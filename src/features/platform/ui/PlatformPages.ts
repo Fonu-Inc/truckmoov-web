@@ -1,0 +1,9 @@
+export { default as PlatformDashboardPageView } from "@/features/platform/ui/pages/PlatformDashboard";
+export { default as PlatformDevicesPageView } from "@/features/platform/ui/pages/PlatformDevices";
+export { default as PlatformSIMsPageView } from "@/features/platform/ui/pages/PlatformSIMs";
+export { default as PlatformTenantsPageView } from "@/features/platform/ui/pages/PlatformTenants";
+export { default as PlatformBillingPageView } from "@/features/platform/ui/pages/PlatformBilling";
+export { default as PlatformSecurityPageView } from "@/features/platform/ui/pages/PlatformSecurity";
+export { default as PlatformSettingsPageView } from "@/features/platform/ui/pages/PlatformSettings";
+export { default as PlatformSupportPageView } from "@/features/platform/ui/pages/PlatformSupport";
+export { default as DeviceSimulatorPageView } from "@/features/platform/ui/pages/DeviceSimulator";

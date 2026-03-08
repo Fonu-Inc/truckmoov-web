@@ -1,0 +1,22 @@
+# Dependencies / build
+node_modules/
+dist/
+.vite/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Tooling cache
+.pnpm-store/
+.npm/
+*.tsbuildinfo
+
+# Logs
+*.log
+
+# OS / Editor
+.DS_Store
+.vscode/
+.idea/

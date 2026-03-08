@@ -1,0 +1,10 @@
+export const PLATFORM_HOME_PATH = "/platform";
+export const PLATFORM_DEVICES_PATH = "/platform/devices";
+export const PLATFORM_SIMS_PATH = "/platform/sims";
+export const PLATFORM_TENANTS_PATH = "/platform/tenants";
+export const PLATFORM_BILLING_PATH = "/platform/billing";
+export const PLATFORM_SECURITY_PATH = "/platform/security";
+export const PLATFORM_SETTINGS_PATH = "/platform/settings";
+export const PLATFORM_SIMULATOR_PATH = "/platform/simulator";
+export const PLATFORM_SUPPORT_PATH = "/platform/support";
+export const PLATFORM_FALLBACK_PATH = "/platform/*";

@@ -1,0 +1,104 @@
+import { Search, Keyboard } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { NotificationCenter } from "@/components/platform/NotificationCenter";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
+import { UserProfileDropdown } from "./UserProfileDropdown";
+import { OrgSwitcher } from "./OrgSwitcher";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { ShortcutTooltip } from "@/components/ui/shortcut-tooltip";
+import { SHORTCUTS, useGlobalShortcuts, formatShortcut } from "@/hooks/useKeyboardShortcuts";
+import { useRef, useState } from "react";
+
+interface DashboardHeaderProps {
+  title: string;
+  subtitle?: string;
+  onRefresh?: () => void;
+}
+
+export function DashboardHeader({ title, subtitle, onRefresh }: DashboardHeaderProps) {
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    clearNotifications,
+  } = useRealtimeNotifications();
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [searchValue, setSearchValue] = useState("");
+
+  // Setup global keyboard shortcuts
+  useGlobalShortcuts({
+    onSearch: () => searchInputRef.current?.focus(),
+    onRefresh: onRefresh,
+  });
+
+  const openShortcutsDialog = () => {
+    // Trigger the keyboard shortcut to open the dialog
+    const event = new KeyboardEvent("keydown", {
+      key: "?",
+      shiftKey: true,
+      bubbles: true,
+    });
+    window.dispatchEvent(event);
+  };
+
+  return (
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/98 px-6 backdrop-blur-sm">
+      <div>
+        <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+      </div>
+
+      <div className="flex items-center gap-2">
+        {/* Organization Switcher */}
+        <OrgSwitcher />
+
+        {/* Search */}
+        <ShortcutTooltip content="Search" shortcut={SHORTCUTS.search.display()}>
+          <div className="relative hidden md:block">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              ref={searchInputRef}
+              placeholder="Search..."
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              className="w-56 h-9 bg-secondary/50 border-border/50 pl-9 pr-10 text-sm focus:bg-background focus:border-primary/50"
+            />
+            <kbd className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              {SHORTCUTS.search.display()}
+            </kbd>
+          </div>
+        </ShortcutTooltip>
+
+        {/* Keyboard Shortcuts Help */}
+        <ShortcutTooltip content="Keyboard shortcuts" shortcut={formatShortcut("?", { shift: true })}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 hidden md:flex text-muted-foreground hover:text-foreground"
+            onClick={openShortcutsDialog}
+          >
+            <Keyboard className="h-4 w-4" />
+          </Button>
+        </ShortcutTooltip>
+
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
+        {/* Notifications */}
+        <NotificationCenter
+          notifications={notifications}
+          unreadCount={unreadCount}
+          onMarkAsRead={markAsRead}
+          onMarkAllAsRead={markAllAsRead}
+          onClear={clearNotifications}
+        />
+
+        {/* User Profile Dropdown */}
+        <UserProfileDropdown />
+      </div>
+    </header>
+  );
+}
