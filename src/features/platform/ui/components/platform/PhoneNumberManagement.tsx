@@ -150,13 +150,13 @@ export function PhoneNumberManagement() {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline-solid'> = {
       available: 'secondary',
       assigned: 'default',
       suspended: 'destructive',
-      released: 'outline',
+      released: 'outline-solid',
     };
-    return <Badge variant={variants[status] || 'outline'}>{status}</Badge>;
+    return <Badge variant={variants[status] || 'outline-solid'}>{status}</Badge>;
   };
 
   const filteredNumbers = phoneNumbers.filter(num => {

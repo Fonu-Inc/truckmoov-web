@@ -312,7 +312,7 @@ function MessageDialog({
         <div className="space-y-4">
           <div className="flex gap-2">
             <Button
-              variant={messageType === "whatsapp" ? "default" : "outline"}
+              variant={messageType === "whatsapp" ? "default" : "outline-solid"}
               size="sm"
               onClick={() => setMessageType("whatsapp")}
               className="gap-2"
@@ -321,7 +321,7 @@ function MessageDialog({
               WhatsApp
             </Button>
             <Button
-              variant={messageType === "sms" ? "default" : "outline"}
+              variant={messageType === "sms" ? "default" : "outline-solid"}
               size="sm"
               onClick={() => setMessageType("sms")}
               className="gap-2"

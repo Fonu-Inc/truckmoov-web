@@ -77,7 +77,7 @@ export function SIMRequestRiskFlags({ request, kycStatus }: SIMRequestRiskFlagsP
       case "medium":
         return "warning";
       case "low":
-        return "outline";
+        return "outline-solid";
     }
   };
 

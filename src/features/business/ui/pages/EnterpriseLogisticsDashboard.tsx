@@ -111,13 +111,13 @@ export default function EnterpriseLogisticsDashboard() {
     return Math.round((onTime / completed.length) * 100);
   }, [jobs]);
 
-  const getStatusColor = (status: string): "default" | "secondary" | "outline" | "destructive" => {
+  const getStatusColor = (status: string): "default" | "secondary" | "outline-solid" | "destructive" => {
     switch (status) {
       case "completed": return "default";
       case "in_progress": return "secondary";
-      case "assigned": case "accepted": return "outline";
+      case "assigned": case "accepted": return "outline-solid";
       case "cancelled": return "destructive";
-      default: return "outline";
+      default: return "outline-solid";
     }
   };
 

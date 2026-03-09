@@ -282,7 +282,7 @@ export function ConfigQueue({
                           {nextAction && canConfigure && (
                             <Button
                               size="sm"
-                              variant={nextAction.action === 'setup' ? 'default' : 'outline'}
+                              variant={nextAction.action === 'setup' ? 'default' : 'outline-solid'}
                               onClick={() => handleOpenWizard(device)}
                             >
                               <nextAction.icon className="h-4 w-4 mr-2" />

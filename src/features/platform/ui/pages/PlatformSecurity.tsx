@@ -1074,7 +1074,7 @@ export default function PlatformSecurity() {
                           </TableCell>
                           <TableCell>{getFailureReasonBadge(attempt.reason)}</TableCell>
                           <TableCell>
-                            <Badge variant={attempt.attempts >= 10 ? "destructive" : attempt.attempts >= 5 ? "secondary" : "outline"}>
+                            <Badge variant={attempt.attempts >= 10 ? "destructive" : attempt.attempts >= 5 ? "secondary" : "outline-solid"}>
                               {attempt.attempts}
                             </Badge>
                           </TableCell>

@@ -104,7 +104,7 @@ export function IVRDashboardTab() {
   }, [calls]);
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
+    const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline-solid'; icon: React.ReactNode }> = {
       answered: { variant: 'default', icon: <PhoneCall className="h-3 w-3" /> },
       no_answer: { variant: 'secondary', icon: <PhoneMissed className="h-3 w-3" /> },
       busy: { variant: 'outline', icon: <PhoneOff className="h-3 w-3" /> },
@@ -129,7 +129,7 @@ export function IVRDashboardTab() {
       pending: 'secondary',
     };
     return (
-      <Badge variant={variants[response] || 'outline'} className="gap-1">
+      <Badge variant={variants[response] || 'outline-solid'} className="gap-1">
         {response === 'accepted' ? <Check className="h-3 w-3" /> : response === 'rejected' ? <X className="h-3 w-3" /> : null}
         {response}
       </Badge>

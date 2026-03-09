@@ -49,7 +49,7 @@ export function FormattingToolbar({ onFormat, onEmojiSelect, activeFormats = [] 
             <TooltipTrigger asChild>
               <Button
                 type="button"
-                variant={activeFormats.includes(type) ? "secondary" : "outline"}
+                variant={activeFormats.includes(type) ? "secondary" : "outline-solid"}
                 size="icon"
                 className="h-8 w-8"
                 onClick={() => onFormat(type)}

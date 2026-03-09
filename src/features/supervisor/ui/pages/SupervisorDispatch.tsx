@@ -315,7 +315,7 @@ export default function SupervisorDispatch() {
                     {assignedDriver && (
                       <div className="flex items-center justify-between pt-3 border-t border-border/50">
                         <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-xs font-bold">
+                          <div className="h-8 w-8 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-white text-xs font-bold">
                             {assignedDriver.name.split(" ").map(n => n[0]).join("")}
                           </div>
                           <div>

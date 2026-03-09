@@ -7,7 +7,7 @@ import { useTenantSenderIds, type SenderIdStatus } from "@/hooks/useTenantSender
 import { SenderIdRequestDialog } from "./SenderIdRequestDialog";
 import { formatDistanceToNow } from "date-fns";
 
-const statusConfig: Record<SenderIdStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
+const statusConfig: Record<SenderIdStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline-solid"; icon: React.ReactNode }> = {
   pending: { label: "Pending Review", variant: "secondary", icon: <Clock className="h-3 w-3" /> },
   whitelisting: { label: "Whitelisting", variant: "outline", icon: <Loader2 className="h-3 w-3 animate-spin" /> },
   approved: { label: "Approved", variant: "default", icon: <CheckCircle2 className="h-3 w-3" /> },

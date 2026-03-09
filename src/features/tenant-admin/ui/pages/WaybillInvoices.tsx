@@ -240,11 +240,11 @@ export default function WaybillInvoices() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               {wb.image_url || wb.image_storage_path ? (
-                                <div className="h-8 w-8 rounded border overflow-hidden bg-muted flex-shrink-0">
+                                <div className="h-8 w-8 rounded border overflow-hidden bg-muted shrink-0">
                                   <WaybillThumbnail waybill={wb} />
                                 </div>
                               ) : (
-                                <div className="h-8 w-8 rounded border bg-muted flex items-center justify-center flex-shrink-0">
+                                <div className="h-8 w-8 rounded border bg-muted flex items-center justify-center shrink-0">
                                   <ImageIcon className="h-4 w-4 text-muted-foreground/50" />
                                 </div>
                               )}

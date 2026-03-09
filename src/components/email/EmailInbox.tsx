@@ -152,7 +152,7 @@ export function EmailInbox() {
   return (
     <div className="flex h-[calc(100vh-200px)] min-h-[600px] gap-4">
       {/* Sidebar */}
-      <div className="w-48 flex-shrink-0 space-y-2">
+      <div className="w-48 shrink-0 space-y-2">
         <Dialog open={isComposing} onOpenChange={setIsComposing}>
           <DialogTrigger asChild>
             <Button variant="gradient" className="w-full">
@@ -181,7 +181,7 @@ export function EmailInbox() {
               </div>
               <div className="space-y-2">
                 <textarea
-                  className="w-full min-h-[200px] p-3 rounded-lg border border-border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full min-h-[200px] p-3 rounded-lg border border-border bg-background text-sm resize-none focus:outline-hidden focus:ring-2 focus:ring-ring"
                   placeholder="Write your message..."
                   value={composeData.body}
                   onChange={(e) => setComposeData({ ...composeData, body: e.target.value })}
@@ -306,7 +306,7 @@ export function EmailInbox() {
                         <p className={`font-medium truncate ${!email.isRead ? "font-semibold" : ""}`}>
                           {email.folder === "sent" ? email.to[0].name : email.from.name}
                         </p>
-                        <span className="text-xs text-muted-foreground flex-shrink-0">
+                        <span className="text-xs text-muted-foreground shrink-0">
                           {format(email.date, "MMM d")}
                         </span>
                       </div>
@@ -337,7 +337,7 @@ export function EmailInbox() {
 
       {/* Email Detail */}
       {selectedEmail && (
-        <Card className="w-[400px] flex-shrink-0">
+        <Card className="w-[400px] shrink-0">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <Button

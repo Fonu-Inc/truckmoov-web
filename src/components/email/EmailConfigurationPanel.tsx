@@ -380,7 +380,7 @@ export function EmailConfigurationPanel() {
           <div className="space-y-2">
             <Label>Email Signature</Label>
             <textarea
-              className="w-full min-h-[100px] p-3 rounded-lg border border-border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full min-h-[100px] p-3 rounded-lg border border-border bg-background text-sm resize-none focus:outline-hidden focus:ring-2 focus:ring-ring"
               value={emailSettings.signature}
               onChange={(e) =>
                 setEmailSettings({ ...emailSettings, signature: e.target.value })

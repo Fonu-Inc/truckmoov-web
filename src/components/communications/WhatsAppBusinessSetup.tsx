@@ -262,7 +262,7 @@ function NotConnectedState({
       </Alert>
 
       <div className="flex flex-col items-center py-8 space-y-4">
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-success/20 to-success/5 flex items-center justify-center">
+        <div className="w-24 h-24 rounded-full bg-linear-to-br from-success/20 to-success/5 flex items-center justify-center">
           <MessageSquare className="h-12 w-12 text-success" />
         </div>
         <h3 className="text-lg font-semibold">Connect WhatsApp Business</h3>

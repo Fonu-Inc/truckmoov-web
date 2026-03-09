@@ -193,7 +193,7 @@ export function LiveTrackingMap({
           </div>
 
           {/* Location Info */}
-          <div className="absolute top-4 left-4 rounded-lg bg-background/95 backdrop-blur-sm border border-border px-4 py-2 z-20 shadow-lg">
+          <div className="absolute top-4 left-4 rounded-lg bg-background/95 backdrop-blur-xs border border-border px-4 py-2 z-20 shadow-lg">
             <p className="text-sm font-semibold">Lagos, Nigeria</p>
             <p className="text-xs text-muted-foreground">{activeVehicles.length} vehicles active</p>
           </div>
@@ -201,7 +201,7 @@ export function LiveTrackingMap({
           {/* Selected Vehicle Info */}
           {selectedVehicle && (
             <div className="absolute bottom-4 left-4 w-80 z-20">
-              <Card className="bg-background/95 backdrop-blur-sm shadow-xl border-border">
+              <Card className="bg-background/95 backdrop-blur-xs shadow-xl border-border">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
@@ -276,15 +276,15 @@ export function LiveTrackingMap({
           )}
 
           {/* Legend */}
-          <div className="absolute bottom-4 right-4 rounded-lg bg-background/95 backdrop-blur-sm border border-border p-3 z-20 shadow-lg">
+          <div className="absolute bottom-4 right-4 rounded-lg bg-background/95 backdrop-blur-xs border border-border p-3 z-20 shadow-lg">
             <p className="text-xs font-semibold mb-2">Vehicle Status</p>
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-emerald-500 shadow-sm" />
+                <div className="h-3 w-3 rounded-full bg-emerald-500 shadow-xs" />
                 <span className="text-xs">Moving</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-amber-500 shadow-sm" />
+                <div className="h-3 w-3 rounded-full bg-amber-500 shadow-xs" />
                 <span className="text-xs">Idle</span>
               </div>
             </div>

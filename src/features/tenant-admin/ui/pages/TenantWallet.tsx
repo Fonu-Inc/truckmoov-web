@@ -366,7 +366,7 @@ export default function TenantWallet() {
         <div className="space-y-6">
           {/* Balance & Quick Stats */}
           <div className="grid gap-4 md:grid-cols-4">
-            <Card className="md:col-span-2 bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20">
+            <Card className="md:col-span-2 bg-linear-to-br from-primary/10 via-primary/5 to-background border-primary/20">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <Wallet className="h-4 w-4" />
@@ -644,7 +644,7 @@ export default function TenantWallet() {
                 {quickTopupAmounts.map((amount) => (
                   <Button
                     key={amount}
-                    variant={topupAmount === amount.toString() ? 'default' : 'outline'}
+                    variant={topupAmount === amount.toString() ? 'default' : 'outline-solid'}
                     size="sm"
                     onClick={() => setTopupAmount(amount.toString())}
                   >

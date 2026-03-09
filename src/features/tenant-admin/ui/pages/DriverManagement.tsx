@@ -441,7 +441,7 @@ export default function DriverManagement() {
                   <TableRow key={driver.id} className="border-border/50">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-primary-foreground">
+                        <div className="h-10 w-10 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-primary-foreground">
                           {driver.name.split(" ").map(n => n[0]).join("")}
                         </div>
                         <div>
@@ -604,7 +604,7 @@ export default function DriverManagement() {
             </DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center py-8">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-2xl font-bold text-white mb-4">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-primary to-accent text-2xl font-bold text-white mb-4">
               {selectedDriver?.name.split(" ").map(n => n[0]).join("")}
             </div>
             <p className="text-lg font-medium">{selectedDriver?.name}</p>
@@ -661,7 +661,7 @@ export default function DriverManagement() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-white">
+              <div className="h-10 w-10 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-white">
                 {selectedDriver?.name.split(" ").map(n => n[0]).join("")}
               </div>
               <div>

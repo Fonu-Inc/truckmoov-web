@@ -369,7 +369,7 @@ export default function TenantAdminDashboard() {
                                 ? "default"
                                 : job.status === "assigned"
                                 ? "secondary"
-                                : "outline"
+                                : "outline-solid"
                             }
                           >
                             {job.status.replace("_", " ")}

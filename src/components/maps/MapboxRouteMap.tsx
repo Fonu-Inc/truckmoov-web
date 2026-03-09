@@ -286,11 +286,11 @@ export function MapboxRouteMap({
         {/* Route summary */}
         {routeData && (
           <div className="absolute bottom-4 left-4 right-4 flex gap-3">
-            <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm px-3 py-1.5">
+            <Badge variant="secondary" className="bg-background/90 backdrop-blur-xs px-3 py-1.5">
               <Navigation className="h-4 w-4 mr-2 text-primary" />
               {formatDistance(routeData.route.distance)}
             </Badge>
-            <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm px-3 py-1.5">
+            <Badge variant="secondary" className="bg-background/90 backdrop-blur-xs px-3 py-1.5">
               <Clock className="h-4 w-4 mr-2 text-primary" />
               {formatDuration(routeData.route.duration)}
             </Badge>
@@ -302,7 +302,7 @@ export function MapboxRouteMap({
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 right-16 bg-background/80 backdrop-blur-sm shadow-lg"
+            className="absolute top-4 right-16 bg-background/80 backdrop-blur-xs shadow-lg"
             onClick={() => setIsExpanded(!isExpanded)}
           >
             {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -339,7 +339,7 @@ export function MapboxRouteMap({
                   >
                     <div className="flex items-start gap-3">
                       <div className={cn(
-                        "flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center",
+                        "shrink-0 h-8 w-8 rounded-full flex items-center justify-center",
                         activeStep === index ? "bg-primary text-primary-foreground" : "bg-muted"
                       )}>
                         {getManeuverIcon(direction.type, direction.modifier)}

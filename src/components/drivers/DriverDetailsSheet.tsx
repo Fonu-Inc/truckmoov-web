@@ -254,7 +254,7 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
         <SheetHeader className="space-y-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-2xl font-bold text-primary-foreground">
+              <div className="h-16 w-16 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-2xl font-bold text-primary-foreground">
                 {driver.name.split(" ").map(n => n[0]).join("")}
               </div>
               <div>
@@ -373,7 +373,7 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
             </Card>
 
             {/* Unified Safety Overview */}
-            <Card className="bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+            <Card className="bg-linear-to-br from-primary/5 to-transparent border-primary/20">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <Award className="h-4 w-4 text-primary" />

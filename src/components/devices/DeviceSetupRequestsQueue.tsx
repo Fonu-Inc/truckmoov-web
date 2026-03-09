@@ -67,7 +67,7 @@ interface DeviceSetupRequestsQueueProps {
   isSupportMode?: boolean;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: typeof Clock }> = {
+const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline-solid'; icon: typeof Clock }> = {
   pending_review: { label: 'Pending Review', variant: 'secondary', icon: Clock },
   assigned: { label: 'Assigned', variant: 'default', icon: UserPlus },
   in_progress: { label: 'In Progress', variant: 'default', icon: Play },

@@ -275,7 +275,7 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
                             checked={selectedDrivers.includes(driver.id)}
                             onCheckedChange={() => toggleDriver(driver.id)}
                           />
-                          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xs font-medium text-primary-foreground">
+                          <div className="h-8 w-8 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-xs font-medium text-primary-foreground">
                             {driver.name.split(" ").map((n) => n[0]).join("")}
                           </div>
                           <div className="flex-1">

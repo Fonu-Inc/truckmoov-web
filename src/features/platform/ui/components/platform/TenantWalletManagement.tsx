@@ -233,7 +233,7 @@ export function TenantWalletManagement() {
                         ₦{wallet.balance_ngn.toLocaleString()}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={status.color as "default" | "destructive" | "outline" | "secondary"}>
+                        <Badge variant={status.color as "default" | "destructive" | "outline-solid" | "secondary"}>
                           {status.text}
                         </Badge>
                       </TableCell>

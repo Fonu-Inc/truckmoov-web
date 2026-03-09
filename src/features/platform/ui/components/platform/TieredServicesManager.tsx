@@ -653,7 +653,7 @@ function UsageSummaryItemsManager() {
         <CardContent className="space-y-4">
           {/* Add new item */}
           <div className="flex items-end gap-2">
-            <div className="space-y-1 flex-shrink-0">
+            <div className="space-y-1 shrink-0">
               <Label className="text-xs">Icon</Label>
               <select
                 value={newIcon}

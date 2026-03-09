@@ -154,7 +154,7 @@ export function JobDetailsSheet({ open, onOpenChange, job }: JobDetailsSheetProp
                 {driver && (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-primary-foreground">
+                      <div className="h-10 w-10 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-primary-foreground">
                         {driver.name.split(" ").map(n => n[0]).join("")}
                       </div>
                       <div>

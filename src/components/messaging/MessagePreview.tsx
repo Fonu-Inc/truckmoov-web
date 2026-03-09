@@ -147,8 +147,8 @@ export function MessagePreview({ message, subject, selectedChannels, senderName 
                 backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")"
               }}>
                 <div className="max-w-[85%] ml-auto">
-                  <div className="bg-[#dcf8c6] dark:bg-[#005c4b] rounded-lg rounded-tr-none p-2 shadow-sm">
-                    <p className="text-sm text-[#303030] dark:text-white whitespace-pre-wrap break-words">
+                  <div className="bg-[#dcf8c6] dark:bg-[#005c4b] rounded-lg rounded-tr-none p-2 shadow-xs">
+                    <p className="text-sm text-[#303030] dark:text-white whitespace-pre-wrap wrap-break-word">
                       {parseFormatting(personalizedMessage, "whatsapp")}
                     </p>
                     <div className="flex items-center justify-end gap-1 mt-1">
@@ -194,7 +194,7 @@ export function MessagePreview({ message, subject, selectedChannels, senderName 
               <div className="bg-background p-3 min-h-[120px]">
                 <div className="max-w-[85%]">
                   <div className="bg-muted rounded-lg rounded-tl-none p-3">
-                    <p className="text-sm whitespace-pre-wrap break-words">{parseFormatting(personalizedMessage, "sms")}</p>
+                    <p className="text-sm whitespace-pre-wrap wrap-break-word">{parseFormatting(personalizedMessage, "sms")}</p>
                   </div>
                   <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
                     <Clock className="h-3 w-3" />
@@ -265,7 +265,7 @@ export function MessagePreview({ message, subject, selectedChannels, senderName 
               
               {/* Email Body */}
               <div className="bg-background p-4 min-h-[120px] border-t border-border/50">
-                <div className="text-sm whitespace-pre-wrap break-words">{parseFormatting(personalizedMessage, "email")}</div>
+                <div className="text-sm whitespace-pre-wrap wrap-break-word">{parseFormatting(personalizedMessage, "email")}</div>
                 <div className="mt-4 pt-4 border-t border-border/50 text-xs text-muted-foreground">
                   <p>—</p>
                   <p>{senderName}</p>

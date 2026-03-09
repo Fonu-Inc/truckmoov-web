@@ -484,7 +484,7 @@ export function GeofenceManagementDialog({ open, onOpenChange }: GeofenceManagem
                           <div className="flex gap-2">
                             <Button
                               type="button"
-                              variant={editForm.geofence_type === "CIRCLE" ? "default" : "outline"}
+                              variant={editForm.geofence_type === "CIRCLE" ? "default" : "outline-solid"}
                               size="sm"
                               onClick={() => updateEditForm({ geofence_type: "CIRCLE" })}
                             >
@@ -493,7 +493,7 @@ export function GeofenceManagementDialog({ open, onOpenChange }: GeofenceManagem
                             </Button>
                             <Button
                               type="button"
-                              variant={editForm.geofence_type === "POLYGON" ? "default" : "outline"}
+                              variant={editForm.geofence_type === "POLYGON" ? "default" : "outline-solid"}
                               size="sm"
                               onClick={() => updateEditForm({ geofence_type: "POLYGON" })}
                             >
@@ -715,7 +715,7 @@ export function GeofenceManagementDialog({ open, onOpenChange }: GeofenceManagem
                                         variant={
                                           editForm.schedule_days.includes(day)
                                             ? "default"
-                                            : "outline"
+                                            : "outline-solid"
                                         }
                                         className="h-8 w-10"
                                         onClick={() => toggleDay(day)}

@@ -189,7 +189,7 @@ export function OnboardingPlanStep({
             onClick={() => onBillingCycleChange("MONTHLY")}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
               billingCycle === "MONTHLY"
-                ? "bg-background text-foreground shadow-sm"
+                ? "bg-background text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -199,7 +199,7 @@ export function OnboardingPlanStep({
             onClick={() => onBillingCycleChange("YEARLY")}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${
               billingCycle === "YEARLY"
-                ? "bg-background text-foreground shadow-sm"
+                ? "bg-background text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -321,7 +321,7 @@ export function OnboardingPlanStep({
                 <ul className="space-y-1.5 text-sm flex-1">
                   {bullets.map((bullet: string, idx: number) => (
                     <li key={idx} className="flex items-start gap-2">
-                      <Check className="h-3.5 w-3.5 text-success flex-shrink-0 mt-0.5" />
+                      <Check className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" />
                       <span className="text-muted-foreground">{bullet}</span>
                     </li>
                   ))}
@@ -351,7 +351,7 @@ export function OnboardingPlanStep({
                     </Button>
                   ) : (
                     <Button
-                      variant={isSelected ? "default" : "outline"}
+                      variant={isSelected ? "default" : "outline-solid"}
                       className="w-full"
                       size="sm"
                       onClick={(e) => {
@@ -443,7 +443,7 @@ function UsageRatesStrip() {
           const Icon = ICON_MAP[item.icon_key] || Wifi;
           return (
             <div key={idx} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Icon className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+              <Icon className="h-3.5 w-3.5 text-primary shrink-0" />
               <span>{item.label}</span>
             </div>
           );

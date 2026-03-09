@@ -25,7 +25,7 @@ interface TicketDetailSheetProps {
   onClose: () => void;
 }
 
-const statusConfig: Record<TicketStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+const statusConfig: Record<TicketStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline-solid" }> = {
   open: { label: "Open", variant: "default" },
   in_progress: { label: "In Progress", variant: "secondary" },
   waiting_on_tenant: { label: "Awaiting Response", variant: "outline" },

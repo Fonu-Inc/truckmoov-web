@@ -187,7 +187,7 @@ export function TenantSubscriptionCard() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Plan Overview */}
-        <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
+        <div className="flex items-center justify-between p-4 rounded-lg bg-linear-to-r from-primary/10 to-accent/10 border border-primary/20">
           <div className="flex items-center gap-4">
             <div 
               className="h-12 w-12 rounded-full flex items-center justify-center text-xl font-bold"
@@ -355,7 +355,7 @@ export function TenantSubscriptionCard() {
                               (plan.max_drivers && usageStats.drivers.current > plan.max_drivers) ||
                               (plan.max_devices && usageStats.devices.current > plan.max_devices)) && (
                               <div className="flex items-center gap-2 p-2 rounded bg-warning/10 border border-warning/20 text-warning text-xs">
-                                <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+                                <AlertTriangle className="h-3 w-3 shrink-0" />
                                 <span>Current usage exceeds this plan's limits</span>
                               </div>
                             )}
@@ -499,7 +499,7 @@ export function TenantSubscriptionCard() {
                   key={feature.feature_key}
                   className="flex items-center gap-2 text-sm p-2 rounded-lg bg-success/5 border border-success/20"
                 >
-                  <Check className="h-4 w-4 text-success flex-shrink-0" />
+                  <Check className="h-4 w-4 text-success shrink-0" />
                   <span>{feature.feature_name}</span>
                   {feature.usage_limit && (
                     <Badge variant="outline" className="ml-auto text-xs">
@@ -513,7 +513,7 @@ export function TenantSubscriptionCard() {
                   key={feature.feature_key}
                   className="flex items-center gap-2 text-sm p-2 rounded-lg bg-muted/30 border border-muted text-muted-foreground"
                 >
-                  <Lock className="h-4 w-4 flex-shrink-0" />
+                  <Lock className="h-4 w-4 shrink-0" />
                   <span>{feature.feature_name}</span>
                   <Badge variant="outline" className="ml-auto text-xs">
                     Upgrade
@@ -531,9 +531,9 @@ export function TenantSubscriptionCard() {
 
         {/* Upgrade Prompt */}
         {(hasWarnings || lockedFeatures.length > 0) && upgradeOptions.length > 0 && (
-          <div className="p-4 rounded-lg bg-gradient-to-r from-warning/10 to-primary/10 border border-warning/20">
+          <div className="p-4 rounded-lg bg-linear-to-r from-warning/10 to-primary/10 border border-warning/20">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="font-medium">
                   {hasWarnings 

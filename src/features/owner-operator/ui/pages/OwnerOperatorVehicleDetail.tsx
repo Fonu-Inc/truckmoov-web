@@ -155,12 +155,12 @@ export default function OwnerOperatorVehicleDetail() {
     );
   }
 
-  const getJobStatusVariant = (status: string): 'default' | 'secondary' | 'outline' | 'destructive' => {
+  const getJobStatusVariant = (status: string): 'default' | 'secondary' | 'outline-solid' | 'destructive' => {
     switch (status) {
       case 'completed': return 'default';
       case 'in_progress': case 'arrived_pickup': case 'arrived_dropoff': return 'secondary';
       case 'cancelled': return 'destructive';
-      default: return 'outline';
+      default: return 'outline-solid';
     }
   };
 

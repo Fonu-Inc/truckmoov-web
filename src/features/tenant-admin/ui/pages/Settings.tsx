@@ -584,7 +584,7 @@ export default function Settings() {
               <div className="flex items-center gap-6">
                 <Avatar className="h-20 w-20">
                   <AvatarImage src="/placeholder.svg" />
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-2xl">TM</AvatarFallback>
+                  <AvatarFallback className="bg-linear-to-br from-primary to-accent text-2xl">TM</AvatarFallback>
                 </Avatar>
                 <div>
                   <Button variant="outline" size="sm">
@@ -849,7 +849,7 @@ export default function Settings() {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-xs">
+                          <AvatarFallback className="bg-linear-to-br from-primary to-accent text-xs">
                             {tenantUser.name.split(" ").map((n) => n[0]).join("")}
                           </AvatarFallback>
                         </Avatar>
@@ -1036,7 +1036,7 @@ export default function Settings() {
                     </div>
                   </div>
                   <Button
-                    variant={integration.connected ? "outline" : "gradient"}
+                    variant={integration.connected ? "outline-solid" : "gradient"}
                     size="sm"
                     onClick={() => toast.success("Integration settings updated")}
                   >

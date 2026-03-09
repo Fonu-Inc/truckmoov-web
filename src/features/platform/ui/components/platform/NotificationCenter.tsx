@@ -118,7 +118,7 @@ export function NotificationCenter({
                       <div className="flex items-center justify-between gap-2">
                         <p className="font-medium text-sm truncate">{notification.title}</p>
                         {!notification.read && (
-                          <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+                          <div className="h-2 w-2 rounded-full bg-primary shrink-0" />
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-2 mt-1">

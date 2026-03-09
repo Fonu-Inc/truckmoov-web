@@ -280,7 +280,7 @@ Reply *HELP* for available commands.`,
                     >
                       <div
                         className={cn(
-                          "max-w-[85%] rounded-lg p-3 shadow-sm",
+                          "max-w-[85%] rounded-lg p-3 shadow-xs",
                           msg.type === "incoming"
                             ? "bg-white dark:bg-card rounded-tl-none"
                             : "bg-[#DCF8C6] dark:bg-success/20 rounded-tr-none"

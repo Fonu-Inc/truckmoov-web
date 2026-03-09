@@ -114,7 +114,7 @@ export function JobCard({ job, onView, onEdit, onDelete, onMatch, onComplete }: 
         <div className="flex items-center justify-between pt-3 border-t border-border/50">
           {driver ? (
             <div className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xs font-medium text-primary-foreground">
+              <div className="h-6 w-6 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-xs font-medium text-primary-foreground">
                 {driver.name.split(" ").map(n => n[0]).join("")}
               </div>
               <span className="text-sm">{driver.name}</span>

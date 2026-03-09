@@ -64,13 +64,13 @@ export default function OwnerOperatorJobs() {
   const completedJobs = jobs.filter(j => j.status === "completed");
   const otherJobs = jobs.filter(j => !activeStatuses.includes(j.status) && j.status !== "completed");
 
-  const getStatusVariant = (status: string): "default" | "secondary" | "outline" | "destructive" => {
+  const getStatusVariant = (status: string): "default" | "secondary" | "outline-solid" | "destructive" => {
     switch (status) {
       case "completed": return "default";
       case "in_progress": case "arrived_pickup": case "arrived_dropoff": return "secondary";
-      case "assigned": case "accepted": return "outline";
+      case "assigned": case "accepted": return "outline-solid";
       case "cancelled": return "destructive";
-      default: return "outline";
+      default: return "outline-solid";
     }
   };
 

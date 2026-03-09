@@ -168,28 +168,28 @@ export function ApiKeyManagement() {
                 <Label>Expiration (optional)</Label>
                 <div className="flex gap-2 mt-1">
                   <Button
-                    variant={expiresInDays === null ? 'default' : 'outline'}
+                    variant={expiresInDays === null ? 'default' : 'outline-solid'}
                     size="sm"
                     onClick={() => setExpiresInDays(null)}
                   >
                     Never
                   </Button>
                   <Button
-                    variant={expiresInDays === 30 ? 'default' : 'outline'}
+                    variant={expiresInDays === 30 ? 'default' : 'outline-solid'}
                     size="sm"
                     onClick={() => setExpiresInDays(30)}
                   >
                     30 days
                   </Button>
                   <Button
-                    variant={expiresInDays === 90 ? 'default' : 'outline'}
+                    variant={expiresInDays === 90 ? 'default' : 'outline-solid'}
                     size="sm"
                     onClick={() => setExpiresInDays(90)}
                   >
                     90 days
                   </Button>
                   <Button
-                    variant={expiresInDays === 365 ? 'default' : 'outline'}
+                    variant={expiresInDays === 365 ? 'default' : 'outline-solid'}
                     size="sm"
                     onClick={() => setExpiresInDays(365)}
                   >

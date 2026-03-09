@@ -179,7 +179,7 @@ function MessageItem({ message }: { message: DriverMessage }) {
     <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
       <div className={cn(
         "flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white",
-        "bg-gradient-to-br from-primary to-accent"
+        "bg-linear-to-br from-primary to-accent"
       )}>
         {message.driver_name?.split(" ").map(n => n[0]).join("") || "?"}
       </div>

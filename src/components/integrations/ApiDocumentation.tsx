@@ -1004,7 +1004,7 @@ export function ApiDocumentation() {
                 <Button
                   key={cat}
                   size="sm"
-                  variant={selectedCategory === cat ? 'default' : 'outline'}
+                  variant={selectedCategory === cat ? 'default' : 'outline-solid'}
                   onClick={() => setSelectedCategory(cat)}
                   className="capitalize"
                 >

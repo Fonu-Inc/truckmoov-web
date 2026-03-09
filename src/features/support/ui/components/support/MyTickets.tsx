@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-const statusConfig: Record<TicketStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ElementType }> = {
+const statusConfig: Record<TicketStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline-solid"; icon: React.ElementType }> = {
   open: { label: "Open", variant: "default", icon: AlertCircle },
   in_progress: { label: "In Progress", variant: "secondary", icon: Loader2 },
   waiting_on_tenant: { label: "Awaiting Response", variant: "outline", icon: MessageSquare },

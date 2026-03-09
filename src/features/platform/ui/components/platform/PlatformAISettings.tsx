@@ -145,7 +145,7 @@ export function PlatformAISettings() {
                       return (
                         <Badge
                           key={model}
-                          variant={isAllowed ? "default" : "outline"}
+                          variant={isAllowed ? "default" : "outline-solid"}
                           className="cursor-pointer text-xs"
                           onClick={() => {
                             const newModels = isAllowed
@@ -185,7 +185,7 @@ export function PlatformAISettings() {
                       return (
                         <Badge
                           key={model}
-                          variant={isAllowed ? "default" : "outline"}
+                          variant={isAllowed ? "default" : "outline-solid"}
                           className="cursor-pointer text-xs"
                           onClick={() => {
                             const newModels = isAllowed
@@ -225,7 +225,7 @@ export function PlatformAISettings() {
                       return (
                         <Badge
                           key={model}
-                          variant={isAllowed ? "default" : "outline"}
+                          variant={isAllowed ? "default" : "outline-solid"}
                           className="cursor-pointer text-xs"
                           onClick={() => {
                             const newModels = isAllowed

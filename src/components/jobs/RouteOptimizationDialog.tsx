@@ -98,7 +98,7 @@ function SortableWaypoint({
             </button>
 
             {/* Stop number */}
-            <div className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${getTypeStyles()}`}>
+            <div className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${getTypeStyles()}`}>
               {index + 1}
             </div>
 

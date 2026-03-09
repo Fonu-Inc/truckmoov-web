@@ -299,7 +299,7 @@ export function SIMAnalyticsDashboard({ sims }: SIMAnalyticsDashboardProps) {
                     content={({ active, payload }) => {
                       if (!active || !payload?.length) return null;
                       return (
-                        <div className="rounded-lg border bg-background p-2 shadow-sm">
+                        <div className="rounded-lg border bg-background p-2 shadow-xs">
                           <div className="font-medium">{payload[0]?.payload.month}</div>
                           {payload.map((entry: any, i: number) => (
                             <div key={i} className="flex items-center gap-2 text-sm">

@@ -373,7 +373,7 @@ export default function OmnichannelInbox() {
                       )}
                     >
                       <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-sm">
+                        <AvatarFallback className="bg-linear-to-br from-primary to-accent text-primary-foreground text-sm">
                           {conv.driverName?.split(" ").map(n => n[0]).join("") || "?"}
                         </AvatarFallback>
                       </Avatar>
@@ -451,7 +451,7 @@ export default function OmnichannelInbox() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground">
+                      <AvatarFallback className="bg-linear-to-br from-primary to-accent text-primary-foreground">
                         {selectedConversation.driverName?.split(" ").map(n => n[0]).join("") || "?"}
                       </AvatarFallback>
                     </Avatar>
@@ -793,7 +793,7 @@ function CommunicationBubble({ item }: { item: CommunicationItem }) {
         )}
       </div>
 
-      <p className="text-sm whitespace-pre-wrap break-words">{item.content}</p>
+      <p className="text-sm whitespace-pre-wrap wrap-break-word">{item.content}</p>
 
       <div
         className={cn(

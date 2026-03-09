@@ -522,7 +522,7 @@ export function DeviceLinkingResolver({
                           <TableCell className="text-right">
                             <Button
                               size="sm"
-                              variant={skippedExceptions.includes(ex.row_index) ? "secondary" : "outline"}
+                              variant={skippedExceptions.includes(ex.row_index) ? "secondary" : "outline-solid"}
                               onClick={() => handleSkipException(ex.row_index)}
                             >
                               {skippedExceptions.includes(ex.row_index) ? (

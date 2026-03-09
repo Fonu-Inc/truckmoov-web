@@ -368,7 +368,7 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
             <Card className="bg-primary/5 border-primary/20">
               <CardContent className="p-3">
                 <div className="flex items-start gap-2">
-                  <Sparkles className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                  <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                   <p className="text-sm text-muted-foreground">{analysis}</p>
                 </div>
               </CardContent>
@@ -416,7 +416,7 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                          index === 0 ? "bg-gradient-to-br from-primary to-accent" : "bg-muted"
+                          index === 0 ? "bg-linear-to-br from-primary to-accent" : "bg-muted"
                         }`}>
                           <Truck className="h-5 w-5 text-primary-foreground" />
                         </div>
@@ -441,7 +441,7 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
 
                     <div className="flex items-center gap-4 mb-3">
                       <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xs font-medium text-primary-foreground">
+                        <div className="h-8 w-8 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-xs font-medium text-primary-foreground">
                           {match.driver.name.split(" ").map(n => n[0]).join("")}
                         </div>
                         <div>

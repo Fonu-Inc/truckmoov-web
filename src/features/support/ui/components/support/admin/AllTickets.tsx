@@ -33,13 +33,13 @@ const categoryOptions: { value: TicketCategory | "all"; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
-const statusVariants: Record<TicketStatus, "default" | "secondary" | "destructive" | "outline"> = {
+const statusVariants: Record<TicketStatus, "default" | "secondary" | "destructive" | "outline-solid"> = {
   open: "default",
   in_progress: "secondary",
-  waiting_on_tenant: "outline",
+  waiting_on_tenant: "outline-solid",
   escalated: "destructive",
   resolved: "secondary",
-  closed: "outline",
+  closed: "outline-solid",
 };
 
 export function AllTickets() {

@@ -262,7 +262,7 @@ export function ConversationInbox() {
                   <div className="flex items-start gap-3">
                     <div className="relative">
                       <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm">
+                        <AvatarFallback className="bg-linear-to-br from-primary to-accent text-white text-sm">
                           {conv.driverName.split(" ").map(n => n[0]).join("")}
                         </AvatarFallback>
                       </Avatar>
@@ -319,7 +319,7 @@ export function ConversationInbox() {
                   </Button>
                 </TooltipWrapper>
                 <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white">
+                  <AvatarFallback className="bg-linear-to-br from-primary to-accent text-white">
                     {selectedConversation.driverName.split(" ").map(n => n[0]).join("")}
                   </AvatarFallback>
                 </Avatar>
@@ -480,7 +480,7 @@ export function ConversationInbox() {
             <div className="p-4 border-t border-border/50">
               <div className="flex items-center gap-2 mb-2">
                 <Button
-                  variant={messageType === "whatsapp" ? "default" : "outline"}
+                  variant={messageType === "whatsapp" ? "default" : "outline-solid"}
                   size="sm"
                   onClick={() => setMessageType("whatsapp")}
                   className="gap-1 h-7"
@@ -489,7 +489,7 @@ export function ConversationInbox() {
                   WhatsApp
                 </Button>
                 <Button
-                  variant={messageType === "sms" ? "default" : "outline"}
+                  variant={messageType === "sms" ? "default" : "outline-solid"}
                   size="sm"
                   onClick={() => setMessageType("sms")}
                   className="gap-1 h-7"

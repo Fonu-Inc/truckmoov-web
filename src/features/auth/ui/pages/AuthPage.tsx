@@ -636,7 +636,7 @@ export default function AuthPage() {
           ].map((feature) => (
             <div
               key={feature}
-              className="flex items-center gap-2.5 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 px-4 py-3"
+              className="flex items-center gap-2.5 rounded-lg bg-white/5 backdrop-blur-xs border border-white/10 px-4 py-3"
             >
               <div className="h-2 w-2 rounded-full bg-primary shadow-mtn" />
               <span className="text-sm font-medium text-white">{feature}</span>

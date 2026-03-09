@@ -361,7 +361,7 @@ export default function LiveMap() {
           </Card>
           
           {/* Map Actions */}
-          <div className="absolute top-4 right-4 z-[1000] flex gap-2">
+          <div className="absolute top-4 right-4 z-1000 flex gap-2">
             {selectedVehicle && (
               <Button
                 variant="secondary"

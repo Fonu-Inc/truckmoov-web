@@ -76,21 +76,21 @@ export function PlatformDeviceTrackingContent({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button
-            variant={activeView === 'map' ? 'default' : 'outline'}
+            variant={activeView === 'map' ? 'default' : 'outline-solid'}
             size="sm"
             onClick={() => setActiveView('map')}
           >
             Live Map
           </Button>
           <Button
-            variant={activeView === 'list' ? 'default' : 'outline'}
+            variant={activeView === 'list' ? 'default' : 'outline-solid'}
             size="sm"
             onClick={() => setActiveView('list')}
           >
             Device List
           </Button>
           <Button
-            variant={activeView === 'events' ? 'default' : 'outline'}
+            variant={activeView === 'events' ? 'default' : 'outline-solid'}
             size="sm"
             onClick={() => setActiveView('events')}
           >
@@ -278,7 +278,7 @@ export function PlatformDeviceTrackingContent({
                             variant={
                               event.severity === 'critical' || event.severity === 'high'
                                 ? 'destructive'
-                                : 'outline'
+                                : 'outline-solid'
                             }
                           >
                             {event.severity}

@@ -83,7 +83,7 @@ function AlertCard({ alert, expanded, onToggle }: {
   onToggle: () => void;
 }) {
   return (
-    <Card className={`bg-gradient-to-r ${riskLevelBg[alert.risk_level]} border-border/50`}>
+    <Card className={`bg-linear-to-r ${riskLevelBg[alert.risk_level]} border-border/50`}>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -196,7 +196,7 @@ export default function DriverFatigueDashboard() {
 
           {/* Stats Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
+            <Card className="bg-linear-to-br from-primary/10 to-transparent border-primary/20">
               <CardHeader className="pb-2">
                 <CardDescription className="flex items-center gap-2">
                   <Activity className="h-4 w-4" />
@@ -212,7 +212,7 @@ export default function DriverFatigueDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-green-500/10 to-transparent border-green-500/20">
+            <Card className="bg-linear-to-br from-green-500/10 to-transparent border-green-500/20">
               <CardHeader className="pb-2">
                 <CardDescription className="flex items-center gap-2">
                   <Coffee className="h-4 w-4" />
@@ -228,7 +228,7 @@ export default function DriverFatigueDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-red-500/10 to-transparent border-red-500/20">
+            <Card className="bg-linear-to-br from-red-500/10 to-transparent border-red-500/20">
               <CardHeader className="pb-2">
                 <CardDescription className="flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
@@ -243,7 +243,7 @@ export default function DriverFatigueDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/20">
+            <Card className="bg-linear-to-br from-blue-500/10 to-transparent border-blue-500/20">
               <CardHeader className="pb-2">
                 <CardDescription className="flex items-center gap-2">
                   <Eye className="h-4 w-4" />

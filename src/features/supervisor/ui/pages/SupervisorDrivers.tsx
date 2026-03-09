@@ -304,7 +304,7 @@ export default function SupervisorDrivers() {
         {/* Stats Row */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent" />
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -318,7 +318,7 @@ export default function SupervisorDrivers() {
             </CardContent>
           </Card>
           <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-br from-success/5 to-transparent" />
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -332,7 +332,7 @@ export default function SupervisorDrivers() {
             </CardContent>
           </Card>
           <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-br from-accent/5 to-transparent" />
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -346,7 +346,7 @@ export default function SupervisorDrivers() {
             </CardContent>
           </Card>
           <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-muted/20 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-br from-muted/20 to-transparent" />
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -439,7 +439,7 @@ export default function SupervisorDrivers() {
                           <div className="flex items-start gap-4">
                             <div className={cn(
                               "relative flex h-14 w-14 items-center justify-center rounded-full text-lg font-bold text-white",
-                              "bg-gradient-to-br from-primary to-accent shadow-lg transition-transform group-hover:scale-105"
+                              "bg-linear-to-br from-primary to-accent shadow-lg transition-transform group-hover:scale-105"
                             )}>
                               {driver.name.split(" ").map(n => n[0]).join("")}
                               <div className={cn(
@@ -607,7 +607,7 @@ export default function SupervisorDrivers() {
                               <div className="flex items-center gap-3">
                                 <div className={cn(
                                   "flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium text-white",
-                                  "bg-gradient-to-br from-primary to-accent"
+                                  "bg-linear-to-br from-primary to-accent"
                                 )}>
                                   {msg.driver_name?.split(" ").map(n => n[0]).join("") || "?"}
                                 </div>
@@ -769,7 +769,7 @@ export default function SupervisorDrivers() {
           <div className="flex flex-col items-center py-8">
             <div className={cn(
               "flex h-24 w-24 items-center justify-center rounded-full text-3xl font-bold text-white mb-6",
-              "bg-gradient-to-br from-primary to-accent shadow-xl",
+              "bg-linear-to-br from-primary to-accent shadow-xl",
               callStatus === "ringing" && "animate-pulse"
             )}>
               {selectedDriver?.name.split(" ").map(n => n[0]).join("")}
@@ -828,7 +828,7 @@ export default function SupervisorDrivers() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
-              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-base font-bold text-white">
+              <div className="h-12 w-12 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-base font-bold text-white">
                 {selectedDriver?.name.split(" ").map(n => n[0]).join("")}
               </div>
               <div>
@@ -900,7 +900,7 @@ export default function SupervisorDrivers() {
               </p>
             </div>
             <div className="flex items-center gap-3 p-3 bg-[#25D366]/5 rounded-lg border border-[#25D366]/20">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-bold text-white">
+              <div className="h-10 w-10 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-sm font-bold text-white">
                 {selectedDriver?.name.split(" ").map(n => n[0]).join("")}
               </div>
               <div>

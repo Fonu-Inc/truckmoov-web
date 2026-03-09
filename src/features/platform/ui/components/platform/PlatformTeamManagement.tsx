@@ -312,7 +312,7 @@ export function PlatformTeamManagement() {
                   <TableRow key={platformUser.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-primary-foreground">
+                        <div className="h-9 w-9 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-primary-foreground">
                           {platformUser.fullName
                             .split(" ")
                             .map((n) => n[0])

@@ -290,7 +290,7 @@ export default function PlatformDeviceTracking() {
                                 variant={
                                   event.severity === 'critical' || event.severity === 'high'
                                     ? 'destructive'
-                                    : 'outline'
+                                    : 'outline-solid'
                                 }
                               >
                                 {event.severity}

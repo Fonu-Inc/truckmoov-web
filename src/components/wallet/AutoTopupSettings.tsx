@@ -145,7 +145,7 @@ export function AutoTopupSettings({ tenantId, onSettingsUpdated }: AutoTopupSett
                     <Button
                       key={t}
                       type="button"
-                      variant={config.threshold === t ? "default" : "outline"}
+                      variant={config.threshold === t ? "default" : "outline-solid"}
                       size="sm"
                       onClick={() => setConfig({ ...config, threshold: t })}
                     >
@@ -169,7 +169,7 @@ export function AutoTopupSettings({ tenantId, onSettingsUpdated }: AutoTopupSett
                     <Button
                       key={a}
                       type="button"
-                      variant={config.amount === a ? "default" : "outline"}
+                      variant={config.amount === a ? "default" : "outline-solid"}
                       size="sm"
                       onClick={() => setConfig({ ...config, amount: a })}
                     >

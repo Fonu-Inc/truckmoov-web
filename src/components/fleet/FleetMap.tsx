@@ -645,7 +645,7 @@ export function FleetMap({
       <div ref={mapContainerRef} className="w-full h-full" />
 
       {/* Map Legend */}
-      <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm rounded-lg border border-border p-3 shadow-lg z-[1000]">
+      <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-xs rounded-lg border border-border p-3 shadow-lg z-1000">
         <p className="text-xs font-medium mb-2">Legend</p>
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
@@ -681,7 +681,7 @@ export function FleetMap({
       </div>
 
       {/* Live indicator with connection status */}
-      <div className="absolute top-4 left-4 bg-card/95 backdrop-blur-sm rounded-full px-3 py-1.5 border border-border shadow-lg z-[1000] flex items-center gap-2">
+      <div className="absolute top-4 left-4 bg-card/95 backdrop-blur-xs rounded-full px-3 py-1.5 border border-border shadow-lg z-1000 flex items-center gap-2">
         {isConnected ? (
           <>
             <Wifi className="h-3.5 w-3.5 text-success" />
@@ -704,7 +704,7 @@ export function FleetMap({
 
       {/* Realtime data indicator */}
       {realtimeLocations.length > 0 && (
-        <div className="absolute top-4 right-4 bg-primary/90 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg z-[1000] flex items-center gap-2">
+        <div className="absolute top-4 right-4 bg-primary/90 backdrop-blur-xs rounded-full px-3 py-1.5 shadow-lg z-1000 flex items-center gap-2">
           <span className="text-xs font-medium text-primary-foreground">
             {realtimeLocations.length} devices tracking
           </span>

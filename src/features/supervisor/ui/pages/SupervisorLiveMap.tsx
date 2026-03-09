@@ -149,14 +149,14 @@ export default function SupervisorLiveMap() {
                 {geofenceEvents.slice(0, 3).map((event) => (
                   <div key={event.id} className="flex items-center gap-2 text-xs">
                     {event.event_type === 'ENTER' ? (
-                      <LogIn className="h-3 w-3 text-success flex-shrink-0" />
+                      <LogIn className="h-3 w-3 text-success shrink-0" />
                     ) : (
-                      <LogOut className="h-3 w-3 text-warning flex-shrink-0" />
+                      <LogOut className="h-3 w-3 text-warning shrink-0" />
                     )}
                     <span className="truncate flex-1">
                       {(event.geofence as any)?.name || 'Unknown zone'}
                     </span>
-                    <span className="text-muted-foreground flex-shrink-0">
+                    <span className="text-muted-foreground shrink-0">
                       {new Date(event.occurred_at).toLocaleTimeString()}
                     </span>
                   </div>
@@ -312,7 +312,7 @@ export default function SupervisorLiveMap() {
           </Card>
 
           {/* Map Actions */}
-          <div className="absolute top-4 right-4 z-[1000] flex gap-2">
+          <div className="absolute top-4 right-4 z-1000 flex gap-2">
             {selectedVehicle && (
               <Button
                 variant="secondary"

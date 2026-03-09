@@ -153,13 +153,13 @@ export default function OwnerOperatorDashboard() {
   const expiredDocs = expiringDocs.filter(doc => isBefore(new Date(doc.expiry_date), now));
   const soonDocs = expiringDocs.filter(doc => !isBefore(new Date(doc.expiry_date), now));
 
-  const getStatusVariant = (status: string): "default" | "secondary" | "outline" | "destructive" => {
+  const getStatusVariant = (status: string): "default" | "secondary" | "outline-solid" | "destructive" => {
     switch (status) {
       case "completed": return "default";
       case "in_progress": case "arrived_pickup": case "arrived_dropoff": return "secondary";
-      case "assigned": case "accepted": return "outline";
+      case "assigned": case "accepted": return "outline-solid";
       case "cancelled": return "destructive";
-      default: return "outline";
+      default: return "outline-solid";
     }
   };
 
@@ -468,7 +468,7 @@ export default function OwnerOperatorDashboard() {
         </Card>
 
         {/* WhatsApp-First CTA */}
-        <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+        <Card className="bg-linear-to-r from-primary/10 to-primary/5 border-primary/20">
           <CardContent className="flex items-center justify-between py-5">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20">

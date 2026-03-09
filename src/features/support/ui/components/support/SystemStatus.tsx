@@ -44,7 +44,7 @@ export function SystemStatus() {
           </div>
           <div className="flex items-center gap-2">
             <OverallIcon className={`h-5 w-5 ${overall.color}`} />
-            <Badge variant={overallStatus === "operational" ? "outline" : "destructive"}>
+            <Badge variant={overallStatus === "operational" ? "outline-solid" : "destructive"}>
               {overall.label}
             </Badge>
           </div>
