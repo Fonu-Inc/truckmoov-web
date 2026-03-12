@@ -1,0 +1,134 @@
+name: Frontend CI/CD
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: truckmoov-web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build environment file
+        run: |
+          cat <<EOF > .env.production
+          VITE_SUPABASE_PROJECT_ID=${VITE_SUPABASE_PROJECT_ID}
+          VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
+          VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+          VITE_BACKEND_URL=${VITE_BACKEND_URL}
+          VITE_FONU_COMPANY_UUID=${VITE_FONU_COMPANY_UUID}
+          VITE_FONU_API_KEY=${VITE_FONU_API_KEY}
+          EOF
+        env:
+          VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID != '' && secrets.VITE_SUPABASE_PROJECT_ID || 'mock-project' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY != '' && secrets.VITE_SUPABASE_PUBLISHABLE_KEY || 'mock-key' }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL != '' && secrets.VITE_SUPABASE_URL || 'https://mock.supabase.local' }}
+          VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL != '' && secrets.VITE_BACKEND_URL || 'http://localhost:3000/api' }}
+          VITE_FONU_COMPANY_UUID: ${{ secrets.VITE_FONU_COMPANY_UUID != '' && secrets.VITE_FONU_COMPANY_UUID || 'mock-company' }}
+          VITE_FONU_API_KEY: ${{ secrets.VITE_FONU_API_KEY != '' && secrets.VITE_FONU_API_KEY || 'mock-api-key' }}
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Verify architecture
+        run: pnpm verify:architecture
+
+      - name: Build
+        run: pnpm build
+
+      - name: Upload build artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: truckmoov-web-dist
+          path: dist
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs:
+      - validate
+    permissions:
+      contents: read
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: truckmoov-web-dist
+          path: dist
+
+      - name: Prepare SSH key
+        env:
+          DEV_SSH_KEY: ${{ secrets.DEV_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEV_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+      - name: Trust deploy host
+        env:
+          DEV_SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          DEV_SSH_PORT: ${{ secrets.DEV_SSH_PORT }}
+        run: |
+          ssh-keyscan -p "${DEV_SSH_PORT:-22}" -H "$DEV_SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload release bundle
+        env:
+          DEV_SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          DEV_SSH_PORT: ${{ secrets.DEV_SSH_PORT }}
+          DEV_SSH_USER: ${{ secrets.DEV_SSH_USER }}
+        run: |
+          tar -C dist -czf truckmoov-web-dist.tgz .
+          scp -P "${DEV_SSH_PORT:-22}" truckmoov-web-dist.tgz "${DEV_SSH_USER}@${DEV_SSH_HOST}:/tmp/truckmoov-web-dist-${GITHUB_SHA}.tgz"
+
+      - name: Deploy release on server
+        env:
+          DEV_SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          DEV_SSH_PORT: ${{ secrets.DEV_SSH_PORT }}
+          DEV_SSH_USER: ${{ secrets.DEV_SSH_USER }}
+        run: |
+          ssh -p "${DEV_SSH_PORT:-22}" "${DEV_SSH_USER}@${DEV_SSH_HOST}" <<EOF
+          set -euo pipefail
+          deploy_root=/var/www/truckmoov-web
+          incoming_dir="\$deploy_root/.incoming-${GITHUB_SHA}"
+          archive="/tmp/truckmoov-web-dist-${GITHUB_SHA}.tgz"
+
+          mkdir -p "\$deploy_root"
+          rm -rf "\$incoming_dir"
+          mkdir -p "\$incoming_dir"
+          tar -xzf "\$archive" -C "\$incoming_dir"
+          find "\$deploy_root" -mindepth 1 -maxdepth 1 \
+            ! -name ".incoming-${GITHUB_SHA}" \
+            -exec rm -rf {} +
+          cp -a "\$incoming_dir"/. "\$deploy_root"/
+          rm -rf "\$incoming_dir"
+          rm -f "\$archive"
+          EOF
