@@ -10,7 +10,7 @@ import {
 import { TooltipWrapper } from "@/components/ui/tooltip-wrapper";
 
 export function ThemeToggle() {
-  const { setTheme, theme } = useTheme();
+  const { setTheme } = useTheme();
 
   return (
     <DropdownMenu>

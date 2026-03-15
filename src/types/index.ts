@@ -1,6 +1,7 @@
 // User Roles
 // Legacy roles kept for DB enum compatibility; frontend permission checks now use org-scoped roles.
-export type UserRole = 'platform_admin' | 'tenant_admin' | 'operations_manager' | 'supervisor' | 'dispatcher' | 'viewer_finance' | 'driver' | 'installer';
+
+import { UserRole } from "@/features/auth/api/types";
 
 // ── Org-scoped role key (canonical) ──
 export type OrgRoleKey = 'ADMIN' | 'OPERATIONS_MANAGER' | 'DISPATCHER' | 'FINANCE' | 'VIEWER';

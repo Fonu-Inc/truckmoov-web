@@ -1,13 +1,22 @@
 import { create } from 'zustand';
-import { User, UserRole } from '@/types';
+import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
+import { User, UserRole } from '@/features/auth/api/types';
+import { toStakeholderType } from '@/features/auth/lib/roleUtils';
 
 interface AuthState {
   user: User | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
   isAuthReady: boolean;
-  bootstrapFromSession: () => Promise<void>;
-  login: (email: string, password: string, role: UserRole) => Promise<void>;
+  setTokens: (tokens: {
+    accessToken: string;
+    refreshToken: string,
+    user?: User
+  }) => void;
+  setUser: (user: User) => void
+  clearTokens: () => void;
   logout: () => void;
   setRole: (role: UserRole, stakeholderType?: DemoStakeholderType) => void;
 }
@@ -20,6 +29,8 @@ const DEMO_ROLE_STORAGE_KEY = "truckmoov_demo_role";
 const DEMO_STAKEHOLDER_KEY = "truckmoov_demo_stakeholder";
 
 export type DemoStakeholderType = 'ENTERPRISE' | 'AGGREGATOR' | 'OWNER_OPERATOR' | null;
+const DEMO_ACCESS_TOKEN = 'demo_access_token';
+const DEMO_REFRESH_TOKEN = 'demo_refresh_token';
 
 function readDemoRole(): UserRole | null {
   try {
@@ -63,168 +74,146 @@ function writeDemoStakeholder(type: DemoStakeholderType) {
 
 // Mock users for demo
 const mockUsers: Record<UserRole, User> = {
-  platform_admin: {
+  PLATFORM_ADMIN: {
     id: 'pa1',
     email: 'admin@truckmoov.com',
     name: 'System Administrator',
-    role: 'platform_admin',
+    role: 'PLATFORM_ADMIN',
     avatar: '',
     createdAt: new Date(),
   },
-  tenant_admin: {
+  FLEET_ADMIN: {
     id: 'ta1',
     email: 'fleet@lagoslogistics.com',
     name: 'Olumide Adeyemi',
-    role: 'tenant_admin',
+    role: 'FLEET_ADMIN',
     tenantId: LAGOS_EXPRESS_TENANT_ID,
     avatar: '',
     createdAt: new Date(),
   },
-  operations_manager: {
+  OPERATIONS_MANAGER: {
     id: 'om1',
     email: 'operations@lagoslogistics.com',
     name: 'Adebayo Ogundimu',
-    role: 'operations_manager',
+    role: 'OPERATIONS_MANAGER',
     tenantId: LAGOS_EXPRESS_TENANT_ID,
     avatar: '',
     createdAt: new Date(),
   },
-  supervisor: {
-    id: 's1',
-    email: 'supervisor@lagoslogistics.com',
-    name: 'Chidinma Okonkwo',
-    role: 'supervisor',
-    tenantId: LAGOS_EXPRESS_TENANT_ID,
-    avatar: '',
-    createdAt: new Date(),
-  },
-  dispatcher: {
+  DISPATCHER: {
     id: 'dp1',
     email: 'dispatch@lagoslogistics.com',
     name: 'Emeka Nwosu',
-    role: 'dispatcher',
+    role: 'DISPATCHER',
     tenantId: LAGOS_EXPRESS_TENANT_ID,
     avatar: '',
     createdAt: new Date(),
   },
-  viewer_finance: {
+  FINANCE_VIEWER: {
     id: 'vf1',
     email: 'finance@lagoslogistics.com',
     name: 'Ngozi Eze',
-    role: 'viewer_finance',
+    role: 'FINANCE_VIEWER',
     tenantId: LAGOS_EXPRESS_TENANT_ID,
     avatar: '',
     createdAt: new Date(),
   },
-  driver: {
-    id: 'd1',
-    email: 'chukwuemeka.o@email.com',
-    name: 'Chukwuemeka Okafor',
-    role: 'driver',
+  ENTERPRISE_ADMIN: {
+    id: 'ent1',
+    email: 'enterprise@dangote.com',
+    name: 'Enterprise Admin',
+    role: 'ENTERPRISE_ADMIN',
     tenantId: LAGOS_EXPRESS_TENANT_ID,
-    phone: '+234 801 234 5678',
+    avatar: '',
     createdAt: new Date(),
   },
-  installer: {
-    id: 'inst1',
-    email: 'installer@lagoslogistics.com',
-    name: 'Tunde Akinwale',
-    role: 'installer',
+  AGGREGATOR_ADMIN: {
+    id: 'agg1',
+    email: 'aggregator@network.com',
+    name: 'Aggregator Admin',
+    role: 'AGGREGATOR_ADMIN',
+    tenantId: LAGOS_EXPRESS_TENANT_ID,
+    avatar: '',
+    createdAt: new Date(),
+  },
+  OWNER_OPERATOR: {
+    id: 'oo1',
+    email: 'owner.operator@email.com',
+    name: 'Owner Operator',
+    role: 'OWNER_OPERATOR',
     tenantId: LAGOS_EXPRESS_TENANT_ID,
     avatar: '',
     createdAt: new Date(),
   },
 };
 
-async function buildAppUserFromAuthUser(authUser: { id: string; email?: string | null } | null): Promise<User | null> {
-  if (!authUser) return null;
-
-  const email = authUser.email ?? '';
-
-  // Role (required for RBAC)
-  const { data: roleRow, error: roleError } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', authUser.id)
-    .maybeSingle();
-
-  if (roleError) {
-    console.warn('Failed to fetch user role:', roleError);
-  }
-
-  // Profile (nice-to-have for name/tenant)
-  const { data: profileRow, error: profileError } = await supabase
-    .from('profiles')
-    .select('full_name, tenant_id, avatar_url, phone')
-    .eq('user_id', authUser.id)
-    .maybeSingle();
-
-  if (profileError) {
-    console.warn('Failed to fetch user profile:', profileError);
-  }
-
-  const role = (roleRow?.role as UserRole | undefined) ?? 'viewer_finance';
-  const name = profileRow?.full_name || email.split('@')[0] || 'User';
-
-  return {
-    id: authUser.id,
-    email,
-    name,
-    role,
-    tenantId: profileRow?.tenant_id ?? undefined,
-    avatar: profileRow?.avatar_url ?? undefined,
-    phone: profileRow?.phone ?? undefined,
-    createdAt: new Date(),
-  };
-}
-
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isAuthenticated: false,
-  isAuthReady: false,
-  bootstrapFromSession: async () => {
-    // Fleetflow UI in truckmoov-web runs integration-free by default.
-    // We keep optional Supabase session bootstrap for future adapter wiring.
-    try {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) throw error;
-
-      const session = data.session;
-      const authUser = session?.user ?? null;
-      if (authUser && session) {
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      isAuthenticated: false,
+      isAuthReady: false,
+      setTokens: ({ accessToken, refreshToken, user }) => {
+        set({
+          accessToken,
+          refreshToken,
+          user,
+          isAuthenticated: Boolean(accessToken && refreshToken),
+          isAuthReady: true,
+        });
+      },
+      clearTokens: () => {
+        set({
+          accessToken: null,
+          refreshToken: null,
+          isAuthenticated: false,
+        });
+      },
+      setUser: (user) => {
+        set({
+          user
+        })
+      },
+      logout: async () => {
         writeDemoRole(null);
-        const user = await buildAppUserFromAuthUser({ id: authUser.id, email: authUser.email });
-        set({ user, isAuthenticated: Boolean(user), isAuthReady: true });
-        return;
-      }
-    } catch (e) {
-      console.error('Failed to bootstrap Supabase session:', e);
+        writeDemoStakeholder(null);
+        void supabase.auth.signOut();
+        set({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          isAuthenticated: false,
+          isAuthReady: true,
+        });
+      },
+      setRole: (role: UserRole, stakeholderType?: DemoStakeholderType) => {
+        // Demo-only auth (no backend)
+        const resolvedStakeholder = stakeholderType ?? toStakeholderType(role);
+        writeDemoRole(role);
+        writeDemoStakeholder(resolvedStakeholder ?? null);
+        set({
+          user: mockUsers[role],
+          accessToken: DEMO_ACCESS_TOKEN,
+          refreshToken: DEMO_REFRESH_TOKEN,
+          isAuthenticated: true,
+          isAuthReady: true,
+        });
+      },
+    }),
+    {
+      name: 'truckmoov-auth-store',
+      partialize: (state) => ({
+        user: state.user,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        state.isAuthenticated = Boolean(state.accessToken && state.refreshToken);
+        state.isAuthReady = true;
+      },
     }
-
-    // Fall back to demo role, defaulting to platform_admin for full UI access.
-    const demoRole = readDemoRole() ?? 'platform_admin';
-    if (demoRole && demoRole in mockUsers) {
-      writeDemoRole(demoRole);
-      set({ user: mockUsers[demoRole], isAuthenticated: true, isAuthReady: true });
-      return;
-    }
-
-    set({ user: null, isAuthenticated: false, isAuthReady: true });
-  },
-  login: async (_email: string, _password: string, _role: UserRole) => {
-    // Use backend auth; AuthPage calls backend directly and sets the token.
-    // This method is kept for interface compatibility only.
-  },
-  logout: () => {
-    writeDemoRole(null);
-    writeDemoStakeholder(null);
-    void supabase.auth.signOut();
-    set({ user: null, isAuthenticated: false, isAuthReady: true });
-  },
-  setRole: (role: UserRole, stakeholderType?: DemoStakeholderType) => {
-    // Demo-only auth (no backend)
-    writeDemoRole(role);
-    writeDemoStakeholder(stakeholderType ?? null);
-    set({ user: mockUsers[role], isAuthenticated: true, isAuthReady: true });
-  },
-}));
+  )
+);

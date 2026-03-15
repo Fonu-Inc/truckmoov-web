@@ -5,9 +5,9 @@ import { useOrgContext } from '@/hooks/useOrgContext';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { useActiveOrgStore } from '@/stores/activeOrgStore';
 import { canAccessRoute, resolveOrgHomeRoute } from '@/lib/orgPermissions';
-import { readDemoStakeholder } from '@/stores/authStore';
 import { toast } from 'sonner';
 import { useRef } from 'react';
+import { toStakeholderType, isPlatformAdmin, toLegacyRole } from '@/features/auth/lib/roleUtils';
 
 interface OrgProtectedRouteProps {
   children: React.ReactNode;
@@ -26,8 +26,8 @@ export function OrgProtectedRoute({ children }: OrgProtectedRouteProps) {
     'enable_multi_stakeholder_model',
     user?.tenantId
   );
-  const demoStakeholder = readDemoStakeholder();
-  const multiStakeholderEnabled = flagEnabled || !!demoStakeholder;
+  const roleStakeholder = toStakeholderType(user?.role);
+  const multiStakeholderEnabled = flagEnabled || !!roleStakeholder;
 
   // Prevent duplicate toasts on the same denied path
   const lastDeniedPath = useRef<string | null>(null);
@@ -37,7 +37,7 @@ export function OrgProtectedRoute({ children }: OrgProtectedRouteProps) {
   if (!isAuthenticated) return <Navigate to="/auth" replace />;
 
   // Platform admins always have access — skip org context loading
-  if (user?.role === 'platform_admin') return <>{children}</>;
+  if (isPlatformAdmin(user?.role)) return <>{children}</>;
 
   // Wait for org context to load for non-platform-admin users
   if (orgCtx.isLoading) return null;
@@ -53,14 +53,14 @@ export function OrgProtectedRoute({ children }: OrgProtectedRouteProps) {
   const hasAccess = canAccessRoute(
     location.pathname,
     effectiveMemberships,
-    user?.role,
+    toLegacyRole(user?.role),
     multiStakeholderEnabled
   );
 
   if (!hasAccess) {
     const redirectPath = resolveOrgHomeRoute(
       effectiveMemberships,
-      user?.role,
+      toLegacyRole(user?.role),
       multiStakeholderEnabled
     );
 

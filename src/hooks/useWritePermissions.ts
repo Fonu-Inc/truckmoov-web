@@ -6,9 +6,10 @@
  */
 import { useMemo } from 'react';
 import { useOrgContext } from '@/hooks/useOrgContext';
-import { useAuthStore, readDemoStakeholder } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { resolveRoleCapabilities } from '@/lib/orgPermissions';
+import { isPlatformAdmin, toStakeholderType } from '@/features/auth/lib/roleUtils';
 
 export interface WritePermissions {
   // Jobs
@@ -50,12 +51,11 @@ export function useWritePermissions(): WritePermissions {
     'enable_multi_stakeholder_model',
     user?.tenantId
   );
-  const demoStakeholder = readDemoStakeholder();
-  const multiStakeholderEnabled = flagEnabled || !!demoStakeholder;
+  const roleStakeholder = toStakeholderType(user?.role);
+  const multiStakeholderEnabled = flagEnabled || !!roleStakeholder;
 
   return useMemo(() => {
-    const isPlatformAdmin = user?.role === 'platform_admin';
-    if (isPlatformAdmin) {
+    if (isPlatformAdmin(user?.role)) {
       return {
         canCreateJobs: true,
         canUpdateJobs: true,

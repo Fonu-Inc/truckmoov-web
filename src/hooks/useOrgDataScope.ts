@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
 import { useOrgContext } from '@/hooks/useOrgContext';
-import { useAuthStore, readDemoStakeholder } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { computeOrgDataScope, type OrgDataScope } from '@/lib/orgPermissions';
+import { toLegacyRole, toStakeholderType } from '@/features/auth/lib/roleUtils';
 
 /**
  * Provides the computed data scope for the current user.
@@ -17,8 +18,8 @@ export function useOrgDataScope(): OrgDataScope & { isReady: boolean; multiStake
     'enable_multi_stakeholder_model',
     user?.tenantId
   );
-  const demoStakeholder = readDemoStakeholder();
-  const multiStakeholderEnabled = flagEnabled || !!demoStakeholder;
+  const roleStakeholder = toStakeholderType(user?.role);
+  const multiStakeholderEnabled = flagEnabled || !!roleStakeholder;
 
   // For aggregators, fetch child org IDs
   const isAggregator = orgCtx.hasOrgType('AGGREGATOR');
@@ -44,7 +45,7 @@ export function useOrgDataScope(): OrgDataScope & { isReady: boolean; multiStake
   });
 
   const scope = useMemo(
-    () => computeOrgDataScope(orgCtx.memberships, user?.role, childOrgIds),
+    () => computeOrgDataScope(orgCtx.memberships, toLegacyRole(user?.role), childOrgIds),
     [orgCtx.memberships, user?.role, childOrgIds]
   );
 

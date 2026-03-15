@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import type { User as AppUser } from "@/types";
 import type { OrgMembership } from "@/types/orgRoles";
+import { isPlatformAdmin, toLegacyRole } from "@/features/auth/lib/roleUtils";
 
 export interface SidebarNavItem {
   label: string;
@@ -384,7 +385,7 @@ export function getSidebarConfig(
   multiStakeholderEnabled: boolean
 ): SidebarConfig {
   // Platform admin always gets the platform sidebar, regardless of org memberships
-  if (user?.role === 'platform_admin') {
+  if (isPlatformAdmin(user?.role)) {
     return platformAdminSidebar;
   }
 
@@ -421,7 +422,7 @@ export function getSidebarConfig(
   }
 
   // Legacy tenant-role fallback
-  switch (user?.role) {
+  switch (toLegacyRole(user?.role)) {
     case "tenant_admin":
       return {
         orgTypeLabel: "Fleet Provider",

@@ -1,4 +1,4 @@
-import type { FeatureRoute, ProtectRoute } from "@/shared/routing/route-types";
+import type { FeatureRoute, ProtectRoute } from "@/shared/routes/route-types";
 import {
   SUPERVISOR_ALERTS_PATH,
   SUPERVISOR_DISPATCH_PATH,

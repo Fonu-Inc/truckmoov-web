@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom";
-import type { FeatureRoute, ProtectRoute } from "@/shared/routing/route-types";
+import type { FeatureRoute, ProtectRoute } from "@/shared/routes/route-types";
 import {
   ADMIN_ANALYTICS_REDIRECT_PATH,
   ADMIN_BEHAVIOR_PATH,

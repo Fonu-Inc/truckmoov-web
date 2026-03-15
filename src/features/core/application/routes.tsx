@@ -1,4 +1,4 @@
-import type { FeatureRoute } from "@/shared/routing/route-types";
+import { FeatureRoute } from "@/shared/routes/route-types";
 import { NOT_FOUND_PATH } from "../domain/core-routes";
 import { NotFoundPageView } from "../ui/FallbackPages";
 

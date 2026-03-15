@@ -1,4 +1,4 @@
-import type { FeatureRoute } from "@/shared/routing/route-types";
+import type { FeatureRoute } from "@/shared/routes/route-types";
 import { DEBUG_MAP_PATH } from "../domain/debug-routes";
 import { DebugMapPageView } from "../ui/DebugPages";
 

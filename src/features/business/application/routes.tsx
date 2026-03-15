@@ -1,4 +1,4 @@
-import type { FeatureRoute, ProtectRoute } from "@/shared/routing/route-types";
+import type { FeatureRoute, ProtectRoute } from "@/shared/routes/route-types";
 import { AGGREGATOR_HOME_PATH, ENTERPRISE_HOME_PATH } from "../domain/business-routes";
 import { AggregatorDashboardPageView, EnterpriseLogisticsDashboardPageView } from "../ui/BusinessPages";
 

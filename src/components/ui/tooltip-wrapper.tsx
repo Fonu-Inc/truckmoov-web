@@ -13,6 +13,7 @@ interface TooltipWrapperProps {
   delayDuration?: number;
   className?: string;
   asChild?: boolean;
+  displayCondition?: boolean
 }
 
 export function TooltipWrapper({
@@ -22,6 +23,7 @@ export function TooltipWrapper({
   delayDuration = 300,
   className,
   asChild = true,
+  displayCondition = undefined,
 }: TooltipWrapperProps) {
   // If children can't accept refs (e.g., non-forwardRef components), wrap in span
   const trigger = asChild ? (
@@ -35,13 +37,19 @@ export function TooltipWrapper({
   );
 
   return (
-    <TooltipProvider delayDuration={delayDuration}>
-      <Tooltip>
-        {trigger}
-        <TooltipContent side={side} className={className}>
-          <p>{content}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <>
+      {
+        displayCondition === undefined || displayCondition === true ? (
+          <TooltipProvider delayDuration={delayDuration}>
+            <Tooltip>
+              {trigger}
+              <TooltipContent side={side} className={className}>
+                <p>{content}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : children
+      }
+    </>
   );
 }

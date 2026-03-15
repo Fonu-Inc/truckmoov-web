@@ -5,7 +5,7 @@ import { NotificationCenter } from "@/components/platform/NotificationCenter";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import { UserProfileDropdown } from "./UserProfileDropdown";
 import { OrgSwitcher } from "./OrgSwitcher";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { ThemeToggle } from "@/shared/components/ThemeToggle";
 import { ShortcutTooltip } from "@/components/ui/shortcut-tooltip";
 import { SHORTCUTS, useGlobalShortcuts, formatShortcut } from "@/hooks/useKeyboardShortcuts";
 import { useRef, useState } from "react";

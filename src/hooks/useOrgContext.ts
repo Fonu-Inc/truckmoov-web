@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
-import { readDemoStakeholder } from '@/stores/authStore';
 import { useMemo } from 'react';
 import type { OrgMembership, UserOrgContext } from '@/types/orgRoles';
+import { toStakeholderType, isPlatformAdmin, toLegacyRole } from '@/features/auth/lib/roleUtils';
 
 // Demo tenant org ID for fallback when user isn't a real UUID
 const DEMO_ORG_ID = 'f906c47a-6d00-4166-b9e8-f47871a146c1';
@@ -72,7 +72,7 @@ export function useOrgContext(): UserOrgContext & { isLoading: boolean } {
   const memberships: OrgMembership[] = useMemo(() => {
     // Demo fallback: when the user ID isn't a real UUID, return the demo org
     if (isDemoUser) {
-      const stakeholder = readDemoStakeholder();
+      const stakeholder = toStakeholderType(user?.role);
       
       if (stakeholder === 'ENTERPRISE') {
         return [{
@@ -103,7 +103,7 @@ export function useOrgContext(): UserOrgContext & { isLoading: boolean } {
       }
 
       // Platform admin demo: show neutral label
-      if (user?.role === 'platform_admin') {
+      if (isPlatformAdmin(user?.role)) {
         return [{
           orgId: DEMO_ORG_ID,
           orgName: 'Platform Administration',
@@ -113,7 +113,7 @@ export function useOrgContext(): UserOrgContext & { isLoading: boolean } {
         }];
       }
 
-      const role = user?.role;
+      const role = toLegacyRole(user?.role);
       const demoRoleKey = role === 'tenant_admin' ? 'ADMIN'
         : role === 'operations_manager' ? 'OPERATIONS_MANAGER'
         : role === 'dispatcher' ? 'DISPATCHER'
@@ -127,7 +127,7 @@ export function useOrgContext(): UserOrgContext & { isLoading: boolean } {
       }];
     }
 
-    return rawMemberships.map((m: any) => {
+    const mappedMemberships = rawMemberships.map((m: any) => {
       const org = m.organizations;
       const roles = rawRoles.filter((r: any) => r.org_id === m.org_id);
       return {
@@ -138,6 +138,29 @@ export function useOrgContext(): UserOrgContext & { isLoading: boolean } {
         roleScope: roles[0]?.org_role_definitions?.role_scope || 'ORG',
       };
     });
+    
+    if (mappedMemberships.length > 0) return mappedMemberships;
+
+    const inferredStakeholder = toStakeholderType(user?.role);
+    if (!inferredStakeholder) return mappedMemberships;
+
+    const fallbackOrgId = inferredStakeholder === 'ENTERPRISE'
+      ? DEMO_ENTERPRISE_ORG_ID
+      : inferredStakeholder === 'AGGREGATOR'
+        ? DEMO_AGGREGATOR_ORG_ID
+        : DEMO_OWNER_OPERATOR_ORG_ID;
+
+    return [{
+      orgId: fallbackOrgId,
+      orgName: inferredStakeholder === 'ENTERPRISE'
+        ? 'Enterprise'
+        : inferredStakeholder === 'AGGREGATOR'
+          ? 'Aggregator'
+          : 'Owner-Operator',
+      orgType: inferredStakeholder,
+      roleKeys: ['ADMIN'],
+      roleScope: 'ORG',
+    }];
   }, [rawMemberships, rawRoles, isDemoUser, user?.role]);
 
   const orgIds = useMemo(() => memberships.map(m => m.orgId), [memberships]);

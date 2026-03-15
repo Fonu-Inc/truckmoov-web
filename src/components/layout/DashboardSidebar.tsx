@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { NavLink, useLocation } from "react-router-dom";
-import { useAuthStore, readDemoStakeholder } from "@/stores/authStore";
+import { useAuthStore } from "@/stores/authStore";
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
 import { useJobOfferNotifications } from "@/hooks/useJobOfferNotifications";
 import { useOrgContext } from "@/hooks/useOrgContext";
@@ -14,6 +14,7 @@ import {
   type SidebarNavGroup,
   type SidebarConfig,
 } from "@/lib/sidebarConfig";
+import { toStakeholderType } from "@/features/auth/lib/roleUtils";
 import {
   Truck,
   HelpCircle,
@@ -46,8 +47,8 @@ export function DashboardSidebar() {
   const activeOrg = resolveActiveOrg(orgCtx.memberships);
 
   const { enabled: flagEnabled } = useFeatureFlag('enable_multi_stakeholder_model', user?.tenantId);
-  const demoStakeholder = readDemoStakeholder();
-  const multiStakeholderEnabled = flagEnabled || !!demoStakeholder;
+  const roleStakeholder = toStakeholderType(user?.role);
+  const multiStakeholderEnabled = flagEnabled || !!roleStakeholder;
 
   // ── Centralized sidebar resolution ──
   const sidebarConfig: SidebarConfig = useMemo(

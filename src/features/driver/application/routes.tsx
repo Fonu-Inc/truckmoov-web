@@ -1,4 +1,4 @@
-import type { FeatureRoute, ProtectRoute } from "@/shared/routing/route-types";
+import type { FeatureRoute, ProtectRoute } from "@/shared/routes/route-types";
 import { DRIVER_HOME_PATH } from "../domain/driver-routes";
 import { DriverInterfacePageView } from "../ui/DriverPages";
 
