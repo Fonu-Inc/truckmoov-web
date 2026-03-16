@@ -138,11 +138,9 @@ export default function SignUpPage() {
           {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
         </div>
 
-        <Button type="submit" className="w-full" size="lg" disabled={isRegistering}>
-          <span className="flex items-center gap-2">
-            Create Account
-            <ArrowRight className="h-4 w-4" />
-          </span>
+        <Button type="submit" className="w-full" size="lg" isLoading={isRegistering}>
+          Create Account
+          <ArrowRight className="h-4 w-4" />
         </Button>
       </form>
 

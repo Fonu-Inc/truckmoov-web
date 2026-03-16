@@ -1,5 +1,8 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios"
+import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
+import { queryClient } from "@/shared/providers/TanstackQueryProvider";
+import { APP_ROUTES } from "@/shared/lib/appRoutes";
 
 type RetryRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean;
@@ -20,16 +23,30 @@ export const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL,
   headers: {
     "Content-Type": "application/json",
-    // "ngrok-skip-browser-warning": "true",
   },
 })
 
 const AUTH_HEADER_EXCLUDED_ENDPOINTS = [
   "/auth/register",
   "/auth/refresh",
+  "/auth/register/invited",
+  "/auth/forget-password",
+  "/auth/verify-reset",
+  "/auth/reset-password",
 ];
 
 let refreshPromise: Promise<string | null> | null = null;
+
+function handleExpiredSession() {
+  useAuthStore.getState().logout();
+  queryClient.clear();
+  toast.error("Session expired", {
+    description: "Your session has ended. Please sign in again to continue.",
+  });
+  setTimeout(() => {
+    window.location.replace(APP_ROUTES.signIn);
+  }, 1000)
+}
 
 axiosInstance.interceptors.request.use(
   (config) => {
@@ -42,8 +59,7 @@ axiosInstance.interceptors.request.use(
     const { accessToken } = useAuthStore.getState();
     if (!accessToken) return config;
 
-    config.headers = config.headers!;
-    config.headers.Authorization = `Bearer ${accessToken}`;
+    config.headers!.Authorization = `Bearer ${accessToken}`;
 
     return config;
   },
@@ -62,13 +78,13 @@ axiosInstance.interceptors.response.use(
       const hasRetried = Boolean(originalRequest._retry);
 
       if (isRefreshRequest || hasRetried) {
-        useAuthStore.getState().logout();
+        handleExpiredSession();
         return Promise.reject(error);
       }
 
-      const { refreshToken, setTokens, logout } = useAuthStore.getState();
+      const { refreshToken, setTokens } = useAuthStore.getState();
       if (!refreshToken) {
-        logout();
+        handleExpiredSession();
         return Promise.reject(error);
       }
 
@@ -98,13 +114,12 @@ axiosInstance.interceptors.response.use(
 
         const nextAccessToken = await refreshPromise;
         if (nextAccessToken) {
-          originalRequest.headers = originalRequest.headers!;
-          originalRequest.headers.Authorization = `Bearer ${nextAccessToken}`;
+          originalRequest.headers!.Authorization = `Bearer ${nextAccessToken}`;
         }
 
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        logout();
+        handleExpiredSession();
         return Promise.reject(refreshError);
       }
     }

@@ -18,6 +18,7 @@ export default function MainSidebar() {
   useQuery(getUserProfileQueryOptions());
   // Fetch Organizations Data
   const { data } = useQuery(getOrganizationsSettingsQueryOptions())
+  const organizationSettings = useMemo(() => data?.data, [data])
 
   const [collapsed, setCollapsed] = useState(false);
   const { user } = useAuthStore()
@@ -25,10 +26,8 @@ export default function MainSidebar() {
   const org = useMemo(() => ({
     label: getOrgLabel(user.role),
     username: user.profile?.fullName ?? "N/A",
-    name: data?.data?.branding.organizationName ?? "N/A"
-  }), [user, data])
-
-
+    name: organizationSettings?.branding.organizationName ?? "N/A"
+  }), [user, organizationSettings])
 
   return (
     <aside

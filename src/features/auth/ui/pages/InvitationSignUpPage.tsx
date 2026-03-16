@@ -207,11 +207,9 @@ export default function InvitationSignUpPage() {
             {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
           </div>
 
-          <Button type="submit" className="w-full" size="lg" disabled={isSubmittingInvitation}>
-            <span className="flex items-center gap-2">
-              Complete Registration
-              <ArrowRight className="h-4 w-4" />
-            </span>
+          <Button type="submit" className="w-full" size="lg" isLoading={isSubmittingInvitation}>
+            Complete Registration
+            <ArrowRight className="h-4 w-4" />
           </Button>
         </form>
       )}

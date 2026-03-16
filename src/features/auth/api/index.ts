@@ -57,9 +57,6 @@ export function useLogout() {
     onSuccess: () => {
       navigate(APP_ROUTES.signIn)
       queryClient.clear()
-      toast.success("Logout Successful", {
-        description: "Bye, Come back soon"
-      })
     }
   })
 }
@@ -128,7 +125,6 @@ export function useUpdateUserProfile() {
       queryClient.invalidateQueries({
         queryKey: AUTH_QUERY_KEY.user
       })
-      toast.success("Saved Changes")
     }
   })
 }
@@ -147,6 +143,7 @@ export function useUpdateNotificationPreferences() {
       queryClient.invalidateQueries({
         queryKey: AUTH_QUERY_KEY.notificationPreferences
       })
+      toast.success("Saved Changes")
     }
   })
 }
@@ -165,6 +162,7 @@ export function useUpdateDispatcherPreferences() {
       queryClient.invalidateQueries({
         queryKey: AUTH_QUERY_KEY.dispatcherPreferences,
       })
+      toast.success("Saved Changes")
     }
   })
 }

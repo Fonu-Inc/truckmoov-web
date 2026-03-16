@@ -31,10 +31,10 @@ export default function RouterProvider() {
 
   const defaultRoute = !isAuthReady || !isAuthenticated
     ? APP_ROUTES.signIn
-    : getRoleDefaultRoute(user.role);
+    : getRoleDefaultRoute(user?.role);
 
-  const routes: FeatureRoute[] = [
-    ...buildAppRoutes(defaultRoute, isAuthenticated),
+  const routes = [
+    ...buildAppRoutes(defaultRoute),
     ...buildPlatformRoutes(protect),
     ...buildBusinessRoutes(protect),
     ...buildOwnerOperatorRoutes(protect),

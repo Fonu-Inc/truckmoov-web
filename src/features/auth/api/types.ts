@@ -31,7 +31,7 @@ export type GetNewAccessTokenPayload = {
 export type InviteMemberPayload = {
  data: {
   "email": string,
-  "role": string
+  "role": UserRole
  }
 }
 

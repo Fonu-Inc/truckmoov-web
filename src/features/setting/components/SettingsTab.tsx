@@ -48,7 +48,7 @@ const SETTINGS_TAB_LIST = [
  {
   label: "Users",
   icon: Users,
-  // to: APP_ROUTES.userSettings
+  to: APP_ROUTES.userSettings
  },
  {
   label: "Branding",

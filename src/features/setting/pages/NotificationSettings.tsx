@@ -91,7 +91,7 @@ export default function NotificationSettings() {
  return (
   <Form {...form}>
    <form className="space-y-4.5" onSubmit={form.handleSubmit(onSubmit)}>
-    <Card className="bg-card/50 border-border/50">
+    <Card>
      <CardHeader>
       <CardTitle>Alert Preferences</CardTitle>
       <CardDescription>Choose which events trigger notifications</CardDescription>
@@ -99,7 +99,7 @@ export default function NotificationSettings() {
      <CardContent className="space-y-4">
       {alertItems.map((item) => (
        <FormField
-        key={item.key}
+        key={item.key as string}
         control={form.control}
         name={item.key}
         render={({ field }) => (
@@ -123,7 +123,7 @@ export default function NotificationSettings() {
      </CardContent>
     </Card>
 
-    <Card className="bg-card/50 border-border/50">
+    <Card>
      <CardHeader>
       <CardTitle>Delivery Channels</CardTitle>
       <CardDescription>How you want to receive notifications</CardDescription>
@@ -131,7 +131,7 @@ export default function NotificationSettings() {
      <CardContent className="space-y-4">
       {deliveryChannelItems.map((item) => (
        <FormField
-        key={item.key}
+        key={item.key as string}
         control={form.control}
         name={item.key}
         render={({ field }) => (
