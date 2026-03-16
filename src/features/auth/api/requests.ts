@@ -1,5 +1,5 @@
 import { axiosInstance, ServerSuccessResponse } from "@/shared/utils/axios-instance";
-import { RegisterPayload, LoginPayload, Authentication, GetNewAccessTokenPayload, User, UpdateUserProfilePayload, NotificationPreferencesResponse, UpdateNotificationPreferencesPayload, DispatchPreferencesResponse, UpdateDispatcherPreferencesPayload, OrganizationSettings, UpdateOrganizationsSettingsPayload, InviteMemberPayload, RegisterInviteMemberPayload, ResetPasswordPayload, ChangeUserRolePayload, LogoutPayload, LogOutResponse } from "./types";
+import { RegisterPayload, LoginPayload, Authentication, GetNewAccessTokenPayload, User, UpdateUserProfilePayload, NotificationPreferencesResponse, UpdateNotificationPreferencesPayload, DispatchPreferencesResponse, UpdateDispatcherPreferencesPayload, OrganizationSettings, UpdateOrganizationsSettingsPayload, InviteMemberPayload, RegisterInviteMemberPayload, ResetPasswordPayload, ChangeUserRolePayload, LogoutPayload, LogOutResponse, ForgetPasswordPayload, VerifyPasswordResetPayload, VerifyPasswordResetResponse } from "./types";
 import { useAuthStore } from "@/stores/authStore";
 
 export async function register(payload: RegisterPayload) {
@@ -41,13 +41,13 @@ export async function registerInvitedMember(payload: RegisterInviteMemberPayload
   return data
 }
 
-export async function forgetPassword() {
-  const { data } = await axiosInstance.post<ServerSuccessResponse>("/auth/forget-password")
+export async function forgetPassword(payload: ForgetPasswordPayload) {
+  const { data } = await axiosInstance.post<ServerSuccessResponse>("/auth/forget-password", payload.data)
   return data
 }
 
-export async function verifyPasswordReset() {
-  const { data } = await axiosInstance.post<ServerSuccessResponse>('/auth/verify-reset')
+export async function verifyPasswordReset(payload: VerifyPasswordResetPayload) {
+  const { data } = await axiosInstance.post<ServerSuccessResponse<VerifyPasswordResetResponse | string>>('/auth/verify-reset', payload.data)
   return data
 }
 

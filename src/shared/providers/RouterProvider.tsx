@@ -18,7 +18,7 @@ import { getRoleDefaultRoute } from "../composables/getRoleDefaultRoute";
 
 function renderRoute(route: FeatureRoute): JSX.Element {
   return (
-    <Route key={route.path} path={route.path} element={route.element}>
+    <Route key={route.path} {...route}>
       {route.children?.map(renderRoute)}
     </Route>
   );

@@ -46,17 +46,12 @@ export type RegisterInviteMemberPayload = {
 export type ForgetPasswordPayload = {
  data: {
   "identifier": string,
-  "method": null,
-  "phone": string,
  }
 }
 
 export type VerifyPasswordResetPayload = {
  data: {
-  "method": null,
   "token": string,
-  "identifier": string,
-  "code": string,
  }
 }
 
@@ -65,6 +60,10 @@ export type ResetPasswordPayload = {
   "token": string,
   "newPassword": string
  }
+}
+
+export type VerifyPasswordResetResponse = {
+ token: string;
 }
 
 export type ChangeUserRolePayload = {

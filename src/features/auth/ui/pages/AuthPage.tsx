@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, NavLink, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -101,9 +101,9 @@ export default function AuthPage() {
         </div>
 
         <div className="flex items-center justify-end">
-          <button type="button" className="text-sm text-primary hover:underline font-medium">
+          <NavLink to={APP_ROUTES.forgetPassword} type="button" className="text-sm text-primary hover:underline font-medium">
             Forgot password?
-          </button>
+          </NavLink>
         </div>
 
         <Button type="submit" className="w-full" size="lg" disabled={isSigningIn} isLoading={isSigningIn}>

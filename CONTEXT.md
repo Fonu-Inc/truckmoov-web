@@ -22,6 +22,9 @@
 - For submission, use `handleSubmit` + async handlers, and connect API calls through TanStack Query mutations.
 - Always submit through `handleSubmit(onValidSubmit)` so Zod validation gates execution.
 - If required/missing fields fail Zod validation, the submit handler (`onValidSubmit`) must not run.
+- shadcn/ui is installed — always use its components (`Input`, `Button`, `Label`, `Select`, `Checkbox`, `InputOTP`, etc.) for form fields instead of raw HTML elements.
+- For custom/non-native inputs (shadcn `Select`, `Checkbox`, `InputOTP`, etc.), use `Controller` from `react-hook-form` to integrate them since they don't support `register` directly.
+- For standard text/email/password inputs rendered as native `<input>`, use `register` directly on the shadcn `Input` component.
 
 ## API Response Contract Convention
 

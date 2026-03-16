@@ -1,6 +1,6 @@
 import { Navigate, RouteObject } from "react-router-dom";
 import MainLayout from "@/shared/layouts/MainLayout";
-import { AuthPageView, InvitationSignUpPageView, NotAuthorizedPageView, SignUpPageView } from "@/features/auth/ui/AuthPages";
+import { AuthPageView, ChangePasswordPageView, ForgotPasswordPageView, InvitationSignUpPageView, NotAuthorizedPageView, SignUpPageView, VerifyResetTokenPageView } from "@/features/auth/ui/AuthPages";
 import { APP_ROUTES } from "@/shared/lib/appRoutes";
 import SettingsLayout from "@/features/setting/layouts/OrganizationsSettings";
 import Settings from "@/features/setting/pages/Settings";
@@ -43,6 +43,9 @@ export function buildAppRoutes(defaultRoute: string): RouteObject[] {
     { path: APP_ROUTES.signIn, element: <AuthPageView /> },
     { path: APP_ROUTES.signUp, element: <SignUpPageView /> },
     { path: APP_ROUTES.invitedSignUp, element: <InvitationSignUpPageView /> },
+    { path: APP_ROUTES.forgetPassword, element: <ForgotPasswordPageView /> },
+    { path: APP_ROUTES.verifyOtp, element: <VerifyResetTokenPageView /> },
+    { path: APP_ROUTES.change, element: <ChangePasswordPageView /> },
     { path: APP_ROUTES.notAuthorized, element: <NotAuthorizedPageView /> },
   ];
 }
