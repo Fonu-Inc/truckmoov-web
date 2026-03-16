@@ -21,7 +21,7 @@ export function UserProfileDropdown() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const org = useMemo(() => ({
-    label: getOrgLabel(user.role),
+    label: getOrgLabel(user?.role),
     userName: user.profile?.fullName ?? "N/A",
     email: user.email ?? "N/A",
   }), [user])
@@ -41,7 +41,7 @@ export function UserProfileDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="cursor-pointer">
-        <AppAvatar value={org.userName} />
+        <AppAvatar value={org.userName} imgUrl={user.profile?.profilePictureUrl} />
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56 bg-popover border-border" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">

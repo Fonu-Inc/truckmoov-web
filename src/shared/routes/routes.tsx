@@ -8,14 +8,10 @@ import NotificationSettings from "@/features/setting/pages/NotificationSettings"
 import BrandingSettings from "@/features/setting/pages/BrandingSettings";
 import UserSettings from "@/features/setting/pages/UserSettings";
 
-export function buildAppRoutes(defaultRoute: string): RouteObject[] {
+export function buildAppRoutes(): RouteObject[] {
   return [
     {
       path: APP_ROUTES.main, element: <MainLayout />, children: [
-        {
-          index: true,
-          element: <Navigate to={defaultRoute} replace />,
-        },
         {
           path: APP_ROUTES.organizationsSettings,
           element: <SettingsLayout />,

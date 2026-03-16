@@ -12,5 +12,5 @@ const OrgLabelMap: Record<UserRole, string> = {
 }
 
 export function getOrgLabel(role: UserRole) {
- return OrgLabelMap[role]
+ return OrgLabelMap[role] ?? ""
 }

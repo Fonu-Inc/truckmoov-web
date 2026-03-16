@@ -1,14 +1,22 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useUploadImageToBucket } from "@/features/auth/api";
 import { Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
-export default function UploadImage() {
- const fileInputRef = useRef<HTMLInputElement>(null);
- const [isUploading, setIsUploading] = useState(false);
- const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+type UploadImageProps = {
+ onUpload: (url: string) => Promise<void>;
+ currentUrl?: string | null;
+ uploading: boolean;
+ text?: string
+}
 
+export default function UploadImage({ onUpload, currentUrl, uploading, text }: UploadImageProps) {
+ const fileInputRef = useRef<HTMLInputElement>(null);
+ const [previewUrl, setPreviewUrl] = useState<string | null>(currentUrl ?? null);
+
+ const { mutateAsync: uploadImage, isPending: uploadingImage } = useUploadImageToBucket()
 
  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   const file = e.target.files?.[0];
@@ -23,6 +31,18 @@ export default function UploadImage() {
   setPreviewUrl(objectUrl);
 
   if (fileInputRef.current) fileInputRef.current.value = '';
+
+  await uploadImage(
+   { 
+    files: [file]
+   },
+   {
+    onSuccess: async (data) => {
+     const imageUrl = data.data.url
+     await onUpload(imageUrl);
+    } 
+   }
+  );
  };
 
  const handleRemoveLogo = async () => {
@@ -33,10 +53,10 @@ export default function UploadImage() {
 
  return (
   <div className="flex items-center gap-6">
-   <Avatar className="h-20 w-20 rounded-lg">
+   <Avatar className="h-20 w-20 rounded-full">
     <AvatarImage src={previewUrl ?? undefined} className="object-contain" />
-    <AvatarFallback className="bg-primary/20 text-primary text-xl rounded-lg">
-     Logo
+    <AvatarFallback className="bg-primary/20 text-primary text-xl">
+     {text ?? "Logo"}
     </AvatarFallback>
    </Avatar>
    <div className="space-y-2">
@@ -51,10 +71,10 @@ export default function UploadImage() {
      variant="outline"
      size="sm"
      onClick={() => fileInputRef.current?.click()}
-     disabled={isUploading}
+     isLoading={uploadingImage || uploading}
     >
      <Upload className="h-4 w-4 mr-2" />
-     {isUploading ? "Uploading..." : "Upload Logo"}
+     Upload Logo
     </Button>
     <p className="text-xs text-muted-foreground">PNG, JPG, SVG or WebP. Max 2MB.</p>
     {previewUrl && (
@@ -63,7 +83,7 @@ export default function UploadImage() {
       size="sm"
       className="text-xs text-destructive"
       onClick={handleRemoveLogo}
-      disabled={isUploading}
+      isLoading={uploadingImage || uploading}
      >
       Remove logo
      </Button>

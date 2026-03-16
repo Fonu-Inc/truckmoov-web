@@ -90,7 +90,7 @@ export default function MainSidebar() {
         {!collapsed && (
           <div className="mb-3 rounded-lg bg-sidebar-accent/50 p-3">
             <div className="flex items-center gap-3">
-              <AppAvatar value={org.username} />
+              <AppAvatar value={org.username} imgUrl={user.profile?.profilePictureUrl}/>
               <div className="flex-1 overflow-hidden">
                 <p className="truncate text-sm font-medium text-sidebar-foreground">{org.username}</p>
                 <p className="truncate text-xs text-sidebar-foreground/60 capitalize">

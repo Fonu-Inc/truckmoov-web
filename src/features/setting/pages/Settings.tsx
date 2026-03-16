@@ -1,9 +1,26 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import OrganizationSettingsForm from "../components/OrganizationSettingsForm";
 import { Separator } from "@/components/ui/separator";
-import UploadImage from "../components/UploadImage";
+import UploadImage from "../../../shared/components/UploadImage";
+import { useUpdateUserProfile } from "@/features/auth/api";
+import { useAuthStore } from "@/stores/authStore";
 
 export default function Settings() {
+  const { user } = useAuthStore();
+
+  const {
+    mutateAsync: updateUserProfile,
+    isPending: isUpdatingUserProfile
+  } = useUpdateUserProfile()
+
+  async function updateProfileLogo(url: string) {
+    await updateUserProfile({
+      data: {
+        profilePictureUrl: url
+      }
+    })
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -11,7 +28,12 @@ export default function Settings() {
         <CardDescription>Manage your organization's information and branding</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <UploadImage />
+        <UploadImage
+          onUpload={updateProfileLogo}
+          currentUrl={user.profile?.profilePictureUrl}
+          uploading={isUpdatingUserProfile}
+          text="Profile"
+        />
 
         <Separator />
         <OrganizationSettingsForm />

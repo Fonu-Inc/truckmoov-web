@@ -1,5 +1,5 @@
 import { axiosInstance, ServerSuccessResponse } from "@/shared/utils/axios-instance";
-import { RegisterPayload, LoginPayload, Authentication, GetNewAccessTokenPayload, User, UpdateUserProfilePayload, NotificationPreferencesResponse, UpdateNotificationPreferencesPayload, DispatchPreferencesResponse, UpdateDispatcherPreferencesPayload, OrganizationSettings, UpdateOrganizationsSettingsPayload, InviteMemberPayload, RegisterInviteMemberPayload, ResetPasswordPayload, ChangeUserRolePayload, LogoutPayload, LogOutResponse, ForgetPasswordPayload, VerifyPasswordResetPayload, VerifyPasswordResetResponse } from "./types";
+import { RegisterPayload, LoginPayload, Authentication, GetNewAccessTokenPayload, User, UpdateUserProfilePayload, NotificationPreferencesResponse, UpdateNotificationPreferencesPayload, DispatchPreferencesResponse, UpdateDispatcherPreferencesPayload, OrganizationSettings, UpdateOrganizationsSettingsPayload, InviteMemberPayload, RegisterInviteMemberPayload, ResetPasswordPayload, ChangeUserRolePayload, LogoutPayload, LogOutResponse, ForgetPasswordPayload, VerifyPasswordResetPayload, VerifyPasswordResetResponse, UploadImageToBucketPayload, UploadedImage } from "./types";
 import { useAuthStore } from "@/stores/authStore";
 
 export async function register(payload: RegisterPayload) {
@@ -109,3 +109,17 @@ export async function updateOrganizationsSettings(payload: UpdateOrganizationsSe
   return data;
 }
 
+export async function uploadImageToBucket(payload: UploadImageToBucketPayload) {
+  const formData = new FormData()
+  const files = payload.files 
+
+  files.forEach((file) => formData.append("file", file))
+
+  const { data } = await axiosInstance.post<ServerSuccessResponse<UploadedImage>>("/auth/media/upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data"
+    }
+  })
+
+  return data;
+}

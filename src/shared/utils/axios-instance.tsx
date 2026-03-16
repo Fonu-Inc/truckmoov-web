@@ -40,9 +40,6 @@ let refreshPromise: Promise<string | null> | null = null;
 function handleExpiredSession() {
   useAuthStore.getState().logout();
   queryClient.clear();
-  toast.error("Session expired", {
-    description: "Your session has ended. Please sign in again to continue.",
-  });
   setTimeout(() => {
     window.location.replace(APP_ROUTES.signIn);
   }, 1000)

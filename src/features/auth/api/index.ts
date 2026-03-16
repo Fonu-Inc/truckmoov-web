@@ -1,7 +1,7 @@
 import { queryOptions, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { changeUserRole, forgetPassword, getDispatcherPreferences, getNotificationsPreferences, getOrganizationsSettings, getUserProfile, inviteMember, login, logout, register, registerInvitedMember, resetPassword, updateDispatcherPreferences, updateNotificationsPreferences, updateOrganizationsSettings, updateUserProfile, validateMemberInvite, verifyPasswordReset } from "./requests";
+import { changeUserRole, forgetPassword, getDispatcherPreferences, getNotificationsPreferences, getOrganizationsSettings, getUserProfile, inviteMember, login, logout, register, registerInvitedMember, resetPassword, updateDispatcherPreferences, updateNotificationsPreferences, updateOrganizationsSettings, updateUserProfile, uploadImageToBucket, validateMemberInvite, verifyPasswordReset } from "./requests";
 import { queryClient } from "@/shared/providers/TanstackQueryProvider";
 import { useNavigate } from "react-router-dom";
 import { APP_ROUTES } from "@/shared/lib/appRoutes";
@@ -181,5 +181,11 @@ export function useUpdateOrganizationSettings() {
         queryKey: AUTH_QUERY_KEY.organizationSettings,
       })
     }
+  })
+}
+
+export function useUploadImageToBucket() {
+  return useMutation({
+    mutationFn: uploadImageToBucket,
   })
 }

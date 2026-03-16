@@ -10,10 +10,11 @@ import { buildSupportRoutes } from "@/features/support/application/routes";
 import { buildDocumentationRoutes } from "@/features/docs/application/routes";
 import { buildDebugRoutes } from "@/features/debug/application/routes";
 import { useAuthStore } from "@/stores/authStore";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { buildCoreRoutes } from "@/features/core/application/routes";
 import { APP_ROUTES } from "@/shared/lib/appRoutes";
 import { buildAppRoutes } from "../routes/routes";
+import { useMemo } from "react";
 import { getRoleDefaultRoute } from "../composables/getRoleDefaultRoute";
 
 function renderRoute(route: FeatureRoute): JSX.Element {
@@ -24,17 +25,13 @@ function renderRoute(route: FeatureRoute): JSX.Element {
   );
 }
 
-export default function RouterProvider() {
+function AppRoutes() {
   const { isAuthenticated, isAuthReady, user } = useAuthStore();
+  const { pathname } = useLocation();
   const protect: ProtectRoute = (element) => <OrgProtectedRoute>{element}</OrgProtectedRoute>;
 
-
-  const defaultRoute = !isAuthReady || !isAuthenticated
-    ? APP_ROUTES.signIn
-    : getRoleDefaultRoute(user?.role);
-
-  const routes = [
-    ...buildAppRoutes(defaultRoute),
+  const routes = useMemo(() => [
+    ...buildAppRoutes(),
     ...buildPlatformRoutes(protect),
     ...buildBusinessRoutes(protect),
     ...buildOwnerOperatorRoutes(protect),
@@ -45,12 +42,27 @@ export default function RouterProvider() {
     ...buildDocumentationRoutes(),
     ...buildDebugRoutes(),
     ...buildCoreRoutes(),
-  ];
+  ], []);
+
+  if (isAuthReady && !isAuthenticated && !pathname.startsWith("/auth")) {
+    return <Navigate to={APP_ROUTES.signIn} replace />;
+  }
+
+  if (isAuthReady && isAuthenticated && pathname === APP_ROUTES.main) {
+    return <Navigate to={getRoleDefaultRoute(user?.role)} replace />;
+  }
+
+  return (
+    <Routes>
+      {routes.map(renderRoute)}
+    </Routes>
+  );
+}
+
+export default function RouterProvider() {
   return (
     <BrowserRouter>
-      <Routes>
-        {routes.map(renderRoute)}
-      </Routes>
+      <AppRoutes />
     </BrowserRouter>
-  )
+  );
 }
