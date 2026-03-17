@@ -37,21 +37,13 @@ jobs:
 
       - name: Build environment file
         run: |
-          cat <<EOF > .env.production
-          VITE_SUPABASE_PROJECT_ID=${VITE_SUPABASE_PROJECT_ID}
-          VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
-          VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
-          VITE_BACKEND_URL=${VITE_BACKEND_URL}
-          VITE_FONU_COMPANY_UUID=${VITE_FONU_COMPANY_UUID}
-          VITE_FONU_API_KEY=${VITE_FONU_API_KEY}
-          EOF
+          if [ -n "${DEV_ENV}" ]; then
+            echo "${DEV_ENV}" | base64 -d > .env.production
+          else
+            cp .env.example .env.production
+          fi
         env:
-          VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID != '' && secrets.VITE_SUPABASE_PROJECT_ID || 'mock-project' }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY != '' && secrets.VITE_SUPABASE_PUBLISHABLE_KEY || 'mock-key' }}
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL != '' && secrets.VITE_SUPABASE_URL || 'https://mock.supabase.local' }}
-          VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL != '' && secrets.VITE_BACKEND_URL || 'http://localhost:3000/api' }}
-          VITE_FONU_COMPANY_UUID: ${{ secrets.VITE_FONU_COMPANY_UUID != '' && secrets.VITE_FONU_COMPANY_UUID || 'mock-company' }}
-          VITE_FONU_API_KEY: ${{ secrets.VITE_FONU_API_KEY != '' && secrets.VITE_FONU_API_KEY || 'mock-api-key' }}
+          DEV_ENV: ${{ secrets.DEV_ENV }}
 
       - name: Lint
         run: pnpm lint
