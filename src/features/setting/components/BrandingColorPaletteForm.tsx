@@ -42,7 +42,7 @@ export default function BrandingColorPaletteForm() {
   sidebar_accent_color: data?.data?.branding?.sidebarAccent ?? DEFAULT_BRANDING.sidebar_accent_color,
  }), [data])
 
- const { control, handleSubmit, watch, reset } = useForm<BrandingColorFormValues>({
+ const { control, handleSubmit, watch, reset, formState: { isSubmitting } } = useForm<BrandingColorFormValues>({
   resolver: zodResolver(brandingColorSchema),
   values: organizationSetting,
  });
@@ -71,7 +71,7 @@ export default function BrandingColorPaletteForm() {
        <RotateCcw className="h-4 w-4" />
        Reset
       </Button>
-      <Button size="sm" type="button" onClick={handleSubmit(onSubmit)}>
+      <Button size="sm" type="button" onClick={handleSubmit(onSubmit)} isLoading={isSubmitting}>
        <Save className="h-4 w-4" />
        Save Colors
       </Button>

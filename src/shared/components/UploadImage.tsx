@@ -45,10 +45,10 @@ export default function UploadImage({ onUpload, currentUrl, uploading, text }: U
   );
  };
 
- const handleRemoveLogo = async () => {
-  setPreviewUrl(null);
-  if (fileInputRef.current) fileInputRef.current.value = '';
- };
+ // const handleRemoveLogo = async () => {
+ //  setPreviewUrl(null);
+ //  if (fileInputRef.current) fileInputRef.current.value = '';
+ // };
 
 
  return (
@@ -77,7 +77,7 @@ export default function UploadImage({ onUpload, currentUrl, uploading, text }: U
      Upload Logo
     </Button>
     <p className="text-xs text-muted-foreground">PNG, JPG, SVG or WebP. Max 2MB.</p>
-    {previewUrl && (
+    {/* {previewUrl && (
      <Button
       variant="ghost"
       size="sm"
@@ -87,7 +87,7 @@ export default function UploadImage({ onUpload, currentUrl, uploading, text }: U
      >
       Remove logo
      </Button>
-    )}
+    )} */}
    </div>
   </div>
  )
