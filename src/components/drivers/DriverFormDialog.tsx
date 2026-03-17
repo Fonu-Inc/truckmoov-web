@@ -14,7 +14,7 @@ const driverSchema = z.object({
   firstName: z.string().min(2, "First name required").max(50),
   lastName: z.string().min(2, "Last name required").max(50),
   phone: z.string().min(10, "Phone must be at least 10 digits").max(20),
-  email: z.string().email("Invalid email").optional().or(z.literal("")),
+  email: z.email("Invalid email").optional().or(z.literal("")),
   licenseNumber: z.string().min(5, "License number required").max(50),
   licenseExpiry: z.string().min(1, "License expiry date required"),
   status: z.enum(["active", "available", "offline", "suspended"]),

@@ -16,7 +16,7 @@ import { z } from "zod";
 const organizationSettingsSchema = z.object({
  fullName: z.string().trim().min(1, "Full name is required"),
  organizationName: z.string().trim().min(1, "Organization name is required"),
- contactEmail: z.string().trim().email("Enter a valid email"),
+ contactEmail: z.email("Enter a valid email"),
  phoneNumber: z.string().optional(),
  timezone: z.string().optional(),
  language: z.string().optional(),

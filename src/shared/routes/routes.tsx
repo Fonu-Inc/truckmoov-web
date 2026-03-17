@@ -1,6 +1,6 @@
 import { RouteObject } from "react-router-dom";
 import MainLayout from "@/shared/layouts/MainLayout";
-import { AuthPageView, ChangePasswordPageView, ForgotPasswordPageView, InvitationSignUpPageView, NotAuthorizedPageView, SignUpPageView, VerifyResetTokenPageView } from "@/features/auth/ui/AuthPages";
+import { AuthPageView, ChangePasswordPageView, ForgotPasswordPageView, InvitationSignUpPageView, NotAuthorizedPageView, SignUpPageView } from "@/features/auth/ui/AuthPages";
 import { APP_ROUTES } from "@/shared/lib/appRoutes";
 import SettingsLayout from "@/features/setting/layouts/OrganizationsSettings";
 import Settings from "@/features/setting/pages/Settings";
@@ -8,6 +8,7 @@ import NotificationSettings from "@/features/setting/pages/NotificationSettings"
 import BrandingSettings from "@/features/setting/pages/BrandingSettings";
 import UserSettings from "@/features/setting/pages/UserSettings";
 import LogisticOverview from "@/features/enterprise/pages/LogisticOverview";
+import VerifyEmail from "@/features/auth/ui/pages/VerifyEmail";
 
 export function buildAppRoutes(): RouteObject[] {
   return [
@@ -15,7 +16,7 @@ export function buildAppRoutes(): RouteObject[] {
     { path: APP_ROUTES.signUp, element: <SignUpPageView /> },
     { path: APP_ROUTES.invitedSignUp, element: <InvitationSignUpPageView /> },
     { path: APP_ROUTES.forgetPassword, element: <ForgotPasswordPageView /> },
-    { path: APP_ROUTES.verifyOtp, element: <VerifyResetTokenPageView /> },
+    { path: APP_ROUTES.verifyEmail, element: <VerifyEmail /> },
     { path: APP_ROUTES.change, element: <ChangePasswordPageView /> },
     { path: APP_ROUTES.notAuthorized, element: <NotAuthorizedPageView /> },
     {

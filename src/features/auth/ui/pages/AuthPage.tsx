@@ -13,7 +13,7 @@ import QuickDemoAccessDropdown from "../components/QuickDemoAccessDropdown";
 import { APP_ROUTES } from "@/shared/lib/appRoutes";
 
 const signInSchema = z.object({
-  email: z.string().trim().email("Enter a valid email"),
+  email: z.email("Enter a valid email"),
   password: z.string().min(1, "Password is required"),
 });
 

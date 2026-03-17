@@ -1,5 +1,5 @@
 import { axiosInstance, ServerSuccessResponse } from "@/shared/utils/axios-instance";
-import { RegisterPayload, LoginPayload, Authentication, GetNewAccessTokenPayload, User, UpdateUserProfilePayload, NotificationPreferencesResponse, UpdateNotificationPreferencesPayload, DispatchPreferencesResponse, UpdateDispatcherPreferencesPayload, OrganizationSettings, UpdateOrganizationsSettingsPayload, InviteMemberPayload, RegisterInviteMemberPayload, ResetPasswordPayload, ChangeUserRolePayload, LogoutPayload, LogOutResponse, ForgetPasswordPayload, VerifyPasswordResetPayload, VerifyPasswordResetResponse, UploadImageToBucketPayload, UploadedImage } from "./types";
+import { RegisterPayload, LoginPayload, Authentication, GetNewAccessTokenPayload, User, UpdateUserProfilePayload, NotificationPreferencesResponse, UpdateNotificationPreferencesPayload, DispatchPreferencesResponse, UpdateDispatcherPreferencesPayload, OrganizationSettings, UpdateOrganizationsSettingsPayload, InviteMemberPayload, RegisterInviteMemberPayload, ResetPasswordPayload, ChangeUserRolePayload, LogoutPayload, LogOutResponse, ForgetPasswordPayload, VerifyPasswordResetPayload, VerifyPasswordResetResponse, UploadImageToBucketPayload, UploadedImage, VerifyEmailPayload } from "./types";
 import { useAuthStore } from "@/stores/authStore";
 
 export async function register(payload: RegisterPayload) {
@@ -42,12 +42,17 @@ export async function registerInvitedMember(payload: RegisterInviteMemberPayload
 }
 
 export async function forgetPassword(payload: ForgetPasswordPayload) {
-  const { data } = await axiosInstance.post<ServerSuccessResponse>("/auth/forget-password", payload.data)
+  const { data } = await axiosInstance.post<ServerSuccessResponse>("/auth/forgot-password", payload.data)
+  return data
+}
+
+export async function verifyEmail(payload: VerifyEmailPayload) {
+  const { data } = await axiosInstance.post<ServerSuccessResponse>("/auth/verify-email", payload.data)
   return data
 }
 
 export async function verifyPasswordReset(payload: VerifyPasswordResetPayload) {
-  const { data } = await axiosInstance.post<ServerSuccessResponse<VerifyPasswordResetResponse | string>>('/auth/verify-reset', payload.data)
+  const { data } = await axiosInstance.post<ServerSuccessResponse<VerifyPasswordResetResponse>>('/auth/verify-reset', payload.data)
   return data
 }
 
@@ -111,7 +116,7 @@ export async function updateOrganizationsSettings(payload: UpdateOrganizationsSe
 
 export async function uploadImageToBucket(payload: UploadImageToBucketPayload) {
   const formData = new FormData()
-  const files = payload.files 
+  const files = payload.files
 
   files.forEach((file) => formData.append("file", file))
 

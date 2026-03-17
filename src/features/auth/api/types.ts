@@ -49,6 +49,12 @@ export type ForgetPasswordPayload = {
   }
 }
 
+export type VerifyEmailPayload = {
+  data: {
+    "token": string,
+  }
+}
+
 export type VerifyPasswordResetPayload = {
   data: {
     "token": string,

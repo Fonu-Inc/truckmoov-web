@@ -4,7 +4,8 @@ export const APP_ROUTES = {
   signUp: "/auth/signup",
   invitedSignUp: "/auth/invite",
   forgetPassword: "/auth/forget-password",
-  verifyOtp: "/auth/verify-otp",
+  verifyEmail: "/auth/verify-email",
+  verifyRequest: "/auth/verify-request",
   change: "/auth/change-password",
   notAuthorized: "/not-authorized",
 

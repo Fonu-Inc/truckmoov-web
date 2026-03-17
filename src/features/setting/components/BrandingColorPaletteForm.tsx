@@ -8,8 +8,10 @@ import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
-import { getOrganizationsSettingsQueryOptions } from "@/features/auth/api";
+import { getOrganizationsSettingsQueryOptions, useUpdateOrganizationSettings } from "@/features/auth/api";
 import { useMemo } from "react";
+import { useBrandingContext } from "../providers/BrandingProvider";
+import { Branding } from "@/features/auth/api/types";
 
 const hexColor = z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color");
 
@@ -42,15 +44,57 @@ export default function BrandingColorPaletteForm() {
   sidebar_accent_color: data?.data?.branding?.sidebarAccent ?? DEFAULT_BRANDING.sidebar_accent_color,
  }), [data])
 
- const { control, handleSubmit, watch, reset, formState: { isSubmitting } } = useForm<BrandingColorFormValues>({
+ const { mutateAsync: updateOrgSettings, isPending } = useUpdateOrganizationSettings();
+ const { applyBrandingColors } = useBrandingContext();
+
+ const { control, handleSubmit, watch, reset } = useForm<BrandingColorFormValues>({
   resolver: zodResolver(brandingColorSchema),
   values: organizationSetting,
  });
 
  const colors = watch();
 
- function onSubmit(values: BrandingColorFormValues) {
-  console.log(values);
+ async function onSubmit(values: BrandingColorFormValues) {
+  const branding = {
+   primaryColor: values.primary_color,
+   secondaryColor: values.secondary_color,
+   accentColor: values.accent_color,
+   successColor: values.success_color,
+   warningColor: values.warning_color,
+   destructiveColor: values.destructive_color,
+   sidebarBackground: values.sidebar_bg_color,
+   sidebarText: values.sidebar_text_color,
+   sidebarAccent: values.sidebar_accent_color,
+   logoUrl: data?.data?.branding?.logoUrl ?? '',
+   organizationName: data?.data?.branding?.organizationName ?? '',
+  } as Branding;
+
+  await updateOrgSettings({
+   data: {
+    branding
+   }
+  }, {
+   onSuccess: () => {
+    applyBrandingColors(branding);
+   }
+  })
+ }
+
+ function handleReset() {
+  reset(DEFAULT_BRANDING);
+  applyBrandingColors({
+   primaryColor: DEFAULT_BRANDING.primary_color,
+   secondaryColor: DEFAULT_BRANDING.secondary_color,
+   accentColor: DEFAULT_BRANDING.accent_color,
+   successColor: DEFAULT_BRANDING.success_color,
+   warningColor: DEFAULT_BRANDING.warning_color,
+   destructiveColor: DEFAULT_BRANDING.destructive_color,
+   sidebarBackground: DEFAULT_BRANDING.sidebar_bg_color,
+   sidebarText: DEFAULT_BRANDING.sidebar_text_color,
+   sidebarAccent: DEFAULT_BRANDING.sidebar_accent_color,
+   logoUrl: data?.data?.branding?.logoUrl ?? '',
+   organizationName: data?.data?.branding?.organizationName ?? '',
+  } as Branding);
  }
 
  return (
@@ -67,11 +111,11 @@ export default function BrandingColorPaletteForm() {
       </CardDescription>
      </div>
      <div className="flex gap-2">
-      <Button variant="outline" size="sm" type="button" onClick={() => reset(organizationSetting)}>
+      <Button variant="outline" size="sm" type="button" onClick={handleReset}>
        <RotateCcw className="h-4 w-4" />
        Reset
       </Button>
-      <Button size="sm" type="button" onClick={handleSubmit(onSubmit)} isLoading={isSubmitting}>
+      <Button size="sm" type="button" onClick={handleSubmit(onSubmit)} isLoading={isPending}>
        <Save className="h-4 w-4" />
        Save Colors
       </Button>

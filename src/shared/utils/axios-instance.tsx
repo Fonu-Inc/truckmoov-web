@@ -14,7 +14,7 @@ export type ServerSuccessResponse<T = null> = {
 }
 
 export type ServerErrorResponse = {
- status: false;
+ statusCode: number;
  message: string;
 }
 
@@ -51,6 +51,8 @@ function handleExpiredSession() {
 
 axiosInstance.interceptors.request.use(
   (config) => {
+    if (isPublicEndpoint(config.url)) return config;
+
     const { accessToken } = useAuthStore.getState();
     if (!accessToken) return config;
 
@@ -63,8 +65,8 @@ axiosInstance.interceptors.request.use(
 
 axiosInstance.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError) => {
-    const status = error?.response?.status;
+  async (error: AxiosError<ServerErrorResponse>) => {
+    const status = error?.response?.data.statusCode;
     const originalRequest = error?.config as RetryRequestConfig | undefined;
 
     if (status === 401 && originalRequest) {

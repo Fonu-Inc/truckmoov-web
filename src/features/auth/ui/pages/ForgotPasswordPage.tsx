@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,13 +11,12 @@ import { APP_ROUTES } from "@/shared/lib/appRoutes";
 import { useForgotPassword } from "../../api";
 
 const forgotPasswordSchema = z.object({
-  email: z.string().trim().email("Enter a valid email"),
+  email: z.email("Enter a valid email"),
 });
 
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
 export default function ForgotPasswordPage() {
-  const navigate = useNavigate();
   const { mutateAsync: forgotPassword, isPending } = useForgotPassword();
   const {
     register,
@@ -37,11 +36,6 @@ export default function ForgotPasswordPage() {
           identifier: values.email,
         },
       },
-      {
-        onSuccess: () => {
-          navigate(`${APP_ROUTES.verifyOtp}`);
-        },
-      }
     );
   };
 

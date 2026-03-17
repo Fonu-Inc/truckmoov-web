@@ -1,6 +1,6 @@
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { BrandingProvider } from "./features/setting/providers/BrandingProvider";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
-import { TenantBrandingProvider } from "./contexts/TenantBrandingContext";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { FonuCallProvider } from "./contexts/FonuCallContext";
 import { KeyboardShortcutsDialog } from "./components/KeyboardShortcutsDialog";
@@ -12,14 +12,14 @@ const App = () => {
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
       <Sonner />
       <TanstackQueryProvider>
-        <CurrencyProvider>
-          <TenantBrandingProvider>
+        <BrandingProvider>
+          <CurrencyProvider>
             <KeyboardShortcutsDialog />
             <FonuCallProvider>
               <RouterProvider />
             </FonuCallProvider>
-          </TenantBrandingProvider>
-        </CurrencyProvider>
+          </CurrencyProvider>
+        </BrandingProvider>
       </TanstackQueryProvider>
     </ThemeProvider>
   );

@@ -6,7 +6,7 @@ export const DEFAULT_BRANDING = {
   success_color: '#22956a',
   warning_color: '#d48a06',
   destructive_color: '#ef4444',
-  sidebar_bg_color: '#141821',
+  sidebar_bg_color: '#0e1115',
   sidebar_text_color: '#e5e5e5',
   sidebar_accent_color: '#1f2937',
 };

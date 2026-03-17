@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 const inviteUserSchema = z.object({
- email: z.string().email("Enter a valid email address"),
+ email: z.email("Enter a valid email address"),
  role: z.string().min(1, "Select a role"),
 });
 
@@ -46,7 +46,7 @@ export default function InviteUserDialog() {
  return (
   <Dialog open={open} onOpenChange={setOpen}>
    <DialogTrigger asChild>
-    <Button variant="gradient">
+    <Button>
      <Plus className="h-4 w-4" />
      Invite User
     </Button>

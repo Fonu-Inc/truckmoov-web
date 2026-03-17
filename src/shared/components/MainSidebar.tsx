@@ -33,7 +33,7 @@ export default function MainSidebar() {
   return (
     <aside
       className={cn(
-        "flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300",
+        "flex h-screen flex-col border-r border-sidebar-border bg-background transition-all duration-300",
         collapsed ? "w-20" : "w-64"
       )}
     >

@@ -1,7 +1,7 @@
 import { queryOptions, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { changeUserRole, forgetPassword, getDispatcherPreferences, getNotificationsPreferences, getOrganizationsSettings, getUserProfile, inviteMember, login, logout, register, registerInvitedMember, resetPassword, updateDispatcherPreferences, updateNotificationsPreferences, updateOrganizationsSettings, updateUserProfile, uploadImageToBucket, validateMemberInvite, verifyPasswordReset } from "./requests";
+import { changeUserRole, forgetPassword, getDispatcherPreferences, getNotificationsPreferences, getOrganizationsSettings, getUserProfile, inviteMember, login, logout, register, registerInvitedMember, resetPassword, updateDispatcherPreferences, updateNotificationsPreferences, updateOrganizationsSettings, updateUserProfile, uploadImageToBucket, validateMemberInvite, verifyEmail, verifyPasswordReset } from "./requests";
 import { queryClient } from "@/shared/providers/TanstackQueryProvider";
 import { useNavigate } from "react-router-dom";
 import { APP_ROUTES } from "@/shared/lib/appRoutes";
@@ -9,45 +9,40 @@ import { APP_ROUTES } from "@/shared/lib/appRoutes";
 export const AUTH_QUERY_KEY = {
   user: ["user"],
   validateInviteMember: ["validateMember"],
+  verifyEmail: ["verifyEmail"],
+  verifyPasswordReset: ["verifyPasswordReset"],
   notificationPreferences: ["notificationPreferences"],
   dispatcherPreferences: ["dispatcherPreferences"],
   organizationSettings: ["organizationSettings"]
 }
 
 export function useRegister() {
- const setTokens = useAuthStore((state) => state.setTokens);
-
- return useMutation({
-  mutationFn: register,
-  onSuccess: (data) => {
-    setTokens({
-      accessToken: data.data.accessToken,
-      refreshToken: data.data.refreshToken,
-    });
-    const message  = data.message
-    toast.success(message, {
-      description: "You can now sign in with your credentials.",
-    });
-  }
- });
+  return useMutation({
+    mutationFn: register,
+    onSuccess: () => {
+      toast.success("Successful", {
+        description: "Check your email inbox and click on the link to verify your email",
+      });
+    }
+  });
 }
 
 export function useLogin() {
- const setTokens = useAuthStore((state) => state.setTokens);
+  const setTokens = useAuthStore((state) => state.setTokens);
 
- return useMutation({
-  mutationFn: login,
-  onSuccess: (data) => {
-    setTokens({
-      accessToken: data.data.accessToken,
-      refreshToken: data.data.refreshToken,
-      user: data.data.user,
-    });
-    toast.success("Login Successful", {
-      description: "Welcome to Truckmoov"
-    });
-  }
- });
+  return useMutation({
+    mutationFn: login,
+    onSuccess: (data) => {
+      setTokens({
+        accessToken: data.data.accessToken,
+        refreshToken: data.data.refreshToken,
+        user: data.data.user,
+      });
+      toast.success("Login Successful", {
+        description: "Welcome to Truckmoov"
+      });
+    }
+  });
 }
 
 export function useLogout() {
@@ -65,19 +60,18 @@ export function useInviteMember() {
   return useMutation({
     mutationFn: inviteMember,
     onSuccess: (data) => {
-      const message = data.message
-      toast.success(message)
+      toast.success("Invite Sent")
     }
   })
 }
 
-export function validateMemberInviteQueryOptions () {
- return queryOptions({
-  queryKey: AUTH_QUERY_KEY.validateInviteMember,
-  queryFn: validateMemberInvite,
-  staleTime: 0,
-  gcTime: 0,
- }) 
+export function validateMemberInviteQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.validateInviteMember,
+    queryFn: validateMemberInvite,
+    staleTime: 0,
+    gcTime: 0,
+  })
 }
 
 export function useRegisterInvitedMember() {
@@ -89,12 +83,29 @@ export function useRegisterInvitedMember() {
 export function useForgotPassword() {
   return useMutation({
     mutationFn: forgetPassword,
+    onSuccess: () => {
+      toast.success("Request Successful", {
+        description: "Check your email inbox and click on the link to verify your email",
+      });
+    }
   })
 }
 
-export function useVerifyPasswordReset() {
-  return useMutation({
-    mutationFn: verifyPasswordReset,
+export function verifyEmailQueryOption(payload: Parameters<typeof verifyEmail>[0]) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.verifyEmail,
+    queryFn: () => verifyEmail(payload),
+    staleTime: 0,
+    gcTime: 0
+  })
+}
+
+export function verifyPasswordResetQueryOption(payload: Parameters<typeof verifyPasswordReset>[0]) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.verifyPasswordReset,
+    queryFn: () => verifyPasswordReset(payload),
+    staleTime: 0,
+    gcTime: 0
   })
 }
 
