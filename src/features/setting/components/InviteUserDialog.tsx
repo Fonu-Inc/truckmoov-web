@@ -4,6 +4,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useInviteMember } from "@/features/auth/api";
+import { UserRole } from "@/features/auth/api/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import { useState } from "react";
@@ -32,7 +33,7 @@ export default function InviteUserDialog() {
   await inviteMember({
    data: {
     email: values.email,
-    role: values.role,
+    role: values.role as UserRole,
    }
   }, {
    onSuccess: () => {

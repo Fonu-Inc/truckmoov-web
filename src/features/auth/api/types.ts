@@ -139,6 +139,13 @@ export type Branding = {
   "logoUrl": string,
   "primaryColor": string,
   "secondaryColor": string
+  "accentColor": string,
+  "successColor": string,
+  "warningColor": string,
+  "destructiveColor": string,
+  "sidebarBackground": string,
+  "sidebarText": string,
+  "sidebarAccent": string
 }
 
 export type OrganizationSettingsDefaults = {

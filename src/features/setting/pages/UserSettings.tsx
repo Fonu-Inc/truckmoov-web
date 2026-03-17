@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import InviteUserDialog from "../components/InviteUserDialog";
+import UsersTable from "../components/UsersTable";
 
 export default function UserSettings() {
  return (
@@ -12,7 +13,7 @@ export default function UserSettings() {
     <InviteUserDialog />
    </section>
    <Card>
-
+    {/* <UsersTable /> */}
    </Card>
   </>
  )

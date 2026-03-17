@@ -45,7 +45,7 @@ export const siderbarList: SidebarListItem[] = [
   {
     label: "Logistics Overview",
     roleWithAccess: ["ENTERPRISE_ADMIN"],
-    to: "/enterprise",
+    to: APP_ROUTES.logisticOverview,
     icon: LayoutDashboard,
   },
   {

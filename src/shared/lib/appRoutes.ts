@@ -11,7 +11,10 @@ export const APP_ROUTES = {
   // Main app routes
   main: "/",
 
-  // settins route
+  // Enterprice role Routes
+  logisticOverview: "/logistic-overview",
+
+  // settings route
   organizationsSettings: "/setting",
   subscriptionSettings: "/setting/subscription",
   kycSettings: "/setting/kyc",

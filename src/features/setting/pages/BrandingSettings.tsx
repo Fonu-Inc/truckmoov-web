@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageIcon } from "lucide-react";
 import UploadImage from "../../../shared/components/UploadImage";
-import BrandingColorPaletterForm from "../components/BrandingColorPaletteForm";
+import BrandingColorPaletteForm from "../components/BrandingColorPaletteForm";
 import { useQuery } from "@tanstack/react-query";
 import { getOrganizationsSettingsQueryOptions, useUpdateOrganizationSettings } from "@/features/auth/api";
 import { useMemo } from "react";
@@ -45,7 +45,7 @@ export default function BrandingSettings() {
      />
     </CardContent>
    </Card>
-   <BrandingColorPaletterForm />
+   <BrandingColorPaletteForm />
   </div>
  )
 }

@@ -1,5 +1,4 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios"
-import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import { queryClient } from "@/shared/providers/TanstackQueryProvider";
 import { APP_ROUTES } from "@/shared/lib/appRoutes";
@@ -26,16 +25,21 @@ export const axiosInstance = axios.create({
   },
 })
 
-const AUTH_HEADER_EXCLUDED_ENDPOINTS = [
+const PUBLIC_ENDPOINTS = new Set([
+  "/auth/login",
   "/auth/register",
   "/auth/refresh",
   "/auth/register/invited",
   "/auth/forget-password",
   "/auth/verify-reset",
   "/auth/reset-password",
-];
+]);
 
 let refreshPromise: Promise<string | null> | null = null;
+
+function isPublicEndpoint(url?: string) {
+  return [...PUBLIC_ENDPOINTS].some((endpoint) => url?.includes(endpoint));
+}
 
 function handleExpiredSession() {
   useAuthStore.getState().logout();
@@ -47,12 +51,6 @@ function handleExpiredSession() {
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const isExcluded = AUTH_HEADER_EXCLUDED_ENDPOINTS.some((endpoint) =>
-      config.url?.includes(endpoint)
-    );
-
-    if (isExcluded) return config;
-
     const { accessToken } = useAuthStore.getState();
     if (!accessToken) return config;
 
@@ -71,10 +69,13 @@ axiosInstance.interceptors.response.use(
 
     if (status === 401 && originalRequest) {
       const requestUrl = String(originalRequest.url ?? "");
-      const isRefreshRequest = requestUrl.includes("/auth/refresh");
+      const isExcluded = isPublicEndpoint(requestUrl);
       const hasRetried = Boolean(originalRequest._retry);
 
-      if (isRefreshRequest || hasRetried) {
+      if (isExcluded) {
+        return Promise.reject(error);
+      }
+      if (hasRetried) {
         handleExpiredSession();
         return Promise.reject(error);
       }

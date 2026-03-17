@@ -33,13 +33,13 @@ export default function BrandingColorPaletteForm() {
  const organizationSetting = useMemo<BrandingColorFormValues>(() => ({
   primary_color: data?.data?.branding?.primaryColor ?? DEFAULT_BRANDING.primary_color,
   secondary_color: data?.data?.branding?.secondaryColor ?? DEFAULT_BRANDING.secondary_color,
-  accent_color: DEFAULT_BRANDING.accent_color,
-  success_color: DEFAULT_BRANDING.success_color,
-  warning_color: DEFAULT_BRANDING.warning_color,
-  destructive_color: DEFAULT_BRANDING.destructive_color,
-  sidebar_bg_color: DEFAULT_BRANDING.sidebar_bg_color,
-  sidebar_text_color: DEFAULT_BRANDING.sidebar_text_color,
-  sidebar_accent_color: DEFAULT_BRANDING.sidebar_accent_color,
+  accent_color: data?.data?.branding?.accentColor ?? DEFAULT_BRANDING.accent_color,
+  success_color: data?.data?.branding?.successColor ?? DEFAULT_BRANDING.success_color,
+  warning_color: data?.data?.branding?.warningColor ?? DEFAULT_BRANDING.warning_color,
+  destructive_color: data?.data?.branding?.destructiveColor ?? DEFAULT_BRANDING.destructive_color,
+  sidebar_bg_color: data?.data?.branding?.sidebarBackground ?? DEFAULT_BRANDING.sidebar_bg_color,
+  sidebar_text_color: data?.data?.branding?.sidebarText ?? DEFAULT_BRANDING.sidebar_text_color,
+  sidebar_accent_color: data?.data?.branding?.sidebarAccent ?? DEFAULT_BRANDING.sidebar_accent_color,
  }), [data])
 
  const { control, handleSubmit, watch, reset } = useForm<BrandingColorFormValues>({
