@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useUploadImageToBucket } from "@/features/auth/api";
 import { Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type UploadImageProps = {
@@ -45,10 +45,14 @@ export default function UploadImage({ onUpload, currentUrl, uploading, text }: U
   );
  };
 
- // const handleRemoveLogo = async () => {
- //  setPreviewUrl(null);
- //  if (fileInputRef.current) fileInputRef.current.value = '';
- // };
+ const handleRemoveLogo = async () => {
+  setPreviewUrl(null);
+  if (fileInputRef.current) fileInputRef.current.value = '';
+ };
+
+ useEffect(() => {
+  setPreviewUrl(currentUrl);
+ }, [currentUrl])
 
 
  return (
@@ -77,7 +81,7 @@ export default function UploadImage({ onUpload, currentUrl, uploading, text }: U
      Upload Logo
     </Button>
     <p className="text-xs text-muted-foreground">PNG, JPG, SVG or WebP. Max 2MB.</p>
-    {/* {previewUrl && (
+    {previewUrl && !uploadingImage && (
      <Button
       variant="ghost"
       size="sm"
@@ -87,7 +91,7 @@ export default function UploadImage({ onUpload, currentUrl, uploading, text }: U
      >
       Remove logo
      </Button>
-    )} */}
+    )}
    </div>
   </div>
  )

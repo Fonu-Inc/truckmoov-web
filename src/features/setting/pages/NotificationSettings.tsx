@@ -156,7 +156,7 @@ export default function NotificationSettings() {
     </Card>
 
     <div className="flex justify-end">
-     <Button type="submit" variant="gradient" isLoading={form.formState.isSubmitting} disabled={!form.formState.isDirty || form.formState.isSubmitting}>
+     <Button type="submit" isLoading={form.formState.isSubmitting} disabled={!form.formState.isDirty || form.formState.isSubmitting}>
       <Save className="h-4 w-4 mr-2" />
       Save Changes
      </Button>

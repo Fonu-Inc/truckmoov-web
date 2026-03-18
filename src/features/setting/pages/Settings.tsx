@@ -4,9 +4,11 @@ import { Separator } from "@/components/ui/separator";
 import UploadImage from "../../../shared/components/UploadImage";
 import { useUpdateUserProfile } from "@/features/auth/api";
 import { useAuthStore } from "@/stores/authStore";
+import { useMemo } from "react";
 
 export default function Settings() {
   const { user } = useAuthStore();
+  const userLogoUrl = useMemo(() => user.profile?.profilePictureUrl, [user])
 
   const {
     mutateAsync: updateUserProfile,
@@ -30,7 +32,7 @@ export default function Settings() {
       <CardContent className="space-y-6">
         <UploadImage
           onUpload={updateProfileLogo}
-          currentUrl={user.profile?.profilePictureUrl}
+          currentUrl={userLogoUrl}
           uploading={isUpdatingUserProfile}
           text="Profile"
         />
