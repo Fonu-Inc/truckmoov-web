@@ -171,7 +171,7 @@ export default function OrganizationSettingsForm() {
    </div>
 
    <div className="flex justify-end">
-    <Button type="submit" variant="gradient" isLoading={isSubmitting} disabled={!isDirty || isSubmitting}>
+    <Button type="submit" isLoading={isSubmitting} disabled={!isDirty || isSubmitting}>
      <Save className="h-4 w-4 mr-2" />
      Save Changes
     </Button>

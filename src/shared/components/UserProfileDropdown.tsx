@@ -1,4 +1,4 @@
-import { Moon, Settings, Sun, User } from "lucide-react";
+import { Moon, Settings, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { useAuthStore } from "@/stores/authStore";
@@ -56,10 +56,6 @@ export function UserProfileDropdown() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSettingsClick} className="cursor-pointer">
-          <User className="mr-2 h-4 w-4" />
-          <span>Profile Settings</span>
-        </DropdownMenuItem>
         <DropdownMenuItem onClick={handleSettingsClick} className="cursor-pointer">
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>

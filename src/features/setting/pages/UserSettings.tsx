@@ -13,7 +13,7 @@ export default function UserSettings() {
     <InviteUserDialog />
    </section>
    <Card>
-    {/* <UsersTable /> */}
+    <UsersTable />
    </Card>
   </>
  )
