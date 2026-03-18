@@ -10,8 +10,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { getOrganizationsSettingsQueryOptions, useUpdateOrganizationSettings } from "@/features/auth/api";
 import { useMemo } from "react";
-import { useBrandingContext } from "../providers/BrandingProvider";
 import { Branding } from "@/features/auth/api/types";
+import { useBrandingContext } from "../contexts/branding";
 
 const hexColor = z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color");
 

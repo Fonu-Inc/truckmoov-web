@@ -7,7 +7,6 @@ import {
   Receipt,
   FileText,
   BellRing,
-  User,
   Building2,
   Radio,
   Headphones,
@@ -25,310 +24,381 @@ import {
   MapPin,
   BarChart3,
   Gauge,
-  Handshake,
   DollarSign,
-  TrendingUp,
 } from "lucide-react";
 import { APP_ROUTES } from "./appRoutes";
+import { DetailsObjectType, SidebarListItem } from "../types";
+import { getRolesFromDetails } from "../composables/getRolesFromDetails";
 
-export type SidebarListItem = {
-  label: string;
-  roleWithAccess: Array<UserRole>;
-  to: string;
-  icon: React.ElementType;
-  items?: SidebarListItem[];
-  pageTitle?: string
-  pageDescription?: string
-};
-
-export const siderbarList: SidebarListItem[] = [
-  {
-    label: "Logistics Overview",
-    roleWithAccess: ["ENTERPRISE_ADMIN"],
-    to: APP_ROUTES.logisticOverview,
-    icon: LayoutDashboard,
+const DASHBOARD_DETAILS: DetailsObjectType = {
+  "ENTERPRISE_ADMIN": {
+    label: "Logistic Overview",
+    pageTitle: "Dashboard",
+    pageDescription: "Enterprise-wide job monitoring & provider performance"
   },
-  {
-    label: "Shipments",
-    roleWithAccess: ["ENTERPRISE_ADMIN"],
-    to: "/admin/jobs",
-    icon: Package,
+  "AGGREGATOR_ADMIN": {
+    label: "Network Overview",
+    pageTitle: "Aggregator Dashboard",
+    pageDescription: "Manage linked operators & coordinated execution"
   },
-  {
-    label: "Fleet Providers",
-    roleWithAccess: ["ENTERPRISE_ADMIN"],
-    to: "/admin/fleet",
-    icon: Truck,
+  "OWNER_OPERATOR": {
+    label: "Overview",
+    pageTitle: "Dashboard",
   },
-  {
-    label: "Live Tracking",
-    roleWithAccess: ["ENTERPRISE_ADMIN"],
-    to: "/admin/map",
-    icon: MapPin,
-  },
-  {
-    label: "Performance",
-    roleWithAccess: ["ENTERPRISE_ADMIN"],
-    to: "/admin/analytics",
-    icon: TrendingUp,
-  },
-  {
-    label: "Settlements",
-    roleWithAccess: ["ENTERPRISE_ADMIN"],
-    to: "/admin/wallet",
-    icon: DollarSign,
-  },
-  {
-    label: "Contracts",
-    roleWithAccess: ["ENTERPRISE_ADMIN"],
-    to: "/admin/compliance",
-    icon: Handshake,
-  },
-  {
-    label: "Reports",
-    roleWithAccess: ["ENTERPRISE_ADMIN", "FLEET_ADMIN"],
-    to: "/admin/reports",
-    icon: BarChart3,
-  },
-  {
-    label: "My Overview",
-    roleWithAccess: ["OWNER_OPERATOR"],
-    to: "/owner-operator",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "My Jobs",
-    roleWithAccess: ["OWNER_OPERATOR"],
-    to: "/owner-operator/jobs",
-    icon: Package,
-  },
-  {
-    label: "Job Offers",
-    roleWithAccess: ["OWNER_OPERATOR"],
-    to: "/admin/job-offers",
-    icon: Inbox,
-  },
-  {
-    label: "My Vehicle",
-    roleWithAccess: ["OWNER_OPERATOR"],
-    to: "/owner-operator/vehicles",
-    icon: Truck,
-  },
-  {
-    label: "Earnings & Invoices",
-    roleWithAccess: ["OWNER_OPERATOR"],
-    to: "/admin/waybill-invoices",
-    icon: Receipt,
-  },
-  {
-    label: "Documents",
-    roleWithAccess: ["OWNER_OPERATOR"],
-    to: "/owner-operator/documents",
-    icon: FileText,
-  },
-  {
-    label: "Notifications",
-    roleWithAccess: ["OWNER_OPERATOR"],
-    to: "/admin/inbox",
-    icon: BellRing,
-  },
-  {
-    label: "Profile",
-    roleWithAccess: ["OWNER_OPERATOR"],
-    to: "/admin/settings",
-    icon: User,
-  },
-
-  {
+  "PLATFORM_ADMIN": {
     label: "Dashboard",
-    roleWithAccess: ["PLATFORM_ADMIN", "OPERATIONS_MANAGER", "FINANCE_VIEWER"],
-    to: "/platform",
-    icon: LayoutDashboard,
+    pageTitle: "Platform Dashboard",
+    pageDescription: "System overview for Super Administrator"
   },
-  {
-    label: "Tenants",
-    roleWithAccess: ["PLATFORM_ADMIN"],
-    to: "/platform/tenants",
-    icon: Building2,
-  },
-  {
-    label: "Simulator",
-    roleWithAccess: ["PLATFORM_ADMIN"],
-    to: "/platform/simulator",
-    icon: Radio,
-  },
-  {
-    label: "Support & Incidents",
-    roleWithAccess: ["PLATFORM_ADMIN"],
-    to: "/platform/support",
-    icon: Headphones,
-  },
-  {
-    label: "Billing",
-    roleWithAccess: ["PLATFORM_ADMIN"],
-    to: "/platform/billing",
-    icon: CreditCard,
-  },
-  {
-    label: "Security",
-    roleWithAccess: ["PLATFORM_ADMIN"],
-    to: "/platform/security",
-    icon: Shield,
-  },
-  {
-    label: "Settings",
-    roleWithAccess: ["PLATFORM_ADMIN"],
-    to: "/platform/settings",
-    icon: Settings,
-  },
-
-  {
+  "FLEET_ADMIN": {
     label: "Fleet Operations",
-    roleWithAccess: ["FLEET_ADMIN"],
-    to: "/admin",
-    icon: LayoutDashboard,
+    pageTitle: "Fleet Dashboard",
   },
-  {
+  "OPERATIONS_MANAGER": {
+    label: "Dashboard",
+    pageTitle: "Dashboard",
+  },
+  "DISPATCHER": {
+    label: "Dashboard",
+    pageTitle: "Operations Center",
+    pageDescription: "Real-time fleet monitoring, dispatch & communications"
+  },
+}
+
+const JOB_DETAILS: DetailsObjectType = {
+  "ENTERPRISE_ADMIN": {
+    label: "Shipment",
+    pageTitle: "Job Dispatch",
+  },
+  "OWNER_OPERATOR": {
+    label: "My Jobs",
+    pageTitle: "My Jobs",
+    pageDescription: "Track and manage your assigned jobs"
+  },
+  "FLEET_ADMIN": {
     label: "Dispatch",
-    roleWithAccess: ["FLEET_ADMIN"],
-    to: "/admin/jobs",
-    icon: Package,
+    pageTitle: "Job Dispatch",
   },
-  {
-    label: "Vehicles",
-    roleWithAccess: ["FLEET_ADMIN"],
-    to: "/admin/fleet",
-    icon: Truck,
-  },
-  {
-    label: "Drivers",
-    roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER"],
-    to: "/admin/drivers",
-    icon: Users,
-  },
-  {
-    label: "Devices",
-    roleWithAccess: ["PLATFORM_ADMIN", "FLEET_ADMIN", "OPERATIONS_MANAGER", "FINANCE_VIEWER", "INSTALLER" as UserRole],
-    to: "/admin/devices",
-    icon: Cpu,
-  },
-  {
-    label: "Installation",
-    roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER", "INSTALLER" as UserRole],
-    to: "/admin/installation",
-    icon: Wrench,
-  },
-  {
-    label: "IoT SIMs",
-    roleWithAccess: ["PLATFORM_ADMIN", "FLEET_ADMIN"],
-    to: "/admin/sims",
-    icon: Wifi,
-  },
-  {
-    label: "Live Map & Zones",
-    roleWithAccess: ["FLEET_ADMIN"],
-    to: "/admin/map",
-    icon: MapPinned,
-  },
-  {
-    label: "Revenue & Invoicing",
-    roleWithAccess: ["FLEET_ADMIN"],
-    to: "/admin/waybill-invoices",
-    icon: Receipt,
-  },
-  {
-    label: "Communications",
-    roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER"],
-    to: "/admin/messages",
-    icon: MessageSquare,
-    items: [
-      {
-        label: "Messaging Center",
-        roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER"],
-        to: "/admin/messages",
-        icon: Send,
-      },
-      {
-        label: "Omnichannel Inbox",
-        roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER"],
-        to: "/admin/inbox",
-        icon: Inbox,
-      },
-    ],
-  },
-  {
-    label: "Integrations",
-    roleWithAccess: ["FLEET_ADMIN", "ENTERPRISE_ADMIN"],
-    to: "/admin/integrations",
-    icon: Code2,
-  },
-  {
-    label: "Organization Settings",
-    roleWithAccess: ["FLEET_ADMIN", "ENTERPRISE_ADMIN"],
-    to: APP_ROUTES.organizationsSettings,
-    icon: Settings,
-    pageTitle: "Settings"
-  },
-
-  {
-    label: "Fleet",
-    roleWithAccess: ["OPERATIONS_MANAGER", "FINANCE_VIEWER"],
-    to: "/admin/fleet",
-    icon: Truck,
-  },
-  {
-    label: "Live Map",
-    roleWithAccess: ["OPERATIONS_MANAGER"],
-    to: "/admin/map",
-    icon: MapPin,
-  },
-  {
-    label: "IoT SIMs Request",
-    roleWithAccess: ["OPERATIONS_MANAGER"],
-    to: "/admin/sims",
-    icon: Wifi,
-  },
-  {
+  "OPERATIONS_MANAGER": {
     label: "Jobs",
-    roleWithAccess: ["OPERATIONS_MANAGER"],
-    to: "/admin/jobs",
-    icon: Package,
+    pageTitle: "Job Dispatch",
   },
-  {
-    label: "Compliance",
-    roleWithAccess: ["OPERATIONS_MANAGER"],
-    to: "/admin/compliance",
-    icon: Shield,
-  },
-  {
-    label: "Analytics",
-    roleWithAccess: ["OPERATIONS_MANAGER", "FINANCE_VIEWER"],
-    to: "/admin/analytics",
-    icon: BarChart3,
-  },
+}
 
-  {
-    label: "SIM Cards",
-    roleWithAccess: ["FINANCE_VIEWER"],
-    to: "/admin/sims",
-    icon: Wifi,
+const FLEET_DETAILS: DetailsObjectType = {
+  "ENTERPRISE_ADMIN": {
+    label: "Fleet Providers",
+    pageTitle: "Fleet Management",
+    pageDescription: "Manage your vehicles, maintenance, and fuel"
   },
-  {
-    label: "Fuel Costs",
-    roleWithAccess: ["FINANCE_VIEWER"],
-    to: "/admin/fuel",
-    icon: Gauge,
+  "OWNER_OPERATOR": {
+    label: "My Vehicles",
+    pageTitle: "My Vehicles",
+    pageDescription: "View and manage your trucks"
   },
-  {
-    label: "Maintenance",
-    roleWithAccess: ["FINANCE_VIEWER"],
-    to: "/admin/fleet?tab=maintenance",
-    icon: Settings,
+  "FLEET_ADMIN": {
+    label: "Vehicles",
+    pageTitle: "Fleet Management",
+    pageDescription: "Manage your vehicles, maintenance, and fuel"
   },
-  {
-    label: "Wallet & Billing",
-    roleWithAccess: ["FINANCE_VIEWER"],
-    to: "/admin/wallet",
-    icon: CreditCard,
+  "OPERATIONS_MANAGER": {
+    label: "Fleet",
+    pageTitle: "Fleet Management",
+    pageDescription: "Manage your vehicles, maintenance, and fuel"
   },
-];
+  "FINANCE_VIEWER": {
+    label: "Fleet",
+    pageTitle: "Fleet Management",
+    pageDescription: "Manage your vehicles, maintenance, and fuel"
+  }
+}
+
+const MAP_DETAILS: DetailsObjectType = {
+  "ENTERPRISE_ADMIN": {
+    label: "Live Tracking",
+    pageTitle: "Live Fleet Map",
+    pageDescription: "Real-time vehicle tracking and monitoring"
+  },
+  "OPERATIONS_MANAGER": {
+    label: "Live Map",
+    pageTitle: "Live Fleet Map",
+    pageDescription: "Real-time vehicle tracking and monitoring"
+  },
+  "FLEET_ADMIN": {
+    label: "Live Map & Zones",
+    pageTitle: "Live Fleet Map",
+    pageDescription: "Real-time vehicle tracking and monitoring",
+  }
+}
+
+const SETTINGS_DETAILS: DetailsObjectType = {
+  "ENTERPRISE_ADMIN": {
+    label: "Organization Settings",
+    pageTitle: "Settings",
+  },
+  "AGGREGATOR_ADMIN": {
+    label: "Organization Settings",
+    pageTitle: "Settings",
+  },
+  "OWNER_OPERATOR": {
+    label: "Settings",
+    pageTitle: "Settings",
+  },
+  "PLATFORM_ADMIN": {
+    label: "Settings",
+    pageTitle: "Platform Settings",
+    pageDescription: "Configure global platform settings and integrations"
+  },
+  "FLEET_ADMIN": {
+    label: "Organization Settings",
+    pageTitle: "Settings",
+  },
+}
+
+const DRIVER_DETAILS: DetailsObjectType = {
+  "FLEET_ADMIN": {
+    label: "Drivers",
+    pageTitle: "Driver Management",
+  },
+  "AGGREGATOR_ADMIN": {
+    label: "Network Members",
+    pageTitle: "Driver Management",
+  },
+  "OPERATIONS_MANAGER": {
+    label: "Drivers",
+    pageTitle: "Driver Management",
+  }
+}
+
+export function siderbarList(role: UserRole): SidebarListItem[] {
+  const dashboardRoleDetail = DASHBOARD_DETAILS[role]
+  const jobRoleDetail = JOB_DETAILS[role]
+  const fleetRoleDetail = FLEET_DETAILS[role];
+  const mapRoleDetail = MAP_DETAILS[role];
+  const settingRoleDetail = SETTINGS_DETAILS[role];
+  const driverRoleDetail = DRIVER_DETAILS[role];
+
+  return [
+    // Dashboard
+    ...(dashboardRoleDetail ? [{
+      label: dashboardRoleDetail.label,
+      roleWithAccess: getRolesFromDetails(DASHBOARD_DETAILS),
+      to: APP_ROUTES.dashboard,
+      icon: LayoutDashboard,
+      pageTitle: dashboardRoleDetail.pageTitle,
+      pageDescription: dashboardRoleDetail.pageDescription
+    }] : []),
+
+    // Jobs
+    ...(jobRoleDetail ? [{
+      label: jobRoleDetail.label,
+      roleWithAccess: getRolesFromDetails(JOB_DETAILS),
+      to: APP_ROUTES.jobs,
+      icon: Package,
+      pageTitle: jobRoleDetail.pageTitle,
+      pageDescription: jobRoleDetail.pageDescription
+    }] : []),
+
+    // Drivers
+    ...(driverRoleDetail ? [{
+      label: driverRoleDetail.label,
+      roleWithAccess: getRolesFromDetails(DRIVER_DETAILS),
+      to: APP_ROUTES.driver,
+      icon: Users,
+      pageTitle: driverRoleDetail.label
+    }] : []),
+
+    // Fleet
+    ...(fleetRoleDetail ? [{
+      label: fleetRoleDetail.label,
+      roleWithAccess: getRolesFromDetails(FLEET_DETAILS),
+      to: APP_ROUTES.fleet,
+      icon: Truck,
+      pageTitle: fleetRoleDetail.pageTitle,
+      pageDescription: fleetRoleDetail.pageDescription
+    }] : []),
+
+    // Device
+
+    // Map
+    ...(mapRoleDetail ? [{
+      label: mapRoleDetail.label,
+      roleWithAccess: getRolesFromDetails(MAP_DETAILS),
+      to: APP_ROUTES.map,
+      icon: MapPin,
+      pageTitle: mapRoleDetail.pageTitle,
+      pageDescription: mapRoleDetail.pageDescription
+    }] : []),
+
+    // Settlement
+    {
+      label: "Settlements",
+      roleWithAccess: ["ENTERPRISE_ADMIN"],
+      to: APP_ROUTES.settlement,
+      icon: DollarSign,
+      pageTitle: "Wallet & Billing",
+      pageDescription: "Manage your communication credits and view usage"
+    },
+
+    // Reports
+    {
+      label: "Reports",
+      roleWithAccess: ["ENTERPRISE_ADMIN", "AGGREGATOR_ADMIN", "FLEET_ADMIN"],
+      to: APP_ROUTES.reports,
+      icon: BarChart3,
+      pageTitle: "Reports",
+      pageDescription: "Exportable historical summaries and audits"
+    },
+
+    // Intergrations
+    {
+      label: "Integrations",
+      roleWithAccess: ["FLEET_ADMIN", "ENTERPRISE_ADMIN", "AGGREGATOR_ADMIN"],
+      to: APP_ROUTES.integrations,
+      icon: Code2,
+      pageTitle: "Developer Portal",
+    },
+
+    {
+      label: "Job Offers",
+      roleWithAccess: ["OWNER_OPERATOR"],
+      to: "/admin/job-offers",
+      icon: Inbox,
+    },
+    {
+      label: "Earnings & Invoices",
+      roleWithAccess: ["OWNER_OPERATOR"],
+      to: "/admin/waybill-invoices",
+      icon: Receipt,
+    },
+    {
+      label: "Documents",
+      roleWithAccess: ["OWNER_OPERATOR"],
+      to: "/owner-operator/documents",
+      icon: FileText,
+    },
+    {
+      label: "Notifications",
+      roleWithAccess: ["OWNER_OPERATOR"],
+      to: "/admin/inbox",
+      icon: BellRing,
+    },
+
+    {
+      label: "Tenants",
+      roleWithAccess: ["PLATFORM_ADMIN"],
+      to: "/platform/tenants",
+      icon: Building2,
+    },
+    {
+      label: "Simulator",
+      roleWithAccess: ["PLATFORM_ADMIN"],
+      to: "/platform/simulator",
+      icon: Radio,
+    },
+    {
+      label: "Support & Incidents",
+      roleWithAccess: ["PLATFORM_ADMIN"],
+      to: "/platform/support",
+      icon: Headphones,
+    },
+    {
+      label: "Billing",
+      roleWithAccess: ["PLATFORM_ADMIN"],
+      to: "/platform/billing",
+      icon: CreditCard,
+    },
+    {
+      label: "Security",
+      roleWithAccess: ["PLATFORM_ADMIN"],
+      to: "/platform/security",
+      icon: Shield,
+    },
+
+    {
+      label: "Devices",
+      roleWithAccess: ["PLATFORM_ADMIN", "FLEET_ADMIN", "OPERATIONS_MANAGER", "FINANCE_VIEWER", "INSTALLER" as UserRole],
+      to: "/admin/devices",
+      icon: Cpu,
+    },
+    {
+      label: "Installation",
+      roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER", "INSTALLER" as UserRole],
+      to: "/admin/installation",
+      icon: Wrench,
+    },
+    {
+      label: "IoT SIMs",
+      roleWithAccess: ["PLATFORM_ADMIN", "FLEET_ADMIN"],
+      to: "/admin/sims",
+      icon: Wifi,
+    },
+    {
+      label: "Revenue & Invoicing",
+      roleWithAccess: ["FLEET_ADMIN"],
+      to: "/admin/waybill-invoices",
+      icon: Receipt,
+    },
+    {
+      label: "Communications",
+      roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER"],
+      icon: MessageSquare,
+      items: [
+        {
+          label: "Messaging Center",
+          roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER"],
+          to: "/admin/messages",
+          icon: Send,
+        },
+        {
+          label: "Omnichannel Inbox",
+          roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER"],
+          to: "/admin/inbox",
+          icon: Inbox,
+        },
+      ],
+    },
+
+    {
+      label: "IoT SIMs Request",
+      roleWithAccess: ["OPERATIONS_MANAGER"],
+      to: "/admin/sims",
+      icon: Wifi,
+    },
+    {
+      label: "Compliance",
+      roleWithAccess: ["OPERATIONS_MANAGER"],
+      to: "/admin/compliance",
+      icon: Shield,
+    },
+
+    {
+      label: "SIM Cards",
+      roleWithAccess: ["FINANCE_VIEWER"],
+      to: "/admin/sims",
+      icon: Wifi,
+    },
+    {
+      label: "Fuel Costs",
+      roleWithAccess: ["FINANCE_VIEWER"],
+      to: "/admin/fuel",
+      icon: Gauge,
+    },
+    {
+      label: "Wallet & Billing",
+      roleWithAccess: ["FINANCE_VIEWER"],
+      to: "/admin/wallet",
+      icon: CreditCard,
+    },
+
+    // Settings
+    ...(settingRoleDetail ? [{
+      label: settingRoleDetail.label,
+      roleWithAccess: getRolesFromDetails(SETTINGS_DETAILS),
+      to: APP_ROUTES.organizationsSettings,
+      icon: Settings,
+      pageTitle: settingRoleDetail.pageTitle,
+      pageDescription: settingRoleDetail.pageDescription
+    }] : []),
+  ]
+};

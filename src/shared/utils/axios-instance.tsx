@@ -44,9 +44,9 @@ function isPublicEndpoint(url?: string) {
 function handleExpiredSession() {
   useAuthStore.getState().logout();
   queryClient.clear();
-  setTimeout(() => {
-    window.location.replace(APP_ROUTES.signIn);
-  }, 1000)
+  // setTimeout(() => {
+  //   window.location.replace(APP_ROUTES.signIn);
+  // }, 1000)
 }
 
 axiosInstance.interceptors.request.use(

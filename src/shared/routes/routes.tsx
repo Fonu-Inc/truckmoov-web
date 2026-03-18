@@ -7,8 +7,8 @@ import Settings from "@/features/setting/pages/Settings";
 import NotificationSettings from "@/features/setting/pages/NotificationSettings";
 import BrandingSettings from "@/features/setting/pages/BrandingSettings";
 import UserSettings from "@/features/setting/pages/UserSettings";
-import LogisticOverview from "@/features/enterprise/pages/LogisticOverview";
 import VerifyEmail from "@/features/auth/ui/pages/VerifyEmail";
+import Dashboard from "@/features/dashboard/pages/Dashboard";
 
 export function buildAppRoutes(): RouteObject[] {
   return [
@@ -23,9 +23,34 @@ export function buildAppRoutes(): RouteObject[] {
       path: APP_ROUTES.main, element: <MainLayout />, children: [
         // Enterprise Role Pages
         {
-          path: APP_ROUTES.logisticOverview,
-          element: <LogisticOverview />
+          path: APP_ROUTES.dashboard,
+          element: <Dashboard />
         },
+        {
+          path: APP_ROUTES.jobs,
+          element: <></>
+        },
+        {
+          path: APP_ROUTES.fleet,
+          element: <></>
+        },
+        {
+          path: APP_ROUTES.map,
+          element: <></>
+        },
+        {
+          path: APP_ROUTES.settlement,
+          element: <></>
+        },
+        {
+          path: APP_ROUTES.reports,
+          element: <></>
+        },
+        {
+          path: APP_ROUTES.integrations,
+          element: <></>
+        },
+
         // Settings Page
         {
           path: APP_ROUTES.organizationsSettings,

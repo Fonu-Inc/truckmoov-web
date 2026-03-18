@@ -11,9 +11,14 @@ export const APP_ROUTES = {
 
   // Main app routes
   main: "/",
-
-  // Enterprice role Routes
-  logisticOverview: "/logistic-overview",
+  dashboard: "/dashboard",
+  jobs: "/jobs",
+  fleet: "/fleet",
+  map: "/map",
+  settlement: "/settlement",
+  reports: "/reports",
+  integrations: "/integrations",
+  driver: "/driver",
 
   // settings route
   organizationsSettings: "/setting",

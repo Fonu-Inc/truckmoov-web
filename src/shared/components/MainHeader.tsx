@@ -10,10 +10,11 @@ import { useLocation } from "react-router-dom";
 import { NotificationCenter } from "@/components/platform/NotificationCenter";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import { UserProfileDropdown } from "./UserProfileDropdown";
-import type { SidebarListItem } from "@/shared/lib/sidebarListItem";
+import { useAuthStore } from "@/stores/authStore";
+import { SidebarListItem } from "../types";
 
-function stripQuery(path: string) {
- return path.split("?")[0];
+function stripQuery(path: string | undefined) {
+ return path ? path.split("?")[0] : "";
 }
 
 function findBestMatch(items: SidebarListItem[], pathname: string, parent?: SidebarListItem) {
@@ -53,9 +54,10 @@ export default function MainHeader() {
     markAllAsRead,
     clearNotifications,
   } = useRealtimeNotifications();
+  const {user} = useAuthStore()
 
  const location = useLocation();
- const matchedRoute = findBestMatch(siderbarList, location.pathname);
+ const matchedRoute = findBestMatch(siderbarList(user.role), location.pathname);
  const pageTitle = matchedRoute?.item.pageTitle ?? matchedRoute?.parent?.pageTitle;
  const pageDescription = matchedRoute?.item.pageDescription ?? matchedRoute?.parent?.pageDescription;
 

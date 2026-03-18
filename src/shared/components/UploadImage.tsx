@@ -50,11 +50,6 @@ export default function UploadImage({ onUpload, currentUrl, uploading, text }: U
   if (fileInputRef.current) fileInputRef.current.value = '';
  };
 
- useEffect(() => {
-  setPreviewUrl(currentUrl);
- }, [currentUrl])
-
-
  return (
   <div className="flex items-center gap-6">
    <Avatar className="h-20 w-20 rounded-full">

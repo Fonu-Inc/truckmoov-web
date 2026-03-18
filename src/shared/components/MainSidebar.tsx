@@ -52,9 +52,6 @@ export default function MainSidebar() {
           {!collapsed && (
             <div className="flex flex-col">
               <span className="text-lg font-bold text-sidebar-foreground">Truckmoov</span>
-              <span className="text-[10px] font-medium text-primary uppercase tracking-wider">
-                {org.label}
-              </span>
             </div>
           )}
         </div>
@@ -77,13 +74,12 @@ export default function MainSidebar() {
           <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="flex-1 min-w-0">
             <p className="truncate text-xs font-semibold text-foreground">{org.name}</p>
-            <p className="text-[10px] text-muted-foreground capitalize">{org.label}</p>
           </div>
         </div>
       )}
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
-        {siderbarList.map(navlist => (
+        {siderbarList(user.role).map(navlist => (
           <MainNavItems
             key={navlist.label}
             navList={navlist}
