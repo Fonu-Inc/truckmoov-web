@@ -1,5 +1,5 @@
 import { axiosInstance, ServerSuccessResponse } from "@/shared/utils/axios-instance";
-import { RegisterPayload, LoginPayload, Authentication, GetNewAccessTokenPayload, User, UpdateUserProfilePayload, NotificationPreferencesResponse, UpdateNotificationPreferencesPayload, DispatchPreferencesResponse, UpdateDispatcherPreferencesPayload, OrganizationSettings, UpdateOrganizationsSettingsPayload, InviteMemberPayload, RegisterInviteMemberPayload, ResetPasswordPayload, ChangeUserRolePayload, LogoutPayload, LogOutResponse, ForgetPasswordPayload, VerifyPasswordResetPayload, VerifyPasswordResetResponse, UploadImageToBucketPayload, UploadedImage, VerifyEmailPayload } from "./types";
+import { RegisterPayload, LoginPayload, Authentication, GetNewAccessTokenPayload, User, UpdateUserProfilePayload, NotificationPreferencesResponse, UpdateNotificationPreferencesPayload, DispatchPreferencesResponse, UpdateDispatcherPreferencesPayload, OrganizationSettings, UpdateOrganizationsSettingsPayload, InviteMemberPayload, RegisterInviteMemberPayload, ResetPasswordPayload, ChangeUserRolePayload, LogoutPayload, LogOutResponse, ForgetPasswordPayload, VerifyPasswordResetPayload, VerifyPasswordResetResponse, UploadImageToBucketPayload, UploadedImage, VerifyEmailPayload, InvitedUsers, UpdateInvitedUserPayload, UpdateInvitedUserResponse, RemoveInvitedUserPayload, RemoveInvitedUserResponse, ResendInvitedUserMailPayload, ResendInvitedUserMailRepsonse } from "./types";
 import { useAuthStore } from "@/stores/authStore";
 
 export async function register(payload: RegisterPayload) {
@@ -31,8 +31,23 @@ export async function inviteMember(payload: InviteMemberPayload) {
   return data
 }
 
-export async function validateMemberInvite() {
-  const { data } = await axiosInstance.get<ServerSuccessResponse>("/auth/invite/validate")
+export async function getInvitedUsers() {
+  const { data } = await axiosInstance.get<ServerSuccessResponse<InvitedUsers>>("/auth/organization/users");
+  return data;
+}
+
+export async function updateInvitedUser(payload: UpdateInvitedUserPayload) {
+  const { data } = await axiosInstance.patch<ServerSuccessResponse<UpdateInvitedUserResponse>>(`/auth/organization/users/${payload.userId}`, payload.data)
+  return data;
+}
+
+export async function removeInvitedUser(payload: RemoveInvitedUserPayload) {
+  const { data } = await axiosInstance.delete<ServerSuccessResponse<RemoveInvitedUserResponse>>(`/auth/organization/users/${payload.userId}`)
+  return data;
+}
+
+export async function resendInvitedUserMail(payload: ResendInvitedUserMailPayload) {
+  const { data } = await axiosInstance.post<ServerSuccessResponse<ResendInvitedUserMailRepsonse>>("/auth/organization/invites/resend", payload.data)
   return data;
 }
 

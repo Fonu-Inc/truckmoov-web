@@ -45,8 +45,8 @@ export default function OrganizationSettingsForm() {
   contactEmail: user.email ?? "",
   phoneNumber: user.profile?.phoneNumber ?? "",
   timezone: organizationSetting?.defaults?.timezone ?? "UTC",
-  language: "en",
-  address: "",
+  language: organizationSetting?.defaults?.language ?? "en",
+  address: user.profile?.address ?? "",
  }), [user, organizationSetting])
 
  const {
@@ -73,6 +73,7 @@ export default function OrganizationSettingsForm() {
      data: {
       fullName: values.fullName,
       phoneNumber: values.phoneNumber,
+      address: values.address
      },
     })
    );
@@ -86,7 +87,8 @@ export default function OrganizationSettingsForm() {
        organizationName: values.organizationName
       } as Branding,
       defaults: {
-       timezone: values.timezone
+       timezone: values.timezone,
+       language: values.language,
       } as OrganizationSettingsDefaults,
      },
     })

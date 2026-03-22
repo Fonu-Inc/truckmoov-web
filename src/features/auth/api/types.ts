@@ -90,6 +90,7 @@ export type UserProfile = {
   "fullName": string,
   "phoneNumber": string
   "profilePictureUrl": string,
+  "address": string,
 }
 
 export type UserRole = "ENTERPRISE_ADMIN" | "AGGREGATOR_ADMIN" | "OWNER_OPERATOR" | "PLATFORM_ADMIN" | "FLEET_ADMIN" | "OPERATIONS_MANAGER" | "DISPATCHER" | "FINANCE_VIEWER";
@@ -142,9 +143,13 @@ export type UpdateDispatcherPreferencesPayload = {
 
 export type Branding = {
   "organizationName": string,
+  "contactEmail": string,
+  "phoneNumber": string,
+  "address": string,
   "logoUrl": string,
+  "profilePictureUrl": string,
   "primaryColor": string,
-  "secondaryColor": string
+  "secondaryColor": string,
   "accentColor": string,
   "successColor": string,
   "warningColor": string,
@@ -156,9 +161,10 @@ export type Branding = {
 
 export type OrganizationSettingsDefaults = {
   "timezone": string,
+  "language": string,
   "currency": string,
   "dateFormat": string,
-  "weekStartsOn": string;
+  "weekStartsOn": string
 }
 
 export type OrganizationSettings = {
@@ -185,4 +191,40 @@ export type UploadedImage = {
   "filename": string,
   "contentType": string,
   "size": number;
+}
+
+export type InvitedUsers = {
+  "tenantId": "string",
+  "users": Array<User>
+}
+
+export type UpdateInvitedUserPayload = {
+  userId: string;
+  data: Partial<User["profile"]>
+}
+
+export type UpdateInvitedUserResponse = {
+  user: User
+}
+
+export type RemoveInvitedUserPayload = {
+  userId: string;
+}
+
+export type RemoveInvitedUserResponse = {
+  message: string;
+  userId: string;
+  email: string;
+}
+
+export type ResendInvitedUserMailPayload = {
+  data: {
+    email: string;
+  }
+}
+
+export type ResendInvitedUserMailRepsonse = {
+  "message": string,
+  "email": string,
+  "role": string
 }

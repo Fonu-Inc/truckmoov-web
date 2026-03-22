@@ -1,19 +1,30 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useDeleteInvitedUser } from "@/features/auth/api";
+import { User } from "@/features/auth/api/types";
 
 type RemoveUserDialogProps = {
+ user: User;
  open: boolean;
  onOpenChange: (value: boolean) => void
 }
 
-export default function RemoveUserDialog({open, onOpenChange}: RemoveUserDialogProps) {
+export default function RemoveUserDialog({ open, onOpenChange, user }: RemoveUserDialogProps) {
+ const { mutateAsync, isPending } = useDeleteInvitedUser()
+
+ async function deleteUser() {
+  await mutateAsync({
+   userId: user.id
+  })
+ }
+
  return (
   <Dialog open={open} onOpenChange={onOpenChange}>
    <DialogContent>
     <DialogHeader>
      <DialogTitle>Remove User</DialogTitle>
      <DialogDescription>
-      Are you sure you want to remove this use from your organization?
+      Are you sure you want to remove {user?.profile?.fullName} from your organization?
       They will lose access to all resources.
      </DialogDescription>
     </DialogHeader>
@@ -27,6 +38,8 @@ export default function RemoveUserDialog({open, onOpenChange}: RemoveUserDialogP
      </DialogClose>
      <Button
       variant="destructive"
+      onClick={deleteUser}
+      isLoading={isPending}
      >
       Remove User
      </Button>

@@ -2,9 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useInviteMember } from "@/features/auth/api";
 import { UserRole } from "@/features/auth/api/types";
+import UserRoleSelect from "@/shared/components/UserRoleSelect";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import { useState } from "react";
@@ -82,21 +82,7 @@ export default function InviteUserDialog() {
         name="role"
         render={({ field }) => (
          <FormItem className="space-y-2">
-          <FormLabel>Role</FormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value}>
-           <FormControl>
-            <SelectTrigger>
-             <SelectValue placeholder="Select a role" />
-            </SelectTrigger>
-           </FormControl>
-           <SelectContent>
-            <SelectItem value="ENTERPRISE_ADMIN">Admin - Full access</SelectItem>
-            <SelectItem value="FLEET_ADMIN">Manager - Manage fleet & drivers</SelectItem>
-            <SelectItem value="OPERATIONS_MANAGER">Supervisor - Monitor operations</SelectItem>
-            <SelectItem value="DISPATCHER">Dispatcher - Assign jobs</SelectItem>
-            {/* <SelectItem value="viewer">Viewer - Read-only access</SelectItem> */}
-           </SelectContent>
-          </Select>
+          <UserRoleSelect value={field.value} onValueChange={field.onChange} />
           <FormMessage />
          </FormItem>
         )}

@@ -44,7 +44,7 @@ export function DataTable<TData, TValue>({
       <TableRow key={headerGroup.id}>
        {headerGroup.headers.map((header) => {
         return (
-         <TableHead key={header.id}>
+         <TableHead key={header.id} className="truncate">
           {header.isPlaceholder
            ? null
            : flexRender(
@@ -62,7 +62,7 @@ export function DataTable<TData, TValue>({
       isLoading ? (
        <TableRow>
         <TableCell colSpan={columns.length} className="h-24 text-center">
-         <Loader2 className="animate-spin w-10 h-10"/>
+          Loading...
         </TableCell>
        </TableRow>
       )

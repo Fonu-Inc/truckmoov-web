@@ -16,6 +16,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data } = useQuery({ ...getOrganizationsSettingsQueryOptions(), enabled: isAuthenticated });
+
   useEffect(() => {
     const b = data?.data?.branding;
     if (!b) return;

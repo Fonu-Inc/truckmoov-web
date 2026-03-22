@@ -1,7 +1,7 @@
 import { queryOptions, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { changeUserRole, forgetPassword, getDispatcherPreferences, getNotificationsPreferences, getOrganizationsSettings, getUserProfile, inviteMember, login, logout, register, registerInvitedMember, resetPassword, updateDispatcherPreferences, updateNotificationsPreferences, updateOrganizationsSettings, updateUserProfile, uploadImageToBucket, validateMemberInvite, verifyEmail, verifyPasswordReset } from "./requests";
+import { changeUserRole, forgetPassword, getDispatcherPreferences, getInvitedUsers, getNotificationsPreferences, getOrganizationsSettings, getUserProfile, inviteMember, login, logout, register, registerInvitedMember, removeInvitedUser, resendInvitedUserMail, resetPassword, updateDispatcherPreferences, updateInvitedUser, updateNotificationsPreferences, updateOrganizationsSettings, updateUserProfile, uploadImageToBucket, verifyEmail, verifyPasswordReset } from "./requests";
 import { queryClient } from "@/shared/providers/TanstackQueryProvider";
 import { useNavigate } from "react-router-dom";
 import { APP_ROUTES } from "@/shared/lib/appRoutes";
@@ -13,7 +13,8 @@ export const AUTH_QUERY_KEY = {
   verifyPasswordReset: ["verifyPasswordReset"],
   notificationPreferences: ["notificationPreferences"],
   dispatcherPreferences: ["dispatcherPreferences"],
-  organizationSettings: ["organizationSettings"]
+  organizationSettings: ["organizationSettings"],
+  invitedUsers: ["invitedUsers"]
 }
 
 export function useRegister() {
@@ -29,6 +30,7 @@ export function useRegister() {
 
 export function useLogin() {
   const setTokens = useAuthStore((state) => state.setTokens);
+  const setUser = useAuthStore((state) => state.setUser);
 
   return useMutation({
     mutationFn: login,
@@ -36,8 +38,8 @@ export function useLogin() {
       setTokens({
         accessToken: data.data.accessToken,
         refreshToken: data.data.refreshToken,
-        user: data.data.user,
       });
+      setUser(data.data.user)
       toast.success("Login Successful", {
         description: "Welcome to Truckmoov"
       });
@@ -59,18 +61,49 @@ export function useLogout() {
 export function useInviteMember() {
   return useMutation({
     mutationFn: inviteMember,
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success("Invite Sent")
+      queryClient.invalidateQueries({
+        queryKey: AUTH_QUERY_KEY.invitedUsers
+      })
     }
   })
 }
 
-export function validateMemberInviteQueryOptions() {
+export function getInvitedUserQueryOptions() {
   return queryOptions({
-    queryKey: AUTH_QUERY_KEY.validateInviteMember,
-    queryFn: validateMemberInvite,
-    staleTime: 0,
-    gcTime: 0,
+    queryKey: AUTH_QUERY_KEY.invitedUsers,
+    queryFn: getInvitedUsers
+  })
+}
+
+export function useUpdateInvitedUser() {
+  return useMutation({
+    mutationFn: updateInvitedUser,
+    onSuccess: () => {
+      toast.success("User Detail Updated")
+      queryClient.invalidateQueries({
+        queryKey: AUTH_QUERY_KEY.invitedUsers
+      })
+    }
+  })
+}
+
+export function useDeleteInvitedUser() {
+  return useMutation({
+    mutationFn: removeInvitedUser,
+    onSuccess: () => {
+      toast.success("User Deleted")
+      queryClient.invalidateQueries({
+        queryKey: AUTH_QUERY_KEY.invitedUsers
+      })
+    }
+  })
+}
+
+export function useResendInvitedUserMail() {
+  return useMutation({
+    mutationFn: resendInvitedUserMail,
   })
 }
 
@@ -191,6 +224,7 @@ export function useUpdateOrganizationSettings() {
       queryClient.invalidateQueries({
         queryKey: AUTH_QUERY_KEY.organizationSettings,
       })
+      toast.success("Saved Changes")
     }
   })
 }

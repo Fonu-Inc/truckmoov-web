@@ -75,10 +75,10 @@ export default function MainHeader() {
  };
 
  return (
-  <header className="flex py-2.5 items-center gap-2 justify-between border-b border-border bg-background px-6 backdrop-blur-xs">
+  <header className="w-full flex py-2.5 items-center gap-2 justify-between border-b border-border bg-background px-6 backdrop-blur-xs">
    <div className="w-full">
     {pageTitle && <h1 className="text-lg font-semibold text-foreground">{pageTitle}</h1>}
-    {pageDescription && <p className="text-xs text-muted-foreground truncate text-ellipsis">{pageDescription}</p>}
+    {pageDescription && <p className="text-xs text-muted-foreground overflow-hidden text-nowrap text-ellipsis w-full max-w-[300px]">{pageDescription}</p>}
    </div>
 
    <div className="flex items-center gap-2">
