@@ -67,7 +67,7 @@ export default function OrganizationSettingsForm() {
  const onSubmit = async (values: OrganizationSettingsFormValues) => {
   const calls: Promise<unknown>[] = [];
 
-  if (dirtyFields.fullName || dirtyFields.phoneNumber) {
+  if (dirtyFields.fullName || dirtyFields.phoneNumber || dirtyFields.address) {
    calls.push(
     updateUserProfile({
      data: {
@@ -79,7 +79,7 @@ export default function OrganizationSettingsForm() {
    );
   }
 
-  if (dirtyFields.organizationName || dirtyFields.timezone) {
+  if (dirtyFields.organizationName || dirtyFields.timezone || dirtyFields.language) {
    calls.push(
     updateOrganizationSettings({
      data: {

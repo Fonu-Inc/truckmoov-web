@@ -50,6 +50,14 @@ export function buildAppRoutes(): RouteObject[] {
           path: APP_ROUTES.integrations,
           element: <></>
         },
+        {
+          path: APP_ROUTES.driver,
+          element: <></>
+        },
+        {
+          path: APP_ROUTES.device,
+          element: <></>
+        },
 
         // Settings Page
         {

@@ -20,6 +20,7 @@ export const APP_ROUTES = {
   reports: "/reports",
   integrations: "/integrations",
   driver: "/driver",
+  device: "/device",
 
   // settings route
   organizationsSettings: "/setting",

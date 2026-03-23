@@ -17,7 +17,6 @@ import {
   Cpu,
   Wrench,
   Wifi,
-  MapPinned,
   MessageSquare,
   Send,
   Code2,
@@ -170,6 +169,45 @@ const DRIVER_DETAILS: DetailsObjectType = {
   }
 }
 
+const WALLET_BILLING_DETAILS: DetailsObjectType = {
+  "ENTERPRISE_ADMIN": {
+    label: "Settlements",
+    icon: DollarSign,
+    pageTitle: "Wallet & Billings",
+    pageDescription: "Manage your communication credits and view usage"
+  },
+  "FINANCE_VIEWER": {
+    label: "Wallet & BIlling",
+    icon: CreditCard,
+    pageTitle: "Wallet & Billings",
+    pageDescription: "Manage your communication credits and view usage"
+  },
+  "PLATFORM_ADMIN": {
+    label: "BIlling",
+    icon: CreditCard,
+    pageTitle: "Wallet & Billings",
+    pageDescription: "Manage your communication credits and view usage"
+  }
+}
+
+const DEVICE_DETAILS: DetailsObjectType = {
+  "FLEET_ADMIN": {
+    label: "Devices"
+  },
+  "AGGREGATOR_ADMIN": {
+    label: "Device Setup Requests"
+  },
+  "DISPATCHER": {
+    label: "Device"
+  },
+  "OPERATIONS_MANAGER": {
+    label: "Device"
+  },
+  "FINANCE_VIEWER": {
+    label: "Device"
+  },
+}
+
 export function siderbarList(role: UserRole): SidebarListItem[] {
   const dashboardRoleDetail = DASHBOARD_DETAILS[role]
   const jobRoleDetail = JOB_DETAILS[role]
@@ -177,6 +215,8 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
   const mapRoleDetail = MAP_DETAILS[role];
   const settingRoleDetail = SETTINGS_DETAILS[role];
   const driverRoleDetail = DRIVER_DETAILS[role];
+  const wallingBillingDetails = WALLET_BILLING_DETAILS[role];
+  const deviceDetails = DEVICE_DETAILS[role]
 
   return [
     // Dashboard
@@ -219,6 +259,14 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
     }] : []),
 
     // Device
+    ...(deviceDetails ? [{
+      label: deviceDetails.label,
+      roleWithAccess: getRolesFromDetails(DEVICE_DETAILS),
+      to: APP_ROUTES.device,
+      icon: Cpu,
+      pageTitle: deviceDetails.pageTitle,
+      pageDescription: deviceDetails.pageDescription,
+    }] : []),
 
     // Map
     ...(mapRoleDetail ? [{
@@ -231,14 +279,14 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
     }] : []),
 
     // Settlement
-    {
-      label: "Settlements",
-      roleWithAccess: ["ENTERPRISE_ADMIN"],
+    ...(wallingBillingDetails ? [{
+      label: wallingBillingDetails.label,
+      roleWithAccess: getRolesFromDetails(WALLET_BILLING_DETAILS),
       to: APP_ROUTES.settlement,
-      icon: DollarSign,
-      pageTitle: "Wallet & Billing",
-      pageDescription: "Manage your communication credits and view usage"
-    },
+      icon: wallingBillingDetails.icon,
+      pageTitle: wallingBillingDetails.pageTitle,
+      pageDescription: wallingBillingDetails.pageDescription
+    }] : []),
 
     // Reports
     {
@@ -303,24 +351,12 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       icon: Headphones,
     },
     {
-      label: "Billing",
-      roleWithAccess: ["PLATFORM_ADMIN"],
-      to: "/platform/billing",
-      icon: CreditCard,
-    },
-    {
       label: "Security",
       roleWithAccess: ["PLATFORM_ADMIN"],
       to: "/platform/security",
       icon: Shield,
     },
 
-    {
-      label: "Devices",
-      roleWithAccess: ["PLATFORM_ADMIN", "FLEET_ADMIN", "OPERATIONS_MANAGER", "FINANCE_VIEWER", "INSTALLER" as UserRole],
-      to: "/admin/devices",
-      icon: Cpu,
-    },
     {
       label: "Installation",
       roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER", "INSTALLER" as UserRole],
@@ -383,12 +419,6 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       roleWithAccess: ["FINANCE_VIEWER"],
       to: "/admin/fuel",
       icon: Gauge,
-    },
-    {
-      label: "Wallet & Billing",
-      roleWithAccess: ["FINANCE_VIEWER"],
-      to: "/admin/wallet",
-      icon: CreditCard,
     },
 
     // Settings
