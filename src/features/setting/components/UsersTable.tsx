@@ -1,15 +1,17 @@
 import { DataTable } from "@/components/ui/data-table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ColumnDef } from "@tanstack/react-table";
-import { Mail, MoreHorizontal, Pencil, RotateCwSquare, Trash2 } from "lucide-react";
+import { Clock, Mail, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import EditUserDialog from "./EditUserDialog";
 import RemoveUserDialog from "./RemoveUserDialog";
 import { useQuery } from "@tanstack/react-query";
 import { getInvitedUserQueryOptions, useResendInvitedUserMail } from "@/features/auth/api";
-import { User } from "@/features/auth/api/types";
+import { InvitedUser } from "@/features/auth/api/types";
 import AppAvatar from "@/shared/components/AppAvatar";
 import RoleBadge from "./RoleBadge";
+import StatusBadge from "./StatusBadge";
+import { timeAgo } from "@/shared/utils/time-functions";
 
 export default function UsersTable() {
  const {
@@ -20,7 +22,7 @@ export default function UsersTable() {
  const rows = useMemo(() => data?.data.users ?? [], [data])
  const [editUser, setEditUser] = useState(false);
  const [removeUser, setRemoveUser] = useState(false);
- const [selectedUser, setSelectedUser] = useState<User>();
+ const [selectedUser, setSelectedUser] = useState<InvitedUser>();
 
  async function handleResendEmail(email: string) {
   await resendInvite({
@@ -30,7 +32,7 @@ export default function UsersTable() {
   })
  }
 
- function toggleModal(user: User, type: "edit" | "remove") {
+ function toggleModal(user: InvitedUser, type: "edit" | "remove") {
   setSelectedUser(user);
   if (type === "edit") {
    setEditUser(true)
@@ -42,7 +44,7 @@ export default function UsersTable() {
   }
  }
 
- const columns: ColumnDef<User>[] = [
+ const columns: ColumnDef<InvitedUser>[] = [
   {
    accessorKey: "user",
    header: "User",
@@ -70,14 +72,33 @@ export default function UsersTable() {
     )
    }
   },
-  // {
-  //  accessorKey: "status",
-  //  header: "Status"
-  // },
-  // {
-  //  accessorKey: "last-active",
-  //  header: "Last Active"
-  // },
+  {
+   accessorKey: "status",
+   header: "Status",
+   cell: ({ row }) => {
+    const userStatus = row.original.status
+    return (
+     <StatusBadge status={userStatus} />
+    )
+   }
+  },
+  {
+   accessorKey: "last-active",
+   header: "Last Active",
+   cell: ({ row }) => {
+    const lastActive = row.original.lastActiveAt
+    return (
+     <div className="flex items-center gap-1 text-sm text-muted-foreground">
+      {lastActive ? (
+       <>
+        <Clock className="h-3 w-3" />
+        {timeAgo(lastActive)}
+       </>
+      ) : "N/A"}
+     </div>
+    )
+   }
+  },
   {
    id: "actions",
    cell: ({ row }) => {

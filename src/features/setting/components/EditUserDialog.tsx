@@ -51,14 +51,14 @@ export default function EditUserDialog({ open, onOpenChange, user }: EditUserDia
 
   if (dirtyFields.fullName) {
    promises.push(
-    updateInvitedUser({ userId: user.id, data: { fullName: values.fullName } })
+    updateInvitedUser({ userId: user.userId, data: { fullName: values.fullName } })
    );
   }
 
   if (dirtyFields.role) {
    promises.push(
     changeUserRole(
-     { data: { targetUserId: user.id, newRole: values.role } },
+     { data: { targetUserId: user.userId, newRole: values.role } },
      {
       onSuccess: () => {
        toast.success("User Role Updated");

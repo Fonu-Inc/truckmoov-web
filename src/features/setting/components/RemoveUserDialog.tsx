@@ -14,7 +14,11 @@ export default function RemoveUserDialog({ open, onOpenChange, user }: RemoveUse
 
  async function deleteUser() {
   await mutateAsync({
-   userId: user.id
+   userId: user.userId
+  }, {
+   onSuccess: () => {
+    onOpenChange(false)
+   }
   })
  }
 

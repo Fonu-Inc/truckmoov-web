@@ -38,7 +38,8 @@ export type InviteMemberPayload = {
 export type RegisterInviteMemberPayload = {
   data: {
     "inviteToken": string,
-    "username": string,
+    "email": string,
+    "fullName": string,
     "password": string
   }
 }
@@ -96,7 +97,7 @@ export type UserProfile = {
 export type UserRole = "ENTERPRISE_ADMIN" | "AGGREGATOR_ADMIN" | "OWNER_OPERATOR" | "PLATFORM_ADMIN" | "FLEET_ADMIN" | "OPERATIONS_MANAGER" | "DISPATCHER" | "FINANCE_VIEWER";
 
 export type User = {
-  "id": string,
+  "userId": string,
   "email": string,
   "tenantId": string,
   "role": UserRole,
@@ -193,9 +194,14 @@ export type UploadedImage = {
   "size": number;
 }
 
+export type InvitedUser = User & {
+  status: string,
+  lastActiveAt: string
+}
+
 export type InvitedUsers = {
   "tenantId": "string",
-  "users": Array<User>
+  "users": Array<InvitedUser>
 }
 
 export type UpdateInvitedUserPayload = {

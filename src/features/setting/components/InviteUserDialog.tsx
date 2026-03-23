@@ -24,7 +24,7 @@ export default function InviteUserDialog() {
   resolver: zodResolver(inviteUserSchema),
   defaultValues: {
    email: "",
-   role: "ENTERPRISE_ADMIN",
+   role: "FLEET_ADMIN",
   },
  });
 

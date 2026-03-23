@@ -7,11 +7,12 @@ import { useRegisterInvitedMember } from "@/features/auth/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Eye, EyeOff, Lock, User } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import AuthLayout from "../components/AuthLayout";
 import { APP_ROUTES } from "@/shared/lib/appRoutes";
 
 const invitationSignUpSchema = z.object({
+  email: z.email(),
   fullName: z.string().trim().min(1, "Full name is required"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string().min(1, "Confirm your password"),
@@ -37,6 +38,7 @@ export default function InvitationSignUpPage() {
   } = useForm<InvitationSignUpFormValues>({
     resolver: zodResolver(invitationSignUpSchema),
     defaultValues: {
+      email: new URLSearchParams(window.location.search.replace(/\+/g, "%2B")).get("email") ?? "",
       fullName: "",
       password: "",
       confirmPassword: "",
@@ -49,7 +51,8 @@ export default function InvitationSignUpPage() {
       {
         data: {
           inviteToken,
-          username: values.fullName,
+          email: values.email,
+          fullName: values.fullName,
           password: values.password,
         },
       },
@@ -68,6 +71,14 @@ export default function InvitationSignUpPage() {
       subtitle="Set your details to activate access"
     >
       <form onSubmit={handleSubmit(handleInvitationSignUp)} className="space-y-4" noValidate>
+        <div className="space-y-1.5">
+          <Label htmlFor="email" className="text-sm">Email</Label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input id="email" type="email" className="pl-10 bg-muted cursor-not-allowed" readOnly {...register("email")} />
+          </div>
+        </div>
+
         <div className="space-y-1.5">
           <Label htmlFor="fullName" className="text-sm">Full Name</Label>
           <div className="relative">

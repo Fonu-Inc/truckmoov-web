@@ -2,8 +2,7 @@ export const APP_ROUTES = {
   // Authentication routes
   signIn: "/auth",
   signUp: "/auth/signup",
-  // invitedSignUp: "/auth/invite",
-  invitedSignUp: "/accept-invite",
+  invitedSignUp: "/auth/invite",
   forgetPassword: "/auth/forget-password",
   verifyEmail: "/auth/verify-email",
   verifyRequest: "/auth/verify-request",
