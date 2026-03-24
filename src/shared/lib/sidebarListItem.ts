@@ -192,7 +192,9 @@ const WALLET_BILLING_DETAILS: DetailsObjectType = {
 
 const DEVICE_DETAILS: DetailsObjectType = {
   "FLEET_ADMIN": {
-    label: "Devices"
+    label: "Devices",
+    pageTitle: "IoT Device Management",
+    pageDescription: "Provision and manage GPS tracking devices"
   },
   "AGGREGATOR_ADMIN": {
     label: "Device Setup Requests"

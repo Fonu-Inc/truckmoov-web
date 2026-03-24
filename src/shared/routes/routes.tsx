@@ -12,6 +12,7 @@ import Dashboard from "@/features/dashboard/pages/Dashboard";
 import Fleet from "@/features/fleet/layouts/Fleet";
 import Vehicles from "@/features/fleet/pages/Vehicles";
 import Driver from "@/features/fleet/pages/Driver";
+import Devices from "@/features/fleet/pages/Devices";
 
 export function buildAppRoutes(): RouteObject[] {
   return [
@@ -65,7 +66,7 @@ export function buildAppRoutes(): RouteObject[] {
         },
         {
           path: APP_ROUTES.device,
-          element: <></>
+          element: <Devices /> 
         },
 
         // Settings Page

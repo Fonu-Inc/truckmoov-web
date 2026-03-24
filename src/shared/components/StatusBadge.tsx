@@ -5,7 +5,10 @@ const statusColors: Record<string, string> = {
  active: "bg-success/20 text-success border-success/30",
  inactive: "bg-destructive/20 text-destructive border-destructive/30",
  maintenance: "bg-warning/10 text-warning",
- decommissioned: "bg-destructive/10 text-destructive"
+ decommissioned: "bg-destructive/10 text-destructive",
+ registered: "bg-muted text-muted-foreground",
+ configured: "bg-info/10 text-info",
+ faulty: "bg-destructive/10 text-destructive"
 };
 
 type StatusBadgeProps = {
