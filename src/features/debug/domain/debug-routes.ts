@@ -1,1 +1,1 @@
-export const DEBUG_MAP_PATH = "/debug/map";
+export const DEBUG_MAP_PATH = "/demo/debug/map";

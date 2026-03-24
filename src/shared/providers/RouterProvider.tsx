@@ -29,22 +29,23 @@ function AppRoutes() {
   const { isAuthenticated, isAuthReady, user } = useAuthStore();
   const { pathname } = useLocation();
   const protect: ProtectRoute = (element) => <OrgProtectedRoute>{element}</OrgProtectedRoute>;
+  const demoProtect: ProtectRoute = (element) => element;
 
   const routes = useMemo(() => [
     ...buildAppRoutes(),
-    ...buildPlatformRoutes(protect),
-    ...buildBusinessRoutes(protect),
-    ...buildOwnerOperatorRoutes(protect),
-    ...buildTenantAdminRoutes(protect),
-    ...buildSupervisorRoutes(protect),
-    ...buildDriverRoutes(protect),
-    ...buildSupportRoutes(protect),
+    ...buildPlatformRoutes(demoProtect),
+    ...buildBusinessRoutes(demoProtect),
+    ...buildOwnerOperatorRoutes(demoProtect),
+    ...buildTenantAdminRoutes(demoProtect),
+    ...buildSupervisorRoutes(demoProtect),
+    ...buildDriverRoutes(demoProtect),
+    ...buildSupportRoutes(demoProtect),
     ...buildDocumentationRoutes(),
     ...buildDebugRoutes(),
     ...buildCoreRoutes(),
   ], []);
 
-  if (isAuthReady && !isAuthenticated && !pathname.startsWith("/auth")) {
+  if (isAuthReady && !isAuthenticated && !pathname.startsWith("/auth") && !pathname.startsWith("/demo")) {
     return <Navigate to={APP_ROUTES.signIn} replace />;
   }
 

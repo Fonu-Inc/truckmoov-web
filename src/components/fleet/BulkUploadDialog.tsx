@@ -164,7 +164,7 @@ LAG-456-AB,2HGCM82633A654321,Volvo,FH16,2023,truck,35`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-150">
         <DialogHeader>
           <DialogTitle>Bulk Import Vehicles</DialogTitle>
           <DialogDescription>

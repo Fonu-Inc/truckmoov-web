@@ -104,43 +104,43 @@ export default function QuickDemoAccessDropdown() {
 
     if (stakeholderType === "ENTERPRISE") {
       toast.success("Logged in as Enterprise Admin");
-      navigate("/enterprise");
+      navigate("/demo/enterprise");
       return;
     }
     if (stakeholderType === "AGGREGATOR") {
       toast.success("Logged in as Aggregator Admin");
-      navigate("/aggregator");
+      navigate("/demo/aggregator");
       return;
     }
     if (stakeholderType === "OWNER_OPERATOR") {
       toast.success("Logged in as Owner-Operator");
-      navigate("/owner-operator");
+      navigate("/demo/owner-operator");
       return;
     }
 
     toast.success(`Logged in as ${role.replace("_", " ")}`);
     switch (role) {
       case "PLATFORM_ADMIN":
-        navigate("/platform");
+        navigate("/demo/platform");
         break;
       case "FLEET_ADMIN":
       case "OPERATIONS_MANAGER":
-        navigate("/admin");
+        navigate("/demo/admin");
         break;
       case "DISPATCHER":
-        navigate("/supervisor");
+        navigate("/demo/supervisor");
         break;
       case "FINANCE_VIEWER":
-        navigate("/admin/fleet?tab=analytics");
+        navigate("/demo/admin/fleet?tab=analytics");
         break;
       case "ENTERPRISE_ADMIN":
-        navigate("/enterprise");
+        navigate("/demo/enterprise");
         break;
       case "AGGREGATOR_ADMIN":
-        navigate("/aggregator");
+        navigate("/demo/aggregator");
         break;
       case "OWNER_OPERATOR":
-        navigate("/owner-operator");
+        navigate("/demo/owner-operator");
         break;
     }
   };

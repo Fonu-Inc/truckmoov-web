@@ -182,119 +182,119 @@ function filterEntriesByRole(entries: TaggedEntry[], roleKeys: string[]): Sideba
 
 // ─── Enterprise ────────────────────────────────────────────────
 const enterpriseEntries: TaggedEntry[] = [
-  { label: "Logistics Overview", href: "/enterprise", icon: LayoutDashboard, moduleTag: 'overview' },
-  { label: "Shipments", href: "/admin/jobs", icon: Package, moduleTag: 'jobs' },
-  { label: "Fleet Providers", href: "/admin/fleet", icon: Truck, moduleTag: 'providers' },
-  { label: "Live Tracking", href: "/admin/map", icon: MapPin, moduleTag: 'live_map' },
-  { label: "Performance", href: "/admin/analytics", icon: TrendingUp, moduleTag: 'performance' },
-  { label: "Settlements", href: "/admin/wallet", icon: DollarSign, moduleTag: 'settlements' },
-  { label: "Contracts", href: "/admin/compliance", icon: Handshake, moduleTag: 'contracts' },
-  { label: "Reports", href: "/admin/reports", icon: BarChart3, moduleTag: 'reports' },
-  { label: "Integrations", href: "/admin/integrations", icon: Code2, moduleTag: 'integrations' },
-  { label: "Organization Settings", href: "/admin/settings", icon: Settings, moduleTag: 'settings' },
+  { label: "Logistics Overview", href: "/demo/enterprise", icon: LayoutDashboard, moduleTag: 'overview' },
+  { label: "Shipments", href: "/demo/admin/jobs", icon: Package, moduleTag: 'jobs' },
+  { label: "Fleet Providers", href: "/demo/admin/fleet", icon: Truck, moduleTag: 'providers' },
+  { label: "Live Tracking", href: "/demo/admin/map", icon: MapPin, moduleTag: 'live_map' },
+  { label: "Performance", href: "/demo/admin/analytics", icon: TrendingUp, moduleTag: 'performance' },
+  { label: "Settlements", href: "/demo/admin/wallet", icon: DollarSign, moduleTag: 'settlements' },
+  { label: "Contracts", href: "/demo/admin/compliance", icon: Handshake, moduleTag: 'contracts' },
+  { label: "Reports", href: "/demo/admin/reports", icon: BarChart3, moduleTag: 'reports' },
+  { label: "Integrations", href: "/demo/admin/integrations", icon: Code2, moduleTag: 'integrations' },
+  { label: "Organization Settings", href: "/demo/admin/settings", icon: Settings, moduleTag: 'settings' },
 ];
 
 // ─── Fleet Provider ────────────────────────────────────────────
 const fleetProviderEntries: TaggedEntry[] = [
-  { label: "Fleet Operations", href: "/admin", icon: LayoutDashboard, moduleTag: 'overview' },
-  { label: "Dispatch", href: "/admin/jobs", icon: Package, moduleTag: 'dispatch' },
-  { label: "Vehicles", href: "/admin/fleet", icon: Truck, moduleTag: 'fleet' },
-  { label: "Drivers", href: "/admin/drivers", icon: Users, moduleTag: 'drivers' },
-  { label: "Devices", href: "/admin/devices", icon: Cpu, moduleTag: 'devices' },
-  { label: "Installation", href: "/admin/installation", icon: Wrench, moduleTag: 'installation' },
-  { label: "IoT SIMs", href: "/admin/sims", icon: Wifi, moduleTag: 'sims' },
-  { label: "Live Map & Zones", href: "/admin/map", icon: MapPinned, moduleTag: 'live_map' },
-  { label: "Revenue & Invoicing", href: "/admin/waybill-invoices", icon: Receipt, moduleTag: 'invoices' },
+  { label: "Fleet Operations", href: "/demo/admin", icon: LayoutDashboard, moduleTag: 'overview' },
+  { label: "Dispatch", href: "/demo/admin/jobs", icon: Package, moduleTag: 'dispatch' },
+  { label: "Vehicles", href: "/demo/admin/fleet", icon: Truck, moduleTag: 'fleet' },
+  { label: "Drivers", href: "/demo/admin/drivers", icon: Users, moduleTag: 'drivers' },
+  { label: "Devices", href: "/demo/admin/devices", icon: Cpu, moduleTag: 'devices' },
+  { label: "Installation", href: "/demo/admin/installation", icon: Wrench, moduleTag: 'installation' },
+  { label: "IoT SIMs", href: "/demo/admin/sims", icon: Wifi, moduleTag: 'sims' },
+  { label: "Live Map & Zones", href: "/demo/admin/map", icon: MapPinned, moduleTag: 'live_map' },
+  { label: "Revenue & Invoicing", href: "/demo/admin/waybill-invoices", icon: Receipt, moduleTag: 'invoices' },
   {
     label: "Communications",
     icon: MessageSquare,
     badgeKey: "messages",
     moduleTag: 'communications',
     items: [
-      { label: "Messaging Center", href: "/admin/messages", icon: Send },
-      { label: "Omnichannel Inbox", href: "/admin/inbox", icon: Inbox },
+      { label: "Messaging Center", href: "/demo/admin/messages", icon: Send },
+      { label: "Omnichannel Inbox", href: "/demo/admin/inbox", icon: Inbox },
     ],
   },
-  { label: "Reports", href: "/admin/reports", icon: FileText, moduleTag: 'reports' },
-  { label: "Integrations", href: "/admin/integrations", icon: Code2, moduleTag: 'integrations' },
-  { label: "Organization Settings", href: "/admin/settings", icon: Settings, moduleTag: 'settings' },
+  { label: "Reports", href: "/demo/admin/reports", icon: FileText, moduleTag: 'reports' },
+  { label: "Integrations", href: "/demo/admin/integrations", icon: Code2, moduleTag: 'integrations' },
+  { label: "Organization Settings", href: "/demo/admin/settings", icon: Settings, moduleTag: 'settings' },
 ];
 
 // ─── Aggregator ────────────────────────────────────────────────
 const aggregatorEntries: TaggedEntry[] = [
-  { label: "Network Overview", href: "/aggregator", icon: LayoutDashboard, moduleTag: 'overview' },
-  { label: "Job Coordination", href: "/admin/jobs", icon: Package, moduleTag: 'jobs' },
-  { label: "Network Members", href: "/admin/drivers", icon: Users, moduleTag: 'network_members' },
-  { label: "Network Fleet", href: "/admin/fleet", icon: Truck, moduleTag: 'network_fleet' },
-  { label: "Device Setup Requests", href: "/admin/devices", icon: Cpu, moduleTag: 'devices' },
-  { label: "Compliance", href: "/admin/compliance", icon: Shield, moduleTag: 'compliance' },
-  { label: "Payouts & Invoicing", href: "/admin/waybill-invoices", icon: Receipt, moduleTag: 'invoices' },
-  { label: "Network Performance", href: "/admin/analytics", icon: TrendingUp, moduleTag: 'performance' },
-  { label: "Zones", href: "/admin/map", icon: MapPinned, moduleTag: 'zones' },
+  { label: "Network Overview", href: "/demo/aggregator", icon: LayoutDashboard, moduleTag: 'overview' },
+  { label: "Job Coordination", href: "/demo/admin/jobs", icon: Package, moduleTag: 'jobs' },
+  { label: "Network Members", href: "/demo/admin/drivers", icon: Users, moduleTag: 'network_members' },
+  { label: "Network Fleet", href: "/demo/admin/fleet", icon: Truck, moduleTag: 'network_fleet' },
+  { label: "Device Setup Requests", href: "/demo/admin/devices", icon: Cpu, moduleTag: 'devices' },
+  { label: "Compliance", href: "/demo/admin/compliance", icon: Shield, moduleTag: 'compliance' },
+  { label: "Payouts & Invoicing", href: "/demo/admin/waybill-invoices", icon: Receipt, moduleTag: 'invoices' },
+  { label: "Network Performance", href: "/demo/admin/analytics", icon: TrendingUp, moduleTag: 'performance' },
+  { label: "Zones", href: "/demo/admin/map", icon: MapPinned, moduleTag: 'zones' },
   {
     label: "Communications",
     icon: MessageSquare,
     badgeKey: "messages",
     moduleTag: 'communications',
     items: [
-      { label: "Messaging Center", href: "/admin/messages", icon: Send },
-      { label: "Omnichannel Inbox", href: "/admin/inbox", icon: Inbox },
+      { label: "Messaging Center", href: "/demo/admin/messages", icon: Send },
+      { label: "Omnichannel Inbox", href: "/demo/admin/inbox", icon: Inbox },
     ],
   },
-  { label: "Reports", href: "/admin/reports", icon: BarChart3, moduleTag: 'reports' },
-  { label: "Integrations", href: "/admin/integrations", icon: Code2, moduleTag: 'integrations' },
-  { label: "Organization Settings", href: "/admin/settings", icon: Settings, moduleTag: 'settings' },
+  { label: "Reports", href: "/demo/admin/reports", icon: BarChart3, moduleTag: 'reports' },
+  { label: "Integrations", href: "/demo/admin/integrations", icon: Code2, moduleTag: 'integrations' },
+  { label: "Organization Settings", href: "/demo/admin/settings", icon: Settings, moduleTag: 'settings' },
 ];
 
 // ─── Owner-Operator ────────────────────────────────────────────
 const ownerOperatorEntries: TaggedEntry[] = [
-  { label: "My Overview", href: "/owner-operator", icon: LayoutDashboard, moduleTag: 'overview' },
-  { label: "My Jobs", href: "/owner-operator/jobs", icon: Package, moduleTag: 'jobs' },
-  { label: "Job Offers", href: "/admin/job-offers", icon: Inbox, moduleTag: 'job_offers', badgeKey: "jobOffers" },
-  { label: "My Vehicle", href: "/owner-operator/vehicles", icon: Truck, moduleTag: 'fleet' },
-  { label: "Earnings & Invoices", href: "/admin/waybill-invoices", icon: Receipt, moduleTag: 'invoices' },
-  { label: "Documents", href: "/owner-operator/documents", icon: FileText, moduleTag: 'documents' },
-  { label: "Notifications", href: "/admin/inbox", icon: BellRing, moduleTag: 'notifications' },
-  { label: "Profile", href: "/admin/settings", icon: User, moduleTag: 'profile' },
+  { label: "My Overview", href: "/demo/owner-operator", icon: LayoutDashboard, moduleTag: 'overview' },
+  { label: "My Jobs", href: "/demo/owner-operator/jobs", icon: Package, moduleTag: 'jobs' },
+  { label: "Job Offers", href: "/demo/admin/job-offers", icon: Inbox, moduleTag: 'job_offers', badgeKey: "jobOffers" },
+  { label: "My Vehicle", href: "/demo/owner-operator/vehicles", icon: Truck, moduleTag: 'fleet' },
+  { label: "Earnings & Invoices", href: "/demo/admin/waybill-invoices", icon: Receipt, moduleTag: 'invoices' },
+  { label: "Documents", href: "/demo/owner-operator/documents", icon: FileText, moduleTag: 'documents' },
+  { label: "Notifications", href: "/demo/admin/inbox", icon: BellRing, moduleTag: 'notifications' },
+  { label: "Profile", href: "/demo/admin/settings", icon: User, moduleTag: 'profile' },
 ];
 
 // ─── Platform Admin ────────────────────────────────────────────
 const platformAdminSidebar: SidebarConfig = {
   orgTypeLabel: "Platform Admin",
-  homeRoute: "/platform",
+  homeRoute: "/demo/platform",
   entries: [
-    { label: "Dashboard", href: "/platform", icon: LayoutDashboard },
-    { label: "Tenants", href: "/platform/tenants", icon: Building2 },
-    { label: "Devices", href: "/platform/devices", icon: Cpu },
-    { label: "IoT SIMs", href: "/platform/sims", icon: Wifi },
-    { label: "Simulator", href: "/platform/simulator", icon: Radio },
-    { label: "Support & Incidents", href: "/platform/support", icon: Headphones },
-    { label: "Billing", href: "/platform/billing", icon: CreditCard },
-    { label: "Security", href: "/platform/security", icon: Shield },
-    { label: "Settings", href: "/platform/settings", icon: Settings },
+    { label: "Dashboard", href: "/demo/platform", icon: LayoutDashboard },
+    { label: "Tenants", href: "/demo/platform/tenants", icon: Building2 },
+    { label: "Devices", href: "/demo/platform/devices", icon: Cpu },
+    { label: "IoT SIMs", href: "/demo/platform/sims", icon: Wifi },
+    { label: "Simulator", href: "/demo/platform/simulator", icon: Radio },
+    { label: "Support & Incidents", href: "/demo/platform/support", icon: Headphones },
+    { label: "Billing", href: "/demo/platform/billing", icon: CreditCard },
+    { label: "Security", href: "/demo/platform/security", icon: Shield },
+    { label: "Settings", href: "/demo/platform/settings", icon: Settings },
   ],
 };
 
 // ─── Supervisor ────────────────────────────────────────────────
 const supervisorSidebar: SidebarConfig = {
   orgTypeLabel: "Supervisor",
-  homeRoute: "/supervisor",
+  homeRoute: "/demo/supervisor",
   entries: [
-    { label: "Dashboard", href: "/supervisor", icon: LayoutDashboard },
-    { label: "Live Map", href: "/supervisor/map", icon: MapPin },
-    { label: "Dispatch", href: "/supervisor/dispatch", icon: Package },
-    { label: "Drivers", href: "/supervisor/drivers", icon: Users },
-    { label: "Alerts", href: "/supervisor/alerts", icon: Bell, badge: 3 },
+    { label: "Dashboard", href: "/demo/supervisor", icon: LayoutDashboard },
+    { label: "Live Map", href: "/demo/supervisor/map", icon: MapPin },
+    { label: "Dispatch", href: "/demo/supervisor/dispatch", icon: Package },
+    { label: "Drivers", href: "/demo/supervisor/drivers", icon: Users },
+    { label: "Alerts", href: "/demo/supervisor/alerts", icon: Bell, badge: 3 },
     {
       label: "Communications",
       icon: MessageSquare,
       badgeKey: "messages",
       items: [
-        { label: "Messaging Center", href: "/supervisor/messages", icon: Send },
-        { label: "Omnichannel Inbox", href: "/supervisor/inbox", icon: Inbox },
+        { label: "Messaging Center", href: "/demo/supervisor/messages", icon: Send },
+        { label: "Omnichannel Inbox", href: "/demo/supervisor/inbox", icon: Inbox },
       ],
     },
-    { label: "Reports", href: "/supervisor/reports", icon: BarChart3 },
+    { label: "Reports", href: "/demo/supervisor/reports", icon: BarChart3 },
   ],
 };
 
@@ -302,22 +302,22 @@ const supervisorSidebar: SidebarConfig = {
 
 const dispatcherSidebar: SidebarConfig = {
   orgTypeLabel: "Dispatcher",
-  homeRoute: "/supervisor",
+  homeRoute: "/demo/supervisor",
   entries: [
-    { label: "Dashboard", href: "/supervisor", icon: LayoutDashboard },
-    { label: "Live Map", href: "/supervisor/map", icon: MapPin },
-    { label: "Dispatch", href: "/supervisor/dispatch", icon: Package },
-    { label: "Drivers", href: "/supervisor/drivers", icon: Users },
-    { label: "Devices", href: "/admin/devices", icon: Cpu },
-    { label: "SIM Cards", href: "/admin/sims", icon: Wifi },
-    { label: "Alerts", href: "/supervisor/alerts", icon: Bell, badge: 3 },
+    { label: "Dashboard", href: "/demo/supervisor", icon: LayoutDashboard },
+    { label: "Live Map", href: "/demo/supervisor/map", icon: MapPin },
+    { label: "Dispatch", href: "/demo/supervisor/dispatch", icon: Package },
+    { label: "Drivers", href: "/demo/supervisor/drivers", icon: Users },
+    { label: "Devices", href: "/demo/admin/devices", icon: Cpu },
+    { label: "SIM Cards", href: "/demo/admin/sims", icon: Wifi },
+    { label: "Alerts", href: "/demo/supervisor/alerts", icon: Bell, badge: 3 },
     {
       label: "Communications",
       icon: MessageSquare,
       badgeKey: "messages",
       items: [
-        { label: "Messaging Center", href: "/supervisor/messages", icon: Send },
-        { label: "Omnichannel Inbox", href: "/supervisor/inbox", icon: Inbox },
+        { label: "Messaging Center", href: "/demo/supervisor/messages", icon: Send },
+        { label: "Omnichannel Inbox", href: "/demo/supervisor/inbox", icon: Inbox },
       ],
     },
   ],
@@ -325,25 +325,25 @@ const dispatcherSidebar: SidebarConfig = {
 
 const operationsManagerSidebar: SidebarConfig = {
   orgTypeLabel: "Operations Manager",
-  homeRoute: "/admin",
+  homeRoute: "/demo/admin",
   entries: [
-    { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { label: "Fleet", href: "/admin/fleet", icon: Truck },
-    { label: "Live Map", href: "/admin/map", icon: MapPin },
-    { label: "Drivers", href: "/admin/drivers", icon: Users },
-    { label: "Devices", href: "/admin/devices", icon: Cpu },
-    { label: "Installation", href: "/admin/installation", icon: Wrench },
-    { label: "IoT SIMs Request", href: "/admin/sims", icon: Wifi },
-    { label: "Jobs", href: "/admin/jobs", icon: Package },
-    { label: "Compliance", href: "/admin/compliance", icon: Shield },
-    { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+    { label: "Dashboard", href: "/demo/admin", icon: LayoutDashboard },
+    { label: "Fleet", href: "/demo/admin/fleet", icon: Truck },
+    { label: "Live Map", href: "/demo/admin/map", icon: MapPin },
+    { label: "Drivers", href: "/demo/admin/drivers", icon: Users },
+    { label: "Devices", href: "/demo/admin/devices", icon: Cpu },
+    { label: "Installation", href: "/demo/admin/installation", icon: Wrench },
+    { label: "IoT SIMs Request", href: "/demo/admin/sims", icon: Wifi },
+    { label: "Jobs", href: "/demo/admin/jobs", icon: Package },
+    { label: "Compliance", href: "/demo/admin/compliance", icon: Shield },
+    { label: "Analytics", href: "/demo/admin/analytics", icon: BarChart3 },
     {
       label: "Communications",
       icon: MessageSquare,
       badgeKey: "messages",
       items: [
-        { label: "Messaging Center", href: "/admin/messages", icon: Send },
-        { label: "Omnichannel Inbox", href: "/admin/inbox", icon: Inbox },
+        { label: "Messaging Center", href: "/demo/admin/messages", icon: Send },
+        { label: "Omnichannel Inbox", href: "/demo/admin/inbox", icon: Inbox },
       ],
     },
   ],
@@ -351,25 +351,25 @@ const operationsManagerSidebar: SidebarConfig = {
 
 const installerSidebar: SidebarConfig = {
   orgTypeLabel: "Installer",
-  homeRoute: "/admin/installation",
+  homeRoute: "/demo/admin/installation",
   entries: [
-    { label: "Installation", href: "/admin/installation", icon: Wrench },
-    { label: "Devices", href: "/admin/devices", icon: Cpu },
+    { label: "Installation", href: "/demo/admin/installation", icon: Wrench },
+    { label: "Devices", href: "/demo/admin/devices", icon: Cpu },
   ],
 };
 
 const viewerFinanceSidebar: SidebarConfig = {
   orgTypeLabel: "Finance",
-  homeRoute: "/admin/analytics",
+  homeRoute: "/demo/admin/analytics",
   entries: [
-    { label: "Dashboard", href: "/admin/analytics", icon: LayoutDashboard },
-    { label: "Fleet", href: "/admin/fleet", icon: Truck },
-    { label: "Devices", href: "/admin/devices", icon: Cpu },
-    { label: "SIM Cards", href: "/admin/sims", icon: Wifi },
-    { label: "Fuel Costs", href: "/admin/fuel", icon: Gauge },
-    { label: "Maintenance", href: "/admin/fleet?tab=maintenance", icon: Settings },
-    { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
-    { label: "Wallet & Billing", href: "/admin/wallet", icon: CreditCard },
+    { label: "Dashboard", href: "/demo/admin/analytics", icon: LayoutDashboard },
+    { label: "Fleet", href: "/demo/admin/fleet", icon: Truck },
+    { label: "Devices", href: "/demo/admin/devices", icon: Cpu },
+    { label: "SIM Cards", href: "/demo/admin/sims", icon: Wifi },
+    { label: "Fuel Costs", href: "/demo/admin/fuel", icon: Gauge },
+    { label: "Maintenance", href: "/demo/admin/fleet?tab=maintenance", icon: Settings },
+    { label: "Analytics", href: "/demo/admin/analytics", icon: BarChart3 },
+    { label: "Wallet & Billing", href: "/demo/admin/wallet", icon: CreditCard },
   ],
 };
 
@@ -397,25 +397,25 @@ export function getSidebarConfig(
       case "ENTERPRISE":
         return {
           orgTypeLabel: "Enterprise",
-          homeRoute: "/enterprise",
+          homeRoute: "/demo/enterprise",
           entries: filterEntriesByRole(enterpriseEntries, roleKeys),
         };
       case "AGGREGATOR":
         return {
           orgTypeLabel: "Aggregator",
-          homeRoute: "/aggregator",
+          homeRoute: "/demo/aggregator",
           entries: filterEntriesByRole(aggregatorEntries, roleKeys),
         };
       case "OWNER_OPERATOR":
         return {
           orgTypeLabel: "Owner-Operator",
-          homeRoute: "/owner-operator",
+          homeRoute: "/demo/owner-operator",
           entries: filterEntriesByRole(ownerOperatorEntries, roleKeys),
         };
       case "FLEET_PROVIDER":
         return {
           orgTypeLabel: "Fleet Provider",
-          homeRoute: "/admin",
+          homeRoute: "/demo/admin",
           entries: filterEntriesByRole(fleetProviderEntries, roleKeys),
         };
     }
@@ -426,7 +426,7 @@ export function getSidebarConfig(
     case "tenant_admin":
       return {
         orgTypeLabel: "Fleet Provider",
-        homeRoute: "/admin",
+        homeRoute: "/demo/admin",
         entries: fleetProviderEntries,
       };
     case "operations_manager":
@@ -442,7 +442,7 @@ export function getSidebarConfig(
     default:
       return {
         orgTypeLabel: "Fleet Provider",
-        homeRoute: "/admin",
+        homeRoute: "/demo/admin",
         entries: fleetProviderEntries,
       };
   }

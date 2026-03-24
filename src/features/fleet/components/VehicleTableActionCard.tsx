@@ -20,7 +20,7 @@ export default function VehicleTableActionCard() {
        />
       </div>
       <Select>
-       <SelectTrigger className="w-[140px]">
+       <SelectTrigger className="w-35">
         <Filter className="mr-2 h-4 w-4" />
         <SelectValue placeholder="Type" />
        </SelectTrigger>

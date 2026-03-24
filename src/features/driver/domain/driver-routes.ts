@@ -1,1 +1,1 @@
-export const DRIVER_HOME_PATH = "/driver";
+export const DRIVER_HOME_PATH = "/demo/driver";
