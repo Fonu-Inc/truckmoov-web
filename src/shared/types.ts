@@ -17,3 +17,5 @@ export type DetailsType = Omit<SidebarListItem, "roleWithAccess" | "to" | "icon"
 }
 
 export type DetailsObjectType = Partial<Record<UserRole, DetailsType>>
+
+export type RequestPayloadExtractor<T extends (...args: any[]) => any> = Parameters<T>[0];

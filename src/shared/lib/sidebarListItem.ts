@@ -239,15 +239,6 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       pageDescription: jobRoleDetail.pageDescription
     }] : []),
 
-    // Drivers
-    ...(driverRoleDetail ? [{
-      label: driverRoleDetail.label,
-      roleWithAccess: getRolesFromDetails(DRIVER_DETAILS),
-      to: APP_ROUTES.driver,
-      icon: Users,
-      pageTitle: driverRoleDetail.label
-    }] : []),
-
     // Fleet
     ...(fleetRoleDetail ? [{
       label: fleetRoleDetail.label,
@@ -256,6 +247,15 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       icon: Truck,
       pageTitle: fleetRoleDetail.pageTitle,
       pageDescription: fleetRoleDetail.pageDescription
+    }] : []),
+
+    // Drivers
+    ...(driverRoleDetail ? [{
+      label: driverRoleDetail.label,
+      roleWithAccess: getRolesFromDetails(DRIVER_DETAILS),
+      to: APP_ROUTES.driver,
+      icon: Users,
+      pageTitle: driverRoleDetail.label
     }] : []),
 
     // Device

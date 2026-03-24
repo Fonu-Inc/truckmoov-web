@@ -9,6 +9,8 @@ import BrandingSettings from "@/features/setting/pages/BrandingSettings";
 import UserSettings from "@/features/setting/pages/UserSettings";
 import VerifyEmail from "@/features/auth/ui/pages/VerifyEmail";
 import Dashboard from "@/features/dashboard/pages/Dashboard";
+import Fleet from "@/features/fleet/layouts/Fleet";
+import Vehicles from "@/features/fleet/pages/Vehicles";
 
 export function buildAppRoutes(): RouteObject[] {
   return [
@@ -32,7 +34,13 @@ export function buildAppRoutes(): RouteObject[] {
         },
         {
           path: APP_ROUTES.fleet,
-          element: <></>
+          element: <Fleet />,
+          children: [
+            {
+              index: true,
+              element: <Vehicles />
+            }
+          ]
         },
         {
           path: APP_ROUTES.map,
