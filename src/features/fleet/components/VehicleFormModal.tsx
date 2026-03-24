@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
  Dialog,
+ DialogClose,
  DialogContent,
  DialogDescription,
  DialogHeader,
@@ -29,6 +30,7 @@ import {
  SelectValue,
 } from "@/components/ui/select";
 import { useCreateVehicle } from "@/features/fleet/api";
+import { FormMode } from "@/shared/types";
 
 const vehicleSchema = z.object({
  vin: z.string().min(17, "VIN must be 17 characters").max(17, "VIN must be 17 characters"),
@@ -52,8 +54,13 @@ const defaultValues: VehicleFormData = {
  capacity: 0,
 };
 
-export default function VehicleFormModal() {
- const [open, setOpen] = useState(false);
+type VehicleFormModalProps = {
+ open: boolean;
+ onOpenChange: (open: boolean) => void;
+ mode?: FormMode;
+}
+
+export default function VehicleFormModal({ open, onOpenChange, mode = "create" }: VehicleFormModalProps) {
  const { mutateAsync, isPending } = useCreateVehicle();
 
  const form = useForm<VehicleFormData>({
@@ -65,13 +72,7 @@ export default function VehicleFormModal() {
  };
 
  return (
-  <Dialog open={open} onOpenChange={setOpen}>
-   <DialogTrigger asChild>
-    <Button>
-     <Plus className="h-4 w-4" />
-     Add Vehicle
-    </Button>
-   </DialogTrigger>
+  <Dialog open={open} onOpenChange={onOpenChange}>
    <DialogContent className="sm:max-w-125">
     <DialogHeader>
      <DialogTitle>Add Vehicle</DialogTitle>
@@ -194,9 +195,11 @@ export default function VehicleFormModal() {
       </div>
 
       <div className="flex justify-end gap-3 pt-4">
-       <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-        Cancel
-       </Button>
+       <DialogClose asChild>
+        <Button type="button" variant="outline">
+         Cancel
+        </Button>
+       </DialogClose>
        <Button type="submit" isLoading={isPending}>
         Add Vehicle
        </Button>
