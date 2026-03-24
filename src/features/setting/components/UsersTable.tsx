@@ -10,7 +10,7 @@ import { getInvitedUserQueryOptions, useResendInvitedUserMail } from "@/features
 import { InvitedUser } from "@/features/auth/api/types";
 import AppAvatar from "@/shared/components/AppAvatar";
 import RoleBadge from "./RoleBadge";
-import StatusBadge from "./StatusBadge";
+import StatusBadge from "../../../shared/components/StatusBadge";
 import { timeAgo } from "@/shared/utils/time-functions";
 
 export default function UsersTable() {
