@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import type { User as AppUser } from "@/types";
 import type { OrgMembership } from "@/types/orgRoles";
-import { isPlatformAdmin, toLegacyRole } from "@/features/auth/lib/roleUtils";
+import { isPlatformAdmin, toLegacyRole, toStakeholderType } from "@/features/auth/lib/roleUtils";
 
 export interface SidebarNavItem {
   label: string;
@@ -387,6 +387,19 @@ export function getSidebarConfig(
   // Platform admin always gets the platform sidebar, regardless of org memberships
   if (isPlatformAdmin(user?.role)) {
     return platformAdminSidebar;
+  }
+
+  // Stakeholder roles in demo mode (no active org membership)
+  const stakeholderType = toStakeholderType(user?.role);
+  if (stakeholderType && !activeOrg) {
+    switch (stakeholderType) {
+      case 'ENTERPRISE':
+        return { orgTypeLabel: "Enterprise", homeRoute: "/demo/enterprise", entries: enterpriseEntries };
+      case 'AGGREGATOR':
+        return { orgTypeLabel: "Aggregator", homeRoute: "/demo/aggregator", entries: aggregatorEntries };
+      case 'OWNER_OPERATOR':
+        return { orgTypeLabel: "Owner-Operator", homeRoute: "/demo/owner-operator", entries: ownerOperatorEntries };
+    }
   }
 
   // Org-type–driven configs when multi-stakeholder is active

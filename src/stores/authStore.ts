@@ -28,7 +28,7 @@ const DEMO_ROLE_STORAGE_KEY = "truckmoov_demo_role";
 const DEMO_STAKEHOLDER_KEY = "truckmoov_demo_stakeholder";
 
 export type DemoStakeholderType = 'ENTERPRISE' | 'AGGREGATOR' | 'OWNER_OPERATOR' | null;
-const DEMO_ACCESS_TOKEN = 'demo_access_token';
+export const DEMO_ACCESS_TOKEN = 'demo_access_token';
 const DEMO_REFRESH_TOKEN = 'demo_refresh_token';
 
 function readDemoRole(): UserRole | null {

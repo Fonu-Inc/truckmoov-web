@@ -4,18 +4,20 @@ import { getOrganizationsSettingsQueryOptions } from '@/features/auth/api';
 import { Branding } from '@/features/auth/api/types';
 import { useBrandingStore } from '../store';
 import { applyBrandingToDOM } from '../composables/applyBrandingToDOM';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, DEMO_ACCESS_TOKEN } from '@/stores/authStore';
 import { BrandingContext } from "../contexts/branding";
 
 export function BrandingProvider({ children }: { children: ReactNode }) {
   const { branding, setBranding } = useBrandingStore();
-  const isAuthenticated = !!useAuthStore((s) => s.accessToken);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const isAuthenticated = !!accessToken;
+  const isDemo = accessToken === DEMO_ACCESS_TOKEN;
 
   useEffect(() => {
     if (branding) applyBrandingToDOM(branding);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { data } = useQuery({ ...getOrganizationsSettingsQueryOptions(), enabled: isAuthenticated });
+  const { data } = useQuery({ ...getOrganizationsSettingsQueryOptions(), enabled: isAuthenticated && !isDemo });
 
   useEffect(() => {
     const b = data?.data?.branding;

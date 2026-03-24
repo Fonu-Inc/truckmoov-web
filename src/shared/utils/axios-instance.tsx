@@ -1,5 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios"
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore, DEMO_ACCESS_TOKEN } from "@/stores/authStore";
 import { queryClient } from "@/shared/providers/TanstackQueryProvider";
 import { APP_ROUTES } from "@/shared/lib/appRoutes";
 
@@ -67,6 +67,13 @@ axiosInstance.interceptors.response.use(
     const originalRequest = error?.config as RetryRequestConfig | undefined;
 
     if (status === 401 && originalRequest) {
+      // Demo sessions use fake tokens that will always be rejected by the real
+      // backend. Skip the refresh/logout cycle entirely so demo auth stays intact.
+      const { accessToken } = useAuthStore.getState();
+      if (accessToken === DEMO_ACCESS_TOKEN) {
+        return Promise.reject(error);
+      }
+
       const requestUrl = String(originalRequest.url ?? "");
       const isExcluded = isPublicEndpoint(requestUrl);
       const hasRetried = Boolean(originalRequest._retry);
