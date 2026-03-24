@@ -255,7 +255,7 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       roleWithAccess: getRolesFromDetails(DRIVER_DETAILS),
       to: APP_ROUTES.driver,
       icon: Users,
-      pageTitle: driverRoleDetail.label
+      pageTitle: driverRoleDetail.pageTitle
     }] : []),
 
     // Device

@@ -6,8 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-import { geofenceCategoryLabels } from "./constants";
-import type { GeofenceModalZone } from "./types";
+import { geofenceCategoryLabels } from "./geofence-modal/constants";
+import type { GeofenceModalZone } from "./geofence-modal/types";
 
 interface GeofenceListPanelProps {
  isEditing: boolean;

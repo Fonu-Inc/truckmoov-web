@@ -24,32 +24,6 @@ import {
 import { cn } from "@/lib/utils";
 import VehicleTableActionCard from "./VehicleTableActionCard";
 
-type VehicleTableRow = {
- id: string;
- model: string;
- make: string;
- year: string;
- registrationNumber: string;
- type: string;
- driverName: string | null;
- status: string;
- fuelLevel: number | null;
-};
-
-function toVehicleTableRow(vehicle: Vehicle): VehicleTableRow {
- return {
-  id: vehicle.id,
-  model: vehicle.model || "Unknown Model",
-  make: "N/A",
-  year: "N/A",
-  registrationNumber: vehicle.plateNumber || "N/A",
-  type: "N/A",
-  driverName: null,
-  status: vehicle.status || "inactive",
-  fuelLevel: null,
- };
-}
-
 function getStatusClassName(status: string) {
  if (status === "active") return "bg-success/10 text-success";
  if (status === "maintenance") return "bg-warning/10 text-warning";
@@ -57,7 +31,7 @@ function getStatusClassName(status: string) {
  return "bg-muted text-muted-foreground";
 }
 
-const vehicleColumns: ColumnDef<VehicleTableRow>[] = [
+const vehicleColumns: ColumnDef<any>[] = [
  {
   header: "Vehicle",
   cell: ({ row }) => (
@@ -142,17 +116,17 @@ const vehicleColumns: ColumnDef<VehicleTableRow>[] = [
       </Button>
      </DropdownMenuTrigger>
      <DropdownMenuContent align="end">
-      <DropdownMenuItem onClick={() => {}}>
+      <DropdownMenuItem onClick={() => { }}>
        <Eye className="mr-2 h-4 w-4" />
        View Details
       </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => {}}>
+      <DropdownMenuItem onClick={() => { }}>
        <Edit className="mr-2 h-4 w-4" />
        Edit
       </DropdownMenuItem>
       <DropdownMenuItem
        className="text-destructive focus:text-destructive"
-       onClick={() => {}}
+       onClick={() => { }}
       >
        <Trash2 className="mr-2 h-4 w-4" />
        Delete
@@ -165,43 +139,29 @@ const vehicleColumns: ColumnDef<VehicleTableRow>[] = [
 ];
 
 export default function VehicleTable() {
- const { data, isLoading } = useQuery(
-  listVehiclesQueryOptions({
-   params: {},
-  }),
- );
-
- const rows = useMemo(
-  () => (data?.data ?? []).map(toVehicleTableRow),
-  [data?.data],
- );
+ const rows = [] 
 
  return (
   <section className="space-y-6">
    <VehicleTableActionCard />
 
-   <Card>
-    <CardHeader>
-     <CardTitle className="flex items-center gap-2">
-      <Truck className="h-5 w-5 text-primary" />
-      Vehicles ({rows.length})
-     </CardTitle>
-    </CardHeader>
-    <CardContent>
-     <DataTable
-      columns={vehicleColumns}
-      data={rows}
-      isLoading={isLoading}
-      noResultStatement={
-       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-        <Truck className="h-12 w-12 mb-4 opacity-30" />
-        <p>No vehicles found</p>
-        <p className="text-sm">Try adjusting your search or filters</p>
-       </div>
-      }
-     />
-    </CardContent>
-   </Card>
+   <div className="space-y-2">
+    <p className="flex items-center gap-2">
+     <Truck className="h-5 w-5 text-primary" />
+     Vehicles ({rows.length})
+    </p>
+    <DataTable
+     columns={vehicleColumns}
+     data={rows}
+     noResultStatement={
+      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+       <Truck className="h-12 w-12 mb-4 opacity-30" />
+       <p>No vehicles found</p>
+       <p className="text-sm">Try adjusting your search or filters</p>
+      </div>
+     }
+    />
+   </div>
   </section>
  );
 }

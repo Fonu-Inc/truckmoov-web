@@ -11,10 +11,10 @@ import {
  DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { ArchiveGeofenceDialog } from "./geofence-modal/ArchiveGeofenceDialog";
-import { GeofenceDetailsPanel } from "./geofence-modal/GeofenceDetailsPanel";
-import { GeofenceEditorPanel } from "./geofence-modal/GeofenceEditorPanel";
-import { GeofenceListPanel } from "./geofence-modal/GeofenceListPanel";
+import { ArchiveGeofenceDialog } from "./ArchiveGeofenceDialog";
+import { GeofenceDetailsPanel } from "./GeofenceDetailsPanel";
+import { GeofenceEditorPanel } from "./GeofenceEditorPanel";
+import { GeofenceListPanel } from "./GeofenceListPanel";
 import { useGeofenceModalState } from "./geofence-modal/useGeofenceModalState";
 
 export default function GeofenceModal() {

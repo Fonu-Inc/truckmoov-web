@@ -11,6 +11,7 @@ import VerifyEmail from "@/features/auth/ui/pages/VerifyEmail";
 import Dashboard from "@/features/dashboard/pages/Dashboard";
 import Fleet from "@/features/fleet/layouts/Fleet";
 import Vehicles from "@/features/fleet/pages/Vehicles";
+import Driver from "@/features/fleet/pages/Driver";
 
 export function buildAppRoutes(): RouteObject[] {
   return [
@@ -60,7 +61,7 @@ export function buildAppRoutes(): RouteObject[] {
         },
         {
           path: APP_ROUTES.driver,
-          element: <></>
+          element: <Driver />
         },
         {
           path: APP_ROUTES.device,

@@ -4,8 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { geofenceCategoryLabels } from "./constants";
-import type { GeofenceModalVehicle, GeofenceModalZone } from "./types";
+import { geofenceCategoryLabels } from "./geofence-modal/constants";
+import type { GeofenceModalVehicle, GeofenceModalZone } from "./geofence-modal/types";
 
 interface GeofenceDetailsPanelProps {
  onEditZone: (zone: GeofenceModalZone) => void;
