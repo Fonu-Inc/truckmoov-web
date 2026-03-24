@@ -69,7 +69,7 @@ export default function MainSidebar() {
 
 
       {/* Org Badge */}
-      {!collapsed && (
+      {!collapsed && user.role !== "FLEET_ADMIN" && (
         <div className="mx-3 mt-3 flex items-center gap-2 rounded-lg border border-border/50 bg-secondary/40 px-3 py-2">
           <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="flex-1 min-w-0">

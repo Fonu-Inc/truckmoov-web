@@ -26,6 +26,28 @@
 - For custom/non-native inputs (shadcn `Select`, `Checkbox`, `InputOTP`, etc.), use `Controller` from `react-hook-form` to integrate them since they don't support `register` directly.
 - For standard text/email/password inputs rendered as native `<input>`, use `register` directly on the shadcn `Input` component.
 
+## Shared Button Loading Convention
+
+- The shared shadcn `Button` in `src/components/ui/button.tsx` supports `ButtonProps.isLoading?: boolean`.
+- When using the shared `Button` for async submit/action states, pass the controlling boolean (`isPending`, `isSubmitting`, `saving`, etc.) through `isLoading`.
+- `isLoading={true}` is responsible for the loading UI and also disables the shared `Button` while the async action is in progress.
+- Do not manually render spinner/loading UI inside the shared `Button` for standard loading states; let the component handle that behavior.
+- Do not duplicate `disabled={isLoading}` on the shared `Button`, since the component already disables itself while loading.
+- Keep separate `disabled` conditions only for non-loading constraints such as invalid form state, missing required selections, or permission/role guards.
+- This convention applies to the shared shadcn `Button` only, not to raw HTML `<button>` elements or non-button loading indicators.
+
+## UI Copy Extraction Convention
+
+- When asked to copy UI from one file to another, preserve the visual structure and interaction shape, not the source file's business logic or data layer.
+- Rebuild the target inside the destination feature with feature-local components, types, constants, and orchestration instead of importing demo/mock hooks into main-app feature code.
+- Make the copied UI work independently by default using local UI state or placeholders when backend/API wiring is not ready.
+- Centralize state transitions and draft shaping in one feature-local orchestration layer so future API integration can replace local actions without rewriting presentational components.
+- Break the copied UI into focused components and keep prop drilling shallow: one level preferred, two levels maximum.
+- Prefer UI-only local types/constants when the source and target files belong to different logic layers or architectures.
+- When copying table-display UI, use `src/components/ui/data-table.tsx` instead of hardcoded `<table>` markup.
+- Always wire table loading and no-results UX through `DataTable` props (`isLoading`, `noResultStatement`) rather than custom conditional wrappers around table markup.
+- Preserve source-table visual structure in the target feature, but keep the target independent by using placeholders for fields/actions that are not yet available in that feature's data layer.
+
 ## API Response Contract Convention
 
 - Use the shared Axios instance from `src/shared/axios-instance.tsx`.
@@ -52,11 +74,11 @@
 - Use feature-based ownership: each feature is responsible for its own UI, API calls, domain models, orchestration, and utilities.
 - Place feature-specific API hooks/types under that feature, not under global services.
 - Preferred feature structure (use what is needed per feature):
-  - `ui/`
+  - `components/`
   - `api/`
-  - `domain/`
-  - `application/`
-  - `infrastructure/`
+  - `pages/`
+  - `layout/`
+  - `provider/`
   - `composable/`
   - `util/`
 - For example, auth API hooks/types should live in `src/features/auth/api/`.

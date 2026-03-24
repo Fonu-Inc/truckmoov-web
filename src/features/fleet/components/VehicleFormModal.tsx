@@ -198,7 +198,7 @@ export default function VehicleFormModal() {
         Cancel
        </Button>
        <Button type="submit" isLoading={isPending}>
-        "Add Vehicle"
+        Add Vehicle
        </Button>
       </div>
      </form>

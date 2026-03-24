@@ -20,7 +20,7 @@ import { Loader2 } from "lucide-react"
 interface DataTableProps<TData, TValue> {
  columns: ColumnDef<TData, TValue>[]
  data: TData[]
- noResultStatement?: string;
+ noResultStatement?: any;
  isLoading?: boolean;
 }
 
