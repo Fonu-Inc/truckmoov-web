@@ -12,7 +12,7 @@ export type SidebarListItem = {
   pageDescription?: string
 };
 
-export type DetailsType = Omit<SidebarListItem, "roleWithAccess" | "to" | "icon" | "items"> & {
+export type DetailsType = Omit<SidebarListItem, "roleWithAccess" | "icon" | "items"> & {
  icon?: React.ElementType
 }
 

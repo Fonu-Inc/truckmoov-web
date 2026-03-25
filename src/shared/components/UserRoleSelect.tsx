@@ -13,10 +13,10 @@ const rolesOption: Array<{
  value: UserRole,
  label: string;
 }> = [
-  // {
-  //  value: "ENTERPRISE_ADMIN",
-  //  label: "Admin - Full access"
-  // },
+  {
+   value: "ENTERPRISE_ADMIN",
+   label: "Admin - Full access"
+  },
   {
    value: "FLEET_ADMIN",
    label: "Manager - Manage fleet & drivers"

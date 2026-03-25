@@ -4,15 +4,10 @@ import { APP_ROUTES } from "../lib/appRoutes";
 export function getRoleDefaultRoute(role: UserRole) {
   switch (role) {
     case "ENTERPRISE_ADMIN":
-    case "AGGREGATOR_ADMIN":
-    case "OWNER_OPERATOR":
-    case "OPERATIONS_MANAGER":
-    case "DISPATCHER":
+      return APP_ROUTES.organizationsSettings
     case "FLEET_ADMIN":
-    case "PLATFORM_ADMIN":
-      return APP_ROUTES.dashboard;
-    case "FINANCE_VIEWER":
+      return APP_ROUTES.jobs;
     default:
-      return APP_ROUTES.main;
+      return APP_ROUTES.dashboard;
   }
 }

@@ -25,9 +25,11 @@ export default function MainSidebar() {
 
   const org = useMemo(() => ({
     label: getOrgLabel(user.role),
+    altLabel: getOrgLabel(user.role, true),
     username: user.profile?.fullName ?? "N/A",
     name: organizationSettings?.branding.organizationName ?? "N/A",
     brandingUrl: organizationSettings?.branding.logoUrl ?? null,
+    profilePictureUrl: user.profile?.profilePictureUrl ?? null
   }), [user, organizationSettings])
 
   return (
@@ -52,6 +54,9 @@ export default function MainSidebar() {
           {!collapsed && (
             <div className="flex flex-col">
               <span className="text-lg font-bold text-sidebar-foreground">Truckmoov</span>
+              <span className="text-[10px] font-medium text-primary uppercase tracking-wider">
+                {org.altLabel}
+              </span>
             </div>
           )}
         </div>
@@ -69,11 +74,12 @@ export default function MainSidebar() {
 
 
       {/* Org Badge */}
-      {!collapsed && user.role !== "FLEET_ADMIN" && (
+      {!collapsed && (
         <div className="mx-3 mt-3 flex items-center gap-2 rounded-lg border border-border/50 bg-secondary/40 px-3 py-2">
           <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="flex-1 min-w-0">
             <p className="truncate text-xs font-semibold text-foreground">{org.name}</p>
+            <p className="text-[10px] text-muted-foreground capitalize">{org.altLabel}</p>
           </div>
         </div>
       )}
@@ -93,7 +99,7 @@ export default function MainSidebar() {
         {!collapsed && (
           <div className="mb-3 rounded-lg bg-sidebar-accent/50 p-3">
             <div className="flex items-center gap-3">
-              <AppAvatar value={org.username} imgUrl={user.profile?.profilePictureUrl} />
+              <AppAvatar value={org.username} imgUrl={org.profilePictureUrl} />
               <div className="flex-1 overflow-hidden">
                 <p className="truncate text-sm font-medium text-sidebar-foreground">{org.username}</p>
                 <p className="truncate text-xs text-sidebar-foreground/60 capitalize">

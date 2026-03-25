@@ -16,9 +16,7 @@ export default function AppAvatar({ value, imgUrl, className }: AppAvatarProp) {
     "h-9 w-9 rounded-full",
     className
    )}>
-    {imgUrl && (
-     <AvatarImage src={imgUrl} className="object-contain" />
-    )}
+    <AvatarImage src={imgUrl ?? undefined} className="object-contain" />
     <AvatarFallback className="uppercase bg-primary text-primary-foreground font-semibold text-sm">
      {getNameInitials(value)}
     </AvatarFallback>

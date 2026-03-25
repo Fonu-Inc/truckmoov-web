@@ -62,16 +62,20 @@ export default function AuthPage() {
 
   return (
     <AuthLayout title="Welcome back" subtitle="Sign in to your Truckmoov account">
-      <QuickDemoAccessDropdown />
+      {import.meta.env.VITE_SHOW_DEMO === 'true' &&
+        <>
+          <QuickDemoAccessDropdown />
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-3 text-muted-foreground tracking-wider">Or continue with email</span>
+            </div>
+          </div>
+        </>
+      }
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-3 text-muted-foreground tracking-wider">Or continue with email</span>
-        </div>
-      </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="space-y-1.5">

@@ -222,14 +222,14 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
 
   return [
     // Dashboard
-    ...(dashboardRoleDetail ? [{
-      label: dashboardRoleDetail.label,
-      roleWithAccess: getRolesFromDetails(DASHBOARD_DETAILS),
-      to: APP_ROUTES.dashboard,
-      icon: LayoutDashboard,
-      pageTitle: dashboardRoleDetail.pageTitle,
-      pageDescription: dashboardRoleDetail.pageDescription
-    }] : []),
+    // ...(dashboardRoleDetail ? [{
+    //   label: dashboardRoleDetail.label,
+    //   roleWithAccess: getRolesFromDetails(DASHBOARD_DETAILS),
+    //   to: APP_ROUTES.dashboard,
+    //   icon: LayoutDashboard,
+    //   pageTitle: dashboardRoleDetail.pageTitle,
+    //   pageDescription: dashboardRoleDetail.pageDescription
+    // }] : []),
 
     // Jobs
     ...(jobRoleDetail ? [{
@@ -271,163 +271,163 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
     }] : []),
 
     // Map
-    ...(mapRoleDetail ? [{
-      label: mapRoleDetail.label,
-      roleWithAccess: getRolesFromDetails(MAP_DETAILS),
-      to: APP_ROUTES.map,
-      icon: MapPin,
-      pageTitle: mapRoleDetail.pageTitle,
-      pageDescription: mapRoleDetail.pageDescription
-    }] : []),
+    // ...(mapRoleDetail ? [{
+    //   label: mapRoleDetail.label,
+    //   roleWithAccess: getRolesFromDetails(MAP_DETAILS),
+    //   to: APP_ROUTES.map,
+    //   icon: MapPin,
+    //   pageTitle: mapRoleDetail.pageTitle,
+    //   pageDescription: mapRoleDetail.pageDescription
+    // }] : []),
 
     // Settlement
-    ...(wallingBillingDetails ? [{
-      label: wallingBillingDetails.label,
-      roleWithAccess: getRolesFromDetails(WALLET_BILLING_DETAILS),
-      to: APP_ROUTES.settlement,
-      icon: wallingBillingDetails.icon,
-      pageTitle: wallingBillingDetails.pageTitle,
-      pageDescription: wallingBillingDetails.pageDescription
-    }] : []),
+    // ...(wallingBillingDetails ? [{
+    //   label: wallingBillingDetails.label,
+    //   roleWithAccess: getRolesFromDetails(WALLET_BILLING_DETAILS),
+    //   to: APP_ROUTES.settlement,
+    //   icon: wallingBillingDetails.icon,
+    //   pageTitle: wallingBillingDetails.pageTitle,
+    //   pageDescription: wallingBillingDetails.pageDescription
+    // }] : []),
 
-    // Reports
-    {
-      label: "Reports",
-      roleWithAccess: ["ENTERPRISE_ADMIN", "AGGREGATOR_ADMIN", "FLEET_ADMIN"],
-      to: APP_ROUTES.reports,
-      icon: BarChart3,
-      pageTitle: "Reports",
-      pageDescription: "Exportable historical summaries and audits"
-    },
+    // // Reports
+    // {
+    //   label: "Reports",
+    //   roleWithAccess: ["ENTERPRISE_ADMIN", "AGGREGATOR_ADMIN", "FLEET_ADMIN"],
+    //   to: APP_ROUTES.reports,
+    //   icon: BarChart3,
+    //   pageTitle: "Reports",
+    //   pageDescription: "Exportable historical summaries and audits"
+    // },
 
-    // Intergrations
-    {
-      label: "Integrations",
-      roleWithAccess: ["FLEET_ADMIN", "ENTERPRISE_ADMIN", "AGGREGATOR_ADMIN"],
-      to: APP_ROUTES.integrations,
-      icon: Code2,
-      pageTitle: "Developer Portal",
-    },
+    // // Intergrations
+    // {
+    //   label: "Integrations",
+    //   roleWithAccess: ["FLEET_ADMIN", "ENTERPRISE_ADMIN", "AGGREGATOR_ADMIN"],
+    //   to: APP_ROUTES.integrations,
+    //   icon: Code2,
+    //   pageTitle: "Developer Portal",
+    // },
 
-    {
-      label: "Job Offers",
-      roleWithAccess: ["OWNER_OPERATOR"],
-      to: "/admin/job-offers",
-      icon: Inbox,
-    },
-    {
-      label: "Earnings & Invoices",
-      roleWithAccess: ["OWNER_OPERATOR"],
-      to: "/admin/waybill-invoices",
-      icon: Receipt,
-    },
-    {
-      label: "Documents",
-      roleWithAccess: ["OWNER_OPERATOR"],
-      to: "/owner-operator/documents",
-      icon: FileText,
-    },
-    {
-      label: "Notifications",
-      roleWithAccess: ["OWNER_OPERATOR"],
-      to: "/admin/inbox",
-      icon: BellRing,
-    },
+    // {
+    //   label: "Job Offers",
+    //   roleWithAccess: ["OWNER_OPERATOR"],
+    //   to: "/admin/job-offers",
+    //   icon: Inbox,
+    // },
+    // {
+    //   label: "Earnings & Invoices",
+    //   roleWithAccess: ["OWNER_OPERATOR"],
+    //   to: "/admin/waybill-invoices",
+    //   icon: Receipt,
+    // },
+    // {
+    //   label: "Documents",
+    //   roleWithAccess: ["OWNER_OPERATOR"],
+    //   to: "/owner-operator/documents",
+    //   icon: FileText,
+    // },
+    // {
+    //   label: "Notifications",
+    //   roleWithAccess: ["OWNER_OPERATOR"],
+    //   to: "/admin/inbox",
+    //   icon: BellRing,
+    // },
 
-    {
-      label: "Tenants",
-      roleWithAccess: ["PLATFORM_ADMIN"],
-      to: "/platform/tenants",
-      icon: Building2,
-    },
-    {
-      label: "Simulator",
-      roleWithAccess: ["PLATFORM_ADMIN"],
-      to: "/platform/simulator",
-      icon: Radio,
-    },
-    {
-      label: "Support & Incidents",
-      roleWithAccess: ["PLATFORM_ADMIN"],
-      to: "/platform/support",
-      icon: Headphones,
-    },
-    {
-      label: "Security",
-      roleWithAccess: ["PLATFORM_ADMIN"],
-      to: "/platform/security",
-      icon: Shield,
-    },
+    // {
+    //   label: "Tenants",
+    //   roleWithAccess: ["PLATFORM_ADMIN"],
+    //   to: "/platform/tenants",
+    //   icon: Building2,
+    // },
+    // {
+    //   label: "Simulator",
+    //   roleWithAccess: ["PLATFORM_ADMIN"],
+    //   to: "/platform/simulator",
+    //   icon: Radio,
+    // },
+    // {
+    //   label: "Support & Incidents",
+    //   roleWithAccess: ["PLATFORM_ADMIN"],
+    //   to: "/platform/support",
+    //   icon: Headphones,
+    // },
+    // {
+    //   label: "Security",
+    //   roleWithAccess: ["PLATFORM_ADMIN"],
+    //   to: "/platform/security",
+    //   icon: Shield,
+    // },
 
-    {
-      label: "Installation",
-      roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER", "INSTALLER" as UserRole],
-      to: "/admin/installation",
-      icon: Wrench,
-    },
-    {
-      label: "IoT SIMs",
-      roleWithAccess: ["PLATFORM_ADMIN", "FLEET_ADMIN"],
-      to: "/admin/sims",
-      icon: Wifi,
-    },
-    {
-      label: "Revenue & Invoicing",
-      roleWithAccess: ["FLEET_ADMIN"],
-      to: "/admin/waybill-invoices",
-      icon: Receipt,
-    },
-    {
-      label: "Communications",
-      roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER"],
-      icon: MessageSquare,
-      items: [
-        {
-          label: "Messaging Center",
-          roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER"],
-          to: "/admin/messages",
-          icon: Send,
-        },
-        {
-          label: "Omnichannel Inbox",
-          roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER"],
-          to: "/admin/inbox",
-          icon: Inbox,
-        },
-      ],
-    },
+    // {
+    //   label: "Installation",
+    //   roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER", "INSTALLER" as UserRole],
+    //   to: "/admin/installation",
+    //   icon: Wrench,
+    // },
+    // {
+    //   label: "IoT SIMs",
+    //   roleWithAccess: ["PLATFORM_ADMIN", "FLEET_ADMIN"],
+    //   to: "/admin/sims",
+    //   icon: Wifi,
+    // },
+    // {
+    //   label: "Revenue & Invoicing",
+    //   roleWithAccess: ["FLEET_ADMIN"],
+    //   to: "/admin/waybill-invoices",
+    //   icon: Receipt,
+    // },
+    // {
+    //   label: "Communications",
+    //   roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER"],
+    //   icon: MessageSquare,
+    //   items: [
+    //     {
+    //       label: "Messaging Center",
+    //       roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER"],
+    //       to: "/admin/messages",
+    //       icon: Send,
+    //     },
+    //     {
+    //       label: "Omnichannel Inbox",
+    //       roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER"],
+    //       to: "/admin/inbox",
+    //       icon: Inbox,
+    //     },
+    //   ],
+    // },
 
-    {
-      label: "IoT SIMs Request",
-      roleWithAccess: ["OPERATIONS_MANAGER"],
-      to: "/admin/sims",
-      icon: Wifi,
-    },
-    {
-      label: "Compliance",
-      roleWithAccess: ["OPERATIONS_MANAGER"],
-      to: "/admin/compliance",
-      icon: Shield,
-    },
+    // {
+    //   label: "IoT SIMs Request",
+    //   roleWithAccess: ["OPERATIONS_MANAGER"],
+    //   to: "/admin/sims",
+    //   icon: Wifi,
+    // },
+    // {
+    //   label: "Compliance",
+    //   roleWithAccess: ["OPERATIONS_MANAGER"],
+    //   to: "/admin/compliance",
+    //   icon: Shield,
+    // },
 
-    {
-      label: "SIM Cards",
-      roleWithAccess: ["FINANCE_VIEWER"],
-      to: "/admin/sims",
-      icon: Wifi,
-    },
-    {
-      label: "Fuel Costs",
-      roleWithAccess: ["FINANCE_VIEWER"],
-      to: "/admin/fuel",
-      icon: Gauge,
-    },
+    // {
+    //   label: "SIM Cards",
+    //   roleWithAccess: ["FINANCE_VIEWER"],
+    //   to: "/admin/sims",
+    //   icon: Wifi,
+    // },
+    // {
+    //   label: "Fuel Costs",
+    //   roleWithAccess: ["FINANCE_VIEWER"],
+    //   to: "/admin/fuel",
+    //   icon: Gauge,
+    // },
 
     // Settings
     ...(settingRoleDetail ? [{
       label: settingRoleDetail.label,
       roleWithAccess: getRolesFromDetails(SETTINGS_DETAILS),
-      to: APP_ROUTES.organizationsSettings,
+      to: settingRoleDetail.to ?? APP_ROUTES.organizationsSettings,
       icon: Settings,
       pageTitle: settingRoleDetail.pageTitle,
       pageDescription: settingRoleDetail.pageDescription

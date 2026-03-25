@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getOrganizationsSettingsQueryOptions, useUpdateOrganizationSettings, useUpdateUserProfile } from "@/features/auth/api";
@@ -10,7 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { Save } from "lucide-react";
 import { useEffect, useMemo } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 const organizationSettingsSchema = z.object({
@@ -27,6 +27,13 @@ type OrganizationSettingsFormValues = z.infer<typeof organizationSettingsSchema>
 
 export default function OrganizationSettingsForm() {
  const { user } = useAuthStore()
+ const canEditOrgSettings = useMemo(() => {
+  if (user.role === "ENTERPRISE_ADMIN") {
+   return true;
+  }
+  return false;
+ }, [user])
+
  const {
   mutateAsync: updateUserProfile,
  } = useUpdateUserProfile()
@@ -49,16 +56,12 @@ export default function OrganizationSettingsForm() {
   address: user.profile?.address ?? "",
  }), [user, organizationSetting])
 
- const {
-  register,
-  control,
-  handleSubmit,
-  reset,
-  formState: { errors, isSubmitting, isDirty, dirtyFields },
- } = useForm<OrganizationSettingsFormValues>({
+ const form = useForm<OrganizationSettingsFormValues>({
   resolver: zodResolver(organizationSettingsSchema),
   defaultValues: formDefaultValues,
  });
+
+ const { handleSubmit, reset, formState: { isSubmitting, isDirty, dirtyFields } } = form;
 
  useEffect(() => {
   reset(formDefaultValues);
@@ -79,12 +82,13 @@ export default function OrganizationSettingsForm() {
    );
   }
 
-  if (dirtyFields.organizationName || dirtyFields.timezone || dirtyFields.language) {
+  if (dirtyFields.organizationName || dirtyFields.contactEmail || dirtyFields.timezone || dirtyFields.language) {
    calls.push(
     updateOrganizationSettings({
      data: {
       branding: {
-       organizationName: values.organizationName
+       organizationName: values.organizationName,
+       contactEmail: values.contactEmail,
       } as Branding,
       defaults: {
        timezone: values.timezone,
@@ -99,85 +103,131 @@ export default function OrganizationSettingsForm() {
  };
 
  return (
-  <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
-   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div className="space-y-2">
-     <Label htmlFor="orgName">Full Name</Label>
-     <Input id="fullname" {...register("fullName")} />
-     {errors.fullName && <p className="text-xs text-destructive">{errors.fullName.message}</p>}
-    </div>
-    <div className="space-y-2">
-     <Label htmlFor="orgName">Organization Name</Label>
-     <Input id="orgName" {...register("organizationName")} />
-     {errors.organizationName && <p className="text-xs text-destructive">{errors.organizationName.message}</p>}
-    </div>
-    <div className="space-y-2">
-     <Label htmlFor="orgEmail">Contact Email</Label>
-     <Input id="orgEmail" type="email" {...register("contactEmail")} />
-     {errors.contactEmail && <p className="text-xs text-destructive">{errors.contactEmail.message}</p>}
-    </div>
-    <div className="space-y-2">
-     <Label htmlFor="orgPhone">Phone Number</Label>
-     <Input id="orgPhone" {...register("phoneNumber")} />
-     {errors.phoneNumber && <p className="text-xs text-destructive">{errors.phoneNumber.message}</p>}
-    </div>
-    <div className="space-y-2">
-     <Label htmlFor="orgTimezone">Timezone</Label>
-     <Controller
-      control={control}
+  <Form {...form}>
+   <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+     <FormField
+      control={form.control}
+      name="fullName"
+      render={({ field }) => (
+       <FormItem>
+        <FormLabel>Full Name</FormLabel>
+        <FormControl>
+         <Input {...field} />
+        </FormControl>
+        <FormMessage />
+       </FormItem>
+      )}
+     />
+     <FormField
+      control={form.control}
+      name="organizationName"
+      render={({ field }) => (
+       <FormItem>
+        <FormLabel>Organization Name</FormLabel>
+        <FormControl>
+         <Input {...field} disabled={!canEditOrgSettings} />
+        </FormControl>
+        <FormMessage />
+       </FormItem>
+      )}
+     />
+     <FormField
+      control={form.control}
+      name="contactEmail"
+      render={({ field }) => (
+       <FormItem>
+        <FormLabel>Contact Email</FormLabel>
+        <FormControl>
+         <Input type="email" {...field} disabled={true} />
+        </FormControl>
+        <FormMessage />
+       </FormItem>
+      )}
+     />
+     <FormField
+      control={form.control}
+      name="phoneNumber"
+      render={({ field }) => (
+       <FormItem>
+        <FormLabel>Phone Number</FormLabel>
+        <FormControl>
+         <Input {...field} />
+        </FormControl>
+        <FormMessage />
+       </FormItem>
+      )}
+     />
+     <FormField
+      control={form.control}
       name="timezone"
       render={({ field }) => (
-       <Select onValueChange={field.onChange} value={field.value}>
-        <SelectTrigger id="orgTimezone">
-         <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-         <SelectItem value="UTC">UTC</SelectItem>
-         <SelectItem value="Africa/Lagos">Africa/Lagos</SelectItem>
-         <SelectItem value="Europe/London">Europe/London</SelectItem>
-         <SelectItem value="America/New_York">America/New York</SelectItem>
-         <SelectItem value="Asia/Dubai">Asia/Dubai</SelectItem>
-        </SelectContent>
-       </Select>
+       <FormItem>
+        <FormLabel>Timezone</FormLabel>
+        <Select onValueChange={field.onChange} value={field.value}>
+         <FormControl>
+          <SelectTrigger disabled={!canEditOrgSettings}>
+           <SelectValue />
+          </SelectTrigger>
+         </FormControl>
+         <SelectContent>
+          <SelectItem value="UTC">UTC</SelectItem>
+          <SelectItem value="Africa/Lagos">Africa/Lagos</SelectItem>
+          <SelectItem value="Europe/London">Europe/London</SelectItem>
+          <SelectItem value="America/New_York">America/New York</SelectItem>
+          <SelectItem value="Asia/Dubai">Asia/Dubai</SelectItem>
+         </SelectContent>
+        </Select>
+        <FormMessage />
+       </FormItem>
       )}
      />
-     {errors.timezone && <p className="text-xs text-destructive">{errors.timezone.message}</p>}
-    </div>
-    <div className="space-y-2">
-     <Label htmlFor="orgLanguage">Language</Label>
-     <Controller
-      control={control}
+     <FormField
+      control={form.control}
       name="language"
       render={({ field }) => (
-       <Select onValueChange={field.onChange} value={field.value}>
-        <SelectTrigger id="orgLanguage">
-         <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-         <SelectItem value="en">English</SelectItem>
-         <SelectItem value="ha">Hausa</SelectItem>
-         <SelectItem value="yo">Yoruba</SelectItem>
-         <SelectItem value="ig">Igbo</SelectItem>
-         <SelectItem value="pcm">Nigerian Pidgin</SelectItem>
-        </SelectContent>
-       </Select>
+       <FormItem>
+        <FormLabel>Language</FormLabel>
+        <Select onValueChange={field.onChange} value={field.value}>
+         <FormControl>
+          <SelectTrigger disabled={!canEditOrgSettings}>
+           <SelectValue />
+          </SelectTrigger>
+         </FormControl>
+         <SelectContent>
+          <SelectItem value="en">English</SelectItem>
+          <SelectItem value="ha">Hausa</SelectItem>
+          <SelectItem value="yo">Yoruba</SelectItem>
+          <SelectItem value="ig">Igbo</SelectItem>
+          <SelectItem value="pcm">Nigerian Pidgin</SelectItem>
+         </SelectContent>
+        </Select>
+        <FormMessage />
+       </FormItem>
       )}
      />
-     {errors.language && <p className="text-xs text-destructive">{errors.language.message}</p>}
+     <FormField
+      control={form.control}
+      name="address"
+      render={({ field }) => (
+       <FormItem className="md:col-span-2">
+        <FormLabel>Address</FormLabel>
+        <FormControl>
+         <Textarea rows={2} {...field} disabled={!canEditOrgSettings} />
+        </FormControl>
+        <FormMessage />
+       </FormItem>
+      )}
+     />
     </div>
-    <div className="space-y-2 md:col-span-2">
-     <Label htmlFor="orgAddress">Address</Label>
-     <Textarea id="orgAddress" rows={2} {...register("address")} />
-     {errors.address && <p className="text-xs text-destructive">{errors.address.message}</p>}
-    </div>
-   </div>
 
-   <div className="flex justify-end">
-    <Button type="submit" isLoading={isSubmitting} disabled={!isDirty || isSubmitting}>
-     <Save className="h-4 w-4 mr-2" />
-     Save Changes
-    </Button>
-   </div>
-  </form>
+    <div className="flex justify-end">
+     <Button type="submit" isLoading={isSubmitting} disabled={!isDirty || isSubmitting}>
+      <Save className="h-4 w-4 mr-2" />
+      Save Changes
+     </Button>
+    </div>
+   </form>
+  </Form>
  )
 }
