@@ -13,6 +13,7 @@ import Fleet from "@/features/fleet/layouts/Fleet";
 import Vehicles from "@/features/fleet/pages/Vehicles";
 import Driver from "@/features/fleet/pages/Driver";
 import Devices from "@/features/fleet/pages/Devices";
+import Job from "@/features/dispatch/pages/Job";
 
 export function buildAppRoutes(): RouteObject[] {
   return [
@@ -32,7 +33,7 @@ export function buildAppRoutes(): RouteObject[] {
         },
         {
           path: APP_ROUTES.jobs,
-          element: <></>
+          element: <Job />
         },
         {
           path: APP_ROUTES.fleet,

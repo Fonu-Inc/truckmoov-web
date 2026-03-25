@@ -11,7 +11,7 @@ export default function StatCard({ label, value, color }: StatCardProps) {
  return (
   <Card
    className={cn(
-    "rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary/50",
+    "rounded-xl border border-border bg-card p-4 text-left transition-all",
    )}
   >
    <p className="text-sm text-muted-foreground">{label}</p>

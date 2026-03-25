@@ -1,4 +1,4 @@
-import { Card, CardContent } from '@/components/ui/card'
+import StatCard2 from '@/shared/components/StatCard2'
 import { AlertTriangle, Clock, UserCheck, Users, UserX } from 'lucide-react'
 import { useMemo } from 'react'
 
@@ -34,17 +34,7 @@ export default function DriverStats() {
  return (
   <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
    {stats.map(stat => (
-    <Card >
-     <CardContent className="p-4">
-      <div className="flex items-center gap-3">
-       {stat.Icon}
-       <div>
-        <p className="text-2xl font-bold">{stat.value}</p>
-        <p className="text-xs text-muted-foreground">{stat.description}</p>
-       </div>
-      </div>
-     </CardContent>
-    </Card>
+    <StatCard2 {...stat}/>
    ))}
   </div>
  )
