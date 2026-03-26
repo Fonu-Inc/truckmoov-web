@@ -1,3 +1,5 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -5,26 +7,81 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { FormMode } from "@/shared/types";
+import { CreateDriverData, Driver } from "../api/types";
+import { useEffect, useMemo } from "react";
+import { useCreateDriver, useUpdateDriver } from "../api";
+import { useAuthStore } from "@/stores/authStore";
+
+const driverSchema = z.object({
+ firstName: z.string().min(1, "First name is required"),
+ lastName: z.string().min(1, "Last name is required"),
+ phone: z.string().min(1, "Phone number is required"),
+ email: z.string().email("Invalid email").or(z.literal("")),
+ licenseNumber: z.string().min(1, "License number is required"),
+ licenseExpiry: z.string().min(1, "License expiry is required"),
+ status: z.enum(["active", "available", "offline", "suspended"]),
+ communicationPreference: z.enum(["whatsapp", "sms", "email", "voice"]),
+});
+
+type DriverFormData = z.infer<typeof driverSchema>;
 
 type DriverFormModalProps = {
  open: boolean;
  onOpenChange: (open: boolean) => void;
  mode?: FormMode
+ driver?: Driver | null;
 }
 
-export default function DriverFormModal({ open, onOpenChange, mode = "create" }: DriverFormModalProps) {
- const form = useForm({
-  defaultValues: {
-   firstName: "",
-   lastName: "",
-   phone: "",
-   email: "",
-   licenseNumber: "",
-   licenseExpiry: "",
-   status: "available",
-   communicationPreference: "whatsapp",
-  },
+export default function DriverFormModal({ open, onOpenChange, mode = "create", driver }: DriverFormModalProps) {
+ const { user } = useAuthStore()
+ const { mutateAsync: createDriver, isPending: creating } = useCreateDriver()
+ const { mutateAsync: updateDriver, isPending: updating } = useUpdateDriver()
+ const isPending = creating || updating
+
+ const defaultValues: DriverFormData = useMemo(() => ({
+  firstName: driver?.firstName ?? "",
+  lastName: driver?.lastName ?? "",
+  phone: driver?.phone ?? "",
+  email: driver?.email ?? "",
+  licenseNumber: driver?.licenseNumber ?? "",
+  licenseExpiry: driver?.licenseExpiryDate ?? "",
+  status: driver?.status ?? "active",
+  communicationPreference: driver?.communicationPreference ?? "whatsapp",
+ }), [driver])
+
+ const form = useForm<DriverFormData>({
+  resolver: zodResolver(driverSchema),
+  defaultValues,
  });
+
+ useEffect(() => {
+  form.reset(defaultValues)
+ }, [driver, defaultValues, form])
+
+ async function handleSubmit(data: DriverFormData) {
+  const payload: CreateDriverData = {
+   firstName: data.firstName,
+   lastName: data.lastName,
+   name: `${data.firstName} ${data.lastName}`,
+   phone: data.phone,
+   email: data.email,
+   licenseNumber: data.licenseNumber,
+   licenseExpiryDate: data.licenseExpiry,
+   tenantId: user.userId,
+   status: data.status,
+   communicationPreference: data.communicationPreference,
+  }
+
+  if (mode === "edit" && driver) {
+   await updateDriver({ id: driver?.id, data: payload }, {
+    onSuccess: () => onOpenChange(false)
+   })
+  } else {
+   await createDriver({ data: payload }, {
+    onSuccess: () => onOpenChange(false)
+   })
+  }
+ }
 
  return (
   <Dialog open={open} onOpenChange={onOpenChange}>
@@ -33,7 +90,7 @@ export default function DriverFormModal({ open, onOpenChange, mode = "create" }:
      <DialogTitle>{mode === "edit" ? "Edit Driver" : "Add New Driver"}</DialogTitle>
     </DialogHeader>
     <Form {...form}>
-     <form className="space-y-4">
+     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
        <FormField
         control={form.control}
@@ -176,8 +233,8 @@ export default function DriverFormModal({ open, onOpenChange, mode = "create" }:
          Cancel
         </Button>
        </DialogClose>
-       <Button type="submit" variant="gradient">
-        Add Driver
+       <Button type="submit" isLoading={isPending}>
+        {mode === "edit" ? "Save Changes" : "Add Driver"}
        </Button>
       </div>
      </form>

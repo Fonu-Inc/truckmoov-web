@@ -7,18 +7,39 @@ import { InboxIcon, Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { useDriverStore } from "../stores/driver";
 import DriverFormModal from "./DriverFormModal";
+import { useBulkCreateDrivers } from "../api";
+import type { CreateDriverData, DriverCommunicationPreferences, DriverStatus } from "../api/types";
+
+import { useAuthStore } from "@/stores/authStore";
 
 export default function DriverTableActions() {
- const showInbox = useDriverStore((state) => state.showInbox)
- const setShowInbox = useDriverStore((state) => state.setShowInbox)
+ const { showInbox, setShowInbox, search, status, setSearch, setStatus } = useDriverStore()
+ const { user } = useAuthStore()
+ const { mutateAsync: bulkCreateDrivers } = useBulkCreateDrivers()
 
- const [statusFilter, setStatusFilter] = useState("all");
  const [addDriverModal, setAddDriverModal] = useState(false)
+
+ async function handleBulkUpload(data: Record<string, string>[]) {
+  const items: CreateDriverData[] = data.map((row) => ({
+   firstName: row["First Name"],
+   lastName: row["Last Name"],
+   name: `${row["First Name"]} ${row["Last Name"]}`,
+   phone: row["Phone"],
+   email: row["Email"],
+   licenseNumber: row["License Number"],
+   licenseExpiryDate: row["License Expiry Date"],
+   tenantId: user.userId,
+   status: row["Status"] as DriverStatus,
+   communicationPreference: row["Communication Preference"] as DriverCommunicationPreferences,
+  }));
+
+  await bulkCreateDrivers({ data: { tenantId: user.userId, items } });
+ }
 
  return (
   <>
    <div className="flex flex-col flex-wrap sm:flex-row gap-4 items-start sm:items-center justify-between">
-    <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+    <Tabs value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v as DriverStatus)}>
      <TabsList className="bg-muted/50">
       <TabsTrigger value="all">All</TabsTrigger>
       <TabsTrigger value="available">Available</TabsTrigger>
@@ -29,16 +50,15 @@ export default function DriverTableActions() {
     </Tabs>
 
     <div className="flex gap-2">
-     <Button variant="outline" onClick={() => setShowInbox(!showInbox)}>
+     {/* <Button variant="outline" onClick={() => setShowInbox(!showInbox)}>
       <InboxIcon className="h-4 w-4" />
       {showInbox ? "Hide Inbox" : "Message Inbox"}
-     </Button>
+     </Button> */}
      <BulkUploadModal
       title="Bulk Upload Drivers"
       description="Upload a CSV file with driver information. Download the template for the correct format."
       templateUrl="/templates/driver_template.csv"
-      onUpload={async (dat) => {
-      }}
+      onUpload={handleBulkUpload}
      />
      <Button variant="gradient" onClick={() => setAddDriverModal(true)}>
       <Plus className="h-4 w-4" />
@@ -52,9 +72,11 @@ export default function DriverTableActions() {
      <Input
       placeholder="Search by name, phone, or license..."
       className="pl-10 bg-card/50 border-border/50"
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
      />
     </div>
-    <Select>
+    {/* <Select>
      <SelectTrigger className="w-45 bg-card/50 border-border/50">
       <SelectValue placeholder="Communication" />
      </SelectTrigger>
@@ -65,7 +87,7 @@ export default function DriverTableActions() {
       <SelectItem value="email">Email</SelectItem>
       <SelectItem value="voice">Voice</SelectItem>
      </SelectContent>
-    </Select>
+    </Select> */}
    </div>
 
    <DriverFormModal open={addDriverModal} onOpenChange={setAddDriverModal}/>

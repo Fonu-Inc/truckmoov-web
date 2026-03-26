@@ -8,7 +8,7 @@ export default function Driver() {
   const showInbox = useDriverStore((state) => state.showInbox)
   return (
     <section className="space-y-6">
-      <DriverStats />
+      {/* <DriverStats /> */}
       <DriverTableActions />
       {showInbox && <DriverMessages />}
       <DriverTable />

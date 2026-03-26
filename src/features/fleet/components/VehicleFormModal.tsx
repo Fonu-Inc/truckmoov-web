@@ -28,11 +28,11 @@ import {
  SelectTrigger,
  SelectValue,
 } from "@/components/ui/select";
-import { useCreateVehicle } from "@/features/fleet/api";
+import { useCreateVehicle, useUpdateVehicle } from "@/features/fleet/api";
 import { FormMode } from "@/shared/types";
 import { useAuthStore } from "@/stores/authStore";
 import { useMemo } from "react";
-import { Vehicle } from "../api/types";
+import { CreateVehicleData, Vehicle } from "../api/types";
 
 const vehicleSchema = z.object({
  vin: z.string().min(17, "VIN must be 17 characters").max(17, "VIN must be 17 characters"),
@@ -58,9 +58,10 @@ type VehicleFormModalProps = {
 export default function VehicleFormModal({ open, onOpenChange, mode = "create", vehicle }: VehicleFormModalProps) {
  const { user } = useAuthStore()
  const { mutateAsync: createVehicle, isPending } = useCreateVehicle();
+ const { mutateAsync: updateVehicle, isPending: updatingVehicle } = useUpdateVehicle()
 
  const defaultValues: VehicleFormData = useMemo(() => ({
-  vin: vehicle?.vin ??  "",
+  vin: vehicle?.vin ?? "",
   registrationNumber: vehicle?.registrationNumber ?? "",
   plateNumber: vehicle?.plateNumber ?? "",
   make: vehicle?.make ?? "",
@@ -76,19 +77,32 @@ export default function VehicleFormModal({ open, onOpenChange, mode = "create", 
  });
 
  async function handleSubmit(data: VehicleFormData) {
+  const payloadData: CreateVehicleData = {
+   capacity: data.capacity,
+   make: data.make,
+   model: data.model,
+   plateNumber: data.plateNumber,
+   registrationNumber: data.registrationNumber,
+   tenantId: user.userId,
+   type: data.type,
+   vin: data.vin,
+   year: data.year,
+   status: "inactive",
+  }
+
+  if (mode === "edit") {
+   await updateVehicle({
+    id: vehicle?.id,
+    data: payloadData
+   }, {
+    onSuccess: () => {
+     onOpenChange(false)
+    }
+   })
+   return
+  }
   await createVehicle({
-   data: {
-    capacity: data.capacity,
-    make: data.make,
-    model: data.model,
-    plateNumber: data.plateNumber,
-    registrationNumber: data.registrationNumber,
-    tenantId: user.userId,
-    type: data.type,
-    vin: data.vin,
-    year: data.year,
-    status: "inactive",
-   }
+   data: payloadData
   }, {
    onSuccess: () => {
     onOpenChange(false)
@@ -238,11 +252,11 @@ export default function VehicleFormModal({ open, onOpenChange, mode = "create", 
 
       <div className="flex justify-end gap-3 pt-4">
        <DialogClose asChild>
-        <Button type="button" variant="outline">
+        <Button type="button" variant="outline" disabled={isPending || updatingVehicle}>
          Cancel
         </Button>
        </DialogClose>
-       <Button type="submit" isLoading={isPending}>
+       <Button type="submit" isLoading={isPending || updatingVehicle}>
         {mode === "edit" ? "Save Changes" : "Add Vehicle"}
        </Button>
       </div>

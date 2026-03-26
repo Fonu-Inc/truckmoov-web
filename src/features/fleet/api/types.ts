@@ -1,3 +1,5 @@
+// ─── Vehicles ────────────────────────────────────────────────────────────────
+
 export type VehicleGpsDevice = {
  "imei": "string",
  "manufacturer": "string",
@@ -46,21 +48,37 @@ export type VehicleHealth = {
  "healthy": boolean
 }
 
+// ─── Drivers ─────────────────────────────────────────────────────────────────
+
 export type DriverContactChannels = {
  "whatsappNumber": string,
  "smsNumber": string,
  "voiceNumber": string
 }
 
+export type DriverStatus = "active" | "available" | "offline" | "suspended" | "active"
+
+export type DriverCommunicationPreferences = "whatsapp" | "sms" | "email" | "voice";
+
 export type Driver = {
  "id": string,
+ "firstName": string,
+ "lastName": string,
  "name": string,
+ "phone": string,
+ "email": string,
  "licenseNumber": string,
+ "licenseExpiryDate": string,
  "tenantId": string,
- "status": FleetStatus
+ "status": DriverStatus,
+ "communicationPreference": DriverCommunicationPreferences
  "assignedVehicleId": string,
- "contactChannels": DriverContactChannels
+ "contactChannels": DriverContactChannels,
+ "createdAt": string,
+ "updatedAt": string
 }
+
+// ─── Jobs & Dispatch ─────────────────────────────────────────────────────────
 
 export type Job = {
  "jobId": string,
@@ -68,6 +86,8 @@ export type Job = {
  "status": FleetStatus,
  "updatedAt": string
 }
+
+// ─── Alerts ──────────────────────────────────────────────────────────────────
 
 export type AlertStatus = "open" | "acknowledged" | "resolved" | "excalated";
 export type AlertSeverity = "low";
@@ -87,6 +107,8 @@ export type Alert = {
  "acknowledgedBy": string,
  "resolvedBy": string
 }
+
+// ─── Fuel ─────────────────────────────────────────────────────────────────────
 
 export type FuelTransaction = {
  "id": string,
@@ -123,6 +145,8 @@ export type FuelThreshold = {
  "minKmPerLiter": number
 }
 
+// ─── Documents ───────────────────────────────────────────────────────────────
+
 export type DocumentEntityType = "job" | "vehicle" | "driver"
 export type DocType = "pod"
 
@@ -151,6 +175,8 @@ export type DocumentAccessLog = {
  "at": string,
 }
 
+// ─── Audit ───────────────────────────────────────────────────────────────────
+
 export type AuditLogEntityType = "job" | "vehicle" | "driver" | "alert" | "document" | "geofence";
 export type AuditLog = {}
 
@@ -168,6 +194,8 @@ type BulkImportResponse<T> = {
  total: number;
  records: T
 }
+
+// ─── Vehicle Payloads ─────────────────────────────────────────────────────────
 
 export type ListVehiclesPayload = {
  params: GetParams
@@ -267,11 +295,18 @@ export type ReportVehicleLivePositionPayload = {
  }
 }
 
+// ─── Driver Payloads ─────────────────────────────────────────────────────────
+
 export type ListDriverPayload = {
- params: GetParams
+ params: {
+  query?: string;
+  status?: DriverStatus;
+  assigned?: boolean;
+  tenantId?: string;
+ }
 }
 
-type CreateDriverData = Omit<Driver, "id" | "assignedVehicleId">
+export type CreateDriverData = Omit<Driver, "id" | "assignedVehicleId" | "assignedVehicleId" | "contactChannels" | "createdAt" | "updatedAt">
 
 export type CreateDriverPayload = {
  data: CreateDriverData
@@ -311,6 +346,8 @@ export type UpdateDriverContactChannelsPayload = {
  data: DriverContactChannels
 }
 
+// ─── Job & Dispatch Payloads ──────────────────────────────────────────────────
+
 export type ListJobsPayload = {
  params: Omit<GetParams, "assigned">
 }
@@ -345,6 +382,8 @@ export type AlertStatisticsResponse = {
  "meanTimeToResolveMs": number
 }
 
+// ─── Alert Payloads ───────────────────────────────────────────────────────────
+
 export type ListAlertsPayload = {
  params: {
   status: AlertStatus;
@@ -361,6 +400,8 @@ export type AcknowledgeAlertPayload = {
 export type ResolveAlertPayload = {
  id: string;
 }
+
+// ─── Report Payloads ─────────────────────────────────────────────────────────
 
 export type OperationalDashboardPayload = {
  params: {
@@ -417,6 +458,8 @@ export type ReportExportPayload = {
  }
 }
 
+// ─── Fuel Payloads ───────────────────────────────────────────────────────────
+
 export type ListFuelTransactionsPayload = {
  params: {
   tenantId: string;
@@ -467,6 +510,8 @@ export type SetFuelThresholdPayload = {
  data: Omit<FuelThreshold, "vehicleType">
 }
 
+// ─── Document Payloads ───────────────────────────────────────────────────────
+
 export type ListDocumentPayload = {
  params: {
   entityType: DocumentEntityType;
@@ -501,6 +546,8 @@ export type DocumentAccessLogPayload = {
   tenantId: string;
  }
 }
+
+// ─── Audit Payloads ──────────────────────────────────────────────────────────
 
 export type AuditLogPayload = {
  params: {

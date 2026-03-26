@@ -2,6 +2,9 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const statusColors: Record<string, string> = {
+ available: "bg-primary/20 text-success border-primary/30",
+ offline: "bg-muted text-muted-foreground border-muted",
+ suspended: "bg-destructive/20 text-destructive border-destructive/30",
  active: "bg-success/20 text-success border-success/30 hover:bg-success/20",
  inactive: "bg-destructive/20 text-destructive border-destructive/30 hover:bg-destructive/20",
  maintenance: "bg-warning/10 text-warning",

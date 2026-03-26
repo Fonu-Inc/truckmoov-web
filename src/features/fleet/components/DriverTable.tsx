@@ -5,21 +5,63 @@ import AppAvatar from '@/shared/components/AppAvatar';
 import StatusBadge from '@/shared/components/StatusBadge';
 import { ColumnDef } from '@tanstack/react-table';
 import { Eye, Mail, MessageSquare, MoreHorizontal, Pencil, Phone, Star, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import DriverFormModal from './DriverFormModal';
-
-const commIcons: Record<string, React.ReactNode> = {
- whatsapp: <MessageSquare className="h-4 w-4 text-success" />,
- sms: <Phone className="h-4 w-4 text-primary" />,
- email: <Mail className="h-4 w-4 text-warning" />,
- voice: <Phone className="h-4 w-4 text-accent" />,
-};
+import { Driver } from '../api/types';
+import { useQuery } from '@tanstack/react-query';
+import { RequestPayloadExtractor } from '@/shared/types';
+import { listDriversQueryOptions, useDeleteDriver } from '../api';
+import DeleteDialog from '@/shared/components/DeleteDialog';
+import { useDriverStore } from '../stores/driver';
+import { useDebounce } from '@/shared/hooks/useDebounce';
+import DriverDetailSheet from './DriverDetailSheet';
+import { commIcons } from '../lib/commIcons';
 
 export default function DriverTable() {
  const [addDriverModal, setAddDriverModal] = useState(false)
+ const [removeDriver, setRemoveDriver] = useState(false)
+ const [openDriverDetails, setOpenDriverDetails] = useState(false)
+ const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
 
- const row = [];
- const column: ColumnDef<any>[] = [
+ function handleSelectedDriver(driver: Driver, type: "view" | "edit" | "delete") {
+  setSelectedDriver(driver);
+  switch (type) {
+   case "edit":
+    setAddDriverModal(true);
+    return;
+   case "view":
+    setOpenDriverDetails(true);
+    return;
+   case "delete":
+    setRemoveDriver(true);
+    return;
+  }
+ }
+
+ const { mutateAsync: deleteDriver, isPending: deletingDriver } = useDeleteDriver()
+ async function handleDriverDelete() {
+  await deleteDriver({
+   id: selectedDriver?.id
+  }, {
+   onSuccess: () => {
+    setRemoveDriver(false)
+   }
+  })
+ }
+
+ const { search, status } = useDriverStore()
+ const debouncedSearch = useDebounce(search)
+
+ const listDriverParams: RequestPayloadExtractor<typeof listDriversQueryOptions> = useMemo(() => ({
+  params: {
+   ...(debouncedSearch && { query: debouncedSearch }),
+   ...(status && { status }),
+  }
+ }), [debouncedSearch, status])
+
+ const { data: drivers } = useQuery(listDriversQueryOptions(listDriverParams))
+ const rows: Driver[] = useMemo(() => drivers?.data ?? [], [drivers])
+ const column: ColumnDef<Driver>[] = [
   {
    accessorKey: "driver",
    header: "Driver",
@@ -69,29 +111,29 @@ export default function DriverTable() {
    header: "Status",
    cell: ({ row }) => {
     return (
-     <StatusBadge status='active' />
+     <StatusBadge status={row.original.status} />
     )
    }
   },
-  {
-   accessorKey: "rating",
-   header: "Rating",
-   cell: ({ row }) => {
-    return (
-     <div className="flex items-center gap-1">
-      <Star className="h-4 w-4 text-warning fill-current" />
-      <span>{row.original.rating.toFixed(1)}</span>
-     </div>
-    )
-   }
-  },
-  {
-   accessorKey: "trips",
-   header: "Trips",
-   cell: ({ row }) => {
-    return row.original.trips
-   }
-  },
+  // {
+  //  accessorKey: "rating",
+  //  header: "Rating",
+  //  cell: ({ row }) => {
+  //   return (
+  //    <div className="flex items-center gap-1">
+  //     <Star className="h-4 w-4 text-warning fill-current" />
+  //     <span>{row.original.rating.toFixed(1)}</span>
+  //    </div>
+  //   )
+  //  }
+  // },
+  // {
+  //  accessorKey: "trips",
+  //  header: "Trips",
+  //  cell: ({ row }) => {
+  //   return row.original.trips
+  //  }
+  // },
   {
    accessorKey: "preferred",
    header: "Preffered",
@@ -109,7 +151,7 @@ export default function DriverTable() {
    cell: ({ row }) => {
     return (
      <div className="flex items-center gap-1">
-      <Button
+      {/* <Button
        variant="ghost"
        size="icon"
        className="h-8 w-8 text-success hover:text-success hover:bg-success/10"
@@ -132,7 +174,7 @@ export default function DriverTable() {
        title="Call"
       >
        <Phone className="h-4 w-4" />
-      </Button>
+      </Button> */}
       <DropdownMenu>
        <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -140,16 +182,16 @@ export default function DriverTable() {
         </Button>
        </DropdownMenuTrigger>
        <DropdownMenuContent align="end">
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleSelectedDriver(row.original, "view")}>
          <Eye className="h-4 w-4" />
          View Details
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setAddDriverModal(true)}>
+        <DropdownMenuItem onClick={() => handleSelectedDriver(row.original, "edit")}>
          <Pencil className="h-4 w-4" />
          Edit
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        {/* <DropdownMenuItem>
          <MessageSquare className="h-4 w-4" />
          Send WhatsApp
         </DropdownMenuItem>
@@ -160,12 +202,13 @@ export default function DriverTable() {
         <DropdownMenuItem>
          <Phone className="h-4 w-4" />
          Call Driver
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
         <DropdownMenuSeparator />
         <DropdownMenuItem
          className="text-destructive"
+         onClick={() => handleSelectedDriver(row.original, "delete")}
         >
-         <Trash2 className="h-4 w-4 mr-2" />
+         <Trash2 className="h-4 w-4" />
          Delete
         </DropdownMenuItem>
        </DropdownMenuContent>
@@ -178,10 +221,28 @@ export default function DriverTable() {
  return (
   <>
    <DataTable
-    data={row}
+    data={rows}
     columns={column}
    />
-   <DriverFormModal open={addDriverModal} onOpenChange={setAddDriverModal} mode='edit' />
+
+   {/* Modals */}
+   <DriverDetailSheet
+    open={openDriverDetails}
+    onOpenChange={setOpenDriverDetails}
+    driver={selectedDriver}
+   />
+   <DriverFormModal
+    open={addDriverModal}
+    onOpenChange={setAddDriverModal}
+    mode='edit'
+    driver={selectedDriver}
+   />
+   <DeleteDialog
+    open={removeDriver}
+    onOpenChange={setRemoveDriver}
+    handleDeleteFn={handleDriverDelete}
+    isLoading={deletingDriver}
+   />
   </>
  )
 }
