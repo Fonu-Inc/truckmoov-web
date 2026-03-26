@@ -37,8 +37,7 @@ export default function DriverTableActions() {
       title="Bulk Upload Drivers"
       description="Upload a CSV file with driver information. Download the template for the correct format."
       templateUrl="/templates/driver_template.csv"
-      onUpload={async (file) => {
-       const content = await file.text();
+      onUpload={async (dat) => {
       }}
      />
      <Button variant="gradient" onClick={() => setAddDriverModal(true)}>

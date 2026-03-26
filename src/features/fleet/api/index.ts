@@ -32,7 +32,7 @@ export const FLEET_QUERY_KEY = {
 
 export function listVehiclesQueryOptions(payload: RequestPayloadExtractor<typeof listVehicles>) {
  return queryOptions({
-  queryKey: FLEET_QUERY_KEY.vehicles,
+  queryKey: [...FLEET_QUERY_KEY.vehicles, payload.params],
   queryFn: () => listVehicles(payload),
  })
 }
@@ -119,7 +119,7 @@ export function useRegisterGpsOnVehicle() {
 
 export function findNearestVehiclesQueryOptions(payload: RequestPayloadExtractor<typeof findNearestVehicles>) {
  return queryOptions({
-  queryKey: FLEET_QUERY_KEY.nearestVehicle,
+  queryKey: [...FLEET_QUERY_KEY.nearestVehicle, payload.params],
   queryFn: () => findNearestVehicles(payload)
  })
 }
@@ -159,7 +159,7 @@ export function useReportVehicleLivePosition() {
 
 export function listDriversQueryOptions(payload: RequestPayloadExtractor<typeof listDrivers>) {
  return queryOptions({
-  queryKey: FLEET_QUERY_KEY.drivers,
+  queryKey: [...FLEET_QUERY_KEY.drivers, payload.params],
   queryFn: () => listDrivers(payload)
  })
 }
@@ -230,7 +230,7 @@ export function useUpdateDriverContactChannels() {
 
 export function listJobsQueryOptions(payload: RequestPayloadExtractor<typeof listJobs>) {
  return queryOptions({
-  queryKey: FLEET_QUERY_KEY.jobs,
+  queryKey: [...FLEET_QUERY_KEY.jobs, payload.params],
   queryFn: () => listJobs(payload)
  })
 }
@@ -262,7 +262,7 @@ export function alertStatisticsQueryOptions() {
 
 export function listAlertsQueryOptions(payload: RequestPayloadExtractor<typeof listAlerts>) {
  return queryOptions({
-  queryKey: FLEET_QUERY_KEY.alerts,
+  queryKey: [...FLEET_QUERY_KEY.alerts, payload.params],
   queryFn: () => listAlerts(payload)
  })
 }
@@ -289,21 +289,21 @@ export function useResolveAlert() {
 
 export function operationalDashboardQueryOptions(payload: RequestPayloadExtractor<typeof operationalDashboard>) {
  return queryOptions({
-  queryKey: FLEET_QUERY_KEY.operationalDashboard,
+  queryKey: [...FLEET_QUERY_KEY.operationalDashboard, payload.params],
   queryFn: () => operationalDashboard(payload)
  })
 }
 
 export function deliveryMetricsQueryOptions(payload: RequestPayloadExtractor<typeof deliveryMetrics>) {
  return queryOptions({
-  queryKey: FLEET_QUERY_KEY.deliveryMetrics,
+  queryKey: [...FLEET_QUERY_KEY.deliveryMetrics, payload.params],
   queryFn: () => deliveryMetrics(payload)
  })
 }
 
 export function reportExportQueryOptions(payload: RequestPayloadExtractor<typeof reportExport>) {
  return queryOptions({
-  queryKey: FLEET_QUERY_KEY.reportExport,
+  queryKey: [...FLEET_QUERY_KEY.reportExport, payload.params],
   queryFn: () => reportExport(payload)
  })
 }
@@ -312,7 +312,7 @@ export function reportExportQueryOptions(payload: RequestPayloadExtractor<typeof
 
 export function listFuelTransactionQueryOptions(payload: RequestPayloadExtractor<typeof listFuelTransaction>) {
  return queryOptions({
-  queryKey: FLEET_QUERY_KEY.fuelTransactions,
+  queryKey: [...FLEET_QUERY_KEY.fuelTransactions, payload.params],
   queryFn: () => listFuelTransaction(payload)
  })
 }
@@ -328,14 +328,14 @@ export function useRecordFuelTransaction() {
 
 export function fuelMetricsQueryOptions(payload: RequestPayloadExtractor<typeof fuelMetrics>) {
  return queryOptions({
-  queryKey: FLEET_QUERY_KEY.fuelMetrics,
+  queryKey: [...FLEET_QUERY_KEY.fuelMetrics, payload.params],
   queryFn: () => fuelMetrics(payload)
  })
 }
 
 export function fuelEfficiencyQueryOptions(payload: RequestPayloadExtractor<typeof fuelEfficiency>) {
  return queryOptions({
-  queryKey: FLEET_QUERY_KEY.fuelEfficiency,
+  queryKey: [...FLEET_QUERY_KEY.fuelEfficiency, payload.params],
   queryFn: () => fuelEfficiency(payload)
  })
 }
@@ -349,7 +349,7 @@ export function fuelThresholdQueryOptions() {
 
 export function fuelExportQueryOptions(payload: RequestPayloadExtractor<typeof fuelExport>) {
  return queryOptions({
-  queryKey: FLEET_QUERY_KEY.fuelThreshold,
+  queryKey: [...FLEET_QUERY_KEY.fuelThreshold, payload.params],
   queryFn: () => fuelExport(payload)
  })
 }
@@ -385,7 +385,7 @@ export function useSetFuelThreshold() {
 
 export function listDocumentsQueryOptions(payload: RequestPayloadExtractor<typeof listDocuments>) {
  return queryOptions({
-  queryKey: FLEET_QUERY_KEY.documents,
+  queryKey: [...FLEET_QUERY_KEY.documents, payload.params],
   queryFn: () => listDocuments(payload)
  })
 }
@@ -419,7 +419,7 @@ export function documentAccessLogQueryOptions(payload: RequestPayloadExtractor<t
 
 export function auditLogQueryOptions(payload: RequestPayloadExtractor<typeof auditLog>) {
  return queryOptions({
-  queryKey: FLEET_QUERY_KEY.auditLog,
+  queryKey: [...FLEET_QUERY_KEY.auditLog, payload.params],
   queryFn: () => auditLog(payload)
  })
 }

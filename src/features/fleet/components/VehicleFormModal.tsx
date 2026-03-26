@@ -1,8 +1,6 @@
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
  Dialog,
@@ -11,16 +9,17 @@ import {
  DialogDescription,
  DialogHeader,
  DialogTitle,
- DialogTrigger,
 } from "@/components/ui/dialog";
 import {
  Form,
  FormControl,
+ FormDescription,
  FormField,
  FormItem,
  FormLabel,
  FormMessage,
 } from "@/components/ui/form";
+import ImageUploadInput from "@/shared/components/ImageUploadInput";
 import { Input } from "@/components/ui/input";
 import {
  Select,
@@ -31,10 +30,14 @@ import {
 } from "@/components/ui/select";
 import { useCreateVehicle } from "@/features/fleet/api";
 import { FormMode } from "@/shared/types";
+import { useAuthStore } from "@/stores/authStore";
+import { useMemo } from "react";
+import { Vehicle } from "../api/types";
 
 const vehicleSchema = z.object({
  vin: z.string().min(17, "VIN must be 17 characters").max(17, "VIN must be 17 characters"),
  registrationNumber: z.string().min(1, "Registration number is required").max(20, "Registration too long"),
+ plateNumber: z.string().min(1, "Plate number image is required"),
  make: z.string().min(1, "Make is required").max(50, "Make too long"),
  model: z.string().min(1, "Model is required").max(50, "Model too long"),
  year: z.coerce.number().min(1990, "Year must be 1990 or later").max(new Date().getFullYear() + 1, "Invalid year"),
@@ -44,24 +47,28 @@ const vehicleSchema = z.object({
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
-const defaultValues: VehicleFormData = {
- vin: "",
- registrationNumber: "",
- make: "",
- model: "",
- year: new Date().getFullYear(),
- type: "truck",
- capacity: 0,
-};
 
 type VehicleFormModalProps = {
  open: boolean;
  onOpenChange: (open: boolean) => void;
  mode?: FormMode;
+ vehicle?: Vehicle | null;
 }
 
-export default function VehicleFormModal({ open, onOpenChange, mode = "create" }: VehicleFormModalProps) {
- const { mutateAsync, isPending } = useCreateVehicle();
+export default function VehicleFormModal({ open, onOpenChange, mode = "create", vehicle }: VehicleFormModalProps) {
+ const { user } = useAuthStore()
+ const { mutateAsync: createVehicle, isPending } = useCreateVehicle();
+
+ const defaultValues: VehicleFormData = useMemo(() => ({
+  vin: vehicle?.vin ??  "",
+  registrationNumber: vehicle?.registrationNumber ?? "",
+  plateNumber: vehicle?.plateNumber ?? "",
+  make: vehicle?.make ?? "",
+  model: vehicle?.model ?? "",
+  year: vehicle?.year ?? new Date().getFullYear(),
+  type: vehicle?.type ?? "truck",
+  capacity: vehicle?.capacity ?? 0,
+ }), [vehicle]);
 
  const form = useForm<VehicleFormData>({
   resolver: zodResolver(vehicleSchema),
@@ -69,14 +76,34 @@ export default function VehicleFormModal({ open, onOpenChange, mode = "create" }
  });
 
  async function handleSubmit(data: VehicleFormData) {
+  await createVehicle({
+   data: {
+    capacity: data.capacity,
+    make: data.make,
+    model: data.model,
+    plateNumber: data.plateNumber,
+    registrationNumber: data.registrationNumber,
+    tenantId: user.userId,
+    type: data.type,
+    vin: data.vin,
+    year: data.year,
+    status: "inactive",
+   }
+  }, {
+   onSuccess: () => {
+    onOpenChange(false)
+   }
+  })
  };
 
  return (
   <Dialog open={open} onOpenChange={onOpenChange}>
    <DialogContent className="sm:max-w-125">
     <DialogHeader>
-     <DialogTitle>Add Vehicle</DialogTitle>
-     <DialogDescription>Fill in the vehicle details to add to your fleet.</DialogDescription>
+     <DialogTitle>{mode === "edit" ? "Edit Vehicle" : "Add Vehicle"} </DialogTitle>
+     <DialogDescription>
+      {mode === "edit" ? "Update the vehicle details below." : "Fill in the vehicle details to add to your fleet."}
+     </DialogDescription>
     </DialogHeader>
 
     <Form {...form}>
@@ -88,8 +115,9 @@ export default function VehicleFormModal({ open, onOpenChange, mode = "create" }
         render={({ field }) => (
          <FormItem>
           <FormLabel>Registration Number</FormLabel>
+          <FormDescription>Same as the plate number</FormDescription>
           <FormControl>
-           <Input placeholder="LAG-123-XY" {...field} />
+           <Input placeholder="Enter registration number" {...field} />
           </FormControl>
           <FormMessage />
          </FormItem>
@@ -98,18 +126,32 @@ export default function VehicleFormModal({ open, onOpenChange, mode = "create" }
 
        <FormField
         control={form.control}
-        name="vin"
+        name="plateNumber"
         render={({ field }) => (
          <FormItem>
-          <FormLabel>VIN</FormLabel>
+          <FormLabel>Plate Number Image</FormLabel>
           <FormControl>
-           <Input placeholder="17-character VIN" maxLength={17} {...field} />
+           <ImageUploadInput onChange={field.onChange} value={field.value} />
           </FormControl>
           <FormMessage />
          </FormItem>
         )}
        />
       </div>
+
+      <FormField
+       control={form.control}
+       name="vin"
+       render={({ field }) => (
+        <FormItem>
+         <FormLabel>VIN</FormLabel>
+         <FormControl>
+          <Input placeholder="17-character VIN" maxLength={17} {...field} />
+         </FormControl>
+         <FormMessage />
+        </FormItem>
+       )}
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
        <FormField
@@ -201,7 +243,7 @@ export default function VehicleFormModal({ open, onOpenChange, mode = "create" }
         </Button>
        </DialogClose>
        <Button type="submit" isLoading={isPending}>
-        Add Vehicle
+        {mode === "edit" ? "Save Changes" : "Add Vehicle"}
        </Button>
       </div>
      </form>

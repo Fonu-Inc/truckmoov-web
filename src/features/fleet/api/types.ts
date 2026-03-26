@@ -1,18 +1,27 @@
 export type VehicleGpsDevice = {
- "deviceId": string,
- "provider": string,
- "serialNumber": string,
- "installedAt": string
+ "imei": "string",
+ "manufacturer": "string",
+ "model": "string",
+ "firmwareVersion": "string",
+ "installedAt": "string"
 }
+
+export type VehicleType = "truck" | "van" | "trailer"
 
 export type FleetStatus = "active" | "inactive"
 
 export type Vehicle = {
  "id": string,
+ "registrationNumber": string,
  "plateNumber": string,
+ "vin": string,
+ "make": string,
  "model": string,
+ "year": number,
+ "type": VehicleType,
+ "capacity": number,
  "tenantId": string,
- "status": FleetStatus;
+ "status": FleetStatus,
  "assignedDriverId": string,
  "gpsDevice": VehicleGpsDevice;
 }
@@ -147,6 +156,7 @@ export type AuditLog = {}
 
 
 type GetParams = {
+ query?: string;
  status?: FleetStatus;
  assigned?: boolean;
  tenantId?: string;
@@ -163,7 +173,7 @@ export type ListVehiclesPayload = {
  params: GetParams
 }
 
-type CreateVehicleData = Omit<Vehicle, "id" | "assignedDriverId" | "gpsDevice">
+export type CreateVehicleData = Omit<Vehicle, "id" | "assignedDriverId" | "gpsDevice">
 
 export type CreateVehiclePayload = {
  data: CreateVehicleData;

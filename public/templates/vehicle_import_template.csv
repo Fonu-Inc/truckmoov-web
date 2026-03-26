@@ -1,3 +1,6 @@
-Registration Number,VIN,Make,Model,Year,Type,Capacity (tons)
-LAG-123-XY,1HGCM82633A123456,Mercedes-Benz,Actros,2022,truck,40
-LAG-456-AB,2HGCM82633A654321,Volvo,FH16,2023,truck,35
+Registration Number,Plate Number Image URL,VIN,Make,Model,Year,Type,Capacity (tons),Status
+LAG-123-XY,https://example.com/plates/lag-123-xy.jpg,1HGCM82633A123456,Mercedes-Benz,Actros,2022,truck,40,inactive
+ABJ-456-KL,https://example.com/plates/abj-456-kl.jpg,2HGCM82633A654321,Volvo,FH16,2023,truck,35,inactive
+RVS-789-MN,https://example.com/plates/rvs-789-mn.jpg,3HGCM82633A987654,MAN,TGX,2021,van,10,inactive
+KJA-321-PQ,https://example.com/plates/kja-321-pq.jpg,4HGCM82633A246810,Scania,R500,2022,truck,45,inactive
+ENU-654-RS,https://example.com/plates/enu-654-rs.jpg,5HGCM82633A135791,DAF,XF,2023,trailer,30,inactive

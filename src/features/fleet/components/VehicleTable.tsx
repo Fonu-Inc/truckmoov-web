@@ -17,14 +17,63 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import StatusBadge from "@/shared/components/StatusBadge";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import VehicleFormModal from "./VehicleFormModal";
+import { Vehicle } from "../api/types";
+import { useQuery } from "@tanstack/react-query";
+import { RequestPayloadExtractor } from "@/shared/types";
+import { listVehiclesQueryOptions, useDeleteVehicle } from "../api";
+import { useVehicleStore } from "../stores/vehicle";
+import { useDebounce } from "@/shared/hooks/useDebounce";
+import DeleteDialog from "@/shared/components/DeleteDialog";
+import VehicleDetailSheet from "./VehicleDetailSheet";
 
 
 export default function VehicleTable() {
   const [openVehicleForm, setOpenVehicleForm] = useState(false)
-  const rows = []
-  const vehicleColumns: ColumnDef<any>[] = [
+  const [openVehicleDetails, setOpenVehicleDetails] = useState(false)
+  const [removeVehicle, setRemoveVehicle] = useState(false)
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
+
+  const { search, status } = useVehicleStore()
+  const debouncedSearch = useDebounce(search)
+
+  function handleSelectedVehicle(vehicle: Vehicle, type: "view" | "edit" | "delete") {
+    setSelectedVehicle(vehicle);
+    switch (type) {
+      case "edit":
+        setOpenVehicleForm(true);
+        return;
+      case "view":
+        setOpenVehicleDetails(true);
+        return;
+      case "delete":
+        setRemoveVehicle(true);
+        return;
+    }
+  }
+
+  const { mutateAsync: deleteVehicle, isPending: deletingVehicle } = useDeleteVehicle()
+  async function handleVehicleDelete() {
+    await deleteVehicle({
+      id: selectedVehicle.id
+    }, {
+      onSuccess: () => {
+        setRemoveVehicle(false)
+      }
+    })
+  }
+
+  const listVehiclesParams: RequestPayloadExtractor<typeof listVehiclesQueryOptions> = useMemo(() => ({
+    params: {
+      ...(debouncedSearch && { query: debouncedSearch }),
+      ...(status && { status }),
+    }
+  }), [debouncedSearch, status])
+
+  const { data: vehicles } = useQuery(listVehiclesQueryOptions(listVehiclesParams))
+  const rows: Vehicle[] = useMemo(() => vehicles?.data ?? [], [vehicles])
+  const vehicleColumns: ColumnDef<Vehicle>[] = [
     {
       header: "Vehicle",
       cell: ({ row }) => (
@@ -55,45 +104,45 @@ export default function VehicleTable() {
         <span className="capitalize">{row.original.type}</span>
       ),
     },
-    {
-      header: "Driver",
-      cell: ({ row }) =>
-        row.original.driverName || <span className="text-muted-foreground">Unassigned</span>,
-    },
+    // {
+    //   header: "Driver",
+    //   cell: ({ row }) =>
+    //     row.original?.driverName || <span className="text-muted-foreground">Unassigned</span>,
+    // },
     {
       header: "Status",
       cell: ({ row }) => (
         <StatusBadge status={row.original.status} />
       ),
     },
-    {
-      header: "Fuel",
-      cell: ({ row }) =>
-        row.original.fuelLevel !== null ? (
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-16 rounded-full bg-secondary">
-              <div
-                className={cn(
-                  "h-full rounded-full",
-                  row.original.fuelLevel > 50
-                    ? "bg-success"
-                    : row.original.fuelLevel > 25
-                      ? "bg-warning"
-                      : "bg-destructive",
-                )}
-                style={{ width: `${row.original.fuelLevel}%` }}
-              />
-            </div>
-            <span className="text-xs text-muted-foreground">{row.original.fuelLevel}%</span>
-          </div>
-        ) : (
-          <span className="text-muted-foreground">N/A</span>
-        ),
-    },
+    // {
+    //   header: "Fuel",
+    //   cell: ({ row }) =>
+    //     row.original.fuelLevel !== null ? (
+    //       <div className="flex items-center gap-2">
+    //         <div className="h-2 w-16 rounded-full bg-secondary">
+    //           <div
+    //             className={cn(
+    //               "h-full rounded-full",
+    //               row.original.fuelLevel > 50
+    //                 ? "bg-success"
+    //                 : row.original.fuelLevel > 25
+    //                   ? "bg-warning"
+    //                   : "bg-destructive",
+    //             )}
+    //             style={{ width: `${row.original.fuelLevel}%` }}
+    //           />
+    //         </div>
+    //         <span className="text-xs text-muted-foreground">{row.original.fuelLevel}%</span>
+    //       </div>
+    //     ) : (
+    //       <span className="text-muted-foreground">N/A</span>
+    //     ),
+    // },
     {
       id: "actions",
       header: "Actions",
-      cell: () => (
+      cell: ({ row }) => (
         <div className="flex justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -102,19 +151,19 @@ export default function VehicleTable() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => { }}>
+              <DropdownMenuItem onClick={() => handleSelectedVehicle(row.original, "view")}>
                 <Eye className="h-4 w-4" />
                 View Details
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setOpenVehicleForm(true)}>
+              <DropdownMenuItem onClick={() => handleSelectedVehicle(row.original, "edit")}>
                 <Edit className="h-4 w-4" />
                 Edit
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
-                onClick={() => { }}
+                onClick={() => handleSelectedVehicle(row.original, "delete")}
               >
-                <Trash2 className="mr-2 h-4 w-4" />
+                <Trash2 className="h-4 w-4" />
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -137,11 +186,28 @@ export default function VehicleTable() {
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <Truck className="h-12 w-12 mb-4 opacity-30" />
             <p>No vehicles found</p>
-            <p className="text-sm">Try adjusting your search or filters</p>
           </div>
         }
       />
-      <VehicleFormModal open={openVehicleForm} onOpenChange={setOpenVehicleForm} mode="edit" />
+
+      {/* modals and dialog */}
+      <VehicleDetailSheet 
+        open={openVehicleDetails}
+        onOpenChange={setOpenVehicleDetails}
+        vehicle={selectedVehicle}
+      />
+      <VehicleFormModal
+        open={openVehicleForm}
+        onOpenChange={setOpenVehicleForm}
+        mode="edit"
+        vehicle={selectedVehicle}
+      />
+      <DeleteDialog
+        open={removeVehicle}
+        onOpenChange={setRemoveVehicle}
+        handleDeleteFn={handleVehicleDelete}
+        isLoading={deletingVehicle}
+      />
     </div>
   );
 }

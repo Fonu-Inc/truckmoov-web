@@ -4,9 +4,9 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Clock, Mail, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import EditUserDialog from "./EditUserDialog";
-import RemoveUserDialog from "./RemoveUserDialog";
+import DeleteDialog from "@/shared/components/DeleteDialog";
 import { useQuery } from "@tanstack/react-query";
-import { getInvitedUserQueryOptions, useResendInvitedUserMail } from "@/features/auth/api";
+import { getInvitedUserQueryOptions, useDeleteInvitedUser, useResendInvitedUserMail } from "@/features/auth/api";
 import { InvitedUser } from "@/features/auth/api/types";
 import AppAvatar from "@/shared/components/AppAvatar";
 import RoleBadge from "./RoleBadge";
@@ -19,10 +19,18 @@ export default function UsersTable() {
   isPending: gettingInvitedUser
  } = useQuery(getInvitedUserQueryOptions())
  const { mutateAsync: resendInvite } = useResendInvitedUserMail()
+ const { mutateAsync: deleteUser, isPending: deletingUser } = useDeleteInvitedUser()
  const rows = useMemo(() => data?.data.users ?? [], [data])
  const [editUser, setEditUser] = useState(false);
  const [removeUser, setRemoveUser] = useState(false);
  const [selectedUser, setSelectedUser] = useState<InvitedUser>();
+
+ async function handleDeleteUser() {
+  if (!selectedUser) return;
+  await deleteUser({ userId: selectedUser.userId }, {
+   onSuccess: () => setRemoveUser(false)
+  })
+ }
 
  async function handleResendEmail(email: string) {
   await resendInvite({
@@ -142,10 +150,13 @@ export default function UsersTable() {
     open={editUser}
     onOpenChange={setEditUser}
    />
-   <RemoveUserDialog
-    user={selectedUser}
+   <DeleteDialog
     open={removeUser}
     onOpenChange={setRemoveUser}
+    handleDeleteFn={handleDeleteUser}
+    isLoading={deletingUser}
+    title="Remove User"
+    description={`Are you sure you want to remove ${selectedUser?.profile?.fullName} from your organization? They will lose access to all resources.`}
    />
   </>
  )

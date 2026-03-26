@@ -1,8 +1,10 @@
 import { useState, useCallback } from "react";
+import { parseCsvToObjects } from "@/shared/composables/parseCsvToObjects";
 import { Upload, FileText, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
  Dialog,
+ DialogClose,
  DialogContent,
  DialogDescription,
  DialogHeader,
@@ -15,7 +17,7 @@ import { toast } from "sonner";
 interface BulkUploadModalProps {
  title: string;
  description: string;
- onUpload: (file: File) => Promise<void>;
+ onUpload: (data: Record<string, string>[]) => Promise<void>;
  templateUrl?: string;
 }
 
@@ -59,7 +61,9 @@ export function BulkUploadModal({
   if (!file) return;
   setIsPending(true);
   try {
-   await onUpload(file);
+   const text = await file.text();
+   const data = parseCsvToObjects(text);
+   await onUpload(data);
    setFile(null);
    setOpen(false);
   } finally {
@@ -145,9 +149,11 @@ export function BulkUploadModal({
      )}
 
      <div className="flex justify-end gap-3 pt-2">
-      <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
-       Cancel
-      </Button>
+      <DialogClose asChild>
+       <Button variant="outline" disabled={isPending}>
+        Cancel
+       </Button>
+      </DialogClose>
       <Button onClick={handleImport} disabled={!file} isLoading={isPending}>
        Import
       </Button>

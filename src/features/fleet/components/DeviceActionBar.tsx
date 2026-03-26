@@ -42,8 +42,7 @@ export default function DeviceActionBar() {
         title="Bulk Import Devices"
         description="Upload a CSV file to register multiple IoT devices at once."
         templateUrl="/templates/device_import_template.csv"
-        onUpload={async (file) => {
-         const content = await file.text();
+        onUpload={async (data) => {
         }}
        />
        <Button onClick={() => setOpenDeviceFormModal(true)}>
