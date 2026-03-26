@@ -7,6 +7,8 @@ export function getRoleDefaultRoute(role: UserRole) {
       return APP_ROUTES.organizationsSettings
     case "FLEET_ADMIN":
       return APP_ROUTES.jobs;
+    case "DISPATCHER":
+      return APP_ROUTES.device;
     default:
       return APP_ROUTES.dashboard;
   }
