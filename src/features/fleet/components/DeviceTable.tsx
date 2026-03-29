@@ -16,13 +16,20 @@ import AssignDeviceToVehicleModal from "./AssignDeviceToVehicleModal";
 import { Device } from "../api/types";
 import { listDevicesQueryOptions, useDeleteDevice } from "../api";
 import { useDeviceStore } from "../stores/device";
+import { useAuthStore } from "@/stores/authStore";
+import { UserRole } from "@/features/auth/api/types";
 
 export default function DeviceTable() {
+  const { user } = useAuthStore()
   const [openDeviceFormModal, setOpenDeviceFormModal] = useState(false)
   const [openAssignDevice, setOpenAssignDevice] = useState(false)
   const [openDeleteDevice, setOpenDeleteDevice] = useState(false)
   const [formMode, setFormMode] = useState<FormMode>("create");
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null)
+  const canAlter = useMemo(() => {
+    const rolesWithAccess: UserRole[] = ["FLEET_ADMIN"]
+    return rolesWithAccess.includes(user.role)
+  }, [user])
 
   function handleSelectedDevice(device: Device, type: "edit" | "delete" | "assign") {
     setSelectedDevice(device);
@@ -130,41 +137,43 @@ export default function DeviceTable() {
         </>
       )
     },
-    {
-      id: "action",
-      cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {/* <DropdownMenuItem>
+    ...(canAlter ? [
+      {
+        id: "action",
+        cell: ({ row }) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {/* <DropdownMenuItem>
               <Eye className="h-4 w-4" />
               View Details
             </DropdownMenuItem> */}
-            <DropdownMenuItem onClick={() => handleSelectedDevice(row.original, "edit")}>
-              <Edit className="h-4 w-4" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleSelectedDevice(row.original, "assign")}>
-              <Link className="h-4 w-4" />
-              Assign to Vehicle
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onClick={() => handleSelectedDevice(row.original, "delete")}
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete Device
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
+              <DropdownMenuItem onClick={() => handleSelectedDevice(row.original, "edit")}>
+                <Edit className="h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleSelectedDevice(row.original, "assign")}>
+                <Link className="h-4 w-4" />
+                Assign to Vehicle
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => handleSelectedDevice(row.original, "delete")}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Device
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    ] : []),
   ]
 
   return (

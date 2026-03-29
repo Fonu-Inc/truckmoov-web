@@ -5,17 +5,22 @@ import { queryClient } from "@/shared/providers/TanstackQueryProvider";
 import { BulkUploadModal } from "@/shared/components/BulkUploadModal";
 import { useAuthStore } from "@/stores/authStore";
 import { Plus, RefreshCw, Search } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FLEET_QUERY_KEY, useBulkCreateDevice } from "../api";
 import type { BulkCreateDevicePayload } from "../api/types";
 import { useDeviceStore } from "../stores/device";
 import DeviceFormModal from "./DeviceFormModal";
+import { UserRole } from "@/features/auth/api/types";
 
 export default function DeviceActionBar() {
  const [openDeviceFormModal, setOpenDeviceFormModal] = useState(false)
  const { user } = useAuthStore()
  const { search, setSearch } = useDeviceStore()
  const { mutateAsync: bulkCreateDevice } = useBulkCreateDevice()
+  const canAlter = useMemo(() => {
+    const rolesWithAccess: UserRole[] = ["FLEET_ADMIN"]
+    return rolesWithAccess.includes(user.role)
+  }, [user])
 
  function handleRefresh() {
   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices })
@@ -52,18 +57,20 @@ export default function DeviceActionBar() {
        </Button>
       </div>
 
-      <div className="flex items-center gap-2">
-       <BulkUploadModal
-        title="Bulk Import Devices"
-        description="Upload a CSV file to register multiple IoT devices at once."
-        templateUrl="/templates/device_import_template.csv"
-        onUpload={handleBulkUpload}
-       />
-       <Button onClick={() => setOpenDeviceFormModal(true)}>
-        <Plus className="h-4 w-4" />
-        Add Device
-       </Button>
-      </div>
+      {canAlter && (
+       <div className="flex items-center gap-2">
+        <BulkUploadModal
+         title="Bulk Import Devices"
+         description="Upload a CSV file to register multiple IoT devices at once."
+         templateUrl="/templates/device_import_template.csv"
+         onUpload={handleBulkUpload}
+        />
+        <Button onClick={() => setOpenDeviceFormModal(true)}>
+         <Plus className="h-4 w-4" />
+         Add Device
+        </Button>
+       </div>
+      )}
      </div>
     </CardContent>
    </Card>
