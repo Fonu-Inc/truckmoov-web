@@ -137,7 +137,7 @@ const SETTINGS_DETAILS: DetailsObjectType = {
     pageDescription: "Configure global platform settings and integrations"
   },
   "FLEET_ADMIN": {
-    label: "Organization Settings",
+    label: "Settings",
     pageTitle: "Settings",
   },
   "DISPATCHER": {

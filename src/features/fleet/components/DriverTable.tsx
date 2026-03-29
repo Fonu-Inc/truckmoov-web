@@ -70,8 +70,8 @@ export default function DriverTable() {
      <div className="flex items-center gap-3">
       <AppAvatar value={row.original.name as string} />
       <div>
-       <p className="font-medium">{row.original.name}</p>
-       <p className="text-sm text-muted-foreground">ID: {row.original.id}</p>
+       <p className="font-medium truncate">{row.original.name}</p>
+       <p className="text-sm text-muted-foreground truncate">ID: {row.original.id}</p>
       </div>
      </div>
     )
@@ -85,7 +85,7 @@ export default function DriverTable() {
      <div className="text-sm">
       <p>{row.original.phone}</p>
       {row.original.email && (
-       <p className="text-muted-foreground truncate max-w-37.5">{row.original.email}</p>
+       <p className="text-muted-foreground truncate">{row.original.email}</p>
       )}
      </div>
     )

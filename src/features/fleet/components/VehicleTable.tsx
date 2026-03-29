@@ -82,7 +82,7 @@ export default function VehicleTable() {
             <Truck className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="font-medium">
+            <p className="font-medium truncate">
               {row.original.make} {row.original.model}
             </p>
             <p className="text-xs text-muted-foreground">{row.original.year}</p>
@@ -93,7 +93,7 @@ export default function VehicleTable() {
     {
       header: "Registration",
       cell: ({ row }) => (
-        <span className="rounded bg-secondary px-2 py-1 font-mono text-sm">
+        <span className="rounded bg-secondary px-2 py-1 font-mono text-sm truncate">
           {row.original.registrationNumber}
         </span>
       ),

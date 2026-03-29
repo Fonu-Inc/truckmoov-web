@@ -68,6 +68,7 @@ export function useUpdateVehicle() {
   mutationFn: updateVehicle,
   onSuccess: (_, variable) => {
    queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(variable.id) })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles })
   }
  })
 }
@@ -196,6 +197,7 @@ export function useUpdateDriver() {
   mutationFn: updateDriver,
   onSuccess: (_, variable) => {
    queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.driver(variable.id) })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.drivers })
   }
  })
 }
@@ -205,6 +207,7 @@ export function useDeleteDriver() {
   mutationFn: deleteDriver,
   onSuccess: (_, variable) => {
    queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.driver(variable.id) })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.drivers })
   }
  })
 }
@@ -214,6 +217,7 @@ export function useSetDriverStatus() {
   mutationFn: setDriverStatus,
   onSuccess: (_, variable) => {
    queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.driver(variable.id) })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.drivers })
   }
  })
 }
