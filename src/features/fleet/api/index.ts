@@ -233,6 +233,7 @@ export function useUpdateDriverContactChannels() {
   mutationFn: updateDriverContactChannels,
   onSuccess: (_, variable) => {
    queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.driver(variable.id) })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.drivers })
   }
  })
 }

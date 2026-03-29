@@ -17,15 +17,17 @@ import { useDebounce } from '@/shared/hooks/useDebounce';
 import DriverDetailSheet from './DriverDetailSheet';
 import { commIcons } from '../lib/commIcons';
 import DriverStatusModal from './DriverStatusModal';
+import DriverContactChannelsModal from './DriverContactChannelsModal';
 
 export default function DriverTable() {
   const [addDriverModal, setAddDriverModal] = useState(false)
   const [removeDriver, setRemoveDriver] = useState(false)
   const [openDriverDetails, setOpenDriverDetails] = useState(false)
   const [openDriverStatus, setOpenDriverStatus] = useState(false)
+  const [openContactChannels, setOpenContactChannels] = useState(false)
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
 
-  function handleSelectedDriver(driver: Driver, type: "view" | "edit" | "delete" | "status") {
+  function handleSelectedDriver(driver: Driver, type: "view" | "edit" | "delete" | "status" | "contacts") {
     setSelectedDriver(driver);
     switch (type) {
       case "edit":
@@ -39,6 +41,9 @@ export default function DriverTable() {
         return;
       case "status":
         setOpenDriverStatus(true);
+        return;
+      case "contacts":
+        setOpenContactChannels(true);
         return;
     }
   }
@@ -210,6 +215,10 @@ export default function DriverTable() {
         </DropdownMenuItem>
         <DropdownMenuSeparator /> */}
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleSelectedDriver(row.original, "contacts")}>
+                  <Phone className="h-4 w-4" />
+                  Contact Channels
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleSelectedDriver(row.original, "status")}>
                   <Pencil className="h-4 w-4" />
                   Change Status
@@ -240,6 +249,11 @@ export default function DriverTable() {
       <DriverDetailSheet
         open={openDriverDetails}
         onOpenChange={setOpenDriverDetails}
+        driver={selectedDriver}
+      />
+      <DriverContactChannelsModal
+        open={openContactChannels}
+        onOpenChange={setOpenContactChannels}
         driver={selectedDriver}
       />
       <DriverStatusModal
