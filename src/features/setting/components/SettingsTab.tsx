@@ -2,7 +2,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserRole } from "@/features/auth/api/types";
 import { APP_ROUTES } from "@/shared/lib/appRoutes";
 import { useAuthStore } from "@/stores/authStore";
-import { BarChart3, Bell, Bot, Building2, CreditCard, FileCheck, MessageSquare, Palette, Plug, Users, Wrench } from "lucide-react";
+import { BarChart3, Bell, Bot, Building2, CreditCard, FileCheck, MessageSquare, Package, Palette, Plug, Users, Wrench } from "lucide-react";
 import { useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -19,6 +19,12 @@ const SETTINGS_TAB_LIST: SettingsObject[] = [
   icon: Building2,
   to: APP_ROUTES.organizationsSettings,
   roleWithAccess: ["ENTERPRISE_ADMIN", "FLEET_ADMIN"]
+ },
+ {
+  label: "dispatch",
+  icon: Package,
+  to: APP_ROUTES.dispatchSettings,
+  roleWithAccess: ["DISPATCHER"]
  },
  // {
  //  label: "subscription",

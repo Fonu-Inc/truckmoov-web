@@ -14,6 +14,7 @@ import Vehicles from "@/features/fleet/pages/Vehicles";
 import Driver from "@/features/fleet/pages/Driver";
 import Devices from "@/features/fleet/pages/Devices";
 import Job from "@/features/dispatch/pages/Job";
+import DispatchSettings from "@/features/setting/pages/DispatchSettings";
 
 export function buildAppRoutes(): RouteObject[] {
   return [
@@ -90,6 +91,10 @@ export function buildAppRoutes(): RouteObject[] {
             {
               path: APP_ROUTES.userSettings,
               element: <UserSettings />
+            },
+            {
+              path: APP_ROUTES.dispatchSettings,
+              element: <DispatchSettings /> 
             },
           ]
         }

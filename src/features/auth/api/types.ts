@@ -139,7 +139,7 @@ export type DispatchPreferencesResponse = {
 }
 
 export type UpdateDispatcherPreferencesPayload = {
-  data: Partial<DispatchPreferencesResponse>
+  data: Partial<DispatcherPreferences>
 }
 
 export type Branding = {

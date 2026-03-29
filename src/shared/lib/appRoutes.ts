@@ -32,5 +32,6 @@ export const APP_ROUTES = {
   communicationSettings: "/setting/communication",
   userSettings: "/setting/user",
   brandingSettings: "/setting/branding",
-  integrationsSettings: "/setting/integrations"
+  integrationsSettings: "/setting/integrations",
+  dispatchSettings: "/setting/dispatch"
 }

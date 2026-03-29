@@ -65,23 +65,11 @@ const DASHBOARD_DETAILS: DetailsObjectType = {
 }
 
 const JOB_DETAILS: DetailsObjectType = {
-  "ENTERPRISE_ADMIN": {
-    label: "Shipment",
-    pageTitle: "Job Dispatch",
-  },
-  "OWNER_OPERATOR": {
-    label: "My Jobs",
-    pageTitle: "My Jobs",
-    pageDescription: "Track and manage your assigned jobs"
-  },
-  "FLEET_ADMIN": {
+  "DISPATCHER": {
     label: "Dispatch",
-    pageTitle: "Job Dispatch",
-  },
-  "OPERATIONS_MANAGER": {
-    label: "Jobs",
-    pageTitle: "Job Dispatch",
-  },
+    pageTitle: "Dispatch Center",
+    pageDescription: "Manage and track all dispatches"
+  }
 }
 
 const FLEET_DETAILS: DetailsObjectType = {
@@ -152,6 +140,11 @@ const SETTINGS_DETAILS: DetailsObjectType = {
     label: "Organization Settings",
     pageTitle: "Settings",
   },
+  "DISPATCHER": {
+    label: "Settings",
+    pageTitle: "Settings",
+    to: APP_ROUTES.dispatchSettings,
+  }
 }
 
 const DRIVER_DETAILS: DetailsObjectType = {

@@ -12,6 +12,7 @@ import { Save } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { TIMEZONES } from "../libs/timezone";
 
 const organizationSettingsSchema = z.object({
  fullName: z.string().trim().min(1, "Full name is required"),
@@ -171,11 +172,9 @@ export default function OrganizationSettingsForm() {
           </SelectTrigger>
          </FormControl>
          <SelectContent>
-          <SelectItem value="UTC">UTC</SelectItem>
-          <SelectItem value="Africa/Lagos">Africa/Lagos</SelectItem>
-          <SelectItem value="Europe/London">Europe/London</SelectItem>
-          <SelectItem value="America/New_York">America/New York</SelectItem>
-          <SelectItem value="Asia/Dubai">Asia/Dubai</SelectItem>
+          {TIMEZONES.map((timezone) => (
+           <SelectItem value={timezone} key={timezone}>{timezone}</SelectItem>
+          ))}
          </SelectContent>
         </Select>
         <FormMessage />

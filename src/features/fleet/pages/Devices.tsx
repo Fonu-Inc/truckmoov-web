@@ -5,7 +5,7 @@ import DeviceTable from "../components/DeviceTable";
 export default function Devices() {
   return (
     <section className="space-y-6">
-     <DeviceStats />
+     {/* <DeviceStats /> */}
      <DeviceActionBar />
      <DeviceTable />
     </section>
