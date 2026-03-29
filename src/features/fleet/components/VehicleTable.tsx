@@ -13,6 +13,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
@@ -27,18 +28,22 @@ import { useVehicleStore } from "../stores/vehicle";
 import { useDebounce } from "@/shared/hooks/useDebounce";
 import DeleteDialog from "@/shared/components/DeleteDialog";
 import VehicleDetailSheet from "./VehicleDetailSheet";
+import AssignDriverModal from "./AssignDriverModal";
+import VehicleStatusModal from "./VehicleStatusModal";
 
 
 export default function VehicleTable() {
   const [openVehicleForm, setOpenVehicleForm] = useState(false)
   const [openVehicleDetails, setOpenVehicleDetails] = useState(false)
+  const [openAssignDriver, setOpenAssignDriver] = useState(false)
+  const [openVehicleStatus, setOpenVehicleStatus] = useState(false)
   const [removeVehicle, setRemoveVehicle] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
 
   const { search, status } = useVehicleStore()
   const debouncedSearch = useDebounce(search)
 
-  function handleSelectedVehicle(vehicle: Vehicle, type: "view" | "edit" | "delete") {
+  function handleSelectedVehicle(vehicle: Vehicle, type: "view" | "edit" | "delete" | "assign" | "status") {
     setSelectedVehicle(vehicle);
     switch (type) {
       case "edit":
@@ -49,6 +54,12 @@ export default function VehicleTable() {
         return;
       case "delete":
         setRemoveVehicle(true);
+        return;
+      case "assign":
+        setOpenAssignDriver(true);
+        return;
+      case "status":
+        setOpenVehicleStatus(true);
         return;
     }
   }
@@ -107,7 +118,7 @@ export default function VehicleTable() {
     {
       header: "Driver",
       cell: ({ row }) =>
-        row.original?.assignedDriverId || <span className="text-muted-foreground">Unassigned</span>,
+        row.original?.assignedDriverId ? <p className="truncate">Assigned</p> : <span className="text-muted-foreground">Unassigned</span>,
     },
     {
       header: "Status",
@@ -159,6 +170,16 @@ export default function VehicleTable() {
                 <Edit className="h-4 w-4" />
                 Edit
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleSelectedVehicle(row.original, "status")}>
+                <Edit className="h-4 w-4" />
+                Change Status
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSelectedVehicle(row.original, "assign")}>
+                <Truck className="h-4 w-4" />
+                Assign Driver
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
                 onClick={() => handleSelectedVehicle(row.original, "delete")}
@@ -191,7 +212,7 @@ export default function VehicleTable() {
       />
 
       {/* modals and dialog */}
-      <VehicleDetailSheet 
+      <VehicleDetailSheet
         open={openVehicleDetails}
         onOpenChange={setOpenVehicleDetails}
         vehicle={selectedVehicle}
@@ -200,6 +221,16 @@ export default function VehicleTable() {
         open={openVehicleForm}
         onOpenChange={setOpenVehicleForm}
         mode="edit"
+        vehicle={selectedVehicle}
+      />
+      <VehicleStatusModal
+        open={openVehicleStatus}
+        onOpenChange={setOpenVehicleStatus}
+        vehicle={selectedVehicle}
+      />
+      <AssignDriverModal
+        open={openAssignDriver}
+        onOpenChange={setOpenAssignDriver}
         vehicle={selectedVehicle}
       />
       <DeleteDialog

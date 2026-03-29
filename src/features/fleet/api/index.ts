@@ -88,6 +88,7 @@ export function useSetVehicleStatus() {
   mutationFn: setVehicleStatus,
   onSuccess: (_, variable) => {
    queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(variable.id) })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles })
   }
  })
 }
@@ -97,6 +98,8 @@ export function useAssignDriverToVehicle() {
   mutationFn: assignDriverToVehicle,
   onSuccess: (_, variable) => {
    queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(variable.id) })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.drivers })
   }
  })
 }
@@ -106,6 +109,8 @@ export function useUnassignDriverFromVehicle() {
   mutationFn: unassignDriverFromVehicle,
   onSuccess: (_, variable) => {
    queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(variable.id) })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.drivers })
   }
  })
 }
@@ -115,6 +120,7 @@ export function useRegisterGpsOnVehicle() {
   mutationFn: registerGpsOnVehicle,
   onSuccess: (_, variable) => {
    queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(variable.id) })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles })
   }
  })
 }

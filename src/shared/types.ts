@@ -21,3 +21,8 @@ export type DetailsObjectType = Partial<Record<UserRole, DetailsType>>
 export type RequestPayloadExtractor<T extends (...args: any[]) => any> = Parameters<T>[0];
 
 export type FormMode = "create" | "edit"
+
+export type ModalProps = {
+ open: boolean;
+ onOpenChange: (open: boolean) => void
+}

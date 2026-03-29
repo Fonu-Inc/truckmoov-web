@@ -1,6 +1,8 @@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Vehicle } from "../api/types";
 import { MapPin, Truck, Wrench } from "lucide-react";
+import { getDriverQueryOptions } from "../api";
+import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import StatusBadge from "@/shared/components/StatusBadge";
@@ -13,6 +15,11 @@ type VehicleDetailSheetProps = {
 }
 
 export default function VehicleDetailSheet({ open, onOpenChange, vehicle }: VehicleDetailSheetProps) {
+ const { data: driverData } = useQuery(getDriverQueryOptions({ id: vehicle?.assignedDriverId ?? "" }))
+ const driverName = driverData?.data
+  ? `${driverData.data.firstName} ${driverData.data.lastName}`
+  : "Unassigned"
+
  return (
   <Sheet open={open} onOpenChange={onOpenChange}>
    <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
@@ -79,10 +86,10 @@ export default function VehicleDetailSheet({ open, onOpenChange, vehicle }: Vehi
           <span className="text-muted-foreground">Capacity</span>
           <span>{vehicle?.capacity} tons</span>
          </div>
-         {/* <div className="flex justify-between text-sm">
+         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Assigned Driver</span>
-          <span>{vehicle.assignedDriverId === null ? "Unassigned": ""}</span>
-         </div> */}
+          <span>{driverName}</span>
+         </div>
         </CardContent>
        </Card>
 
