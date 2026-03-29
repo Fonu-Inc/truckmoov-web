@@ -9,7 +9,7 @@ const statusColors: Record<string, string> = {
  inactive: "bg-destructive/20 text-destructive border-destructive/30 hover:bg-destructive/20",
  maintenance: "bg-warning/10 text-warning",
  decommissioned: "bg-destructive/10 text-destructive",
- registered: "bg-muted text-muted-foreground",
+ registered: "bg-muted text-muted-foreground hover:bg-muted",
  configured: "bg-info/10 text-info",
  faulty: "bg-destructive/10 text-destructive",
  created: "bg-muted text-muted-foreground border-muted",
@@ -25,6 +25,6 @@ type StatusBadgeProps = {
 }
 export default function StatusBadge({ status }: StatusBadgeProps) {
  return (
-  <Badge className={cn("capitalize truncate", statusColors[status] ?? "bg-muted text-muted-foreground")}>{status}</Badge>
+  <Badge className={cn("capitalize truncate", statusColors[status] ?? "bg-muted text-muted-foreground hover:bg-muted")}>{status}</Badge>
  )
 }

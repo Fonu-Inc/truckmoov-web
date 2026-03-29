@@ -122,6 +122,12 @@ export default function VehicleTable() {
       )
     },
     {
+      header: "GPS Device",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground truncate">{row.original.gpsDevice ? `${row.original.gpsDevice.manufacturer} ${row.original.gpsDevice.model}`: "Unassigned"}</span>
+      )
+    },
+    {
       header: "Status",
       cell: ({ row }) => (
         <StatusBadge status={row.original.status} />

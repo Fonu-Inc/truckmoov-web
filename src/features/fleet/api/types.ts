@@ -78,6 +78,30 @@ export type Driver = {
  "updatedAt": string
 }
 
+// ─── Device ────────────────────────────────────────────────────────────────
+
+export type DeviceStatus = "registered" | "configured" | 'assigned' | "active" | "faulty" | "decommissioned"
+
+export type DeviceLifeCycleStatus = "registered" | "config_pending" | "configured" | "verified_online" | "assignable" | "assigned" | "faulty"
+
+export type Device = {
+ "id": string,
+ "imei": string,
+ "manufacturer": string,
+ "model": string,
+ "firmwareVersion": string,
+ "tenantId": string,
+ "status": DeviceStatus,
+ "lifecycleStatus": DeviceLifeCycleStatus,
+ "vehicleId": string,
+ "signalStrength": number,
+ "batteryLevel": number,
+ "lastSeen": string,
+ "assignedAt": string,
+ "createdAt": string,
+ "updatedAt": string
+}
+
 // ─── Jobs & Dispatch ─────────────────────────────────────────────────────────
 
 export type Job = {
@@ -344,6 +368,85 @@ export type SetDriverStatusPayload = {
 export type UpdateDriverContactChannelsPayload = {
  id: string;
  data: DriverContactChannels
+}
+
+// ─── Device Payloads ─────────────────────────────────────────────────────────
+
+export type ListDevicesPayload = {
+ params: {
+  query?: string;
+  manufactuerer?: string;
+  status?: DeviceStatus;
+  lifecycleStatus?: DeviceLifeCycleStatus;
+  assigned?: boolean
+  tenantId?: boolean;
+ }
+}
+
+export type CreateDeviceData = Omit<Device, "id" | "status" | "vehicleId" | "signalStrength" | "batteryLevel" | "lastSeen" | "assignedAt" | "createdAt" | "updatedAt">
+
+export type CreateDevicePayload = {
+ data: Partial<CreateDeviceData>
+}
+
+export type BulkCreateDevicePayload = {
+ data: {
+  "tenantId": string,
+  "items": Array<Omit<CreateDeviceData, "tenantId">>
+ }
+}
+
+export type BulkCreateDeviceResponse = {
+ "created": number,
+ "updated": number,
+ "total": number,
+ "records": Device[]
+}
+
+export type GetDevicePayload = {
+ id: string;
+}
+
+export type UpdateDevicePayload = {
+ id: string;
+ data: Partial<CreateDeviceData & {
+  "signalStrength": number,
+  "batteryLevel": number,
+ }>
+}
+
+export type DeleteDevicePayload = {
+ id: string;
+}
+
+export type SetDeviceLifecyclePayload = {
+ id: string;
+ data: {
+  "lifecycleStatus": DeviceLifeCycleStatus
+ }
+}
+
+export type ValidateDeviceAssignmentPayload = {
+ id: string;
+ params: {
+  vehicleId: string
+ }
+}
+
+export type ValidateDeviceAssignmentResponse = {
+ "canAssign": boolean,
+ "reason": string
+}
+
+export type AssignDeviceToVehiclePayload = {
+ id: string;
+ data: {
+  vehicleId: string
+ }
+}
+
+export type UnassignDeviceToVehiclePayload = {
+ id: string;
 }
 
 // ─── Job & Dispatch Payloads ──────────────────────────────────────────────────

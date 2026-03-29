@@ -1,5 +1,5 @@
 import { queryOptions, useMutation } from "@tanstack/react-query"
-import { acknowledgeAlert, alertStatistics, assignDriverToVehicle, auditLog, bulkCreateDrivers, bulkCreateVehicle, createDriver, createVehicle, deleteDriver, deleteFuelTransaction, deleteVehicle, deliveryMetrics, documentAccessLog, documentSecureUrl, findNearestVehicles, fuelEfficiency, fuelExport, fuelMetrics, fuelThreshold, getDriver, getVehicle, listAlerts, listDocuments, listDrivers, listFuelTransaction, listJobs, listVehicles, operationalDashboard, publishJobStatus, recordFuelTransaction, registerGpsOnVehicle, registerVehicleGeofence, reportExport, reportVehicleLivePosition, resolveAlert, searchDispatch, setDriverStatus, setFuelThreshold, setVehicleStatus, unassignDriverFromVehicle, updateDriver, updateDriverContactChannels, updateFuelTransaction, updateVehicle, uploadDocument, vehicleGeofence, vehicleHealth } from "./request"
+import { acknowledgeAlert, alertStatistics, assignDeviceToVehicle, assignDriverToVehicle, auditLog, bulkCreateDevice, bulkCreateDrivers, bulkCreateVehicle, createDevice, createDriver, createVehicle, deleteDevice, deleteDriver, deleteFuelTransaction, deleteVehicle, deliveryMetrics, documentAccessLog, documentSecureUrl, findNearestVehicles, fuelEfficiency, fuelExport, fuelMetrics, fuelThreshold, getDevice, getDriver, getVehicle, listAlerts, listDevices, listDocuments, listDrivers, listFuelTransaction, listJobs, listVehicles, operationalDashboard, publishJobStatus, recordFuelTransaction, registerGpsOnVehicle, registerVehicleGeofence, reportExport, reportVehicleLivePosition, resolveAlert, searchDispatch, setDeviceLifeCycle, setDriverStatus, setFuelThreshold, setVehicleStatus, unassignDeviceToVehicle, unassignDriverFromVehicle, updateDevice, updateDriver, updateDriverContactChannels, updateFuelTransaction, updateVehicle, uploadDocument, validateDeviceAssignment, vehicleGeofence, vehicleHealth } from "./request"
 import { queryClient } from "@/shared/providers/TanstackQueryProvider"
 import { RequestPayloadExtractor } from "@/shared/types"
 
@@ -26,6 +26,8 @@ export const FLEET_QUERY_KEY = {
  documentSecureUrl: (id: string) => ["documentSecureUrl", id],
  documentAccessLog: (id: string) => ["documentAccessLog", id],
  auditLog: ["auditLog"],
+ devices: ["devices"],
+ device: (deviceId: string) => ["device", deviceId],
 }
 
 // ─── Vehicles ────────────────────────────────────────────────────────────────
@@ -424,6 +426,101 @@ export function documentAccessLogQueryOptions(payload: RequestPayloadExtractor<t
   queryKey: FLEET_QUERY_KEY.documentAccessLog(payload.id),
   queryFn: () => documentAccessLog(payload),
   enabled: !!payload.id
+ })
+}
+
+// ─── Devices ─────────────────────────────────────────────────────────────────
+
+export function listDevicesQueryOptions(payload: RequestPayloadExtractor<typeof listDevices>) {
+ return queryOptions({
+  queryKey: [...FLEET_QUERY_KEY.devices, payload.params],
+  queryFn: () => listDevices(payload),
+ })
+}
+
+export function getDeviceQueryOptions(payload: RequestPayloadExtractor<typeof getDevice>) {
+ return queryOptions({
+  queryKey: FLEET_QUERY_KEY.device(payload.id),
+  queryFn: () => getDevice(payload),
+  enabled: !!payload.id
+ })
+}
+
+export function validateDeviceAssignmentQueryOptions(payload: RequestPayloadExtractor<typeof validateDeviceAssignment>) {
+ return queryOptions({
+  queryKey: [...FLEET_QUERY_KEY.device(payload.id), "assignment-validate", payload.params],
+  queryFn: () => validateDeviceAssignment(payload),
+  enabled: !!payload.id
+ })
+}
+
+export function useCreateDevice() {
+ return useMutation({
+  mutationFn: createDevice,
+  onSuccess: () => {
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices })
+  }
+ })
+}
+
+export function useBulkCreateDevice() {
+ return useMutation({
+  mutationFn: bulkCreateDevice,
+  onSuccess: () => {
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices })
+  }
+ })
+}
+
+export function useUpdateDevice() {
+ return useMutation({
+  mutationFn: updateDevice,
+  onSuccess: (_, variable) => {
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.device(variable.id) })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices })
+  }
+ })
+}
+
+export function useDeleteDevice() {
+ return useMutation({
+  mutationFn: deleteDevice,
+  onSuccess: (_, variable) => {
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.device(variable.id) })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices })
+  }
+ })
+}
+
+export function useSetDeviceLifeCycle() {
+ return useMutation({
+  mutationFn: setDeviceLifeCycle,
+  onSuccess: (_, variable) => {
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.device(variable.id) })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices })
+  }
+ })
+}
+
+export function useAssignDeviceToVehicle() {
+ return useMutation({
+  mutationFn: assignDeviceToVehicle,
+  onSuccess: (_, variable) => {
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.device(variable.id) })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles })
+  }
+ })
+}
+
+export function useUnassignDeviceFromVehicle() {
+ return useMutation({
+  mutationFn: unassignDeviceToVehicle,
+  onSuccess: (_, variable) => {
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.device(variable.id) })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles })
+  }
  })
 }
 

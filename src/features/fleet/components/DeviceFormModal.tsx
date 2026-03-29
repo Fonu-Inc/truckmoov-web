@@ -2,16 +2,17 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FormMode } from "@/shared/types";
+import { useCreateDevice, useUpdateDevice } from "@/features/fleet/api";
+import { Device } from "@/features/fleet/api/types";
+import { FormMode, ModalProps } from "@/shared/types";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 
-type DeviceFormModalProps = {
- open: boolean;
- onOpenChange: (open: boolean) => void;
- mode?: FormMode
+type DeviceFormModalProps = ModalProps & {
+ mode?: FormMode;
+ device?: Device | null;
 }
 
 const deviceSchema = z.object({
@@ -23,18 +24,42 @@ const deviceSchema = z.object({
 
 type DeviceFormData = z.infer<typeof deviceSchema>;
 
-export default function DeviceFormModal({ open, onOpenChange, mode = "create" }: DeviceFormModalProps) {
+export default function DeviceFormModal({ open, onOpenChange, mode = "create", device }: DeviceFormModalProps) {
+ const defaultValues = useMemo<DeviceFormData>(() => ({
+  imei: mode === "edit" && device ? device.imei : "",
+  manufacturer: mode === "edit" && device ? device.manufacturer : "",
+  model: mode === "edit" && device ? device.model : "",
+  firmwareVersion: mode === "edit" && device ? device.firmwareVersion : "1.0.0",
+ }), [device, mode]);
+
  const form = useForm<DeviceFormData>({
   resolver: zodResolver(deviceSchema),
-  defaultValues: {
-   imei: "",
-   manufacturer: "",
-   model: "",
-   firmwareVersion: "1.0.0",
-  },
+  defaultValues,
  });
 
- const handleSubmit = (data: DeviceFormData) => {
+ useEffect(() => {
+  if (open) form.reset(defaultValues);
+ }, [open, defaultValues, form]);
+
+ const { mutateAsync: createDevice, isPending: creating } = useCreateDevice();
+ const { mutateAsync: updateDevice, isPending: updating } = useUpdateDevice();
+ const isLoading = creating || updating;
+
+ const handleSubmit = async (data: DeviceFormData) => {
+  if (mode === "edit" && device) {
+   await updateDevice(
+    { id: device.id, data: {
+     ...data,
+     lifecycleStatus: "registered"
+    } },
+    { onSuccess: () => onOpenChange(false) }
+   );
+  } else {
+   await createDevice(
+    { data },
+    { onSuccess: () => onOpenChange(false) }
+   );
+  }
  };
 
  return (
@@ -71,18 +96,9 @@ export default function DeviceFormModal({ open, onOpenChange, mode = "create" }:
        render={({ field }) => (
         <FormItem>
          <FormLabel>Manufacturer</FormLabel>
-         <Select onValueChange={field.onChange} value={field.value}>
-          <FormControl>
-           <SelectTrigger>
-            <SelectValue placeholder="Select manufacturer" />
-           </SelectTrigger>
-          </FormControl>
-          <SelectContent>
-           {/* {manufacturers.map((m) => (
-            <SelectItem key={m} value={m}>{m}</SelectItem>
-           ))} */}
-          </SelectContent>
-         </Select>
+         <FormControl>
+          <Input placeholder="Teltonika" {...field} />
+         </FormControl>
          <FormMessage />
         </FormItem>
        )}
@@ -117,12 +133,12 @@ export default function DeviceFormModal({ open, onOpenChange, mode = "create" }:
       />
 
       <div className="flex justify-end gap-3 pt-4">
-       <DialogClose>
-        <Button type="button" variant="outline">
+       <DialogClose asChild>
+        <Button type="button" variant="outline" disabled={isLoading}>
          Cancel
         </Button>
        </DialogClose>
-       <Button type="submit">
+       <Button type="submit" isLoading={isLoading}>
         {mode === "edit" ? "Save Changes" : "Register Device"}
        </Button>
       </div>

@@ -1,14 +1,36 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { queryClient } from "@/shared/providers/TanstackQueryProvider";
 import { BulkUploadModal } from "@/shared/components/BulkUploadModal";
-import { Filter, Plus, RefreshCw, Search } from "lucide-react";
+import { useAuthStore } from "@/stores/authStore";
+import { Plus, RefreshCw, Search } from "lucide-react";
 import { useState } from "react";
+import { FLEET_QUERY_KEY, useBulkCreateDevice } from "../api";
+import type { BulkCreateDevicePayload } from "../api/types";
+import { useDeviceStore } from "../stores/device";
 import DeviceFormModal from "./DeviceFormModal";
 
 export default function DeviceActionBar() {
  const [openDeviceFormModal, setOpenDeviceFormModal] = useState(false)
+ const { user } = useAuthStore()
+ const { search, setSearch } = useDeviceStore()
+ const { mutateAsync: bulkCreateDevice } = useBulkCreateDevice()
+
+ function handleRefresh() {
+  queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices })
+ }
+
+ async function handleBulkUpload(data: Record<string, string>[]) {
+  const items: BulkCreateDevicePayload["data"]["items"] = data.map((row) => ({
+   imei: row["IMEI"],
+   manufacturer: row["Manufacturer"],
+   model: row["Model"],
+   firmwareVersion: row["Firmware Version"],
+   lifecycleStatus: "verified_online"
+  }));
+  await bulkCreateDevice({ data: { tenantId: user.userId, items } });
+ }
 
  return (
   <>
@@ -21,18 +43,11 @@ export default function DeviceActionBar() {
         <Input
          placeholder="Search by IMEI, manufacturer, model..."
          className="pl-9"
+         value={search}
+         onChange={(e) => setSearch(e.target.value)}
         />
        </div>
-       <Select>
-        <SelectTrigger className="w-40">
-         <Filter className="h-4 w-4" />
-         <SelectValue placeholder="Manufacturer" />
-        </SelectTrigger>
-        <SelectContent>
-         <SelectItem value="all">All Manufacturers</SelectItem>
-        </SelectContent>
-       </Select>
-       <Button variant="outline" size="icon">
+       <Button variant="outline" size="icon" onClick={handleRefresh}>
         <RefreshCw className="h-4 w-4" />
        </Button>
       </div>
@@ -42,8 +57,7 @@ export default function DeviceActionBar() {
         title="Bulk Import Devices"
         description="Upload a CSV file to register multiple IoT devices at once."
         templateUrl="/templates/device_import_template.csv"
-        onUpload={async (data) => {
-        }}
+        onUpload={handleBulkUpload}
        />
        <Button onClick={() => setOpenDeviceFormModal(true)}>
         <Plus className="h-4 w-4" />
