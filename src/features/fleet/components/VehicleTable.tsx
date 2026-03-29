@@ -117,8 +117,9 @@ export default function VehicleTable() {
     },
     {
       header: "Driver",
-      cell: ({ row }) =>
-        row.original?.assignedDriverId ? <p className="truncate">Assigned</p> : <span className="text-muted-foreground">Unassigned</span>,
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">{row.original.assignedDriverId ? "Assigned" : "Unassigned"}</span>
+      )
     },
     {
       header: "Status",
