@@ -31,7 +31,7 @@ import {
 import { useCreateVehicle, useUpdateVehicle } from "@/features/fleet/api";
 import { FormMode } from "@/shared/types";
 import { useAuthStore } from "@/stores/authStore";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { CreateVehicleData, Vehicle } from "../api/types";
 
 const vehicleSchema = z.object({
@@ -71,10 +71,14 @@ export default function VehicleFormModal({ open, onOpenChange, mode = "create", 
   capacity: vehicle?.capacity ?? 0,
  }), [vehicle]);
 
- const form = useForm<VehicleFormData>({
+ const form = useForm<z.input<typeof vehicleSchema>, any, VehicleFormData>({
   resolver: zodResolver(vehicleSchema),
   defaultValues,
  });
+
+ useEffect(() => {
+  form.reset(defaultValues)
+ }, [form, defaultValues])
 
  async function handleSubmit(data: VehicleFormData) {
   const payloadData: CreateVehicleData = {
@@ -87,12 +91,13 @@ export default function VehicleFormModal({ open, onOpenChange, mode = "create", 
    type: data.type,
    vin: data.vin,
    year: data.year,
-   status: "inactive",
+   status: mode === "edit" ? vehicle!.status : "active",
   }
 
   if (mode === "edit") {
+   if (!vehicle?.id) return
    await updateVehicle({
-    id: vehicle?.id,
+    id: vehicle.id,
     data: payloadData
    }, {
     onSuccess: () => {
@@ -129,7 +134,9 @@ export default function VehicleFormModal({ open, onOpenChange, mode = "create", 
         render={({ field }) => (
          <FormItem>
           <FormLabel>Registration Number</FormLabel>
-          <FormDescription>Same as the plate number</FormDescription>
+          {mode === "create" && (
+           <FormDescription>Same as the plate number</FormDescription>
+          )}
           <FormControl>
            <Input placeholder="Enter registration number" {...field} />
           </FormControl>
@@ -138,19 +145,21 @@ export default function VehicleFormModal({ open, onOpenChange, mode = "create", 
         )}
        />
 
-       <FormField
-        control={form.control}
-        name="plateNumber"
-        render={({ field }) => (
-         <FormItem>
-          <FormLabel>Plate Number Image</FormLabel>
-          <FormControl>
-           <ImageUploadInput onChange={field.onChange} value={field.value} />
-          </FormControl>
-          <FormMessage />
-         </FormItem>
-        )}
-       />
+       {mode === "create" && (
+        <FormField
+         control={form.control}
+         name="plateNumber"
+         render={({ field }) => (
+          <FormItem>
+           <FormLabel>Plate Number Image</FormLabel>
+           <FormControl>
+            <ImageUploadInput onChange={field.onChange} value={field.value as string} />
+           </FormControl>
+           <FormMessage />
+          </FormItem>
+         )}
+        />
+       )}
       </div>
 
       <FormField
@@ -205,7 +214,7 @@ export default function VehicleFormModal({ open, onOpenChange, mode = "create", 
          <FormItem>
           <FormLabel>Year</FormLabel>
           <FormControl>
-           <Input type="number" placeholder="2024" {...field} />
+           <Input type="number" placeholder="2024" {...field} value={field.value as number} />
           </FormControl>
           <FormMessage />
          </FormItem>
@@ -242,7 +251,7 @@ export default function VehicleFormModal({ open, onOpenChange, mode = "create", 
          <FormItem>
           <FormLabel>Capacity (tons)</FormLabel>
           <FormControl>
-           <Input type="number" placeholder="40" {...field} />
+           <Input type="number" placeholder="40" {...field} value={field.value as number} />
           </FormControl>
           <FormMessage />
          </FormItem>

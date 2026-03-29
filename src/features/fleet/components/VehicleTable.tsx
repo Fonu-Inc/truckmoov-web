@@ -104,11 +104,11 @@ export default function VehicleTable() {
         <span className="capitalize">{row.original.type}</span>
       ),
     },
-    // {
-    //   header: "Driver",
-    //   cell: ({ row }) =>
-    //     row.original?.driverName || <span className="text-muted-foreground">Unassigned</span>,
-    // },
+    {
+      header: "Driver",
+      cell: ({ row }) =>
+        row.original?.assignedDriverId || <span className="text-muted-foreground">Unassigned</span>,
+    },
     {
       header: "Status",
       cell: ({ row }) => (

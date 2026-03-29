@@ -79,10 +79,10 @@ export default function VehicleDetailSheet({ open, onOpenChange, vehicle }: Vehi
           <span className="text-muted-foreground">Capacity</span>
           <span>{vehicle?.capacity} tons</span>
          </div>
-         {/* <div className="flex justify-between text-sm">
+         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Assigned Driver</span>
-          <span>{driverName || "Unassigned"}</span>
-         </div> */}
+          <span>{vehicle.assignedDriverId ?? "Unassigned"}</span>
+         </div>
         </CardContent>
        </Card>
 

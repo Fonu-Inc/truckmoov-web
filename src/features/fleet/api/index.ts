@@ -77,6 +77,7 @@ export function useDeleteVehicle() {
   mutationFn: deleteVehicle,
   onSuccess: (_, variable) => {
    queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(variable.id) })
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles })
   }
  })
 }
