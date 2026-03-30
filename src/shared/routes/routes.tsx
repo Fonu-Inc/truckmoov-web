@@ -15,7 +15,6 @@ import Driver from "@/features/fleet/pages/Driver";
 import Devices from "@/features/fleet/pages/Devices";
 import Job from "@/features/dispatch/pages/Job";
 import DispatchSettings from "@/features/setting/pages/DispatchSettings";
-import Map from "@/features/dispatch/pages/Map";
 import Alerts from "@/features/fleet/pages/Alerts";
 
 export function buildAppRoutes(): RouteObject[] {
@@ -47,10 +46,6 @@ export function buildAppRoutes(): RouteObject[] {
               element: <Vehicles />
             }
           ]
-        },
-        {
-          path: APP_ROUTES.map,
-          element: <Map />
         },
         {
           path: APP_ROUTES.driver,

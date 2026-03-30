@@ -5,16 +5,15 @@ import { useState } from "react";
 import RealTimeAlertsActions from "./RealTimeAlertsActions";
 import AlertsCard from "./AlertsCard";
 import { AlertSeverity, AlertStatus } from "../api/types";
+import { useQuery } from "@tanstack/react-query";
+import { listAlertsQueryOptions } from "../api";
 
 export default function RealTimeAlerts() {
  const [search, setSearch] = useState("");
  const [severity, setSeverity] = useState<AlertSeverity | "all">("all");
  const [status, setStatus] = useState<AlertStatus | "all">("all");
 
- // TODO: When API is ready, replace with:
- //   const { data } = useQuery(listAlertsQueryOptions({ params: { status: status !== "all" ? status : undefined } }))
- //   const openAlertIds = (data?.data ?? []).filter(a => !a.acknowledgedAt).map(a => a.id)
- //   Then call acknowledgeAlert for each id on "Acknowledge All"
+ // const { data } = useQuery(listAlertsQueryOptions({ params: { status: status !== "all" ? status : undefined } }))
 
  return (
   <Card>

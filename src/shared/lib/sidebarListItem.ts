@@ -70,6 +70,10 @@ const JOB_DETAILS: DetailsObjectType = {
     label: "Dispatch",
     pageTitle: "Dispatch Center",
     pageDescription: "Manage and track all dispatches"
+  },
+  "ENTERPRISE_ADMIN": {
+    label: "Shipment",
+    pageTitle: "Job Dispatch",
   }
 }
 
@@ -175,14 +179,14 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
 
   return [
     // Dashboard
-    // ...(dashboardRoleDetail ? [{
-    //   label: dashboardRoleDetail.label,
-    //   roleWithAccess: getRolesFromDetails(DASHBOARD_DETAILS),
-    //   to: APP_ROUTES.dashboard,
-    //   icon: LayoutDashboard,
-    //   pageTitle: dashboardRoleDetail.pageTitle,
-    //   pageDescription: dashboardRoleDetail.pageDescription
-    // }] : []),
+    ...(dashboardRoleDetail ? [{
+      label: dashboardRoleDetail.label,
+      roleWithAccess: getRolesFromDetails(DASHBOARD_DETAILS),
+      to: APP_ROUTES.dashboard,
+      icon: LayoutDashboard,
+      pageTitle: dashboardRoleDetail.pageTitle,
+      pageDescription: dashboardRoleDetail.pageDescription
+    }] : []),
 
     // Jobs
     ...(jobRoleDetail ? [{
@@ -222,18 +226,18 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       pageDescription: "Provision and manage GPS tracking devices"
     },
 
-    {
-      label: "Live Map & Zones",
-      roleWithAccess: ["DISPATCHER"],
-      to: APP_ROUTES.map,
-      icon: MapPin,
-      pageTitle: "Live Fleet Map",
-      pageDescription: "Real-time vehicle tracking and monitoring",
-    },
+    // {
+    //   label: "Live Map & Zones",
+    //   roleWithAccess: ["DISPATCHER"],
+    //   to: APP_ROUTES.map,
+    //   icon: MapPin,
+    //   pageTitle: "Live Fleet Map",
+    //   pageDescription: "Real-time vehicle tracking and monitoring",
+    // },
 
     {
       label: "Alerts",
-      roleWithAccess: ["DISPATCHER"],
+      roleWithAccess: ["DISPATCHER", "FLEET_ADMIN", "OPERATIONS_MANAGER"],
       to: APP_ROUTES.alerts,
       icon: Bell,
       pageTitle: "Alerts Center",
