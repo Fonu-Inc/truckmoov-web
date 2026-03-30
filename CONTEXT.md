@@ -53,6 +53,7 @@ User story role names map to `UserRole` code values as follows:
 | User               | All `UserRole` values | Feature/page is accessible to every role |
 
 ### Implementation Rules
+0. **UI only, no dummy API** — when working on an epic, build the UI only. Do not create placeholder/dummy API hooks, mock requests, or fake data fetching. Use local UI state or static placeholder data directly in the component until real backend endpoints are available and explicitly handed over for integration.
 1. **Check first** — before creating anything new, determine whether the user story is an enhancement to a page that already exists in an active feature (`auth`, `setting`, `dashboard`, `fleet`, `dispatch`). If it is, extend the existing feature rather than creating a new one.
 2. **Access control** — if the user story names specific roles, only those roles (mapped via the table above) should have access to the new/modified page or feature. Gate access in `src/shared/lib/sidebarListItem.ts` (for sidebar entries) and in route guards where applicable.
 3. **Skip non-app roles** — do not implement anything for `System` (backend job) or `Driver` (no role).
