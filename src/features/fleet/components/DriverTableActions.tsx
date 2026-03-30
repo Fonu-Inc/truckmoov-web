@@ -28,12 +28,12 @@ export default function DriverTableActions() {
    email: row["Email"],
    licenseNumber: row["License Number"],
    licenseExpiryDate: row["License Expiry Date"],
-   tenantId: user.userId,
+   tenantId: user.tenantId,
    status: row["Status"] as DriverStatus,
    communicationPreference: row["Communication Preference"] as DriverCommunicationPreferences,
   }));
 
-  await bulkCreateDrivers({ data: { tenantId: user.userId, items } });
+  await bulkCreateDrivers({ data: { tenantId: user.tenantId, items } });
  }
 
  return (

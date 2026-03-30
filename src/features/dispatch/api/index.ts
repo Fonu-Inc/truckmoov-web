@@ -1,5 +1,5 @@
 import { queryOptions, useMutation } from "@tanstack/react-query"
-import { acknowledgeJob, addJobNote, addPODAttachment, cancelJob, createJob, getJob, getJobTimeline, optimizeMultiStopRoute, setJobToDriverOrVehicle, suggestOptimatRouteForJob, updateJobPriority } from "./request"
+import { acknowledgeJob, addJobNote, addPODAttachment, cancelJob, createJob, getJob, getJobTimeline, listJob, optimizeMultiStopRoute, setJobToDriverOrVehicle, suggestOptimatRouteForJob, updateJobPriority } from "./request"
 import { queryClient } from "@/shared/providers/TanstackQueryProvider"
 import { RequestPayloadExtractor } from "@/shared/types"
 
@@ -15,6 +15,13 @@ export function useCreateJob() {
   onSuccess: () => {
    queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs })
   }
+ })
+}
+
+export function listJobQueryOptions(payload: RequestPayloadExtractor<typeof listJob>) {
+ return queryOptions({
+  queryKey: [...DISPATCH_QUERY_KEY.jobs, payload.params],
+  queryFn: () => listJob(payload)
  })
 }
 

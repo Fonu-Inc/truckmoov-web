@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -6,10 +6,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import z from "zod"
+import { ModalProps } from "@/shared/types"
+import { useAuthStore } from "@/stores/authStore"
+import { useUpdateJobPriority } from "../api"
+import { Job, JobPriority } from "../api/types"
 
-type SetJobPriorityModalProps = {
- open: boolean
- onOpenChange: (open: boolean) => void
+type SetJobPriorityModalProps = ModalProps & {
+  job: Job | null
 }
 
 const setPrioritySchema = z.object({
@@ -18,20 +21,27 @@ const setPrioritySchema = z.object({
 
 type SetPriorityFormData = z.infer<typeof setPrioritySchema>
 
-export default function SetJobPriorityModal({ open, onOpenChange }: SetJobPriorityModalProps) {
+export default function SetJobPriorityModal({ open, onOpenChange, job }: SetJobPriorityModalProps) {
+ const { user } = useAuthStore()
+ const { mutateAsync: updatePriority, isPending } = useUpdateJobPriority()
+
+ const defaultValues = useMemo(() => ({
+  priority: (job?.priority as JobPriority) ?? "normal",
+ }), [job])
+
  const form = useForm<SetPriorityFormData>({
   resolver: zodResolver(setPrioritySchema),
-  defaultValues: {
-   priority: "normal",
-  },
+  defaultValues,
  })
 
  useEffect(() => {
-  if (open) form.reset({ priority: "normal" })
- }, [open, form])
+  if (open) form.reset(defaultValues)
+ }, [open, form, defaultValues])
 
- const handleSave = (_data: SetPriorityFormData) => {
-  onOpenChange(false)
+ const handleSave = (data: SetPriorityFormData) => {
+  updatePriority({ jobId: job!.id, data: { priority: data.priority, tenant_id: user.tenantId, time_window: job!.time_window } }, {
+   onSuccess: () => onOpenChange(false),
+  })
  }
 
  return (
@@ -74,7 +84,7 @@ export default function SetJobPriorityModal({ open, onOpenChange }: SetJobPriori
        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
         Cancel
        </Button>
-       <Button type="submit">
+       <Button type="submit" isLoading={isPending}>
         Save Priority
        </Button>
       </div>

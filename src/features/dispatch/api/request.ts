@@ -1,8 +1,15 @@
 import { axiosInstance, ServerSuccessResponse } from "@/shared/utils/axios-instance";
-import { AcknowledgeJobPayload, AddJobNotePayload, AddPODAttachmentPayload, CancelJobPayload, CreateJobPayload, GetJobPayload, GetJobTimelinePayload, GetJobTimelineResponse, Job, OptimizeMultiStopRoutePayload, SetJobToDriverOrVehiclePayload, SuggestOptimalRoutePayload, OptimalRoute, UpdateJobPriorityPayload } from "./types";
+import { AcknowledgeJobPayload, AddJobNotePayload, AddPODAttachmentPayload, CancelJobPayload, CreateJobPayload, GetJobPayload, GetJobTimelinePayload, GetJobTimelineResponse, Job, ListJobPayload, OptimizeMultiStopRoutePayload, SetJobToDriverOrVehiclePayload, SuggestOptimalRoutePayload, OptimalRoute, UpdateJobPriorityPayload } from "./types";
 
 export async function createJob(payload: CreateJobPayload) {
  const { data } = await axiosInstance.post<ServerSuccessResponse<Job>>("/dispatch/jobs", payload.data)
+ return data
+}
+
+export async function listJob(payload: ListJobPayload) {
+ const { data } = await axiosInstance.get<ServerSuccessResponse<Job[]>>("/dispatch/jobs", {
+  params: payload.params
+ })
  return data
 }
 

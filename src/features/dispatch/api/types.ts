@@ -69,7 +69,7 @@ export type Job = {
  "priority": string,
  "reference": string,
  "required_vehicle_type": string,
- "status": string,
+ "status": JobStatus,
  "tenant_id": string,
  "time_window": JobTimeWindow,
  "timeline": JobTimeline,
@@ -143,6 +143,16 @@ type CreateJobData = {
 
 export type CreateJobPayload = {
  data: Partial<CreateJobData>
+}
+
+export type ListJobPayload = {
+ params: {
+  status?: JobStatus;
+  tenant_id?: string;
+  query?: string;
+  driver_id?: string;
+  vehicle_id?: string;
+ }
 }
 
 export type GetJobPayload = {

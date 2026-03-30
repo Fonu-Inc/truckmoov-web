@@ -67,7 +67,7 @@ export default function DriverFormModal({ open, onOpenChange, mode = "create", d
    email: data.email,
    licenseNumber: data.licenseNumber,
    licenseExpiryDate: data.licenseExpiry,
-   tenantId: user.userId,
+   tenantId: user.tenantId,
    status: data.status,
    communicationPreference: data.communicationPreference,
   }

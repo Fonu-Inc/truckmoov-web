@@ -34,7 +34,7 @@ export default function DeviceActionBar() {
    firmwareVersion: row["Firmware Version"],
    lifecycleStatus: "verified_online"
   }));
-  await bulkCreateDevice({ data: { tenantId: user.userId, items } });
+  await bulkCreateDevice({ data: { tenantId: user.tenantId, items } });
  }
 
  return (

@@ -7,10 +7,12 @@ import StatusBadge from "@/shared/components/StatusBadge";
 import { ModalProps } from "@/shared/types"
 import { Calendar, Camera, Clock, FileText, Package, PenLine, Plus, Truck } from "lucide-react";
 import { useState } from "react";
-import { JobStatus } from "../api/types";
+import { Job, JobStatus } from "../api/types";
 import UploadPodModal from "./UploadPodModal";
 
-type JobDetailSheetProps = ModalProps
+type JobDetailSheetProps = ModalProps & {
+  job: Job | null
+}
 
 const statusSteps: Array<{ key: JobStatus; label: string }> = [
  { key: "created", label: "Created" },
@@ -27,7 +29,7 @@ const POD_PLACEHOLDER = [
   { type: "document", label: "Waybill Copy", icon: <FileText className="h-4 w-4 text-primary" />, date: "Dec 11, 2024 17:46" },
 ]
 
-export default function JobDetailSheet({ open, onOpenChange }: JobDetailSheetProps) {
+export default function JobDetailSheet({ open, onOpenChange, job }: JobDetailSheetProps) {
  const [openUploadPod, setOpenUploadPod] = useState(false)
  const currentStatus: JobStatus = "delivered"
  const currentStepIndex = statusSteps.findIndex((step) => step.key === currentStatus)

@@ -11,12 +11,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { listDriversQueryOptions, listVehiclesQueryOptions } from "@/features/fleet/api"
 import { ModalProps } from "@/shared/types"
+import { useAuthStore } from "@/stores/authStore"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQuery } from "@tanstack/react-query"
 import { RefreshCw, Truck, User } from "lucide-react"
 import { useMemo } from "react"
 import { useForm } from "react-hook-form"
 import z from "zod"
+import { useSetJobToDriverOrVehicle } from "../api"
+import { Job } from "../api/types"
 
 const reassignSchema = z.object({
   vehicleId: z.string().min(1, "Vehicle is required"),
@@ -26,16 +29,21 @@ const reassignSchema = z.object({
 type ReassignFormData = z.infer<typeof reassignSchema>
 
 type ReassignJobModalProps = ModalProps & {
-  jobId?: string
+  job: Job | null
 }
 
-export default function ReassignJobModal({ open, onOpenChange, jobId }: ReassignJobModalProps) {
+export default function ReassignJobModal({ open, onOpenChange, job }: ReassignJobModalProps) {
+  const { user } = useAuthStore()
+  const { mutateAsync: reassignJob, isPending } = useSetJobToDriverOrVehicle()
+
+  const defaultValues = useMemo(() => ({
+    vehicleId: job?.assigned_vehicle_id ?? "",
+    driverId: job?.assigned_driver_id ?? "",
+  }), [job])
+
   const form = useForm<ReassignFormData>({
     resolver: zodResolver(reassignSchema),
-    defaultValues: {
-      vehicleId: "",
-      driverId: "",
-    },
+    defaultValues,
   })
 
   const { data: vehiclesData } = useQuery(listVehiclesQueryOptions({ params: {} }))
@@ -44,8 +52,10 @@ export default function ReassignJobModal({ open, onOpenChange, jobId }: Reassign
   const { data: driversData } = useQuery(listDriversQueryOptions({ params: {} }))
   const drivers = useMemo(() => driversData?.data ?? [], [driversData])
 
-  const handleSubmit = (_data: ReassignFormData) => {
-    onOpenChange(false)
+  const handleSubmit = (data: ReassignFormData) => {
+    reassignJob({ jobId: job!.id, data: { vehicle_id: data.vehicleId, driver_id: data.driverId, tenant_id: user.tenantId, reason: "" } }, {
+      onSuccess: () => onOpenChange(false),
+    })
   }
 
   return (
@@ -57,7 +67,7 @@ export default function ReassignJobModal({ open, onOpenChange, jobId }: Reassign
             Reassign Job
           </DialogTitle>
           <DialogDescription>
-            {jobId ? `Job ${jobId}` : "Select a new vehicle and driver for this job."}
+            {job ? `Job ${job.id}` : "Select a new vehicle and driver for this job."}
           </DialogDescription>
         </DialogHeader>
 
@@ -123,7 +133,7 @@ export default function ReassignJobModal({ open, onOpenChange, jobId }: Reassign
                   Cancel
                 </Button>
               </DialogClose>
-              <Button type="submit">
+              <Button type="submit" isLoading={isPending}>
                 <RefreshCw className="h-4 w-4" />
                 Reassign Job
               </Button>

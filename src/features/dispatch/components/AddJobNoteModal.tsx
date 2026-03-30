@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -6,10 +6,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import z from "zod"
+import { ModalProps } from "@/shared/types"
+import { useAuthStore } from "@/stores/authStore"
+import { useAddJobNote } from "../api"
+import { Job } from "../api/types"
 
-type AddJobNoteModalProps = {
- open: boolean
- onOpenChange: (open: boolean) => void
+type AddJobNoteModalProps = ModalProps & {
+  job: Job | null
 }
 
 const addJobNoteSchema = z.object({
@@ -18,20 +21,25 @@ const addJobNoteSchema = z.object({
 
 type AddJobNoteFormData = z.infer<typeof addJobNoteSchema>
 
-export default function AddJobNoteModal({ open, onOpenChange }: AddJobNoteModalProps) {
+export default function AddJobNoteModal({ open, onOpenChange, job }: AddJobNoteModalProps) {
+ const { user } = useAuthStore()
+ const { mutateAsync: addNote, isPending } = useAddJobNote()
+
+ const defaultValues = useMemo(() => ({ note: "" }), [])
+
  const form = useForm<AddJobNoteFormData>({
   resolver: zodResolver(addJobNoteSchema),
-  defaultValues: {
-   note: "",
-  },
+  defaultValues,
  })
 
  useEffect(() => {
-  if (open) form.reset({ note: "" })
- }, [open, form])
+  if (open) form.reset(defaultValues)
+ }, [open, form, defaultValues])
 
- const handleSave = (_data: AddJobNoteFormData) => {
-  onOpenChange(false)
+ const handleSave = (data: AddJobNoteFormData) => {
+  addNote({ jobId: job!.id, data: { text: data.note, tenant_id: user.tenantId, driver_id: "" } }, {
+   onSuccess: () => onOpenChange(false),
+  })
  }
 
  return (
@@ -68,7 +76,7 @@ export default function AddJobNoteModal({ open, onOpenChange }: AddJobNoteModalP
        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
         Cancel
        </Button>
-       <Button type="submit">
+       <Button type="submit" isLoading={isPending}>
         Save Note
        </Button>
       </div>

@@ -57,7 +57,7 @@ export default function JobFormModal({ open, onOpenChange }: JobFormModalProps) 
   await createJob({
    data: {
     ...data,
-    tenant_id: user.userId
+    tenant_id: user.tenantId
    }
   }, {
    onSuccess: () => {

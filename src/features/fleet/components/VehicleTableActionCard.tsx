@@ -28,11 +28,11 @@ export default function VehicleTableActionCard() {
    year: Number(row["Year"]),
    type: row["Type"] as VehicleType,
    capacity: Number(row["Capacity (tons)"]),
-   tenantId: user.userId,
+   tenantId: user.tenantId,
    status: (row["Status"] as FleetStatus) ?? "inactive",
   }));
 
-  await bulkCreateVehicle({ data: { tenantId: user.userId, items } });
+  await bulkCreateVehicle({ data: { tenantId: user.tenantId, items } });
  }
 
  return (

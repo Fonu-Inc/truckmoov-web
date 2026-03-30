@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -6,10 +6,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import z from "zod"
+import { ModalProps } from "@/shared/types"
+import { useAuthStore } from "@/stores/authStore"
+import { useCancelJob } from "../api"
+import { Job } from "../api/types"
 
-type CancelJobModalProps = {
- open: boolean
- onOpenChange: (open: boolean) => void
+type CancelJobModalProps = ModalProps & {
+  job: Job | null
 }
 
 const cancelJobSchema = z.object({
@@ -18,24 +21,25 @@ const cancelJobSchema = z.object({
 
 type CancelJobFormData = z.infer<typeof cancelJobSchema>
 
-export default function CancelJobModal({ open, onOpenChange }: CancelJobModalProps) {
+export default function CancelJobModal({ open, onOpenChange, job }: CancelJobModalProps) {
+ const { user } = useAuthStore()
+ const { mutateAsync: cancelJob, isPending } = useCancelJob()
+
+ const defaultValues = useMemo(() => ({ reason: "" }), [])
+
  const form = useForm<CancelJobFormData>({
   resolver: zodResolver(cancelJobSchema),
-  defaultValues: {
-   reason: "",
-  },
+  defaultValues,
  })
 
  useEffect(() => {
-  if (open) {
-   form.reset({
-    reason: "",
-   })
-  }
- }, [open, form])
+  if (open) form.reset(defaultValues)
+ }, [open, form, defaultValues])
 
  const handleConfirmCancel = (_data: CancelJobFormData) => {
-  onOpenChange(false)
+  cancelJob({ jobId: job!.id, data: { driver_id: "", tenant_id: user.tenantId } }, {
+   onSuccess: () => onOpenChange(false),
+  })
  }
 
  return (
@@ -72,7 +76,7 @@ export default function CancelJobModal({ open, onOpenChange }: CancelJobModalPro
        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
         Keep Job
        </Button>
-       <Button type="submit" variant="destructive">
+       <Button type="submit" variant="destructive" isLoading={isPending}>
         Confirm Cancel
        </Button>
       </div>
