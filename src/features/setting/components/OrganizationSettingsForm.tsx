@@ -212,7 +212,7 @@ export default function OrganizationSettingsForm() {
        <FormItem className="md:col-span-2">
         <FormLabel>Address</FormLabel>
         <FormControl>
-         <Textarea rows={2} {...field} disabled={!canEditOrgSettings} />
+         <Textarea rows={2} {...field} />
         </FormControl>
         <FormMessage />
        </FormItem>

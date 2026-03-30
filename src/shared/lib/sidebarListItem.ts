@@ -125,7 +125,6 @@ const SETTINGS_DETAILS: DetailsObjectType = {
   "DISPATCHER": {
     label: "Settings",
     pageTitle: "Settings",
-    to: APP_ROUTES.dispatchSettings,
   }
 }
 
@@ -378,7 +377,7 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
     ...(settingRoleDetail ? [{
       label: settingRoleDetail.label,
       roleWithAccess: getRolesFromDetails(SETTINGS_DETAILS),
-      to: settingRoleDetail.to ?? APP_ROUTES.organizationsSettings,
+      to: APP_ROUTES.organizationsSettings,
       icon: Settings,
       pageTitle: settingRoleDetail.pageTitle,
       pageDescription: settingRoleDetail.pageDescription
