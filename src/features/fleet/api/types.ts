@@ -171,7 +171,7 @@ export type FuelThreshold = {
 // ─── Documents ───────────────────────────────────────────────────────────────
 
 export type DocumentEntityType = "job" | "vehicle" | "driver"
-export type DocType = "pod"
+export type DocType = "pod" | "invoice" | "permit" | (string & {})
 
 export type Document = {
  "id": string,
@@ -187,7 +187,7 @@ export type Document = {
  "expiresAt": string
 }
 
-export type DocumentAccessLogAction = "upload"
+export type DocumentAccessLogAction = "upload" | "view" | "download" | (string & {})
 
 export type DocumentAccessLog = {
  "id": string,
@@ -615,8 +615,8 @@ export type SetFuelThresholdPayload = {
 
 export type ListDocumentPayload = {
  params: {
-  entityType: DocumentEntityType;
-  entityId: string;
+  entityType?: DocumentEntityType;
+  entityId?: string;
   tenantId: string
  }
 }

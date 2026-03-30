@@ -25,6 +25,7 @@ import {
   Gauge,
   DollarSign,
   Bell,
+  Logs,
 } from "lucide-react";
 import { APP_ROUTES } from "./appRoutes";
 import { DetailsObjectType, SidebarListItem } from "../types";
@@ -242,6 +243,15 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       icon: Bell,
       pageTitle: "Alerts Center",
       pageDescription: "Real-time fleet alerts and notifications",
+    },
+
+    {
+      label: "Documents",
+      roleWithAccess: ["ENTERPRISE_ADMIN", "OPERATIONS_MANAGER"],
+      to: APP_ROUTES.documents,
+      icon: Logs,
+      pageTitle: "Documents",
+      pageDescription: "Access Logs for Document managed by organization",
     },
 
     // Settlement

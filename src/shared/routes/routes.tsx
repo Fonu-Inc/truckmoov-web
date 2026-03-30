@@ -16,6 +16,7 @@ import Devices from "@/features/fleet/pages/Devices";
 import Job from "@/features/dispatch/pages/Job";
 import DispatchSettings from "@/features/setting/pages/DispatchSettings";
 import Alerts from "@/features/fleet/pages/Alerts";
+import Documents from "@/features/fleet/pages/Documents";
 
 export function buildAppRoutes(): RouteObject[] {
   return [
@@ -58,6 +59,10 @@ export function buildAppRoutes(): RouteObject[] {
         {
           path: APP_ROUTES.alerts,
           element: <Alerts /> 
+        },
+        {
+          path: APP_ROUTES.documents,
+          element: <Documents /> 
         },
 
         // Settings Page

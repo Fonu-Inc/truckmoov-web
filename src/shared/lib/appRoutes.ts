@@ -21,6 +21,7 @@ export const APP_ROUTES = {
   driver: "/driver",
   device: "/device",
   alerts: "/alerts",
+  documents: "/documents",
 
   // settings route
   organizationsSettings: "/setting",

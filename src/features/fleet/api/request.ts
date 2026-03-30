@@ -307,13 +307,35 @@ export async function setFuelThreshold(payload: SetFuelThresholdPayload) {
  return data;
 }
 
+function unwrapNestedSuccessData<T>(value: unknown): T | undefined {
+ if (!value) return undefined;
+
+ if (
+  typeof value === "object" &&
+  value !== null &&
+  "status" in (value as Record<string, unknown>) &&
+  "data" in (value as Record<string, unknown>) &&
+  typeof (value as { status?: unknown }).status === "boolean"
+ ) {
+  return unwrapNestedSuccessData<T>((value as { data: unknown }).data);
+ }
+
+ return value as T;
+}
+
+function normalizeToArray<T>(value: T | T[] | null | undefined): T[] {
+ if (Array.isArray(value)) return value;
+ return value ? [value] : [];
+}
+
 // ─── Documents ───────────────────────────────────────────────────────────────
 
 export async function listDocuments(payload: ListDocumentPayload) {
- const { data } = await axiosInstance.get<ServerSuccessResponse<Document>>("/fleet/documents", {
+ const { data } = await axiosInstance.get<ServerSuccessResponse<Document[] | Document>>("/fleet/documents", {
   params: payload.params
  })
- return data;
+ const docs = normalizeToArray(unwrapNestedSuccessData<Document[] | Document>(data.data))
+ return { ...data, data: docs };
 }
 
 export async function uploadDocument(payload: UploadDocumentPayload) {
@@ -331,10 +353,11 @@ export async function documentSecureUrl(payload: DocumentSecureUrlPayload) {
 }
 
 export async function documentAccessLog(payload: DocumentAccessLogPayload) {
- const { data } = await axiosInstance.get<ServerSuccessResponse<DocumentAccessLog>>(`/fleet/documents/${payload.id}/access-log`, {
+ const { data } = await axiosInstance.get<ServerSuccessResponse<DocumentAccessLog[] | DocumentAccessLog>>(`/fleet/documents/${payload.id}/access-log`, {
   params: payload.params
  })
- return data;
+ const logs = normalizeToArray(unwrapNestedSuccessData<DocumentAccessLog[] | DocumentAccessLog>(data.data))
+ return { ...data, data: logs };
 }
 
 // ─── Audit ───────────────────────────────────────────────────────────────────
