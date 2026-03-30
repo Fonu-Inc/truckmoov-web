@@ -4,13 +4,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { useCreateJob } from "@/features/dispatch/api"
 import { listDriversQueryOptions, listVehiclesQueryOptions } from "@/features/fleet/api"
 import { ModalProps } from "@/shared/types"
+import { useAuthStore } from "@/stores/authStore"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQuery } from "@tanstack/react-query"
 import { Clock, MapPin, Package, Send, Truck, User } from "lucide-react"
 import { useMemo } from "react"
 import { useForm } from "react-hook-form"
+import { toast } from "sonner"
 import z from "zod"
 
 const jobSchema = z.object({
@@ -28,6 +31,9 @@ type JobFormData = z.infer<typeof jobSchema>
 type JobFormModalProps = ModalProps
 
 export default function JobFormModal({ open, onOpenChange }: JobFormModalProps) {
+ const { user } = useAuthStore()
+ const { mutateAsync: createJob, isPending } = useCreateJob()
+
  const form = useForm<JobFormData>({
   resolver: zodResolver(jobSchema),
   defaultValues: {
@@ -47,8 +53,18 @@ export default function JobFormModal({ open, onOpenChange }: JobFormModalProps) 
  const { data: driversData } = useQuery(listDriversQueryOptions({ params: {} }))
  const drivers = useMemo(() => driversData?.data ?? [], [driversData])
 
- const handleSubmit = (_data: JobFormData) => {
-  onOpenChange(false)
+ const handleSubmit = async (data: JobFormData) => {
+  await createJob({
+   data: {
+    ...data,
+    tenant_id: user.userId
+   }
+  }, {
+   onSuccess: () => {
+    onOpenChange(false)
+    form.reset()
+   }
+  })
  }
 
  return (
@@ -214,11 +230,11 @@ export default function JobFormModal({ open, onOpenChange }: JobFormModalProps) 
 
       <div className="flex justify-end gap-3 pt-2">
        <DialogClose asChild>
-        <Button type="button" variant="outline">
+        <Button type="button" variant="outline" disabled={isPending}>
          Cancel
         </Button>
        </DialogClose>
-       <Button type="submit">
+       <Button type="submit" isLoading={isPending} disabled={isPending}>
         Create Dispatch
        </Button>
       </div>

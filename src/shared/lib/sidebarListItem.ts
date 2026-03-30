@@ -100,24 +100,6 @@ const FLEET_DETAILS: DetailsObjectType = {
   }
 }
 
-const MAP_DETAILS: DetailsObjectType = {
-  "ENTERPRISE_ADMIN": {
-    label: "Live Tracking",
-    pageTitle: "Live Fleet Map",
-    pageDescription: "Real-time vehicle tracking and monitoring"
-  },
-  "OPERATIONS_MANAGER": {
-    label: "Live Map",
-    pageTitle: "Live Fleet Map",
-    pageDescription: "Real-time vehicle tracking and monitoring"
-  },
-  "FLEET_ADMIN": {
-    label: "Live Map & Zones",
-    pageTitle: "Live Fleet Map",
-    pageDescription: "Real-time vehicle tracking and monitoring",
-  }
-}
-
 const SETTINGS_DETAILS: DetailsObjectType = {
   "ENTERPRISE_ADMIN": {
     label: "Organization Settings",
@@ -183,35 +165,13 @@ const WALLET_BILLING_DETAILS: DetailsObjectType = {
   }
 }
 
-const DEVICE_DETAILS: DetailsObjectType = {
-  "FLEET_ADMIN": {
-    label: "Devices",
-    pageTitle: "IoT Device Management",
-    pageDescription: "Provision and manage GPS tracking devices"
-  },
-  "AGGREGATOR_ADMIN": {
-    label: "Device Setup Requests"
-  },
-  "DISPATCHER": {
-    label: "Device"
-  },
-  "OPERATIONS_MANAGER": {
-    label: "Device"
-  },
-  "FINANCE_VIEWER": {
-    label: "Device"
-  },
-}
-
 export function siderbarList(role: UserRole): SidebarListItem[] {
   const dashboardRoleDetail = DASHBOARD_DETAILS[role]
   const jobRoleDetail = JOB_DETAILS[role]
   const fleetRoleDetail = FLEET_DETAILS[role];
-  const mapRoleDetail = MAP_DETAILS[role];
   const settingRoleDetail = SETTINGS_DETAILS[role];
   const driverRoleDetail = DRIVER_DETAILS[role];
   const wallingBillingDetails = WALLET_BILLING_DETAILS[role];
-  const deviceDetails = DEVICE_DETAILS[role]
 
   return [
     // Dashboard
@@ -253,25 +213,23 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       pageTitle: driverRoleDetail.pageTitle
     }] : []),
 
-    // Device
-    ...(deviceDetails ? [{
-      label: deviceDetails.label,
-      roleWithAccess: getRolesFromDetails(DEVICE_DETAILS),
+    {
+      label: "Devices",
+      roleWithAccess: ["FLEET_ADMIN", "DISPATCHER"],
       to: APP_ROUTES.device,
       icon: Cpu,
-      pageTitle: deviceDetails.pageTitle,
-      pageDescription: deviceDetails.pageDescription,
-    }] : []),
+      pageTitle: "IoT Device Management",
+      pageDescription: "Provision and manage GPS tracking devices"
+    },
 
-    // Map
-    // ...(mapRoleDetail ? [{
-    //   label: mapRoleDetail.label,
-    //   roleWithAccess: getRolesFromDetails(MAP_DETAILS),
-    //   to: APP_ROUTES.map,
-    //   icon: MapPin,
-    //   pageTitle: mapRoleDetail.pageTitle,
-    //   pageDescription: mapRoleDetail.pageDescription
-    // }] : []),
+    {
+      label: "Live Map & Zones",
+      roleWithAccess: ["DISPATCHER"],
+      to: APP_ROUTES.map,
+      icon: MapPin,
+      pageTitle: "Live Fleet Map",
+      pageDescription: "Real-time vehicle tracking and monitoring",
+    },
 
     // Settlement
     // ...(wallingBillingDetails ? [{
