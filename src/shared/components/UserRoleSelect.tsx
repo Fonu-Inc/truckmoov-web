@@ -9,31 +9,21 @@ type UserRoleSelectProps = {
  id?: string;
 };
 
-const rolesOption: Array<{
- value: UserRole,
- label: string;
-}> = [
-  {
-   value: "ENTERPRISE_ADMIN",
-   label: "Admin - Full access"
-  },
-  {
-   value: "FLEET_ADMIN",
-   label: "Manager - Manage fleet & drivers"
-  },
-  {
-   value: "OPERATIONS_MANAGER",
-   label: "Supervisor - Monitor operations"
-  },
-  {
-   value: "DISPATCHER",
-   label: "Dispatcher - Assign jobs"
-  },
-  {
-   value: "FINANCE_VIEWER",
-   label: "Viewer - Read-only access"
-  },
- ]
+const ROLE_LABELS: Record<UserRole, string> = {
+ ENTERPRISE_ADMIN: "Enterprise Admin - Full access",
+ AGGREGATOR_ADMIN: "Aggregator Admin - Manage linked operators",
+ OWNER_OPERATOR: "Owner-Operator - Execute assigned jobs",
+ PLATFORM_ADMIN: "Platform Admin - Platform-wide administration",
+ FLEET_ADMIN: "Fleet Admin - Manage fleet & drivers",
+ OPERATIONS_MANAGER: "Operations Manager - Monitor operations",
+ DISPATCHER: "Dispatcher - Assign and track jobs",
+ FINANCE_VIEWER: "Finance Viewer - Read-only financial access",
+};
+
+const rolesOption: Array<{ value: UserRole; label: string }> = Object.entries(ROLE_LABELS).map(([value, label]) => ({
+ value: value as UserRole,
+ label,
+}));
 
 export default function UserRoleSelect({ value, onValueChange, label = "Role", id = "role" }: UserRoleSelectProps) {
  return (

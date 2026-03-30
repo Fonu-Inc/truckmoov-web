@@ -18,7 +18,7 @@ const SETTINGS_TAB_LIST: SettingsObject[] = [
   label: "organization",
   icon: Building2,
   to: APP_ROUTES.organizationsSettings,
-  roleWithAccess: ["ENTERPRISE_ADMIN", "FLEET_ADMIN", "DISPATCHER"]
+  roleWithAccess: ["ENTERPRISE_ADMIN", "FLEET_ADMIN", "DISPATCHER", "AGGREGATOR_ADMIN", "FINANCE_VIEWER", "OPERATIONS_MANAGER", "AGGREGATOR_ADMIN", "OWNER_OPERATOR", "PLATFORM_ADMIN"],
  },
  {
   label: "dispatch",

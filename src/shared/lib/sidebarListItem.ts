@@ -37,24 +37,24 @@ const DASHBOARD_DETAILS: DetailsObjectType = {
     pageTitle: "Dashboard",
     pageDescription: "Enterprise-wide job monitoring & provider performance"
   },
-  "AGGREGATOR_ADMIN": {
-    label: "Network Overview",
-    pageTitle: "Aggregator Dashboard",
-    pageDescription: "Manage linked operators & coordinated execution"
-  },
-  "OWNER_OPERATOR": {
-    label: "Overview",
-    pageTitle: "Dashboard",
-  },
-  "PLATFORM_ADMIN": {
-    label: "Dashboard",
-    pageTitle: "Platform Dashboard",
-    pageDescription: "System overview for Super Administrator"
-  },
   "FLEET_ADMIN": {
     label: "Fleet Operations",
     pageTitle: "Fleet Dashboard",
   },
+  // "AGGREGATOR_ADMIN": {
+  //   label: "Network Overview",
+  //   pageTitle: "Aggregator Dashboard",
+  //   pageDescription: "Manage linked operators & coordinated execution"
+  // },
+  // "OWNER_OPERATOR": {
+  //   label: "Overview",
+  //   pageTitle: "Dashboard",
+  // },
+  // "PLATFORM_ADMIN": {
+  //   label: "Dashboard",
+  //   pageTitle: "Platform Dashboard",
+  //   pageDescription: "System overview for Super Administrator"
+  // },
   "OPERATIONS_MANAGER": {
     label: "Dashboard",
     pageTitle: "Dashboard",
@@ -131,7 +131,15 @@ const SETTINGS_DETAILS: DetailsObjectType = {
   "DISPATCHER": {
     label: "Settings",
     pageTitle: "Settings",
-  }
+  },
+  "OPERATIONS_MANAGER": {
+    label: "Settings",
+    pageTitle: "Settings",
+  },
+  "FINANCE_VIEWER": {
+    label: "Settings",
+    pageTitle: "Settings",
+  },
 }
 
 const DRIVER_DETAILS: DetailsObjectType = {
@@ -247,7 +255,7 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
 
     {
       label: "Documents",
-      roleWithAccess: ["ENTERPRISE_ADMIN", "OPERATIONS_MANAGER"],
+      roleWithAccess: ["ENTERPRISE_ADMIN", "OPERATIONS_MANAGER", "PLATFORM_ADMIN"],
       to: APP_ROUTES.documents,
       icon: Logs,
       pageTitle: "Documents",
@@ -274,14 +282,14 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
     //   pageDescription: "Exportable historical summaries and audits"
     // },
 
-    // // Intergrations
-    // {
-    //   label: "Integrations",
-    //   roleWithAccess: ["FLEET_ADMIN", "ENTERPRISE_ADMIN", "AGGREGATOR_ADMIN"],
-    //   to: APP_ROUTES.integrations,
-    //   icon: Code2,
-    //   pageTitle: "Developer Portal",
-    // },
+    // Intergrations
+    {
+      label: "Integrations",
+      roleWithAccess: ["ENTERPRISE_ADMIN", "PLATFORM_ADMIN"],
+      to: APP_ROUTES.integrations,
+      icon: Code2,
+      pageTitle: "Developer Portal",
+    },
 
     // {
     //   label: "Job Offers",

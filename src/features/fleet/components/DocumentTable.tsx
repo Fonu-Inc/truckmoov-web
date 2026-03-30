@@ -120,8 +120,8 @@ export default function DocumentTable({ tenantId, search, entityType }: Document
    header: "Filename",
    cell: ({ row }) => (
     <div className="flex items-center gap-2">
-     <FileText className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-     <span className="max-w-[200px] truncate font-medium">{row.original.filename}</span>
+     <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+     <span className="max-w-50 truncate font-medium">{row.original.filename}</span>
     </div>
    ),
   },

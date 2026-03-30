@@ -9,6 +9,6 @@ export function getRoleDefaultRoute(role: UserRole) {
     case "OPERATIONS_MANAGER":
       return APP_ROUTES.dashboard
     default:
-      return APP_ROUTES.dashboard;
+      return APP_ROUTES.organizationsSettings;
   }
 }

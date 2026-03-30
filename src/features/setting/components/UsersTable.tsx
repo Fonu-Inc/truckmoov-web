@@ -59,9 +59,10 @@ export default function UsersTable() {
    cell: ({ row }) => {
     const userName = row.original.profile.fullName
     const userEmail = row.original.email
+    const userImage = row.original?.profile?.profilePictureUrl ?? null
     return (
      <div className="flex items-center gap-3">
-      <AppAvatar value={userName} className="w-8 h-8" />
+      <AppAvatar value={userName} imgUrl={userImage} className="w-8 h-8" />
       <div>
        <p className="font-medium truncate">{userName}</p>
        <p className="text-sm text-muted-foreground truncate">{userEmail}</p>
