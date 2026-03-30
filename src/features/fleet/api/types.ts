@@ -113,7 +113,7 @@ export type Job = {
 // ─── Alerts ──────────────────────────────────────────────────────────────────
 
 export type AlertStatus = "open" | "acknowledged" | "resolved" | "excalated";
-export type AlertSeverity = "low";
+export type AlertSeverity = "low" | "medium" | "high" | 'critical';
 
 export type Alert = {
  "id": string,
@@ -487,10 +487,10 @@ export type AlertStatisticsResponse = {
 
 export type ListAlertsPayload = {
  params: {
-  status: AlertStatus;
-  type: string;
-  vehicleId: string;
-  tenantId: string;
+  status?: AlertStatus;
+  type?: string;
+  vehicleId?: string;
+  tenantId?: string;
  }
 }
 

@@ -16,6 +16,7 @@ import Devices from "@/features/fleet/pages/Devices";
 import Job from "@/features/dispatch/pages/Job";
 import DispatchSettings from "@/features/setting/pages/DispatchSettings";
 import Map from "@/features/dispatch/pages/Map";
+import Alerts from "@/features/fleet/pages/Alerts";
 
 export function buildAppRoutes(): RouteObject[] {
   return [
@@ -52,24 +53,16 @@ export function buildAppRoutes(): RouteObject[] {
           element: <Map />
         },
         {
-          path: APP_ROUTES.settlement,
-          element: <></>
-        },
-        {
-          path: APP_ROUTES.reports,
-          element: <></>
-        },
-        {
-          path: APP_ROUTES.integrations,
-          element: <></>
-        },
-        {
           path: APP_ROUTES.driver,
           element: <Driver />
         },
         {
           path: APP_ROUTES.device,
           element: <Devices /> 
+        },
+        {
+          path: APP_ROUTES.alerts,
+          element: <Alerts /> 
         },
 
         // Settings Page

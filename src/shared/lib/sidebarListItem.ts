@@ -24,6 +24,7 @@ import {
   BarChart3,
   Gauge,
   DollarSign,
+  Bell,
 } from "lucide-react";
 import { APP_ROUTES } from "./appRoutes";
 import { DetailsObjectType, SidebarListItem } from "../types";
@@ -228,6 +229,15 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       icon: MapPin,
       pageTitle: "Live Fleet Map",
       pageDescription: "Real-time vehicle tracking and monitoring",
+    },
+
+    {
+      label: "Alerts",
+      roleWithAccess: ["DISPATCHER"],
+      to: APP_ROUTES.alerts,
+      icon: Bell,
+      pageTitle: "Alerts Center",
+      pageDescription: "Real-time fleet alerts and notifications",
     },
 
     // Settlement

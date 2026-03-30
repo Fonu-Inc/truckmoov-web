@@ -192,7 +192,7 @@ export async function alertStatistics() {
 }
 
 export async function listAlerts(payload: ListAlertsPayload) {
- const { data } = await axiosInstance.get<ServerSuccessResponse<Alert>>("/fleet/alerts", {
+ const { data } = await axiosInstance.get<ServerSuccessResponse<Alert[]>>("/fleet/alerts", {
   params: payload.params
  })
  return data;

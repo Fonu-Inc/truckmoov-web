@@ -20,6 +20,7 @@ export const APP_ROUTES = {
   integrations: "/integrations",
   driver: "/driver",
   device: "/device",
+  alerts: "/alerts",
 
   // settings route
   organizationsSettings: "/setting",
