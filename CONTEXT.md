@@ -55,7 +55,7 @@ User story role names map to `UserRole` code values as follows:
 ### Implementation Rules
 0. **UI only, no dummy API** — when working on an epic, build the UI only. Do not create placeholder/dummy API hooks, mock requests, or fake data fetching. Use local UI state or static placeholder data directly in the component until real backend endpoints are available and explicitly handed over for integration.
 1. **Check first** — before creating anything new, determine whether the user story is an enhancement to a page that already exists in an active feature (`auth`, `setting`, `dashboard`, `fleet`, `dispatch`). If it is, extend the existing feature rather than creating a new one.
-2. **Access control** — if the user story names specific roles, only those roles (mapped via the table above) should have access to the new/modified page or feature. Gate access in `src/shared/lib/sidebarListItem.ts` (for sidebar entries) and in route guards where applicable.
+2. **Access control** — access is controlled by what roles can *see*, not by route guards. If a user story names specific roles, restrict access by only adding the page's sidebar entry for those roles in `src/shared/lib/sidebarListItem.ts`. Since the sidebar is the only navigation surface, users without an entry simply never discover the route. Do not create role guard providers, wrapper components, or route-level permission checks for this purpose.
 3. **Skip non-app roles** — do not implement anything for `System` (backend job) or `Driver` (no role).
 4. **Feature placement** — new pages/components go inside the relevant active feature folder. If no existing active feature owns the epic's domain, create a new feature folder under `src/features/` following the feature-first architecture convention, then update the **Active main-app features** list in the App Architecture Overview section of this file to include the new feature.
 5. **Route & sidebar registration** — for every new page: (a) add its path constant to `src/shared/lib/appRoutes.ts`, (b) register the `RouteObject` in `src/shared/routes/routes.tsx` under `MainLayout` children, and (c) if the page needs a sidebar link, add role-gated details to the appropriate `*_DETAILS` constant in `src/shared/lib/sidebarListItem.ts` and add the entry to the returned array.
@@ -71,7 +71,8 @@ User story role names map to `UserRole` code values as follows:
   - `src/features/dashboard` — role-based dashboards
   - `src/features/fleet` — fleet/vehicle management
   - `src/features/dispatch` — dispatch/job management
-- Any feature folder outside the five above (e.g. `src/features/business`, `src/features/driver`, `src/features/platform`, etc.) belongs to the demo app and should not be touched for main-app work.
+  - `src/features/integrations` — integrations and developer portal UI
+- Any feature folder outside the six above (e.g. `src/features/business`, `src/features/driver`, `src/features/platform`, etc.) belongs to the demo app and should not be touched for main-app work.
 - **`src/shared/`** is the cross-feature infrastructure layer for the main app. It contains:
   - `components/` — reusable UI components
   - `composables/` — shared composable utilities

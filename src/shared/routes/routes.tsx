@@ -17,6 +17,7 @@ import Job from "@/features/dispatch/pages/Job";
 import DispatchSettings from "@/features/setting/pages/DispatchSettings";
 import Alerts from "@/features/fleet/pages/Alerts";
 import Documents from "@/features/fleet/pages/Documents";
+import IntegrationsPage from "@/features/integrations/ui/pages/Integrations";
 
 export function buildAppRoutes(): RouteObject[] {
   return [
@@ -63,6 +64,10 @@ export function buildAppRoutes(): RouteObject[] {
         {
           path: APP_ROUTES.documents,
           element: <Documents /> 
+        },
+        {
+          path: APP_ROUTES.integrations,
+          element: <IntegrationsPage />
         },
 
         // Settings Page
