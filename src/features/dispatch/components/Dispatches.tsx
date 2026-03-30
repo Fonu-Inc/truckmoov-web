@@ -26,6 +26,7 @@ export default function Dispatches() {
      <div className='space-y-3'>
       <JobCard />
      </div>
+
     </CardContent>
    </Card>
 

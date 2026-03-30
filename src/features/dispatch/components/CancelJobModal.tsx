@@ -1,0 +1,84 @@
+import { useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Textarea } from "@/components/ui/textarea"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import z from "zod"
+
+type CancelJobModalProps = {
+ open: boolean
+ onOpenChange: (open: boolean) => void
+}
+
+const cancelJobSchema = z.object({
+ reason: z.string().trim().min(1, "Cancellation reason is required"),
+})
+
+type CancelJobFormData = z.infer<typeof cancelJobSchema>
+
+export default function CancelJobModal({ open, onOpenChange }: CancelJobModalProps) {
+ const form = useForm<CancelJobFormData>({
+  resolver: zodResolver(cancelJobSchema),
+  defaultValues: {
+   reason: "",
+  },
+ })
+
+ useEffect(() => {
+  if (open) {
+   form.reset({
+    reason: "",
+   })
+  }
+ }, [open, form])
+
+ const handleConfirmCancel = (_data: CancelJobFormData) => {
+  onOpenChange(false)
+ }
+
+ return (
+  <Dialog open={open} onOpenChange={onOpenChange}>
+   <DialogContent className="sm:max-w-md">
+    <DialogHeader>
+     <DialogTitle>Cancel Job</DialogTitle>
+     <DialogDescription>
+      Provide a reason for cancelling this job.
+     </DialogDescription>
+    </DialogHeader>
+
+    <Form {...form}>
+     <form onSubmit={form.handleSubmit(handleConfirmCancel)} className="space-y-4 py-2">
+      <FormField
+       control={form.control}
+       name="reason"
+       render={({ field }) => (
+        <FormItem>
+         <FormLabel>Cancellation Reason</FormLabel>
+         <FormControl>
+          <Textarea
+           rows={4}
+           placeholder="Tell us why this job is being cancelled..."
+           {...field}
+          />
+         </FormControl>
+         <FormMessage />
+        </FormItem>
+       )}
+      />
+
+      <div className="flex justify-end gap-2">
+       <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+        Keep Job
+       </Button>
+       <Button type="submit" variant="destructive">
+        Confirm Cancel
+       </Button>
+      </div>
+     </form>
+    </Form>
+   </DialogContent>
+  </Dialog>
+ )
+}

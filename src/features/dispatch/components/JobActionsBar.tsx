@@ -1,6 +1,20 @@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Filter, Search } from "lucide-react";
+import { JobStatus } from "../api/types";
+
+type JobStatusFilter = "all" | JobStatus
+
+const JOB_STATUS_OPTIONS: Array<{ value: JobStatusFilter; label: string }> = [
+ { value: "all", label: "All Status" },
+ { value: "created", label: "Created" },
+ { value: "assigned", label: "Assigned" },
+ { value: "en-route", label: "En Route" },
+ { value: "arrived", label: "Arrived" },
+ { value: "loaded", label: "Loaded" },
+ { value: "delivered", label: "Delivered" },
+ { value: "cancelled", label: "Cancelled" },
+]
 
 export default function JobActionsBar() {
  return (
@@ -15,14 +29,14 @@ export default function JobActionsBar() {
    <Select>
     <SelectTrigger className="w-full sm:w-45">
      <Filter className="h-4 w-4 mr-2" />
-     <SelectValue placeholder="Filter by status" />
+    <SelectValue placeholder="Filter by status" />
     </SelectTrigger>
     <SelectContent>
-     <SelectItem value="all">All Status</SelectItem>
-     <SelectItem value="created">Pending</SelectItem>
-     <SelectItem value="in_progress">In Progress</SelectItem>
-     <SelectItem value="completed">Completed</SelectItem>
-     <SelectItem value="cancelled">Cancelled</SelectItem>
+     {JOB_STATUS_OPTIONS.map((status) => (
+      <SelectItem key={status.value} value={status.value}>
+       {status.label}
+      </SelectItem>
+     ))}
     </SelectContent>
    </Select>
   </div>

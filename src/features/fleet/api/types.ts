@@ -101,7 +101,14 @@ export type Device = {
  "createdAt": string,
  "updatedAt": string
 }
+// Jobs & Dispatch
 
+export type Job = {
+ "jobId": string,
+ "tenantId": string,
+ "status": FleetStatus,
+ "updatedAt": string
+}
 
 // ─── Alerts ──────────────────────────────────────────────────────────────────
 
@@ -440,7 +447,33 @@ export type AssignDeviceToVehiclePayload = {
 export type UnassignDeviceToVehiclePayload = {
  id: string;
 }
+// Job & Dispatch Payloads
 
+export type ListJobsPayload = {
+ params: Omit<GetParams, "assigned">
+}
+
+export type SearchDispatchPayload = {
+ params: {
+  vehicleStatus: FleetStatus;
+  driverStatus: FleetStatus;
+  jobStatus: FleetStatus;
+  assignedOnly: boolean;
+  tenantId: string;
+ }
+}
+
+export type SearchDispatchResponse = {
+ vehicles: Vehicle[];
+ drivers: Driver[];
+ jobs: Job[];
+}
+
+export type PublishJobStatusPayload = {
+ params: {
+  tenant: string
+ }
+}
 
 export type AlertStatisticsResponse = {
  "total": number,
@@ -626,4 +659,6 @@ export type AuditLogPayload = {
   tenantId: string;
  }
 }
+
+
 

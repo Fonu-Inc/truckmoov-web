@@ -145,36 +145,6 @@ export type CreateJobPayload = {
  data: Partial<CreateJobData>
 }
 
-export type ListJobsPayload = {
- params: {
-  query?: string
-  status?: string
-  tenantId?: string
- }
-}
-
-export type SearchDispatchPayload = {
- params: {
-  vehicleStatus?: string
-  driverStatus?: string
-  jobStatus?: string
-  assignedOnly?: boolean
-  tenantId?: string
- }
-}
-
-export type SearchDispatchResponse = {
- vehicles: Array<Record<string, unknown>>;
- drivers: Array<Record<string, unknown>>;
- jobs: Job[];
-}
-
-export type PublishJobStatusPayload = {
- params: {
-  tenant: string
- }
-}
-
 export type GetJobPayload = {
  jobId: string;
  params: {

@@ -1,34 +1,13 @@
 import { axiosInstance, ServerSuccessResponse } from "@/shared/utils/axios-instance";
-import { AcknowledgeJobPayload, AddJobNotePayload, AddPODAttachmentPayload, CancelJobPayload, CreateJobPayload, GetJobPayload, GetJobTimelinePayload, GetJobTimelineResponse, Job, ListJobsPayload, OptimizeMultiStopRoutePayload, SetJobToDriverOrVehiclePayload, SuggestOptimalRoutePayload, OptimalRoute, PublishJobStatusPayload, SearchDispatchPayload, SearchDispatchResponse, UpdateJobPriorityPayload } from "./types";
+import { AcknowledgeJobPayload, AddJobNotePayload, AddPODAttachmentPayload, CancelJobPayload, CreateJobPayload, GetJobPayload, GetJobTimelinePayload, GetJobTimelineResponse, Job, OptimizeMultiStopRoutePayload, SetJobToDriverOrVehiclePayload, SuggestOptimalRoutePayload, OptimalRoute, UpdateJobPriorityPayload } from "./types";
 
 export async function createJob(payload: CreateJobPayload) {
  const { data } = await axiosInstance.post<ServerSuccessResponse<Job>>("/dispatch/jobs", payload.data)
  return data
 }
 
-export async function listJobs(payload: ListJobsPayload) {
- const { data } = await axiosInstance.get<ServerSuccessResponse<Job[]>>("/fleet/jobs", {
-  params: payload.params
- })
- return data;
-}
-
 export async function getJob(payload: GetJobPayload) {
  const { data } = await axiosInstance.get<ServerSuccessResponse<Job>>(`/dispatch/jobs/${payload.jobId}`, {
-  params: payload.params
- })
- return data
-}
-
-export async function searchDispatch(payload: SearchDispatchPayload) {
- const { data } = await axiosInstance.get<ServerSuccessResponse<SearchDispatchResponse>>("/fleet/dispatch/search", {
-  params: payload.params
- })
- return data;
-}
-
-export async function publishJobStatus(payload: PublishJobStatusPayload) {
- const { data } = await axiosInstance.post("/fleet/events/job-status", undefined, {
   params: payload.params
  })
  return data

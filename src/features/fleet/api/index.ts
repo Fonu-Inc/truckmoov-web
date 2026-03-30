@@ -1,5 +1,5 @@
 import { queryOptions, useMutation } from "@tanstack/react-query"
-import { acknowledgeAlert, alertStatistics, assignDeviceToVehicle, assignDriverToVehicle, auditLog, bulkCreateDevice, bulkCreateDrivers, bulkCreateVehicle, createDevice, createDriver, createVehicle, deleteDevice, deleteDriver, deleteFuelTransaction, deleteVehicle, deliveryMetrics, documentAccessLog, documentSecureUrl, findNearestVehicles, fuelEfficiency, fuelExport, fuelMetrics, fuelThreshold, getDevice, getDriver, getVehicle, listAlerts, listDevices, listDocuments, listDrivers, listFuelTransaction, listVehicles, operationalDashboard, recordFuelTransaction, registerGpsOnVehicle, registerVehicleGeofence, reportExport, reportVehicleLivePosition, resolveAlert, setDeviceLifeCycle, setDriverStatus, setFuelThreshold, setVehicleStatus, unassignDeviceToVehicle, unassignDriverFromVehicle, updateDevice, updateDriver, updateDriverContactChannels, updateFuelTransaction, updateVehicle, uploadDocument, validateDeviceAssignment, vehicleGeofence, vehicleHealth } from "./request"
+import { acknowledgeAlert, alertStatistics, assignDeviceToVehicle, assignDriverToVehicle, auditLog, bulkCreateDevice, bulkCreateDrivers, bulkCreateVehicle, createDevice, createDriver, createVehicle, deleteDevice, deleteDriver, deleteFuelTransaction, deleteVehicle, deliveryMetrics, documentAccessLog, documentSecureUrl, findNearestVehicles, fuelEfficiency, fuelExport, fuelMetrics, fuelThreshold, getDevice, getDriver, getVehicle, listAlerts, listDevices, listDocuments, listDrivers, listFuelTransaction, listJobs, listVehicles, operationalDashboard, publishJobStatus, recordFuelTransaction, registerGpsOnVehicle, registerVehicleGeofence, reportExport, reportVehicleLivePosition, resolveAlert, searchDispatch, setDeviceLifeCycle, setDriverStatus, setFuelThreshold, setVehicleStatus, unassignDeviceToVehicle, unassignDriverFromVehicle, updateDevice, updateDriver, updateDriverContactChannels, updateFuelTransaction, updateVehicle, uploadDocument, validateDeviceAssignment, vehicleGeofence, vehicleHealth } from "./request"
 import { queryClient } from "@/shared/providers/TanstackQueryProvider"
 import { RequestPayloadExtractor } from "@/shared/types"
 
@@ -11,6 +11,8 @@ export const FLEET_QUERY_KEY = {
  vehicleGeofence: ["vehicleGeofence"],
  drivers: ["drivers"],
  driver: (driverId: string) => ["driver", driverId],
+ jobs: ["jobs"],
+ dispatch: ["dispatch"],
  alertStatistics: ["alertStatistics"],
  alerts: ["alerts"],
  operationalDashboard: ["operationalDashboard"],
@@ -237,7 +239,30 @@ export function useUpdateDriverContactChannels() {
   }
  })
 }
+// Jobs & Dispatch
 
+export function listJobsQueryOptions(payload: RequestPayloadExtractor<typeof listJobs>) {
+ return queryOptions({
+  queryKey: [...FLEET_QUERY_KEY.jobs, payload.params],
+  queryFn: () => listJobs(payload)
+ })
+}
+
+export function searchDispatchQueryOptions(payload: RequestPayloadExtractor<typeof searchDispatch>) {
+ return queryOptions({
+  queryKey: FLEET_QUERY_KEY.dispatch,
+  queryFn: () => searchDispatch(payload)
+ })
+}
+
+export function usePublishJobStatus() {
+ return useMutation({
+  mutationFn: publishJobStatus,
+  onSuccess: () => {
+   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.jobs })
+  }
+ })
+}
 // ─── Alerts ──────────────────────────────────────────────────────────────────
 
 export function alertStatisticsQueryOptions() {
@@ -505,3 +530,4 @@ export function auditLogQueryOptions(payload: RequestPayloadExtractor<typeof aud
   queryFn: () => auditLog(payload)
  })
 }
+

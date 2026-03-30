@@ -1,5 +1,5 @@
 import { queryOptions, useMutation } from "@tanstack/react-query"
-import { acknowledgeJob, addJobNote, addPODAttachment, cancelJob, createJob, getJob, getJobTimeline, listJobs, optimizeMultiStopRoute, publishJobStatus, searchDispatch, setJobToDriverOrVehicle, suggestOptimatRouteForJob, updateJobPriority } from "./request"
+import { acknowledgeJob, addJobNote, addPODAttachment, cancelJob, createJob, getJob, getJobTimeline, optimizeMultiStopRoute, setJobToDriverOrVehicle, suggestOptimatRouteForJob, updateJobPriority } from "./request"
 import { queryClient } from "@/shared/providers/TanstackQueryProvider"
 import { RequestPayloadExtractor } from "@/shared/types"
 
@@ -7,7 +7,6 @@ export const DISPATCH_QUERY_KEY = {
  jobs: ["jobs"],
  job: (jobId: string) => ["job", jobId],
  jobTimeline: (jobId: string) => ["jobTimeline", jobId],
- search: ["dispatchSearch"],
 }
 
 export function useCreateJob() {
@@ -19,25 +18,11 @@ export function useCreateJob() {
  })
 }
 
-export function listJobsQueryOptions(payload: RequestPayloadExtractor<typeof listJobs>) {
- return queryOptions({
-  queryKey: [...DISPATCH_QUERY_KEY.jobs, payload.params],
-  queryFn: () => listJobs(payload)
- })
-}
-
 export function getJobQueryOptions(payload: RequestPayloadExtractor<typeof getJob>) {
  return queryOptions({
   queryKey: DISPATCH_QUERY_KEY.job(payload.jobId),
   queryFn: () => getJob(payload),
   enabled: !!payload.jobId
- })
-}
-
-export function searchDispatchQueryOptions(payload: RequestPayloadExtractor<typeof searchDispatch>) {
- return queryOptions({
-  queryKey: [...DISPATCH_QUERY_KEY.search, payload.params],
-  queryFn: () => searchDispatch(payload)
  })
 }
 
@@ -122,14 +107,5 @@ export function useSuggestOptimalRouteForJob() {
 export function useOptimizeMultiStopRoute() {
  return useMutation({
   mutationFn: optimizeMultiStopRoute,
- })
-}
-
-export function usePublishJobStatus() {
- return useMutation({
-  mutationFn: publishJobStatus,
-  onSuccess: () => {
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs })
-  }
  })
 }

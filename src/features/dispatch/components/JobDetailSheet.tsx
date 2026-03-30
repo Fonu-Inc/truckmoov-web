@@ -7,17 +7,19 @@ import StatusBadge from "@/shared/components/StatusBadge";
 import { ModalProps } from "@/shared/types"
 import { Calendar, Camera, Clock, FileText, Package, PenLine, Plus, Truck } from "lucide-react";
 import { useState } from "react";
+import { JobStatus } from "../api/types";
 import UploadPodModal from "./UploadPodModal";
 
 type JobDetailSheetProps = ModalProps
 
-const statusSteps = [
-  { key: "created", label: "Created" },
-  { key: "assigned", label: "Assigned" },
-  { key: "accepted", label: "Accepted" },
-  { key: "in_progress", label: "In Progress" },
-  { key: "completed", label: "Completed" },
-];
+const statusSteps: Array<{ key: JobStatus; label: string }> = [
+ { key: "created", label: "Created" },
+ { key: "assigned", label: "Assigned" },
+ { key: "en-route", label: "En Route" },
+ { key: "arrived", label: "Arrived" },
+ { key: "loaded", label: "Loaded" },
+ { key: "delivered", label: "Delivered" },
+]
 
 const POD_PLACEHOLDER = [
   { type: "photo", label: "Delivery Photo", icon: <Camera className="h-4 w-4 text-primary" />, date: "Dec 11, 2024 17:42" },
@@ -27,6 +29,9 @@ const POD_PLACEHOLDER = [
 
 export default function JobDetailSheet({ open, onOpenChange }: JobDetailSheetProps) {
  const [openUploadPod, setOpenUploadPod] = useState(false)
+ const currentStatus: JobStatus = "delivered"
+ const currentStepIndex = statusSteps.findIndex((step) => step.key === currentStatus)
+ const progressValue = currentStepIndex === -1 ? 0 : ((currentStepIndex + 1) / statusSteps.length) * 100
 
  return (
   <>
@@ -36,7 +41,7 @@ export default function JobDetailSheet({ open, onOpenChange }: JobDetailSheetPro
      <div className="flex items-start justify-between">
       <div>
        <SheetTitle className="text-xl font-mono">TM-2847</SheetTitle>
-       <StatusBadge status="completed"/>
+       <StatusBadge status={currentStatus}/>
       </div>
       <div className="text-right">
        <p className="text-2xl font-bold text-primary">₦185,000</p>
@@ -51,11 +56,11 @@ export default function JobDetailSheet({ open, onOpenChange }: JobDetailSheetPro
        <CardTitle className="text-sm font-medium">Status Progress</CardTitle>
       </CardHeader>
       <CardContent>
-       <Progress value={100} className="h-2 mb-4" />
+       <Progress value={progressValue} className="h-2 mb-4" />
        <div className="flex justify-between">
         {statusSteps.map((step, index) => {
-         const isCompleted = index <= 5;
-         const isCurrent = index === 5;
+         const isCompleted = currentStepIndex >= 0 && index <= currentStepIndex;
+         const isCurrent = index === currentStepIndex;
          return (
           <div key={step.key} className="flex flex-col items-center">
            <div className={`h-3 w-3 rounded-full ${isCompleted ? "bg-primary" : "bg-muted"

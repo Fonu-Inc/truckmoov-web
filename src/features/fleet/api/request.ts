@@ -1,5 +1,5 @@
 import { axiosInstance, ServerSuccessResponse } from "@/shared/utils/axios-instance";
-import type { AcknowledgeAlertPayload, Alert, AlertStatisticsResponse, AssignDeviceToVehiclePayload, AssignDriverToVehiclePayload, AssignDriverToVehicleResponse, AuditLog, AuditLogPayload, BulkCreateDevicePayload, BulkCreateDriversPayload, BulkCreateDriversResponse, BulkCreateVehiclePayload, BulkCreateVehicleResponse, CreateDevicePayload, CreateDriverPayload, CreateVehiclePayload, DeleteDevicePayload, DeleteDriverPayload, DeleteFuelTransactionPayload, DeleteVehiclePayload, DeliveryMetrics, DeliveryMetricsPayload, Device, Document, DocumentAccessLog, DocumentAccessLogPayload, DocumentSecureUrl, DocumentSecureUrlPayload, Driver, FindNearestVehiclesPayload, FuelEffficiency, FuelEfficiencyPayload, FuelExportPayload, FuelMetrics, FuelMetricsPayload, FuelThreshold, FuelTransaction, GetDevicePayload, GetVehiclePayload, ListAlertsPayload, ListDevicesPayload, ListDocumentPayload, ListDriverPayload, ListFuelTransactionsPayload, ListVehiclesPayload, NearestVehicle, OperationalDashboard, OperationalDashboardPayload, RecordFuelTransactionPayload, RegisterGpsOnVehiclePayload, RegisterVehicleGeofencePayload, ReportExportPayload, ReportVehicleLivePositionPayload, ResolveAlertPayload, SetDeviceLifecyclePayload, SetDriverStatusPayload, SetFuelThresholdPayload, SetVehicleStatusPayload, UnassignDeviceToVehiclePayload, UnassignDriverFromVehiclePayload, UpdateDevicePayload, UpdateDriverContactChannelsPayload, UpdateDriverPayload, UpdateFuelTransactionPayload, UpdateVehiclePayload, UploadDocumentPayload, ValidateDeviceAssignmentPayload, ValidateDeviceAssignmentResponse, Vehicle, VehicleGeofencePayload, VehicleHealth, VehicleHealthPayload } from "./types";
+import type { AcknowledgeAlertPayload, Alert, AlertStatisticsResponse, AssignDeviceToVehiclePayload, AssignDriverToVehiclePayload, AssignDriverToVehicleResponse, AuditLog, AuditLogPayload, BulkCreateDevicePayload, BulkCreateDriversPayload, BulkCreateDriversResponse, BulkCreateVehiclePayload, BulkCreateVehicleResponse, CreateDevicePayload, CreateDriverPayload, CreateVehiclePayload, DeleteDevicePayload, DeleteDriverPayload, DeleteFuelTransactionPayload, DeleteVehiclePayload, DeliveryMetrics, DeliveryMetricsPayload, Device, Document, DocumentAccessLog, DocumentAccessLogPayload, DocumentSecureUrl, DocumentSecureUrlPayload, Driver, FindNearestVehiclesPayload, FuelEffficiency, FuelEfficiencyPayload, FuelExportPayload, FuelMetrics, FuelMetricsPayload, FuelThreshold, FuelTransaction, GetDevicePayload, GetVehiclePayload, Job, ListAlertsPayload, ListDevicesPayload, ListDocumentPayload, ListDriverPayload, ListFuelTransactionsPayload, ListJobsPayload, ListVehiclesPayload, NearestVehicle, OperationalDashboard, OperationalDashboardPayload, PublishJobStatusPayload, RecordFuelTransactionPayload, RegisterGpsOnVehiclePayload, RegisterVehicleGeofencePayload, ReportExportPayload, ReportVehicleLivePositionPayload, ResolveAlertPayload, SearchDispatchPayload, SearchDispatchResponse, SetDeviceLifecyclePayload, SetDriverStatusPayload, SetFuelThresholdPayload, SetVehicleStatusPayload, UnassignDeviceToVehiclePayload, UnassignDriverFromVehiclePayload, UpdateDevicePayload, UpdateDriverContactChannelsPayload, UpdateDriverPayload, UpdateFuelTransactionPayload, UpdateVehiclePayload, UploadDocumentPayload, ValidateDeviceAssignmentPayload, ValidateDeviceAssignmentResponse, Vehicle, VehicleGeofencePayload, VehicleHealth, VehicleHealthPayload } from "./types";
 
 // ─── Vehicles ────────────────────────────────────────────────────────────────
 
@@ -207,7 +207,28 @@ export async function resolveAlert(payload: ResolveAlertPayload) {
  const { data } = await axiosInstance.post<ServerSuccessResponse<Alert>>(`/fleet/alerts/${payload.id}/resolve`);
  return data;
 }
+// Jobs & Dispatch
 
+export async function listJobs(payload: ListJobsPayload) {
+ const { data } = await axiosInstance.get<ServerSuccessResponse<Job[]>>("/fleet/jobs", {
+  params: payload.params
+ })
+ return data;
+}
+
+export async function searchDispatch(payload: SearchDispatchPayload) {
+ const { data } = await axiosInstance.get<ServerSuccessResponse<SearchDispatchResponse>>("/fleet/dispatch/search", {
+  params: payload.params
+ })
+ return data;
+}
+
+export async function publishJobStatus(payload: PublishJobStatusPayload) {
+ const { data } = await axiosInstance.post("/fleet/events/job-status", undefined, {
+  params: payload.params
+ })
+ return data
+}
 // ─── Reports ─────────────────────────────────────────────────────────────────
 
 export async function operationalDashboard(payload: OperationalDashboardPayload) {
@@ -324,4 +345,5 @@ export async function auditLog(payload: AuditLogPayload) {
  })
  return data;
 }
+
 

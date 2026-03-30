@@ -1,17 +1,26 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import AppAvatar from "@/shared/components/AppAvatar";
 import StatusBadge from "@/shared/components/StatusBadge";
-import { AlertCircle, CheckCircle, Clock, Ellipsis, Eye, MapPin, Package, Pencil, Trash, Trash2, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, Ellipsis, Eye, FileText, Flag, MapPin, Navigation, Package, Pencil, Trash2, Truck, XCircle } from "lucide-react";
 import { useState } from "react";
+import AddJobNoteModal from "./AddJobNoteModal";
+import CancelJobModal from "./CancelJobModal";
 import JobDetailSheet from "./JobDetailSheet";
 import ReassignJobModal from "./ReassignJobModal";
+import SetJobPriorityModal from "./SetJobPriorityModal";
+import { JobStatus } from "../api/types";
+import { useQuery } from "@tanstack/react-query";
+import { listJobsQueryOptions } from "@/features/fleet/api";
 
-const STATUS_ICON = {
- "completed": <CheckCircle className="h-4 w-4 text-success" />,
- "in_progress": <Clock className="h-4 w-4 text-primary" />,
+const STATUS_ICON: Record<JobStatus, JSX.Element> = {
+ "assigned": <Truck className="h-4 w-4 text-info" />,
+ "arrived": <MapPin className="h-4 w-4 text-accent" />,
+ "loaded": <Package className="h-4 w-4 text-warning" />,
+ "delivered": <CheckCircle className="h-4 w-4 text-success" />,
+ "en-route": <Navigation className="h-4 w-4 text-primary" />,
  "created": <AlertCircle className="h-4 w-4 text-warning" />,
  "cancelled": <XCircle className="h-4 w-4 text-destructive" />
 }
@@ -19,6 +28,11 @@ const STATUS_ICON = {
 export default function JobCard() {
  const [openJobDetailSheet, setOpenJobDetailSheet] = useState(false)
  const [openReassignJob, setOpenReassignJob] = useState(false)
+ const [openSetPriorityModal, setOpenSetPriorityModal] = useState(false)
+ const [openAddNoteModal, setOpenAddNoteModal] = useState(false)
+ const [openCancelJobModal, setOpenCancelJobModal] = useState(false)
+
+ useQuery(listJobsQueryOptions({ params: {} }))
 
  return (
   <>
@@ -28,7 +42,7 @@ export default function JobCard() {
       className="flex justify-between gap-3"
      >
       <section className="flex items-start gap-3">
-       {STATUS_ICON?.completed ?? (
+       {STATUS_ICON?.delivered ?? (
         <Package className="h-4 w-4" />
        )}
        <div>
@@ -71,7 +85,17 @@ export default function JobCard() {
           <Pencil className="w-4 h-4" />
           Reassign Job
          </DropdownMenuItem>
+         <DropdownMenuItem onClick={() => setOpenSetPriorityModal(true)}>
+          <Flag className="h-4 w-4" />
+          Set Priority
+         </DropdownMenuItem>
+         <DropdownMenuItem onClick={() => setOpenAddNoteModal(true)}>
+          <FileText className="h-4 w-4" />
+          Add Note
+         </DropdownMenuItem>
+         <DropdownMenuSeparator />
          <DropdownMenuItem
+          onClick={() => setOpenCancelJobModal(true)}
           className="text-destructive focus:text-destructive"
          >
           <Trash2 className="h-4 w-4" />
@@ -95,6 +119,9 @@ export default function JobCard() {
    {/* modals */}
    <JobDetailSheet open={openJobDetailSheet} onOpenChange={setOpenJobDetailSheet} />
    <ReassignJobModal open={openReassignJob} onOpenChange={setOpenReassignJob} />
+   <SetJobPriorityModal open={openSetPriorityModal} onOpenChange={setOpenSetPriorityModal} />
+   <AddJobNoteModal open={openAddNoteModal} onOpenChange={setOpenAddNoteModal} />
+   <CancelJobModal open={openCancelJobModal} onOpenChange={setOpenCancelJobModal} />
   </>
  )
 }
