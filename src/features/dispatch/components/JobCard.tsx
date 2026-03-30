@@ -1,7 +1,9 @@
+import { useDebounce } from "@/shared/hooks/useDebounce";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle, Ellipsis, Eye, FileText, Flag, MapPin, Navigation, Package, Pencil, Trash2, Truck, XCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { listJobQueryOptions } from "../api";
+import { useJobStore } from "../stores/job";
 import { Job, JobStatus } from "../api/types";
 import AddJobNoteModal from "./AddJobNoteModal";
 import CancelJobModal from "./CancelJobModal";
@@ -53,7 +55,15 @@ export default function JobCard() {
   setOpenCancelJobModal(true);
  }
 
- const { data, isPending: listingJob } = useQuery(listJobQueryOptions({ params: {} }));
+ const { search, status } = useJobStore()
+ const debouncedSearch = useDebounce(search)
+
+ const { data, isPending: listingJob } = useQuery(listJobQueryOptions({
+  params: {
+   ...(debouncedSearch && { query: debouncedSearch }),
+   ...(status && { status }),
+  }
+ }));
  const jobs: Job[] = useMemo(() => data?.data ?? [], [data]);
 
  return (

@@ -14,7 +14,7 @@ import SignOutButton from "./SignOutButton";
 import { useMemo } from "react";
 import { getOrgLabel } from "../composables/getOrgLabel";
 import AppAvatar from "./AppAvatar";
-import { APP_ROUTES } from "@/shared/lib/appRoutes";
+import { siderbarList } from "@/shared/lib/sidebarListItem";
 
 export function UserProfileDropdown() {
   const { user } = useAuthStore();
@@ -31,11 +31,8 @@ export function UserProfileDropdown() {
   };
 
   const handleSettingsClick = () => {
-    if (user?.role === "PLATFORM_ADMIN") {
-      navigate("/platform/settings");
-    } else {
-      navigate(APP_ROUTES.organizationsSettings);
-    }
+    const settingsItem = siderbarList(user.role).find(item => item.icon === Settings)
+    navigate(settingsItem?.to ?? "/setting")
   };
 
   return (

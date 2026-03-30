@@ -82,7 +82,7 @@ export default function VehicleTable() {
     }
   }), [debouncedSearch, status])
 
-  const { data: vehicles } = useQuery(listVehiclesQueryOptions(listVehiclesParams))
+  const { data: vehicles, isPending: loadingVehicles } = useQuery(listVehiclesQueryOptions(listVehiclesParams))
   const rows: Vehicle[] = useMemo(() => vehicles?.data ?? [], [vehicles])
   const vehicleColumns: ColumnDef<Vehicle>[] = [
     {
@@ -216,6 +216,7 @@ export default function VehicleTable() {
             <p>No vehicles found</p>
           </div>
         }
+        isLoading={loadingVehicles}
       />
 
       {/* modals and dialog */}

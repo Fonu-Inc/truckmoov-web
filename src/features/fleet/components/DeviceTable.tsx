@@ -58,11 +58,10 @@ export default function DeviceTable() {
   const { search } = useDeviceStore()
   const debouncedSearch = useDebounce(search)
 
-  const { data: devicesData } = useQuery(listDevicesQueryOptions({
+  const { data: devicesData, isPending: loadingDevices } = useQuery(listDevicesQueryOptions({
     params: { ...(debouncedSearch && { query: debouncedSearch }) }
   }))
   const rows: Device[] = useMemo(() => devicesData?.data ?? [], [devicesData])
-
   const column: ColumnDef<Device>[] = [
     {
       accessorKey: "device",
@@ -191,6 +190,7 @@ export default function DeviceTable() {
             <h3 className="text-lg font-medium">No devices found</h3>
           </div>
         }
+        isLoading={loadingDevices}
       />
 
       <DeviceFormModal

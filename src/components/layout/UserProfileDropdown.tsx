@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
+import { siderbarList } from "@/shared/lib/sidebarListItem";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,11 +28,8 @@ export function UserProfileDropdown() {
   };
 
   const handleSettingsClick = () => {
-    if (user?.role === "platform_admin") {
-      navigate("/platform/settings");
-    } else {
-      navigate("/admin/settings");
-    }
+    const settingsItem = siderbarList(user.role).find(item => item.icon === Settings)
+    navigate(settingsItem?.to ?? "/setting")
   };
 
   const getRoleLabel = (role?: string) => {

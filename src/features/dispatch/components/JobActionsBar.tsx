@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Filter, Search } from "lucide-react";
 import { JobStatus } from "../api/types";
+import { useJobStore } from "../stores/job";
 
 type JobStatusFilter = "all" | JobStatus
 
@@ -17,6 +18,8 @@ const JOB_STATUS_OPTIONS: Array<{ value: JobStatusFilter; label: string }> = [
 ]
 
 export default function JobActionsBar() {
+ const { search, status, setSearch, setStatus } = useJobStore()
+
  return (
   <div className="flex flex-col gap-4 sm:flex-row sm:items-center mb-6">
    <div className="relative flex-1">
@@ -24,17 +27,19 @@ export default function JobActionsBar() {
     <Input
      placeholder="Search jobs..."
      className="pl-9"
+     value={search}
+     onChange={(e) => setSearch(e.target.value)}
     />
    </div>
-   <Select>
+   <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v as JobStatus)}>
     <SelectTrigger className="w-full sm:w-45">
      <Filter className="h-4 w-4 mr-2" />
-    <SelectValue placeholder="Filter by status" />
+     <SelectValue placeholder="Filter by status" />
     </SelectTrigger>
     <SelectContent>
-     {JOB_STATUS_OPTIONS.map((status) => (
-      <SelectItem key={status.value} value={status.value}>
-       {status.label}
+     {JOB_STATUS_OPTIONS.map((s) => (
+      <SelectItem key={s.value} value={s.value}>
+       {s.label}
       </SelectItem>
      ))}
     </SelectContent>

@@ -31,7 +31,7 @@ export default function DispatchSettings() {
    timezone: data?.data?.dispatcherPreferences?.timezone ?? "UTC",
    shiftStart: data?.data?.dispatcherPreferences?.shiftStart ?? "09:00",
    shiftEnd: data?.data?.dispatcherPreferences?.shiftEnd ?? "17:00",
-   workDays: data?.data?.dispatcherPreferences?.workDays ?? [2, 3, 4, 5, 6],
+   workDays: data?.data?.dispatcherPreferences?.workDays ?? [1, 2, 3, 4, 5],
   }),
   [data]
  )

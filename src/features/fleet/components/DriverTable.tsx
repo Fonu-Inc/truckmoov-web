@@ -69,7 +69,7 @@ export default function DriverTable() {
     }
   }), [debouncedSearch, status])
 
-  const { data: drivers } = useQuery(listDriversQueryOptions(listDriverParams))
+  const { data: drivers, isPending: loadingDrivers } = useQuery(listDriversQueryOptions(listDriverParams))
   const rows: Driver[] = useMemo(() => drivers?.data ?? [], [drivers])
   const column: ColumnDef<Driver>[] = [
     {
@@ -243,6 +243,7 @@ export default function DriverTable() {
       <DataTable
         data={rows}
         columns={column}
+        isLoading={loadingDrivers}
       />
 
       {/* Modals */}

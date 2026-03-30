@@ -15,16 +15,16 @@ type SettingsObject = {
 
 const SETTINGS_TAB_LIST: SettingsObject[] = [
  {
-  label: "organizations",
-  icon: Building2,
-  to: APP_ROUTES.organizationsSettings,
-  roleWithAccess: ["ENTERPRISE_ADMIN", "FLEET_ADMIN"]
- },
- {
   label: "dispatch",
   icon: Package,
   to: APP_ROUTES.dispatchSettings,
   roleWithAccess: ["DISPATCHER"]
+ },
+ {
+  label: "organizations",
+  icon: Building2,
+  to: APP_ROUTES.organizationsSettings,
+  roleWithAccess: ["ENTERPRISE_ADMIN", "FLEET_ADMIN", "DISPATCHER"]
  },
  // {
  //  label: "subscription",
