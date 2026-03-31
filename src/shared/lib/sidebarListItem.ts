@@ -26,6 +26,9 @@ import {
   DollarSign,
   Bell,
   Logs,
+  UserCheck,
+  AlertTriangle,
+  Activity,
 } from "lucide-react";
 import { APP_ROUTES } from "./appRoutes";
 import { DetailsObjectType, SidebarListItem } from "../types";
@@ -207,6 +210,15 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       pageDescription: jobRoleDetail.pageDescription
     }] : []),
 
+    {
+      label: "Driver Availability",
+      roleWithAccess: ["DISPATCHER"],
+      to: APP_ROUTES.driverAvailability,
+      icon: UserCheck,
+      pageTitle: "Driver Availability",
+      pageDescription: "Manage on-duty, off-duty, and break statuses"
+    },
+
     // Fleet
     ...(fleetRoleDetail ? [{
       label: fleetRoleDetail.label,
@@ -216,6 +228,15 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       pageTitle: fleetRoleDetail.pageTitle,
       pageDescription: fleetRoleDetail.pageDescription
     }] : []),
+
+    {
+      label: "Incidents",
+      roleWithAccess: ["FLEET_ADMIN"],
+      to: APP_ROUTES.fleetIncidents,
+      icon: AlertTriangle,
+      pageTitle: "Incident Reporting",
+      pageDescription: "Track breakdowns, accidents, and delays"
+    },
 
     // Drivers
     ...(driverRoleDetail ? [{
@@ -260,6 +281,15 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       icon: Logs,
       pageTitle: "Documents",
       pageDescription: "Access Logs for Document managed by organization",
+    },
+
+    {
+      label: "Event Streams",
+      roleWithAccess: ["OPERATIONS_MANAGER"],
+      to: APP_ROUTES.eventStreams,
+      icon: Activity,
+      pageTitle: "Event Streams",
+      pageDescription: "Live job and tracking events for analysis"
     },
 
     // Settlement

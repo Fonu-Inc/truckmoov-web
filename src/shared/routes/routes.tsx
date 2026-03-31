@@ -17,6 +17,11 @@ import Job from "@/features/dispatch/pages/Job";
 import DispatchSettings from "@/features/setting/pages/DispatchSettings";
 import Alerts from "@/features/fleet/pages/Alerts";
 import Documents from "@/features/fleet/pages/Documents";
+import DriverAvailability from "@/features/dispatch/pages/DriverAvailability";
+import Incidents from "@/features/fleet/pages/Incidents";
+import EventStreams from "@/features/dashboard/pages/EventStreams";
+import TenantOverridesSettings from "@/features/setting/pages/TenantOverridesSettings";
+import DataComplianceSettings from "@/features/setting/pages/DataComplianceSettings";
 import IntegrationsPage from "@/features/integrations/ui/pages/Integrations";
 
 export function buildAppRoutes(): RouteObject[] {
@@ -40,12 +45,20 @@ export function buildAppRoutes(): RouteObject[] {
           element: <Job />
         },
         {
+          path: APP_ROUTES.driverAvailability,
+          element: <DriverAvailability />
+        },
+        {
           path: APP_ROUTES.fleet,
           element: <Fleet />,
           children: [
             {
               index: true,
               element: <Vehicles />
+            },
+            {
+              path: APP_ROUTES.fleetIncidents,
+              element: <Incidents />
             }
           ]
         },
@@ -68,6 +81,10 @@ export function buildAppRoutes(): RouteObject[] {
         {
           path: APP_ROUTES.integrations,
           element: <IntegrationsPage />
+        },
+        {
+          path: APP_ROUTES.eventStreams,
+          element: <EventStreams />
         },
 
         // Settings Page
@@ -94,6 +111,14 @@ export function buildAppRoutes(): RouteObject[] {
             {
               path: APP_ROUTES.dispatchSettings,
               element: <DispatchSettings /> 
+            },
+            {
+              path: APP_ROUTES.tenantOverridesSettings,
+              element: <TenantOverridesSettings />
+            },
+            {
+              path: APP_ROUTES.dataComplianceSettings,
+              element: <DataComplianceSettings />
             },
           ]
         }
