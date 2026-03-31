@@ -72,6 +72,7 @@ User story role names map to `UserRole` code values as follows:
   - `src/features/fleet` — fleet/vehicle management
   - `src/features/dispatch` — dispatch/job management
   - `src/features/integrations` — integrations and developer portal UI
+  - `src/features/reports` — report builder UI for Ops Analyst
 - Any feature folder outside the six above (e.g. `src/features/business`, `src/features/driver`, `src/features/platform`, etc.) belongs to the demo app and should not be touched for main-app work.
 - **`src/shared/`** is the cross-feature infrastructure layer for the main app. It contains:
   - `components/` — reusable UI components

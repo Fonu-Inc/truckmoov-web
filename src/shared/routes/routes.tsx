@@ -23,6 +23,9 @@ import EventStreams from "@/features/dashboard/pages/EventStreams";
 import TenantOverridesSettings from "@/features/setting/pages/TenantOverridesSettings";
 import DataComplianceSettings from "@/features/setting/pages/DataComplianceSettings";
 import IntegrationsPage from "@/features/integrations/ui/pages/Integrations";
+import MapPage from "@/features/dispatch/pages/Map";
+import Reports from "@/features/reports/pages/Reports";
+import AuditLog from "@/features/dashboard/pages/AuditLog";
 
 export function buildAppRoutes(): RouteObject[] {
   return [
@@ -85,6 +88,18 @@ export function buildAppRoutes(): RouteObject[] {
         {
           path: APP_ROUTES.eventStreams,
           element: <EventStreams />
+        },
+        {
+          path: APP_ROUTES.map,
+          element: <MapPage />
+        },
+        {
+          path: APP_ROUTES.reports,
+          element: <Reports />
+        },
+        {
+          path: APP_ROUTES.auditLog,
+          element: <AuditLog />
         },
 
         // Settings Page

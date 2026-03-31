@@ -25,6 +25,7 @@ export const APP_ROUTES = {
   driverAvailability: "/dispatch/availability",
   fleetIncidents: "/fleet/incidents",
   eventStreams: "/event-streams",
+  auditLog: "/audit",
 
   // settings route
   organizationsSettings: "/setting",

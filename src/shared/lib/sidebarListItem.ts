@@ -246,14 +246,14 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       pageDescription: "Provision and manage GPS tracking devices"
     },
 
-    // {
-    //   label: "Live Map & Zones",
-    //   roleWithAccess: ["DISPATCHER"],
-    //   to: APP_ROUTES.map,
-    //   icon: MapPin,
-    //   pageTitle: "Live Fleet Map",
-    //   pageDescription: "Real-time vehicle tracking and monitoring",
-    // },
+    {
+      label: "Live Map & Zones",
+      roleWithAccess: ["DISPATCHER"],
+      to: APP_ROUTES.map,
+      icon: MapPin,
+      pageTitle: "Live Fleet Map",
+      pageDescription: "Real-time vehicle tracking and monitoring",
+    },
 
     {
       label: "Alerts",
@@ -280,6 +280,26 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       icon: Activity,
       pageTitle: "Event Streams",
       pageDescription: "Live job and tracking events for analysis"
+    },
+
+    // Reports
+    {
+      label: "Reports",
+      roleWithAccess: ["OPERATIONS_MANAGER"],
+      to: APP_ROUTES.reports,
+      icon: BarChart3,
+      pageTitle: "Report Builder",
+      pageDescription: "Build, filter, and export operational reports"
+    },
+
+    // Audit Log
+    {
+      label: "Activity Log",
+      roleWithAccess: ["DISPATCHER", "FLEET_ADMIN", "OPERATIONS_MANAGER", "ENTERPRISE_ADMIN"],
+      to: APP_ROUTES.auditLog,
+      icon: Logs,
+      pageTitle: "Activity & Audit Log",
+      pageDescription: "Track what changed, who did it, and when"
     },
 
     // Settlement
