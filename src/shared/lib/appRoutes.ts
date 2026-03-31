@@ -22,6 +22,9 @@ export const APP_ROUTES = {
   device: "/device",
   alerts: "/alerts",
   documents: "/documents",
+  driverAvailability: "/dispatch/availability",
+  fleetIncidents: "/fleet/incidents",
+  eventStreams: "/event-streams",
 
   // settings route
   organizationsSettings: "/setting",
@@ -35,5 +38,7 @@ export const APP_ROUTES = {
   userSettings: "/setting/user",
   brandingSettings: "/setting/branding",
   integrationsSettings: "/setting/integrations",
-  dispatchSettings: "/setting/dispatch"
+  dispatchSettings: "/setting/dispatch",
+  tenantOverridesSettings: "/setting/tenant-overrides",
+  dataComplianceSettings: "/setting/data-compliance"
 }

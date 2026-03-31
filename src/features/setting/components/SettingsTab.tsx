@@ -2,7 +2,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserRole } from "@/features/auth/api/types";
 import { APP_ROUTES } from "@/shared/lib/appRoutes";
 import { useAuthStore } from "@/stores/authStore";
-import { BarChart3, Bell, Bot, Building2, CreditCard, FileCheck, MessageSquare, Package, Palette, Plug, Users, Wrench } from "lucide-react";
+import { BarChart3, Bell, Bot, Building2, CreditCard, FileCheck, MessageSquare, Package, Palette, Plug, Shield, SlidersHorizontal, Users, Wrench } from "lucide-react";
 import { useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -72,6 +72,18 @@ const SETTINGS_TAB_LIST: SettingsObject[] = [
   label: "Branding",
   icon: Palette,
   to: APP_ROUTES.brandingSettings,
+  roleWithAccess: ["ENTERPRISE_ADMIN"]
+ },
+ {
+  label: "Tenant Overrides",
+  icon: SlidersHorizontal,
+  to: APP_ROUTES.tenantOverridesSettings,
+  roleWithAccess: ["PLATFORM_ADMIN"]
+ },
+ {
+  label: "Compliance",
+  icon: Shield,
+  to: APP_ROUTES.dataComplianceSettings,
   roleWithAccess: ["ENTERPRISE_ADMIN"]
  },
  // {
