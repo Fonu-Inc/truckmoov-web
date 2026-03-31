@@ -14,6 +14,7 @@ export const APP_ROUTES = {
   dashboard: "/dashboard",
   jobs: "/jobs",
   fleet: "/fleet",
+  fuelManagement: "/fleet/fuel",
   map: "/map",
   settlement: "/settlement",
   reports: "/reports",

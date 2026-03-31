@@ -29,6 +29,7 @@ import {
   UserCheck,
   AlertTriangle,
   Activity,
+  Fuel,
 } from "lucide-react";
 import { APP_ROUTES } from "./appRoutes";
 import { DetailsObjectType, SidebarListItem } from "../types";
@@ -228,6 +229,15 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       pageTitle: fleetRoleDetail.pageTitle,
       pageDescription: fleetRoleDetail.pageDescription
     }] : []),
+
+    {
+      label: "Fuel & Cost",
+      roleWithAccess: ["ENTERPRISE_ADMIN", "AGGREGATOR_ADMIN", "OWNER_OPERATOR", "PLATFORM_ADMIN", "FLEET_ADMIN", "OPERATIONS_MANAGER", "DISPATCHER", "FINANCE_VIEWER"],
+      to: APP_ROUTES.fuelManagement,
+      icon: Fuel,
+      pageTitle: "Fuel & Cost Management",
+      pageDescription: "Track fuel spend, efficiency, and export reports"
+    },
 
     {
       label: "Incidents",
