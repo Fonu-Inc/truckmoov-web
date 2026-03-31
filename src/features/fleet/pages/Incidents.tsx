@@ -3,6 +3,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { Navigate } from "react-router-dom";
 import {
   AlertTriangle,
   CalendarClock,
@@ -12,6 +13,7 @@ import {
   Plus,
 } from "lucide-react";
 
+import { APP_ROUTES } from "@/shared/lib/appRoutes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +36,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/authStore";
 
 type IncidentType = "breakdown" | "accident" | "delay";
 type IncidentSeverity = "low" | "medium" | "high";
@@ -275,11 +278,14 @@ function IncidentReportDialog({
 }
 
 export default function Incidents() {
+  const { user, isAuthReady } = useAuthStore();
   const [incidents, setIncidents] = useState<Incident[]>(INITIAL_INCIDENTS);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<IncidentType | "all">("all");
   const [statusFilter, setStatusFilter] = useState<IncidentStatus | "all">("all");
   const [reportOpen, setReportOpen] = useState(false);
+
+  const isUnauthorized = isAuthReady && user?.role !== "FLEET_ADMIN";
 
   const filteredIncidents = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -306,6 +312,8 @@ export default function Incidents() {
       { total: 0, open: 0, high: 0 }
     );
   }, [incidents]);
+
+  if (isUnauthorized) return <Navigate to={APP_ROUTES.notAuthorized} replace />;
 
   const updateStatus = (id: string, status: IncidentStatus) => {
     setIncidents((prev) => prev.map((item) => (item.id === id ? { ...item, status } : item)));

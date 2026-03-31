@@ -27,7 +27,6 @@ import {
   Bell,
   Logs,
   UserCheck,
-  AlertTriangle,
   Activity,
 } from "lucide-react";
 import { APP_ROUTES } from "./appRoutes";
@@ -228,15 +227,6 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       pageTitle: fleetRoleDetail.pageTitle,
       pageDescription: fleetRoleDetail.pageDescription
     }] : []),
-
-    {
-      label: "Incidents",
-      roleWithAccess: ["FLEET_ADMIN"],
-      to: APP_ROUTES.fleetIncidents,
-      icon: AlertTriangle,
-      pageTitle: "Incident Reporting",
-      pageDescription: "Track breakdowns, accidents, and delays"
-    },
 
     // Drivers
     ...(driverRoleDetail ? [{
