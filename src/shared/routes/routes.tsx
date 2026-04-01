@@ -1,6 +1,13 @@
 import { RouteObject } from "react-router-dom";
 import MainLayout from "@/shared/layouts/MainLayout";
-import { AuthPageView, ChangePasswordPageView, ForgotPasswordPageView, InvitationSignUpPageView, NotAuthorizedPageView, SignUpPageView } from "@/features/auth/ui/AuthPages";
+import {
+  AuthPageView,
+  ChangePasswordPageView,
+  ForgotPasswordPageView,
+  InvitationSignUpPageView,
+  NotAuthorizedPageView,
+  SignUpPageView,
+} from "@/features/auth/ui/AuthPages";
 import { APP_ROUTES } from "@/shared/lib/appRoutes";
 import SettingsLayout from "@/features/setting/layouts/OrganizationsSettings";
 import Settings from "@/features/setting/pages/Settings";
@@ -22,6 +29,7 @@ import Incidents from "@/features/fleet/pages/Incidents";
 import EventStreams from "@/features/dashboard/pages/EventStreams";
 import TenantOverridesSettings from "@/features/setting/pages/TenantOverridesSettings";
 import DataComplianceSettings from "@/features/setting/pages/DataComplianceSettings";
+import FuelManagement from "@/features/fleet/pages/FuelManagement";
 import IntegrationsPage from "@/features/integrations/ui/pages/Integrations";
 import MapPage from "@/features/dispatch/pages/Map";
 import Reports from "@/features/reports/pages/Reports";
@@ -37,19 +45,21 @@ export function buildAppRoutes(): RouteObject[] {
     { path: APP_ROUTES.change, element: <ChangePasswordPageView /> },
     { path: APP_ROUTES.notAuthorized, element: <NotAuthorizedPageView /> },
     {
-      path: APP_ROUTES.main, element: <MainLayout />, children: [
+      path: APP_ROUTES.main,
+      element: <MainLayout />,
+      children: [
         // Enterprise Role Pages
         {
           path: APP_ROUTES.dashboard,
-          element: <Dashboard />
+          element: <Dashboard />,
         },
         {
           path: APP_ROUTES.jobs,
-          element: <Job />
+          element: <Job />,
         },
         {
           path: APP_ROUTES.driverAvailability,
-          element: <DriverAvailability />
+          element: <DriverAvailability />,
         },
         {
           path: APP_ROUTES.fleet,
@@ -57,37 +67,41 @@ export function buildAppRoutes(): RouteObject[] {
           children: [
             {
               index: true,
-              element: <Vehicles />
+              element: <Vehicles />,
+            },
+            {
+              path: APP_ROUTES.fuelManagement,
+              element: <FuelManagement />,
             },
             {
               path: APP_ROUTES.fleetIncidents,
-              element: <Incidents />
-            }
-          ]
+              element: <Incidents />,
+            },
+          ],
         },
         {
           path: APP_ROUTES.driver,
-          element: <Driver />
+          element: <Driver />,
         },
         {
           path: APP_ROUTES.device,
-          element: <Devices /> 
+          element: <Devices />,
         },
         {
           path: APP_ROUTES.alerts,
-          element: <Alerts /> 
+          element: <Alerts />,
         },
         {
           path: APP_ROUTES.documents,
-          element: <Documents /> 
+          element: <Documents />,
         },
         {
           path: APP_ROUTES.integrations,
-          element: <IntegrationsPage />
+          element: <IntegrationsPage />,
         },
         {
           path: APP_ROUTES.eventStreams,
-          element: <EventStreams />
+          element: <EventStreams />,
         },
         {
           path: APP_ROUTES.map,
@@ -109,35 +123,35 @@ export function buildAppRoutes(): RouteObject[] {
           children: [
             {
               index: true,
-              element: <Settings />
+              element: <Settings />,
             },
             {
               path: APP_ROUTES.notificationSettings,
-              element: <NotificationSettings />
+              element: <NotificationSettings />,
             },
             {
               path: APP_ROUTES.brandingSettings,
-              element: <BrandingSettings />
+              element: <BrandingSettings />,
             },
             {
               path: APP_ROUTES.userSettings,
-              element: <UserSettings />
+              element: <UserSettings />,
             },
             {
               path: APP_ROUTES.dispatchSettings,
-              element: <DispatchSettings /> 
+              element: <DispatchSettings />,
             },
             {
               path: APP_ROUTES.tenantOverridesSettings,
-              element: <TenantOverridesSettings />
+              element: <TenantOverridesSettings />,
             },
             {
               path: APP_ROUTES.dataComplianceSettings,
-              element: <DataComplianceSettings />
+              element: <DataComplianceSettings />,
             },
-          ]
-        }
-      ]
+          ],
+        },
+      ],
     },
   ];
 }
