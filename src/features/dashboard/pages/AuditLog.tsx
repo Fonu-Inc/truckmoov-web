@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { auditLogQueryOptions } from "@/features/fleet/api";
 
 type ActionType = "created" | "updated" | "deleted" | "assigned" | "resolved";
 type EntityType = "Job" | "Vehicle" | "Driver" | "Device" | "Document" | "Alert";
@@ -186,6 +188,8 @@ export default function AuditLog() {
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState<ActionType | "all">("all");
   const [entityFilter, setEntityFilter] = useState<EntityType | "all">("all");
+
+  useQuery(auditLogQueryOptions({ params: {} }))
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();

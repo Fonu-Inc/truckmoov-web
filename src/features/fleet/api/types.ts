@@ -649,11 +649,11 @@ export type DocumentAccessLogPayload = {
 
 export type AuditLogPayload = {
  params: {
-  entityType: AuditLogEntityType;
-  entityId: string;
-  action: string;
-  limit: string;
-  tenantId: string;
+  entityType?: AuditLogEntityType;
+  entityId?: string;
+  action?: string;
+  limit?: string;
+  tenantId?: string;
  }
 }
 

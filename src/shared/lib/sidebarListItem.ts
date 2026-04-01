@@ -315,7 +315,7 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
     // Audit Log
     {
       label: "Activity Log",
-      roleWithAccess: ["DISPATCHER", "FLEET_ADMIN", "OPERATIONS_MANAGER", "ENTERPRISE_ADMIN"],
+      roleWithAccess: ["ENTERPRISE_ADMIN"],
       to: APP_ROUTES.auditLog,
       icon: Logs,
       pageTitle: "Activity & Audit Log",
