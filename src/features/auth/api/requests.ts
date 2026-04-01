@@ -129,7 +129,7 @@ export async function updateOrganizationsSettings(payload: UpdateOrganizationsSe
   return data;
 }
 
-export async function uploadImageToBucket(payload: UploadImageToBucketPayload) {
+export async function uploadMediaToBucket(payload: UploadImageToBucketPayload) {
   const formData = new FormData()
   const files = payload.files
 

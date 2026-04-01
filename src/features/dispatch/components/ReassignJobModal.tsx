@@ -11,7 +11,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { listDriversQueryOptions, listVehiclesQueryOptions } from "@/features/fleet/api"
 import { ModalProps } from "@/shared/types"
-import { useAuthStore } from "@/stores/authStore"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQuery } from "@tanstack/react-query"
 import { RefreshCw, Truck, User } from "lucide-react"
@@ -33,7 +32,6 @@ type ReassignJobModalProps = ModalProps & {
 }
 
 export default function ReassignJobModal({ open, onOpenChange, job }: ReassignJobModalProps) {
-  const { user } = useAuthStore()
   const { mutateAsync: reassignJob, isPending } = useSetJobToDriverOrVehicle()
 
   const defaultValues = useMemo(() => ({
@@ -53,7 +51,7 @@ export default function ReassignJobModal({ open, onOpenChange, job }: ReassignJo
   const drivers = useMemo(() => driversData?.data ?? [], [driversData])
 
   const handleSubmit = (data: ReassignFormData) => {
-    reassignJob({ jobId: job!.id, data: { vehicle_id: data.vehicleId, driver_id: data.driverId, tenant_id: user.tenantId, reason: "" } }, {
+    reassignJob({ jobId: job!.id, data: { vehicle_id: data.vehicleId, driver_id: data.driverId, reason: "" } }, {
       onSuccess: () => onOpenChange(false),
     })
   }

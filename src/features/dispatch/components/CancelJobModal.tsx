@@ -7,7 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import z from "zod"
 import { ModalProps } from "@/shared/types"
-import { useAuthStore } from "@/stores/authStore"
 import { useCancelJob } from "../api"
 import { Job } from "../api/types"
 
@@ -22,7 +21,6 @@ const cancelJobSchema = z.object({
 type CancelJobFormData = z.infer<typeof cancelJobSchema>
 
 export default function CancelJobModal({ open, onOpenChange, job }: CancelJobModalProps) {
- const { user } = useAuthStore()
  const { mutateAsync: cancelJob, isPending } = useCancelJob()
 
  const defaultValues = useMemo(() => ({ reason: "" }), [])
@@ -36,8 +34,8 @@ export default function CancelJobModal({ open, onOpenChange, job }: CancelJobMod
   if (open) form.reset(defaultValues)
  }, [open, form, defaultValues])
 
- const handleConfirmCancel = (_data: CancelJobFormData) => {
-  cancelJob({ jobId: job!.id, data: { driver_id: "", tenant_id: user.tenantId } }, {
+ const handleConfirmCancel = (data: CancelJobFormData) => {
+  cancelJob({ jobId: job!.id, data: { reason: data.reason } }, {
    onSuccess: () => onOpenChange(false),
   })
  }

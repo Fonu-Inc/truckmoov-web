@@ -1,7 +1,7 @@
 import { queryOptions, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { changeUserRole, forgetPassword, getDispatcherPreferences, getInvitedUsers, getNotificationsPreferences, getOrganizationsSettings, getUserProfile, inviteMember, login, logout, register, registerInvitedMember, removeInvitedUser, resendInvitedUserMail, resetPassword, updateDispatcherPreferences, updateInvitedUser, updateNotificationsPreferences, updateOrganizationsSettings, updateUserProfile, uploadImageToBucket, verifyEmail, verifyPasswordReset } from "./requests";
+import { changeUserRole, forgetPassword, getDispatcherPreferences, getInvitedUsers, getNotificationsPreferences, getOrganizationsSettings, getUserProfile, inviteMember, login, logout, register, registerInvitedMember, removeInvitedUser, resendInvitedUserMail, resetPassword, updateDispatcherPreferences, updateInvitedUser, updateNotificationsPreferences, updateOrganizationsSettings, updateUserProfile, uploadMediaToBucket, verifyEmail, verifyPasswordReset } from "./requests";
 import { queryClient } from "@/shared/providers/TanstackQueryProvider";
 import { useNavigate } from "react-router-dom";
 import { APP_ROUTES } from "@/shared/lib/appRoutes";
@@ -229,8 +229,8 @@ export function useUpdateOrganizationSettings() {
   })
 }
 
-export function useUploadImageToBucket() {
+export function useUploadMediaToBucket() {
   return useMutation({
-    mutationFn: uploadImageToBucket,
+    mutationFn: uploadMediaToBucket,
   })
 }

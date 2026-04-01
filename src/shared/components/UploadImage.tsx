@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useUploadImageToBucket } from "@/features/auth/api";
+import { useUploadMediaToBucket } from "@/features/auth/api";
 import { Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -16,7 +16,7 @@ export default function UploadImage({ onUpload, currentUrl, uploading, text }: U
  const fileInputRef = useRef<HTMLInputElement>(null);
  const [previewUrl, setPreviewUrl] = useState<string | null>(currentUrl ?? null);
 
- const { mutateAsync: uploadImage, isPending: uploadingImage } = useUploadImageToBucket()
+ const { mutateAsync: uploadImage, isPending: uploadingImage } = useUploadMediaToBucket()
 
  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   const file = e.target.files?.[0];

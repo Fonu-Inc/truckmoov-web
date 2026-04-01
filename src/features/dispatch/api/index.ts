@@ -2,6 +2,7 @@ import { queryOptions, useMutation } from "@tanstack/react-query"
 import { acknowledgeJob, addJobNote, addPODAttachment, cancelJob, createJob, getJob, getJobTimeline, listJob, optimizeMultiStopRoute, setJobToDriverOrVehicle, suggestOptimatRouteForJob, updateJobPriority } from "./request"
 import { queryClient } from "@/shared/providers/TanstackQueryProvider"
 import { RequestPayloadExtractor } from "@/shared/types"
+import { toast } from "sonner"
 
 export const DISPATCH_QUERY_KEY = {
  jobs: ["jobs"],
@@ -37,6 +38,7 @@ export function useSetJobToDriverOrVehicle() {
  return useMutation({
   mutationFn: setJobToDriverOrVehicle,
   onSuccess: (_, variable) => {
+   toast.success("Job reassigned successfully")
    queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(variable.jobId) })
    queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(variable.jobId) })
    queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs })
@@ -59,6 +61,7 @@ export function useCancelJob() {
  return useMutation({
   mutationFn: cancelJob,
   onSuccess: (_, variable) => {
+   toast.success("Job cancelled")
    queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(variable.jobId) })
    queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(variable.jobId) })
    queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs })
@@ -70,8 +73,10 @@ export function useAddJobNote() {
  return useMutation({
   mutationFn: addJobNote,
   onSuccess: (_, variable) => {
+   toast.success("Note added successfully")
    queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(variable.jobId) })
    queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(variable.jobId) })
+   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs })
   }
  })
 }
@@ -82,6 +87,7 @@ export function useAddPODAttachment() {
   onSuccess: (_, variable) => {
    queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(variable.jobId) })
    queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(variable.jobId) })
+   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs })
   }
  })
 }
@@ -90,6 +96,7 @@ export function useUpdateJobPriority() {
  return useMutation({
   mutationFn: updateJobPriority,
   onSuccess: (_, variable) => {
+   toast.success("Priority updated")
    queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(variable.jobId) })
    queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(variable.jobId) })
    queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs })

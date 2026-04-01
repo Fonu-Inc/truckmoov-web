@@ -37,7 +37,7 @@ export default function AddJobNoteModal({ open, onOpenChange, job }: AddJobNoteM
  }, [open, form, defaultValues])
 
  const handleSave = (data: AddJobNoteFormData) => {
-  addNote({ jobId: job!.id, data: { text: data.note, tenant_id: user.tenantId, driver_id: "" } }, {
+  addNote({ jobId: job!.id, data: { text: data.note, author_id: user.id } }, {
    onSuccess: () => onOpenChange(false),
   })
  }

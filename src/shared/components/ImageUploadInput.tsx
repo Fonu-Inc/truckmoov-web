@@ -1,4 +1,4 @@
-import { useUploadImageToBucket } from "@/features/auth/api";
+import { useUploadMediaToBucket } from "@/features/auth/api";
 import { ImageIcon, Loader2, Upload } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ type ImageUploadInputProps = {
 
 export default function ImageUploadInput({ onChange, value }: ImageUploadInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { mutateAsync: uploadImage, isPending } = useUploadImageToBucket();
+  const { mutateAsync: uploadImage, isPending } = useUploadMediaToBucket();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

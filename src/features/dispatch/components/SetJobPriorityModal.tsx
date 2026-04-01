@@ -7,9 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import z from "zod"
 import { ModalProps } from "@/shared/types"
-import { useAuthStore } from "@/stores/authStore"
 import { useUpdateJobPriority } from "../api"
-import { Job, JobPriority } from "../api/types"
+import { Job } from "../api/types"
 
 type SetJobPriorityModalProps = ModalProps & {
   job: Job | null
@@ -22,11 +21,10 @@ const setPrioritySchema = z.object({
 type SetPriorityFormData = z.infer<typeof setPrioritySchema>
 
 export default function SetJobPriorityModal({ open, onOpenChange, job }: SetJobPriorityModalProps) {
- const { user } = useAuthStore()
  const { mutateAsync: updatePriority, isPending } = useUpdateJobPriority()
 
  const defaultValues = useMemo(() => ({
-  priority: (job?.priority as JobPriority) ?? "normal",
+  priority: job?.priority ?? "normal",
  }), [job])
 
  const form = useForm<SetPriorityFormData>({
@@ -39,7 +37,7 @@ export default function SetJobPriorityModal({ open, onOpenChange, job }: SetJobP
  }, [open, form, defaultValues])
 
  const handleSave = (data: SetPriorityFormData) => {
-  updatePriority({ jobId: job!.id, data: { priority: data.priority, tenant_id: user.tenantId, time_window: job!.time_window } }, {
+  updatePriority({ jobId: job!.id, data: { priority: data.priority } }, {
    onSuccess: () => onOpenChange(false),
   })
  }

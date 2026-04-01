@@ -112,7 +112,7 @@ export default function JobCard() {
          <div>
           <div className="flex items-center gap-2 mb-1">
            <p className="font-semibold">{job.id}</p>
-           <StatusBadge status="completed" />
+           <StatusBadge status={job.status} />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
            <span className="flex items-center gap-1">
@@ -128,10 +128,10 @@ export default function JobCard() {
          </div>
         </section>
         <section className="flex items-center gap-2">
-         <div className="text-right">
+         {/* <div className="text-right">
           <p className="text-sm font-medium">{job.cargo_description}</p>
           <p className="text-xs text-muted-foreground">{job.deadline}</p>
-         </div>
+         </div> */}
          <DropdownMenu>
           <DropdownMenuTrigger asChild>
            <Button variant="ghost">
@@ -143,26 +143,30 @@ export default function JobCard() {
             <Eye className="w-4 h-4" />
             View
            </DropdownMenuItem>
-           <DropdownMenuItem onClick={() => handleActionSelect(job, "reassign")}>
-            <Pencil className="w-4 h-4" />
-            Reassign Job
-           </DropdownMenuItem>
-           <DropdownMenuItem onClick={() => handleActionSelect(job, "priority")}>
-            <Flag className="h-4 w-4" />
-            Set Priority
-           </DropdownMenuItem>
-           <DropdownMenuItem onClick={() => handleActionSelect(job, "note")}>
-            <FileText className="h-4 w-4" />
-            Add Note
-           </DropdownMenuItem>
-           <DropdownMenuSeparator />
-           <DropdownMenuItem
-            onClick={() => handleActionSelect(job, "cancel")}
-            className="text-destructive focus:text-destructive"
-           >
-            <Trash2 className="h-4 w-4" />
-            Cancel Job
-           </DropdownMenuItem>
+           {job.status !== "cancelled" && (
+            <>
+             <DropdownMenuItem onClick={() => handleActionSelect(job, "reassign")}>
+              <Pencil className="w-4 h-4" />
+              Reassign Job
+             </DropdownMenuItem>
+             <DropdownMenuItem onClick={() => handleActionSelect(job, "priority")}>
+              <Flag className="h-4 w-4" />
+              Set Priority
+             </DropdownMenuItem>
+             <DropdownMenuItem onClick={() => handleActionSelect(job, "note")}>
+              <FileText className="h-4 w-4" />
+              Add Note
+             </DropdownMenuItem>
+             <DropdownMenuSeparator />
+             <DropdownMenuItem
+              onClick={() => handleActionSelect(job, "cancel")}
+              className="text-destructive focus:text-destructive"
+             >
+              <Trash2 className="h-4 w-4" />
+              Cancel Job
+             </DropdownMenuItem>
+            </>
+           )}
           </DropdownMenuContent>
          </DropdownMenu>
         </section>

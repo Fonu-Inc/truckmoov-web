@@ -9,19 +9,21 @@ import {
 } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { useUploadMediaToBucket } from "@/features/auth/api"
 import { cn } from "@/lib/utils"
 import { ModalProps } from "@/shared/types"
+import { useAuthStore } from "@/stores/authStore"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Camera, FileText, PenLine, Upload, X } from "lucide-react"
 import { useCallback, useState } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import z from "zod"
+import { useAddPODAttachment } from "../api"
+import { Job } from "../api/types"
 
 const podSchema = z.object({
-  type: z.enum(["photo", "signature", "document"], { required_error: "Document type is required" }),
-  notes: z.string().optional(),
+  type: z.enum(["photo", "signature", "document"], { error: "Document type is required" }),
 })
 
 type PodFormData = z.infer<typeof podSchema>
@@ -32,9 +34,14 @@ const TYPE_ICONS = {
   document: <FileText className="h-4 w-4" />,
 }
 
-type UploadPodModalProps = ModalProps
+type UploadPodModalProps = ModalProps & {
+  job: Job | null
+}
 
-export default function UploadPodModal({ open, onOpenChange }: UploadPodModalProps) {
+export default function UploadPodModal({ open, onOpenChange, job }: UploadPodModalProps) {
+  const { user } = useAuthStore()
+  const { mutateAsync: uploadMedia } = useUploadMediaToBucket()
+  const { mutateAsync: addPODAttachment, isPending } = useAddPODAttachment()
   const [file, setFile] = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -42,7 +49,6 @@ export default function UploadPodModal({ open, onOpenChange }: UploadPodModalPro
     resolver: zodResolver(podSchema),
     defaultValues: {
       type: undefined,
-      notes: "",
     },
   })
 
@@ -67,10 +73,21 @@ export default function UploadPodModal({ open, onOpenChange }: UploadPodModalPro
     if (selected) handleFile(selected)
   }
 
-  const handleSubmit = (_data: PodFormData) => {
-    onOpenChange(false)
-    setFile(null)
-    form.reset()
+  const handleSubmit = async (data: PodFormData) => {
+    if (!file || !job) return
+
+    const uploaded = await uploadMedia({ files: [file] })
+
+    await addPODAttachment(
+      { jobId: job.id, data: { kind: data.type, uploaded_by: user.userId, url: uploaded.data.url } },
+      {
+        onSuccess: () => {
+          onOpenChange(false)
+          setFile(null)
+          form.reset()
+        },
+      }
+    )
   }
 
   const handleOpenChange = (val: boolean) => {
@@ -172,25 +189,12 @@ export default function UploadPodModal({ open, onOpenChange }: UploadPodModalPro
               </div>
             )}
 
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="e.g., Received by John at reception desk..." rows={2} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <div className="flex justify-end gap-3 pt-2">
               <DialogClose asChild>
                 <Button type="button" variant="outline">Cancel</Button>
               </DialogClose>
-              <Button type="submit" disabled={!file}>
+              <Button type="submit" disabled={!file} isLoading={isPending || form.formState.isSubmitting}>
                 <Upload className="h-4 w-4" />
                 Upload
               </Button>

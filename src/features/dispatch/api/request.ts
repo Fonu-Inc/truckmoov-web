@@ -46,7 +46,7 @@ export async function addPODAttachment(payload: AddPODAttachmentPayload) {
 }
 
 export async function updateJobPriority(payload: UpdateJobPriorityPayload) {
- const { data } = await axiosInstance.post<ServerSuccessResponse<Job>>(`/dispatch/jobs/${payload.jobId}/scheduling`, payload.data)
+ const { data } = await axiosInstance.patch<ServerSuccessResponse<Job>>(`/dispatch/jobs/${payload.jobId}/scheduling`, payload.data)
  return data
 }
 

@@ -7,18 +7,16 @@ import { Textarea } from "@/components/ui/textarea"
 import { useCreateJob } from "@/features/dispatch/api"
 import { listDriversQueryOptions, listVehiclesQueryOptions } from "@/features/fleet/api"
 import { ModalProps } from "@/shared/types"
-import { useAuthStore } from "@/stores/authStore"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQuery } from "@tanstack/react-query"
 import { Clock, MapPin, Package, Send, Truck, User } from "lucide-react"
 import { useMemo } from "react"
 import { useForm } from "react-hook-form"
-import { toast } from "sonner"
 import z from "zod"
 
 const jobSchema = z.object({
  vehicleId: z.string().min(1, "Vehicle is required"),
- driverId: z.string().min(1, "Driver is required"),
+ driverId: z.string().optional(),
  pickupLocation: z.string().min(1, "Pickup location is required"),
  deliveryLocation: z.string().min(1, "Delivery location is required"),
  cargoDescription: z.string().min(1, "Cargo description is required"),
@@ -114,7 +112,7 @@ export default function JobFormModal({ open, onOpenChange }: JobFormModalProps) 
         render={({ field }) => (
          <FormItem>
           <FormLabel className="flex items-center gap-1">
-           <User className="h-3 w-3" /> Driver
+           <User className="h-3 w-3" /> Driver <span className="text-muted-foreground font-normal">(optional)</span>
           </FormLabel>
           <Select onValueChange={field.onChange} value={field.value}>
            <FormControl>
@@ -178,7 +176,7 @@ export default function JobFormModal({ open, onOpenChange }: JobFormModalProps) 
            <Package className="h-3 w-3" /> Cargo Description
           </FormLabel>
           <FormControl>
-           <Input placeholder="e.g., Electronics, 50kg" {...field} />
+           <Textarea placeholder="e.g., Electronics, 50kg" rows={3} {...field} />
           </FormControl>
           <FormMessage />
          </FormItem>
@@ -217,7 +215,7 @@ export default function JobFormModal({ open, onOpenChange }: JobFormModalProps) 
        name="notes"
        render={({ field }) => (
         <FormItem>
-         <FormLabel>Additional Notes</FormLabel>
+         <FormLabel>Additional Notes <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
          <FormControl>
           <Textarea placeholder="Any special instructions..." rows={3} {...field} />
          </FormControl>

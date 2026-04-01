@@ -66,13 +66,13 @@ export type Job = {
  "notes": JobNotes[],
  "pickup": JobPickup,
  "pod_attachments": JobPodAttachment[],
- "priority": string,
+ "priority": JobPriority,
  "reference": string,
  "required_vehicle_type": string,
  "status": JobStatus,
  "tenant_id": string,
  "time_window": JobTimeWindow,
- "timeline": JobTimeline,
+ "timeline": JobTimeline[],
  "updated_at": string
 }
 
@@ -166,7 +166,6 @@ export type SetJobToDriverOrVehiclePayload = {
  data: {
   "driver_id": string,
   "reason": string,
-  "tenant_id": string,
   "vehicle_id": string
  }
 }
@@ -182,16 +181,14 @@ export type AcknowledgeJobPayload = {
 export type CancelJobPayload = {
  jobId: string;
  data: {
-  "driver_id": string,
-  "tenant_id": string
+  "reason": string
  }
 }
 
 export type AddJobNotePayload = {
  jobId: string;
  data: {
-  "driver_id": string,
-  "tenant_id": string
+  "author_id": string,
   "text": string
  }
 }
@@ -200,7 +197,6 @@ export type AddPODAttachmentPayload = {
  jobId: string;
  data: {
   "kind": string,
-  "tenant_id": string,
   "uploaded_by": string,
   "url": string
  }
@@ -209,9 +205,8 @@ export type AddPODAttachmentPayload = {
 export type UpdateJobPriorityPayload = {
  jobId: string;
  data: {
-  "priority": JobPriority;
-  "tenant_id": string,
-  "time_window": JobTimeWindow;
+  "priority"?: JobPriority;
+  "time_window"?: JobTimeWindow;
  }
 }
 
