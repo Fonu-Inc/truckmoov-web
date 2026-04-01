@@ -135,7 +135,6 @@ type CreateJobData = {
  "priority": JobPriority,
  "reference": string,
  "required_vehicle_type": string,
- "tenant_id": string,
  "time_window": JobTimeWindow,
  "vehicleId": string,
  "vehicle_id": string,

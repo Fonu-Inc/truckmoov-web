@@ -10,7 +10,6 @@ import { FormMode } from "@/shared/types";
 import { CreateDriverData, Driver } from "../api/types";
 import { useEffect, useMemo } from "react";
 import { useCreateDriver, useUpdateDriver } from "../api";
-import { useAuthStore } from "@/stores/authStore";
 
 const driverSchema = z.object({
  firstName: z.string().min(1, "First name is required"),
@@ -33,7 +32,6 @@ type DriverFormModalProps = {
 }
 
 export default function DriverFormModal({ open, onOpenChange, mode = "create", driver }: DriverFormModalProps) {
- const { user } = useAuthStore()
  const { mutateAsync: createDriver, isPending: creating } = useCreateDriver()
  const { mutateAsync: updateDriver, isPending: updating } = useUpdateDriver()
  const isPending = creating || updating
@@ -67,7 +65,6 @@ export default function DriverFormModal({ open, onOpenChange, mode = "create", d
    email: data.email,
    licenseNumber: data.licenseNumber,
    licenseExpiryDate: data.licenseExpiry,
-   tenantId: user.tenantId,
    status: data.status,
    communicationPreference: data.communicationPreference,
   }

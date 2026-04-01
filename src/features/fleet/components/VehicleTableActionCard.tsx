@@ -9,12 +9,10 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useBulkCreateVehicle } from "../api";
 import type { CreateVehicleData, FleetStatus, VehicleType } from "../api/types";
-import { useAuthStore } from "@/stores/authStore";
 import { useVehicleStore } from "../stores/vehicle";
 
 export default function VehicleTableActionCard() {
  const [openVehicleForm, setOpenVehicleForm] = useState(false)
- const { user } = useAuthStore()
  const { search, status, setSearch, setStatus } = useVehicleStore()
  const { mutateAsync: bulkCreateVehicle } = useBulkCreateVehicle()
 
@@ -28,11 +26,10 @@ export default function VehicleTableActionCard() {
    year: Number(row["Year"]),
    type: row["Type"] as VehicleType,
    capacity: Number(row["Capacity (tons)"]),
-   tenantId: user.tenantId,
    status: (row["Status"] as FleetStatus) ?? "inactive",
   }));
 
-  await bulkCreateVehicle({ data: { tenantId: user.tenantId, items } });
+  await bulkCreateVehicle({ data: { items } });
  }
 
  return (

@@ -31,7 +31,6 @@ type JobFormData = z.infer<typeof jobSchema>
 type JobFormModalProps = ModalProps
 
 export default function JobFormModal({ open, onOpenChange }: JobFormModalProps) {
- const { user } = useAuthStore()
  const { mutateAsync: createJob, isPending } = useCreateJob()
 
  const form = useForm<JobFormData>({
@@ -57,7 +56,6 @@ export default function JobFormModal({ open, onOpenChange }: JobFormModalProps) 
   await createJob({
    data: {
     ...data,
-    tenant_id: user.tenantId
    }
   }, {
    onSuccess: () => {

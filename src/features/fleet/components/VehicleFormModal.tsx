@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/select";
 import { useCreateVehicle, useUpdateVehicle } from "@/features/fleet/api";
 import { FormMode } from "@/shared/types";
-import { useAuthStore } from "@/stores/authStore";
 import { useEffect, useMemo } from "react";
 import { CreateVehicleData, Vehicle } from "../api/types";
 
@@ -56,7 +55,6 @@ type VehicleFormModalProps = {
 }
 
 export default function VehicleFormModal({ open, onOpenChange, mode = "create", vehicle }: VehicleFormModalProps) {
- const { user } = useAuthStore()
  const { mutateAsync: createVehicle, isPending } = useCreateVehicle();
  const { mutateAsync: updateVehicle, isPending: updatingVehicle } = useUpdateVehicle()
 
@@ -87,7 +85,6 @@ export default function VehicleFormModal({ open, onOpenChange, mode = "create", 
    model: data.model,
    plateNumber: data.plateNumber,
    registrationNumber: data.registrationNumber,
-   tenantId: user.tenantId,
    type: data.type,
    vin: data.vin,
    year: data.year,

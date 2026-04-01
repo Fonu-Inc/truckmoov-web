@@ -224,7 +224,7 @@ export type ListVehiclesPayload = {
  params: GetParams
 }
 
-export type CreateVehicleData = Omit<Vehicle, "id" | "assignedDriverId" | "gpsDevice">
+export type CreateVehicleData = Omit<Vehicle, "id" | "assignedDriverId" | "gpsDevice" | "tenantId">
 
 export type CreateVehiclePayload = {
  data: CreateVehicleData;
@@ -232,7 +232,6 @@ export type CreateVehiclePayload = {
 
 export type BulkCreateVehiclePayload = {
  data: {
-  tenantId: string;
   items: CreateVehicleData[]
  }
 }
@@ -329,7 +328,7 @@ export type ListDriverPayload = {
  }
 }
 
-export type CreateDriverData = Omit<Driver, "id" | "assignedVehicleId" | "assignedVehicleId" | "contactChannels" | "createdAt" | "updatedAt">
+export type CreateDriverData = Omit<Driver, "id" | "assignedVehicleId" | "contactChannels" | "createdAt" | "updatedAt" | "tenantId">
 
 export type CreateDriverPayload = {
  data: CreateDriverData
@@ -337,8 +336,7 @@ export type CreateDriverPayload = {
 
 export type BulkCreateDriversPayload = {
  data: {
-  tenantId: string;
-  items: CreateDriverData[]
+  items: (CreateDriverData & { contactChannels: DriverContactChannels })[]
  }
 }
 
@@ -382,7 +380,7 @@ export type ListDevicesPayload = {
  }
 }
 
-export type CreateDeviceData = Omit<Device, "id" | "status" | "vehicleId" | "signalStrength" | "batteryLevel" | "lastSeen" | "assignedAt" | "createdAt" | "updatedAt">
+export type CreateDeviceData = Omit<Device, "id" | "status" | "vehicleId" | "signalStrength" | "batteryLevel" | "lastSeen" | "assignedAt" | "createdAt" | "updatedAt" | "tenantId">
 
 export type CreateDevicePayload = {
  data: Partial<CreateDeviceData>
@@ -390,8 +388,7 @@ export type CreateDevicePayload = {
 
 export type BulkCreateDevicePayload = {
  data: {
-  "tenantId": string,
-  "items": Array<Omit<CreateDeviceData, "tenantId">>
+  "items": CreateDeviceData[]
  }
 }
 

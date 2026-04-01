@@ -8,19 +8,16 @@ import { useState } from "react";
 import { useDriverStore } from "../stores/driver";
 import DriverFormModal from "./DriverFormModal";
 import { useBulkCreateDrivers } from "../api";
-import type { CreateDriverData, DriverCommunicationPreferences, DriverStatus } from "../api/types";
-
-import { useAuthStore } from "@/stores/authStore";
+import type { CreateDriverData, DriverCommunicationPreferences, DriverContactChannels, DriverStatus } from "../api/types";
 
 export default function DriverTableActions() {
  const { showInbox, setShowInbox, search, status, setSearch, setStatus } = useDriverStore()
- const { user } = useAuthStore()
  const { mutateAsync: bulkCreateDrivers } = useBulkCreateDrivers()
 
  const [addDriverModal, setAddDriverModal] = useState(false)
 
  async function handleBulkUpload(data: Record<string, string>[]) {
-  const items: CreateDriverData[] = data.map((row) => ({
+  const items: (CreateDriverData & { contactChannels: DriverContactChannels })[] = data.map((row) => ({
    firstName: row["First Name"],
    lastName: row["Last Name"],
    name: `${row["First Name"]} ${row["Last Name"]}`,
@@ -28,12 +25,16 @@ export default function DriverTableActions() {
    email: row["Email"],
    licenseNumber: row["License Number"],
    licenseExpiryDate: row["License Expiry Date"],
-   tenantId: user.tenantId,
    status: row["Status"] as DriverStatus,
    communicationPreference: row["Communication Preference"] as DriverCommunicationPreferences,
+   contactChannels: {
+    whatsappNumber: row["WhatsApp Number"] ?? "",
+    smsNumber: row["SMS Number"] ?? "",
+    voiceNumber: row["Voice Number"] ?? "",
+   },
   }));
 
-  await bulkCreateDrivers({ data: { tenantId: user.tenantId, items } });
+  await bulkCreateDrivers({ data: { items } });
  }
 
  return (
