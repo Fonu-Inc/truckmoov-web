@@ -285,12 +285,12 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
     },
 
     {
-      label: "Documents",
-      roleWithAccess: ["ENTERPRISE_ADMIN", "OPERATIONS_MANAGER", "PLATFORM_ADMIN"],
+      label: "Compliance Docs",
+      roleWithAccess: ["ENTERPRISE_ADMIN", "AGGREGATOR_ADMIN", "OWNER_OPERATOR", "PLATFORM_ADMIN", "FLEET_ADMIN", "OPERATIONS_MANAGER", "DISPATCHER", "FINANCE_VIEWER"],
       to: APP_ROUTES.documents,
       icon: Logs,
-      pageTitle: "Documents",
-      pageDescription: "Access Logs for Document managed by organization",
+      pageTitle: "Compliance Documents",
+      pageDescription: "Track expiries, renewals, and evidence files",
     },
 
     {
