@@ -259,11 +259,20 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
 
     {
       label: "Devices",
-      roleWithAccess: ["FLEET_ADMIN", "DISPATCHER"],
+      roleWithAccess: ["ENTERPRISE_ADMIN", "AGGREGATOR_ADMIN", "PLATFORM_ADMIN", "FLEET_ADMIN", "DISPATCHER"],
       to: APP_ROUTES.device,
       icon: Cpu,
       pageTitle: "IoT Device Management",
-      pageDescription: "Provision and manage GPS tracking devices"
+      pageDescription: "Provision, configure, and assign tracking devices"
+    },
+
+    {
+      label: "SIMs",
+      roleWithAccess: ["FLEET_ADMIN", "OPERATIONS_MANAGER"],
+      to: APP_ROUTES.simManagement,
+      icon: Wifi,
+      pageTitle: "SIM Management",
+      pageDescription: "Track SIM inventory, usage, and requests"
     },
 
     {

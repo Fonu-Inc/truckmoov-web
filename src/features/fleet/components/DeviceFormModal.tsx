@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
+import { DEVICE_CATALOG, findCatalogEntry } from "../lib/deviceCatalog";
 
 type DeviceFormModalProps = ModalProps & {
  mode?: FormMode;
@@ -37,9 +38,22 @@ export default function DeviceFormModal({ open, onOpenChange, mode = "create", d
   defaultValues,
  });
 
+ const catalogModels = useMemo(() => DEVICE_CATALOG.map((entry) => entry.model), []);
+ const selectedModel = form.watch("model");
+ const selectedCatalog = useMemo(
+  () => (selectedModel ? findCatalogEntry(selectedModel) : undefined),
+  [selectedModel],
+ );
+
  useEffect(() => {
   if (open) form.reset(defaultValues);
  }, [open, defaultValues, form]);
+
+ useEffect(() => {
+  if (!open || !selectedCatalog) return;
+  form.setValue("manufacturer", selectedCatalog.manufacturer, { shouldValidate: true });
+  form.setValue("firmwareVersion", selectedCatalog.firmwareVersion, { shouldValidate: true });
+ }, [open, selectedCatalog, form]);
 
  const { mutateAsync: createDevice, isPending: creating } = useCreateDevice();
  const { mutateAsync: updateDevice, isPending: updating } = useUpdateDevice();
@@ -94,13 +108,13 @@ export default function DeviceFormModal({ open, onOpenChange, mode = "create", d
        control={form.control}
        name="manufacturer"
        render={({ field }) => (
-        <FormItem>
-         <FormLabel>Manufacturer</FormLabel>
-         <FormControl>
-          <Input placeholder="Teltonika" {...field} />
-         </FormControl>
-         <FormMessage />
-        </FormItem>
+         <FormItem>
+          <FormLabel>Manufacturer</FormLabel>
+          <FormControl>
+           <Input placeholder="Teltonika" {...field} />
+          </FormControl>
+          <FormMessage />
+         </FormItem>
        )}
       />
 
@@ -110,9 +124,34 @@ export default function DeviceFormModal({ open, onOpenChange, mode = "create", d
        render={({ field }) => (
         <FormItem>
          <FormLabel>Model</FormLabel>
-         <FormControl>
-          <Input placeholder="FMC130" {...field} />
-         </FormControl>
+         <div className="space-y-3">
+          <FormControl>
+           <Input placeholder="FMC130" {...field} />
+          </FormControl>
+          <div className="rounded-lg border border-dashed border-border p-3">
+           <p className="text-xs text-muted-foreground">Catalog selection (optional)</p>
+           <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {catalogModels.map((model) => (
+             <Button
+              key={model}
+              type="button"
+              variant={field.value === model ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+               const entry = findCatalogEntry(model);
+               form.setValue("model", model, { shouldValidate: true });
+               if (entry) {
+                form.setValue("manufacturer", entry.manufacturer, { shouldValidate: true });
+                form.setValue("firmwareVersion", entry.firmwareVersion, { shouldValidate: true });
+               }
+              }}
+             >
+              {model}
+             </Button>
+            ))}
+           </div>
+          </div>
+         </div>
          <FormMessage />
         </FormItem>
        )}

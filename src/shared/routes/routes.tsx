@@ -20,6 +20,7 @@ import Fleet from "@/features/fleet/layouts/Fleet";
 import Vehicles from "@/features/fleet/pages/Vehicles";
 import Driver from "@/features/fleet/pages/Driver";
 import Devices from "@/features/fleet/pages/Devices";
+import SIMManagement from "@/features/fleet/pages/SIMManagement";
 import Job from "@/features/dispatch/pages/Job";
 import DispatchSettings from "@/features/setting/pages/DispatchSettings";
 import Alerts from "@/features/fleet/pages/Alerts";
@@ -72,6 +73,10 @@ export function buildAppRoutes(): RouteObject[] {
             {
               path: APP_ROUTES.fuelManagement,
               element: <FuelManagement />,
+            },
+            {
+              path: APP_ROUTES.simManagement,
+              element: <SIMManagement />,
             },
             {
               path: APP_ROUTES.fleetIncidents,
