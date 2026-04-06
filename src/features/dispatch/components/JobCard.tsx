@@ -1,12 +1,13 @@
 import { useDebounce } from "@/shared/hooks/useDebounce";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, CheckCircle, Ellipsis, Eye, FileText, Flag, MapPin, Navigation, Package, Pencil, Trash2, Truck, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, Ellipsis, Eye, FileText, Flag, MapPin, Navigation, Package, Pencil, Trash2, Truck, XCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { listJobQueryOptions } from "../api";
 import { useJobStore } from "../stores/job";
 import { Job, JobStatus } from "../api/types";
 import AddJobNoteModal from "./AddJobNoteModal";
 import CancelJobModal from "./CancelJobModal";
+import EditJobTimeWindowModal from "./EditJobTimeWindowModal";
 import JobDetailSheet from "./JobDetailSheet";
 import ReassignJobModal from "./ReassignJobModal";
 import SetJobPriorityModal from "./SetJobPriorityModal";
@@ -32,9 +33,10 @@ export default function JobCard() {
  const [openSetPriorityModal, setOpenSetPriorityModal] = useState(false);
  const [openAddNoteModal, setOpenAddNoteModal] = useState(false);
  const [openCancelJobModal, setOpenCancelJobModal] = useState(false);
+ const [openEditTimeWindowModal, setOpenEditTimeWindowModal] = useState(false);
  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
- function handleActionSelect(job: Job, mode: "view" | "reassign" | "priority" | "note" | "cancel") {
+ function handleActionSelect(job: Job, mode: "view" | "reassign" | "priority" | "note" | "cancel" | "timeWindow") {
   setSelectedJob(job);
   if (mode === "view") {
    setOpenJobDetailSheet(true);
@@ -50,6 +52,10 @@ export default function JobCard() {
   }
   if (mode === "note") {
    setOpenAddNoteModal(true);
+   return;
+  }
+  if (mode === "timeWindow") {
+   setOpenEditTimeWindowModal(true);
    return;
   }
   setOpenCancelJobModal(true);
@@ -157,6 +163,10 @@ export default function JobCard() {
               <FileText className="h-4 w-4" />
               Add Note
              </DropdownMenuItem>
+             <DropdownMenuItem onClick={() => handleActionSelect(job, "timeWindow")}>
+              <Clock className="h-4 w-4" />
+              Edit Time Window
+             </DropdownMenuItem>
              <DropdownMenuSeparator />
              <DropdownMenuItem
               onClick={() => handleActionSelect(job, "cancel")}
@@ -180,6 +190,7 @@ export default function JobCard() {
    <SetJobPriorityModal open={openSetPriorityModal} onOpenChange={setOpenSetPriorityModal} job={selectedJob} />
    <AddJobNoteModal open={openAddNoteModal} onOpenChange={setOpenAddNoteModal} job={selectedJob} />
    <CancelJobModal open={openCancelJobModal} onOpenChange={setOpenCancelJobModal} job={selectedJob} />
+   <EditJobTimeWindowModal open={openEditTimeWindowModal} onOpenChange={setOpenEditTimeWindowModal} job={selectedJob} />
   </>
  );
 }
