@@ -2,7 +2,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { UserRole } from "@/features/auth/api/types";
 import { APP_ROUTES } from "@/shared/lib/appRoutes";
 import { useAuthStore } from "@/stores/authStore";
-import { AlertTriangle, Truck } from "lucide-react";
+import { AlertTriangle, Fuel, Truck } from "lucide-react";
 import { useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -25,6 +25,12 @@ const FLEET_TAB_LIST: FleetTab[] = [
     icon: AlertTriangle,
     to: APP_ROUTES.fleetIncidents,
     roleWithAccess: ["FLEET_ADMIN"],
+  },
+  {
+    label: "Fuel & Cost",
+    icon: Fuel,
+    to: APP_ROUTES.fuelManagement,
+    roleWithAccess: ["ENTERPRISE_ADMIN", "AGGREGATOR_ADMIN", "OWNER_OPERATOR", "PLATFORM_ADMIN", "FLEET_ADMIN", "OPERATIONS_MANAGER", "DISPATCHER", "FINANCE_VIEWER"],
   },
 ];
 
