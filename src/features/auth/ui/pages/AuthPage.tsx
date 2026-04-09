@@ -3,10 +3,11 @@ import { Link, NavLink, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useLogin } from "@/features/auth/api";
+import { useLogin, useSystemLogin } from "@/features/auth/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
 import AuthLayout from "../components/AuthLayout";
 import QuickDemoAccessDropdown from "../components/QuickDemoAccessDropdown";
@@ -18,12 +19,15 @@ const signInSchema = z.object({
 });
 
 type SignInFormValues = z.infer<typeof signInSchema>;
+type LoginMode = "user" | "system";
 
 export default function AuthPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { mutateAsync: signInUser, isPending: isSigningIn } = useLogin();
+  const { mutateAsync: signInUser, isPending: isUserSigningIn } = useLogin();
+  const { mutateAsync: signInSystemUser, isPending: isSystemSigningIn } = useSystemLogin();
   const [showPassword, setShowPassword] = useState(false);
+  const [loginMode, setLoginMode] = useState<LoginMode>("user");
 
   useEffect(() => {
     if (!searchParams.get("invitation")) return;
@@ -44,7 +48,9 @@ export default function AuthPage() {
   });
 
   const onSubmit = async (values: SignInFormValues) => {
-    await signInUser(
+    const signIn = loginMode === "system" ? signInSystemUser : signInUser;
+
+    await signIn(
       {
         data: {
           email: values.email,
@@ -59,6 +65,8 @@ export default function AuthPage() {
       }
     );
   };
+
+  const isSigningIn = isUserSigningIn || isSystemSigningIn;
 
   return (
     <AuthLayout title="Welcome back" subtitle="Sign in to your Truckmoov account">
@@ -78,6 +86,19 @@ export default function AuthPage() {
 
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <div className="space-y-1.5">
+          <Label htmlFor="login-mode" className="text-sm">Login As</Label>
+          <Select value={loginMode} onValueChange={(value) => setLoginMode(value as LoginMode)}>
+            <SelectTrigger id="login-mode">
+              <SelectValue placeholder="Select login type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="user">Normal User</SelectItem>
+              <SelectItem value="system">System Admin</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="space-y-1.5">
           <Label htmlFor="email" className="text-sm">Email</Label>
           <div className="relative">

@@ -27,12 +27,16 @@ export const axiosInstance = axios.create({
 
 const PUBLIC_ENDPOINTS = new Set([
   "/auth/login",
+  "/auth/system/login",
   "/auth/register",
   "/auth/refresh",
   "/auth/register/invited",
-  "/auth/forget-password",
+  "/auth/forgot-password",
+  "/auth/verify-email",
   "/auth/verify-reset",
+  "/auth/complete-profile",
   "/auth/reset-password",
+  "/auth/invite/validate",
 ]);
 
 let refreshPromise: Promise<string | null> | null = null;
