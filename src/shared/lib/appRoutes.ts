@@ -29,6 +29,10 @@ export const APP_ROUTES = {
   eventStreams: "/event-streams",
   auditLog: "/audit",
 
+  // Platform and System Admin routes
+  systemDashboard: "/platform/dashboard",
+  systemTenants: "/platform/tenant",
+
   // settings route
   organizationsSettings: "/setting",
   subscriptionSettings: "/setting/subscription",

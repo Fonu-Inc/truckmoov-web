@@ -8,6 +8,8 @@ export function getRoleDefaultRoute(role: UserRole) {
     case "DISPATCHER":
     case "OPERATIONS_MANAGER":
       return APP_ROUTES.dashboard
+    case "PLATFORM_ADMIN":
+      return APP_ROUTES.systemDashboard
     default:
       return APP_ROUTES.organizationsSettings;
   }

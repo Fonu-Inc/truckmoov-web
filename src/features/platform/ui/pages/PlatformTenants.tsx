@@ -177,10 +177,10 @@ const emptyTenant: Partial<Tenant> = {
 export default function PlatformTenants() {
   const { currency, format } = useCurrency();
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications, addNotification } = useRealtimeNotifications();
-  
+
   // Fetch real tenants from database
   const { tenants: dbTenants, isLoading: isLoadingDbTenants, refetch: refetchDbTenants, updateTenantStatus, updateTenant: updateDbTenant, deleteTenant: deleteDbTenant } = useTenants();
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [planFilter, setPlanFilter] = useState("all");
@@ -236,14 +236,14 @@ export default function PlatformTenants() {
   const totalVehicles = dbTenants.reduce((sum, t) => sum + (t.vehicleCount || 0), 0);
 
   const formatTotalRevenue = () => {
-    return currency === "NGN" 
-      ? `₦${totalRevenueNGN.toLocaleString()}` 
+    return currency === "NGN"
+      ? `₦${totalRevenueNGN.toLocaleString()}`
       : `$${Math.round(totalRevenueNGN / 1550).toLocaleString()}`;
   };
 
   const formatPlanPrice = (plan: keyof typeof planDetails) => {
-    return currency === "NGN" 
-      ? `₦${planDetails[plan].priceNGN.toLocaleString()}` 
+    return currency === "NGN"
+      ? `₦${planDetails[plan].priceNGN.toLocaleString()}`
       : `$${planDetails[plan].priceUSD}`;
   };
 
@@ -265,7 +265,7 @@ export default function PlatformTenants() {
   const handleWizardComplete = (wizardData: any) => {
     // Wizard now creates tenants via the API - just trigger a refetch and notification
     refetchDbTenants();
-    
+
     addNotification({
       type: "tenant_created",
       title: "Tenant Onboarded",
@@ -327,7 +327,7 @@ export default function PlatformTenants() {
 
     const tenantName = deleteConfirmDbTenant.name;
     const success = await deleteDbTenant(deleteConfirmDbTenant.id);
-    
+
     if (success) {
       addNotification({
         type: "system",
@@ -336,7 +336,7 @@ export default function PlatformTenants() {
         severity: "warning",
       });
     }
-    
+
     setDeleteConfirmDbTenant(null);
   };
 
@@ -369,7 +369,7 @@ export default function PlatformTenants() {
       }
 
       toast.success(`Welcome email sent to ${tenant.email}`, { id: "resend-invitation" });
-      
+
       addNotification({
         type: "system",
         title: "Invitation Sent",
@@ -384,10 +384,7 @@ export default function PlatformTenants() {
 
 
   return (
-    <DashboardLayout
-      title="Tenant Management"
-      subtitle="Create, edit, and manage tenant organizations"
-    >
+    <>
       <div className="space-y-6">
         {/* Header Actions */}
         <div className="flex items-center justify-between">
@@ -632,13 +629,13 @@ export default function PlatformTenants() {
                           </div>
                         </TableCell>
                         <TableCell className="font-medium">
-                          {currency === "NGN" 
-                            ? `₦${(tenant.monthlyRevenueNgn || 0).toLocaleString()}` 
+                          {currency === "NGN"
+                            ? `₦${(tenant.monthlyRevenueNgn || 0).toLocaleString()}`
                             : `$${Math.round((tenant.monthlyRevenueNgn || 0) / 1550).toLocaleString()}`}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {tenant.lastActiveAt 
-                            ? new Date(tenant.lastActiveAt).toLocaleDateString() 
+                          {tenant.lastActiveAt
+                            ? new Date(tenant.lastActiveAt).toLocaleDateString()
                             : "Never"}
                         </TableCell>
                         <TableCell>
@@ -810,7 +807,7 @@ export default function PlatformTenants() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Tenant</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deleteConfirmDbTenant?.name}"? This will permanently remove 
+              Are you sure you want to delete "{deleteConfirmDbTenant?.name}"? This will permanently remove
               all their data including business information and documents. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -825,6 +822,6 @@ export default function PlatformTenants() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </DashboardLayout>
+    </>
   );
 }

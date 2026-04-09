@@ -54,11 +54,12 @@ const DASHBOARD_DETAILS: DetailsObjectType = {
   //   label: "Overview",
   //   pageTitle: "Dashboard",
   // },
-  // "PLATFORM_ADMIN": {
-  //   label: "Dashboard",
-  //   pageTitle: "Platform Dashboard",
-  //   pageDescription: "System overview for Super Administrator"
-  // },
+  "PLATFORM_ADMIN": {
+    label: "Dashboard",
+    pageTitle: "Platform Dashboard",
+    pageDescription: "System overview for Super Administrator",
+    to: APP_ROUTES.systemDashboard
+  },
   "OPERATIONS_MANAGER": {
     label: "Dashboard",
     pageTitle: "Dashboard",
@@ -195,7 +196,7 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
     ...(dashboardRoleDetail ? [{
       label: dashboardRoleDetail.label,
       roleWithAccess: getRolesFromDetails(DASHBOARD_DETAILS),
-      to: APP_ROUTES.dashboard,
+      to: dashboardRoleDetail.to ?? APP_ROUTES.dashboard,
       icon: LayoutDashboard,
       pageTitle: dashboardRoleDetail.pageTitle,
       pageDescription: dashboardRoleDetail.pageDescription
@@ -247,6 +248,15 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
       icon: Users,
       pageTitle: driverRoleDetail.pageTitle
     }] : []),
+
+    {
+      label: "Tenants",
+      roleWithAccess: ["PLATFORM_ADMIN"],
+      to: APP_ROUTES.systemTenants,
+      icon: Cpu,
+      pageTitle: "Tenant Management",
+      pageDescription: "Create, edit, and manage tenant organizations"
+    },
 
     {
       label: "Devices",

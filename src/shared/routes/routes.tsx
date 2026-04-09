@@ -35,6 +35,8 @@ import IntegrationsPage from "@/features/integrations/ui/pages/Integrations";
 import MapPage from "@/features/dispatch/pages/Map";
 import Reports from "@/features/reports/pages/Reports";
 import AuditLog from "@/features/dashboard/pages/AuditLog";
+import PlatformDashboard from "@/pages/platform/PlatformDashboard";
+import PlatformTenants from "@/pages/platform/PlatformTenants";
 
 export function buildAppRoutes(): RouteObject[] {
   return [
@@ -49,6 +51,16 @@ export function buildAppRoutes(): RouteObject[] {
       path: APP_ROUTES.main,
       element: <MainLayout />,
       children: [
+        // Platform admin pages
+        {
+          path: APP_ROUTES.systemDashboard,
+          element: <PlatformDashboard />,
+        },
+        {
+          path: APP_ROUTES.systemDashboard,
+          element: <PlatformTenants />,
+        },
+
         // Enterprise Role Pages
         {
           path: APP_ROUTES.dashboard,
