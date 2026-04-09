@@ -482,6 +482,15 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
     // },
 
     // Settings
+    {
+      label: "Settings",
+      roleWithAccess: ["PLATFORM_ADMIN", "SUPER_ADMIN"],
+      to: APP_ROUTES.systemSettings,
+      icon: Settings,
+      pageTitle: "Platform Settings",
+      pageDescription: "Configure global platform settings and integrations"
+    },
+
     ...(settingRoleDetail ? [{
       label: settingRoleDetail.label,
       roleWithAccess: getRolesFromDetails(SETTINGS_DETAILS),

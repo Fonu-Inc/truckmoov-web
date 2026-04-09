@@ -69,10 +69,7 @@ export default function PlatformSettings() {
   };
 
   return (
-    <DashboardLayout
-      title="Platform Settings"
-      subtitle="Configure global platform settings and integrations"
-    >
+    <>
       <Tabs defaultValue="general" className="space-y-6">
         <div className="overflow-x-auto pb-2">
           <TabsList className="inline-flex h-auto flex-wrap gap-1 p-1 lg:flex-nowrap">
@@ -552,13 +549,13 @@ export default function PlatformSettings() {
           <OrgUpgradeQueue />
         </TabsContent>
 
-        <div className="flex justify-end">
+        {/* <div className="flex justify-end">
           <Button onClick={handleSave} disabled={saving}>
             <Save className="h-4 w-4 mr-2" />
             {saving ? "Saving..." : "Save Changes"}
           </Button>
-        </div>
+        </div> */}
       </Tabs>
-    </DashboardLayout>
+    </>
   );
 }

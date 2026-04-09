@@ -37,6 +37,7 @@ import Reports from "@/features/reports/pages/Reports";
 import AuditLog from "@/features/dashboard/pages/AuditLog";
 import PlatformDashboard from "@/pages/platform/PlatformDashboard";
 import PlatformTenants from "@/pages/platform/PlatformTenants";
+import PlatformSettings from "@/pages/platform/PlatformSettings";
 
 export function buildAppRoutes(): RouteObject[] {
   return [
@@ -59,6 +60,10 @@ export function buildAppRoutes(): RouteObject[] {
         {
           path: APP_ROUTES.systemTenants,
           element: <PlatformTenants />,
+        },
+        {
+          path: APP_ROUTES.systemSettings,
+          element: <PlatformSettings />,
         },
 
         // Enterprise Role Pages

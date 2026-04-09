@@ -32,6 +32,7 @@ export const APP_ROUTES = {
   // Platform and System Admin routes
   systemDashboard: "/platform/dashboard",
   systemTenants: "/platform/tenant",
+  systemSettings: "/platform/settings",
 
   // settings route
   organizationsSettings: "/setting",
