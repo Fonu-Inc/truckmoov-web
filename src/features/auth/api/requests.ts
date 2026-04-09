@@ -77,7 +77,7 @@ export async function login(payload: LoginPayload) {
 }
 
 export async function systemLogin(payload: LoginPayload) {
-  const { data } = await axiosInstance.post<ServerSuccessResponse<Session>>("/auth/system/login", payload.data);
+  const { data } = await axiosInstance.post<ServerSuccessResponse<Authentication>>("/auth/system/login", payload.data);
   return data;
 }
 

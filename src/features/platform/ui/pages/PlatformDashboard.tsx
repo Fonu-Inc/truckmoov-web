@@ -86,7 +86,7 @@ function formatMetricValue(
   const unavailableMetrics = new Set(dashboard.unavailableMetrics);
   const value = dashboard[key];
 
-  if (value === null || unavailableMetrics.has(key)) {
+  if (value === null || value === undefined || unavailableMetrics.has(key)) {
     return "N/A";
   }
 

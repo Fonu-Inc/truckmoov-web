@@ -8,7 +8,8 @@ const OrgLabelMap: Record<UserRole, string> = {
  FINANCE_VIEWER: "finance viewer",
  FLEET_ADMIN: "fleet admin",
  OPERATIONS_MANAGER: "operations manager",
- PLATFORM_ADMIN: "platform admin"
+ PLATFORM_ADMIN: "platform admin",
+ SUPER_ADMIN: "Super Admin"
 }
 
 const OrgAltLabelMap: Record<UserRole, string> = {
@@ -19,12 +20,13 @@ const OrgAltLabelMap: Record<UserRole, string> = {
  FINANCE_VIEWER: "finance",
  FLEET_ADMIN: "fleet provider",
  OPERATIONS_MANAGER: "operations manager",
- PLATFORM_ADMIN: "platform admin"
+ PLATFORM_ADMIN: "platform admin",
+ SUPER_ADMIN: "Super Admin"
 }
 
 export function getOrgLabel(role: UserRole, alt?: boolean) {
- if(alt) {
-  return OrgAltLabelMap[role] ?? "" 
+ if (alt) {
+  return OrgAltLabelMap[role] ?? ""
  }
  return OrgLabelMap[role] ?? ""
 }

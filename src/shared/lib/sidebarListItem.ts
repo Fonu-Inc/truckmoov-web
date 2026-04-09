@@ -60,6 +60,12 @@ const DASHBOARD_DETAILS: DetailsObjectType = {
     pageDescription: "System overview for Super Administrator",
     to: APP_ROUTES.systemDashboard
   },
+  "SUPER_ADMIN": {
+    label: "Dashboard",
+    pageTitle: "Dashboard",
+    pageDescription: "System overview for Super Administrator",
+    to: APP_ROUTES.systemDashboard
+  },
   "OPERATIONS_MANAGER": {
     label: "Dashboard",
     pageTitle: "Dashboard",
@@ -251,7 +257,7 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
 
     {
       label: "Tenants",
-      roleWithAccess: ["PLATFORM_ADMIN"],
+      roleWithAccess: ["PLATFORM_ADMIN", "SUPER_ADMIN"],
       to: APP_ROUTES.systemTenants,
       icon: Cpu,
       pageTitle: "Tenant Management",

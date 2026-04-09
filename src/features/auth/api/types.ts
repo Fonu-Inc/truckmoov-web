@@ -6,7 +6,8 @@ export type UserRole =
   | "FLEET_ADMIN"
   | "OPERATIONS_MANAGER"
   | "DISPATCHER"
-  | "FINANCE_VIEWER";
+  | "FINANCE_VIEWER"
+  | "SUPER_ADMIN";
 
 export type AccountStatus = "enabled" | "disabled";
 export type SystemTenantStatus = "active" | "pending" | "suspended" | "inactive";

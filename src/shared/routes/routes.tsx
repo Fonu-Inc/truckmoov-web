@@ -57,7 +57,7 @@ export function buildAppRoutes(): RouteObject[] {
           element: <PlatformDashboard />,
         },
         {
-          path: APP_ROUTES.systemDashboard,
+          path: APP_ROUTES.systemTenants,
           element: <PlatformTenants />,
         },
 

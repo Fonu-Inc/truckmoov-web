@@ -98,6 +98,7 @@ export function useLogin() {
 
 export function useSystemLogin() {
   const setTokens = useAuthStore((state) => state.setTokens);
+  const setUser = useAuthStore((state) => state.setUser);
 
   return useMutation({
     mutationFn: systemLogin,
@@ -106,6 +107,7 @@ export function useSystemLogin() {
         accessToken: data.data.accessToken,
         refreshToken: data.data.refreshToken,
       });
+      setUser(data.data.user);
       toast.success("Login Successful");
     },
   });
