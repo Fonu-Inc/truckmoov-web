@@ -252,6 +252,27 @@ export type UploadedImage = {
   size: number;
 };
 
+export type SystemSubscriptionPlan = {
+  code: string;
+  tier: SystemTenantPlan;
+  name: string;
+  description: string;
+  monthlyPriceNgn: number | null;
+  yearlyMonthlyEquivalentNgn: number | null;
+  yearlyDiscountPercent: number | null;
+  maxActiveVehicles: number | null;
+  customPricing: boolean;
+  trialDays: number | null;
+  badge: string | null;
+  ctaLabel: string;
+  features: string[];
+};
+
+export type SystemSubscriptionPlansResponse = {
+  plans: SystemSubscriptionPlan[];
+  generatedAt: string;
+};
+
 export type OrganizationUser = {
   userId: string;
   email: string;
@@ -388,13 +409,33 @@ export type TenantCompanyDetails = {
   organizationType: OrganizationType;
 };
 
+export type UpdateTenantCompanyDetailsPayload = {
+  companyName?: string;
+  email?: string;
+  phoneNumber?: string | null;
+  billingEmail?: string | null;
+  businessAddress?: string | null;
+  organizationType?: OrganizationType;
+};
+
 export type TenantSubscriptionSelection = {
   planCode: string;
   billingCycle: BillingCycle;
 };
 
+export type UpdateTenantSubscriptionSelectionPayload = {
+  planCode?: string;
+  billingCycle?: BillingCycle;
+};
+
 export type TenantDeviceProvisioning = {
   provisionNow: boolean;
+  numberOfDevices?: number | null;
+  deviceManufacturer?: DeviceManufacturer | null;
+};
+
+export type UpdateTenantDeviceProvisioningPayload = {
+  provisionNow?: boolean;
   numberOfDevices?: number | null;
   deviceManufacturer?: DeviceManufacturer | null;
 };
@@ -406,6 +447,15 @@ export type TenantSimAssignment = {
   dataPackage?: SimDataPackage | null;
 };
 
+export type UpdateTenantSimAssignmentPayload = {
+  provisionNow?: boolean;
+  numberOfSims?: number | null;
+  carrier?: SimCarrier | null;
+  dataPackage?: SimDataPackage | null;
+};
+
+export type UpdateTenantFeatureFlagsPayload = Partial<SystemTenantFeatureFlags>;
+
 export type CreateSystemTenantPayload = {
   data: {
     company: TenantCompanyDetails;
@@ -413,6 +463,17 @@ export type CreateSystemTenantPayload = {
     deviceProvisioning?: TenantDeviceProvisioning;
     simAssignment?: TenantSimAssignment;
     features?: Partial<SystemTenantFeatureFlags>;
+  };
+};
+
+export type UpdateSystemTenantPayload = {
+  tenantId: string;
+  data: {
+    company?: UpdateTenantCompanyDetailsPayload;
+    subscription?: UpdateTenantSubscriptionSelectionPayload;
+    deviceProvisioning?: UpdateTenantDeviceProvisioningPayload;
+    simAssignment?: UpdateTenantSimAssignmentPayload;
+    features?: UpdateTenantFeatureFlagsPayload;
   };
 };
 
@@ -546,4 +607,9 @@ export type UpdateSystemTenantStatusPayload = {
   data: {
     status: Extract<SystemTenantStatus, "active" | "suspended">;
   };
+};
+
+export type SystemTenantDeleteResponse = {
+  tenantId: string;
+  deleted: boolean;
 };

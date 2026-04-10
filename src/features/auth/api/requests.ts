@@ -28,7 +28,9 @@ import type {
   ResetPasswordPayload,
   Session,
   SystemDashboard,
+  SystemSubscriptionPlansResponse,
   SystemTenantDetail,
+  SystemTenantDeleteResponse,
   SystemTenantOnboarding,
   SystemTenantOnboardingReferenceData,
   SystemTenantsListResponse,
@@ -41,6 +43,7 @@ import type {
   UpdateOrganizationsSettingsPayload,
   UpdateOrganizationUserStatusPayload,
   UpdateSystemAdminStatusPayload,
+  UpdateSystemTenantPayload,
   UpdateSystemTenantStatusPayload,
   UpdateUserProfilePayload,
   UploadImageToBucketPayload,
@@ -90,6 +93,13 @@ export async function changeSystemPassword(payload: ChangeSystemPasswordPayload)
   const { data } = await axiosInstance.patch<ServerSuccessResponse<Session>>(
     "/auth/system/change-password",
     payload.data
+  );
+  return data;
+}
+
+export async function getSystemSubscriptionPlans() {
+  const { data } = await axiosInstance.get<ServerSuccessResponse<SystemSubscriptionPlansResponse>>(
+    "/auth/system/subscription-plans"
   );
   return data;
 }
@@ -322,6 +332,21 @@ export async function updateSystemTenantStatus(payload: UpdateSystemTenantStatus
   const { data } = await axiosInstance.patch<ServerSuccessResponse<SystemTenantDetail>>(
     `/auth/system/tenants/${payload.tenantId}/status`,
     payload.data
+  );
+  return data;
+}
+
+export async function updateSystemTenant(payload: UpdateSystemTenantPayload) {
+  const { data } = await axiosInstance.patch<ServerSuccessResponse<SystemTenantDetail>>(
+    `/auth/system/tenants/${payload.tenantId}`,
+    payload.data
+  );
+  return data;
+}
+
+export async function deleteSystemTenant(tenantId: string) {
+  const { data } = await axiosInstance.delete<ServerSuccessResponse<SystemTenantDeleteResponse>>(
+    `/auth/system/tenants/${tenantId}`
   );
   return data;
 }

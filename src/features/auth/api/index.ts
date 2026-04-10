@@ -10,6 +10,7 @@ import {
   completeProfile,
   createSystemAdmin,
   createSystemTenant,
+  deleteSystemTenant,
   exportSystemTenants,
   forgetPassword,
   getActivityLog,
@@ -17,6 +18,7 @@ import {
   getInvitedUsers,
   getNotificationsPreferences,
   getOrganizationsSettings,
+  getSystemSubscriptionPlans,
   getSystemActivityLog,
   getSystemAdmins,
   getSystemDashboard,
@@ -40,6 +42,7 @@ import {
   updateOrganizationsSettings,
   updateOrganizationUserStatus,
   updateSystemAdminStatus,
+  updateSystemTenant,
   updateSystemTenantStatus,
   updateUserProfile,
   uploadMediaToBucket,
@@ -60,6 +63,7 @@ export const AUTH_QUERY_KEY = {
   systemAdmins: ["systemAdmins"],
   systemActivityLog: ["systemActivityLog"],
   systemDashboard: ["systemDashboard"],
+  systemSubscriptionPlans: ["systemSubscriptionPlans"],
   systemTenantsSummary: ["systemTenantsSummary"],
   systemTenants: ["systemTenants"],
   systemTenant: ["systemTenant"],
@@ -389,6 +393,13 @@ export function getSystemTenantsQueryOptions(payload?: SystemTenantsQuery) {
   });
 }
 
+export function getSystemSubscriptionPlansQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSubscriptionPlans,
+    queryFn: getSystemSubscriptionPlans,
+  });
+}
+
 export function getSystemActivityLogQueryOptions(payload?: ActivityLogQuery) {
   return queryOptions({
     queryKey: [...AUTH_QUERY_KEY.systemActivityLog, payload ?? {}],
@@ -440,6 +451,42 @@ export function useUpdateSystemTenantStatus() {
       });
       queryClient.invalidateQueries({
         queryKey: [...AUTH_QUERY_KEY.systemTenant, variables.tenantId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: AUTH_QUERY_KEY.systemTenantsSummary,
+      });
+    },
+  });
+}
+
+export function useUpdateSystemTenant() {
+  return useMutation({
+    mutationFn: updateSystemTenant,
+    onSuccess: (_, variables) => {
+      toast.success("Tenant Updated");
+      queryClient.invalidateQueries({
+        queryKey: AUTH_QUERY_KEY.systemTenants,
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...AUTH_QUERY_KEY.systemTenant, variables.tenantId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: AUTH_QUERY_KEY.systemTenantsSummary,
+      });
+    },
+  });
+}
+
+export function useDeleteSystemTenant() {
+  return useMutation({
+    mutationFn: deleteSystemTenant,
+    onSuccess: (_, tenantId) => {
+      toast.success("Tenant Deleted");
+      queryClient.invalidateQueries({
+        queryKey: AUTH_QUERY_KEY.systemTenants,
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...AUTH_QUERY_KEY.systemTenant, tenantId],
       });
       queryClient.invalidateQueries({
         queryKey: AUTH_QUERY_KEY.systemTenantsSummary,

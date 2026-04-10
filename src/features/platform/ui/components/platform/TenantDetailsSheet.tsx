@@ -69,6 +69,13 @@ function formatCurrency(amount: number) {
   }).format(amount);
 }
 
+function formatOnboardingStatus(status: string) {
+  return status
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 function getStatusBadge(status: SystemTenantDetail["tenant"]["status"]) {
   switch (status) {
     case "active":
@@ -304,7 +311,7 @@ export function TenantDetailsSheet({ tenantId, open, onOpenChange }: TenantDetai
                             <p className="font-medium">Onboarding Status</p>
                             <p className="text-sm text-muted-foreground">Admin invite: {detail.onboarding.adminInviteEmail}</p>
                           </div>
-                          <Badge variant="outline">{detail.onboarding.status}</Badge>
+                          <Badge variant="outline">{formatOnboardingStatus(detail.onboarding.status)}</Badge>
                         </div>
                         <div className="text-sm text-muted-foreground">
                           Created {formatDateTime(detail.onboarding.createdAt)}
