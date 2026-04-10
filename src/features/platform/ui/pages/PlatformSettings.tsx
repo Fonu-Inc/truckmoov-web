@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { useMemo } from "react";
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import {
   Select,
   SelectContent,
@@ -36,8 +37,12 @@ import {
   Wallet,
   Bot,
   Link2,
-  Layers,
 } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
+import { getOrganizationsSettingsQueryOptions, getUserProfileQueryOptions, useChangeSystemPassword } from "@/features/auth/api";
 import { TelephonySettings } from "@/components/platform/TelephonySettings";
 import { IntegrationSettings } from "@/components/platform/IntegrationSettings";
 import { WebhookManagement } from "@/components/platform/WebhookManagement";
@@ -55,18 +60,176 @@ import { PhoneNumberManagement } from "@/components/platform/PhoneNumberManageme
 import { SenderIdApprovalQueue } from "@/components/platform/SenderIdApprovalQueue";
 import { FeatureFlagsPanel } from "@/components/platform/FeatureFlagsPanel";
 import { OrgUpgradeQueue } from "@/components/platform/OrgUpgradeQueue";
-import { toast } from "sonner";
+import UploadImage from "@/shared/components/UploadImage";
+import { useUpdateUserProfile } from "@/features/auth/api";
+
+const passwordSchema = z.object({
+  currentPassword: z.string().trim().min(1, "Old password is required"),
+  newPassword: z.string().trim().min(8, "New password must be at least 8 characters"),
+});
+
+const profileSchema = z.object({
+  fullName: z.string().trim().min(1, "Full name is required"),
+  phoneNumber: z.string().optional(),
+  address: z.string().optional(),
+});
+
+type ProfileFormValues = z.infer<typeof profileSchema>;
+type PasswordFormValues = z.infer<typeof passwordSchema>;
+
+function formatRoleLabel(role?: string | null) {
+  if (!role) {
+    return "N/A";
+  }
+
+  switch (role) {
+    case "PLATFORM_ADMIN":
+    case "SUPER_ADMIN":
+      return "System Admin";
+    case "ENTERPRISE_ADMIN":
+      return "Enterprise Admin";
+    case "AGGREGATOR_ADMIN":
+      return "Aggregator Admin";
+    case "OWNER_OPERATOR":
+      return "Owner Operator";
+    case "FLEET_ADMIN":
+      return "Fleet Admin";
+    case "OPERATIONS_MANAGER":
+      return "Operations Manager";
+    case "FINANCE_VIEWER":
+      return "Finance Viewer";
+    case "DISPATCHER":
+      return "Dispatcher";
+    default:
+      return role
+        .toLowerCase()
+        .split("_")
+        .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+        .join(" ");
+  }
+}
+
+function SystemInfoRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number | null | undefined;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-sm font-medium text-foreground capitalize">{value && value !== "" ? value : "N/A"}</p>
+    </div>
+  );
+}
 
 export default function PlatformSettings() {
-  const [saving, setSaving] = useState(false);
+  const { data: userProfileQuery } = useQuery(getUserProfileQueryOptions());
+  const { data: organizationSettingsQuery } = useQuery(getOrganizationsSettingsQueryOptions());
+  const { mutateAsync: changeSystemPassword, isPending: isChangingPassword } = useChangeSystemPassword();
+  const { mutateAsync: updateUserProfile, isPending: isUpdatingProfile } = useUpdateUserProfile();
 
-  const handleSave = () => {
-    setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
-      toast.success("Settings saved successfully");
-    }, 1000);
+  const profile = userProfileQuery?.data;
+  const organizationSettings = organizationSettingsQuery?.data;
+
+  const profileForm = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      fullName: profile?.profile?.fullName ?? "",
+      phoneNumber: profile?.profile?.phoneNumber ?? "",
+      address: profile?.profile?.address ?? "",
+    },
+  });
+
+  const passwordForm = useForm<PasswordFormValues>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+    },
+  });
+
+  const {
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = passwordForm;
+
+  const {
+    handleSubmit: handleProfileSubmit,
+    reset: resetProfileForm,
+    formState: { isSubmitting: isProfileSubmitting, isDirty: isProfileDirty },
+  } = profileForm;
+
+  const systemSummary = useMemo(() => ({
+    fullName: profile?.profile?.fullName,
+    email: profile?.email,
+    role: profile?.role,
+    accountStatus: profile?.accountStatus,
+    phoneNumber: profile?.profile?.phoneNumber,
+    address: profile?.profile?.address,
+    tenantId: profile?.tenantId,
+  }), [profile]);
+
+  const organizationSummary = useMemo(() => ({
+    organizationName: organizationSettings?.branding?.organizationName,
+    contactEmail: organizationSettings?.branding?.contactEmail,
+    timezone: organizationSettings?.defaults?.timezone,
+    language: organizationSettings?.defaults?.language,
+    currency: organizationSettings?.defaults?.currency,
+    dateFormat: organizationSettings?.defaults?.dateFormat,
+    weekStartsOn: organizationSettings?.defaults?.weekStartsOn,
+  }), [organizationSettings]);
+
+  useEffect(() => {
+    resetProfileForm({
+      fullName: profile?.profile?.fullName ?? "",
+      phoneNumber: profile?.profile?.phoneNumber ?? "",
+      address: profile?.profile?.address ?? "",
+    });
+  }, [profile, resetProfileForm]);
+
+  const onPasswordSubmit = async (values: PasswordFormValues) => {
+    await changeSystemPassword(
+      {
+        data: {
+          currentPassword: values.currentPassword,
+          newPassword: values.newPassword,
+        },
+      },
+      {
+        onSuccess: () => {
+          reset();
+        },
+      }
+    );
   };
+
+  const onProfileSubmit = async (values: ProfileFormValues) => {
+    await updateUserProfile(
+      {
+        data: {
+          fullName: values.fullName,
+          phoneNumber: values.phoneNumber,
+          address: values.address,
+        },
+      },
+      {
+        onSuccess: () => {
+          resetProfileForm(values);
+        },
+      }
+    );
+  };
+
+  async function updateProfileLogo(url: string) {
+    await updateUserProfile({
+      data: {
+        profilePictureUrl: url,
+      },
+    });
+  }
 
   return (
     <>
@@ -94,153 +257,187 @@ export default function PlatformSettings() {
 
         {/* General Settings */}
         <TabsContent value="general" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5 text-primary" />
-                Platform Configuration
-              </CardTitle>
-              <CardDescription>
-                General settings for the fleet management platform
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="platformName">Platform Name</Label>
-                  <Input id="platformName" defaultValue="Truckmoov" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="supportEmail">Support Email</Label>
-                  <Input id="supportEmail" type="email" defaultValue="support@truckmoov.com" />
-                </div>
-              </div>
+          <div className="grid gap-6 xl:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  System Admin Profile
+                </CardTitle>
+                <CardDescription>
+                  Live profile data for the currently signed-in system administrator
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <UploadImage
+                  onUpload={updateProfileLogo}
+                  currentUrl={profile?.profile?.profilePictureUrl}
+                  uploading={isUpdatingProfile}
+                  text={profile?.profile?.fullName?.slice(0, 2).toUpperCase() ?? "SA"}
+                />
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="timezone">Default Timezone</Label>
-                  <Select defaultValue="africa/lagos">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="africa/lagos">Africa/Lagos (WAT, GMT+1)</SelectItem>
-                      <SelectItem value="africa/johannesburg">Africa/Johannesburg (SAST)</SelectItem>
-                      <SelectItem value="utc">UTC</SelectItem>
-                      <SelectItem value="europe/london">Europe/London</SelectItem>
-                      <SelectItem value="america/new_york">America/New_York</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="language">Default Language</Label>
-                  <Select defaultValue="en">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="ha">Hausa</SelectItem>
-                      <SelectItem value="yo">Yoruba</SelectItem>
-                      <SelectItem value="ig">Igbo</SelectItem>
-                      <SelectItem value="fr">French</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h4 className="font-medium">Platform Features</h4>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label>Allow New Tenant Registration</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Enable self-service tenant onboarding
-                      </p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label>Maintenance Mode</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Temporarily disable platform access
-                      </p>
-                    </div>
-                    <Switch />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label>Enable Beta Features</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Allow access to experimental features
-                      </p>
-                    </div>
-                    <Switch defaultChecked />
+                <div className="flex items-center gap-4 rounded-lg border border-border/60 bg-muted/30 p-4">
+                  <div className="space-y-1">
+                    <p className="text-base font-semibold">{systemSummary.fullName ?? "N/A"}</p>
+                    <p className="text-sm text-muted-foreground">{systemSummary.email ?? "N/A"}</p>
+                    <Badge variant="secondary" className="capitalize">
+                      {formatRoleLabel(systemSummary.role)}
+                    </Badge>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="h-5 w-5 text-primary" />
-                Data Retention
-              </CardTitle>
-              <CardDescription>
-                Configure how long data is retained in the system
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label>GPS Data Retention</Label>
-                  <Select defaultValue="365">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="90">90 Days</SelectItem>
-                      <SelectItem value="180">180 Days</SelectItem>
-                      <SelectItem value="365">1 Year</SelectItem>
-                      <SelectItem value="730">2 Years</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <Form {...profileForm}>
+                  <form onSubmit={handleProfileSubmit(onProfileSubmit)} className="space-y-6" noValidate>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <FormField
+                        control={profileForm.control}
+                        name="fullName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Full Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={profileForm.control}
+                        name="phoneNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone Number</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="space-y-2">
+                        <Label>Email Address</Label>
+                        <Input value={systemSummary.email ?? "N/A"} disabled />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Account Status</Label>
+                        <Input value={systemSummary.accountStatus ?? "N/A"} disabled />
+                      </div>
+                    </div>
+
+                    <FormField
+                      control={profileForm.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Address</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Tenant ID</Label>
+                        <Input value={systemSummary.tenantId ?? "N/A"} disabled />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Role</Label>
+                        <Input value={formatRoleLabel(systemSummary.role)} disabled />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button type="submit" isLoading={isProfileSubmitting} disabled={!isProfileDirty}>
+                        <Save className="h-4 w-4" />
+                        Save Profile
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-primary" />
+                  Organization Settings
+                </CardTitle>
+                <CardDescription>
+                  Organization defaults and tenant-level settings from the platform
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <SystemInfoRow label="Organization Name" value={organizationSummary.organizationName} />
+                  <SystemInfoRow label="Contact Email" value={organizationSummary.contactEmail} />
+                  <SystemInfoRow label="Timezone" value={organizationSummary.timezone} />
+                  <SystemInfoRow label="Language" value={organizationSummary.language} />
+                  <SystemInfoRow label="Currency" value={organizationSummary.currency} />
+                  <SystemInfoRow label="Date Format" value={organizationSummary.dateFormat} />
+                  <SystemInfoRow label="Week Starts On" value={organizationSummary.weekStartsOn} />
                 </div>
-                <div className="space-y-2">
-                  <Label>Log Retention</Label>
-                  <Select defaultValue="30">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="7">7 Days</SelectItem>
-                      <SelectItem value="30">30 Days</SelectItem>
-                      <SelectItem value="90">90 Days</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Backup Frequency</Label>
-                  <Select defaultValue="daily">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="hourly">Hourly</SelectItem>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+
+              </CardContent>
+            </Card>
+
+            <Card className="xl:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="h-5 w-5 text-primary" />
+                  Change System Password
+                </CardTitle>
+                <CardDescription>
+                  Update the current system admin password by confirming the old password first
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...passwordForm}>
+                  <form onSubmit={handleSubmit(onPasswordSubmit)} className="space-y-6" noValidate>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <FormField
+                        control={passwordForm.control}
+                        name="currentPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Old Password</FormLabel>
+                            <FormControl>
+                              <Input type="password" autoComplete="current-password" {...field} />
+                            </FormControl>
+                            <FormMessage>{errors.currentPassword?.message}</FormMessage>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={passwordForm.control}
+                        name="newPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>New Password</FormLabel>
+                            <FormControl>
+                              <Input type="password" autoComplete="new-password" {...field} />
+                            </FormControl>
+                            <FormMessage>{errors.newPassword?.message}</FormMessage>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button type="submit" isLoading={isChangingPassword}>
+                        <Shield className="h-4 w-4" />
+                        Update Password
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Platform Team */}

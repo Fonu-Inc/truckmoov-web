@@ -18,6 +18,10 @@ export default function UploadImage({ onUpload, currentUrl, uploading, text }: U
 
  const { mutateAsync: uploadImage, isPending: uploadingImage } = useUploadMediaToBucket()
 
+ useEffect(() => {
+  setPreviewUrl(currentUrl ?? null);
+ }, [currentUrl]);
+
  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   const file = e.target.files?.[0];
   if (!file) return;
