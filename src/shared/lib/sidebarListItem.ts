@@ -358,6 +358,31 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
     //   pageDescription: "Exportable historical summaries and audits"
     // },
 
+    // Communications
+    {
+      label: "Communications",
+      roleWithAccess: ["FLEET_ADMIN"],
+      icon: MessageSquare,
+      items: [
+        {
+          label: "Messaging Center",
+          roleWithAccess: ["FLEET_ADMIN"],
+          to: APP_ROUTES.messages,
+          icon: Send,
+          pageTitle: "Messaging Center",
+          pageDescription: "Send and manage fleet messages"
+        },
+        {
+          label: "Omnichannel Inbox",
+          roleWithAccess: ["FLEET_ADMIN"],
+          to: APP_ROUTES.inbox,
+          icon: Inbox,
+          pageTitle: "Omnichannel Inbox",
+          pageDescription: "Unified inbox for all communication channels"
+        },
+      ],
+    },
+
     // Intergrations
     {
       label: "Integrations",

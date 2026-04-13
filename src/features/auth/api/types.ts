@@ -10,14 +10,30 @@ export type UserRole =
   | "SUPER_ADMIN";
 
 export type AccountStatus = "enabled" | "disabled";
-export type SystemTenantStatus = "active" | "pending" | "suspended" | "inactive";
+export type SystemTenantStatus =
+  | "active"
+  | "pending"
+  | "suspended"
+  | "inactive";
 export type SystemTenantActivationStatus = "pending_activation";
 export type SystemTenantPlan = "starter" | "professional" | "enterprise";
-export type OrganizationType = "fleet_provider" | "enterprise" | "aggregator" | "owner_operator";
+export type OrganizationType =
+  | "fleet_provider"
+  | "enterprise"
+  | "aggregator"
+  | "owner_operator";
 export type BillingCycle = "monthly" | "yearly";
-export type DeviceManufacturer = "Teltonika" | "Queclink" | "Meitrack" | "CalAmp";
+export type DeviceManufacturer =
+  | "Teltonika"
+  | "Queclink"
+  | "Meitrack"
+  | "CalAmp";
 export type SimCarrier = "MTN" | "Airtel" | "Glo" | "9mobile";
-export type SimDataPackage = "250MB/month" | "500MB/month" | "1GB/month" | "2GB/month";
+export type SimDataPackage =
+  | "250MB/month"
+  | "500MB/month"
+  | "1GB/month"
+  | "2GB/month";
 export type OrganizationDateFormat = "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
 export type WeekStartsOn = "monday" | "sunday";
 export type VerificationStatus =

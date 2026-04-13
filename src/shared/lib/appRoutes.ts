@@ -28,6 +28,8 @@ export const APP_ROUTES = {
   fleetIncidents: "/fleet/incidents",
   eventStreams: "/event-streams",
   auditLog: "/audit",
+  messages: "/messages",
+  inbox: "/inbox",
 
   // Platform and System Admin routes
   systemDashboard: "/platform/dashboard",

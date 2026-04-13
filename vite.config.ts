@@ -8,6 +8,9 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "0.0.0.0",
     port: 5173,
+    allowedHosts: [
+      "causing-dandruff-kitten.ngrok-free.dev",
+    ],
     hmr: {
       overlay: false,
     },

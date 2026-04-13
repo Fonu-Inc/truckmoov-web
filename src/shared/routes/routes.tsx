@@ -35,6 +35,8 @@ import IntegrationsPage from "@/features/integrations/ui/pages/Integrations";
 import MapPage from "@/features/dispatch/pages/Map";
 import Reports from "@/features/reports/pages/Reports";
 import AuditLog from "@/features/dashboard/pages/AuditLog";
+import MessagingCenter from "@/features/communications/pages/MessagingCenter";
+import OmnichannelInbox from "@/features/communications/pages/OmnichannelInbox";
 import PlatformDashboard from "@/pages/platform/PlatformDashboard";
 import PlatformTenants from "@/pages/platform/PlatformTenants";
 import PlatformSettings from "@/pages/platform/PlatformSettings";
@@ -127,15 +129,23 @@ export function buildAppRoutes(): RouteObject[] {
         },
         {
           path: APP_ROUTES.map,
-          element: <MapPage />
+          element: <MapPage />,
         },
         {
           path: APP_ROUTES.reports,
-          element: <Reports />
+          element: <Reports />,
         },
         {
           path: APP_ROUTES.auditLog,
-          element: <AuditLog />
+          element: <AuditLog />,
+        },
+        {
+          path: APP_ROUTES.messages,
+          element: <MessagingCenter />,
+        },
+        {
+          path: APP_ROUTES.inbox,
+          element: <OmnichannelInbox />,
         },
 
         // Settings Page

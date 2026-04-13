@@ -21,10 +21,28 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
-  Plus, Search, MessageSquare, Phone, Mail, Send,
-  Users, Clock, CheckCircle, XCircle, MoreHorizontal,
-  Eye, Copy, Trash2, TrendingUp, Zap, BarChart3, Mic, Inbox, Settings, PhoneCall
+import {
+  Plus,
+  Search,
+  MessageSquare,
+  Phone,
+  Mail,
+  Send,
+  Users,
+  Clock,
+  CheckCircle,
+  XCircle,
+  MoreHorizontal,
+  Eye,
+  Copy,
+  Trash2,
+  TrendingUp,
+  Zap,
+  BarChart3,
+  Mic,
+  Inbox,
+  Settings,
+  PhoneCall,
 } from "lucide-react";
 import { CampaignBuilderDialog } from "@/components/messaging/CampaignBuilderDialog";
 import { SMSTemplatesManager } from "@/components/messaging/SMSTemplatesManager";
@@ -69,68 +87,78 @@ const channelIcons: Record<string, React.ReactNode> = {
 
 export default function MessagingCenter() {
   const { user } = useAuthStore();
-  const tenantId = user?.tenantId || '';
-  
+  const tenantId = user?.tenantId || "";
+
   const [searchParams] = useSearchParams();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "campaigns");
+  const [activeTab, setActiveTab] = useState(
+    searchParams.get("tab") || "campaigns"
+  );
   const [isCampaignBuilderOpen, setIsCampaignBuilderOpen] = useState(false);
-  const [messageStats, setMessageStats] = useState({ sent: 0, delivered: 0, read: 0 });
+  const [messageStats, setMessageStats] = useState({
+    sent: 0,
+    delivered: 0,
+    read: 0,
+  });
 
   // Fetch real message stats from broadcast_messages table
   const fetchStats = useCallback(async () => {
     if (!tenantId) return;
-    
+
     try {
       const { data, error } = await supabase
-        .from('broadcast_messages')
-        .select('total_recipients, delivered_count, read_count')
-        .eq('tenant_id', tenantId);
-      
+        .from("broadcast_messages")
+        .select("total_recipients, delivered_count, read_count")
+        .eq("tenant_id", tenantId);
+
       if (error) throw error;
-      
-      const totals = (data || []).reduce((acc, msg) => ({
-        sent: acc.sent + (msg.total_recipients || 0),
-        delivered: acc.delivered + (msg.delivered_count || 0),
-        read: acc.read + (msg.read_count || 0),
-      }), { sent: 0, delivered: 0, read: 0 });
-      
+
+      const totals = (data || []).reduce(
+        (acc, msg) => ({
+          sent: acc.sent + (msg.total_recipients || 0),
+          delivered: acc.delivered + (msg.delivered_count || 0),
+          read: acc.read + (msg.read_count || 0),
+        }),
+        { sent: 0, delivered: 0, read: 0 }
+      );
+
       setMessageStats(totals);
     } catch (err) {
-      console.error('Error fetching message stats:', err);
+      console.error("Error fetching message stats:", err);
     }
   }, [tenantId]);
 
   // Fetch campaigns from broadcast_messages
   const fetchCampaigns = useCallback(async () => {
     if (!tenantId) return;
-    
+
     try {
       const { data, error } = await supabase
-        .from('broadcast_messages')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .order('created_at', { ascending: false });
-      
+        .from("broadcast_messages")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .order("created_at", { ascending: false });
+
       if (error) throw error;
-      
-      const mappedCampaigns: Campaign[] = (data || []).map(msg => ({
+
+      const mappedCampaigns: Campaign[] = (data || []).map((msg) => ({
         id: msg.id,
-        name: msg.message.substring(0, 50) + (msg.message.length > 50 ? '...' : ''),
-        channels: [msg.channel || 'sms'],
+        name:
+          msg.message.substring(0, 50) + (msg.message.length > 50 ? "..." : ""),
+        channels: [msg.channel || "sms"],
         recipients: msg.total_recipients || 0,
-        status: 'completed' as const,
+        status: "completed" as const,
         sent: msg.total_recipients || 0,
         delivered: msg.delivered_count || 0,
         read: msg.read_count || 0,
         failed: (msg.total_recipients || 0) - (msg.delivered_count || 0),
         createdAt: new Date(msg.created_at),
       }));
-      
+
       setCampaigns(mappedCampaigns);
     } catch (err) {
-      console.error('Error fetching campaigns:', err);
+      console.error("Error fetching campaigns:", err);
     }
   }, [tenantId]);
 
@@ -143,7 +171,10 @@ export default function MessagingCenter() {
     totalSent: messageStats.sent,
     totalDelivered: messageStats.delivered,
     totalRead: messageStats.read,
-    deliveryRate: messageStats.sent > 0 ? Math.round((messageStats.delivered / messageStats.sent) * 100) : 0,
+    deliveryRate:
+      messageStats.sent > 0
+        ? Math.round((messageStats.delivered / messageStats.sent) * 100)
+        : 0,
   };
 
   const handleCreateCampaign = (data: any) => {
@@ -158,10 +189,17 @@ export default function MessagingCenter() {
       read: 0,
       failed: 0,
       createdAt: new Date(),
-      scheduledFor: data.scheduleType === "scheduled" ? new Date(data.scheduledDate) : undefined,
+      scheduledFor:
+        data.scheduleType === "scheduled"
+          ? new Date(data.scheduledDate)
+          : undefined,
     };
     setCampaigns([newCampaign, ...campaigns]);
-    toast.success(`Campaign "${data.name}" ${data.scheduleType === "now" ? "launched" : "scheduled"} successfully`);
+    toast.success(
+      `Campaign "${data.name}" ${
+        data.scheduleType === "now" ? "launched" : "scheduled"
+      } successfully`
+    );
   };
 
   const filteredCampaigns = campaigns.filter((c) =>
@@ -243,13 +281,14 @@ export default function MessagingCenter() {
               </TabsTrigger>
             </TabsList>
 
-            <Button variant="gradient" onClick={() => setIsCampaignBuilderOpen(true)}>
+            <Button
+              variant="gradient"
+              onClick={() => setIsCampaignBuilderOpen(true)}
+            >
               <Plus className="h-4 w-4 mr-2" />
               New Campaign
             </Button>
           </div>
-
-
 
           <TabsContent value="campaigns" className="space-y-4">
             <div className="relative">
@@ -302,21 +341,46 @@ export default function MessagingCenter() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {campaign.status === "completed" || campaign.status === "sending" ? (
+                        {campaign.status === "completed" ||
+                        campaign.status === "sending" ? (
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 text-xs">
-                              <span className="text-muted-foreground w-16">Delivered</span>
-                              <Progress value={(campaign.delivered / Math.max(1, campaign.sent)) * 100} className="h-1.5 flex-1" />
-                              <span>{campaign.delivered}/{campaign.sent}</span>
+                              <span className="text-muted-foreground w-16">
+                                Delivered
+                              </span>
+                              <Progress
+                                value={
+                                  (campaign.delivered /
+                                    Math.max(1, campaign.sent)) *
+                                  100
+                                }
+                                className="h-1.5 flex-1"
+                              />
+                              <span>
+                                {campaign.delivered}/{campaign.sent}
+                              </span>
                             </div>
                             <div className="flex items-center gap-2 text-xs">
-                              <span className="text-muted-foreground w-16">Read</span>
-                              <Progress value={(campaign.read / Math.max(1, campaign.delivered)) * 100} className="h-1.5 flex-1" />
-                              <span>{campaign.read}/{campaign.delivered}</span>
+                              <span className="text-muted-foreground w-16">
+                                Read
+                              </span>
+                              <Progress
+                                value={
+                                  (campaign.read /
+                                    Math.max(1, campaign.delivered)) *
+                                  100
+                                }
+                                className="h-1.5 flex-1"
+                              />
+                              <span>
+                                {campaign.read}/{campaign.delivered}
+                              </span>
                             </div>
                           </div>
                         ) : (
-                          <span className="text-sm text-muted-foreground">—</span>
+                          <span className="text-sm text-muted-foreground">
+                            —
+                          </span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -372,7 +436,10 @@ export default function MessagingCenter() {
                   <Inbox className="h-4 w-4" />
                   Inbox
                 </TabsTrigger>
-                <TabsTrigger value="settings" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="settings"
+                  className="flex items-center gap-2"
+                >
                   <Mail className="h-4 w-4" />
                   Provider Settings
                 </TabsTrigger>
