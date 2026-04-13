@@ -40,6 +40,7 @@ import OmnichannelInbox from "@/features/communications/pages/OmnichannelInbox";
 import PlatformDashboard from "@/pages/platform/PlatformDashboard";
 import PlatformTenants from "@/pages/platform/PlatformTenants";
 import PlatformSettings from "@/pages/platform/PlatformSettings";
+import PlatformDevices from "@/pages/platform/PlatformDevices";
 
 export function buildAppRoutes(): RouteObject[] {
   return [
@@ -66,6 +67,10 @@ export function buildAppRoutes(): RouteObject[] {
         {
           path: APP_ROUTES.systemSettings,
           element: <PlatformSettings />,
+        },
+        {
+          path: APP_ROUTES.systemDevices,
+          element: <PlatformDevices />,
         },
 
         // Enterprise Role Pages

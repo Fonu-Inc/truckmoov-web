@@ -30,6 +30,7 @@ import {
   Activity,
   Fuel,
   AlertTriangle,
+  Building,
 } from "lucide-react";
 import { APP_ROUTES } from "./appRoutes";
 import { DetailsObjectType, SidebarListItem } from "../types";
@@ -60,7 +61,7 @@ const DASHBOARD_DETAILS: DetailsObjectType = {
     pageDescription: "System overview for Super Administrator",
     to: APP_ROUTES.systemDashboard
   },
-  "SUPER_ADMIN": {
+  "SYSTEM_ADMIN": {
     label: "Dashboard",
     pageTitle: "Dashboard",
     pageDescription: "System overview for Super Administrator",
@@ -189,6 +190,45 @@ const WALLET_BILLING_DETAILS: DetailsObjectType = {
   }
 }
 
+const DEVICES_DETAILS: DetailsObjectType = {
+  "ENTERPRISE_ADMIN": {
+    label: "Devices",
+    pageTitle: "IoT Device Management",
+    pageDescription: "Provision, configure, and assign tracking devices",
+    to: APP_ROUTES.device,
+  },
+  "AGGREGATOR_ADMIN": {
+    label: "Devices",
+    pageTitle: "IoT Device Management",
+    pageDescription: "Provision, configure, and assign tracking devices",
+    to: APP_ROUTES.device,
+  },
+  "PLATFORM_ADMIN": {
+    label: "Devices",
+    pageTitle: "Device Management",
+    pageDescription: "Manage and track all devices across tenants",
+    to: APP_ROUTES.systemDevices,
+  },
+  "SYSTEM_ADMIN": {
+    label: "Devices",
+    pageTitle: "Device Management",
+    pageDescription: "Manage and track all devices across tenants",
+    to: APP_ROUTES.systemDevices,
+  },
+  "FLEET_ADMIN": {
+    label: "Devices",
+    pageTitle: "IoT Device Management",
+    pageDescription: "Provision, configure, and assign tracking devices",
+    to: APP_ROUTES.device,
+  },
+  "DISPATCHER": {
+    label: "Devices",
+    pageTitle: "IoT Device Management",
+    pageDescription: "Provision, configure, and assign tracking devices",
+    to: APP_ROUTES.device,
+  },
+}
+
 export function siderbarList(role: UserRole): SidebarListItem[] {
   const dashboardRoleDetail = DASHBOARD_DETAILS[role]
   const jobRoleDetail = JOB_DETAILS[role]
@@ -257,21 +297,21 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
 
     {
       label: "Tenants",
-      roleWithAccess: ["PLATFORM_ADMIN", "SUPER_ADMIN"],
+      roleWithAccess: ["PLATFORM_ADMIN", "SYSTEM_ADMIN"],
       to: APP_ROUTES.systemTenants,
-      icon: Cpu,
+      icon: Building2,
       pageTitle: "Tenant Management",
       pageDescription: "Create, edit, and manage tenant organizations"
     },
 
-    {
-      label: "Devices",
-      roleWithAccess: ["ENTERPRISE_ADMIN", "AGGREGATOR_ADMIN", "PLATFORM_ADMIN", "FLEET_ADMIN", "DISPATCHER"],
-      to: APP_ROUTES.device,
+    ...(DEVICES_DETAILS[role] ? [{
+      label: DEVICES_DETAILS[role]!.label,
+      roleWithAccess: getRolesFromDetails(DEVICES_DETAILS),
+      to: DEVICES_DETAILS[role]!.to ?? APP_ROUTES.device,
       icon: Cpu,
-      pageTitle: "IoT Device Management",
-      pageDescription: "Provision, configure, and assign tracking devices"
-    },
+      pageTitle: DEVICES_DETAILS[role]!.pageTitle,
+      pageDescription: DEVICES_DETAILS[role]!.pageDescription,
+    }] : []),
 
     {
       label: "SIMs",
@@ -509,7 +549,7 @@ export function siderbarList(role: UserRole): SidebarListItem[] {
     // Settings
     {
       label: "Settings",
-      roleWithAccess: ["PLATFORM_ADMIN", "SUPER_ADMIN"],
+      roleWithAccess: ["PLATFORM_ADMIN", "SYSTEM_ADMIN"],
       to: APP_ROUTES.systemSettings,
       icon: Settings,
       pageTitle: "Platform Settings",

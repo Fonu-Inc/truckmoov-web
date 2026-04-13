@@ -3,9 +3,11 @@ import { useAuthStore } from "@/stores/authStore";
 import type {
   ActivityLogEntry,
   ActivityLogQuery,
+  AuthMeResponse,
   Authentication,
   ChangeSystemPasswordPayload,
   ChangeUserRolePayload,
+  CreateSystemDeviceModelPayload,
   CompleteProfilePayload,
   CreateSystemAdminPayload,
   CreateSystemTenantPayload,
@@ -27,6 +29,14 @@ import type {
   ResendInvitedUserMailResponse,
   ResetPasswordPayload,
   Session,
+  SystemDeviceCatalogDeleteData,
+  SystemDeviceCatalogListData,
+  SystemDeviceCatalogModel,
+  SystemDeviceCatalogQuery,
+  SystemDeviceCatalogReferenceData,
+  SystemDeviceInventoryListData,
+  SystemDeviceInventoryQuery,
+  SystemDeviceSummaryData,
   SystemDashboard,
   SystemSubscriptionPlansResponse,
   SystemTenantDetail,
@@ -43,6 +53,7 @@ import type {
   UpdateOrganizationsSettingsPayload,
   UpdateOrganizationUserStatusPayload,
   UpdateSystemAdminStatusPayload,
+  UpdateSystemDeviceModelPayload,
   UpdateSystemTenantPayload,
   UpdateSystemTenantStatusPayload,
   UpdateUserProfilePayload,
@@ -196,6 +207,11 @@ export async function getUserProfile() {
   return data;
 }
 
+export async function getAuthMe() {
+  const { data } = await axiosInstance.get<ServerSuccessResponse<AuthMeResponse>>("/auth/me");
+  return data;
+}
+
 export async function updateUserProfile(payload: UpdateUserProfilePayload) {
   const { data } = await axiosInstance.patch<ServerSuccessResponse<ProfileUser>>("/auth/profile", payload.data);
   return data;
@@ -248,6 +264,68 @@ export async function getActivityLog(payload?: ActivityLogQuery) {
   const { data } = await axiosInstance.get<ServerSuccessResponse<ActivityLogEntry[]>>("/auth/activity-log", {
     params: payload,
   });
+  return data;
+}
+
+export async function getSystemDeviceInventory(payload?: SystemDeviceInventoryQuery) {
+  const { data } = await axiosInstance.get<ServerSuccessResponse<SystemDeviceInventoryListData>>("/auth/system/devices", {
+    params: payload,
+  });
+  return data;
+}
+
+export async function getSystemDeviceSummary() {
+  const { data } = await axiosInstance.get<ServerSuccessResponse<SystemDeviceSummaryData>>(
+    "/auth/system/devices/summary"
+  );
+  return data;
+}
+
+export async function exportSystemDeviceInventory(payload?: SystemDeviceInventoryQuery) {
+  const { data } = await axiosInstance.get<Blob>("/auth/system/devices/export", {
+    params: payload,
+    responseType: "blob",
+  });
+  return data;
+}
+
+export async function getSystemDeviceCatalog(payload?: SystemDeviceCatalogQuery) {
+  const { data } = await axiosInstance.get<ServerSuccessResponse<SystemDeviceCatalogListData>>(
+    "/auth/system/devices/catalog",
+    {
+      params: payload,
+    }
+  );
+  return data;
+}
+
+export async function createSystemDeviceModel(payload: CreateSystemDeviceModelPayload) {
+  const { data } = await axiosInstance.post<ServerSuccessResponse<SystemDeviceCatalogModel>>(
+    "/auth/system/devices/catalog",
+    payload.data
+  );
+  return data;
+}
+
+export async function updateSystemDeviceModel(payload: UpdateSystemDeviceModelPayload) {
+  const { data } = await axiosInstance.patch<ServerSuccessResponse<SystemDeviceCatalogModel>>(
+    `/auth/system/devices/catalog/${payload.deviceModelId}`,
+    payload.data
+  );
+  return data;
+}
+
+export async function deleteSystemDeviceModel(deviceModelId: string) {
+  const { data } = await axiosInstance.delete<ServerSuccessResponse<SystemDeviceCatalogDeleteData>>(
+    `/auth/system/devices/catalog/${deviceModelId}`
+  );
+  return data;
+}
+
+export async function getSystemDeviceCatalogReferenceData() {
+  const { data } = await axiosInstance.get<ServerSuccessResponse<SystemDeviceCatalogReferenceData>>(
+    "/auth/system/reference-data/device-catalog"
+  );
   return data;
 }
 

@@ -35,6 +35,7 @@ export const APP_ROUTES = {
   systemDashboard: "/platform/dashboard",
   systemTenants: "/platform/tenant",
   systemSettings: "/platform/settings",
+  systemDevices: "/platform/devices",
 
   // settings route
   organizationsSettings: "/setting",

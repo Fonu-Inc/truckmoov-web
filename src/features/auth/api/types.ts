@@ -7,7 +7,7 @@ export type UserRole =
   | "OPERATIONS_MANAGER"
   | "DISPATCHER"
   | "FINANCE_VIEWER"
-  | "SUPER_ADMIN";
+  | "SYSTEM_ADMIN";
 
 export type AccountStatus = "enabled" | "disabled";
 export type SystemTenantStatus =
@@ -148,6 +148,8 @@ export type VerifyPasswordResetPayload = {
 export type VerifyPasswordResetResponse = unknown | null;
 export type VerifyEmailResponse = unknown | null;
 
+export type AuthMeResponse = Record<string, unknown>;
+
 export type ResetPasswordPayload = {
   data: {
     token: string;
@@ -181,6 +183,138 @@ export type ProfileUser = {
 
 export type UpdateUserProfilePayload = {
   data: Partial<UserProfile>;
+};
+
+export type DeviceCatalogProtocolType = "TCP" | "HTTP" | "MQTT" | "UDP";
+export type DeviceCatalogStatus = "supported" | "deprecated" | "blocked";
+export type DeviceCatalogFeature = "obd2" | "fuel" | "sos";
+
+export type SystemDeviceInventoryQuery = {
+  search?: string;
+  manufacturer?: string;
+  status?: string;
+  lifecycleStatus?: string;
+};
+
+export type SystemDeviceInventoryItem = {
+  id: string;
+  imei: string;
+  manufacturer: string;
+  model: string;
+  tenantId: string;
+  tenantName: string;
+  lifecycleStatus: string;
+  operationalStatus: string;
+  signalStrength: number | null;
+  lastSeen: string | null;
+  vehicleId: string | null;
+  assignedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SystemDeviceInventoryListData = {
+  total: number;
+  devices: SystemDeviceInventoryItem[];
+  generatedAt: string;
+};
+
+export type SystemDeviceInventoryListResponse = {
+  data: SystemDeviceInventoryListData;
+};
+
+export type SystemDeviceSummaryData = {
+  totalDevices: number;
+  registeredDevices: number;
+  configuredDevices: number;
+  verifiedActiveDevices: number;
+  pendingConfigDevices: number;
+  onlineNowDevices: number;
+  assignableDevices: number;
+  assignedDevices: number;
+  activeDevices: number;
+  faultyDevices: number;
+  totalCatalogModels: number;
+  supportedCatalogModels: number;
+  deprecatedCatalogModels: number;
+  blockedCatalogModels: number;
+  generatedAt: string;
+};
+
+export type SystemDeviceSummaryResponse = {
+  data: SystemDeviceSummaryData;
+};
+
+export type SystemDeviceCatalogQuery = {
+  search?: string;
+  status?: DeviceCatalogStatus;
+};
+
+export type SystemDeviceCatalogModel = {
+  id: string;
+  manufacturer: string;
+  model: string;
+  protocolType: DeviceCatalogProtocolType;
+  defaultPort: number | null;
+  supportedFeatures: DeviceCatalogFeature[];
+  status: DeviceCatalogStatus;
+  configurationInstructions: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SystemDeviceCatalogListData = {
+  total: number;
+  models: SystemDeviceCatalogModel[];
+  generatedAt: string;
+};
+
+export type SystemDeviceCatalogListResponse = {
+  data: SystemDeviceCatalogListData;
+};
+
+export type SystemDeviceCatalogFeatureOption = {
+  key: DeviceCatalogFeature;
+  label: string;
+  description: string;
+  defaultEnabled: boolean;
+};
+
+export type SystemDeviceCatalogReferenceData = {
+  protocolTypes: DeviceCatalogProtocolType[];
+  statuses: DeviceCatalogStatus[];
+  featureOptions: SystemDeviceCatalogFeatureOption[];
+  generatedAt: string;
+};
+
+export type SystemDeviceCatalogReferenceDataResponse = {
+  data: SystemDeviceCatalogReferenceData;
+};
+
+export type CreateSystemDeviceModelPayload = {
+  data: {
+    manufacturer: string;
+    model: string;
+    protocolType: DeviceCatalogProtocolType;
+    defaultPort?: number | null;
+    supportedFeatures: DeviceCatalogFeature[];
+    status: DeviceCatalogStatus;
+    configurationInstructions?: string | null;
+  };
+};
+
+export type UpdateSystemDeviceModelPayload = {
+  deviceModelId: string;
+  data: Partial<CreateSystemDeviceModelPayload["data"]>;
+};
+
+export type SystemDeviceCatalogDeleteData = {
+  id: string;
+  deleted: boolean;
+};
+
+export type SystemDeviceCatalogDeleteResponse = {
+  data: SystemDeviceCatalogDeleteData;
 };
 
 export type NotificationPreferences = {

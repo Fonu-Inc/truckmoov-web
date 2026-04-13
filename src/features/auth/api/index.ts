@@ -7,17 +7,25 @@ import { useAuthStore } from "@/stores/authStore";
 import {
   changeSystemPassword,
   changeUserRole,
+  createSystemDeviceModel,
   completeProfile,
   createSystemAdmin,
   createSystemTenant,
+  deleteSystemDeviceModel,
   deleteSystemTenant,
+  exportSystemDeviceInventory,
   exportSystemTenants,
   forgetPassword,
+  getAuthMe,
   getActivityLog,
   getDispatcherPreferences,
   getInvitedUsers,
   getNotificationsPreferences,
   getOrganizationsSettings,
+  getSystemDeviceCatalog,
+  getSystemDeviceCatalogReferenceData,
+  getSystemDeviceInventory,
+  getSystemDeviceSummary,
   getSystemSubscriptionPlans,
   getSystemActivityLog,
   getSystemAdmins,
@@ -42,6 +50,7 @@ import {
   updateOrganizationsSettings,
   updateOrganizationUserStatus,
   updateSystemAdminStatus,
+  updateSystemDeviceModel,
   updateSystemTenant,
   updateSystemTenantStatus,
   updateUserProfile,
@@ -49,9 +58,15 @@ import {
   verifyEmail,
   verifyPasswordReset,
 } from "./requests";
-import type { ActivityLogQuery, SystemTenantsQuery } from "./types";
+import type {
+  ActivityLogQuery,
+  SystemDeviceCatalogQuery,
+  SystemDeviceInventoryQuery,
+  SystemTenantsQuery,
+} from "./types";
 
 export const AUTH_QUERY_KEY = {
+  me: ["me"],
   user: ["user"],
   verifyEmail: ["verifyEmail"],
   verifyPasswordReset: ["verifyPasswordReset"],
@@ -68,6 +83,10 @@ export const AUTH_QUERY_KEY = {
   systemTenants: ["systemTenants"],
   systemTenant: ["systemTenant"],
   systemTenantOnboardingReferenceData: ["systemTenantOnboardingReferenceData"],
+  systemDeviceInventory: ["systemDeviceInventory"],
+  systemDeviceSummary: ["systemDeviceSummary"],
+  systemDeviceCatalog: ["systemDeviceCatalog"],
+  systemDeviceCatalogReferenceData: ["systemDeviceCatalogReferenceData"],
 } as const;
 
 export function useRegister() {
@@ -246,6 +265,13 @@ export function verifyPasswordResetQueryOption(payload: Parameters<typeof verify
   });
 }
 
+export function getAuthMeQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.me,
+    queryFn: getAuthMe,
+  });
+}
+
 export function useResetPassword() {
   return useMutation({
     mutationFn: resetPassword,
@@ -337,6 +363,94 @@ export function getActivityLogQueryOptions(payload?: ActivityLogQuery) {
   return queryOptions({
     queryKey: [...AUTH_QUERY_KEY.activityLog, payload ?? {}],
     queryFn: () => getActivityLog(payload),
+  });
+}
+
+export function getSystemDeviceInventoryQueryOptions(payload?: SystemDeviceInventoryQuery) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.systemDeviceInventory, payload ?? {}],
+    queryFn: () => getSystemDeviceInventory(payload),
+  });
+}
+
+export function getSystemDeviceSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemDeviceSummary,
+    queryFn: getSystemDeviceSummary,
+  });
+}
+
+export function useExportSystemDeviceInventory() {
+  return useMutation({
+    mutationFn: exportSystemDeviceInventory,
+  });
+}
+
+export function getSystemDeviceCatalogQueryOptions(payload?: SystemDeviceCatalogQuery) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.systemDeviceCatalog, payload ?? {}],
+    queryFn: () => getSystemDeviceCatalog(payload),
+  });
+}
+
+export function getSystemDeviceCatalogReferenceDataQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemDeviceCatalogReferenceData,
+    queryFn: getSystemDeviceCatalogReferenceData,
+  });
+}
+
+export function useCreateSystemDeviceModel() {
+  return useMutation({
+    mutationFn: createSystemDeviceModel,
+    onSuccess: () => {
+      toast.success("Device Model Created");
+      queryClient.invalidateQueries({
+        queryKey: AUTH_QUERY_KEY.systemDeviceCatalog,
+      });
+      queryClient.invalidateQueries({
+        queryKey: AUTH_QUERY_KEY.systemDeviceSummary,
+      });
+      queryClient.invalidateQueries({
+        queryKey: AUTH_QUERY_KEY.systemDeviceCatalogReferenceData,
+      });
+    },
+  });
+}
+
+export function useUpdateSystemDeviceModel() {
+  return useMutation({
+    mutationFn: updateSystemDeviceModel,
+    onSuccess: () => {
+      toast.success("Device Model Updated");
+      queryClient.invalidateQueries({
+        queryKey: AUTH_QUERY_KEY.systemDeviceCatalog,
+      });
+      queryClient.invalidateQueries({
+        queryKey: AUTH_QUERY_KEY.systemDeviceSummary,
+      });
+      queryClient.invalidateQueries({
+        queryKey: AUTH_QUERY_KEY.systemDeviceCatalogReferenceData,
+      });
+    },
+  });
+}
+
+export function useDeleteSystemDeviceModel() {
+  return useMutation({
+    mutationFn: deleteSystemDeviceModel,
+    onSuccess: () => {
+      toast.success("Device Model Deleted");
+      queryClient.invalidateQueries({
+        queryKey: AUTH_QUERY_KEY.systemDeviceCatalog,
+      });
+      queryClient.invalidateQueries({
+        queryKey: AUTH_QUERY_KEY.systemDeviceSummary,
+      });
+      queryClient.invalidateQueries({
+        queryKey: AUTH_QUERY_KEY.systemDeviceCatalogReferenceData,
+      });
+    },
   });
 }
 
