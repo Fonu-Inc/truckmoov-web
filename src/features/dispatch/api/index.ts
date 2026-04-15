@@ -1,125 +1,194 @@
-import { queryOptions, useMutation } from "@tanstack/react-query"
-import { acknowledgeJob, addJobNote, addPODAttachment, cancelJob, createJob, getJob, getJobTimeline, listJob, optimizeMultiStopRoute, setJobToDriverOrVehicle, suggestOptimatRouteForJob, updateJobPriority } from "./request"
-import { queryClient } from "@/shared/providers/TanstackQueryProvider"
-import { RequestPayloadExtractor } from "@/shared/types"
-import { toast } from "sonner"
+import { queryOptions, useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { queryClient } from "@/shared/providers/TanstackQueryProvider";
+import { RequestPayloadExtractor } from "@/shared/types";
+import {
+ acknowledgeJob,
+ addJobNote,
+ addPODAttachment,
+ assignJob,
+ cancelJob,
+ confirmDriverStatusRequest,
+ createDriverStatusRequest,
+ createJob,
+ dispatchHealth,
+ getJob,
+ getJobTimeline,
+ listJob,
+ optimizeRoute,
+ publishJobStatusLegacy,
+ sendWhatsAppInstruction,
+ updateJobScheduling,
+ updateJobStatus,
+} from "./request";
 
 export const DISPATCH_QUERY_KEY = {
+ health: ["dispatchHealth"],
  jobs: ["jobs"],
  job: (jobId: string) => ["job", jobId],
  jobTimeline: (jobId: string) => ["jobTimeline", jobId],
+};
+
+function invalidateJobRelatedQueries(jobId?: string) {
+ if (jobId) {
+  queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(jobId) });
+  queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(jobId) });
+ }
+
+ queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs });
+}
+
+export function dispatchHealthQueryOptions() {
+ return queryOptions({
+  queryKey: DISPATCH_QUERY_KEY.health,
+  queryFn: () => dispatchHealth(),
+ });
 }
 
 export function useCreateJob() {
  return useMutation({
   mutationFn: createJob,
   onSuccess: () => {
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs })
-  }
- })
+   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs });
+  },
+ });
 }
 
 export function listJobQueryOptions(payload: RequestPayloadExtractor<typeof listJob>) {
  return queryOptions({
   queryKey: [...DISPATCH_QUERY_KEY.jobs, payload.params],
-  queryFn: () => listJob(payload)
- })
+  queryFn: () => listJob(payload),
+ });
 }
 
 export function getJobQueryOptions(payload: RequestPayloadExtractor<typeof getJob>) {
  return queryOptions({
   queryKey: DISPATCH_QUERY_KEY.job(payload.jobId),
   queryFn: () => getJob(payload),
-  enabled: !!payload.jobId
- })
+  enabled: !!payload.jobId,
+ });
 }
 
-export function useSetJobToDriverOrVehicle() {
+export function useAssignJob() {
  return useMutation({
-  mutationFn: setJobToDriverOrVehicle,
+  mutationFn: assignJob,
   onSuccess: (_, variable) => {
-   toast.success("Job reassigned successfully")
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(variable.jobId) })
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(variable.jobId) })
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs })
-  }
- })
+   toast.success("Job reassigned successfully");
+   invalidateJobRelatedQueries(variable.jobId);
+  },
+ });
 }
+
+export const useSetJobToDriverOrVehicle = useAssignJob;
 
 export function useAcknowledgeJob() {
  return useMutation({
   mutationFn: acknowledgeJob,
   onSuccess: (_, variable) => {
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(variable.jobId) })
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(variable.jobId) })
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs })
-  }
- })
+   invalidateJobRelatedQueries(variable.jobId);
+  },
+ });
 }
 
 export function useCancelJob() {
  return useMutation({
   mutationFn: cancelJob,
   onSuccess: (_, variable) => {
-   toast.success("Job cancelled")
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(variable.jobId) })
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(variable.jobId) })
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs })
-  }
- })
+   toast.success("Job cancelled");
+   invalidateJobRelatedQueries(variable.jobId);
+  },
+ });
+}
+
+export function useCreateDriverStatusRequest() {
+ return useMutation({
+  mutationFn: createDriverStatusRequest,
+  onSuccess: (_, variable) => {
+   invalidateJobRelatedQueries(variable.jobId);
+  },
+ });
+}
+
+export function useConfirmDriverStatusRequest() {
+ return useMutation({
+  mutationFn: confirmDriverStatusRequest,
+  onSuccess: (_, variable) => {
+   invalidateJobRelatedQueries(variable.jobId);
+  },
+ });
 }
 
 export function useAddJobNote() {
  return useMutation({
   mutationFn: addJobNote,
   onSuccess: (_, variable) => {
-   toast.success("Note added successfully")
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(variable.jobId) })
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(variable.jobId) })
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs })
-  }
- })
+   toast.success("Note added successfully");
+   invalidateJobRelatedQueries(variable.jobId);
+  },
+ });
 }
 
 export function useAddPODAttachment() {
  return useMutation({
   mutationFn: addPODAttachment,
   onSuccess: (_, variable) => {
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(variable.jobId) })
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(variable.jobId) })
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs })
-  }
- })
+   invalidateJobRelatedQueries(variable.jobId);
+  },
+ });
 }
 
-export function useUpdateJobPriority() {
+export function useUpdateJobScheduling() {
  return useMutation({
-  mutationFn: updateJobPriority,
+  mutationFn: updateJobScheduling,
   onSuccess: (_, variable) => {
-   toast.success("Priority updated")
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(variable.jobId) })
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(variable.jobId) })
-   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs })
-  }
- })
+   toast.success("Priority updated");
+   invalidateJobRelatedQueries(variable.jobId);
+  },
+ });
+}
+
+export const useUpdateJobPriority = useUpdateJobScheduling;
+
+export function useSendWhatsAppInstruction() {
+ return useMutation({
+  mutationFn: sendWhatsAppInstruction,
+  onSuccess: (_, variable) => {
+   toast.success("Instruction sent");
+   invalidateJobRelatedQueries(variable.jobId);
+  },
+ });
+}
+
+export function useUpdateJobStatus() {
+ return useMutation({
+  mutationFn: updateJobStatus,
+  onSuccess: (_, variable) => {
+   invalidateJobRelatedQueries(variable.jobId);
+  },
+ });
 }
 
 export function getJobTimelineQueryOptions(payload: RequestPayloadExtractor<typeof getJobTimeline>) {
  return queryOptions({
   queryKey: DISPATCH_QUERY_KEY.jobTimeline(payload.jobId),
   queryFn: () => getJobTimeline(payload),
-  enabled: !!payload.jobId
- })
+  enabled: !!payload.jobId,
+ });
 }
 
-export function useSuggestOptimalRouteForJob() {
+export function usePublishJobStatusLegacy() {
  return useMutation({
-  mutationFn: suggestOptimatRouteForJob,
- })
+  mutationFn: publishJobStatusLegacy,
+  onSuccess: () => {
+   queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs });
+  },
+ });
 }
 
-export function useOptimizeMultiStopRoute() {
+export function useOptimizeRoute() {
  return useMutation({
-  mutationFn: optimizeMultiStopRoute,
- })
+  mutationFn: optimizeRoute,
+ });
 }
+
+export const useOptimizeMultiStopRoute = useOptimizeRoute;
