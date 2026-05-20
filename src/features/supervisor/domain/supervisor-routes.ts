@@ -1,9 +1,0 @@
-export const SUPERVISOR_HOME_PATH = "/demo/supervisor";
-export const SUPERVISOR_MAP_PATH = "/demo/supervisor/map";
-export const SUPERVISOR_DISPATCH_PATH = "/demo/supervisor/dispatch";
-export const SUPERVISOR_DRIVERS_PATH = "/demo/supervisor/drivers";
-export const SUPERVISOR_ALERTS_PATH = "/demo/supervisor/alerts";
-export const SUPERVISOR_MESSAGES_PATH = "/demo/supervisor/messages";
-export const SUPERVISOR_INBOX_PATH = "/demo/supervisor/inbox";
-export const SUPERVISOR_REPORTS_PATH = "/demo/supervisor/reports";
-export const SUPERVISOR_FALLBACK_PATH = "/demo/supervisor/*";

@@ -1,25 +1,28 @@
-# Dependencies / build
-node_modules/
-dist/
-.vite/
+# Logs
+logs
+*.log
+pnpm-debug.log*
+lerna-debug.log*
 
-# Env
 .env
 .env.*
 !.env.example
-
-# Tooling cache
-.pnpm-store/
-.npm/
+.turbo
+.next
 *.tsbuildinfo
 
-# Logs
-*.log
+node_modules
+dist
+dist-ssr
+*.local
 
-# OS / Editor
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-.vscode/
-.idea/
-
-.claude
-.playwright-mcp
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
