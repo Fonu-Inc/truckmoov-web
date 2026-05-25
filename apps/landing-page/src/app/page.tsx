@@ -1,7 +1,5 @@
-export default function Home() {
-  return (
-    <div>
-      Try me
-    </div>
-  );
+import HomeSection from "@/ui/pages/home";
+
+export default function Page() {
+  return <HomeSection />;
 }
