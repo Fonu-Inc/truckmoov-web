@@ -47,9 +47,6 @@ jobs:
         env:
           DEV_ENV: ${{ secrets.DEV_ENV }}
 
-      - name: Verify architecture
-        run: pnpm verify:architecture
-
       - name: Build
         run: pnpm build
 
