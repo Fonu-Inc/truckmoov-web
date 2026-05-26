@@ -53,7 +53,7 @@ jobs:
       - name: Package release
         if: github.event_name != 'pull_request'
         run: |
-          tar --owner=0 --group=0 --mode='go-w' -czf "${RELEASE_ARCHIVE}" -C dist .
+          tar --owner=0 --group=0 --mode='go-w' -czf "${RELEASE_ARCHIVE}" -C apps/main/dist .
           ls -lh "${RELEASE_ARCHIVE}"
           test -f "${RELEASE_ARCHIVE}"
 
