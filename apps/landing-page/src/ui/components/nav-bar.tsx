@@ -10,7 +10,7 @@ export default function NavBar() {
  return (
   <SectionContainer
    rootAs="nav"
-   rootClassName="fixed top-0 left-0 bg-background"
+   rootClassName="fixed top-0 left-0 bg-background shadow z-50"
    containerClassName="flex items-center justify-between gap-2 py-0"
   >
    <Logo />

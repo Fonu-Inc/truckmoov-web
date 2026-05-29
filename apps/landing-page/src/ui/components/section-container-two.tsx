@@ -15,7 +15,7 @@ export default function SectionContainerTwo({
  return (
   <SectionContainer
    rootClassName={cn("bg-fleet-gradient relative", rootClassName)}
-   containerClassName={containerClassName}
+   containerClassName={cn("z-10", containerClassName)}
    rootChildren={
     <img
      src="/grid-bg.png"
