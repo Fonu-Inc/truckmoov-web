@@ -10,8 +10,8 @@ export default function NavBar() {
  return (
   <SectionContainer
    rootAs="nav"
-   rootClassName="fixed top-0 left-0"
-   containerClassName="flex items-center justify-between gap-2"
+   rootClassName="fixed top-0 left-0 bg-background"
+   containerClassName="flex items-center justify-between gap-2 py-0"
   >
    <Logo />
    <ul className="flex items-center gap-8 text-sm font-medium text-foreground">

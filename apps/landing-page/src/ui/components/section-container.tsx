@@ -18,9 +18,9 @@ export default function SectionContainer({
  rootChildren,
 }: SectionContainerProps) {
  return (
-  <Root className={cn("w-full px-4 py-2", rootClassName)}>
+  <Root className={cn("w-full px-4 py-2 h-auto", rootClassName)}>
    {rootChildren}
-   <Container className={cn("container mx-auto", containerClassName)}>
+   <Container className={cn("container mx-auto py-8", containerClassName)}>
     {children}
    </Container>
   </Root>

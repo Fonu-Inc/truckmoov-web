@@ -7,11 +7,15 @@
 :root {
   --background: #FFFFFF;
   --foreground: #1E1E1E;
+  --foreground-100: #F8F9F833;
   --primary: #FFC105;
   --primary-100: #E2AC07;
   --primary-200: #FFC10533;
   --primary-300: #343330;
+  --primary-400: #FFCC01;
+  --primary-500: #FFC10533;
   --border: #DBDBDB;
+  --border-100: #E9E9E9;
 
   --radius: 0.625rem;
   --card: oklch(1 0 0);
@@ -46,10 +50,15 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-foreground-100: var(--foreground-100);
   --color-primary: var(--primary);
   --color-primary-100: var(--primary-100);
   --color-primary-200: var(--primary-200);
   --color-primary-300: var(--primary-300);
+  --color-primary-400: var(--primary-400);
+  --color-primary-500: var(--primary-500);
+  --color-border: var(--border);
+  --color-border-100: var(--border-100);
 
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -64,7 +73,6 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-chart-1: var(--chart-1);
@@ -131,5 +139,11 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .bg-fleet-gradient {
+    background-image: linear-gradient(90deg, #000000 0%, #272727 35%, #212020 70%, #000000 100%);
   }
 }
