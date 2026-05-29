@@ -14,12 +14,12 @@ export default function SectionContainerTwo({
 }: SectionContainerTwoProps) {
  return (
   <SectionContainer
-   rootClassName={cn("bg-fleet-gradient", rootClassName)}
+   rootClassName={cn("bg-fleet-gradient relative", rootClassName)}
    containerClassName={containerClassName}
    rootChildren={
     <img
      src="/grid-bg.png"
-     className="absolute inset-0 h-full w-full"
+     className="absolute h-full w-full top-0 left-0"
     />
    }
   >

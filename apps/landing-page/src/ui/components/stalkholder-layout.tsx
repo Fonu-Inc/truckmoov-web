@@ -19,6 +19,7 @@ export type StalkholderData = {
  titleIcon: string;
  title: string;
  description: string;
+ definitionHeader?: string;
  definition: string;
  responsibilities: Array<string>;
  permissions: Array<string>;
@@ -51,7 +52,7 @@ export default function StalkholderLayout({ data }: StalkholderLayoutProps) {
    >
     <StalkholderHeader
      headerTitle="Role definition"
-     header={`Who is an ${data.title}?`}
+     header={data.definitionHeader ?? `Who is an ${data.title}?`}
     />
     <p className="text-xl font-normal mt-10">{data.definition}</p>
    </SectionContainer>
