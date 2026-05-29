@@ -14,7 +14,7 @@ const NAVLINKS = [
 
 export default function NavBar() {
  return (
-  <section className="w-full px-4 py-2">
+  <section className="w-full px-4 py-2 fixed top-0 left-0">
    <nav className="container mx-auto flex items-center justify-between gap-2">
     <Logo />
     <ul className="flex items-center gap-8 text-sm font-medium text-foreground">

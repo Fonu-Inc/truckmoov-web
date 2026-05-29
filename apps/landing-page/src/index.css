@@ -10,7 +10,7 @@
   --primary: #FFC105;
   --primary-100: #E2AC07;
   --primary-200: #FFC10533;
-  --border: oklch(0.922 0 0);
+  --border: #DBDBDB;
 
   --radius: 0.625rem;
   --card: oklch(1 0 0);
