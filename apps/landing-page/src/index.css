@@ -10,6 +10,7 @@
   --primary: #FFC105;
   --primary-100: #E2AC07;
   --primary-200: #FFC10533;
+  --primary-300: #343330;
   --border: #DBDBDB;
 
   --radius: 0.625rem;
@@ -48,6 +49,7 @@
   --color-primary: var(--primary);
   --color-primary-100: var(--primary-100);
   --color-primary-200: var(--primary-200);
+  --color-primary-300: var(--primary-300);
 
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
