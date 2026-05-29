@@ -41,9 +41,9 @@ export default function Footer() {
     </section>
     <section className="flex gap-2 items-start justify-between w-full">
      {appLinks.map(link => (
-      <div key={link.title} className="space-x-3">
+      <div key={link.title} className="space-y-4">
        <h1 className="uppercase font-bold text-base">{link.title}</h1>
-       <div className="space-y-1">
+       <div className="space-y-2">
         {link.children.map(child => (
          <Link to={child.href} key={child.title} className="text-sm block">{child.title}</Link>
         ))}

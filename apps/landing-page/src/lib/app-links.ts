@@ -12,10 +12,10 @@ export const appLinks: AppLinkType[] = [
   title: "Stakeholders",
   href: "#",
   children: [
-   { title: "Enterprise Admin", href: "#" },
-   { title: "Fleet Provider", href: "#" },
-   { title: "Owner Operator", href: "#" },
-   { title: "Aggregator Admin", href: "#" },
+   { title: "Enterprise Admin", href: "/stalkholder/enterprise-admin" },
+   { title: "Fleet Provider", href: "/stalkholder/fleet-provider" },
+   { title: "Owner Operator", href: "/stalkholder/owner-operator" },
+   { title: "Aggregator Admin", href: "/stalkholder/aggregator-admin" },
   ],
  },
  {

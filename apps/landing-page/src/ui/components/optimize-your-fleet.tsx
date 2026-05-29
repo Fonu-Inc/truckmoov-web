@@ -7,12 +7,12 @@ export default function OptimizeYourFleet() {
 
  return (
   <SectionContainer
-   rootClassName="flex min-h-[400px] flex-col bg-[linear-gradient(90deg,#000000_0%,#272727_35%,#212020_70%,#000000_100%)] relative"
+   rootClassName="flex h-[400px] flex-col bg-[linear-gradient(90deg,#000000_0%,#272727_35%,#212020_70%,#000000_100%)] relative"
    containerClassName="grid flex-1 lg:grid-cols-2 grid-cols-1 gap-2 items-center  justify-center text-background"
    rootChildren={
     <img
      src="/grid-bg.png"
-     className="absolute inset-0"
+     className="absolute inset-0 h-full w-full"
     />
    }
   >
