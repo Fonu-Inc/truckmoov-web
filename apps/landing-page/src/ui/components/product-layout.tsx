@@ -7,6 +7,7 @@ export type ProductData = {
  titleIcon: string;
  title: string;
  description: string;
+ capabilitiesHeader?: string;
  capabilities: Array<string>;
  fit: string;
 }
@@ -37,7 +38,7 @@ export default function ProductLayout({ data }: ProductLayoutProps) {
    >
     <StalkholderHeader
      headerTitle="Feature capabilities"
-     header="Feature built to simplify, automate, and scale modern logistics operations."
+     header={data.capabilitiesHeader ?? "Feature built to simplify, automate, and scale modern logistics operations."}
     />
     <section className="grid grid-cols-2 gap-4">
      {data.capabilities.map((ability) => (
