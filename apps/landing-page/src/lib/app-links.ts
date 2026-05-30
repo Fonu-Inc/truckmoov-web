@@ -70,27 +70,27 @@ export const appLinks: AppLinkType[] = [
   children: [
    {
     title: "Fleet Management",
-    href: "#",
+    href: "/product/fleet-management",
     description:
      "Manage vehicles, drivers, and daily operations from a single platform for better efficiency and control.",
     icon: Truck,
    },
    {
     title: "Live Tracking",
-    href: "#",
+    href: "/product/live-tracking",
     description:
      "Track your vehicles in real time with accurate location updates and movement visibility.",
     icon: MapPin,
    },
    {
     title: "Dispatch Management",
-    href: "#",
+    href: "/product/dispatch-management",
     description: "Easily assign trips, coordinate drivers, and streamline delivery operations.",
     icon: Map,
    },
    {
     title: "AI Optimisation",
-    href: "#",
+    href: "/product/ai-optimisation",
     description: "Use intelligent insights to improve routes, reduce costs, and boost overall fleet performance.",
     icon: BrainCircuit,
    },

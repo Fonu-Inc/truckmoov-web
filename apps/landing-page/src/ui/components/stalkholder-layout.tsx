@@ -35,6 +35,7 @@ export default function StalkholderLayout({ data }: StalkholderLayoutProps) {
  return (
   <section className="bg-black">
    <SectionContainerTwo
+    rootClassName="py-16"
     containerClassName="text-background"
    >
     <p className="font-medium text-sm">STAKEHOLDER</p>
