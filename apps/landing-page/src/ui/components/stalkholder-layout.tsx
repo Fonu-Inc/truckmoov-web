@@ -1,6 +1,6 @@
 import SectionContainer from "./section-container";
 import SectionContainerTwo from "./section-container-two";
-import StalkholderHeader from "./stalkholder-header";
+import SectionHeader from "./section-header";
 import { Check } from "lucide-react";
 
 export type Roles = "Operations Manager" | "Finance Officer" | "Viewer" | "Dispatcher" | "Maintenance Supervisor" | "Driver" | "Analyst";
@@ -51,7 +51,7 @@ export default function StalkholderLayout({ data }: StalkholderLayoutProps) {
     rootClassName="bg-background rounded-tl-[50px] rounded-tr-[50px] border-b border-border"
     containerClassName="space-y-10"
    >
-    <StalkholderHeader
+    <SectionHeader
      headerTitle="Role definition"
      header={data.definitionHeader ?? `Who is an ${data.title}?`}
     />
@@ -61,7 +61,7 @@ export default function StalkholderLayout({ data }: StalkholderLayoutProps) {
     rootClassName="bg-background border-b border-border"
     containerClassName="space-y-10"
    >
-    <StalkholderHeader
+    <SectionHeader
      headerTitle="Key responsibilities"
      header="What this role is accountable for day-to-day."
     />
@@ -76,7 +76,7 @@ export default function StalkholderLayout({ data }: StalkholderLayoutProps) {
    </SectionContainer>
    <SectionContainer rootClassName="bg-[#fafafa] border-b border-border" containerClassName="space-y-10"
    >
-    <StalkholderHeader
+    <SectionHeader
      headerTitle="Role permissions"
      header="Permissions granted to this role within the tenant workspace."
     />
@@ -93,7 +93,7 @@ export default function StalkholderLayout({ data }: StalkholderLayoutProps) {
     rootClassName="bg-background border-b border-border"
     containerClassName="space-y-10"
    >
-    <StalkholderHeader
+    <SectionHeader
      headerTitle="Role Limitations"
      header="Actions outside this role's authority."
     />
@@ -110,7 +110,7 @@ export default function StalkholderLayout({ data }: StalkholderLayoutProps) {
     rootClassName="bg-background"
     containerClassName="space-y-10"
    >
-    <StalkholderHeader
+    <SectionHeader
      headerTitle="Enterprise Roles"
      header="Roles this stakeholder can Invite into their workspace."
     />

@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
 import SectionContainer from "./section-container";
 import SectionContainerTwo from "./section-container-two";
-import StalkholderHeader from "./stalkholder-header";
+import SectionHeader from "./section-header";
 
 export type ProductData = {
  titleIcon: string;
@@ -36,7 +36,7 @@ export default function ProductLayout({ data }: ProductLayoutProps) {
     rootClassName="bg-background rounded-tl-[50px] rounded-tr-[50px] border-b border-border"
     containerClassName="space-y-10"
    >
-    <StalkholderHeader
+    <SectionHeader
      headerTitle="Feature capabilities"
      header={data.capabilitiesHeader ?? "Feature built to simplify, automate, and scale modern logistics operations."}
     />

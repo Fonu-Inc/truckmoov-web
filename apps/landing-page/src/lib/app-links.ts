@@ -203,7 +203,7 @@ export const appLinks: AppLinkType[] = [
     icon: ScrollText,
    },
    {
-    title: "API &Integration Docs",
+    title: "API & Integration Docs",
     href: "#",
     description: "REST APIs, webhooks and SDKs for building on Fleet Pro.",
     icon: Database,
