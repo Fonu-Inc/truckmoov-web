@@ -21,36 +21,46 @@ export const router = createBrowserRouter([
         element: <Home />,
       },
       {
-        path: "/stalkholder/fleet-provider",
-        element: <FleetProvider />
+        path: "/stalkholder",
+        children: [
+          {
+            path: "fleet-provider",
+            element: <FleetProvider />
+          },
+          {
+            path: "enterprise-admin",
+            element: <EnterpriseAdmin />
+          },
+          {
+            path: "owner-operator",
+            element: <OwnerOperator />
+          },
+          {
+            path: "aggregator-admin",
+            element: <AggregatorAdmin />
+          },
+        ]
       },
       {
-        path: "/stalkholder/enterprise-admin",
-        element: <EnterpriseAdmin />
-      },
-      {
-        path: "/stalkholder/owner-operator",
-        element: <OwnerOperator />
-      },
-      {
-        path: "/stalkholder/aggregator-admin",
-        element: <AggregatorAdmin />
-      },
-      {
-        path: "/product/fleet-management",
-        element: <FleetManagement />
-      },
-      {
-        path: "/product/live-tracking",
-        element: <LiveTracking />
-      },
-      {
-        path: "/product/dispatch-management",
-        element: <DispatchManagement />
-      },
-      {
-        path: "/product/ai-optimisation",
-        element: <AiOptimisation />
+        path: "/product",
+        children: [
+          {
+            path: "fleet-management",
+            element: <FleetManagement />
+          },
+          {
+            path: "live-tracking",
+            element: <LiveTracking />
+          },
+          {
+            path: "dispatch-management",
+            element: <DispatchManagement />
+          },
+          {
+            path: "ai-optimisation",
+            element: <AiOptimisation />
+          },
+        ]
       },
     ],
   },
