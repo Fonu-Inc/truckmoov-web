@@ -288,7 +288,7 @@ export function DashboardSidebar() {
           {(() => {
             const isPlatformAdmin = user?.role === 'platform_admin';
             const supportLabel = isPlatformAdmin ? "Support & Incident" : "Ticketing & Support";
-            const supportHref = isPlatformAdmin ? "/platform/support" : "/help";
+            const supportHref = "/help";
             const SupportIcon = isPlatformAdmin ? Headphones : Ticket;
             return collapsed ? (
               <TooltipWrapper content={supportLabel} side="right">

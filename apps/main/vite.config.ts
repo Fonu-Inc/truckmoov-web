@@ -16,6 +16,8 @@ export default defineConfig(({ mode }) => ({
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
+      "@/components/ui": path.resolve(__dirname, "../../packages/ui/src/components/ui"),
+      "@/lib/utils": path.resolve(__dirname, "../../packages/ui/src/lib/utils.ts"),
       "@": path.resolve(__dirname, "./src"),
       // Workaround: the published fonu-sdk package points module to a missing ESM bundle.
       // Force Vite to use the published CJS build instead.

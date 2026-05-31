@@ -1,0 +1,9 @@
+{
+  "name": "@truckmoov/app-core",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json"
+  }
+}

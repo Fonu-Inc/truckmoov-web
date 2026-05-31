@@ -12,13 +12,28 @@ import { UserRole } from "@/types";
 import { DemoStakeholderType } from "@/stores/authStore";
 import { Truck, Mail, Lock, ArrowRight, Building2, Users, Headphones, Car, Settings, Calculator, User, CheckCircle2, Loader2, ChevronDown, Wrench, Factory, Network, Sparkles, Eye, EyeOff, HelpCircle } from "lucide-react";
 
+const PLATFORM_ADMIN_URL = (import.meta.env.VITE_PLATFORM_ADMIN_URL || "http://localhost:3002").replace(/\/$/, "");
+
+function getPlatformAdminUrl(search = "") {
+  return `${PLATFORM_ADMIN_URL}${search}`;
+}
+
+function navigateAfterLogin(route: string, navigate: ReturnType<typeof useNavigate>) {
+  if (/^https?:\/\//.test(route)) {
+    window.location.assign(route);
+    return;
+  }
+
+  navigate(route);
+}
+
 /**
  * Determine the correct dashboard route for a user based on their legacy role
  * AND their organization memberships (for multi-stakeholder model).
  */
 async function resolvePostLoginRoute(userId: string, legacyRole: string | null | undefined): Promise<string> {
-  // Platform admin always goes to /platform
-  if (legacyRole === "platform_admin") return "/platform";
+  // Platform admin now lives in the standalone admin app.
+  if (legacyRole === "platform_admin") return getPlatformAdminUrl();
 
   // Check if multi-stakeholder feature flag is enabled
   const { data: flagData } = await supabase
@@ -345,7 +360,7 @@ export default function AuthPage() {
           await bootstrapFromSession();
           const user = useAuthStore.getState().user;
           const route = await resolvePostLoginRoute(authData.user!.id, user?.role);
-          navigate(route);
+          navigateAfterLogin(route, navigate);
         } else {
           toast.success("Account created!", {
             description: "Please check your email to confirm your account before signing in.",
@@ -369,7 +384,7 @@ export default function AuthPage() {
         await bootstrapFromSession();
         const user = useAuthStore.getState().user;
         const route = await resolvePostLoginRoute(authData.user.id, user?.role);
-        navigate(route);
+        navigateAfterLogin(route, navigate);
       }
     } catch (error) {
       console.error("Auth error:", error);
@@ -404,7 +419,7 @@ export default function AuthPage() {
     toast.success(`Logged in as ${role.replace("_", " ")}`);
     switch (role) {
       case "platform_admin":
-        navigate("/platform");
+        window.location.assign(getPlatformAdminUrl("?demoRole=platform_admin"));
         break;
       case "tenant_admin":
       case "operations_manager":

@@ -19,19 +19,6 @@ import { OnboardingModalsHost } from "./components/onboarding/OnboardingModalsHo
 import AuthPage from "./pages/AuthPage";
 import ResetPassword from "./pages/ResetPassword";
 import NotAuthorized from "./pages/NotAuthorized";
-import PlatformDashboard from "./pages/platform/PlatformDashboard";
-import PlatformDevices from "./pages/platform/PlatformDevices";
-import PlatformSettings from "./pages/platform/PlatformSettings";
-import DeviceSimulator from "./pages/platform/DeviceSimulator";
-import PlatformTenants from "./pages/platform/PlatformTenants";
-import PlatformSIMs from "./pages/platform/PlatformSIMs";
-
-
-import PlatformBilling from "./pages/platform/PlatformBilling";
-import PlatformSecurity from "./pages/platform/PlatformSecurity";
-import PlatformComplianceAudit from "./pages/platform/PlatformComplianceAudit";
-import PlatformCommunications from "./pages/platform/PlatformCommunications";
-import PlatformMessagingCenter from "./pages/platform/PlatformMessagingCenter";
 import TenantAdminDashboard from "./pages/admin/TenantAdminDashboard";
 import FleetManagement from "./pages/admin/FleetManagement";
 import DriverManagement from "./pages/admin/DriverManagement";
@@ -52,7 +39,6 @@ import ComplianceManagement from "./pages/admin/ComplianceManagement";
 import Settings from "./pages/admin/Settings";
 import TenantWallet from "./pages/admin/TenantWallet";
 import DataBundles from "./pages/admin/DataBundles";
-import PlatformDataBundles from "./pages/platform/PlatformDataBundles";
 import SupervisorDashboard from "./pages/supervisor/SupervisorDashboard";
 import SupervisorLiveMap from "./pages/supervisor/SupervisorLiveMap";
 import SupervisorDispatch from "./pages/supervisor/SupervisorDispatch";
@@ -70,7 +56,6 @@ import OmnichannelInbox from "./pages/admin/OmnichannelInbox";
 import Architecture from "./pages/Architecture";
 import TechnicalArchitecture from "./pages/TechnicalArchitecture";
 import HelpSupport from "./pages/support/HelpSupport";
-import PlatformSupport from "./pages/platform/PlatformSupport";
 import EnterpriseLogisticsDashboard from "./pages/enterprise/EnterpriseLogisticsDashboard";
 import AggregatorDashboard from "./pages/aggregator/AggregatorDashboard";
 import OwnerOperatorDashboard from "./pages/owner-operator/OwnerOperatorDashboard";
@@ -146,24 +131,6 @@ const App = () => {
                 <Route path="/onboarding/activate" element={<OrgProtectedRoute><ActivationOnboarding /></OrgProtectedRoute>} />
                 <Route path="/onboarding/quick-access" element={<OrgProtectedRoute><WelcomeDashboard /></OrgProtectedRoute>} />
                 <Route path="/onboarding/welcome" element={<Navigate to="/onboarding/subscription" replace />} />
-                
-                {/* Platform Admin Routes */}
-                <Route path="/platform" element={<OrgProtectedRoute><PlatformDashboard /></OrgProtectedRoute>} />
-                <Route path="/platform/devices" element={<OrgProtectedRoute><PlatformDevices /></OrgProtectedRoute>} />
-                <Route path="/platform/sims" element={<OrgProtectedRoute><PlatformSIMs /></OrgProtectedRoute>} />
-                <Route path="/platform/data-bundles" element={<OrgProtectedRoute><PlatformDataBundles /></OrgProtectedRoute>} />
-                
-                
-                <Route path="/platform/tenants" element={<OrgProtectedRoute><PlatformTenants /></OrgProtectedRoute>} />
-                <Route path="/platform/billing" element={<OrgProtectedRoute><PlatformBilling /></OrgProtectedRoute>} />
-                <Route path="/platform/security" element={<OrgProtectedRoute><PlatformSecurity /></OrgProtectedRoute>} />
-                <Route path="/platform/compliance-audit" element={<OrgProtectedRoute><PlatformComplianceAudit /></OrgProtectedRoute>} />
-                <Route path="/platform/communications" element={<OrgProtectedRoute><PlatformCommunications /></OrgProtectedRoute>} />
-                <Route path="/platform/messaging" element={<OrgProtectedRoute><PlatformMessagingCenter /></OrgProtectedRoute>} />
-                <Route path="/platform/settings" element={<OrgProtectedRoute><PlatformSettings /></OrgProtectedRoute>} />
-                <Route path="/platform/simulator" element={<OrgProtectedRoute><DeviceSimulator /></OrgProtectedRoute>} />
-                <Route path="/platform/support" element={<OrgProtectedRoute><PlatformSupport /></OrgProtectedRoute>} />
-                <Route path="/platform/*" element={<OrgProtectedRoute><PlatformDashboard /></OrgProtectedRoute>} />
                 
                 {/* Enterprise Routes */}
                 <Route path="/enterprise" element={<OrgProtectedRoute><EnterpriseLogisticsDashboard /></OrgProtectedRoute>} />

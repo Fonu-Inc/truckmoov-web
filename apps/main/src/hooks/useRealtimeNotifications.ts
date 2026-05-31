@@ -51,8 +51,9 @@ export function useRealtimeNotifications() {
 
   // Subscribe to security audit logs for real-time updates
   useEffect(() => {
+    const channelName = `platform-notifications-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const channel = supabase
-      .channel("platform-notifications")
+      .channel(channelName)
       .on(
         "postgres_changes",
         {

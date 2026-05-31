@@ -12,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const PLATFORM_ADMIN_URL = (import.meta.env.VITE_PLATFORM_ADMIN_URL || "http://localhost:3002").replace(/\/$/, "");
+
 export function UserProfileDropdown() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
@@ -26,7 +28,7 @@ export function UserProfileDropdown() {
 
   const handleSettingsClick = () => {
     if (user?.role === "platform_admin") {
-      navigate("/platform/settings");
+      window.location.assign(`${PLATFORM_ADMIN_URL}/settings`);
     } else {
       navigate("/admin/settings");
     }

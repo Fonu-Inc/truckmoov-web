@@ -281,22 +281,22 @@ const ownerOperatorEntries: TaggedEntry[] = [
 // ─── Platform Admin ────────────────────────────────────────────
 const platformAdminSidebar: SidebarConfig = {
   orgTypeLabel: "Platform Admin",
-  homeRoute: "/platform",
+  homeRoute: "/",
   entries: [
-    { label: "Dashboard", href: "/platform", icon: LayoutDashboard },
-    { label: "Tenants", href: "/platform/tenants", icon: Building2 },
-    { label: "Devices", href: "/platform/devices", icon: Cpu },
-    { label: "IoT SIMs", href: "/platform/sims", icon: Wifi },
-    { label: "Data Bundles", href: "/platform/data-bundles", icon: Database },
+    { label: "Dashboard", href: "/", icon: LayoutDashboard },
+    { label: "Tenants", href: "/tenants", icon: Building2 },
+    { label: "Devices", href: "/devices", icon: Cpu },
+    { label: "IoT SIMs", href: "/sims", icon: Wifi },
+    { label: "Data Bundles", href: "/data-bundles", icon: Database },
     
-    { label: "Simulator", href: "/platform/simulator", icon: Radio },
+    { label: "Simulator", href: "/simulator", icon: Radio },
     
-    { label: "Channel Providers", href: "/platform/communications", icon: Bell },
-    { label: "Messaging Center", href: "/platform/messaging", icon: Send },
-    { label: "Billing", href: "/platform/billing", icon: CreditCard },
-    { label: "Security", href: "/platform/security", icon: ShieldHalf },
-    { label: "Compliance & Audit", href: "/platform/compliance-audit", icon: ShieldCheck },
-    { label: "Settings", href: "/platform/settings", icon: Settings },
+    { label: "Channel Providers", href: "/communications", icon: Bell },
+    { label: "Messaging Center", href: "/messaging", icon: Send },
+    { label: "Billing", href: "/billing", icon: CreditCard },
+    { label: "Security", href: "/security", icon: ShieldHalf },
+    { label: "Compliance & Audit", href: "/compliance-audit", icon: ShieldCheck },
+    { label: "Settings", href: "/settings", icon: Settings },
   ] };
 
 // ─── Supervisor ────────────────────────────────────────────────
