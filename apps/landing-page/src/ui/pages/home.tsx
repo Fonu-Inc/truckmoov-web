@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import SectionContainer from "../components/section-container";
 import { Button } from "../shadcn/button";
-import { ArrowRight, BarChart3, Blocks, Cpu, Navigation, ShieldCheck, Webhook } from "lucide-react";
+import { ArrowRight, BarChart3, Blocks, BrainCircuit, CloudSun, Cpu, MapPinned, Navigation, ShieldCheck, Sprout, Webhook } from "lucide-react";
 import SectionHeader from "../components/section-header";
 import { appLinks } from "@/lib/app-links";
 
@@ -14,6 +14,28 @@ const HOME_FEATURES = [
 
 const STAKEHOLDER_CARDS = appLinks.find((link) => link.title === "Stakeholders")?.children ?? [];
 const PRODUCT_CARDS = appLinks.find((link) => link.title === "Products")?.children ?? [];
+const INTELLIGENCE_CARDS = [
+ {
+  title: "Predictive routing",
+  description: "AI Adaptive ETAs that learn from traffic, driver behaviour and historical corridors.",
+  icon: MapPinned,
+ },
+ {
+  title: "Smart dispatch",
+  description: "Recommends the best-fit driver, vehicle and trip sequence in real time.",
+  icon: BrainCircuit,
+ },
+ {
+  title: "Operational forecasting",
+  description: "Forecast demand, capacity and SLA risk before it impacts customers.",
+  icon: CloudSun,
+ },
+ {
+  title: "Anomaly detection",
+  description: "Surface fuel theft, route deviation and idling anomalies automatically.",
+  icon: Sprout,
+ },
+];
 const INTEGRATION_CARDS = [
  {
   title: "APIs & Webhooks",
@@ -148,6 +170,24 @@ export default function Home() {
     rootClassName="bg-background border-b border-border-100"
     containerClassName="space-y-10"
    >
+   <section className="rounded-[100px] bg-[url('/grid-bg.png')] bg-cover bg-center bg-no-repeat py-16 px-20 bg-foreground text-background">
+     <h1 className="font-semibold text-[40px] w-full max-w-[840px] capitalize">How Businesses and operations  Think using fleet Pro</h1>
+     <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-4">
+      {INTELLIGENCE_CARDS.map((card) => {
+       const Icon = card.icon;
+
+       return (
+        <article key={card.title} className="space-y-5">
+         <Icon className="size-12 text-primary" strokeWidth={2.2} />
+         <div className="space-y-3">
+          <h3 className="text-[22px] font-semibold leading-tight text-white">{card.title}</h3>
+          <p className="max-w-[245px] text-[15px] leading-6 text-[#FFFFFFCC]">{card.description}</p>
+         </div>
+        </article>
+       );
+      })}
+     </div>
+    </section>
    </SectionContainer>
    <SectionContainer
     rootClassName="bg-background border-b border-border-100"
