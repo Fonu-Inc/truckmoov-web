@@ -37,6 +37,7 @@ The workspace is declared in `pnpm-workspace.yaml` with `apps/*` and `packages/*
 
 - [docs/api.md](docs/api.md) documents the API package structure, import paths, service file conventions, React Query patterns, and how to add a new API service.
 - [docs/git-workflow.md](docs/git-workflow.md) documents the Husky commit hooks and conventional commit message format.
+- [docs/tsconfig.md](docs/tsconfig.md) documents the shared TypeScript base config and app/package override conventions.
 
 When adding backend calls, put the service in `packages/api` and import it from the app through `@truckmoov/api`. Apps should not call backend endpoints directly.
 

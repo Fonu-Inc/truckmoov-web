@@ -1,4 +1,4 @@
 {
-  "extends": "@truckmoov/app-core/tsconfig.base.json",
+  "extends": "../app-core/tsconfig.base.json",
   "include": ["src"]
 }
