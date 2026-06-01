@@ -17,7 +17,9 @@ import { OnboardingModalsHost } from "./components/onboarding/OnboardingModalsHo
 
 // Pages
 import AuthPage from "./pages/AuthPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPassword from "./pages/ResetPassword";
+import SignUpPage from "./pages/SignUpPage";
 import NotAuthorized from "./pages/NotAuthorized";
 import TenantAdminDashboard from "./pages/admin/TenantAdminDashboard";
 import FleetManagement from "./pages/admin/FleetManagement";
@@ -122,6 +124,8 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<Navigate to="/auth" replace />} />
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/auth/signup" element={<SignUpPage />} />
+                <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/not-authorized" element={<NotAuthorized />} />
 
