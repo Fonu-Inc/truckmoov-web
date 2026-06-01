@@ -25,6 +25,18 @@
       ],
       "@/*": [
         "./src/*"
+      ],
+      "@truckmoov/api/lib/token": [
+        "../../packages/api/src/lib/token.ts"
+      ],
+      "@truckmoov/api/lib/axios-instance": [
+        "../../packages/api/src/lib/axios-instance.ts"
+      ],
+      "@truckmoov/api/lib/query-client": [
+        "../../packages/api/src/lib/query-client.ts"
+      ],
+      "@truckmoov/api/auth": [
+        "../../packages/api/src/auth/index.ts"
       ]
     },
     "skipLibCheck": true,

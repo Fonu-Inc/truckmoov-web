@@ -119,6 +119,9 @@ importers:
       '@testing-library/react':
         specifier: ^16.3.2
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.29))(@types/react@18.3.29)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@truckmoov/api':
+        specifier: workspace:*
+        version: link:../../packages/api
       '@truckmoov/app-core':
         specifier: workspace:*
         version: link:../../packages/app-core
@@ -475,6 +478,9 @@ importers:
       '@testing-library/react':
         specifier: ^16.3.2
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.29))(@types/react@18.3.29)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@truckmoov/api':
+        specifier: workspace:*
+        version: link:../../packages/api
       '@truckmoov/app-core':
         specifier: workspace:*
         version: link:../../packages/app-core
@@ -647,6 +653,25 @@ importers:
       vite:
         specifier: ^5.4.19
         version: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)
+
+  packages/api:
+    dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.83.0
+        version: 5.100.11(react@19.2.6)
+      axios:
+        specifier: ^1.7.0
+        version: 1.16.1
+      zustand:
+        specifier: ^5.0.9
+        version: 5.0.13(@types/react@19.2.15)(react@19.2.6)(use-sync-external-store@1.6.0(react@19.2.6))
+    devDependencies:
+      '@truckmoov/app-core':
+        specifier: workspace:*
+        version: link:../app-core
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
 
   packages/app-core: {}
 
@@ -9342,6 +9367,11 @@ snapshots:
       '@tanstack/query-core': 5.100.11
       react: 18.3.1
 
+  '@tanstack/react-query@5.100.11(react@19.2.6)':
+    dependencies:
+      '@tanstack/query-core': 5.100.11
+      react: 19.2.6
+
   '@testing-library/dom@10.4.1':
     dependencies:
       '@babel/code-frame': 7.29.7
@@ -13221,3 +13251,9 @@ snapshots:
       '@types/react': 18.3.29
       react: 18.3.1
       use-sync-external-store: 1.6.0(react@18.3.1)
+
+  zustand@5.0.13(@types/react@19.2.15)(react@19.2.6)(use-sync-external-store@1.6.0(react@19.2.6)):
+    optionalDependencies:
+      '@types/react': 19.2.15
+      react: 19.2.6
+      use-sync-external-store: 1.6.0(react@19.2.6)
