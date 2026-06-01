@@ -36,6 +36,7 @@ The workspace is declared in `pnpm-workspace.yaml` with `apps/*` and `packages/*
 ## Documentation
 
 - [docs/api.md](docs/api.md) documents the API package structure, import paths, service file conventions, React Query patterns, and how to add a new API service.
+- [docs/git-workflow.md](docs/git-workflow.md) documents the Husky commit hooks and conventional commit message format.
 
 When adding backend calls, put the service in `packages/api` and import it from the app through `@truckmoov/api`. Apps should not call backend endpoints directly.
 

@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      husky:
+        specifier: ^9.1.7
+        version: 9.1.7
       turbo:
         specifier: 2.9.14
         version: 2.9.14
@@ -154,7 +157,7 @@ importers:
         version: 2.0.5
       fonu-sdk:
         specifier: ^1.1.2
-        version: 1.1.2(react@18.3.1)(typescript@5.9.3)
+        version: 1.1.2(react@18.3.1)(typescript@5.9.3)(yaml@2.9.0)
       html-to-image:
         specifier: ^1.11.13
         version: 1.11.13
@@ -226,7 +229,7 @@ importers:
         version: 2.6.1
       tailwindcss-animate:
         specifier: ^1.0.7
-        version: 1.0.7(tailwindcss@3.4.19)
+        version: 1.0.7(tailwindcss@3.4.19(yaml@2.9.0))
       vaul:
         specifier: ^0.9.9
         version: 0.9.9(@types/react-dom@18.3.7(@types/react@18.3.29))(@types/react@18.3.29)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -248,7 +251,7 @@ importers:
         version: 9.39.4
       '@tailwindcss/typography':
         specifier: ^0.5.16
-        version: 0.5.19(tailwindcss@3.4.19)
+        version: 0.5.19(tailwindcss@3.4.19(yaml@2.9.0))
       '@types/node':
         specifier: ^22.16.5
         version: 22.19.19
@@ -278,13 +281,13 @@ importers:
         version: 15.15.0
       lovable-tagger:
         specifier: ^1.1.13
-        version: 1.3.0(vite@5.4.21(@types/node@22.19.19)(lightningcss@1.32.0))
+        version: 1.3.0(vite@5.4.21(@types/node@22.19.19)(lightningcss@1.32.0))(yaml@2.9.0)
       postcss:
         specifier: ^8.5.6
         version: 8.5.15
       tailwindcss:
         specifier: ^3.4.17
-        version: 3.4.19
+        version: 3.4.19(yaml@2.9.0)
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
@@ -333,7 +336,7 @@ importers:
         version: 10.0.1(eslint@10.4.0(jiti@2.7.0))
       '@tailwindcss/vite':
         specifier: ^4.3.0
-        version: 4.3.0(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0))
+        version: 4.3.0(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0)(yaml@2.9.0))
       '@types/node':
         specifier: ^24.12.3
         version: 24.12.4
@@ -345,7 +348,7 @@ importers:
         version: 19.2.3(@types/react@19.2.15)
       '@vitejs/plugin-react':
         specifier: ^6.0.1
-        version: 6.0.2(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0))
+        version: 6.0.2(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0)(yaml@2.9.0))
       eslint:
         specifier: ^10.3.0
         version: 10.4.0(jiti@2.7.0)
@@ -369,7 +372,7 @@ importers:
         version: 8.59.4(eslint@10.4.0(jiti@2.7.0))(typescript@6.0.3)
       vite:
         specifier: ^8.0.12
-        version: 8.0.14(@types/node@24.12.4)(jiti@2.7.0)
+        version: 8.0.14(@types/node@24.12.4)(jiti@2.7.0)(yaml@2.9.0)
 
   apps/main:
     dependencies:
@@ -513,7 +516,7 @@ importers:
         version: 2.0.5
       fonu-sdk:
         specifier: ^1.1.2
-        version: 1.1.2(react@18.3.1)(typescript@5.9.3)
+        version: 1.1.2(react@18.3.1)(typescript@5.9.3)(yaml@2.9.0)
       html-to-image:
         specifier: ^1.11.13
         version: 1.11.13
@@ -585,7 +588,7 @@ importers:
         version: 2.6.1
       tailwindcss-animate:
         specifier: ^1.0.7
-        version: 1.0.7(tailwindcss@3.4.19)
+        version: 1.0.7(tailwindcss@3.4.19(yaml@2.9.0))
       vaul:
         specifier: ^0.9.9
         version: 0.9.9(@types/react-dom@18.3.7(@types/react@18.3.29))(@types/react@18.3.29)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -607,7 +610,7 @@ importers:
         version: 9.39.4
       '@tailwindcss/typography':
         specifier: ^0.5.16
-        version: 0.5.19(tailwindcss@3.4.19)
+        version: 0.5.19(tailwindcss@3.4.19(yaml@2.9.0))
       '@types/node':
         specifier: ^22.16.5
         version: 22.19.19
@@ -637,13 +640,13 @@ importers:
         version: 15.15.0
       lovable-tagger:
         specifier: ^1.1.13
-        version: 1.3.0(vite@5.4.21(@types/node@22.19.19)(lightningcss@1.32.0))
+        version: 1.3.0(vite@5.4.21(@types/node@22.19.19)(lightningcss@1.32.0))(yaml@2.9.0)
       postcss:
         specifier: ^8.5.6
         version: 8.5.15
       tailwindcss:
         specifier: ^3.4.17
-        version: 3.4.19
+        version: 3.4.19(yaml@2.9.0)
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
@@ -4356,6 +4359,11 @@ packages:
     resolution: {integrity: sha512-eKCa6bwnJhvxj14kZk5NCPc6Hb6BdsU9DZcOnmQKSnO1VKrfV0zCvtttPZUsBvjmNDn8rpcJfpwSYnHBjc95MQ==}
     engines: {node: '>=18.18.0'}
 
+  husky@9.1.7:
+    resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   iceberg-js@0.8.1:
     resolution: {integrity: sha512-1dhVQZXhcHje7798IVM+xoo/1ZdVfzOMIc8/rgVSijRK38EDqOJoGula9N/8ZI5RD8QTxNQtK/Gozpr+qUqRRA==}
     engines: {node: '>=20.0.0'}
@@ -6122,6 +6130,11 @@ packages:
 
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
+
+  yaml@2.9.0:
+    resolution: {integrity: sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
 
   yargs-parser@21.1.1:
     resolution: {integrity: sha512-tVpsJW7DdjecAiFpbIB1e3qxIQsE6NoPc5/eTdrbbIC4h0LVsWhnoa3g+m2HclBIujHzsxZ4VJVA+GUuc2/LBw==}
@@ -9348,17 +9361,17 @@ snapshots:
       '@tailwindcss/oxide-win32-arm64-msvc': 4.3.0
       '@tailwindcss/oxide-win32-x64-msvc': 4.3.0
 
-  '@tailwindcss/typography@0.5.19(tailwindcss@3.4.19)':
+  '@tailwindcss/typography@0.5.19(tailwindcss@3.4.19(yaml@2.9.0))':
     dependencies:
       postcss-selector-parser: 6.0.10
-      tailwindcss: 3.4.19
+      tailwindcss: 3.4.19(yaml@2.9.0)
 
-  '@tailwindcss/vite@4.3.0(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0))':
+  '@tailwindcss/vite@4.3.0(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0)(yaml@2.9.0))':
     dependencies:
       '@tailwindcss/node': 4.3.0
       '@tailwindcss/oxide': 4.3.0
       tailwindcss: 4.3.0
-      vite: 8.0.14(@types/node@24.12.4)(jiti@2.7.0)
+      vite: 8.0.14(@types/node@24.12.4)(jiti@2.7.0)(yaml@2.9.0)
 
   '@tanstack/query-core@5.100.11': {}
 
@@ -9864,10 +9877,10 @@ snapshots:
     transitivePeerDependencies:
       - '@swc/helpers'
 
-  '@vitejs/plugin-react@6.0.2(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0))':
+  '@vitejs/plugin-react@6.0.2(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0)(yaml@2.9.0))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
-      vite: 8.0.14(@types/node@24.12.4)(jiti@2.7.0)
+      vite: 8.0.14(@types/node@24.12.4)(jiti@2.7.0)(yaml@2.9.0)
 
   '@vitest/expect@3.2.4':
     dependencies:
@@ -11080,7 +11093,7 @@ snapshots:
 
   follow-redirects@1.16.0: {}
 
-  fonu-sdk@1.1.2(react@18.3.1)(typescript@5.9.3):
+  fonu-sdk@1.1.2(react@18.3.1)(typescript@5.9.3)(yaml@2.9.0):
     dependencies:
       autoprefixer: 10.5.0(postcss@8.5.15)
       axios: 1.16.1
@@ -11090,7 +11103,7 @@ snapshots:
       postcss-loader: 8.2.1(postcss@8.5.15)(typescript@5.9.3)
       react: 18.3.1
       socket.io-client: 4.8.3
-      tailwindcss: 3.4.19
+      tailwindcss: 3.4.19(yaml@2.9.0)
       uuid: 11.1.1
     transitivePeerDependencies:
       - '@rspack/core'
@@ -11274,6 +11287,8 @@ snapshots:
   human-signals@2.1.0: {}
 
   human-signals@8.0.1: {}
+
+  husky@9.1.7: {}
 
   iceberg-js@0.8.1: {}
 
@@ -11587,10 +11602,10 @@ snapshots:
 
   loupe@3.2.1: {}
 
-  lovable-tagger@1.3.0(vite@5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)):
+  lovable-tagger@1.3.0(vite@5.4.21(@types/node@22.19.19)(lightningcss@1.32.0))(yaml@2.9.0):
     dependencies:
       esbuild: 0.25.12
-      tailwindcss: 3.4.19
+      tailwindcss: 3.4.19(yaml@2.9.0)
       vite: 5.4.21(@types/node@22.19.19)(lightningcss@1.32.0)
     transitivePeerDependencies:
       - tsx
@@ -11964,12 +11979,13 @@ snapshots:
       camelcase-css: 2.0.1
       postcss: 8.5.15
 
-  postcss-load-config@6.0.1(jiti@1.21.7)(postcss@8.5.15):
+  postcss-load-config@6.0.1(jiti@1.21.7)(postcss@8.5.15)(yaml@2.9.0):
     dependencies:
       lilconfig: 3.1.3
     optionalDependencies:
       jiti: 1.21.7
       postcss: 8.5.15
+      yaml: 2.9.0
 
   postcss-loader@8.2.1(postcss@8.5.15)(typescript@5.9.3):
     dependencies:
@@ -12740,11 +12756,11 @@ snapshots:
 
   tailwind-merge@3.6.0: {}
 
-  tailwindcss-animate@1.0.7(tailwindcss@3.4.19):
+  tailwindcss-animate@1.0.7(tailwindcss@3.4.19(yaml@2.9.0)):
     dependencies:
-      tailwindcss: 3.4.19
+      tailwindcss: 3.4.19(yaml@2.9.0)
 
-  tailwindcss@3.4.19:
+  tailwindcss@3.4.19(yaml@2.9.0):
     dependencies:
       '@alloc/quick-lru': 5.2.0
       arg: 5.0.2
@@ -12763,7 +12779,7 @@ snapshots:
       postcss: 8.5.15
       postcss-import: 15.1.0(postcss@8.5.15)
       postcss-js: 4.1.0(postcss@8.5.15)
-      postcss-load-config: 6.0.1(jiti@1.21.7)(postcss@8.5.15)
+      postcss-load-config: 6.0.1(jiti@1.21.7)(postcss@8.5.15)(yaml@2.9.0)
       postcss-nested: 6.2.0(postcss@8.5.15)
       postcss-selector-parser: 6.1.2
       resolve: 1.22.12
@@ -13086,7 +13102,7 @@ snapshots:
       fsevents: 2.3.3
       lightningcss: 1.32.0
 
-  vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0):
+  vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0)(yaml@2.9.0):
     dependencies:
       lightningcss: 1.32.0
       picomatch: 4.0.4
@@ -13097,6 +13113,7 @@ snapshots:
       '@types/node': 24.12.4
       fsevents: 2.3.3
       jiti: 2.7.0
+      yaml: 2.9.0
 
   vitest@3.2.4(@types/node@22.19.19)(jsdom@20.0.3)(lightningcss@1.32.0)(msw@2.14.6(@types/node@22.19.19)(typescript@5.9.3)):
     dependencies:
@@ -13215,6 +13232,9 @@ snapshots:
   y18n@5.0.8: {}
 
   yallist@3.1.1: {}
+
+  yaml@2.9.0:
+    optional: true
 
   yargs-parser@21.1.1: {}
 
