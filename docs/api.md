@@ -2,6 +2,24 @@
 
 All backend communication lives in `packages/api` (`@truckmoov/api`). Apps never call the backend directly — they import from this package.
 
+## Environment
+
+Apps that import from `@truckmoov/api` must define `VITE_BACKEND_URL` in their environment.
+
+`packages/api/src/lib/axios-instance.ts` reads the value with `import.meta.env.VITE_BACKEND_URL` and uses it as the Axios `baseURL`. If the value is missing, the package throws:
+
+```text
+[truckmoov/api] VITE_BACKEND_URL is not set. Add it to your .env file.
+```
+
+Example app `.env` value:
+
+```sh
+VITE_BACKEND_URL="your value"
+```
+
+Use a local backend URL for development when needed.
+
 ## Package structure
 
 ```text
