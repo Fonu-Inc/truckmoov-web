@@ -60,12 +60,21 @@ Components import from the service barrel (`@truckmoov/api/[service]`), not from
 Define request payloads and response types here. Use `type`, not `interface`.
 
 ```ts
+export type ActivityLog  = {
+  id: string;
+  activity: string;
+}
+
 export type ActivityLogQuery = {
   params?: {
     search?: string
     status?: string
     page?: number
   }
+}
+
+export type User = {
+  name: string;
 }
 
 export type UpdateInvitedUserPayload = {
@@ -79,6 +88,23 @@ export type UpdateInvitedUserPayload = {
 export type DeleteUserPayload = {
   id: string
 }
+```
+
+### Response types
+
+All API responses share the envelope shape `{ status, message, data }`. Use the `ServerResponse<T>` generic from `@truckmoov/api/lib/types` to define response envelope types:
+
+```ts
+import type { ServerResponse } from '../lib/types'
+
+export type ActivityLogResponse = ServerResponse<ActivityLog[]>
+export type UserResponse = ServerResponse<User>
+```
+
+You can also use `ServerResponse<T>` inline directly in `requests.ts`:
+
+```ts
+axiosInstance.get<ServerResponse<ActivityLog[]>>('/auth/activity-log')
 ```
 
 | Property | Use it for |
@@ -97,14 +123,14 @@ import { axiosInstance } from "../lib/axios-instance"
 import type { ActivityLogQuery, UpdateInvitedUserPayload } from "./types"
 
 export async function getActivityLog(payload?: ActivityLogQuery) {
-  const { data } = await axiosInstance.get("/auth/activity-log", {
+  const { data } = await axiosInstance.get<ActivityLog[]>("/auth/activity-log", {
     params: payload?.params,
   })
   return data
 }
 
 export async function updateInvitedUser({ id, data: body }: UpdateInvitedUserPayload) {
-  const { data } = await axiosInstance.patch(`/auth/invited-users/${id}`, body)
+  const { data } = await axiosInstance.patch<User>(`/auth/invited-users/${id}`, body)
   return data
 }
 ```

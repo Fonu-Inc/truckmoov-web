@@ -259,3 +259,102 @@ export type CreateTicketMessagePayload = {
 export type SystemChangePasswordPayload = {
   data: Record<string, unknown>
 }
+
+// ─── Response entity types ────────────────────────────────────────────────────
+
+export type AuthSession = {
+  accessToken: string
+  refreshToken: string
+}
+
+export type UserProfile = {
+  userId?: string
+  firstName?: string
+  lastName?: string
+  fullName?: string
+  email?: string
+  phoneNumber?: string
+  avatarUrl?: string
+}
+
+export type OrganizationUser = {
+  userId: string
+  email: string
+  tenantId: string
+  role: string
+  accountStatus: string
+  status: string
+  lastActiveAt: string
+  profile: UserProfile
+}
+
+export type SystemDeviceCatalogModel = {
+  id: string
+  manufacturer: string
+  model: string
+  protocolType: string
+  defaultPort: number
+  supportedFeatures: string[]
+  status: string
+  configurationInstructions?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type UploadedMedia = {
+  url: string
+  key?: string
+}
+
+export type AuthSystemSettings = {
+  platformName?: string
+  supportEmail?: string
+  defaults?: Record<string, unknown>
+  features?: Record<string, unknown>
+  retention?: Record<string, unknown>
+  updatedAt?: string
+  updatedByUserId?: string
+}
+
+import type { ServerResponse } from '../lib/types'
+
+// ─── Response envelopes ───────────────────────────────────────────────────────
+
+export type AuthTokenResponse = ServerResponse<AuthSession>
+export type MeResponse = ServerResponse<Record<string, unknown>>
+export type ProfileResponse = ServerResponse<Record<string, unknown>>
+export type OrganizationUserResponse = ServerResponse<OrganizationUser>
+export type OrganizationUsersResponse = ServerResponse<OrganizationUser[]>
+export type RemoveOrganizationUserResponse = ServerResponse<Record<string, unknown>>
+export type OrganizationSettingsResponse = ServerResponse<Record<string, unknown>>
+export type NotificationPreferencesResponse = ServerResponse<Record<string, unknown>>
+export type DispatcherPreferencesResponse = ServerResponse<Record<string, unknown>>
+export type ActivityLogResponse = ServerResponse<Record<string, unknown>>
+export type UploadedMediaResponse = ServerResponse<UploadedMedia>
+export type StandardApiResponse = ServerResponse<unknown>
+export type InviteActionResponse = ServerResponse<Record<string, unknown>>
+export type AuthSystemSettingsResponse = ServerResponse<AuthSystemSettings>
+export type SystemDashboardResponse = ServerResponse<Record<string, unknown>>
+export type SystemTenantsListResponse = ServerResponse<Record<string, unknown>[]>
+export type SystemTenantsSummaryResponse = ServerResponse<Record<string, unknown>>
+export type SystemTenantDetailResponse = ServerResponse<Record<string, unknown>>
+export type SystemTenantDeleteResponse = ServerResponse<Record<string, unknown>>
+export type SystemTenantOnboardingResponse = ServerResponse<Record<string, unknown>>
+export type SystemTenantOnboardingReferenceDataResponse = ServerResponse<Record<string, unknown>>
+export type SystemTenantInviteActionResponse = ServerResponse<Record<string, unknown>>
+export type SystemDeviceCatalogListResponse = ServerResponse<SystemDeviceCatalogModel[]>
+export type SystemDeviceCatalogModelResponse = ServerResponse<SystemDeviceCatalogModel>
+export type SystemDeviceCatalogDeleteResponse = ServerResponse<Record<string, unknown>>
+export type SystemDeviceCatalogReferenceDataResponse = ServerResponse<Record<string, unknown>>
+export type SystemDeviceInventoryListResponse = ServerResponse<Record<string, unknown>[]>
+export type SystemDeviceSummaryResponse = ServerResponse<Record<string, unknown>>
+export type SystemSimsListResponse = ServerResponse<Record<string, unknown>[]>
+export type SystemSimSummaryResponse = ServerResponse<Record<string, unknown>>
+export type SystemSimRequestsListResponse = ServerResponse<Record<string, unknown>[]>
+export type SystemSimBatchesListResponse = ServerResponse<Record<string, unknown>[]>
+export type SystemSubscriptionPlansResponse = ServerResponse<Record<string, unknown>[]>
+export type SystemFeatureFlagsResponse = ServerResponse<Record<string, unknown>[]>
+export type SystemFeatureFlagResponse = ServerResponse<Record<string, unknown>>
+export type SystemAdminInvitesResponse = ServerResponse<Record<string, unknown>[]>
+export type SystemAdminInviteResponse = ServerResponse<Record<string, unknown>>
+export type SystemAdminInviteCancelResponse = ServerResponse<Record<string, unknown>>

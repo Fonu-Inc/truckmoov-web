@@ -5,10 +5,11 @@
   "type": "module",
   "exports": {
     "./package.json": "./package.json",
-    "./lib/token": "./src/lib/token.ts",
     "./lib/axios-instance": "./src/lib/axios-instance.ts",
     "./lib/query-client": "./src/lib/query-client.ts",
-    "./auth": "./src/auth/index.ts"
+    "./auth": "./src/auth/index.ts",
+    "./fleet": "./src/fleet/index.ts",
+    "./dispatch": "./src/dispatch/index.ts"
   },
   "dependencies": {
     "axios": "^1.7.0",
