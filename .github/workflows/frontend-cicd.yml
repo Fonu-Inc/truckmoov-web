@@ -2,9 +2,19 @@ name: Frontend CI/CD
 
 on:
   pull_request:
+    paths:
+      - apps/main/**
+      - packages/**
+      - package.json
+      - pnpm-lock.yaml
   push:
     branches:
       - main
+    paths:
+      - apps/main/**
+      - packages/**
+      - package.json
+      - pnpm-lock.yaml
   workflow_dispatch:
 
 concurrency:
