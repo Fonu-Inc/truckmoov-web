@@ -1,10 +1,10 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
+import { Badge } from '@/components/shadcn/badge';
+import { Button } from '@/components/shadcn/button';
+import { Switch } from '@/components/shadcn/switch';
+import { Label } from '@/components/shadcn/label';
+import { Separator } from '@/components/shadcn/separator';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { useAIConfigPermissions } from '@/hooks/useAIConfigPermissions';
 import { 

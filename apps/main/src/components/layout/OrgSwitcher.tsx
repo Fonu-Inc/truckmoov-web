@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { Building2, Check, ChevronsUpDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/shadcn/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +12,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/shadcn/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { getSidebarConfig, getAllowedRoutes } from '@/lib/sidebarConfig';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';

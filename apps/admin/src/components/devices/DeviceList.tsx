@@ -1,15 +1,15 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card';
+import { Badge } from '@/components/shadcn/badge';
+import { Input } from '@/components/shadcn/input';
+import { ScrollArea } from '@/components/shadcn/scroll-area';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/shadcn/select';
 import { Search, Filter, Signal, Battery, Gauge, MapPin } from 'lucide-react';
 import { DeviceWithTelemetry } from '@/hooks/useDeviceTelemetry';
 import { formatDistanceToNow } from 'date-fns';

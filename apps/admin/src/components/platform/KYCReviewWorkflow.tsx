@@ -1,32 +1,32 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
+import { Button } from '@/components/shadcn/button';
+import { Input } from '@/components/shadcn/input';
+import { Badge } from '@/components/shadcn/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
+import { Textarea } from '@/components/shadcn/textarea';
+import { ScrollArea } from '@/components/shadcn/scroll-area';
+import { Separator } from '@/components/shadcn/separator';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter } from '@/components/ui/dialog';
+  DialogFooter } from '@/components/shadcn/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from '@/components/ui/select';
+  SelectValue } from '@/components/shadcn/select';
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from '@/components/ui/table';
+  TableRow } from '@/components/shadcn/table';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -49,8 +49,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { KYCNotificationHistory } from './KYCNotificationHistory';
-import { TableToolbar } from '@/components/ui/table-toolbar';
-import { ExportButton } from '@/components/ui/export-button';
+import { TableToolbar } from '@/components/shadcn/table-toolbar';
+import { ExportButton } from '@/components/shadcn/export-button';
 
 interface BusinessInfo {
   id: string;

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import mermaid from "mermaid";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/shadcn/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
 import {Copy, Check, Download} from "lucide-react";
 import { toast } from "sonner";
 

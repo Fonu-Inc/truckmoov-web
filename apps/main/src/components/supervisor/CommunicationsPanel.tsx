@@ -1,18 +1,18 @@
 import { useState } from "react";
 import { MessageSquare, Phone, Send, User, Clock, CheckCheck, PhoneCall, PhoneOff } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Badge } from "@/components/shadcn/badge";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/shadcn/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 

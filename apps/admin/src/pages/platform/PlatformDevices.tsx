@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { demoDevicesWithTelemetry } from "@/lib/demoDeviceData";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { PlatformDeviceManagement } from "@/components/devices/PlatformDeviceManagement";
 import { PlatformDeviceTrackingContent } from "@/components/devices/PlatformDeviceTracking";
@@ -20,7 +20,7 @@ import {
   BookOpen,
   ClipboardCheck,
 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/shadcn/skeleton";
 
 export default function PlatformDevices() {
   const [activeTab, setActiveTab] = useState("management");

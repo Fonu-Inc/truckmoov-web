@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Smile, Search } from "lucide-react";
-import { TooltipWrapper } from "@/components/ui/tooltip-wrapper";
+import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 
 interface EmojiPickerProps {
   onEmojiSelect: (emoji: string) => void;

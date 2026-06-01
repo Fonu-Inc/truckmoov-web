@@ -1,12 +1,12 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
+import { Progress } from "@/components/shadcn/progress";
+import { Separator } from "@/components/shadcn/separator";
 import {
   Truck,
   Package,
@@ -39,7 +39,7 @@ import { ComplianceDocumentsPanel } from "@/components/owner-operator/Compliance
 import { DeviceSetupRequestTracker } from "@/components/devices/DeviceSetupRequestTracker";
 import { DeviceSetupRequestDialog } from "@/components/devices/DeviceSetupRequestDialog";
 import { useDeviceSetupRequests } from "@/hooks/useDeviceSetupRequests";
-import { ChartDateFilter, type ChartDateRange } from "@/components/ui/chart-date-filter";
+import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import {
   DUMMY_RECENT_JOBS,
   DUMMY_VEHICLES,

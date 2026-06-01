@@ -1,11 +1,11 @@
 import { Search, X, PanelLeftClose, PanelLeftOpen, Settings as SettingsIcon, Keyboard } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Input } from "@/components/shadcn/input";
+import { Button } from "@/components/shadcn/button";
 import { NotificationCenter } from "@/components/platform/NotificationCenter";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import { UserProfileDropdown } from "./UserProfileDropdown";
 import { OrgSwitcher } from "./OrgSwitcher";
-import { ShortcutTooltip } from "@/components/ui/shortcut-tooltip";
+import { ShortcutTooltip } from "@/components/shadcn/shortcut-tooltip";
 import { SHORTCUTS, useGlobalShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { KeyboardShortcutsDialog } from "@/components/KeyboardShortcutsDialog";
 import { useEffect, useMemo, useRef, useState } from "react";

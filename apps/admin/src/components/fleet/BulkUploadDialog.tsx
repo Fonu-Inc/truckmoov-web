@@ -5,8 +5,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+  DialogDescription } from "@/components/shadcn/dialog";
+import { Button } from "@/components/shadcn/button";
 import {Upload, FileText, AlertCircle, CheckCircle, X, Download} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";

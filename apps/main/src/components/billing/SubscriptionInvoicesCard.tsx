@@ -4,23 +4,23 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+  CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Badge } from "@/components/shadcn/badge";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from "@/components/ui/table";
+  TableRow } from "@/components/shadcn/table";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
+  DialogTitle } from "@/components/shadcn/dialog";
+import { Separator } from "@/components/shadcn/separator";
 import {FileText, Calendar, CheckCircle, Clock, AlertCircle, Download} from "lucide-react";
 import { toast } from "sonner";
 import { downloadReceiptPDF } from "@/lib/receiptPdf";

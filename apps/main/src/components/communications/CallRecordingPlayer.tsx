@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/shadcn/button";
+import { Slider } from "@/components/shadcn/slider";
 import {Play, Pause, Volume2, VolumeX, RotateCcw, Download} from "lucide-react";
 import { cn } from "@/lib/utils";
 

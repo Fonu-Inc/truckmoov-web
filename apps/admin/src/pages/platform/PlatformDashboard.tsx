@@ -8,7 +8,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/shadcn/select";
 import {
   Building2,
   Truck,
@@ -32,12 +32,12 @@ import {
   MapPin,
   Eye,
 } from "lucide-react";
-import { ChartDateFilter, type ChartDateRange } from "@/components/ui/chart-date-filter";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Badge } from "@/components/shadcn/badge";
+import { Progress } from "@/components/shadcn/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import {
   AreaChart,
   Area,

@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
+import { Button } from '@/components/shadcn/button';
+import { Badge } from '@/components/shadcn/badge';
+import { ScrollArea } from '@/components/shadcn/scroll-area';
 import { Key, Webhook, BookOpen, Activity, BarChart3 } from 'lucide-react';
 import { ApiKeyManagement } from './ApiKeyManagement';
 import { WebhookManagementPanel } from './WebhookManagementPanel';

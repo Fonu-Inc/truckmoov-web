@@ -8,7 +8,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/shadcn/dialog";
 import {
   Form,
   FormControl,
@@ -16,19 +16,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+} from "@/components/shadcn/form";
+import { Input } from "@/components/shadcn/input";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Button } from "@/components/shadcn/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+} from "@/components/shadcn/select";
+import { Badge } from "@/components/shadcn/badge";
+import { Separator } from "@/components/shadcn/separator";
 import { LocationPicker, LocationValue } from "@/components/maps/LocationPicker";
 import { RoutePreviewMap, RoutePoint } from "@/components/maps/RoutePreviewMap";
 import { RouteOptimizationDialog } from "@/components/jobs/RouteOptimizationDialog";

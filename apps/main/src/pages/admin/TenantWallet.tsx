@@ -1,28 +1,28 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Badge } from "@/components/shadcn/badge";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from "@/components/ui/table";
+  TableRow } from "@/components/shadcn/table";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle } from "@/components/ui/dialog";
+  DialogTitle } from "@/components/shadcn/dialog";
 import {Wallet, CreditCard, Phone, MessageSquare, MessageCircle, ArrowUpRight, ArrowDownRight, RefreshCw, Plus, TrendingUp, AlertTriangle, History, Smartphone, BarChart3, FileText, Search, SlidersHorizontal as Filter, Download} from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { Separator } from "@/components/shadcn/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
@@ -35,13 +35,13 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+  DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from "@/components/ui/select";
+  SelectValue } from "@/components/shadcn/select";
 
 type UsageRange = "today" | "yesterday" | "last_7_days" | "last_30_days" | "last_90_days";
 const USAGE_RANGE_OPTIONS: { value: UsageRange; label: string }[] = [

@@ -11,28 +11,28 @@ import {
   Check,
   X,
 } from "lucide-react";
-import { TableToolbar } from "@/components/ui/table-toolbar";
-import { ExportButton } from "@/components/ui/export-button";
-import { Label as FilterLabel } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Slider } from "@/components/ui/slider";
+import { TableToolbar } from "@/components/shadcn/table-toolbar";
+import { ExportButton } from "@/components/shadcn/export-button";
+import { Label as FilterLabel } from "@/components/shadcn/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Switch } from "@/components/shadcn/switch";
+import { Badge } from "@/components/shadcn/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { Slider } from "@/components/shadcn/slider";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+} from "@/components/shadcn/select";
+import { Separator } from "@/components/shadcn/separator";
 import { usePlatformAIConfig } from "@/hooks/usePlatformAIConfig";
 import { useAIUsageLogs } from "@/hooks/useAIUsageLogs";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
   TableBody,
@@ -40,7 +40,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/shadcn/table";
 
 const OPENAI_MODELS = ["gpt-4o", "gpt-4o-mini", "gpt-5", "gpt-5-mini", "gpt-5-nano"];
 const ANTHROPIC_MODELS = ["claude-3.5-sonnet", "claude-3-sonnet", "claude-3-haiku", "claude-3-opus"];

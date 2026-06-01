@@ -1,13 +1,13 @@
 import { useState, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
+import { Button } from '@/components/shadcn/button';
+import { Input } from '@/components/shadcn/input';
+import { Label } from '@/components/shadcn/label';
+import { Separator } from '@/components/shadcn/separator';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/shadcn/avatar';
 import { Upload, RotateCcw, Save, Palette, Image as ImageIcon } from 'lucide-react';
 import { useTenantBranding } from '@/hooks/useTenantBranding';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/shadcn/skeleton';
 
 interface ColorFieldProps {
   label: string;

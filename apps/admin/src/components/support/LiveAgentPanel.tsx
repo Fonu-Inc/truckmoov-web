@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Headphones, Loader2, Send, X, UserRound } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { useLiveAgentSession } from "@/hooks/useLiveAgentSession";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";

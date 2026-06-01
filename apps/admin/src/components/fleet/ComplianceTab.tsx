@@ -1,40 +1,40 @@
 import {Download,  AlertTriangle, Bell, CalendarIcon, CheckCircle, Clock, Eye, File, FileText, Loader2, Mail, MoreHorizontal, Plus, Search, Shield, SlidersHorizontal, Truck, Upload, X } from 'lucide-react';
 import { useState, useRef, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Badge } from "@/components/shadcn/badge";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
+import { Calendar } from "@/components/shadcn/calendar";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from "@/components/ui/table";
+  TableRow } from "@/components/shadcn/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+  DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter } from "@/components/ui/dialog";
+  DialogFooter } from "@/components/shadcn/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  SelectValue } from "@/components/shadcn/select";
+import { Label } from "@/components/shadcn/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { format, differenceInDays, addDays } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";

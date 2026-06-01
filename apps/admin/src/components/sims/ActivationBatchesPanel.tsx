@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuthStore } from "@/stores/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Badge } from "@/components/shadcn/badge";
+import { Progress } from "@/components/shadcn/progress";
+import { Input } from "@/components/shadcn/input";
 import { Search, SlidersHorizontal as Filter } from "lucide-react";
 import {
   Select,
@@ -12,9 +12,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { ExportButton } from "@/components/ui/export-button";
-import { PlatformFilterPopover, type FilterDraft } from "@/components/ui/platform-filter-popover";
+} from "@/components/shadcn/select";
+import { ExportButton } from "@/components/shadcn/export-button";
+import { PlatformFilterPopover, type FilterDraft } from "@/components/shadcn/platform-filter-popover";
 import {
   Table,
   TableBody,
@@ -22,7 +22,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/shadcn/table";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +30,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/shadcn/dialog";
 import {
   Play,
   Loader2,

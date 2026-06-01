@@ -1,28 +1,28 @@
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Badge } from "@/components/shadcn/badge";
+import { Progress } from "@/components/shadcn/progress";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle } from "@/components/ui/dialog";
+  DialogTitle } from "@/components/shadcn/dialog";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from "@/components/ui/table";
+  TableRow } from "@/components/shadcn/table";
 import {Mic, Play, Pause, FileText, Loader2, Star, ThumbsUp, ThumbsDown, Minus, Clock, AlertTriangle, Download} from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useVoiceCalls } from "@/hooks/useVoiceCalls";
 import { useAuthStore } from "@/stores/authStore";
 import { supabase } from "@/integrations/supabase/client";
-import { TableToolbar, type FilterValues } from "@/components/ui/table-toolbar";
+import { TableToolbar, type FilterValues } from "@/components/shadcn/table-toolbar";
 
 type Language = "en" | "ha" | "yo" | "ig" | "pcm";
 

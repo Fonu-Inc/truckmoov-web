@@ -1,22 +1,22 @@
 import { useMemo, useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
+import { Input } from '@/components/shadcn/input';
+import { Button } from '@/components/shadcn/button';
+import { Badge } from '@/components/shadcn/badge';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
+} from '@/components/shadcn/table';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+} from '@/components/shadcn/select';
 import {
   Popover, PopoverContent, PopoverTrigger,
-} from '@/components/ui/popover';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
+} from '@/components/shadcn/popover';
+import { Checkbox } from '@/components/shadcn/checkbox';
+import { Label } from '@/components/shadcn/label';
 import { SlidersHorizontal, ShieldCheck, Search, Lock } from 'lucide-react';
-import { ExportButton } from '@/components/ui/export-button';
+import { ExportButton } from '@/components/shadcn/export-button';
 import { usePlatformAuditLog, type AuditFilters } from '@/hooks/usePlatformAuditLog';
 import { useTenants } from '@/hooks/useTenants';
 import { format } from 'date-fns';

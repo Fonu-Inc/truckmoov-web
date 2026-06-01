@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
   TableBody,
@@ -11,7 +11,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/shadcn/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +21,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@/components/shadcn/alert-dialog";
 import {
   Activity,
   AlertTriangle,
@@ -38,8 +38,8 @@ import {
 } from "lucide-react";
 import { usePlatformIntegrationGovernance } from "@/hooks/usePlatformIntegrationGovernance";
 import { formatDistanceToNow } from "date-fns";
-import { TableToolbar } from "@/components/ui/table-toolbar";
-import { ExportButton } from "@/components/ui/export-button";
+import { TableToolbar } from "@/components/shadcn/table-toolbar";
+import { ExportButton } from "@/components/shadcn/export-button";
 
 export function IntegrationsGovernance() {
   const {

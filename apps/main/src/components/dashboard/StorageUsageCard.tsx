@@ -1,12 +1,12 @@
 import { HardDrive, AlertTriangle } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Progress } from "@/components/shadcn/progress";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
 import { useStorageUsage } from "@/hooks/useStorageUsage";
 import { useTenantSubscription } from "@/hooks/useTenantSubscription";
 import { useNavigate } from "react-router-dom";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/shadcn/skeleton";
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;

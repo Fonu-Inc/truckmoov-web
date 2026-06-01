@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { StatCard } from "@/components/dashboard/StatCard";
 import {
@@ -44,14 +44,14 @@ import {
   Cell,
   Legend,
 } from "recharts";
-import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ExportButton } from "@/components/ui/export-button";
-import { ChartDateFilter, type ChartDateRange } from "@/components/ui/chart-date-filter";
+import { Progress } from "@/components/shadcn/progress";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
+import { ExportButton } from "@/components/shadcn/export-button";
+import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import { Search, SlidersHorizontal as FilterIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";

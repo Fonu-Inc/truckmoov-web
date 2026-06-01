@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/shadcn/badge";
 import { AlertTriangle, ShieldAlert, TrendingUp, Database } from "lucide-react";
 import { SIMProvisioningRequest } from "@/hooks/useFonuSIM";
 

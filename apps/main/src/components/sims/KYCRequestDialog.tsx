@@ -7,10 +7,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+} from "@/components/shadcn/dialog";
+import { Button } from "@/components/shadcn/button";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Label } from "@/components/shadcn/label";
 import { Loader2, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";

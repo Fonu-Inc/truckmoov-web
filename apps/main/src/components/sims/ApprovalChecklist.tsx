@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Badge } from "@/components/shadcn/badge";
+import { Label } from "@/components/shadcn/label";
 import {
   ShieldCheck,
   ShieldAlert,

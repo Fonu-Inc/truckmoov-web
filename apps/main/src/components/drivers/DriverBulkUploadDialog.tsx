@@ -1,8 +1,8 @@
 import { useState, useCallback } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/shadcn/dialog";
+import { Button } from "@/components/shadcn/button";
+import { Progress } from "@/components/shadcn/progress";
+import { Badge } from "@/components/shadcn/badge";
 import {Upload, FileSpreadsheet, CheckCircle, XCircle, AlertTriangle, Download} from "lucide-react";
 import { toast } from "sonner";
 

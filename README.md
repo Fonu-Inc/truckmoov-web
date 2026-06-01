@@ -13,7 +13,7 @@ apps/
 packages/
   api/           Shared backend API layer and React Query integration.
   app-core/      Shared app foundations and cross-app configuration.
-  ui/            Shared React UI primitives and utility helpers.
+  reusables/     Shared React UI components, utilities, and base styles for main and admin.
 
 docs/
   api.md         API package conventions and service patterns.
@@ -31,7 +31,7 @@ The workspace is declared in `pnpm-workspace.yaml` with `apps/*` and `packages/*
 
 - `@truckmoov/api` (`packages/api`) - Owns backend communication for the apps. It exports token helpers, the configured Axios instance, the shared React Query client, and service modules such as `@truckmoov/api/auth`.
 - `@truckmoov/app-core` (`packages/app-core`) - Shared app-level foundations, starting with the exported base TypeScript config and a home for runtime code that should converge across apps.
-- `@truckmoov/ui` (`packages/ui`) - Shared React components and UI utilities. Apps import shared primitives from paths such as `@truckmoov/ui/components/*` and `@truckmoov/ui/lib/*`.
+- `@truckmoov/reusables` (`packages/reusables`) - Shared React components, UI utilities, and base styles used by the main and admin apps. Shadcn primitives live under `src/components/shadcn/`. Apps resolve them via `@/components/shadcn/*` and `@/lib/utils`. The shared base stylesheet is imported as `@truckmoov/reusables/index.css`.
 
 ## Documentation
 
@@ -40,6 +40,8 @@ The workspace is declared in `pnpm-workspace.yaml` with `apps/*` and `packages/*
 - [docs/tsconfig.md](docs/tsconfig.md) documents the shared TypeScript base config and app/package override conventions.
 
 When adding backend calls, put the service in `packages/api` and import it from the app through `@truckmoov/api`. Apps should not call backend endpoints directly.
+
+When adding shared UI components or styles, add them to `packages/reusables`. Shadcn components go in `src/components/shadcn/` and are imported via `@/components/shadcn/*` in the apps.
 
 ## Requirements
 

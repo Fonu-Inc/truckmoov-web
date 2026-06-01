@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
+import { Button } from '@/components/shadcn/button';
+import { Input } from '@/components/shadcn/input';
+import { Label } from '@/components/shadcn/label';
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shadcn/select';
+import { Badge } from '@/components/shadcn/badge';
+import { Progress } from '@/components/shadcn/progress';
+import { Separator } from '@/components/shadcn/separator';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import {Building2, FileText, Upload, CheckCircle2, Clock, XCircle, AlertCircle, Trash2, Eye, Shield, FileCheck, Loader2, UploadCloud, Download} from 'lucide-react';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
-import { TableToolbar } from '@/components/ui/table-toolbar';
-import { ExportButton } from '@/components/ui/export-button';
+import { TableToolbar } from '@/components/shadcn/table-toolbar';
+import { ExportButton } from '@/components/shadcn/export-button';
 
 interface BusinessInfo {
   id?: string;

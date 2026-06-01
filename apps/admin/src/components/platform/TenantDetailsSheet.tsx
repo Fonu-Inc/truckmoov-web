@@ -4,17 +4,17 @@ import {
   DialogContent as SheetContent,
   DialogDescription as SheetDescription,
   DialogHeader as SheetHeader,
-  DialogTitle as SheetTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+  DialogTitle as SheetTitle } from "@/components/shadcn/dialog";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import { Card } from "@/components/shadcn/card";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Separator } from "@/components/shadcn/separator";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Progress } from "@/components/shadcn/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { TenantKYCVerification } from "./TenantKYCVerification";
 import { TerminateTenantDialog } from "./TerminateTenantDialog";
 import { DataExportPanel } from "./DataExportPanel";

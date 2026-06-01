@@ -4,12 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrgContext } from "@/hooks/useOrgContext";
 import { useOwnerOperatorJobLimit } from "@/hooks/useOwnerOperatorJobLimit";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { Card, CardContent } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/shadcn/card";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/shadcn/tabs";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import {
   Dialog,
@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from "@/components/shadcn/dialog";
 import {
   Package,
   CheckCircle2,

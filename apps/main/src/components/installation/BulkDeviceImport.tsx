@@ -1,23 +1,23 @@
 import { useState, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
+import { Button } from '@/components/shadcn/button';
+import { Input } from '@/components/shadcn/input';
+import { Badge } from '@/components/shadcn/badge';
+import { Progress } from '@/components/shadcn/progress';
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from '@/components/ui/table';
+  TableRow } from '@/components/shadcn/table';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+  SelectValue } from '@/components/shadcn/select';
+import { Alert, AlertDescription, AlertTitle } from '@/components/shadcn/alert';
 import { DeviceCatalogEntry } from '@/hooks/useDeviceCatalog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';

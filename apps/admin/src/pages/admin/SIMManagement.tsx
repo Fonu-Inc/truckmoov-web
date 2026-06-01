@@ -6,13 +6,13 @@ import { SIMCard } from "@/types";
 import {
   Search, SlidersHorizontal as Filter, Upload, Plus, ShieldAlert,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Card, CardContent } from "@/components/shadcn/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+} from "@/components/shadcn/select";
 import { cn } from "@/lib/utils";
 import { SIMFormDialog } from "@/components/sims/SIMFormDialog";
 import { SIMRequestFormDialog } from "@/components/sims/SIMRequestFormDialog";

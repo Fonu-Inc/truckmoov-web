@@ -1,36 +1,36 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SendInvoiceEmailDialog } from '@/components/invoices/SendInvoiceEmailDialog';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
+import { Button } from '@/components/shadcn/button';
+import { Input } from '@/components/shadcn/input';
+import { Label } from '@/components/shadcn/label';
+import { Badge } from '@/components/shadcn/badge';
+import { Textarea } from '@/components/shadcn/textarea';
+import { Switch } from '@/components/shadcn/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shadcn/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/shadcn/dialog';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/shadcn/sheet';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/shadcn/table';
+import { Separator } from '@/components/shadcn/separator';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shadcn/tabs';
 import { toast } from 'sonner';
 import { useWaybillInvoice, type WaybillRecord, type WaybillInvoice, type PricingRule, type InvoiceShare } from '@/hooks/useWaybillInvoice';
 import { useWaybillRealtimeEvents } from '@/hooks/useWaybillRealtimeEvents';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import {FileText, Upload, Scan, Plus, Eye, Send, Settings2, Loader2, CheckCircle2, XCircle, Clock, AlertTriangle, ImageIcon, Truck, MapPin, Calendar, Package, User, DollarSign, ArrowRight, Pencil, Trash2, ToggleLeft, ToggleRight, Mail, MessageSquare, Save, Search, SlidersHorizontal, MoreHorizontal, Share2, Download, Receipt} from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/shadcn/popover';
+import { Checkbox } from '@/components/shadcn/checkbox';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+  DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/shadcn/dropdown-menu';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/shadcn/alert-dialog';
 import { useWritePermissions } from '@/hooks/useWritePermissions';
 import { format } from 'date-fns';
-import { ExportButton } from '@/components/ui/export-button';
+import { ExportButton } from '@/components/shadcn/export-button';
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   received: { label: 'Received', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: Clock },

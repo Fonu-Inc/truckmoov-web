@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
+import { Input } from '@/components/shadcn/input';
+import { Badge } from '@/components/shadcn/badge';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
+} from '@/components/shadcn/accordion';
 import { DeviceCatalogEntry } from '@/hooks/useDeviceCatalog';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/shadcn/skeleton';
 import {
   Search,
   BookOpen,

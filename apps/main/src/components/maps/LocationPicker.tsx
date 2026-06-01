@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/shadcn/input";
 import { Loader2, MapPin, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 

@@ -5,12 +5,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+} from '@/components/shadcn/dialog';
+import { Button } from '@/components/shadcn/button';
+import { Badge } from '@/components/shadcn/badge';
+import { Textarea } from '@/components/shadcn/textarea';
+import { Card, CardContent } from '@/components/shadcn/card';
+import { Separator } from '@/components/shadcn/separator';
 import { ConfigQueueDevice } from '@/hooks/useInstallerConfig';
 import { DeviceCatalogEntry } from '@/hooks/useDeviceCatalog';
 import { DeviceLifecycleBadge } from '@/components/devices/DeviceLifecycleBadge';

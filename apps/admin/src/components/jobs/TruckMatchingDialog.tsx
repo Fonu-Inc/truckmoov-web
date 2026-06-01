@@ -1,19 +1,19 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Card, CardContent } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/shadcn/dialog";
+import { Button } from "@/components/shadcn/button";
+import { Badge } from "@/components/shadcn/badge";
+import { Progress } from "@/components/shadcn/progress";
+import { Card, CardContent } from "@/components/shadcn/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
+import { Label } from "@/components/shadcn/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/shadcn/select";
 import { Job, Vehicle, Driver } from "@/types";
 import { mockVehicles, mockDrivers } from "@/data/mockData";
 import { useDriverIVR } from "@/hooks/useDriverIVR";

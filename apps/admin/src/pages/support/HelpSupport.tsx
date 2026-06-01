@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { Button } from "@/components/shadcn/button";
 import { Ticket } from "lucide-react";
 import { useSupportPermissions } from "@/hooks/useSupportPermissions";
 import { useAuthStore } from "@/stores/authStore";

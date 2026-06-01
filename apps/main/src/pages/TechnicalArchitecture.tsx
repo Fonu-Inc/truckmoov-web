@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { MermaidDiagram } from "@/components/diagrams/MermaidDiagram";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
+import { Separator } from "@/components/shadcn/separator";
+import { Button } from "@/components/shadcn/button";
 import { 
   FileText, Shield, Database, Users, Server, MessageSquare, 
   Radio, Cpu, Lock, Layers, Cloud, GitBranch, FileIcon, Presentation, Loader2

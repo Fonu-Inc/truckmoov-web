@@ -1,6 +1,6 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { MermaidDiagram } from "@/components/diagrams/MermaidDiagram";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { Shield, Database, Users, Lock } from "lucide-react";
 
 const securityArchitectureDiagram = `graph TD

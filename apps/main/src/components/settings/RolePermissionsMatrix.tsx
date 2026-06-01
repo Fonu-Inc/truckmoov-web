@@ -1,7 +1,7 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { Check, Eye, X, ShieldCheck } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/shadcn/badge";
 
 /**
  * US-E02-002 — Role Permissions Summary.

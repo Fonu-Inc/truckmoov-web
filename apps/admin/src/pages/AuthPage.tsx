@@ -4,10 +4,10 @@ import { useAuthStore } from "@/stores/authStore";
 import { useOnboardingStore, isKnownEmail, registerKnownEmail, detectStakeholderFromEmail, type DetectedStakeholder } from "@/stores/onboardingStore";
 import { supabase } from "@/integrations/supabase/client";
 import { setToken } from "@/lib/backendApi";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { UserRole } from "@/types";
 import { DemoStakeholderType } from "@/stores/authStore";
 import { Truck, Mail, Lock, ArrowRight, Building2, Users, Headphones, Car, Settings, Calculator, User, CheckCircle2, Loader2, ChevronDown, Wrench, Factory, Network, Sparkles, Eye, EyeOff, HelpCircle } from "lucide-react";
@@ -72,7 +72,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/shadcn/dropdown-menu";
 import { toast } from "sonner";
 import mtnLogoDark from "@/assets/mtn-logo-dark.svg";
 import { AuthHelpDialog } from "@/components/auth/AuthHelpDialog";

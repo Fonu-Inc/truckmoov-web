@@ -1,5 +1,5 @@
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/shadcn/dialog";
+import { Button } from "@/components/shadcn/button";
 import { useOnboardingStore } from "@/stores/onboardingStore";
 import { useNavigate } from "react-router-dom";
 

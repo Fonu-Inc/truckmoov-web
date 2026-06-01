@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { Timezone, DEFAULT_TIMEZONE } from "@/lib/timezone";
-import type { ChartDateRange } from "@/components/ui/chart-date-filter";
+import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 
 interface PreferencesContextType {
   timezone: Timezone;

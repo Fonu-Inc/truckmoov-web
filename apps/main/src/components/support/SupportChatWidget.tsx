@@ -22,10 +22,10 @@ import {
   Paperclip,
   Camera,
   FileText } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";

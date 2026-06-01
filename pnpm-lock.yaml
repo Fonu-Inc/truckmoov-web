@@ -128,9 +128,9 @@ importers:
       '@truckmoov/app-core':
         specifier: workspace:*
         version: link:../../packages/app-core
-      '@truckmoov/ui':
+      '@truckmoov/reusables':
         specifier: workspace:*
-        version: link:../../packages/ui
+        version: link:../../packages/reusables
       '@types/leaflet':
         specifier: ^1.9.21
         version: 1.9.21
@@ -487,9 +487,9 @@ importers:
       '@truckmoov/app-core':
         specifier: workspace:*
         version: link:../../packages/app-core
-      '@truckmoov/ui':
+      '@truckmoov/reusables':
         specifier: workspace:*
-        version: link:../../packages/ui
+        version: link:../../packages/reusables
       '@types/leaflet':
         specifier: ^1.9.21
         version: 1.9.21
@@ -678,7 +678,7 @@ importers:
 
   packages/app-core: {}
 
-  packages/ui:
+  packages/reusables:
     dependencies:
       '@radix-ui/react-accordion':
         specifier: ^1.2.11

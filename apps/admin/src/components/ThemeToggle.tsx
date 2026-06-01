@@ -1,13 +1,13 @@
 import { Moon, Sun, Monitor } from "lucide-react";
 import { useTheme } from "next-themes";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/shadcn/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { TooltipWrapper } from "@/components/ui/tooltip-wrapper";
+} from "@/components/shadcn/dropdown-menu";
+import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 
 export function ThemeToggle() {
   const { setTheme, theme } = useTheme();

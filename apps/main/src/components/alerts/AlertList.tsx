@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { Alert as AlertType } from "@/types";
 import { AlertTriangle, MapPin, Gauge, Wrench, Fuel, AlertCircle, Bell } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/shadcn/button";
 
 interface AlertItemProps {
   alert: AlertType;

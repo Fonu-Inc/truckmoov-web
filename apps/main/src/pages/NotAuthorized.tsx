@@ -1,6 +1,6 @@
 import { ShieldX, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/shadcn/button';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function NotAuthorized() {

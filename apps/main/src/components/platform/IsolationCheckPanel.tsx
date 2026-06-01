@@ -1,23 +1,23 @@
 import { useMemo, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Badge } from "@/components/shadcn/badge";
+import { Label } from "@/components/shadcn/label";
+import { Separator } from "@/components/shadcn/separator";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from "@/components/ui/select";
+  SelectValue } from "@/components/shadcn/select";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from "@/components/ui/table";
+  TableRow } from "@/components/shadcn/table";
 import {ShieldCheck, ShieldAlert, ShieldX, Play, Loader2, CheckCircle2, XCircle, FileText, History, ArrowRight, Download} from "lucide-react";
 import { toast } from "sonner";
 import { formatDateInTimezone } from "@/lib/timezone";

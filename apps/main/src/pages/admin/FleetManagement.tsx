@@ -22,23 +22,23 @@ import {
   BarChart3,
   SlidersHorizontal,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/shadcn/dropdown-menu";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from "@/components/shadcn/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { cn } from "@/lib/utils";
 import { VehicleFormDialog } from "@/components/fleet/VehicleFormDialog";
 import { VehicleDetailsSheet } from "@/components/fleet/VehicleDetailsSheet";
@@ -56,7 +56,7 @@ import {
   countActiveVehicleFilters,
   type VehiclesFilterValue,
 } from "@/components/fleet/VehiclesFilterDialog";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/shadcn/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -66,10 +66,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@/components/shadcn/alert-dialog";
 import { Vehicle } from "@/types";
 import { mockVehicles } from "@/data/mockData";
-import { ExportButton } from "@/components/ui/export-button";
+import { ExportButton } from "@/components/shadcn/export-button";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 import { WritableAction } from "@/components/auth/WritableAction";
 import { useOrgContext } from "@/hooks/useOrgContext";

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ChartDateFilter, type ChartDateRange } from "@/components/ui/chart-date-filter";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
+import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import { useOrgOverview } from "@/hooks/useOrgOverview";
 import {
   Building2,

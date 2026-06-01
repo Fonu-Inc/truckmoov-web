@@ -21,9 +21,9 @@ import {
   Bell,
   ChevronRight,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ChartDateFilter, type ChartDateRange } from "@/components/ui/chart-date-filter";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import {
   AreaChart,
   Area,
@@ -39,7 +39,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useMemo } from "react";
 import { format, subDays, startOfDay, isWithinInterval } from "date-fns";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/shadcn/badge";
 import { withDemoFallback, demoTripsByDay, demoVehicleStatusBreakdown } from "@/lib/demoChartData";
 
 export default function TenantAdminDashboard() {

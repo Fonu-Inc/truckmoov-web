@@ -1,15 +1,15 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ExportButton } from "@/components/ui/export-button";
-import { PlatformFilterPopover, buildEmptyDraft, type FilterDraft, type FilterField } from "@/components/ui/platform-filter-popover";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { Badge } from "@/components/shadcn/badge";
+import { Progress } from "@/components/shadcn/progress";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
+import { ExportButton } from "@/components/shadcn/export-button";
+import { PlatformFilterPopover, buildEmptyDraft, type FilterDraft, type FilterField } from "@/components/shadcn/platform-filter-popover";
 import { Search } from "lucide-react";
 import { useSustainability } from "@/hooks/useSustainability";
 import { useVehicles } from "@/hooks/useVehicles";
@@ -26,7 +26,7 @@ import {
 } from "recharts";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { ChartDateFilter, type ChartDateRange } from "@/components/ui/chart-date-filter";
+import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import {
   getDummyTrend,
   getDummyFuelComposition,

@@ -1,15 +1,15 @@
 import { Bell, Check, CheckCheck, Trash2, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/shadcn/button";
+import { Badge } from "@/components/shadcn/badge";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/shadcn/popover";
 import { PlatformNotification } from "@/hooks/useRealtimeNotifications";
 import { formatDistanceToNow } from "date-fns";
-import { TooltipWrapper } from "@/components/ui/tooltip-wrapper";
+import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 
 interface NotificationCenterProps {
   notifications: PlatformNotification[];

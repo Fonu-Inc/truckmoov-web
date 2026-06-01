@@ -1,13 +1,13 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Badge } from "@/components/shadcn/badge";
+import { Input } from "@/components/shadcn/input";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
 import {
   MessageSquare,
   Phone,
@@ -34,13 +34,13 @@ import {
   BarChart3,
   X,
 } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { format, formatDistanceToNow } from "date-fns";
 import { useDriverCommunications, DriverMessage, DriverCallLog } from "@/hooks/useDriverCommunications";
 import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/lib/utils";
-import { TooltipWrapper } from "@/components/ui/tooltip-wrapper";
-import { Textarea } from "@/components/ui/textarea";
+import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
+import { Textarea } from "@/components/shadcn/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EmojiPicker } from "@/components/messaging/EmojiPicker";

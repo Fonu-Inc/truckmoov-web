@@ -1,21 +1,21 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
+import { Button } from '@/components/shadcn/button';
+import { Badge } from '@/components/shadcn/badge';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/shadcn/select';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+} from '@/components/shadcn/accordion';
+import { Alert, AlertDescription, AlertTitle } from '@/components/shadcn/alert';
 import { ConfigQueueDevice } from '@/hooks/useInstallerConfig';
 import { DeviceLifecycleBadge } from '@/components/devices/DeviceLifecycleBadge';
 import { DeviceLifecycleStatus } from '@/hooks/useDeviceLifecycle';

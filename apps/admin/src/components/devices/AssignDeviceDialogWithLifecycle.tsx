@@ -5,10 +5,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+} from "@/components/shadcn/dialog";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Truck, Search, Cpu, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDeviceLifecycle, DeviceLifecycleStatus } from "@/hooks/useDeviceLifecycle";

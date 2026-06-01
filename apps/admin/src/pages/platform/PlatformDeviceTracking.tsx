@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
+import { Button } from '@/components/shadcn/button';
+import { Badge } from '@/components/shadcn/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { DeviceRealtimeMap } from '@/components/devices/DeviceRealtimeMap';
 import { DeviceTelemetryPanel } from '@/components/devices/DeviceTelemetryPanel';
 import { DeviceList } from '@/components/devices/DeviceList';
 import { useDeviceTelemetry } from '@/hooks/useDeviceTelemetry';
 import {Satellite, Activity, AlertTriangle, Signal, RefreshCw, Settings, Plus, Play, Pause, Trash2, Download} from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/shadcn/skeleton';
 
 export default function PlatformDeviceTracking() {
   const { devices, recentEvents, loading, error, refetch, isSimulating, startSimulation, stopSimulation, trailHistory, clearTrailHistory } = useDeviceTelemetry(undefined, true);

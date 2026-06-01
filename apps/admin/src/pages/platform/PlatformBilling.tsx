@@ -1,45 +1,45 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Badge } from "@/components/shadcn/badge";
+import { Label } from "@/components/shadcn/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Separator } from "@/components/shadcn/separator";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from "@/components/ui/table";
+  TableRow } from "@/components/shadcn/table";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter } from "@/components/ui/dialog";
+  DialogFooter } from "@/components/shadcn/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from "@/components/ui/select";
+  SelectValue } from "@/components/shadcn/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+  DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
 import {
   Dialog as Sheet,
   DialogContent as SheetContent,
   DialogDescription as SheetDescription,
   DialogHeader as SheetHeader,
-  DialogTitle as SheetTitle } from "@/components/ui/dialog";
+  DialogTitle as SheetTitle } from "@/components/shadcn/dialog";
 import {Download, Receipt, CreditCard,
   Search,
   RefreshCw,
@@ -64,13 +64,13 @@ import {Download, Receipt, CreditCard,
   Loader2,
   Globe,
   Plus } from "lucide-react";
-import { ChartDateFilter, type ChartDateRange } from "@/components/ui/chart-date-filter";
+import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import {
   PlatformFilterPopover,
   buildEmptyDraft,
   type FilterDraft,
-  type FilterField } from "@/components/ui/platform-filter-popover";
-import { ExportButton } from "@/components/ui/export-button";
+  type FilterField } from "@/components/shadcn/platform-filter-popover";
+import { ExportButton } from "@/components/shadcn/export-button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { useBilling } from "@/hooks/useBilling";
 import {

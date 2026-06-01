@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/shadcn/dialog";
 import {
   Form,
   FormControl,
@@ -16,21 +16,21 @@ import {
   FormLabel,
   FormMessage,
   FormDescription,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+} from "@/components/shadcn/form";
+import { Input } from "@/components/shadcn/input";
+import { Button } from "@/components/shadcn/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+} from "@/components/shadcn/select";
+import { Badge } from "@/components/shadcn/badge";
 import { useEffect, useState } from "react";
 import { useDeviceCatalog, DeviceCatalogEntry } from "@/hooks/useDeviceCatalog";
 import { Gauge, Fuel, AlertTriangle, Info } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/shadcn/skeleton";
 
 const deviceSchema = z.object({
   imei: z.string().min(15, "IMEI must be 15 digits").max(15, "IMEI must be 15 digits").regex(/^\d+$/, "IMEI must contain only digits"),

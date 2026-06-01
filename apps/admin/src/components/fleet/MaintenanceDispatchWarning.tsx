@@ -1,6 +1,6 @@
 import { AlertTriangle, Clock, Shield, ShieldAlert } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
+import { Badge } from "@/components/shadcn/badge";
 import { cn } from "@/lib/utils";
 import type { DispatchEligibility } from "@/hooks/useDispatchEligibility";
 

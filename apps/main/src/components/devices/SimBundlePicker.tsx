@@ -1,13 +1,13 @@
 import { useMemo } from "react";
-import { Label } from "@/components/ui/label";
+import { Label } from "@/components/shadcn/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+} from "@/components/shadcn/select";
+import { Separator } from "@/components/shadcn/separator";
 import { Smartphone, Database } from "lucide-react";
 import { useBundleCatalog } from "@/hooks/useDataBundles";
 

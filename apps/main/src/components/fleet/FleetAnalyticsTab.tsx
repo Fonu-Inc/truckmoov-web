@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { PeriodFilter, PeriodValue } from "./PeriodFilter";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
+import { Progress } from "@/components/shadcn/progress";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -13,7 +13,7 @@ import {
   DollarSign, Clock, AlertTriangle, CheckCircle, Gauge, Wrench,
   Activity, Zap, ShieldAlert, Eye, RefreshCw, Wifi, WifiOff,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/shadcn/button";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useJobs } from "@/hooks/useJobs";

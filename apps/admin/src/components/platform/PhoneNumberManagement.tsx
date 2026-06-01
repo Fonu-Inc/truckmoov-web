@@ -1,23 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
+import { Button } from '@/components/shadcn/button';
+import { Input } from '@/components/shadcn/input';
+import { Label } from '@/components/shadcn/label';
+import { Badge } from '@/components/shadcn/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shadcn/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/shadcn/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/shadcn/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/shadcn/dropdown-menu';
+import { Checkbox } from '@/components/shadcn/checkbox';
+import { Textarea } from '@/components/shadcn/textarea';
 import { Phone, Plus, MoreHorizontal, Building2, PhoneOff, Trash2, RefreshCw, MessageSquare, PhoneCall, Search, Loader2 } from 'lucide-react';
 import { usePlatformPhoneNumbers, PlatformPhoneNumber } from '@/hooks/usePlatformPhoneNumbers';
 import { useTenants } from '@/hooks/useTenants';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ExportButton } from '@/components/ui/export-button';
-import { TableToolbar } from '@/components/ui/table-toolbar';
+import { ExportButton } from '@/components/shadcn/export-button';
+import { TableToolbar } from '@/components/shadcn/table-toolbar';
 
 interface AvailableNumber {
   phone_number: string;

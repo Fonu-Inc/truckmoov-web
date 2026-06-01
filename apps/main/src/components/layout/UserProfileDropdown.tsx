@@ -1,7 +1,7 @@
 import { LogOut, Settings, Sun, Moon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/shadcn/button";
 import { useTheme } from "next-themes";
 import {
   DropdownMenu,
@@ -10,7 +10,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/shadcn/dropdown-menu";
 
 const PLATFORM_ADMIN_URL = (import.meta.env.VITE_PLATFORM_ADMIN_URL || "http://localhost:3002").replace(/\/$/, "");
 

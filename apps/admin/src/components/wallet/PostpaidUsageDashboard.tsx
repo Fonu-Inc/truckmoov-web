@@ -1,18 +1,18 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
+import { Progress } from "@/components/shadcn/progress";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
+import { Button } from "@/components/shadcn/button";
 import { usePostpaidBilling } from "@/hooks/usePostpaidBilling";
 import { formatCurrency } from "@/lib/currency";
 import {Download, Shield, TrendingUp, Clock, Zap, MessageSquare, Phone,
   MessageCircle, Bot, Cpu } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { Separator } from "@/components/shadcn/separator";
 import { useMemo, useState } from "react";
-import { TableToolbar, type FilterField, type FilterValues } from "@/components/ui/table-toolbar";
-import { ExportButton } from "@/components/ui/export-button";
+import { TableToolbar, type FilterField, type FilterValues } from "@/components/shadcn/table-toolbar";
+import { ExportButton } from "@/components/shadcn/export-button";
 import { PaymentGateModal } from "@/components/onboarding/PaymentGateModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";

@@ -12,26 +12,26 @@ import {
   TestTube,
   AlertCircle,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Switch } from "@/components/shadcn/switch";
+import { Badge } from "@/components/shadcn/badge";
+import { Slider } from "@/components/shadcn/slider";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+} from "@/components/shadcn/select";
+import { Separator } from "@/components/shadcn/separator";
+import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import { useTenantAIConfig } from "@/hooks/useTenantAIConfig";
 import { usePlatformAIConfig } from "@/hooks/usePlatformAIConfig";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import { Checkbox } from "@/components/shadcn/checkbox";
 import { format } from "date-fns";
 import { useAIConfigPermissions } from "@/hooks/useAIConfigPermissions";
 

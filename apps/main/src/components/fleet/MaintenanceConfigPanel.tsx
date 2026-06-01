@@ -1,18 +1,18 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Switch } from "@/components/shadcn/switch";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@/components/shadcn/select";
+import { Separator } from "@/components/shadcn/separator";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { toast } from "sonner";
 import { Settings, Wrench, Fuel, AlertTriangle, Save } from "lucide-react";
 import { useDispatchEligibility, TenantMaintenanceConfig } from "@/hooks/useDispatchEligibility";

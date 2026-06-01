@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
+import { Button } from '@/components/shadcn/button';
+import { Badge } from '@/components/shadcn/badge';
+import { Input } from '@/components/shadcn/input';
+import { Checkbox } from '@/components/shadcn/checkbox';
 import { cn } from '@/lib/utils';
 import {
   Table,
@@ -11,19 +11,19 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from '@/components/ui/table';
+  TableRow } from '@/components/shadcn/table';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from '@/components/ui/select';
+  SelectValue } from '@/components/shadcn/select';
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger } from '@/components/ui/popover';
+  PopoverTrigger } from '@/components/shadcn/popover';
 import { ConfigQueueDevice } from '@/hooks/useInstallerConfig';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/shadcn/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import {Radio, AlertTriangle, Check, Clock, Search, SlidersHorizontal as Filter, Hourglass, ShieldCheck, Download} from 'lucide-react';
 

@@ -1,5 +1,5 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/shadcn/card";
+import { Progress } from "@/components/shadcn/progress";
 import { Wifi, Signal, Pause } from "lucide-react";
 
 interface Props {

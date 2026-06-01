@@ -1,9 +1,9 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import { Card, CardContent } from "@/components/shadcn/card";
 import { Truck, AlertTriangle, Navigation, Clock, Fuel, Phone, Wifi, WifiOff } from "lucide-react";
 import { useRealtimeTracking, RealtimeVehicleLocation } from "@/hooks/useRealtimeTracking";
 import { useGeofences, type Geofence } from "@/hooks/useGeofences";

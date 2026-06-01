@@ -1,46 +1,46 @@
 import { useState, useEffect, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Badge } from "@/components/shadcn/badge";
+import { Label } from "@/components/shadcn/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Separator } from "@/components/shadcn/separator";
+import { Switch } from "@/components/shadcn/switch";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from "@/components/ui/table";
+  TableRow } from "@/components/shadcn/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from "@/components/ui/select";
+  SelectValue } from "@/components/shadcn/select";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter } from "@/components/ui/dialog";
+  DialogFooter } from "@/components/shadcn/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+  DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
 import {
   Dialog as Sheet,
   DialogContent as SheetContent,
   DialogDescription as SheetDescription,
   DialogHeader as SheetHeader,
-  DialogTitle as SheetTitle } from "@/components/ui/dialog";
+  DialogTitle as SheetTitle } from "@/components/shadcn/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +49,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle } from "@/components/ui/alert-dialog";
+  AlertDialogTitle } from "@/components/shadcn/alert-dialog";
 import {Download, Search, RefreshCw, SlidersHorizontal as Filter, Eye, MoreHorizontal, Shield, ShieldAlert, ShieldCheck, ShieldX, LogIn, LogOut, UserX, Key, Lock, Unlock, AlertTriangle, CheckCircle, XCircle, Clock, MapPin, Monitor, Smartphone, Globe, Building2, User, Activity, Ban, FileWarning, Plus, Loader2, Trash2, Settings2, Zap, Flag, Mail, Bell, Send} from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import {
@@ -69,12 +69,12 @@ import { useAutoIPBlocking, type IPGeolocation, type AutoBlockingRule } from "@/
 import { useSecurityAlerts } from "@/hooks/useSecurityAlerts";
 import { GeographicHeatmap } from "@/components/security/GeographicHeatmap";
 import { IsolationCheckPanel } from "@/components/platform/IsolationCheckPanel";
-import { ChartDateFilter, type ChartDateRange } from "@/components/ui/chart-date-filter";
+import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import {
   PlatformFilterPopover,
   buildEmptyDraft,
   type FilterField,
-  type FilterDraft } from "@/components/ui/platform-filter-popover";
+  type FilterDraft } from "@/components/shadcn/platform-filter-popover";
 import { toast } from "sonner";
 
 const LOGIN_FILTER_FIELDS: FilterField[] = [

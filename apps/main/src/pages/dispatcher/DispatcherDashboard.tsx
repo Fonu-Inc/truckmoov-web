@@ -13,12 +13,12 @@ import {
   CheckCircle2, XCircle, Send, MessageSquare, Phone,
   ArrowUpRight, Activity, MapPin, Timer, ChevronRight,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Progress } from "@/components/ui/progress";
-import { ChartDateFilter, type ChartDateRange } from "@/components/ui/chart-date-filter";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Progress } from "@/components/shadcn/progress";
+import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import { cn } from "@/lib/utils";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,

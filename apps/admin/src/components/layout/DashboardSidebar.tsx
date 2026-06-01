@@ -26,12 +26,12 @@ import {
 import mtnLogoDark from "@/assets/mtn-logo-dark.svg";
 import { useState, useMemo } from "react";
 import { useSidebarStore } from "@/stores/sidebarStore";
-import { TooltipWrapper } from "@/components/ui/tooltip-wrapper";
+import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from "@/components/shadcn/collapsible";
 
 export function DashboardSidebar() {
   const { user, logout } = useAuthStore();

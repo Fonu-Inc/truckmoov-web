@@ -4,24 +4,24 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+  CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Badge } from "@/components/shadcn/badge";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from "@/components/ui/table";
+  TableRow } from "@/components/shadcn/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+  SelectValue } from "@/components/shadcn/select";
+import { Separator } from "@/components/shadcn/separator";
 import {Download, 
   Search,
   CheckCircle,
@@ -48,7 +48,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
+} from "@/components/shadcn/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -56,18 +56,18 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+} from "@/components/shadcn/dialog";
+import { Label } from "@/components/shadcn/label";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
+import { Calendar as CalendarPicker } from "@/components/shadcn/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { downloadReceiptPDF } from "@/lib/receiptPdf";
 import { formatCurrency } from "@/lib/currency";
 import { useAuthStore } from "@/stores/authStore";
-import { ExportButton } from "@/components/ui/export-button";
+import { ExportButton } from "@/components/shadcn/export-button";
 
 type SubInvoiceStatus = "paid" | "pending" | "failed" | "overdue";
 type BillingType = "Monthly" | "Yearly";

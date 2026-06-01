@@ -1,23 +1,23 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
+import { Switch } from "@/components/shadcn/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/shadcn/avatar";
+import { Separator } from "@/components/shadcn/separator";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/shadcn/select";
 import {
   Table,
   TableBody,
@@ -25,13 +25,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/shadcn/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/shadcn/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -39,7 +39,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@/components/shadcn/dialog";
 import { 
   Building2, Bell, Users, Plug, Save, Upload, Plus,
   MoreHorizontal, Pencil, Trash2, Mail, Phone, Clock, MapPin,
@@ -58,7 +58,7 @@ import { SubscriptionInvoicesPanel } from "@/components/billing/SubscriptionInvo
 import { TenantCommunicationSettings } from "@/components/settings/TenantCommunicationSettings";
 import { TenantBrandingPanel } from "@/components/settings/TenantBrandingPanel";
 import { RolePermissionsMatrix } from "@/components/settings/RolePermissionsMatrix";
-import { TableToolbar, type FilterField, type FilterValues } from "@/components/ui/table-toolbar";
+import { TableToolbar, type FilterField, type FilterValues } from "@/components/shadcn/table-toolbar";
 import { TenantInvoiceConfigPanel } from "@/components/settings/TenantInvoiceConfigPanel";
 import { useAuthStore } from "@/stores/authStore";
 import { supabase } from "@/integrations/supabase/client";

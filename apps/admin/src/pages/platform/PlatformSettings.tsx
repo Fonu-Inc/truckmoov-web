@@ -1,24 +1,24 @@
 import { useEffect, useRef, useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/shadcn/avatar";
 import { useAuthStore } from "@/stores/authStore";
 import { supabase } from "@/integrations/supabase/client";
 import { Camera, User as UserIcon } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Switch } from "@/components/shadcn/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { Separator } from "@/components/shadcn/separator";
+import { Badge } from "@/components/shadcn/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/shadcn/select";
 import {
   Settings,
   Globe,
@@ -65,7 +65,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { usePreferences } from "@/contexts/PreferencesContext";
 import { CURRENCIES, type Currency } from "@/lib/currency";
 import { TIMEZONES, type Timezone } from "@/lib/timezone";
-import type { ChartDateRange } from "@/components/ui/chart-date-filter";
+import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 
 const DATE_RANGE_OPTIONS: Record<ChartDateRange, string> = {
   today: "Today",

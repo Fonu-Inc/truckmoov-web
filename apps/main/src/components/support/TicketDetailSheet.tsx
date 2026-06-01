@@ -4,10 +4,10 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+} from "@/components/shadcn/dialog";
+import { Badge } from "@/components/shadcn/badge";
+import { Label } from "@/components/shadcn/label";
+import { Separator } from "@/components/shadcn/separator";
 import { SupportTicket, TicketStatus, TicketPriority } from "@/hooks/useSupportTickets";
 import { formatDistanceToNow, format } from "date-fns";
 import {

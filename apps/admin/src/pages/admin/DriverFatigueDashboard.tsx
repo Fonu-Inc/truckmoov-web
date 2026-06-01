@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
+import { Button } from '@/components/shadcn/button';
+import { Badge } from '@/components/shadcn/badge';
+import { Progress } from '@/components/shadcn/progress';
+import { ScrollArea } from '@/components/shadcn/scroll-area';
+import { Separator } from '@/components/shadcn/separator';
 import { useDriverFatigue, FatigueAlert } from '@/hooks/useDriverFatigue';
 import { 
   AlertTriangle, 

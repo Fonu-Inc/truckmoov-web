@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/shadcn/dialog";
+import { Button } from "@/components/shadcn/button";
 import { useOnboardingStore } from "@/stores/onboardingStore";
 import { Check, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";

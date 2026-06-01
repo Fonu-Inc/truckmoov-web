@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
   TableBody,
@@ -9,7 +9,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/shadcn/table";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
@@ -19,8 +19,8 @@ import { useAIUsageLogs } from "@/hooks/useAIUsageLogs";
 import { useAuthStore } from "@/stores/authStore";
 import { format, parseISO, subDays } from "date-fns";
 import { TimeRangeSelect, type TimeRange } from "@/components/charts/TimeRangeSelect";
-import { TableToolbar, type FilterField, type FilterValues } from "@/components/ui/table-toolbar";
-import { ExportButton } from "@/components/ui/export-button";
+import { TableToolbar, type FilterField, type FilterValues } from "@/components/shadcn/table-toolbar";
+import { ExportButton } from "@/components/shadcn/export-button";
 
 const CHART_COLORS = [
   "hsl(var(--primary))",

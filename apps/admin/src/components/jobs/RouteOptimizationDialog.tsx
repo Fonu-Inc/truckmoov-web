@@ -16,13 +16,13 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/shadcn/dialog";
+import { Button } from "@/components/shadcn/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Separator } from "@/components/shadcn/separator";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import {
   GripVertical, MapPin, Clock, Route, Truck, ArrowRight,
   Play, RotateCcw, Zap, Navigation, Plus, X, CheckCircle,

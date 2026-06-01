@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Badge } from "@/components/shadcn/badge";
+import { Input } from "@/components/shadcn/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   MessageSquare,
   Phone,
@@ -21,7 +21,7 @@ import {
 import { format, formatDistanceToNow } from "date-fns";
 import { useDriverCommunications, DriverMessage, DriverCallLog } from "@/hooks/useDriverCommunications";
 import { cn } from "@/lib/utils";
-import { TooltipWrapper } from "@/components/ui/tooltip-wrapper";
+import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 
 const statusColors: Record<string, string> = {
   sent: "bg-success/20 text-success",

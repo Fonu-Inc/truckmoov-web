@@ -34,7 +34,7 @@ Shared packages should keep their `tsconfig.json` small and only add package-spe
 Current package usage:
 
 - `packages/api/tsconfig.json` extends `../app-core/tsconfig.base.json`.
-- `packages/ui/tsconfig.json` extends `../app-core/tsconfig.base.json` and only adds its local `@/*` path alias.
+- `packages/reusables/tsconfig.json` extends `../app-core/tsconfig.base.json` and only adds its local `@/*` path alias.
 - `packages/app-core/tsconfig.base.json` owns shared compiler defaults such as `jsx`, `moduleResolution`, `target`, `strict`, `skipLibCheck`, and `noEmit`.
 
 ## App Configs

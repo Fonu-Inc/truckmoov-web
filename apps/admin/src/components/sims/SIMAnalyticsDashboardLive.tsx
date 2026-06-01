@@ -1,20 +1,20 @@
 import { useState, useMemo } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/shadcn/select";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
-} from "@/components/ui/chart";
+} from "@/components/shadcn/chart";
 import {
   AreaChart,
   Area,
@@ -36,7 +36,7 @@ import {
   ArrowUpRight,
   Loader2,
 } from "lucide-react";
-import { ChartDateFilter, type ChartDateRange } from "@/components/ui/chart-date-filter";
+import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { IoTSIM } from "@/hooks/useFonuSIM";
 

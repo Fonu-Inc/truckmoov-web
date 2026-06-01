@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
 import { ConfigQueue } from '@/components/installation/ConfigQueue';
 import { InstallerGuide } from '@/components/installation/InstallerGuide';
 import { VerificationMonitor } from '@/components/installation/VerificationMonitor';

@@ -25,28 +25,28 @@ import {
   AlertTriangle,
   SlidersHorizontal,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ExportButton } from "@/components/ui/export-button";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/shadcn/badge";
+import { Label } from "@/components/shadcn/label";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
+import { ExportButton } from "@/components/shadcn/export-button";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/shadcn/dropdown-menu";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/shadcn/select";
 import { cn } from "@/lib/utils";
 import { DeviceFormDialogWithCatalog } from "@/components/devices/DeviceFormDialogWithCatalog";
 import { DeviceFormDialog } from "@/components/devices/DeviceFormDialog";
@@ -59,8 +59,8 @@ import { DeviceLifecycleBadge } from "@/components/devices/DeviceLifecycleBadge"
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useDevicePermissions } from "@/hooks/useDevicePermissions";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { IoTDevice } from "@/types";

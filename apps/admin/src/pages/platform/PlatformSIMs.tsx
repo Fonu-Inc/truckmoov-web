@@ -1,51 +1,51 @@
 import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Badge } from "@/components/shadcn/badge";
+import { Label } from "@/components/shadcn/label";
+import { Progress } from "@/components/shadcn/progress";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Separator } from "@/components/shadcn/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { SIMAnalyticsDashboardLive } from "@/components/sims/SIMAnalyticsDashboardLive";
 import { SIMApprovalQueue } from "@/components/sims/SIMApprovalQueue";
 import { ActivationBatchesPanel } from "@/components/sims/ActivationBatchesPanel";
 import { useFonuSIM, IoTSIM } from "@/hooks/useFonuSIM";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from "@/components/ui/table";
+  TableRow } from "@/components/shadcn/table";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter } from "@/components/ui/dialog";
+  DialogFooter } from "@/components/shadcn/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from "@/components/ui/select";
+  SelectValue } from "@/components/shadcn/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+  DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
 import {
   Dialog as Sheet,
   DialogContent as SheetContent,
   DialogDescription as SheetDescription,
   DialogHeader as SheetHeader,
-  DialogTitle as SheetTitle } from "@/components/ui/dialog";
+  DialogTitle as SheetTitle } from "@/components/shadcn/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,10 +54,10 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle } from "@/components/ui/alert-dialog";
+  AlertDialogTitle } from "@/components/shadcn/alert-dialog";
 import {Wifi, Search, Plus, MoreHorizontal, Signal, SignalLow, SignalZero, Building2, Upload, RefreshCw, SlidersHorizontal as Filter, Eye, Pencil, Trash2, Cpu, Phone, Calendar, CreditCard, TrendingUp, AlertTriangle, CheckCircle, XCircle, Smartphone, Globe, Zap, ArrowUpDown, Download} from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { PlatformFilterPopover, type FilterDraft } from "@/components/ui/platform-filter-popover";
+import { PlatformFilterPopover, type FilterDraft } from "@/components/shadcn/platform-filter-popover";
 import { toast } from "sonner";
 
 interface SIMCard {

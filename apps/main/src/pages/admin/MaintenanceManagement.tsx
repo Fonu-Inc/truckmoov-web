@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Badge } from "@/components/shadcn/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import {
   Table,
   TableBody,
@@ -12,13 +12,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/shadcn/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/shadcn/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -26,17 +26,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from "@/components/shadcn/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@/components/shadcn/select";
+import { Label } from "@/components/shadcn/label";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Wrench,
   Plus,
@@ -60,8 +60,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useMaintenanceRecords, MaintenanceRecord } from "@/hooks/useMaintenanceRecords";
 import { useFleetReminders } from "@/hooks/useFleetReminders";
-import { ShortcutTooltip } from "@/components/ui/shortcut-tooltip";
-import { TooltipWrapper } from "@/components/ui/tooltip-wrapper";
+import { ShortcutTooltip } from "@/components/shadcn/shortcut-tooltip";
+import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 import { useKeyboardShortcuts, SHORTCUTS } from "@/hooks/useKeyboardShortcuts";
 
 const statusColors: Record<string, string> = {

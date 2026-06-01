@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Badge } from "@/components/shadcn/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import {
   Dialog,
   DialogContent,
@@ -11,19 +11,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from "@/components/shadcn/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+} from "@/components/shadcn/select";
+import { Label } from "@/components/shadcn/label";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import { Calendar as CalendarPicker } from "@/components/shadcn/calendar";
 import {
   Wrench,
   Plus,
@@ -37,12 +37,12 @@ import {
   Archive,
   SlidersHorizontal,
 } from "lucide-react";
-import { ExportButton } from "@/components/ui/export-button";
+import { ExportButton } from "@/components/shadcn/export-button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/shadcn/popover";
 import { format, differenceInDays, addDays, addMonths } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";

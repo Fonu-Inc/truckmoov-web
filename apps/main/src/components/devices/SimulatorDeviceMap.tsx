@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
+import { Badge } from '@/components/shadcn/badge';
 import { Locate } from 'lucide-react';
 import type { SimulatedDevice } from '@/hooks/useMQTTSimulator';
 

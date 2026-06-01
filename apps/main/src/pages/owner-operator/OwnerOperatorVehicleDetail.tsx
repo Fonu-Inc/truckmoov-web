@@ -1,10 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card';
+import { Badge } from '@/components/shadcn/badge';
+import { Button } from '@/components/shadcn/button';
+import { Separator } from '@/components/shadcn/separator';
+import { Skeleton } from '@/components/shadcn/skeleton';
 import { DeviceHealthBadge } from '@/components/devices/DeviceHealthBadge';
 import {
   ArrowLeft,

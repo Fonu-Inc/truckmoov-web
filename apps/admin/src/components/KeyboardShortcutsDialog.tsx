@@ -5,7 +5,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/shadcn/dialog";
 import { SHORTCUTS, formatShortcut } from "@/hooks/useKeyboardShortcuts";
 
 interface ShortcutItem {

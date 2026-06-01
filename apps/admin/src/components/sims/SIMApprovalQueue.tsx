@@ -1,24 +1,24 @@
 import { useState, useMemo } from "react";
 import { useAuthStore } from "@/stores/authStore";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Textarea } from "@/components/shadcn/textarea";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
+} from "@/components/shadcn/table";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/shadcn/dialog";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/shadcn/dropdown-menu";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/shadcn/tooltip";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+} from "@/components/shadcn/select";
 import {
   ClipboardCheck, MoreHorizontal, Eye, ThumbsUp, ThumbsDown,
   Loader2, Wifi, ShieldAlert, AlertTriangle, Smartphone, Search,
@@ -26,7 +26,7 @@ import {
 import {
   PlatformFilterPopover,
   type FilterDraft,
-} from "@/components/ui/platform-filter-popover";
+} from "@/components/shadcn/platform-filter-popover";
 import { useSIMProvisioningRequests, SIMProvisioningRequest } from "@/hooks/useFonuSIM";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -37,7 +37,7 @@ import { useTenantKYCCache } from "@/hooks/useTenantKYCCache";
 import { useTenants } from "@/hooks/useTenants";
 import { KYCBadge, RequestStatusBadge, PriorityBadge } from "./SIMStatusBadges";
 import { SIMApprovalSummaryCards } from "./SIMApprovalSummaryCards";
-import { ExportButton } from "@/components/ui/export-button";
+import { ExportButton } from "@/components/shadcn/export-button";
 import { startSIMProvisioningSimulation } from "@/lib/provisioningEngineSim";
 
 export function SIMApprovalQueue() {

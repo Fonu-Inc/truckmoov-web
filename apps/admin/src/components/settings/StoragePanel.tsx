@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { HardDrive, AlertTriangle, FileText, Image as ImageIcon, ShieldCheck, Receipt, TrendingUp, Database, Archive } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Progress } from "@/components/shadcn/progress";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { useStorageUsage } from "@/hooks/useStorageUsage";
 import { useTenantSubscription } from "@/hooks/useTenantSubscription";
 import { useAuthStore } from "@/stores/authStore";

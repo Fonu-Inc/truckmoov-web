@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { useSupportPermissions } from "@/hooks/useSupportPermissions";
 import { SupportDashboard } from "@/components/support/admin/SupportDashboard";
 import { AllTickets } from "@/components/support/admin/AllTickets";

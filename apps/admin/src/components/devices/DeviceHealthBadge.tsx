@@ -1,6 +1,6 @@
 import React from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/shadcn/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/shadcn/tooltip';
 import { Circle, AlertCircle, WifiOff } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 

@@ -1,20 +1,20 @@
 import { useState } from "react";
 import { useBroadcastTracking } from "@/hooks/useBroadcastTracking";
 import { mockDrivers } from "@/data/mockData";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Badge } from "@/components/shadcn/badge";
+import { Textarea } from "@/components/shadcn/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
+import { Label } from "@/components/shadcn/label";
+import { Progress } from "@/components/shadcn/progress";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/shadcn/dialog";
 import {
   Table,
   TableBody,
@@ -22,7 +22,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/shadcn/table";
 import {
   Send,
   Megaphone,

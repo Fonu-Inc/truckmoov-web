@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { startDeviceProvisioningSimulation } from "@/lib/provisioningEngineSim";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
 import {
   Table,
   TableBody,
@@ -11,14 +11,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/shadcn/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/shadcn/select";
 import {
   Dialog,
   DialogContent,
@@ -26,17 +26,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@/components/shadcn/dialog";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { ExportButton } from "@/components/ui/export-button";
+import { ExportButton } from "@/components/shadcn/export-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/shadcn/dropdown-menu";
 import {
   Cpu,
   Clock,
@@ -54,7 +54,7 @@ import {
 import {
   PlatformFilterPopover,
   type FilterDraft,
-} from "@/components/ui/platform-filter-popover";
+} from "@/components/shadcn/platform-filter-popover";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";

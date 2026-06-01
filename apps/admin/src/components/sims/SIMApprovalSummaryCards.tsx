@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Clock, CheckCircle, XCircle, Wifi } from "lucide-react";
 
 interface Props {

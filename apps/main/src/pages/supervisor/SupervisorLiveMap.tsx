@@ -4,12 +4,12 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { FleetMap, type FleetMapVehicle, type HarshEvent } from "@/components/fleet/FleetMap";
 import { GeofenceManagementDialog } from "@/components/fleet/GeofenceManagementDialog";
 import { JobFormDialog } from "@/components/jobs/JobFormDialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Badge } from "@/components/shadcn/badge";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Input } from "@/components/shadcn/input";
+import { Separator } from "@/components/shadcn/separator";
 import {
   Truck, AlertTriangle, MapPin, Shield, Search,
   RefreshCw, Maximize2, Navigation, Fuel, Loader2,

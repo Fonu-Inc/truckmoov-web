@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Badge } from "@/components/shadcn/badge";
 import { 
   Table, 
   TableBody, 
@@ -10,8 +10,8 @@ import {
   TableHead, 
   TableHeader, 
   TableRow 
-} from "@/components/ui/table";
-import { TableToolbar } from "@/components/ui/table-toolbar";
+} from "@/components/shadcn/table";
+import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import {History, RefreshCw, Phone, MessageSquare, MessageCircle, ArrowUpRight, ArrowDownRight, Download} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";

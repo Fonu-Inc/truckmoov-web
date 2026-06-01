@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Badge } from "@/components/shadcn/badge";
 import {
   Table,
   TableBody,
@@ -10,7 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/shadcn/table";
 import {
   Dialog,
   DialogContent,
@@ -18,24 +18,24 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from "@/components/shadcn/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/shadcn/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+} from "@/components/shadcn/dropdown-menu";
+import { Label } from "@/components/shadcn/label";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   BookOpen,
   Search,
@@ -53,8 +53,8 @@ import {
   Trash2,
   Archive,
 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ExportButton } from "@/components/ui/export-button";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import { ExportButton } from "@/components/shadcn/export-button";
 import { useDeviceCatalog, DeviceCatalogEntry, CreateCatalogEntry, CatalogStatus, ProtocolType } from "@/hooks/useDeviceCatalog";
 
 export function DeviceCatalogManager() {

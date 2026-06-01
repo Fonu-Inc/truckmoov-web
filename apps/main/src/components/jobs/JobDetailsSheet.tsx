@@ -1,9 +1,9 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
+import { Badge } from "@/components/shadcn/badge";
+import { Card, CardContent } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Progress } from "@/components/shadcn/progress";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { Job } from "@/types";
 import { mockDrivers, mockVehicles } from "@/data/mockData";
 import { format } from "date-fns";

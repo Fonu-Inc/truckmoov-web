@@ -1,15 +1,15 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Badge } from "@/components/shadcn/badge";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/shadcn/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { usePostpaidBilling, type PostpaidInvoice } from "@/hooks/usePostpaidBilling";
 import { formatCurrency, type Currency } from "@/lib/currency";
@@ -19,17 +19,17 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/shadcn/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Separator } from "@/components/ui/separator";
-import { ExportButton } from "@/components/ui/export-button";
+import { Separator } from "@/components/shadcn/separator";
+import { ExportButton } from "@/components/shadcn/export-button";
 import {
   PlatformFilterPopover,
   buildEmptyDraft,
   type FilterDraft,
-  type FilterField } from "@/components/ui/platform-filter-popover";
+  type FilterField } from "@/components/shadcn/platform-filter-popover";
 
 const POSTPAID_FILTER_FIELDS: FilterField[] = [
   { key: "due_date", label: "Due Date", type: "date" },

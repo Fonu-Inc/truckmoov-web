@@ -16,20 +16,20 @@ import {
 } from "lucide-react";
 
 import { OnboardingLayout } from "./OnboardingLayout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/shadcn/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Label } from "@/components/shadcn/label";
+import { Input } from "@/components/shadcn/input";
+import { Switch } from "@/components/shadcn/switch";
+import { Badge } from "@/components/shadcn/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
+} from "@/components/shadcn/select";
+import { Progress } from "@/components/shadcn/progress";
 import { cn } from "@/lib/utils";
 
 import { DeviceFormDialog } from "@/components/devices/DeviceFormDialog";

@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
+import { Button } from '@/components/shadcn/button';
+import { Badge } from '@/components/shadcn/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
+import { ScrollArea } from '@/components/shadcn/scroll-area';
+import { Progress } from '@/components/shadcn/progress';
+import { Separator } from '@/components/shadcn/separator';
+import { Input } from '@/components/shadcn/input';
+import { Label } from '@/components/shadcn/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/shadcn/select';
 import {
   Table,
   TableBody,
@@ -23,7 +23,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@/components/shadcn/table';
 import {
   Play,
   Pause,
@@ -51,7 +51,7 @@ import {
 import { useMQTTSimulator, SimulatedDevice, MessageLog, GeofenceAlert } from '@/hooks/useMQTTSimulator';
 import { SimulatorGeofenceMap } from '@/components/devices/SimulatorGeofenceMap';
 import { SimulatorDeviceMap } from '@/components/devices/SimulatorDeviceMap';
-import { ExportButton } from '@/components/ui/export-button';
+import { ExportButton } from '@/components/shadcn/export-button';
 import { formatDistanceToNow } from 'date-fns';
 
 function DeviceStatusBadge({ status }: { status: SimulatedDevice['status'] }) {

@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { TableToolbar, FilterValues } from '@/components/ui/table-toolbar';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
+import { Badge } from '@/components/shadcn/badge';
+import { Button } from '@/components/shadcn/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shadcn/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/shadcn/table';
+import { TableToolbar, FilterValues } from '@/components/shadcn/table-toolbar';
 import { supabase } from '@/integrations/supabase/client';
 import {Phone, PhoneCall, PhoneOff, PhoneMissed, Check, X, Clock, TrendingUp, CalendarDays, Download} from 'lucide-react';
 import { format, subDays, startOfDay } from 'date-fns';

@@ -1,5 +1,5 @@
 import { addDays, format, subDays } from "date-fns";
-import type { ChartDateRange } from "@/components/ui/chart-date-filter";
+import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 
 const RANGE_DAYS: Record<ChartDateRange, number> = {
   today: 1,

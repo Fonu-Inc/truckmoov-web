@@ -1,5 +1,5 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
 import { useSupportPermissions } from "@/hooks/useSupportPermissions";
 import { useSupportTickets } from "@/hooks/useSupportTickets";
 import { 
@@ -11,7 +11,7 @@ import {
   Clock,
   AlertCircle
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/shadcn/badge";
 
 interface HelpHomeProps {
   onNavigate: (tab: string) => void;

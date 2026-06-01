@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import { Progress } from "@/components/shadcn/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { useDriverBehavior, DriverScore, DriverBehaviorEvent } from "@/hooks/useDriverBehavior";
 import { useGeofenceAlerts, GeofenceAlert } from "@/hooks/useGeofenceAlerts";
 import { mockDrivers } from "@/data/mockData";

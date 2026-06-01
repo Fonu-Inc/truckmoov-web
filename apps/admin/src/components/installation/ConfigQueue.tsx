@@ -1,39 +1,39 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
+import { Button } from '@/components/shadcn/button';
+import { Input } from '@/components/shadcn/input';
+import { Badge } from '@/components/shadcn/badge';
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from '@/components/ui/table';
+  TableRow } from '@/components/shadcn/table';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from '@/components/ui/select';
+  SelectValue } from '@/components/shadcn/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+  DropdownMenuSeparator } from '@/components/shadcn/dropdown-menu';
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger } from '@/components/ui/popover';
-import { Checkbox } from '@/components/ui/checkbox';
+  PopoverTrigger } from '@/components/shadcn/popover';
+import { Checkbox } from '@/components/shadcn/checkbox';
 import { cn } from '@/lib/utils';
 import { DeviceLifecycleBadge } from '@/components/devices/DeviceLifecycleBadge';
 import { DeviceSetupWizard } from './DeviceSetupWizard';
 import { ConfigQueueDevice } from '@/hooks/useInstallerConfig';
 import { DeviceCatalogEntry } from '@/hooks/useDeviceCatalog';
 import { DeviceLifecycleStatus } from '@/hooks/useDeviceLifecycle';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/shadcn/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import {Search, MoreHorizontal, Settings, CheckCircle2, Radio, ArrowRight, AlertTriangle, SlidersHorizontal as Filter, Cpu, Download} from 'lucide-react';
 

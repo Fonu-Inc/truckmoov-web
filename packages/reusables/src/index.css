@@ -1,0 +1,330 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode is now the default for :root */
+    --background: 0 0% 99%;
+    --foreground: 220 20% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+
+    /* Primary - MTN Yellow */
+    --primary: 45 100% 45%;
+    --primary-foreground: 220 20% 7%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 20% 15%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 10% 40%;
+
+    --accent: 40 95% 45%;
+    --accent-foreground: 220 20% 7%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 90%;
+    --input: 220 13% 91%;
+    --ring: 45 100% 45%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar stays dark in light mode for contrast */
+    --sidebar-background: 220 20% 10%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 45 100% 51%;
+    --sidebar-primary-foreground: 220 20% 7%;
+    --sidebar-accent: 220 16% 16%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 16% 16%;
+    --sidebar-ring: 45 100% 51%;
+
+    /* Status Colors - Light Mode */
+    --success: 152 69% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 45%;
+    --warning-foreground: 220 20% 10%;
+    --info: 199 89% 42%;
+    --info-foreground: 0 0% 100%;
+
+    /* Light mode overlays */
+    --overlay: 220 20% 10% / 0.1;
+    --glass: 0 0% 100% / 0.8;
+
+    /* Chart colors - MTN-aligned palette */
+    --chart-1: 45 100% 45%;
+    --chart-2: 152 69% 36%;
+    --chart-3: 199 89% 42%;
+    --chart-4: 280 60% 50%;
+    --chart-5: 0 72% 51%;
+
+    /* Light mode gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(45 100% 45%), hsl(40 95% 40%));
+    --gradient-success: linear-gradient(135deg, hsl(152 69% 36%), hsl(160 55% 45%));
+    --gradient-dark: linear-gradient(180deg, hsl(220 14% 96%), hsl(0 0% 100%));
+    --gradient-hero: linear-gradient(135deg, hsl(0 0% 99%) 0%, hsl(220 14% 96%) 50%, hsl(0 0% 99%) 100%);
+    --gradient-auth: radial-gradient(ellipse at top left, hsl(45 100% 51% / 0.05) 0%, transparent 50%),
+                     radial-gradient(ellipse at bottom right, hsl(40 95% 45% / 0.04) 0%, transparent 50%),
+                     linear-gradient(180deg, hsl(0 0% 98%) 0%, hsl(220 14% 96%) 100%);
+  }
+
+  .dark {
+    /* MTN-Inspired Fleet Management - Dark Professional Theme */
+    /* Primary: MTN Yellow - Bold, Confident, Enterprise */
+    --background: 220 20% 7%;
+    --foreground: 0 0% 98%;
+
+    /* Card/Main content - Lighter than sidebar for contrast */
+    --card: 220 18% 13%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 220 20% 10%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Primary - MTN Yellow for CTAs and highlights */
+    --primary: 45 100% 51%;
+    --primary-foreground: 220 20% 7%;
+
+    /* Secondary - Deep charcoal/slate */
+    --secondary: 220 16% 16%;
+    --secondary-foreground: 0 0% 95%;
+
+    /* Muted - Subtle dark areas */
+    --muted: 220 16% 16%;
+    --muted-foreground: 220 10% 55%;
+
+    /* Accent - Warm yellow-gold for subtle accents */
+    --accent: 40 95% 45%;
+    --accent-foreground: 220 20% 7%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 16% 20%;
+    --input: 220 16% 18%;
+    --ring: 45 100% 51%;
+
+    /* Sidebar - Dark charcoal with MTN accents */
+    --sidebar-background: 220 20% 6%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 45 100% 51%;
+    --sidebar-primary-foreground: 220 20% 7%;
+    --sidebar-accent: 220 16% 14%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 16% 14%;
+    --sidebar-ring: 45 100% 51%;
+
+    /* Status Colors - Clean and accessible */
+    --success: 152 69% 41%;
+    --success-foreground: 0 0% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 220 20% 7%;
+    --info: 199 89% 48%;
+    --info-foreground: 220 20% 7%;
+
+    /* Map overlay */
+    --overlay: 220 20% 7% / 0.88;
+    --glass: 220 20% 10% / 0.7;
+
+    /* Chart colors - MTN-aligned palette */
+    --chart-1: 45 100% 51%;
+    --chart-2: 152 69% 41%;
+    --chart-3: 199 89% 48%;
+    --chart-4: 280 60% 55%;
+    --chart-5: 0 72% 51%;
+
+    /* MTN Brand Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(45 100% 51%), hsl(40 95% 45%));
+    --gradient-success: linear-gradient(135deg, hsl(152 69% 41%), hsl(160 55% 50%));
+    --gradient-dark: linear-gradient(180deg, hsl(220 20% 10%), hsl(220 20% 6%));
+    --gradient-hero: linear-gradient(135deg, hsl(220 20% 8%) 0%, hsl(220 20% 12%) 50%, hsl(220 20% 8%) 100%);
+    --gradient-auth: radial-gradient(ellipse at top left, hsl(45 100% 51% / 0.08) 0%, transparent 50%),
+                     radial-gradient(ellipse at bottom right, hsl(40 95% 45% / 0.06) 0%, transparent 50%),
+                     linear-gradient(180deg, hsl(220 20% 5%) 0%, hsl(220 20% 9%) 100%);
+  }
+
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* Typography Scale */
+  h1 {
+    @apply text-3xl font-bold tracking-tight;
+  }
+
+  h2 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+
+  h3 {
+    @apply text-xl font-semibold;
+  }
+
+  h4 {
+    @apply text-lg font-medium;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
+  }
+
+  .bg-gradient-primary {
+    background-image: var(--gradient-primary);
+  }
+
+  .bg-gradient-hero {
+    background-image: var(--gradient-hero);
+  }
+
+  .bg-gradient-auth {
+    background: var(--gradient-auth);
+  }
+
+  .bg-glass {
+    background-color: hsl(var(--glass));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .bg-overlay {
+    background-color: hsl(var(--overlay));
+  }
+
+  /* MTN-styled glow effects */
+  .glow-primary {
+    box-shadow: 0 0 32px hsl(var(--primary) / 0.25);
+  }
+
+  .glow-success {
+    box-shadow: 0 0 20px hsl(var(--success) / 0.35);
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Enterprise card elevation */
+  .card-elevated {
+    box-shadow: 0 1px 3px 0 hsl(var(--foreground) / 0.04),
+                0 1px 2px -1px hsl(var(--foreground) / 0.04);
+  }
+
+  .card-elevated:hover {
+    box-shadow: 0 4px 12px 0 hsl(var(--foreground) / 0.08),
+                0 2px 4px -2px hsl(var(--foreground) / 0.05);
+  }
+
+  .map-marker {
+    @apply relative;
+  }
+
+  .map-marker::after {
+    content: '';
+    @apply absolute inset-0 rounded-full animate-ping;
+    background-color: hsl(var(--primary) / 0.35);
+    animation-duration: 2s;
+  }
+
+  /* Clean scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.25);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
+}
+
+/* Status indicators - MTN-aligned */
+.status-active {
+  @apply bg-success text-success-foreground;
+}
+
+.status-idle {
+  @apply bg-warning text-warning-foreground;
+}
+
+.status-offline {
+  @apply bg-destructive text-destructive-foreground;
+}
+
+.status-moving {
+  @apply bg-primary text-primary-foreground;
+}
+
+/* Vehicle marker animation */
+@keyframes vehicle-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.8;
+  }
+}
+
+.vehicle-active {
+  animation: vehicle-pulse 2s ease-in-out infinite;
+}
+
+/* MTN Yellow highlight animation for important elements */
+@keyframes mtn-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px hsl(45 100% 51% / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 24px hsl(45 100% 51% / 0.4);
+  }
+}
+
+.mtn-highlight {
+  animation: mtn-glow 3s ease-in-out infinite;
+}
+
+/* Enterprise Button Styles */
+.btn-mtn-primary {
+  @apply bg-primary text-primary-foreground font-semibold shadow-sm;
+  @apply hover:bg-primary/90 active:bg-primary/80;
+  @apply transition-all duration-200;
+}
+
+/* Focus ring using MTN yellow */
+.focus-mtn {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+}

@@ -4,20 +4,20 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { FleetMap, type FleetMapVehicle } from "@/components/fleet/FleetMap";
 import { GeofenceManagementDialog } from "@/components/fleet/GeofenceManagementDialog";
 import { JobFormDialog } from "@/components/jobs/JobFormDialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Badge } from "@/components/shadcn/badge";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Input } from "@/components/shadcn/input";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Separator } from "@/components/shadcn/separator";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/shadcn/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+} from "@/components/shadcn/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/components/shadcn/dialog";
 import {
   Truck, AlertTriangle, MapPin, Shield, Search, RefreshCw, Navigation,
   Loader2, X, Clock, User, Package, Route, MessageSquarePlus, UserPlus,

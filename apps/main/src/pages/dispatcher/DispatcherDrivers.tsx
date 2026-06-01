@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Badge } from "@/components/shadcn/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/shadcn/tabs";
 import {
   Table,
   TableBody,
@@ -12,33 +12,33 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/shadcn/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/shadcn/dropdown-menu";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/shadcn/select";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+} from "@/components/shadcn/dialog";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Label } from "@/components/shadcn/label";
+import { Progress } from "@/components/shadcn/progress";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Separator } from "@/components/shadcn/separator";
 import { 
   Plus, Search, Upload, MoreHorizontal, Eye, Pencil, Trash2,
   Users, UserCheck, UserX, Clock, Star, MessageSquare, Phone, Mail,
@@ -47,9 +47,9 @@ import {
   Bell, RefreshCw, Wifi, WifiOff, ChevronRight, User, Coffee, ChevronDown, ChevronUp,
   SlidersHorizontal
 } from "lucide-react";
-import { ExportButton } from "@/components/ui/export-button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
+import { ExportButton } from "@/components/shadcn/export-button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
+import { Checkbox } from "@/components/shadcn/checkbox";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { CallInteractionModal } from "@/components/communications/CallInteractionModal";
 import { useDrivers, DriverData } from "@/hooks/useDrivers";

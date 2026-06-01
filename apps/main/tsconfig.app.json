@@ -17,11 +17,11 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "paths": {
-      "@/components/ui/*": [
-        "../../packages/ui/src/components/ui/*"
+      "@/components/shadcn/*": [
+        "../../packages/reusables/src/components/shadcn/*"
       ],
       "@/lib/utils": [
-        "../../packages/ui/src/lib/utils"
+        "../../packages/reusables/src/lib/utils"
       ],
       "@/*": [
         "./src/*"

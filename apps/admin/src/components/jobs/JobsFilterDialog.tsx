@@ -2,15 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/shadcn/button";
+import { Calendar } from "@/components/shadcn/calendar";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { Input } from "@/components/shadcn/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/shadcn/popover";
 import { cn } from "@/lib/utils";
 
 export interface JobsFilterValue {

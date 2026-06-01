@@ -1,5 +1,5 @@
 import { Calendar } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 
 export type PeriodValue = "0" | "1" | "7" | "30" | "90" | "180" | "365";
 

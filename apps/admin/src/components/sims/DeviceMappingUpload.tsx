@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/shadcn/button";
 import {Upload, FileText, AlertCircle, CheckCircle, X, HardDrive, Download} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";

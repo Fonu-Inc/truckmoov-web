@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card';
+import { Button } from '@/components/shadcn/button';
+import { Badge } from '@/components/shadcn/badge';
 import { DeviceRealtimeMap } from '@/components/devices/DeviceRealtimeMap';
 import { DeviceTelemetryPanel } from '@/components/devices/DeviceTelemetryPanel';
 import { DeviceList } from '@/components/devices/DeviceList';
@@ -9,7 +9,7 @@ import { DeviceWithTelemetry, DriverBehaviorEvent } from '@/hooks/useDeviceTelem
 import type { GeofenceZone } from '@/components/devices/DeviceRealtimeMap';
 import type { Geofence } from '@/hooks/useGeofences';
 import {AlertTriangle, RefreshCw, Play, Pause, Trash2, Download} from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/shadcn/skeleton';
 
 interface TrailPoint {
   lat: number;

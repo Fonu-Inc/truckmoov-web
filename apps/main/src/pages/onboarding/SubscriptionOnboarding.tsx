@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/shadcn/button";
+import { Switch } from "@/components/shadcn/switch";
+import { Label } from "@/components/shadcn/label";
 import { Check, Info, CreditCard, Truck, Users, MessageSquare, Phone, MapPin, HardDrive, Headphones, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";

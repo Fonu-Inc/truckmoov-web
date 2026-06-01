@@ -1,14 +1,14 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useSupervisorData } from "@/hooks/useSupervisorData";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Badge } from "@/components/shadcn/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from "@/components/ui/select";
+  SelectValue } from "@/components/shadcn/select";
 import {BarChart3, Calendar, TrendingUp, Truck, Users, Package, Clock, AlertTriangle, Loader2, Download} from "lucide-react";
 import {
   BarChart,

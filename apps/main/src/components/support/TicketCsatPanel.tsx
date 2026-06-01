@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/shadcn/button";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Label } from "@/components/shadcn/label";
+import { Switch } from "@/components/shadcn/switch";
 import { useTicketCsat } from "@/hooks/useTicketCsat";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";

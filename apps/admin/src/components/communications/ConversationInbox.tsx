@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { WhatsAppIcon, SMSIcon, VoiceCallIcon } from "./ChannelIcons";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Badge } from "@/components/shadcn/badge";
+import { Textarea } from "@/components/shadcn/textarea";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
 import {
   MessageSquare,
   Phone,
@@ -34,8 +34,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { TooltipWrapper } from "@/components/ui/tooltip-wrapper";
+} from "@/components/shadcn/dropdown-menu";
+import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 import { useAuthStore } from "@/stores/authStore";
 import { MessageActions } from "./MessageActions";
 import { CallRecordingPlayer } from "./CallRecordingPlayer";

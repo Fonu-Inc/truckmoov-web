@@ -2,13 +2,13 @@ import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { FleetMap, type FleetMapVehicle } from "@/components/fleet/FleetMap";
 import { GeofenceManagementDialog } from "@/components/fleet/GeofenceManagementDialog";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import { Button } from "@/components/shadcn/button";
+import { Badge } from "@/components/shadcn/badge";
+import { Switch } from "@/components/shadcn/switch";
+import { Label } from "@/components/shadcn/label";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Input } from "@/components/shadcn/input";
 import {
   Truck, AlertTriangle, MapPin, Route, Shield, Search,
   RefreshCw, Maximize2, SlidersHorizontal as Filter, Navigation, Clock, Fuel, Settings2, Loader2, ExternalLink, Plus,

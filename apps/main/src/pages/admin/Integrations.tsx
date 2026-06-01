@@ -1,7 +1,7 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DeveloperPortal } from '@/components/integrations/DeveloperPortal';
 import { ERPWMSIntegrationPanel } from '@/components/integrations/ERPWMSIntegrationPanel';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
 import { useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 

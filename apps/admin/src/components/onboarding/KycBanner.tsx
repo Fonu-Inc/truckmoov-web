@@ -1,6 +1,6 @@
 import { AlertOctagon, ArrowRight, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/shadcn/button";
 import { useOnboardingProgress } from "@/hooks/useOnboardingProgress";
 import { useKycProgress } from "@/hooks/useKycProgress";
 import { useOnboardingStore } from "@/stores/onboardingStore";

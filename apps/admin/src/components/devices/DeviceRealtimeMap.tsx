@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import L from 'leaflet';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card';
+import { Button } from '@/components/shadcn/button';
 import { 
   AlertTriangle,
   MapPin,

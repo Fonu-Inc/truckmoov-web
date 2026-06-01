@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
 import {
   Table,
   TableBody,
@@ -7,8 +7,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
+} from "@/components/shadcn/table";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Cpu, CheckCircle } from "lucide-react";
 import { DeviceMappingRow } from "@/hooks/useFonuSIM";
 
