@@ -8,6 +8,7 @@ import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { AuthBrandingPanel } from "@truckmoov/reusables/components/layouts/AuthBrandingPanel";
 import { UserRole } from "@/types";
 import { DemoStakeholderType } from "@/stores/authStore";
 import { Truck, Mail, Lock, ArrowRight, Building2, Users, Headphones, Car, Settings, Calculator, User, CheckCircle2, Loader2, ChevronDown, Wrench, Factory, Network, Sparkles, Eye, EyeOff, HelpCircle } from "lucide-react";
@@ -74,7 +75,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
 import { toast } from "sonner";
-import mtnLogoDark from "@/assets/mtn-logo-dark.svg";
 import { AuthHelpDialog } from "@/components/auth/AuthHelpDialog";
 import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
 import { SupportChatWidget } from "@/components/support/SupportChatWidget";
@@ -700,91 +700,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Panel - Branding (always dark theme) */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-[hsl(220,20%,8%)] p-12 flex-col justify-between overflow-hidden">
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-[0.03]">
-          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-                <path d="M 60 0 L 0 0 0 60" fill="none" stroke="white" strokeWidth="0.5"/>
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid)" />
-          </svg>
-        </div>
-
-        {/* Logo */}
-        <div className="relative z-10">
-          <div className="mb-10 inline-flex flex-col gap-2">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary shadow-mtn">
-                <Truck className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-2xl font-bold text-white">FleetPro</span>
-                <span className="text-[10px] font-semibold text-primary uppercase tracking-widest">Enterprise Fleet Platform</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 pl-1">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-white/50">Powered by</span>
-              <img src={mtnLogoDark} alt="MTN" className="h-8 w-auto brightness-0 invert" />
-            </div>
-          </div>
-          <h1 className="text-4xl font-bold leading-tight mb-4 text-white">
-            Enterprise Fleet Management for Africa
-          </h1>
-          <p className="text-base text-white/70 max-w-md leading-relaxed">
-            Real-time tracking, intelligent dispatch, and seamless driver communication via WhatsApp, SMS & Voice.
-          </p>
-        </div>
-
-        {/* Features */}
-        <div className="relative z-10 grid grid-cols-2 gap-3">
-          {[
-            "10+ GPS Device Brands",
-            "WhatsApp Integration",
-            "AI Load Matching",
-            "Real-time Analytics",
-          ].map((feature) => (
-            <div
-              key={feature}
-              className="flex items-center gap-2.5 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 px-4 py-3"
-            >
-              <div className="h-2 w-2 rounded-full bg-primary shadow-mtn" />
-              <span className="text-sm font-medium text-white">{feature}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Decorative elements */}
-        <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute top-1/4 -left-16 h-48 w-48 rounded-full bg-primary/5 blur-2xl" />
-      </div>
-
-      {/* Right Panel - Auth Form */}
-      <div className="flex-1 flex items-center justify-center p-8 relative bg-gradient-auth">
-        {/* Top Right - Help */}
-        <div className="absolute top-4 right-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setHelpOpen(true)}
-            aria-label="Help"
-            className="h-10 w-10 text-muted-foreground hover:text-foreground"
-          >
-            <HelpCircle className="!h-6 !w-6" />
-          </Button>
-        </div>
-
-        <AuthHelpDialog
-          open={helpOpen}
-          onOpenChange={setHelpOpen}
-          mode={isSignUp ? "sign-up" : "sign-in"}
-          onOpenChat={() => setChatOpen(true)}
-        />
-        <SupportChatWidget open={chatOpen} onOpenChange={setChatOpen} />
+    <AuthBrandingPanel helpMode={isSignUp ? "sign-up" : "sign-in"}>
         <ForgotPasswordDialog open={forgotOpen} onOpenChange={setForgotOpen} defaultEmail={email} />
 
         <div className="w-full max-w-sm space-y-6">
@@ -1149,10 +1065,6 @@ export default function AuthPage() {
           </form>
 
         </div>
-      </div>
-    </div>
+    </AuthBrandingPanel>
   );
 }
-
-
-
