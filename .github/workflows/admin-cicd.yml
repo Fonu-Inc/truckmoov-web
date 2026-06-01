@@ -112,6 +112,13 @@ jobs:
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
             "deploy $APP_NAME $RELEASE" < "${RELEASE_ARCHIVE}"
 
+      - name: Reload PM2
+        env:
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
+            "pm2 reload $APP_NAME || pm2 start /var/www/$APP_NAME/current --name $APP_NAME"
+
       - name: Tear down SSH
         if: always()
         run: rm -f ~/.ssh/deploy_key
