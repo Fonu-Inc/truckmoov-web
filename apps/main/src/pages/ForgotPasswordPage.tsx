@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
+import { useForgotPassword } from "@truckmoov/api/auth";
 import { Button } from "@/components/shadcn/button";
 import {
   Form,
@@ -40,6 +41,8 @@ function MobileLogo() {
 }
 
 export default function ForgotPasswordPage() {
+  const forgotPassword = useForgotPassword();
+
   const form = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
@@ -47,8 +50,18 @@ export default function ForgotPasswordPage() {
     },
   });
 
-  function onSubmit(_values: ForgotPasswordFormValues) {
-    toast.info("Password reset is ready for backend auth wiring.");
+  function onSubmit(values: ForgotPasswordFormValues) {
+    forgotPassword.mutate(
+      { data: { identifier: values.email } },
+      {
+        onSuccess: () => {
+          toast.success("Password reset request completed.");
+        },
+        onError: (error) => {
+          toast.error(error.message || "Password reset request failed.");
+        },
+      },
+    );
   }
 
   return (
@@ -87,7 +100,7 @@ export default function ForgotPasswordPage() {
               )}
             />
 
-            <Button type="submit" form={FORGOT_PASSWORD_FORM_ID} className="w-full" size="lg">
+            <Button type="submit" form={FORGOT_PASSWORD_FORM_ID} className="w-full" size="lg" loading={forgotPassword.isPending}>
               <span className="flex items-center gap-2">
                 Send reset link
                 <ArrowRight className="h-4 w-4" />

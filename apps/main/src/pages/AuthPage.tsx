@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
+import { useLogin } from "@truckmoov/api/auth";
 import { Button } from "@/components/shadcn/button";
 import {
   Form,
@@ -86,6 +87,8 @@ function PasswordFieldControl({
 }
 
 export default function AuthPage() {
+  const login = useLogin();
+
   const form = useForm<SignInFormValues>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
@@ -94,8 +97,23 @@ export default function AuthPage() {
     },
   });
 
-  function onSubmit(_values: SignInFormValues) {
-    toast.info("Sign in is ready for backend auth wiring.");
+  function onSubmit(values: SignInFormValues) {
+    login.mutate(
+      {
+        data: {
+          email: values.email,
+          password: values.password
+        }
+      },
+      {
+        onSuccess: () => {
+          toast.success("Login request completed.");
+        },
+        onError: (error) => {
+          toast.error(error.message || "Login request failed.");
+        },
+      },
+    );
   }
 
   return (
@@ -144,7 +162,7 @@ export default function AuthPage() {
               )}
             />
 
-            <Button type="submit" form={SIGN_IN_FORM_ID} className="w-full" size="lg">
+            <Button type="submit" form={SIGN_IN_FORM_ID} className="w-full" size="lg" loading={login.isPending}>
               <span className="flex items-center gap-2">
                 Sign In
                 <ArrowRight className="h-4 w-4" />

@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
+import { useRegister } from "@truckmoov/api/auth";
 import { Button } from "@/components/shadcn/button";
 import {
   Form,
@@ -97,6 +98,8 @@ function PasswordFieldControl({
 }
 
 export default function SignUpPage() {
+  const register = useRegister();
+
   const form = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
@@ -109,8 +112,26 @@ export default function SignUpPage() {
     },
   });
 
-  function onSubmit(_values: SignUpFormValues) {
-    toast.info("Sign up is ready for backend auth wiring.");
+  function onSubmit(values: SignUpFormValues) {
+    register.mutate(
+      {
+        data: {
+          email: values.email,
+          firstName: values.firstName,
+          lastName: values.lastName,
+          organizationName: values.organizationName,
+          password: values.password
+        }
+      },
+      {
+        onSuccess: () => {
+          toast.success("Registration request completed.");
+        },
+        onError: (error) => {
+          toast.error(error.message || "Registration request failed.");
+        },
+      },
+    );
   }
 
   return (
@@ -219,7 +240,7 @@ export default function SignUpPage() {
               )}
             />
 
-            <Button type="submit" form={SIGN_UP_FORM_ID} className="w-full" size="lg">
+            <Button type="submit" form={SIGN_UP_FORM_ID} className="w-full" size="lg" loading={register.isPending}>
               <span className="flex items-center gap-2">
                 Create Account
                 <ArrowRight className="h-4 w-4" />

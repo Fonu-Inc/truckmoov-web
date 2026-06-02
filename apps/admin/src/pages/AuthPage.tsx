@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
+import { useSystemLogin } from "@truckmoov/api/auth";
 import { Button } from "@/components/shadcn/button";
 import {
   Form,
@@ -83,6 +84,8 @@ function PasswordFieldControl({
 }
 
 export default function AuthPage() {
+  const systemLogin = useSystemLogin();
+
   const form = useForm<AdminSignInFormValues>({
     resolver: zodResolver(adminSignInSchema),
     defaultValues: {
@@ -91,8 +94,23 @@ export default function AuthPage() {
     },
   });
 
-  function onSubmit(_values: AdminSignInFormValues) {
-    toast.info("Admin sign in is ready for backend auth wiring.");
+  function onSubmit(values: AdminSignInFormValues) {
+    systemLogin.mutate(
+      {
+        data: {
+          email: values.email,
+          password: values.password
+        }
+      },
+      {
+        onSuccess: () => {
+          toast.success("System login request completed.");
+        },
+        onError: (error) => {
+          toast.error(error.message || "System login request failed.");
+        },
+      },
+    );
   }
 
   return (
@@ -139,7 +157,7 @@ export default function AuthPage() {
               )}
             />
 
-            <Button type="submit" form={ADMIN_SIGN_IN_FORM_ID} className="w-full" size="lg">
+            <Button type="submit" form={ADMIN_SIGN_IN_FORM_ID} className="w-full" size="lg" loading={systemLogin.isPending}>
               <span className="flex items-center gap-2">
                 Sign In
                 <ArrowRight className="h-4 w-4" />
