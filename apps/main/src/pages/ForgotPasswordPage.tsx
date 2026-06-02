@@ -58,7 +58,7 @@ export default function ForgotPasswordPage() {
           toast.success("Password reset request completed.");
         },
         onError: (error) => {
-          toast.error(error.message || "Password reset request failed.");
+          toast.error(error.message);
         },
       },
     );

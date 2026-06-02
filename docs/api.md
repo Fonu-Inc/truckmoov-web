@@ -40,6 +40,7 @@ packages/api/src/
 import { getToken, setToken, clearToken } from "@truckmoov/api/lib/token"
 import { axiosInstance }                  from "@truckmoov/api/lib/axios-instance"
 import { queryClient }                    from "@truckmoov/api/lib/query-client"
+import type { ServerResponse, ServerErrorResponse } from "@truckmoov/api/lib/types"
 import { ... }                            from "@truckmoov/api/auth"
 ```
 
@@ -112,6 +113,20 @@ axiosInstance.get<ServerResponse<ActivityLog[]>>('/auth/activity-log')
 | `id` | URL identifiers, such as `/users/:id` |
 | `data` | POST, PATCH, or PUT request bodies |
 | `params` | Query string parameters |
+
+### Error responses
+
+Failed API calls are normalized by `axiosInstance` to the shared `ServerErrorResponse` shape:
+
+```ts
+export type ServerErrorResponse = {
+  error: string
+  message: string
+  statusCode: number
+}
+```
+
+`query-client.ts` registers `ServerErrorResponse` as React Query's default error type. Mutation `onError` callbacks can use `error.message` directly for toasts without casting to `Error` or reading Axios internals.
 
 ## `requests.ts`
 
@@ -202,6 +217,8 @@ export function useUpdateInvitedUser() {
   })
 }
 ```
+
+Apps should provide the shared `queryClient` from `@truckmoov/api/lib/query-client` to `QueryClientProvider` so package mutation hooks invalidate the same React Query cache the app renders from.
 
 ## Naming
 

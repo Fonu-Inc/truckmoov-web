@@ -128,7 +128,7 @@ export default function SignUpPage() {
           toast.success("Registration request completed.");
         },
         onError: (error) => {
-          toast.error(error.message || "Registration request failed.");
+          toast.error(error.message);
         },
       },
     );

@@ -1,6 +1,7 @@
 import React, { Component, ReactNode, useEffect } from "react";
 import { Toaster as Sonner } from "@/components/shadcn/sonner";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@truckmoov/api/lib/query-client";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { setToken, clearToken } from "@/lib/backendApi";
@@ -29,8 +30,6 @@ import PlatformComplianceAudit from "./pages/platform/PlatformComplianceAudit";
 import PlatformCommunications from "./pages/platform/PlatformCommunications";
 import PlatformMessagingCenter from "./pages/platform/PlatformMessagingCenter";
 import PlatformSupport from "./pages/platform/PlatformSupport";
-
-const queryClient = new QueryClient();
 
 class AppErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -107,7 +106,7 @@ const App = () => {
           <PreferencesProvider>
             <TenantBrandingProvider>
               <Sonner />
-              <KeyboardShortcutsDialog />
+              {/* <KeyboardShortcutsDialog /> */}
               <FonuCallProvider>
                 <BrowserRouter>
                   <Routes>

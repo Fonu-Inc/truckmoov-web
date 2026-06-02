@@ -107,7 +107,7 @@ export default function AuthPage() {
           toast.success("System login request completed.");
         },
         onError: (error) => {
-          toast.error(error.message || "System login request failed.");
+          toast.error(error.message);
         },
       },
     );

@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Toaster as Sonner } from "@/components/shadcn/sonner";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@truckmoov/api/lib/query-client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./stores/authStore";
 import { OrgProtectedRoute } from "./components/layout/OrgProtectedRoute";
@@ -87,8 +88,6 @@ import DispatcherMessages from "./pages/dispatcher/DispatcherMessages";
 import DispatcherInbox from "./pages/dispatcher/DispatcherInbox";
 import DispatcherReports from "./pages/dispatcher/DispatcherReports";
 
-const queryClient = new QueryClient();
-
 const App = () => {
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -116,117 +115,117 @@ const App = () => {
       <QueryClientProvider client={queryClient}>
         <CurrencyProvider>
           <PreferencesProvider>
-          <TenantBrandingProvider>
-          <Sonner />
-          <KeyboardShortcutsDialog />
-          <FonuCallProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Navigate to="/auth" replace />} />
-                <Route path="/auth" element={<AuthPage />} />
-                <Route path="/auth/signup" element={<SignUpPage />} />
-                <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/not-authorized" element={<NotAuthorized />} />
+            <TenantBrandingProvider>
+              <Sonner />
+              {/* <KeyboardShortcutsDialog /> */}
+              <FonuCallProvider>
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/auth" replace />} />
+                    <Route path="/auth" element={<AuthPage />} />
+                    <Route path="/auth/signup" element={<SignUpPage />} />
+                    <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/not-authorized" element={<NotAuthorized />} />
 
-                {/* Onboarding Pages */}
-                <Route path="/onboarding/subscription" element={<OrgProtectedRoute><SubscriptionOnboarding /></OrgProtectedRoute>} />
-                <Route path="/onboarding/kyc" element={<OrgProtectedRoute><KycOnboarding /></OrgProtectedRoute>} />
-                <Route path="/onboarding/activate" element={<OrgProtectedRoute><ActivationOnboarding /></OrgProtectedRoute>} />
-                <Route path="/onboarding/quick-access" element={<OrgProtectedRoute><WelcomeDashboard /></OrgProtectedRoute>} />
-                <Route path="/onboarding/welcome" element={<Navigate to="/onboarding/subscription" replace />} />
-                
-                {/* Enterprise Routes */}
-                <Route path="/enterprise" element={<OrgProtectedRoute><EnterpriseLogisticsDashboard /></OrgProtectedRoute>} />
-                
-                {/* Aggregator Routes */}
-                <Route path="/aggregator" element={<OrgProtectedRoute><AggregatorDashboard /></OrgProtectedRoute>} />
-                
-                {/* Owner-Operator Routes */}
-                <Route path="/owner-operator" element={<OrgProtectedRoute><OwnerOperatorDashboard /></OrgProtectedRoute>} />
-                <Route path="/owner-operator/vehicle/:vehicleId" element={<OrgProtectedRoute><OwnerOperatorVehicleDetail /></OrgProtectedRoute>} />
-                <Route path="/owner-operator/vehicles" element={<OrgProtectedRoute><OwnerOperatorVehicles /></OrgProtectedRoute>} />
-                <Route path="/owner-operator/documents" element={<OrgProtectedRoute><OwnerOperatorDocuments /></OrgProtectedRoute>} />
-                <Route path="/owner-operator/jobs" element={<OrgProtectedRoute><OwnerOperatorJobs /></OrgProtectedRoute>} />
-                
-                {/* Tenant Admin / Fleet Provider Routes */}
-                <Route path="/admin" element={<OrgProtectedRoute><TenantAdminDashboard /></OrgProtectedRoute>} />
-                <Route path="/admin/fleet" element={<OrgProtectedRoute><FleetManagement /></OrgProtectedRoute>} />
-                <Route path="/admin/drivers" element={<OrgProtectedRoute><DriverManagement /></OrgProtectedRoute>} />
-                <Route path="/admin/devices" element={<OrgProtectedRoute><DeviceManagement /></OrgProtectedRoute>} />
-                <Route path="/admin/sims" element={<OrgProtectedRoute><SIMManagement /></OrgProtectedRoute>} />
-                <Route path="/admin/data-bundles" element={<OrgProtectedRoute><DataBundles /></OrgProtectedRoute>} />
-                
-                <Route path="/admin/jobs" element={<OrgProtectedRoute><JobDispatch /></OrgProtectedRoute>} />
-                <Route path="/admin/ivr-dashboard" element={<Navigate to="/admin/messages?tab=ivr-dashboard" replace />} />
-                <Route path="/admin/analytics" element={<Navigate to="/admin/fleet?tab=analytics" replace />} />
-                <Route path="/admin/map" element={<OrgProtectedRoute><LiveMap /></OrgProtectedRoute>} />
-                <Route path="/admin/behavior" element={<OrgProtectedRoute><DriverBehaviorDashboard /></OrgProtectedRoute>} />
-                <Route path="/admin/fatigue" element={<OrgProtectedRoute><DriverFatigueDashboard /></OrgProtectedRoute>} />
-                <Route path="/admin/messages" element={<OrgProtectedRoute><MessagingCenter /></OrgProtectedRoute>} />
-                <Route path="/admin/inbox" element={<OrgProtectedRoute><OmnichannelInbox /></OrgProtectedRoute>} />
-                <Route path="/admin/maintenance" element={<Navigate to="/admin/fleet?tab=maintenance" replace />} />
-                <Route path="/admin/fuel" element={<Navigate to="/admin/fleet?tab=fuel" replace />} />
-                <Route path="/admin/compliance" element={<Navigate to="/admin/fleet?tab=compliance" replace />} />
-                <Route path="/admin/wallet" element={<OrgProtectedRoute><TenantWallet /></OrgProtectedRoute>} />
-                <Route path="/admin/installation" element={<OrgProtectedRoute><DeviceInstallation /></OrgProtectedRoute>} />
-                <Route path="/admin/integrations" element={<OrgProtectedRoute><Integrations /></OrgProtectedRoute>} />
-                <Route path="/admin/job-offers" element={<OrgProtectedRoute><JobOffers /></OrgProtectedRoute>} />
-                <Route path="/admin/subscription" element={<Navigate to="/admin/settings?tab=subscription" replace />} />
-                <Route path="/admin/reports" element={<OrgProtectedRoute><Reports /></OrgProtectedRoute>} />
-                <Route path="/admin/waybill-invoices" element={<OrgProtectedRoute><WaybillInvoices /></OrgProtectedRoute>} />
-                <Route path="/admin/subscription-invoices" element={<OrgProtectedRoute><SubscriptionInvoices /></OrgProtectedRoute>} />
-                <Route path="/admin/sustainability" element={<OrgProtectedRoute><Sustainability /></OrgProtectedRoute>} />
-                <Route path="/admin/fleet/pl-statement" element={<VehiclePLStatementPreview />} />
-                <Route path="/admin/settings" element={<OrgProtectedRoute><Settings /></OrgProtectedRoute>} />
-                
-                {/* Supervisor Routes */}
-                <Route path="/supervisor" element={<OrgProtectedRoute><SupervisorDashboard /></OrgProtectedRoute>} />
-                <Route path="/supervisor/map" element={<OrgProtectedRoute><SupervisorLiveMap /></OrgProtectedRoute>} />
-                <Route path="/supervisor/dispatch" element={<OrgProtectedRoute><SupervisorDispatch /></OrgProtectedRoute>} />
-                
-                <Route path="/supervisor/drivers" element={<OrgProtectedRoute><SupervisorDrivers /></OrgProtectedRoute>} />
-                <Route path="/supervisor/alerts" element={<OrgProtectedRoute><SupervisorAlerts /></OrgProtectedRoute>} />
-                <Route path="/supervisor/messages" element={<OrgProtectedRoute><SupervisorMessages /></OrgProtectedRoute>} />
-                <Route path="/supervisor/inbox" element={<OrgProtectedRoute><OmnichannelInbox /></OrgProtectedRoute>} />
-                <Route path="/supervisor/reports" element={<OrgProtectedRoute><SupervisorReports /></OrgProtectedRoute>} />
-                <Route path="/supervisor/*" element={<OrgProtectedRoute><SupervisorDashboard /></OrgProtectedRoute>} />
+                    {/* Onboarding Pages */}
+                    <Route path="/onboarding/subscription" element={<OrgProtectedRoute><SubscriptionOnboarding /></OrgProtectedRoute>} />
+                    <Route path="/onboarding/kyc" element={<OrgProtectedRoute><KycOnboarding /></OrgProtectedRoute>} />
+                    <Route path="/onboarding/activate" element={<OrgProtectedRoute><ActivationOnboarding /></OrgProtectedRoute>} />
+                    <Route path="/onboarding/quick-access" element={<OrgProtectedRoute><WelcomeDashboard /></OrgProtectedRoute>} />
+                    <Route path="/onboarding/welcome" element={<Navigate to="/onboarding/subscription" replace />} />
 
-                {/* Dispatcher Portal Routes (independent) */}
-                <Route path="/dispatcher" element={<OrgProtectedRoute><DispatcherDashboard /></OrgProtectedRoute>} />
-                <Route path="/dispatcher/dispatch" element={<OrgProtectedRoute><DispatcherDispatch /></OrgProtectedRoute>} />
-                <Route path="/dispatcher/map" element={<OrgProtectedRoute><DispatcherLiveMap /></OrgProtectedRoute>} />
-                <Route path="/dispatcher/drivers" element={<OrgProtectedRoute><DispatcherDrivers /></OrgProtectedRoute>} />
-                <Route path="/dispatcher/devices" element={<OrgProtectedRoute><DispatcherDevices /></OrgProtectedRoute>} />
-                <Route path="/dispatcher/sims" element={<OrgProtectedRoute><DispatcherSIMs /></OrgProtectedRoute>} />
-                <Route path="/dispatcher/alerts" element={<OrgProtectedRoute><DispatcherAlerts /></OrgProtectedRoute>} />
-                <Route path="/dispatcher/messages" element={<OrgProtectedRoute><DispatcherMessages /></OrgProtectedRoute>} />
-                <Route path="/dispatcher/inbox" element={<OrgProtectedRoute><DispatcherInbox /></OrgProtectedRoute>} />
-                <Route path="/dispatcher/reports" element={<OrgProtectedRoute><DispatcherReports /></OrgProtectedRoute>} />
-                <Route path="/dispatcher/*" element={<OrgProtectedRoute><DispatcherDashboard /></OrgProtectedRoute>} />
+                    {/* Enterprise Routes */}
+                    <Route path="/enterprise" element={<OrgProtectedRoute><EnterpriseLogisticsDashboard /></OrgProtectedRoute>} />
 
-                {/* Driver Interface */}
-                <Route path="/driver" element={<OrgProtectedRoute><DriverInterface /></OrgProtectedRoute>} />
-                
-                {/* Debug Route - No auth, no layout */}
-                <Route path="/debug/map" element={<DebugMap />} />
-                
-                {/* Architecture Documentation - Public */}
-                <Route path="/architecture" element={<Architecture />} />
-                <Route path="/technical-architecture" element={<TechnicalArchitecture />} />
-                
-                {/* Help & Support */}
-                <Route path="/help" element={<HelpSupport />} />
-                
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              <GlobalSupportChat />
-              <div data-allow-no-subscription data-allow-no-kyc>
-                <OnboardingModalsHost />
-              </div>
-            </BrowserRouter>
-          </FonuCallProvider>
-          </TenantBrandingProvider>
+                    {/* Aggregator Routes */}
+                    <Route path="/aggregator" element={<OrgProtectedRoute><AggregatorDashboard /></OrgProtectedRoute>} />
+
+                    {/* Owner-Operator Routes */}
+                    <Route path="/owner-operator" element={<OrgProtectedRoute><OwnerOperatorDashboard /></OrgProtectedRoute>} />
+                    <Route path="/owner-operator/vehicle/:vehicleId" element={<OrgProtectedRoute><OwnerOperatorVehicleDetail /></OrgProtectedRoute>} />
+                    <Route path="/owner-operator/vehicles" element={<OrgProtectedRoute><OwnerOperatorVehicles /></OrgProtectedRoute>} />
+                    <Route path="/owner-operator/documents" element={<OrgProtectedRoute><OwnerOperatorDocuments /></OrgProtectedRoute>} />
+                    <Route path="/owner-operator/jobs" element={<OrgProtectedRoute><OwnerOperatorJobs /></OrgProtectedRoute>} />
+
+                    {/* Tenant Admin / Fleet Provider Routes */}
+                    <Route path="/admin" element={<OrgProtectedRoute><TenantAdminDashboard /></OrgProtectedRoute>} />
+                    <Route path="/admin/fleet" element={<OrgProtectedRoute><FleetManagement /></OrgProtectedRoute>} />
+                    <Route path="/admin/drivers" element={<OrgProtectedRoute><DriverManagement /></OrgProtectedRoute>} />
+                    <Route path="/admin/devices" element={<OrgProtectedRoute><DeviceManagement /></OrgProtectedRoute>} />
+                    <Route path="/admin/sims" element={<OrgProtectedRoute><SIMManagement /></OrgProtectedRoute>} />
+                    <Route path="/admin/data-bundles" element={<OrgProtectedRoute><DataBundles /></OrgProtectedRoute>} />
+
+                    <Route path="/admin/jobs" element={<OrgProtectedRoute><JobDispatch /></OrgProtectedRoute>} />
+                    <Route path="/admin/ivr-dashboard" element={<Navigate to="/admin/messages?tab=ivr-dashboard" replace />} />
+                    <Route path="/admin/analytics" element={<Navigate to="/admin/fleet?tab=analytics" replace />} />
+                    <Route path="/admin/map" element={<OrgProtectedRoute><LiveMap /></OrgProtectedRoute>} />
+                    <Route path="/admin/behavior" element={<OrgProtectedRoute><DriverBehaviorDashboard /></OrgProtectedRoute>} />
+                    <Route path="/admin/fatigue" element={<OrgProtectedRoute><DriverFatigueDashboard /></OrgProtectedRoute>} />
+                    <Route path="/admin/messages" element={<OrgProtectedRoute><MessagingCenter /></OrgProtectedRoute>} />
+                    <Route path="/admin/inbox" element={<OrgProtectedRoute><OmnichannelInbox /></OrgProtectedRoute>} />
+                    <Route path="/admin/maintenance" element={<Navigate to="/admin/fleet?tab=maintenance" replace />} />
+                    <Route path="/admin/fuel" element={<Navigate to="/admin/fleet?tab=fuel" replace />} />
+                    <Route path="/admin/compliance" element={<Navigate to="/admin/fleet?tab=compliance" replace />} />
+                    <Route path="/admin/wallet" element={<OrgProtectedRoute><TenantWallet /></OrgProtectedRoute>} />
+                    <Route path="/admin/installation" element={<OrgProtectedRoute><DeviceInstallation /></OrgProtectedRoute>} />
+                    <Route path="/admin/integrations" element={<OrgProtectedRoute><Integrations /></OrgProtectedRoute>} />
+                    <Route path="/admin/job-offers" element={<OrgProtectedRoute><JobOffers /></OrgProtectedRoute>} />
+                    <Route path="/admin/subscription" element={<Navigate to="/admin/settings?tab=subscription" replace />} />
+                    <Route path="/admin/reports" element={<OrgProtectedRoute><Reports /></OrgProtectedRoute>} />
+                    <Route path="/admin/waybill-invoices" element={<OrgProtectedRoute><WaybillInvoices /></OrgProtectedRoute>} />
+                    <Route path="/admin/subscription-invoices" element={<OrgProtectedRoute><SubscriptionInvoices /></OrgProtectedRoute>} />
+                    <Route path="/admin/sustainability" element={<OrgProtectedRoute><Sustainability /></OrgProtectedRoute>} />
+                    <Route path="/admin/fleet/pl-statement" element={<VehiclePLStatementPreview />} />
+                    <Route path="/admin/settings" element={<OrgProtectedRoute><Settings /></OrgProtectedRoute>} />
+
+                    {/* Supervisor Routes */}
+                    <Route path="/supervisor" element={<OrgProtectedRoute><SupervisorDashboard /></OrgProtectedRoute>} />
+                    <Route path="/supervisor/map" element={<OrgProtectedRoute><SupervisorLiveMap /></OrgProtectedRoute>} />
+                    <Route path="/supervisor/dispatch" element={<OrgProtectedRoute><SupervisorDispatch /></OrgProtectedRoute>} />
+
+                    <Route path="/supervisor/drivers" element={<OrgProtectedRoute><SupervisorDrivers /></OrgProtectedRoute>} />
+                    <Route path="/supervisor/alerts" element={<OrgProtectedRoute><SupervisorAlerts /></OrgProtectedRoute>} />
+                    <Route path="/supervisor/messages" element={<OrgProtectedRoute><SupervisorMessages /></OrgProtectedRoute>} />
+                    <Route path="/supervisor/inbox" element={<OrgProtectedRoute><OmnichannelInbox /></OrgProtectedRoute>} />
+                    <Route path="/supervisor/reports" element={<OrgProtectedRoute><SupervisorReports /></OrgProtectedRoute>} />
+                    <Route path="/supervisor/*" element={<OrgProtectedRoute><SupervisorDashboard /></OrgProtectedRoute>} />
+
+                    {/* Dispatcher Portal Routes (independent) */}
+                    <Route path="/dispatcher" element={<OrgProtectedRoute><DispatcherDashboard /></OrgProtectedRoute>} />
+                    <Route path="/dispatcher/dispatch" element={<OrgProtectedRoute><DispatcherDispatch /></OrgProtectedRoute>} />
+                    <Route path="/dispatcher/map" element={<OrgProtectedRoute><DispatcherLiveMap /></OrgProtectedRoute>} />
+                    <Route path="/dispatcher/drivers" element={<OrgProtectedRoute><DispatcherDrivers /></OrgProtectedRoute>} />
+                    <Route path="/dispatcher/devices" element={<OrgProtectedRoute><DispatcherDevices /></OrgProtectedRoute>} />
+                    <Route path="/dispatcher/sims" element={<OrgProtectedRoute><DispatcherSIMs /></OrgProtectedRoute>} />
+                    <Route path="/dispatcher/alerts" element={<OrgProtectedRoute><DispatcherAlerts /></OrgProtectedRoute>} />
+                    <Route path="/dispatcher/messages" element={<OrgProtectedRoute><DispatcherMessages /></OrgProtectedRoute>} />
+                    <Route path="/dispatcher/inbox" element={<OrgProtectedRoute><DispatcherInbox /></OrgProtectedRoute>} />
+                    <Route path="/dispatcher/reports" element={<OrgProtectedRoute><DispatcherReports /></OrgProtectedRoute>} />
+                    <Route path="/dispatcher/*" element={<OrgProtectedRoute><DispatcherDashboard /></OrgProtectedRoute>} />
+
+                    {/* Driver Interface */}
+                    <Route path="/driver" element={<OrgProtectedRoute><DriverInterface /></OrgProtectedRoute>} />
+
+                    {/* Debug Route - No auth, no layout */}
+                    <Route path="/debug/map" element={<DebugMap />} />
+
+                    {/* Architecture Documentation - Public */}
+                    <Route path="/architecture" element={<Architecture />} />
+                    <Route path="/technical-architecture" element={<TechnicalArchitecture />} />
+
+                    {/* Help & Support */}
+                    <Route path="/help" element={<HelpSupport />} />
+
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                  <GlobalSupportChat />
+                  <div data-allow-no-subscription data-allow-no-kyc>
+                    <OnboardingModalsHost />
+                  </div>
+                </BrowserRouter>
+              </FonuCallProvider>
+            </TenantBrandingProvider>
           </PreferencesProvider>
         </CurrencyProvider>
       </QueryClientProvider>

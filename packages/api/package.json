@@ -7,6 +7,7 @@
     "./package.json": "./package.json",
     "./lib/axios-instance": "./src/lib/axios-instance.ts",
     "./lib/query-client": "./src/lib/query-client.ts",
+    "./lib/types": "./src/lib/types.ts",
     "./auth": "./src/auth/index.ts",
     "./fleet": "./src/fleet/index.ts",
     "./dispatch": "./src/dispatch/index.ts"

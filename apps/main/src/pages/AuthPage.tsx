@@ -110,7 +110,7 @@ export default function AuthPage() {
           toast.success("Login request completed.");
         },
         onError: (error) => {
-          toast.error(error.message || "Login request failed.");
+          toast.error(error.message);
         },
       },
     );

@@ -3,3 +3,9 @@ export type ServerResponse<T> = {
   message: string
   data: T
 }
+
+export type ServerErrorResponse = {
+  error: string
+  message: string
+  statusCode: number
+}

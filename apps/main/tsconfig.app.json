@@ -38,6 +38,9 @@
       "@truckmoov/api/lib/query-client": [
         "../../packages/api/src/lib/query-client.ts"
       ],
+      "@truckmoov/api/lib/types": [
+        "../../packages/api/src/lib/types.ts"
+      ],
       "@truckmoov/api/auth": [
         "../../packages/api/src/auth/index.ts"
       ]
