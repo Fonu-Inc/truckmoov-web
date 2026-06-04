@@ -23,8 +23,8 @@ export default defineConfig(({ mode }) => ({
       // Force Vite to use the published CJS build instead.
       "fonu-sdk": "fonu-sdk/dist/fonu-sdk.js",
     },
-    // Prevent duplicate React instances causing hooks errors
-    dedupe: ["react", "react-dom", "react/jsx-runtime", "zustand"],
+    // Prevent duplicate React/react-query instances causing hooks/QueryClient errors
+    dedupe: ["react", "react-dom", "react/jsx-runtime", "zustand", "@tanstack/react-query"],
   },
   preview: {
     host: true,                 // allow binding on 0.0.0.0
