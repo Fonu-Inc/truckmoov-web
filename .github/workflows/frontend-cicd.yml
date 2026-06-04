@@ -49,13 +49,13 @@ jobs:
 
       - name: Build environment file
         run: |
-          if [ -n "${DEV_ENV}" ]; then
-            printf '%s' "${DEV_ENV}" | base64 -d > .env.production
-          else
-            cp .env.example .env.production
+          if [ -n "${MAIN_ENV}" ]; then
+            printf '%s' "${MAIN_ENV}" | base64 -d > apps/main/.env.production
+          elif [ -f apps/main/.env.example ]; then
+            cp apps/main/.env.example apps/main/.env.production
           fi
         env:
-          DEV_ENV: ${{ secrets.DEV_ENV }}
+          MAIN_ENV: ${{ secrets.MAIN_ENV }}
 
       - name: Build
         run: pnpm build
@@ -101,6 +101,14 @@ jobs:
           echo "SSH_PORT=$PORT" >> $GITHUB_ENV
           echo "SSH_HOST=$SSH_HOST" >> $GITHUB_ENV
           ssh-keyscan -t ed25519 -p "$PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Write .env to shared
+        env:
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          ENV_B64: ${{ secrets.MAIN_ENV }}
+        run: |
+          printf '%s' "$ENV_B64" | ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" \
+            "$SSH_USER@$SSH_HOST" "write-env $APP_NAME"
 
       - name: Deploy via wrapper
         env:
