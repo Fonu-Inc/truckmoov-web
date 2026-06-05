@@ -1,13 +1,10 @@
 import { useMemo } from "react";
 import { ShieldCheck, type LucideIcon } from "lucide-react";
-import { useAuthStore, readDemoStakeholder } from "@/stores/authStore";
+import { useAuthStore } from "@/stores/authStore";
 import { useOnboardingStore } from "@/stores/onboardingStore";
 import { useKYCVerification } from "@/hooks/useKYCVerification";
 import { getOnboardingGroups, type OnboardingGroup } from "@/components/onboarding/onboardingChecklist";
-import { isFreshActivation } from "@/lib/freshActivation";
 
-// Demo users from authStore mockUsers — bypass gating entirely.
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1", "inst1"];
 
 export type OnboardingStepStatus = "done" | "active" | "locked";
 
@@ -48,13 +45,10 @@ export function useOnboardingProgress(): OnboardingProgress {
   const { isVerified: kycVerified } = useKYCVerification();
   const { completedSteps } = useOnboardingStore();
 
-  const freshActivation = isFreshActivation();
-  const isDemoUser = !!user?.id && DEMO_USER_IDS.includes(user.id) && !freshActivation;
   const isPlatformAdmin = user?.role === "platform_admin";
-  const bypassGating = isDemoUser || isPlatformAdmin;
+  const bypassGating = isPlatformAdmin;
 
-  const stakeholder = readDemoStakeholder();
-  const groups = getOnboardingGroups(user?.role, stakeholder);
+  const groups = getOnboardingGroups(user?.role);
 
   // Subscription step removed — KYC is the first step.
   const kycGroup = groups.find((g) => g.id === "kyc");

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useOnboardingStore } from "@/stores/onboardingStore";
 import { OnboardingLayout } from "./OnboardingLayout";
-import { useAuthStore, readDemoStakeholder } from "@/stores/authStore";
+import { useAuthStore } from "@/stores/authStore";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -26,12 +26,6 @@ async function resolveDashboardRoute(
   legacyRole: string | undefined,
 ): Promise<string> {
   if (legacyRole === "platform_admin") return "/";
-
-  // Demo stakeholder selection (Quick Demo Access) — use immediately.
-  const demoStakeholder = readDemoStakeholder();
-  if (demoStakeholder === "ENTERPRISE") return "/enterprise";
-  if (demoStakeholder === "AGGREGATOR") return "/aggregator";
-  if (demoStakeholder === "OWNER_OPERATOR") return "/owner-operator";
 
   if (userId) {
     try {
@@ -79,15 +73,6 @@ interface QuickAction {
   to: string;
 }
 
-const ENTERPRISE_ACTIONS: QuickAction[] = [
-  { id: "create-fleet", title: "Create a fleet", description: "Spin up a fleet and assign managers to run it.", icon: Truck, to: "/enterprise" },
-  { id: "add-vehicle", title: "Add a vehicle", description: "Register vehicles across your fleets.", icon: Truck, to: "/admin/fleet" },
-  { id: "add-driver", title: "Add a driver", description: "Invite drivers and assign them to vehicles.", icon: Users, to: "/admin/drivers" },
-  { id: "request-sim", title: "Request a SIM", description: "Order MTN SIMs for your IoT devices.", icon: Smartphone, to: "/admin/sims" },
-  { id: "request-device", title: "Request a device", description: "Order IoT trackers from the platform.", icon: Cpu, to: "/admin/devices" },
-  { id: "live-map", title: "Open Live Map", description: "Track all vehicles in real-time.", icon: Map, to: "/admin/map" },
-];
-
 const FLEET_PROVIDER_ACTIONS: QuickAction[] = [
   { id: "add-vehicle", title: "Add a vehicle", description: "Register vehicles you'll be managing.", icon: Truck, to: "/admin/fleet" },
   { id: "add-driver", title: "Add a driver", description: "Invite drivers to receive job offers.", icon: Users, to: "/admin/drivers" },
@@ -99,22 +84,6 @@ const FLEET_PROVIDER_ACTIONS: QuickAction[] = [
   { id: "settings", title: "Configure preferences", description: "Set timezone, currency and notification rules.", icon: SettingsIcon, to: "/admin/settings" },
 ];
 
-const AGGREGATOR_ACTIONS: QuickAction[] = [
-  { id: "add-members", title: "Add network members", description: "Onboard partner fleets into your network.", icon: Users, to: "/aggregator" },
-  { id: "set-zones", title: "Set service zones", description: "Define where your network operates.", icon: Map, to: "/aggregator" },
-  { id: "request-sim", title: "Request a SIM", description: "Order MTN SIMs for partner devices.", icon: Smartphone, to: "/admin/sims" },
-  { id: "request-device", title: "Request a device", description: "Order IoT trackers for partners.", icon: Cpu, to: "/admin/devices" },
-  { id: "settings", title: "Configure preferences", description: "Set timezone, currency and notification rules.", icon: SettingsIcon, to: "/admin/settings" },
-];
-
-const OWNER_OPERATOR_ACTIONS: QuickAction[] = [
-  { id: "add-vehicle", title: "Add a vehicle", description: "Register your trucks (up to 10).", icon: Truck, to: "/owner-operator/vehicles" },
-  { id: "upload-docs", title: "Upload documents", description: "Submit vehicle and driver paperwork.", icon: SettingsIcon, to: "/owner-operator/documents" },
-  { id: "request-sim", title: "Request a SIM", description: "Order an MTN SIM for your tracker.", icon: Smartphone, to: "/admin/sims" },
-  { id: "request-device", title: "Request a device", description: "Order an IoT tracker.", icon: Cpu, to: "/admin/devices" },
-  { id: "jobs", title: "View available jobs", description: "Find and accept loads.", icon: ClipboardList, to: "/owner-operator/jobs" },
-];
-
 const DISPATCHER_ACTIONS: QuickAction[] = [
   { id: "create-jobs", title: "Create jobs", description: "Build and dispatch loads to drivers.", icon: ClipboardList, to: "/admin/jobs" },
   { id: "assign-drivers", title: "Assign drivers", description: "Match drivers to active jobs.", icon: Users, to: "/admin/jobs" },
@@ -122,13 +91,7 @@ const DISPATCHER_ACTIONS: QuickAction[] = [
   { id: "messages", title: "Open messaging", description: "Talk to drivers via SMS, voice or WhatsApp.", icon: Users, to: "/admin/messaging" },
 ];
 
-function getActionsFor(
-  role: string | undefined,
-  stakeholder: ReturnType<typeof readDemoStakeholder>,
-): QuickAction[] {
-  if (stakeholder === "ENTERPRISE") return ENTERPRISE_ACTIONS;
-  if (stakeholder === "AGGREGATOR") return AGGREGATOR_ACTIONS;
-  if (stakeholder === "OWNER_OPERATOR") return OWNER_OPERATOR_ACTIONS;
+function getActionsFor(role: string | undefined): QuickAction[] {
   if (role === "dispatcher" || role === "supervisor") return DISPATCHER_ACTIONS;
   return FLEET_PROVIDER_ACTIONS;
 }
@@ -137,8 +100,7 @@ export default function WelcomeDashboard() {
   const navigate = useNavigate();
   const { completeOnboarding } = useOnboardingStore();
   const { user } = useAuthStore();
-  const stakeholder = readDemoStakeholder();
-  const actions = getActionsFor(user?.role, stakeholder);
+  const actions = getActionsFor(user?.role);
 
   const goToDashboard = async () => {
     const route = await resolveDashboardRoute(user?.id, user?.role);

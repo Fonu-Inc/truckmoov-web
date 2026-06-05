@@ -1,11 +1,11 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore as useApiAuthStore } from '@truckmoov/api/lib/auth-store';
 import { useOrgContext } from '@/hooks/useOrgContext';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { useActiveOrgStore } from '@/stores/activeOrgStore';
 import { canAccessRoute, resolveOrgHomeRoute } from '@/lib/orgPermissions';
-import { readDemoStakeholder } from '@/stores/authStore';
 import { toast } from 'sonner';
 import { useRef } from 'react';
 
@@ -18,7 +18,8 @@ interface OrgProtectedRouteProps {
  * Unauthorized users are redirected to their org home with a toast notification.
  */
 export function OrgProtectedRoute({ children }: OrgProtectedRouteProps) {
-  const { user, isAuthenticated, isAuthReady } = useAuthStore();
+  const { user, isAuthReady } = useAuthStore();
+  const { accessToken } = useApiAuthStore();
   const orgCtx = useOrgContext();
   const location = useLocation();
   const { resolveActiveOrg } = useActiveOrgStore();
@@ -26,15 +27,14 @@ export function OrgProtectedRoute({ children }: OrgProtectedRouteProps) {
     'enable_multi_stakeholder_model',
     user?.tenantId
   );
-  const demoStakeholder = readDemoStakeholder();
-  const multiStakeholderEnabled = flagEnabled || !!demoStakeholder;
+  const multiStakeholderEnabled = flagEnabled;
 
   // Prevent duplicate toasts on the same denied path
   const lastDeniedPath = useRef<string | null>(null);
 
   // Wait for auth to be ready
   if (!isAuthReady) return null;
-  if (!isAuthenticated) return <Navigate to="/auth" replace />;
+  if (!accessToken) return <Navigate to="/auth" replace />;
 
   // Platform admins always have access — skip org context loading
   if (user?.role === 'platform_admin') return <>{children}</>;

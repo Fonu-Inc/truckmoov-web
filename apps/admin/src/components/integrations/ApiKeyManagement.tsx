@@ -11,13 +11,12 @@ import { ScrollArea } from '@/components/shadcn/scroll-area';
 import { Separator } from '@/components/shadcn/separator';
 import { Key, Plus, Copy, Eye, EyeOff, Trash2, Clock, Check, AlertTriangle } from 'lucide-react';
 import { useApiKeys, API_SCOPES, CreateApiKeyInput } from '@/hooks/useApiKeys';
-import { demoApiKeys } from './demoIntegrationData';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 export function ApiKeyManagement() {
   const { apiKeys: realKeys, isLoading, newlyCreatedKey, createApiKey, revokeApiKey, clearNewlyCreatedKey } = useApiKeys();
-  const apiKeys = realKeys.length > 0 ? realKeys : demoApiKeys;
+  const apiKeys = realKeys;
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [selectedScopes, setSelectedScopes] = useState<string[]>([]);

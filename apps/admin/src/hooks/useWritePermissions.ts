@@ -6,7 +6,7 @@
  */
 import { useMemo } from 'react';
 import { useOrgContext } from '@/hooks/useOrgContext';
-import { useAuthStore, readDemoStakeholder } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { resolveRoleCapabilities } from '@/lib/orgPermissions';
 
@@ -50,8 +50,7 @@ export function useWritePermissions(): WritePermissions {
     'enable_multi_stakeholder_model',
     user?.tenantId
   );
-  const demoStakeholder = readDemoStakeholder();
-  const multiStakeholderEnabled = flagEnabled || !!demoStakeholder;
+  const multiStakeholderEnabled = flagEnabled;
 
   return useMemo(() => {
     const isPlatformAdmin = user?.role === 'platform_admin';

@@ -2,18 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
-import { mockDevices } from '@/data/mockData';
 import { useOrgDataScope } from '@/hooks/useOrgDataScope';
-import { filterValidUuids } from '@/lib/uuidUtils';
-import { isFreshActivation } from "@/lib/freshActivation";
-
-// Stabilize org scope arrays
-
-// Lagos Express Logistics tenant UUID (for demo mode)
-const DEMO_TENANT_ID = "f7f5af88-fd76-4439-aae3-0461be52f63f";
-
-// Demo user IDs from authStore mockUsers
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
 
 export interface DeviceWithTelemetry {
   id: string;
@@ -88,10 +77,8 @@ const MAX_TRAIL_POINTS = 50; // Keep last 50 positions per device
 export function useDeviceTelemetry(providedTenantId?: string, enableSimulation = false) {
   const { user } = useAuthStore();
   const orgScope = useOrgDataScope();
-  // Strip demo/non-UUID placeholders so .in('owning_org_id', ...) doesn't 400.
-  const validAssetOrgIds = useMemo(() => filterValidUuids(orgScope.assetOrgIds), [orgScope.assetOrgIds]);
-  const assetOrgIdsKey = JSON.stringify(validAssetOrgIds);
-  const stableAssetOrgIds = useMemo(() => validAssetOrgIds, [assetOrgIdsKey]);
+  const assetOrgIdsKey = JSON.stringify(orgScope.assetOrgIds);
+  const stableAssetOrgIds = useMemo(() => orgScope.assetOrgIds, [assetOrgIdsKey]);
   const [devices, setDevices] = useState<DeviceWithTelemetry[]>([]);
   const [recentEvents, setRecentEvents] = useState<DriverBehaviorEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,33 +86,20 @@ export function useDeviceTelemetry(providedTenantId?: string, enableSimulation =
   const [isSimulating, setIsSimulating] = useState(false);
   const [trailHistory, setTrailHistory] = useState<Map<string, Array<{ lat: number; lng: number; timestamp: string }>>>(new Map());
   
-  // Check if this is a demo user (mock login)
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !isFreshActivation() : false;
-  
-  // Resolve tenant ID
-  const tenantId = providedTenantId || (isDemoUser ? DEMO_TENANT_ID : user?.tenantId);
+  const tenantId = providedTenantId || user?.tenantId;
 
   const fetchDevices = useCallback(async () => {
-    // For demo users, use DEMO_TENANT_ID to fetch from database
-    const effectiveTenantId = isDemoUser ? DEMO_TENANT_ID : tenantId;
     const isPlatformAdmin = user?.role === 'platform_admin';
-    
-    if (!effectiveTenantId) {
+
+    if (!tenantId) {
       setDevices([]);
       setLoading(false);
       return;
     }
 
-    // When multi-stakeholder is enabled and the user has no asset orgs,
-    // skip the DB call — but for demo users fall back to mock devices so
-    // Owner-Operator / Enterprise demo dashboards still render inventory.
+    // When multi-stakeholder is enabled and the user has no asset orgs, skip the DB call.
     if (orgScope.multiStakeholderEnabled && stableAssetOrgIds.length === 0 && !isPlatformAdmin) {
-      if (isDemoUser) {
-        const { demoDevicesWithTelemetry } = await import('@/lib/demoDeviceData');
-        setDevices(demoDevicesWithTelemetry);
-      } else {
-        setDevices([]);
-      }
+      setDevices([]);
       setLoading(false);
       return;
     }
@@ -138,8 +112,8 @@ export function useDeviceTelemetry(providedTenantId?: string, enableSimulation =
 
       // Filter by tenant if a specific tenant ID is provided.
       // Platform admins see ALL devices across tenants (including unassigned).
-      if (effectiveTenantId && !isPlatformAdmin) {
-        query = query.eq('tenant_id', effectiveTenantId);
+      if (tenantId && !isPlatformAdmin) {
+        query = query.eq('tenant_id', tenantId);
       }
 
       // Apply org-level filter when multi-stakeholder is enabled
@@ -174,13 +148,7 @@ export function useDeviceTelemetry(providedTenantId?: string, enableSimulation =
         })
       );
 
-      // Frontend demo fallback: when no devices exist, surface mock inventory
-      if (devicesWithTelemetry.length === 0) {
-        const { demoDevicesWithTelemetry } = await import('@/lib/demoDeviceData');
-        setDevices(demoDevicesWithTelemetry);
-      } else {
-        setDevices(devicesWithTelemetry);
-      }
+      setDevices(devicesWithTelemetry);
       setError(null);
     } catch (err) {
       console.error('Error fetching devices:', err);
@@ -188,7 +156,7 @@ export function useDeviceTelemetry(providedTenantId?: string, enableSimulation =
     } finally {
       setLoading(false);
     }
-  }, [tenantId, isDemoUser, orgScope.multiStakeholderEnabled, stableAssetOrgIds, user?.role]);
+  }, [tenantId, orgScope.multiStakeholderEnabled, stableAssetOrgIds, user?.role]);
 
   const fetchRecentEvents = useCallback(async () => {
     try {
@@ -206,17 +174,9 @@ export function useDeviceTelemetry(providedTenantId?: string, enableSimulation =
 
       if (eventsError) throw eventsError;
 
-      const events = data || [];
-      if (events.length === 0) {
-        const { demoBehaviorEvents } = await import('@/lib/demoDeviceData');
-        setRecentEvents(demoBehaviorEvents);
-      } else {
-        setRecentEvents(events);
-      }
+      setRecentEvents(data || []);
     } catch (err) {
       console.error('Error fetching events:', err);
-      const { demoBehaviorEvents } = await import('@/lib/demoDeviceData');
-      setRecentEvents(demoBehaviorEvents);
     }
   }, [tenantId]);
 

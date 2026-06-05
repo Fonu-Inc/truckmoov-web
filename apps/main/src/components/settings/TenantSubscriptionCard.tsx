@@ -81,17 +81,11 @@ export function TenantSubscriptionCard() {
   const [downgradeDialogOpen, setDowngradeDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
 
-  // Demo user IDs that are not valid UUIDs
-  const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1", "inst1"];
-
   const handleContactSales = async (plan: TenantPlan, action: 'upgrade' | 'downgrade') => {
     if (!user?.tenantId || !user?.id) {
       toast.error("Unable to create request. Please try again.");
       return;
     }
-
-    // Check if this is a demo user (mock ID is not a valid UUID)
-    const isDemoUser = DEMO_USER_IDS.includes(user.id);
 
     setIsSubmitting(plan.id);
     try {
@@ -100,7 +94,7 @@ export function TenantSubscriptionCard() {
         .from('support_tickets')
         .insert([{
           tenant_id: user.tenantId,
-          created_by: isDemoUser ? null : user.id,
+          created_by: user.id,
           category: 'billing_subscription' as const,
           subject: `Plan ${action === 'upgrade' ? 'Upgrade' : 'Downgrade'} Request: ${currentPlan?.name} → ${plan.name}`,
           description: `Request to ${action} from ${currentPlan?.name} plan to ${plan.name} plan.\n\nCurrent Plan: ${currentPlan?.name} (₦${currentPlan?.price_ngn?.toLocaleString()}/${currentPlan?.billing_cycle})\nRequested Plan: ${plan.name} (₦${plan.price_ngn.toLocaleString()}/${plan.billing_cycle})\n\nCurrent Usage:\n- Vehicles: ${usageStats.vehicles.current}/${usageStats.vehicles.limit || '∞'}\n- Drivers: ${usageStats.drivers.current}/${usageStats.drivers.limit || '∞'}\n- Devices: ${usageStats.devices.current}/${usageStats.devices.limit || '∞'}`,

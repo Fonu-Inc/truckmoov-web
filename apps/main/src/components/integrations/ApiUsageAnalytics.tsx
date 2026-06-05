@@ -6,8 +6,7 @@ import { TimeRangeSelect, sliceByRange, type TimeRange } from '@/components/char
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
 import { Activity, TrendingUp, TrendingDown, Clock, AlertTriangle, RefreshCw, Zap, CheckCircle } from 'lucide-react';
 import { useApiUsageAnalytics } from '@/hooks/useApiUsageAnalytics';
-import { buildDemoDailyUsage, demoEndpointUsage, demoApiKeyUsage, buildDemoSummary } from './demoIntegrationData';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 
 export function ApiUsageAnalytics() {
@@ -24,12 +23,10 @@ export function ApiUsageAnalytics() {
     refreshAnalytics,
   } = useApiUsageAnalytics(daysRange);
 
-  const hasReal = realSummary.totalRequests > 0;
-  const demoDaily = useMemo(() => buildDemoDailyUsage(daysRange), [daysRange]);
-  const dailyUsage = hasReal ? realDaily : demoDaily;
-  const endpointUsage = hasReal && realEndpoints.length > 0 ? realEndpoints : demoEndpointUsage;
-  const apiKeyUsage = hasReal && realKeys.length > 0 ? realKeys : demoApiKeyUsage;
-  const summary = hasReal ? realSummary : buildDemoSummary(demoDaily);
+  const dailyUsage = realDaily;
+  const endpointUsage = realEndpoints;
+  const apiKeyUsage = realKeys;
+  const summary = realSummary;
 
   const chartData = dailyUsage.map(d => ({
     date: format(parseISO(d.date), 'MMM d'),

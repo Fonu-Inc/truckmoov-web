@@ -57,8 +57,6 @@ export interface CreateTicketPayload {
   contextSnapshot?: Record<string, unknown>;
 }
 
-// Demo tenant ID for unauthenticated demo access
-const DEMO_TENANT_ID = 'f7f5af88-fd76-4439-aae3-0461be52f63f';
 
 export function useSupportTickets() {
   const { user } = useAuthStore();
@@ -69,9 +67,8 @@ export function useSupportTickets() {
   const assetOrgIdsKey = JSON.stringify(orgScope.assetOrgIds);
   const stableAssetOrgIds = useMemo(() => orgScope.assetOrgIds, [assetOrgIdsKey]);
 
-  const tenantId = user?.tenantId || DEMO_TENANT_ID;
+  const tenantId = user?.tenantId ?? null;
   const isPlatformAdmin = user?.role === 'platform_admin';
-  const isDemoUser = !user?.tenantId && user?.role !== 'platform_admin';
 
   const fetchTickets = useCallback(async () => {
     setIsLoading(true);

@@ -4,11 +4,6 @@ import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
 import { logActivity } from './useActivityLogs';
 import { useOrgDataScope } from '@/hooks/useOrgDataScope';
-import { isFreshActivation } from "@/lib/freshActivation";
-
-// Lagos Express Logistics tenant UUID (for demo mode)
-const DEMO_TENANT_ID = "f7f5af88-fd76-4439-aae3-0461be52f63f";
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
 
 export type MaintenanceIntervalType = 'date' | 'mileage' | 'both';
 export type MaintenanceLifecycleStatus = 'upcoming' | 'due' | 'overdue' | 'completed';
@@ -89,12 +84,10 @@ export function useMaintenanceProfiles() {
   const assetOrgIdsKey = JSON.stringify(orgScope.assetOrgIds);
   const stableAssetOrgIds = useMemo(() => orgScope.assetOrgIds, [assetOrgIdsKey]);
 
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !isFreshActivation() : false;
-  const tenantId = isDemoUser ? DEMO_TENANT_ID : user?.tenantId;
+  const tenantId = user?.tenantId;
 
   const fetchProfiles = useCallback(async () => {
-    const effectiveTenantId = isDemoUser ? DEMO_TENANT_ID : tenantId;
-    if (!effectiveTenantId) {
+    if (!tenantId) {
       setProfiles([]);
       setIsLoading(false);
       return;
@@ -109,7 +102,7 @@ export function useMaintenanceProfiles() {
           *,
           vehicles!inner(registration_number, make, model, current_mileage, current_engine_hours, mileage_source, engine_hours_source, owning_org_id)
         `)
-        .eq('tenant_id', effectiveTenantId)
+        .eq('tenant_id', tenantId)
         .eq('is_archived', false)
         .order('next_due_date', { ascending: true, nullsFirst: false });
 
@@ -144,7 +137,7 @@ export function useMaintenanceProfiles() {
     } finally {
       setIsLoading(false);
     }
-  }, [tenantId, isDemoUser, orgScope.multiStakeholderEnabled, stableAssetOrgIds, user?.role]);
+  }, [tenantId, orgScope.multiStakeholderEnabled, stableAssetOrgIds, user?.role]);
 
   useEffect(() => {
     fetchProfiles();

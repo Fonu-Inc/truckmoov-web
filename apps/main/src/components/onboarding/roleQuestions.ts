@@ -1,4 +1,3 @@
-import type { DemoStakeholderType } from "@/stores/authStore";
 import type { UserRole } from "@/types";
 
 /**
@@ -358,17 +357,8 @@ const OWNER_OPERATOR: RoleQuestionnaire = {
 
 const DEFAULT: RoleQuestionnaire = FLEET_PROVIDER;
 
-/**
- * Resolve the appropriate questionnaire for the user.
- * Falls back to Fleet Provider if no stakeholder is detected.
- */
 export function getRoleQuestionnaire(
-  role: UserRole | undefined,
-  stakeholder: DemoStakeholderType,
+  _role: UserRole | undefined,
 ): RoleQuestionnaire {
-  if (stakeholder === "ENTERPRISE") return ENTERPRISE;
-  if (stakeholder === "AGGREGATOR") return AGGREGATOR;
-  if (stakeholder === "OWNER_OPERATOR") return OWNER_OPERATOR;
-  // Default for FLEET_PROVIDER, tenant_admin, operations_manager, dispatcher, etc.
   return FLEET_PROVIDER;
 }

@@ -2,11 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
-import { isFreshActivation } from "@/lib/freshActivation";
-
-// Demo tenant for fallback
-const DEMO_TENANT_ID = "f7f5af88-fd76-4439-aae3-0461be52f63f";
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
 
 export type FuelAnomalyType = 'sudden_drop' | 'abnormal_consumption' | 'suspected_theft' | 'sensor_error';
 export type FuelAnomalySeverity = 'low' | 'medium' | 'high' | 'critical';
@@ -59,12 +54,10 @@ export function useFuelAnomalies() {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuthStore();
 
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !isFreshActivation() : false;
-  const tenantId = isDemoUser ? DEMO_TENANT_ID : user?.tenantId;
+  const tenantId = user?.tenantId;
 
   const fetchAnomalies = useCallback(async (vehicleId?: string, limit = 50) => {
-    const effectiveTenantId = isDemoUser ? DEMO_TENANT_ID : tenantId;
-    if (!effectiveTenantId) {
+    if (!tenantId) {
       setAnomalies([]);
       setIsLoading(false);
       return;
@@ -75,7 +68,7 @@ export function useFuelAnomalies() {
       let query = supabase
         .from('fuel_anomaly_events')
         .select('*')
-        .eq('tenant_id', effectiveTenantId)
+        .eq('tenant_id', tenantId)
         .order('detected_at', { ascending: false })
         .limit(limit);
 
@@ -96,7 +89,7 @@ export function useFuelAnomalies() {
     } finally {
       setIsLoading(false);
     }
-  }, [tenantId, isDemoUser]);
+  }, [tenantId]);
 
   useEffect(() => {
     fetchAnomalies();
@@ -129,8 +122,7 @@ export function useFuelAnomalies() {
   }, [user?.id]);
 
   const getFuelHistory = useCallback(async (vehicleId: string, hours = 24): Promise<FuelLevelHistory[]> => {
-    const effectiveTenantId = isDemoUser ? DEMO_TENANT_ID : tenantId;
-    if (!effectiveTenantId) return [];
+    if (!tenantId) return [];
 
     try {
       const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
@@ -138,7 +130,7 @@ export function useFuelAnomalies() {
       const { data, error: fetchError } = await supabase
         .from('fuel_level_history')
         .select('*')
-        .eq('tenant_id', effectiveTenantId)
+        .eq('tenant_id', tenantId)
         .eq('vehicle_id', vehicleId)
         .gte('recorded_at', since)
         .order('recorded_at', { ascending: true });
@@ -150,7 +142,7 @@ export function useFuelAnomalies() {
       console.error('Error fetching fuel history:', err);
       return [];
     }
-  }, [tenantId, isDemoUser]);
+  }, [tenantId]);
 
   // Stats computed from anomalies
   const stats = {

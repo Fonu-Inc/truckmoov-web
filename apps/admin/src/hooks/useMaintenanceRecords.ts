@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { demoMaintenanceRecords } from '@/lib/demoFleetData';
 
 export interface MaintenanceRecord {
   id: string;
@@ -49,7 +48,7 @@ export function useMaintenanceRecords(tenantId: string = 'default') {
 
       if (fetchError) throw fetchError;
       const rows = data || [];
-      setRecords(rows.length > 0 ? rows : (demoMaintenanceRecords as unknown as MaintenanceRecord[]));
+      setRecords(rows);
       setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch maintenance records';

@@ -19,12 +19,8 @@ import {
   Settings2, Database, Layers, CalendarClock, AlertTriangle,
 } from 'lucide-react';
 import { useERPIntegration, ERP_PROVIDERS, type ERPConnector } from '@/hooks/useERPIntegration';
-import { demoERPConnectors } from './demoIntegrationData';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-
-const isDemoConnector = (id: string) => id.startsWith('demo-');
-const demoToast = () => toast.info('This is demo data. Add a real connector to test or sync.');
 import type { Database as DB } from '@/integrations/supabase/types';
 
 type ERPProvider = DB['public']['Enums']['erp_provider'];
@@ -50,7 +46,7 @@ export function ERPWMSIntegrationPanel({ tenantId }: Props) {
     fetchMappings, addMapping, deleteMapping, loadDefaultMappings,
     executeSync, fetchSyncLogs, fetchSchedules, upsertSchedule,
   } = useERPIntegration(tenantId);
-  const connectors = realConnectors.length > 0 ? realConnectors : demoERPConnectors;
+  const connectors = realConnectors;
 
   const [selectedConnector, setSelectedConnector] = useState<ERPConnector | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -62,7 +58,7 @@ export function ERPWMSIntegrationPanel({ tenantId }: Props) {
   useEffect(() => { fetchConnectors(); }, [fetchConnectors]);
 
   useEffect(() => {
-    if (selectedConnector && !isDemoConnector(selectedConnector.id)) {
+    if (selectedConnector) {
       fetchMappings(selectedConnector.id);
       fetchSyncLogs(selectedConnector.id);
       fetchSchedules(selectedConnector.id);
@@ -200,11 +196,11 @@ export function ERPWMSIntegrationPanel({ tenantId }: Props) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); isDemoConnector(conn.id) ? demoToast() : testConnection(conn.id); }}
+                      <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); testConnection(conn.id); }}
                         disabled={isSyncing}>
                         <RefreshCw className={`h-3 w-3 mr-1 ${isSyncing ? 'animate-spin' : ''}`} />Test
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); isDemoConnector(conn.id) ? demoToast() : deleteConnector(conn.id); }}>
+                      <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); deleteConnector(conn.id); }}>
                         <Trash2 className="h-3 w-3 text-destructive" />
                       </Button>
                     </div>
@@ -240,7 +236,7 @@ export function ERPWMSIntegrationPanel({ tenantId }: Props) {
                     Map FleetPro fields to your {ERP_PROVIDERS.find(p => p.id === selectedConnector.provider)?.name} fields
                   </p>
                   <Button size="sm" variant="outline"
-                    onClick={() => isDemoConnector(selectedConnector.id) ? demoToast() : loadDefaultMappings(selectedConnector.id, selectedConnector.provider)}>
+                    onClick={() => loadDefaultMappings(selectedConnector.id, selectedConnector.provider)}>
                     <ArrowLeftRight className="h-3 w-3 mr-1" />Load Defaults
                   </Button>
                 </div>
@@ -288,7 +284,7 @@ export function ERPWMSIntegrationPanel({ tenantId }: Props) {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {(Object.keys(SCOPE_LABELS) as ERPSyncScope[]).map(scope => (
                     <Button key={scope} variant="outline" className="h-auto flex-col py-3 gap-1"
-                      onClick={() => isDemoConnector(selectedConnector.id) ? demoToast() : executeSync(selectedConnector.id, scope)} disabled={isSyncing}>
+                      onClick={() => executeSync(selectedConnector.id, scope)} disabled={isSyncing}>
                       {isSyncing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                       <span className="text-xs">Sync {SCOPE_LABELS[scope].label}</span>
                     </Button>

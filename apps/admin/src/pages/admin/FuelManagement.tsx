@@ -50,7 +50,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useFuelTransactions, FuelTransaction } from "@/hooks/useFuelTransactions";
 import { useFuelEfficiency } from "@/hooks/useFuelEfficiency";
-import { withDemoFallback, demoFuelConsumption } from "@/lib/demoChartData";
 
 export default function FuelManagement() {
   const { transactions, isLoading, addTransaction, updateTransaction, deleteTransaction, getStats } = useFuelTransactions();

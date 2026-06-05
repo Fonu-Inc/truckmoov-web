@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { demoDevicesWithTelemetry } from "@/lib/demoDeviceData";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { PlatformDeviceManagement } from "@/components/devices/PlatformDeviceManagement";
@@ -75,15 +74,7 @@ export default function PlatformDevices() {
     }).length,
   };
 
-  // Merge in demo unassigned inventory so platform admin can demo the
-  // "Assign to Tenant" flow even when the DB has no unassigned devices.
-  const inventoryDevices = useMemo(() => {
-    const unassignedDemo = demoDevicesWithTelemetry.filter(d => !d.tenant_id);
-    const existingIds = new Set(devices.map(d => d.id));
-    const merged = [...devices];
-    unassignedDemo.forEach(d => { if (!existingIds.has(d.id)) merged.push(d); });
-    return merged;
-  }, [devices]);
+  const inventoryDevices = devices;
 
   return (
     <DashboardLayout

@@ -197,100 +197,6 @@ const createHarshEventIcon = (severity: HarshEventSeverity) => {
   });
 };
 
-// Mock vehicle data with real-time positions (Lagos, Nigeria coordinates)
-// IDs match the demo vehicle registration numbers from mockData.ts
-const mockVehicles: Vehicle[] = [
-  {
-    id: "LAG-234-XY",
-    driver: "Chukwuemeka Okafor",
-    phone: "+234 801 234 5678",
-    position: [6.5244, 3.3792],
-    heading: 90,
-    speed: 45,
-    status: "moving",
-    fuel: 72,
-    lastUpdate: "2 min ago",
-    route: [[6.5244, 3.3792], [6.53, 3.385], [6.535, 3.39]],
-    startLocation: "Apapa Depot",
-    destination: "Victoria Island",
-    eta: "15 min",
-    networkStatus: "online",
-    batteryVoltage: 12.8,
-    signalStrength: 85,
-  },
-  {
-    id: "LAG-567-AB",
-    driver: "Adebayo Johnson",
-    phone: "+234 802 345 6789",
-    position: [6.4550, 3.3941],
-    heading: 180,
-    speed: 62,
-    status: "moving",
-    fuel: 45,
-    lastUpdate: "1 min ago",
-    route: [[6.4550, 3.3941], [6.45, 3.4], [6.445, 3.41]],
-    startLocation: "Ikeja Warehouse",
-    destination: "Lekki Phase 1",
-    eta: "20 min",
-    networkStatus: "online",
-    batteryVoltage: 13.2,
-    signalStrength: 92,
-  },
-  {
-    id: "LAG-890-CD",
-    driver: "Unassigned",
-    phone: "",
-    position: [6.5833, 3.3500],
-    heading: 45,
-    speed: 0,
-    status: "stopped",
-    fuel: 30,
-    lastUpdate: "5 min ago",
-    route: [],
-    startLocation: "—",
-    destination: "Maintenance Bay",
-    eta: "—",
-    networkStatus: "offline",
-    batteryVoltage: 11.2,
-    signalStrength: 15,
-  },
-  {
-    id: "LAG-112-EF",
-    driver: "Ngozi Obi",
-    phone: "+234 804 567 8901",
-    position: [6.4698, 3.5852],
-    heading: 270,
-    speed: 28,
-    status: "moving",
-    fuel: 92,
-    lastUpdate: "3 min ago",
-    route: [[6.4698, 3.5852], [6.465, 3.58], [6.46, 3.575]],
-    startLocation: "Surulere Hub",
-    destination: "Ajah",
-    eta: "30 min",
-    networkStatus: "online",
-    batteryVoltage: 12.6,
-    signalStrength: 78,
-  },
-  {
-    id: "LAG-445-GH",
-    driver: "Tunde Bakare",
-    phone: "+234 805 678 9012",
-    position: [6.6018, 3.3515],
-    heading: 0,
-    speed: 55,
-    status: "moving",
-    fuel: 65,
-    lastUpdate: "1 min ago",
-    route: [[6.6018, 3.3515], [6.595, 3.36], [6.59, 3.37]],
-    startLocation: "Maryland Depot",
-    destination: "Agege",
-    eta: "10 min",
-    networkStatus: "degraded",
-    batteryVoltage: 12.1,
-    signalStrength: 45,
-  },
-];
 
 // Helper to convert database geofence to map display format
 const convertGeofenceToZone = (gf: Geofence): GeofenceZone => {
@@ -358,9 +264,6 @@ interface FleetMapProps {
   onHarshEventPlayback?: (event: HarshEvent) => void;
 }
 
-// Demo user IDs from authStore mockUsers
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
-
 export function FleetMap({
   selectedVehicle,
   onVehicleSelect,
@@ -371,8 +274,7 @@ export function FleetMap({
   harshEvents,
   onHarshEventPlayback,
 }: FleetMapProps) {
-  // Use external vehicles if provided, otherwise fall back to mock data for demo users only
-  const [vehicles, setVehicles] = useState<Vehicle[]>(externalVehicles && externalVehicles.length > 0 ? externalVehicles : mockVehicles);
+  const [vehicles, setVehicles] = useState<Vehicle[]>(externalVehicles ?? []);
 
   // Fetch geofences from database
   const { geofences: dbGeofences } = useGeofences();

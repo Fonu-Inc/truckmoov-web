@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./package.json": "./package.json",
+    "./lib/auth-store": "./src/lib/auth-store.ts",
     "./lib/axios-instance": "./src/lib/axios-instance.ts",
     "./lib/query-client": "./src/lib/query-client.ts",
     "./lib/types": "./src/lib/types.ts",

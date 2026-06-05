@@ -19,150 +19,6 @@ import {
   Timer,
 } from "lucide-react";
 
-// ---------- Demo data (used when no real tickets exist yet) ----------
-const DEMO_TICKETS: SupportTicket[] = [
-  {
-    id: "demo-tkt-001",
-    tenantId: "demo-tenant-lagos",
-    category: "device_tracking",
-    subject: "Tracker offline on truck LAG-204",
-    description: "",
-    status: "escalated",
-    priority: "high",
-    contextType: "device",
-    createdBy: "demo",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-tkt-002",
-    tenantId: "demo-tenant-lagos",
-    category: "sim_connectivity",
-    subject: "SIM not registering on network",
-    description: "",
-    status: "open",
-    priority: "high",
-    contextType: "sim",
-    createdBy: "demo",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-tkt-003",
-    tenantId: "demo-tenant-abuja",
-    category: "messaging",
-    subject: "WhatsApp template not sending",
-    description: "",
-    status: "in_progress",
-    priority: "medium",
-    contextType: "whatsapp",
-    createdBy: "demo",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-tkt-004",
-    tenantId: "demo-tenant-abuja",
-    category: "billing",
-    subject: "Invoice INV-1042 disputed",
-    description: "",
-    status: "open",
-    priority: "medium",
-    contextType: "billing",
-    createdBy: "demo",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-tkt-005",
-    tenantId: "demo-tenant-portharcourt",
-    category: "account_access",
-    subject: "Manager locked out of dashboard",
-    description: "",
-    status: "in_progress",
-    priority: "critical",
-    contextType: "none",
-    createdBy: "demo",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-tkt-006",
-    tenantId: "demo-tenant-portharcourt",
-    category: "device_tracking",
-    subject: "Geofence alerts not firing",
-    description: "",
-    status: "resolved",
-    priority: "low",
-    contextType: "device",
-    createdBy: "demo",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-    updatedAt: new Date().toISOString(),
-    resolvedAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-tkt-007",
-    tenantId: "demo-tenant-kano",
-    category: "sim_connectivity",
-    subject: "SIM data exhausted early",
-    description: "",
-    status: "resolved",
-    priority: "medium",
-    contextType: "sim",
-    createdBy: "demo",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(),
-    updatedAt: new Date().toISOString(),
-    resolvedAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-tkt-008",
-    tenantId: "demo-tenant-kano",
-    category: "other",
-    subject: "Driver app crashes on launch",
-    description: "",
-    status: "escalated",
-    priority: "high",
-    contextType: "none",
-    createdBy: "demo",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-tkt-009",
-    tenantId: "demo-tenant-ibadan",
-    category: "billing",
-    subject: "Wallet top-up not credited",
-    description: "",
-    status: "open",
-    priority: "high",
-    contextType: "billing",
-    createdBy: "demo",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-tkt-010",
-    tenantId: "demo-tenant-ibadan",
-    category: "messaging",
-    subject: "SMS delivery delayed",
-    description: "",
-    status: "in_progress",
-    priority: "low",
-    contextType: "whatsapp",
-    createdBy: "demo",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
-
-const DEMO_TENANT_NAMES: Record<string, string> = {
-  "demo-tenant-lagos": "Lagos Express Logistics",
-  "demo-tenant-abuja": "Abuja Freight Co.",
-  "demo-tenant-portharcourt": "PH Cargo Movers",
-  "demo-tenant-kano": "Kano Northern Haulage",
-  "demo-tenant-ibadan": "Ibadan Swift Transit",
-};
-
 const CATEGORY_LABELS: Record<string, string> = {
   device_tracking: "Device & Tracking",
   sim_connectivity: "SIM & Connectivity",
@@ -177,13 +33,10 @@ export function SupportDashboard() {
   const { tickets: realTickets, isLoading } = useSupportTickets();
   const [tenantNames, setTenantNames] = useState<Record<string, string>>({});
 
-  // Use real tickets when present, fall back to demo data otherwise
-  const tickets: SupportTicket[] = realTickets.length > 0 ? realTickets : DEMO_TICKETS;
-  const usingDemo = realTickets.length === 0;
+  const tickets: SupportTicket[] = realTickets;
 
   // Resolve real tenant names
   useEffect(() => {
-    if (usingDemo) return;
     const ids = Array.from(new Set(tickets.map((t) => t.tenantId).filter(Boolean)));
     if (ids.length === 0) return;
     (async () => {
@@ -199,10 +52,10 @@ export function SupportDashboard() {
         setTenantNames(map);
       }
     })();
-  }, [tickets, usingDemo]);
+  }, [tickets]);
 
   const tenantName = (id: string) =>
-    tenantNames[id] || DEMO_TENANT_NAMES[id] || `${id.slice(0, 8)}…`;
+    tenantNames[id] || `${id.slice(0, 8)}…`;
 
   const stats = useMemo(() => {
     const now = Date.now();

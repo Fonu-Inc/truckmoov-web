@@ -16,7 +16,6 @@ import {
 import { cn } from '@/lib/utils';
 import { getSidebarConfig, getAllowedRoutes } from '@/lib/sidebarConfig';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
-import { readDemoStakeholder } from '@/stores/authStore';
 
 export function OrgSwitcher() {
   const { memberships } = useOrgContext();
@@ -27,8 +26,7 @@ export function OrgSwitcher() {
   const { user } = useAuthStore();
 
   const { enabled: flagEnabled } = useFeatureFlag('enable_multi_stakeholder_model', user?.tenantId);
-  const demoStakeholder = readDemoStakeholder();
-  const multiStakeholderEnabled = flagEnabled || !!demoStakeholder;
+  const multiStakeholderEnabled = flagEnabled;
 
   // Only show switcher for multi-org users
   if (memberships.length <= 1) return null;

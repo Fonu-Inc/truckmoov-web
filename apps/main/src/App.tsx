@@ -5,8 +5,6 @@ import { queryClient } from "@truckmoov/api/lib/query-client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./stores/authStore";
 import { OrgProtectedRoute } from "./components/layout/OrgProtectedRoute";
-import { supabase } from "@/integrations/supabase/client";
-import { setToken, clearToken } from "@/lib/backendApi";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
 import { TenantBrandingProvider } from "./contexts/TenantBrandingContext";
@@ -29,16 +27,11 @@ import DeviceManagement from "./pages/admin/DeviceManagement";
 import SIMManagement from "./pages/admin/SIMManagement";
 
 import JobDispatch from "./pages/admin/JobDispatch";
-import DriverIVRDashboard from "./pages/admin/DriverIVRDashboard";
 import MessagingCenter from "./pages/admin/MessagingCenter";
-import Analytics from "./pages/admin/Analytics";
 import Reports from "./pages/admin/Reports";
 import LiveMap from "./pages/admin/LiveMap";
 import DriverBehaviorDashboard from "./pages/admin/DriverBehaviorDashboard";
 import DriverFatigueDashboard from "./pages/admin/DriverFatigueDashboard";
-import MaintenanceManagement from "./pages/admin/MaintenanceManagement";
-import FuelManagement from "./pages/admin/FuelManagement";
-import ComplianceManagement from "./pages/admin/ComplianceManagement";
 import Settings from "./pages/admin/Settings";
 import TenantWallet from "./pages/admin/TenantWallet";
 import DataBundles from "./pages/admin/DataBundles";
@@ -90,24 +83,7 @@ import DispatcherReports from "./pages/dispatcher/DispatcherReports";
 
 const App = () => {
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      const demoRole = sessionStorage.getItem('fleetpro_demo_role');
-      if (demoRole) return;
-
-      if (session?.access_token) {
-        setToken(session.access_token);
-      } else if (_event === 'SIGNED_OUT') {
-        clearToken();
-      }
-
-      void useAuthStore.getState().bootstrapFromSession();
-    });
-
     void useAuthStore.getState().bootstrapFromSession();
-
-    return () => {
-      data.subscription.unsubscribe();
-    };
   }, []);
 
   return (

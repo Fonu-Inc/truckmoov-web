@@ -12,7 +12,6 @@ import { ApiDocumentation } from './ApiDocumentation';
 import { useApiKeys } from '@/hooks/useApiKeys';
 import { useWebhookSubscriptions } from '@/hooks/useWebhookSubscriptions';
 import { useIntegrationAudit } from '@/hooks/useIntegrationAudit';
-import { demoApiKeys, demoWebhookSubscriptions, demoAuditLogs } from './demoIntegrationData';
 import { format } from 'date-fns';
 
 export function DeveloperPortal() {
@@ -20,9 +19,9 @@ export function DeveloperPortal() {
   const { subscriptions: realSubs } = useWebhookSubscriptions();
   const { auditLogs: realLogs, isLoading: auditLoading } = useIntegrationAudit();
 
-  const apiKeys = realKeys.length > 0 ? realKeys : demoApiKeys;
-  const subscriptions = realSubs.length > 0 ? realSubs : demoWebhookSubscriptions;
-  const auditLogs = realLogs.length > 0 ? realLogs : demoAuditLogs;
+  const apiKeys = realKeys;
+  const subscriptions = realSubs;
+  const auditLogs = realLogs;
 
   const activeKeysCount = apiKeys.filter(k => k.status === 'active').length;
   const enabledWebhooksCount = subscriptions.filter(w => w.is_enabled).length;

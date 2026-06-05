@@ -1,11 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
-import { isFreshActivation } from "@/lib/freshActivation";
-
-// Demo tenant for fallback
-const DEMO_TENANT_ID = "f7f5af88-fd76-4439-aae3-0461be52f63f";
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
 
 export interface MaintenanceCompletion {
   id: string;
@@ -39,12 +34,10 @@ export function useMaintenanceHistory() {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuthStore();
 
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !isFreshActivation() : false;
-  const tenantId = isDemoUser ? DEMO_TENANT_ID : user?.tenantId;
+  const tenantId = user?.tenantId;
 
   const fetchCompletions = useCallback(async (vehicleId?: string, limit = 100) => {
-    const effectiveTenantId = isDemoUser ? DEMO_TENANT_ID : tenantId;
-    if (!effectiveTenantId) {
+    if (!tenantId) {
       setCompletions([]);
       setIsLoading(false);
       return;
@@ -55,7 +48,7 @@ export function useMaintenanceHistory() {
       let query = supabase
         .from('maintenance_completions')
         .select('*')
-        .eq('tenant_id', effectiveTenantId)
+        .eq('tenant_id', tenantId)
         .order('completion_date', { ascending: false })
         .limit(limit);
 
@@ -76,22 +69,21 @@ export function useMaintenanceHistory() {
     } finally {
       setIsLoading(false);
     }
-  }, [tenantId, isDemoUser]);
+  }, [tenantId]);
 
   useEffect(() => {
     fetchCompletions();
   }, [fetchCompletions]);
 
   const getCostSummary = useCallback(async (): Promise<VehicleMaintenanceCostSummary[]> => {
-    const effectiveTenantId = isDemoUser ? DEMO_TENANT_ID : tenantId;
-    if (!effectiveTenantId) return [];
+    if (!tenantId) return [];
 
     try {
       // Get aggregated costs per vehicle
       const { data, error: fetchError } = await supabase
         .from('maintenance_completions')
         .select('vehicle_id, cost_ngn, parts_cost_ngn, labor_cost_ngn')
-        .eq('tenant_id', effectiveTenantId);
+        .eq('tenant_id', tenantId);
 
       if (fetchError) throw fetchError;
 
@@ -99,7 +91,7 @@ export function useMaintenanceHistory() {
       const { data: vehicles } = await supabase
         .from('vehicles')
         .select('id, registration_number')
-        .eq('tenant_id', effectiveTenantId);
+        .eq('tenant_id', tenantId);
 
       const vehicleMap = new Map((vehicles || []).map(v => [v.id, v.registration_number]));
 
@@ -129,7 +121,7 @@ export function useMaintenanceHistory() {
       console.error('Error fetching cost summary:', err);
       return [];
     }
-  }, [tenantId, isDemoUser]);
+  }, [tenantId]);
 
   // Stats computed from completions
   const stats = {

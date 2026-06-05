@@ -21,7 +21,6 @@ import { useDriverBehavior } from "@/hooks/useDriverBehavior";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
-import { withDemoFallback, demoVehicleStatusBreakdown, demoTopDrivers, demoDriverBehavior } from "@/lib/demoChartData";
 
 const CHART_TOOLTIP_STYLE = {
   backgroundColor: "hsl(var(--card))",
@@ -164,7 +163,7 @@ export function FleetAnalyticsTab() {
     { name: "Inactive", value: vehicles.filter(v => v.status === "inactive").length, color: "hsl(var(--muted-foreground))" },
   ].filter(d => d.value > 0);
 
-  const fleetStatusChart = withDemoFallback(fleetStatusData, demoVehicleStatusBreakdown.map(v => ({ name: v.name, value: v.value, color: v.fill })));
+  const fleetStatusChart = fleetStatusData;
 
   // ── Job Pipeline Data ──
   const jobPipelineData = [
@@ -205,12 +204,7 @@ export function FleetAnalyticsTab() {
       ]
     : [];
 
-  const radarChart = withDemoFallback(radarData, [
-    { metric: "Braking", score: 82, fullMark: 100 },
-    { metric: "Acceleration", score: 76, fullMark: 100 },
-    { metric: "Cornering", score: 88, fullMark: 100 },
-    { metric: "Speed Control", score: 71, fullMark: 100 },
-  ]);
+  const radarChart = radarData;
 
   // ── Recent Behavior Events Timeline ──
   const recentEvents = events.slice(0, 8).map(e => ({
@@ -230,41 +224,12 @@ export function FleetAnalyticsTab() {
     };
   });
 
-  // ── Demo fallbacks (so chart cards always look populated) ──
-  const fuelLevelsChart = withDemoFallback(fuelLevels, [
-    { vehicle: "Sprinter 314", reg: "LAG-014-AB", level: 88, fill: "hsl(var(--success))" },
-    { vehicle: "Hino 500", reg: "LAG-227-CD", level: 72, fill: "hsl(var(--success))" },
-    { vehicle: "Iveco Daily", reg: "ABJ-118-EF", level: 54, fill: "hsl(var(--success))" },
-    { vehicle: "MAN TGS", reg: "LAG-303-GH", level: 41, fill: "hsl(var(--warning))" },
-    { vehicle: "Volvo FH", reg: "PHC-441-JK", level: 33, fill: "hsl(var(--warning))" },
-    { vehicle: "Scania R450", reg: "LAG-552-LM", level: 22, fill: "hsl(var(--destructive))" },
-    { vehicle: "Mercedes Actros", reg: "ABJ-660-NP", level: 14, fill: "hsl(var(--destructive))" },
-  ]);
+  const fuelLevelsChart = fuelLevels;
 
-  const driverScoresChart: Array<{ driverId: string; name?: string; overallScore: number; totalEvents: number; trend: "improving" | "stable" | "declining" }> = withDemoFallback(
-    driverScores.map((d) => ({ driverId: d.driverId, name: drivers.find((dr) => dr.id === d.driverId)?.name, overallScore: d.overallScore, totalEvents: d.totalEvents, trend: d.trend })),
-    [
-      { driverId: "demo-1", name: "Tunde Adebayo", overallScore: 94, totalEvents: 3, trend: "improving" },
-      { driverId: "demo-2", name: "Chinwe Okafor", overallScore: 88, totalEvents: 6, trend: "stable" },
-      { driverId: "demo-3", name: "Musa Ibrahim", overallScore: 82, totalEvents: 8, trend: "improving" },
-      { driverId: "demo-4", name: "Funke Adeleke", overallScore: 76, totalEvents: 11, trend: "stable" },
-      { driverId: "demo-5", name: "Emeka Nwosu", overallScore: 71, totalEvents: 14, trend: "declining" },
-      { driverId: "demo-6", name: "Aisha Bello", overallScore: 64, totalEvents: 19, trend: "declining" },
-      { driverId: "demo-7", name: "Olumide Sani", overallScore: 58, totalEvents: 22, trend: "declining" },
-      { driverId: "demo-8", name: "Ngozi Eze", overallScore: 49, totalEvents: 27, trend: "declining" },
-    ]
-  );
+  const driverScoresChart: Array<{ driverId: string; name?: string; overallScore: number; totalEvents: number; trend: "improving" | "stable" | "declining" }> =
+    driverScores.map((d) => ({ driverId: d.driverId, name: drivers.find((dr) => dr.id === d.driverId)?.name, overallScore: d.overallScore, totalEvents: d.totalEvents, trend: d.trend }));
 
-  const recentEventsChart = withDemoFallback(recentEvents, [
-    { type: "harsh braking", severity: "high", time: "09:42", date: "Today" },
-    { type: "overspeeding", severity: "critical", time: "09:18", date: "Today" },
-    { type: "harsh acceleration", severity: "medium", time: "08:51", date: "Today" },
-    { type: "harsh cornering", severity: "low", time: "08:33", date: "Today" },
-    { type: "overspeeding", severity: "high", time: "07:56", date: "Today" },
-    { type: "harsh braking", severity: "medium", time: "17:24", date: "Yesterday" },
-    { type: "idling", severity: "low", time: "15:11", date: "Yesterday" },
-    { type: "harsh acceleration", severity: "high", time: "11:48", date: "Yesterday" },
-  ]);
+  const recentEventsChart = recentEvents;
 
   return (
     <div className="space-y-6">

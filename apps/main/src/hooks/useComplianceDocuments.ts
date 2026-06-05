@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { differenceInDays } from 'date-fns';
 import { useOrgDataScope } from '@/hooks/useOrgDataScope';
-import { demoComplianceDocuments } from '@/lib/demoFleetData';
 export interface ComplianceDocument {
   id: string;
   tenant_id: string;
@@ -74,7 +73,7 @@ export function useComplianceDocuments(tenantId: string = 'default') {
         status: calculateStatus(doc.expiry_date),
       }));
 
-      setDocuments(updatedData.length > 0 ? updatedData : (demoComplianceDocuments as unknown as ComplianceDocument[]));
+      setDocuments(updatedData);
       setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch compliance documents';

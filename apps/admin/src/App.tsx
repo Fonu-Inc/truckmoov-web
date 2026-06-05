@@ -3,9 +3,8 @@ import { Toaster as Sonner } from "@/components/shadcn/sonner";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@truckmoov/api/lib/query-client";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { setToken, clearToken } from "@/lib/backendApi";
 import { useAuthStore } from "./stores/authStore";
+import { useAuthStore as useApiAuthStore } from "@truckmoov/api/lib/auth-store";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
 import { TenantBrandingProvider } from "./contexts/TenantBrandingContext";
@@ -61,11 +60,12 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { hasError: bo
 }
 
 function PlatformAdminRoute({ children }: { children: ReactNode }) {
-  const { user, isAuthenticated, isAuthReady } = useAuthStore();
+  const { user, isAuthReady } = useAuthStore();
+  const { accessToken } = useApiAuthStore();
   const location = useLocation();
 
   if (!isAuthReady) return null;
-  if (!isAuthenticated) return <Navigate to="/auth" state={{ from: location }} replace />;
+  if (!accessToken) return <Navigate to="/auth" state={{ from: location }} replace />;
   if (user?.role !== "platform_admin") return <Navigate to="/not-authorized" replace />;
 
   return <AppErrorBoundary>{children}</AppErrorBoundary>;
@@ -73,30 +73,7 @@ function PlatformAdminRoute({ children }: { children: ReactNode }) {
 
 const App = () => {
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("demoRole") === "platform_admin") {
-      useAuthStore.getState().setRole("platform_admin");
-      window.history.replaceState({}, "", window.location.pathname || "/");
-    }
-
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      const demoRole = sessionStorage.getItem("fleetpro_demo_role");
-      if (demoRole) return;
-
-      if (session?.access_token) {
-        setToken(session.access_token);
-      } else if (_event === "SIGNED_OUT") {
-        clearToken();
-      }
-
-      void useAuthStore.getState().bootstrapFromSession();
-    });
-
     void useAuthStore.getState().bootstrapFromSession();
-
-    return () => {
-      data.subscription.unsubscribe();
-    };
   }, []);
 
   return (

@@ -3,14 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { SIMCard } from "@/types";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { mockSIMCards } from "@/data/mockData";
-import { isFreshActivation } from "@/lib/freshActivation";
-
-// Lagos Express Logistics tenant UUID (for demo mode)
-const DEMO_TENANT_ID = "f7f5af88-fd76-4439-aae3-0461be52f63f";
-
-// Demo user IDs from authStore mockUsers
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
 
 interface IOTSIMFromDB {
   id: string;
@@ -104,43 +96,13 @@ export function useIOTSIMs(providedTenantId?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // Check if this is a demo user (mock login)
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !isFreshActivation() : false;
-  
-  // Resolve tenant ID
-  const tenantId = providedTenantId || (isDemoUser ? DEMO_TENANT_ID : user?.tenantId);
+  const tenantId = providedTenantId || user?.tenantId;
 
   const fetchSIMs = useCallback(async () => {
     setLoading(true);
     setError(null);
 
-    // Demo users get mock data immediately
-    if (isDemoUser) {
-      const mockMapped: SIMCardExtended[] = mockSIMCards.map((sim) => ({
-        ...sim,
-        plan: "iot_basic",
-        tenantId: DEMO_TENANT_ID,
-        monthlyCostNGN: 2500,
-        smsUsage: 0,
-        smsLimit: 100,
-        activationDate: new Date().toISOString(),
-        expiryDate: null,
-        lastActivity: new Date().toISOString(),
-        signalStrength: 85,
-        roaming: false,
-        networkType: "4G",
-        fonuSimId: null,
-        fonuStatus: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }));
-      setSims(mockMapped);
-      setLoading(false);
-      return;
-    }
-
     try {
-      // For production mode, fetch from database
       let query = supabase.from("iot_sims").select("*").order("created_at", { ascending: false });
 
       // Filter by tenant if available
@@ -161,7 +123,7 @@ export function useIOTSIMs(providedTenantId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [tenantId, isDemoUser]);
+  }, [tenantId]);
 
   const updateSIMStatus = useCallback(async (simId: string, newStatus: SIMCard["status"]) => {
     try {

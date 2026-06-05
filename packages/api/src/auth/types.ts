@@ -262,9 +262,30 @@ export type SystemChangePasswordPayload = {
 
 // ─── Response entity types ────────────────────────────────────────────────────
 
+export type UserRole =
+  | 'SUPER_ADMIN'
+  | 'SYSTEM_ADMIN'
+  | 'ENTERPRISE_ADMIN'
+  | 'AGGREGATOR_ADMIN'
+  | 'OWNER_OPERATOR'
+  | 'PLATFORM_ADMIN'
+  | 'FLEET_ADMIN'
+  | 'OPERATIONS_MANAGER'
+  | 'DISPATCHER'
+  | 'FINANCE_VIEWER'
+
+export type AuthUser = {
+  id: string
+  email: string
+  role: UserRole
+  tenantId: string
+}
+
 export type AuthSession = {
   accessToken: string
   refreshToken: string
+  expiresIn: number
+  user: AuthUser
 }
 
 export type UserProfile = {
@@ -281,7 +302,7 @@ export type OrganizationUser = {
   userId: string
   email: string
   tenantId: string
-  role: string
+  role: UserRole
   accountStatus: string
   status: string
   lastActiveAt: string

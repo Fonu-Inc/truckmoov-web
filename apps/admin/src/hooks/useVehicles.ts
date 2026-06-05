@@ -2,17 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { mockVehicles } from "@/data/mockData";
 import { useOrgDataScope } from "@/hooks/useOrgDataScope";
 import { useWritePermissions } from "@/hooks/useWritePermissions";
-import { filterValidUuids } from "@/lib/uuidUtils";
-import { isFreshActivation } from "@/lib/freshActivation";
-
-// Lagos Express Logistics tenant UUID (for demo mode)
-const DEMO_TENANT_ID = "f7f5af88-fd76-4439-aae3-0461be52f63f";
-
-// Demo user IDs from authStore mockUsers
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
 
 export interface VehicleData {
   id: string;
@@ -44,30 +35,21 @@ export function useVehicles() {
   const { canCreateAssets, canUpdateAssets, canDeleteAssets } = useWritePermissions();
 
   // Stabilize array reference to prevent infinite re-renders.
-  // Strip demo/non-UUID placeholders so .in('owning_org_id', ...) doesn't 400.
-  const validAssetOrgIds = useMemo(() => filterValidUuids(orgScope.assetOrgIds), [orgScope.assetOrgIds]);
-  const assetOrgIdsKey = JSON.stringify(validAssetOrgIds);
-  const stableAssetOrgIds = useMemo(() => validAssetOrgIds, [assetOrgIdsKey]);
+  const assetOrgIdsKey = JSON.stringify(orgScope.assetOrgIds);
+  const stableAssetOrgIds = useMemo(() => orgScope.assetOrgIds, [assetOrgIdsKey]);
 
-  // Check if this is a demo user (mock login)
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !isFreshActivation() : false;
-  
-  // For demo users, always use the demo tenant; otherwise use real tenant ID
-  const tenantId = isDemoUser ? DEMO_TENANT_ID : user?.tenantId;
+  const tenantId = user?.tenantId;
 
   const fetchVehicles = useCallback(async () => {
-    // For demo users, use DEMO_TENANT_ID to fetch from database
-    const effectiveTenantId = isDemoUser ? DEMO_TENANT_ID : tenantId;
-
-    if (!effectiveTenantId) {
+    if (!tenantId) {
       setVehicles([]);
       setIsLoading(false);
       return;
     }
 
     // When multi-stakeholder is enabled and the user has no asset orgs,
-    // skip the DB call. Demo users still get the mock fleet fallback below.
-    if (orgScope.multiStakeholderEnabled && stableAssetOrgIds.length === 0 && !orgScope.canManageAssets && user?.role !== 'platform_admin' && !isDemoUser) {
+    // skip the DB call.
+    if (orgScope.multiStakeholderEnabled && stableAssetOrgIds.length === 0 && !orgScope.canManageAssets && user?.role !== 'platform_admin') {
       setVehicles([]);
       setIsLoading(false);
       return;
@@ -80,7 +62,7 @@ export function useVehicles() {
       let query = supabase
         .from("vehicles")
         .select("*")
-        .eq("tenant_id", effectiveTenantId)
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
 
       // Always apply org-level filter when multi-stakeholder is enabled
@@ -111,33 +93,7 @@ export function useVehicles() {
         updatedAt: v.updated_at,
       }));
 
-      if (mapped.length === 0) {
-        // Frontend demo fallback so empty tenants still render a populated fleet
-        const nowIso = new Date().toISOString();
-        const fallback: VehicleData[] = mockVehicles.map((v) => ({
-          id: v.id,
-          tenantId: effectiveTenantId,
-          vin: v.vin,
-          registrationNumber: v.registrationNumber,
-          make: v.make,
-          model: v.model,
-          year: v.year,
-          type: v.type,
-          status: v.status as VehicleData["status"],
-          capacity: v.capacity ?? null,
-          currentDriverId: v.currentDriver ?? null,
-          deviceId: v.deviceId ?? null,
-          fuelLevel: v.fuelLevel ?? null,
-          currentMileage: null,
-          mileageSource: null,
-          lastMileageUpdate: null,
-          createdAt: nowIso,
-          updatedAt: nowIso,
-        }));
-        setVehicles(fallback);
-      } else {
-        setVehicles(mapped);
-      }
+      setVehicles(mapped);
     } catch (err) {
       console.error("Error fetching vehicles:", err);
       setError(err as Error);
@@ -145,7 +101,7 @@ export function useVehicles() {
     } finally {
       setIsLoading(false);
     }
-  }, [isDemoUser, tenantId, orgScope.multiStakeholderEnabled, stableAssetOrgIds, orgScope.canManageAssets, user?.role]);
+  }, [tenantId, orgScope.multiStakeholderEnabled, stableAssetOrgIds, orgScope.canManageAssets, user?.role]);
 
   const addVehicle = useCallback(async (vehicle: Partial<VehicleData>) => {
     if (!canCreateAssets) {

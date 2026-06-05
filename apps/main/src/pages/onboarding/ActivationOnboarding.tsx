@@ -39,7 +39,7 @@ import { SIMRequestFormDialogMinimal } from "@/components/sims/SIMRequestFormDia
 import { useDeviceSetupRequests } from "@/hooks/useDeviceSetupRequests";
 import { useSIMRequestSubmit } from "@/hooks/useSIMRequestSubmit";
 import { useOnboardingStore } from "@/stores/onboardingStore";
-import { useAuthStore, readDemoStakeholder } from "@/stores/authStore";
+import { useAuthStore } from "@/stores/authStore";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -50,10 +50,6 @@ async function resolvePostActivationRoute(
   legacyRole: string | undefined,
 ): Promise<string> {
   if (legacyRole === "platform_admin") return "/platform";
-  const demoStakeholder = readDemoStakeholder();
-  if (demoStakeholder === "ENTERPRISE") return "/enterprise";
-  if (demoStakeholder === "AGGREGATOR") return "/aggregator";
-  if (demoStakeholder === "OWNER_OPERATOR") return "/owner-operator";
   if (userId) {
     try {
       const { data: memberships } = await supabase

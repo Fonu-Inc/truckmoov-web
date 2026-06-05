@@ -96,23 +96,9 @@ const reporterName = (ticket: DemoTicket) =>
 const tenantLabel = (ticket: DemoTicket) =>
   ticket.tenantName || TENANT_NAMES[ticket.tenantId] || `Tenant ${shortId(ticket.tenantId)}`;
 
-// Demo dataset spanning multiple tenants — only used when no real tickets exist
-const DEMO_TICKETS: DemoTicket[] = [
-  { id: "tkt-20000001-aaaa", tenantId: "demo-tenant-lagos", category: "device_tracking", subject: "GPS tracker offline on TRK-204", description: "Device stopped reporting since 06:42. Last known position Apapa.", status: "open", priority: "high", contextType: "device", createdBy: "usr-21f4a8c0", createdAt: new Date(Date.now() - 1000 * 60 * 35).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-20000002-bbbb", tenantId: "demo-tenant-lagos", category: "sim_connectivity", subject: "SIM not activating after swap", description: "ICCID 8923440100… stuck in 'pending activation' for 4h.", status: "in_progress", priority: "medium", contextType: "sim", createdBy: "usr-9a3b1c44", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-20000003-cccc", tenantId: "demo-tenant-abuja", category: "billing", subject: "Wallet top-up not reflecting", description: "₦250,000 top-up via MoMo not credited to wallet.", status: "escalated", priority: "critical", contextType: "billing", createdBy: "usr-55cd0091", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-20000004-dddd", tenantId: "demo-tenant-abuja", category: "messaging", subject: "WhatsApp template rejected", description: "Template 'oo_job_offer_v3' rejected by Meta with policy violation.", status: "waiting_on_tenant", priority: "medium", contextType: "whatsapp", createdBy: "usr-ab991122", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-20000005-eeee", tenantId: "demo-tenant-portharcourt", category: "account_access", subject: "Manager locked out of dashboard", description: "Operations manager unable to log in after password reset.", status: "in_progress", priority: "critical", contextType: "none", createdBy: "usr-31aa55b9", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-20000006-ffff", tenantId: "demo-tenant-portharcourt", category: "device_tracking", subject: "Geofence alerts not firing", description: "Geofence Apapa-Port created but no entry/exit alerts received.", status: "resolved", priority: "low", contextType: "device", createdBy: "usr-7711eecc", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), updatedAt: new Date().toISOString(), resolvedAt: new Date().toISOString() },
-  { id: "tkt-20000007-0000", tenantId: "demo-tenant-kano", category: "sim_connectivity", subject: "SIM data exhausted early", description: "5GB plan consumed in 2 days — possible misuse.", status: "resolved", priority: "medium", contextType: "sim", createdBy: "usr-cc220011", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(), updatedAt: new Date().toISOString(), resolvedAt: new Date().toISOString() },
-  { id: "tkt-20000008-1111", tenantId: "demo-tenant-kano", category: "other", subject: "Driver app crashes on launch", description: "Latest mobile app build crashes on Android 12 devices.", status: "escalated", priority: "high", contextType: "none", createdBy: "usr-66aa00ee", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-20000009-2222", tenantId: "demo-tenant-ibadan", category: "billing", subject: "Wallet top-up not credited", description: "Bank transfer of ₦100k not reflecting in wallet.", status: "open", priority: "high", contextType: "billing", createdBy: "usr-aa11bbcc", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-20000010-3333", tenantId: "demo-tenant-ibadan", category: "messaging", subject: "SMS delivery delayed", description: "Bulk SMS notifications taking >10 min to deliver.", status: "in_progress", priority: "low", contextType: "whatsapp", createdBy: "usr-12340987", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), updatedAt: new Date().toISOString() },
-];
-
 export function AllTickets() {
   const { tickets: realTickets, isLoading } = useSupportTickets();
-  const tickets: DemoTicket[] = realTickets.length > 0 ? realTickets : DEMO_TICKETS;
+  const tickets: DemoTicket[] = realTickets;
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);

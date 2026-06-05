@@ -32,8 +32,6 @@ interface ContextItem {
   extra?: string;
 }
 
-const DEMO_TENANT_ID = 'f7f5af88-fd76-4439-aae3-0461be52f63f';
-
 const categories: { value: TicketCategory; label: string; icon: React.ElementType; contextType: ContextType }[] = [
   { value: "device_tracking", label: "Device & Tracking", icon: Cpu, contextType: "device" },
   { value: "sim_connectivity", label: "SIM & Connectivity", icon: Wifi, contextType: "sim" },
@@ -62,7 +60,7 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
   // Context options
   const [contextOptions, setContextOptions] = useState<ContextItem[]>([]);
 
-  const tenantId = user?.tenantId || DEMO_TENANT_ID;
+  const tenantId = user?.tenantId ?? null;
 
   // Load context options when category changes
   useEffect(() => {

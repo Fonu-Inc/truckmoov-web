@@ -1,11 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
-import { isFreshActivation } from "@/lib/freshActivation";
-
-// Demo tenant for fallback
-const DEMO_TENANT_ID = "f7f5af88-fd76-4439-aae3-0461be52f63f";
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
 
 export interface DispatchEligibility {
   eligible: boolean;
@@ -29,8 +24,7 @@ export function useDispatchEligibility() {
   const [isChecking, setIsChecking] = useState(false);
   const { user } = useAuthStore();
 
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !isFreshActivation() : false;
-  const tenantId = isDemoUser ? DEMO_TENANT_ID : user?.tenantId;
+  const tenantId = user?.tenantId;
 
   const checkEligibility = useCallback(async (vehicleId: string): Promise<DispatchEligibility> => {
     if (!tenantId) {

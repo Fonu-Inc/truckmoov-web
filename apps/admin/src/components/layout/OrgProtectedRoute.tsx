@@ -5,7 +5,6 @@ import { useOrgContext } from '@/hooks/useOrgContext';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { useActiveOrgStore } from '@/stores/activeOrgStore';
 import { canAccessRoute, resolveOrgHomeRoute } from '@/lib/orgPermissions';
-import { readDemoStakeholder } from '@/stores/authStore';
 import { toast } from 'sonner';
 import { useRef } from 'react';
 
@@ -26,8 +25,7 @@ export function OrgProtectedRoute({ children }: OrgProtectedRouteProps) {
     'enable_multi_stakeholder_model',
     user?.tenantId
   );
-  const demoStakeholder = readDemoStakeholder();
-  const multiStakeholderEnabled = flagEnabled || !!demoStakeholder;
+  const multiStakeholderEnabled = flagEnabled;
 
   // Prevent duplicate toasts on the same denied path
   const lastDeniedPath = useRef<string | null>(null);

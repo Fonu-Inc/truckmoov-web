@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
 import { useOrgContext } from '@/hooks/useOrgContext';
-import { useAuthStore, readDemoStakeholder } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { computeOrgDataScope, type OrgDataScope } from '@/lib/orgPermissions';
-import { filterValidUuids } from '@/lib/uuidUtils';
 
 /**
  * Provides the computed data scope for the current user.
@@ -18,8 +17,7 @@ export function useOrgDataScope(): OrgDataScope & { isReady: boolean; multiStake
     'enable_multi_stakeholder_model',
     user?.tenantId
   );
-  const demoStakeholder = readDemoStakeholder();
-  const multiStakeholderEnabled = flagEnabled || !!demoStakeholder;
+  const multiStakeholderEnabled = flagEnabled;
 
   // For aggregators, fetch child org IDs
   const isAggregator = orgCtx.hasOrgType('AGGREGATOR');
@@ -49,16 +47,8 @@ export function useOrgDataScope(): OrgDataScope & { isReady: boolean; multiStake
     [orgCtx.memberships, user?.role, childOrgIds]
   );
 
-  // Sanitize org IDs going into Supabase .in() filters: demo stakeholder
-  // placeholders (e.g. "o0000001-...") are not real UUIDs and would 400.
-  const sanitizedScope = useMemo<OrgDataScope>(() => ({
-    ...scope,
-    assetOrgIds: filterValidUuids(scope.assetOrgIds),
-    jobFilterOrgIds: filterValidUuids(scope.jobFilterOrgIds),
-  }), [scope]);
-
   return {
-    ...sanitizedScope,
+    ...scope,
     multiStakeholderEnabled,
     isReady: !orgCtx.isLoading,
   };

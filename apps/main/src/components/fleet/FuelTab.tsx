@@ -52,7 +52,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useFuelTransactions, FuelTransaction } from "@/hooks/useFuelTransactions";
 import { useFuelEfficiency } from "@/hooks/useFuelEfficiency";
-import { withDemoFallback, demoFuelConsumption, demoFuelByVehicle } from "@/lib/demoChartData";
 import { PeriodFilter, PeriodValue } from "./PeriodFilter";
 
 export function FuelTab() {
@@ -664,7 +663,7 @@ export function FuelTab() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={withDemoFallback(weeklyConsumption, demoFuelConsumption.slice(0, 7).map(d => ({ date: d.name, diesel: Math.round(d.liters * 0.7), petrol: Math.round(d.liters * 0.3) })))}>
+                <BarChart data={weeklyConsumption}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />

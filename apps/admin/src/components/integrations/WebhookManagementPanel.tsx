@@ -12,7 +12,6 @@ import { ScrollArea } from '@/components/shadcn/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
 import { Webhook, Plus, Copy, RefreshCw, Trash2, Check, X, Clock, AlertTriangle, ExternalLink, Eye } from 'lucide-react';
 import { useWebhookSubscriptions, WEBHOOK_EVENT_TYPES, CreateWebhookInput, WebhookDeliveryLog } from '@/hooks/useWebhookSubscriptions';
-import { demoWebhookSubscriptions, demoDeliveryLogs } from './demoIntegrationData';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -27,8 +26,8 @@ export function WebhookManagementPanel() {
     regenerateSecret,
     refreshDeliveryLogs,
   } = useWebhookSubscriptions();
-  const subscriptions = realSubscriptions.length > 0 ? realSubscriptions : demoWebhookSubscriptions;
-  const deliveryLogs = realDeliveryLogs.length > 0 ? realDeliveryLogs : demoDeliveryLogs;
+  const subscriptions = realSubscriptions;
+  const deliveryLogs = realDeliveryLogs;
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newWebhookName, setNewWebhookName] = useState('');

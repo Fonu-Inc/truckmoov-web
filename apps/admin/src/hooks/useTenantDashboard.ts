@@ -1,14 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
-import { mockVehicles, mockDrivers, mockDevices, mockSIMCards } from "@/data/mockData";
-import { isFreshActivation } from "@/lib/freshActivation";
-
-// Lagos Express Logistics tenant UUID (for demo mode)
-const DEMO_TENANT_ID = "f7f5af88-fd76-4439-aae3-0461be52f63f";
-
-// Demo user IDs from authStore mockUsers
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
 
 interface TenantDashboardData {
   name: string;
@@ -26,28 +18,8 @@ export function useTenantDashboard() {
   const [error, setError] = useState<Error | null>(null);
   const { user } = useAuthStore();
 
-  // Check if this is a demo user (mock login)
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !isFreshActivation() : false;
-
   useEffect(() => {
     const fetchTenantData = async () => {
-      // Demo users get Lagos Express fixtures (no backend auth needed)
-      if (isDemoUser) {
-        setData({
-          name: "Lagos Express Logistics",
-          vehicleCount: mockVehicles.length,
-          driverCount: mockDrivers.length,
-          deviceCount: mockDevices.length,
-          simCount: mockSIMCards.length,
-          plan: "enterprise",
-          status: "active",
-        });
-        setError(null);
-        setIsLoading(false);
-        return;
-      }
-
-      // Real users without a tenant assignment
       if (!user?.tenantId) {
         setData(null);
         setIsLoading(false);
@@ -89,7 +61,7 @@ export function useTenantDashboard() {
     };
 
     fetchTenantData();
-  }, [isDemoUser, user?.id, user?.tenantId]);
+  }, [user?.id, user?.tenantId]);
 
   return { data, isLoading, error };
 }

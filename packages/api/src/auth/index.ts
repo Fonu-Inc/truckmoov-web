@@ -1,5 +1,6 @@
 import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
+import { useAuthStore } from '../lib/auth-store'
 import { queryClient } from '../lib/query-client'
 import {
   approveSIMRequest,
@@ -82,6 +83,8 @@ import type { ActivityLogQuery, SystemTenantsQuery } from './types'
 export type {
   ActivityLogQuery,
   ApproveSIMRequestPayload,
+  AuthSession,
+  AuthUser,
   ChangeRolePayload,
   CompleteProfilePayload,
   CreateDeviceCatalogPayload,
@@ -353,11 +356,21 @@ export function useRegister() {
 }
 
 export function useLogin() {
-  return useMutation({ mutationFn: login })
+  return useMutation({
+    mutationFn: login,
+    onSuccess: (res) => {
+      useAuthStore.getState().setSession(res.data)
+    },
+  })
 }
 
 export function useSystemLogin() {
-  return useMutation({ mutationFn: systemLogin })
+  return useMutation({
+    mutationFn: systemLogin,
+    onSuccess: (res) => {
+      useAuthStore.getState().setSession(res.data)
+    },
+  })
 }
 
 export function useRefresh() {
@@ -447,7 +460,12 @@ export function useChangeRole() {
 }
 
 export function useLogout() {
-  return useMutation({ mutationFn: logout })
+  return useMutation({
+    mutationFn: logout,
+    onSuccess: () => {
+      useAuthStore.getState().logout()
+    },
+  })
 }
 
 export function useUpdateOrganizationUser() {

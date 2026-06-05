@@ -2,13 +2,6 @@ import { useEffect, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
-import { isFreshActivation } from "@/lib/freshActivation";
-
-// Lagos Express Logistics tenant UUID (for demo mode)
-const DEMO_TENANT_ID = "f7f5af88-fd76-4439-aae3-0461be52f63f";
-
-// Demo user IDs from authStore mockUsers
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
 
 interface RealtimeMessage {
   id: string;
@@ -33,12 +26,8 @@ interface RealtimeCallLog {
 
 export function useRealtimeMessages(providedTenantId?: string) {
   const { user } = useAuthStore();
-  
-  // Check if this is a demo user (mock login)
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !isFreshActivation() : false;
-  
-  // Resolve tenant ID: provided > demo tenant > user tenant > fallback
-  const tenantId = providedTenantId || (isDemoUser ? DEMO_TENANT_ID : user?.tenantId) || DEMO_TENANT_ID;
+
+  const tenantId = providedTenantId || user?.tenantId;
   
   const [unreadCount, setUnreadCount] = useState(0);
   const [lastMessage, setLastMessage] = useState<RealtimeMessage | null>(null);

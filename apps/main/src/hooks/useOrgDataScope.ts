@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useOrgContext } from '@/hooks/useOrgContext';
-import { useAuthStore, readDemoStakeholder } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,8 +18,7 @@ export function useOrgDataScope(): OrgDataScope & { isReady: boolean; multiStake
     'enable_multi_stakeholder_model',
     user?.tenantId
   );
-  const demoStakeholder = readDemoStakeholder();
-  const multiStakeholderEnabled = flagEnabled || !!demoStakeholder;
+  const multiStakeholderEnabled = flagEnabled;
 
   // For aggregators, fetch child org IDs
   const isAggregator = orgCtx.hasOrgType('AGGREGATOR');

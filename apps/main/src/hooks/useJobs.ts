@@ -6,13 +6,6 @@ import { mockJobs } from "@/data/mockData";
 import { logActivity } from "@/hooks/useActivityLogs";
 import { useOrgDataScope } from "@/hooks/useOrgDataScope";
 import { useWritePermissions } from "@/hooks/useWritePermissions";
-import { isFreshActivation } from "@/lib/freshActivation";
-
-// Lagos Express Logistics tenant UUID (for demo mode)
-const DEMO_TENANT_ID = "f7f5af88-fd76-4439-aae3-0461be52f63f";
-
-// Demo user IDs from authStore mockUsers
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
 
 export interface JobData {
   id: string;
@@ -56,11 +49,7 @@ export function useJobs() {
   const orgScope = useOrgDataScope();
   const { canCreateJobs, canUpdateJobs, canDeleteJobs } = useWritePermissions();
 
-  // Check if this is a demo user (mock login)
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !isFreshActivation() : false;
-  
-  // For demo users, always use the demo tenant; otherwise use real tenant ID
-  const tenantId = isDemoUser ? DEMO_TENANT_ID : (user?.tenantId ?? null);
+  const tenantId = user?.tenantId ?? null;
   const isPlatformAdmin = user?.role === "platform_admin";
 
   // Stabilize array references to prevent infinite re-renders
@@ -71,43 +60,7 @@ export function useJobs() {
     setIsLoading(true);
     setError(null);
 
-    if (isDemoUser) {
-      const nowIso = new Date().toISOString();
-      const mapped: JobData[] = (mockJobs || []).map((j) => ({
-        id: j.id,
-        tenantId: DEMO_TENANT_ID,
-        reference: j.reference,
-        status: j.status as JobData["status"],
-        pickupAddress: j.pickup?.address ?? "",
-        pickupLat: j.pickup?.lat ?? null,
-        pickupLng: j.pickup?.lng ?? null,
-        deliveryAddress: j.delivery?.address ?? "",
-        deliveryLat: j.delivery?.lat ?? null,
-        deliveryLng: j.delivery?.lng ?? null,
-        cargoType: j.cargo?.type ?? null,
-        cargoWeight: j.cargo?.weight ?? null,
-        cargoDescription: j.cargo?.description ?? null,
-        driverId: j.driverId ?? null,
-        vehicleId: j.vehicleId ?? null,
-        amountNgn: j.amount ?? 0,
-        deadline: j.deadline ? new Date(j.deadline as any).toISOString() : null,
-        completedAt: null,
-        notes: null,
-        createdAt: j.createdAt ? new Date(j.createdAt as any).toISOString() : nowIso,
-        updatedAt: nowIso,
-        revenueNgn: null,
-        billableKm: null,
-        billableHours: null,
-        customerChargeNgn: null,
-        assignedVehicleId: j.vehicleId ?? null,
-      }));
-
-      setJobs(mapped);
-      setIsLoading(false);
-      return;
-    }
-
-    // Never fall back to demo tenant data. If the user has no tenant assignment,
+    // If the user has no tenant assignment,
     // return an empty dataset (platform admins can see all tenants).
     if (!isPlatformAdmin && !tenantId) {
       setJobs([]);
@@ -208,7 +161,7 @@ export function useJobs() {
     } finally {
       setIsLoading(false);
     }
-  }, [isDemoUser, isPlatformAdmin, tenantId, orgScope.multiStakeholderEnabled, orgScope.jobFilterField, stableJobFilterOrgIds]);
+  }, [isPlatformAdmin, tenantId, orgScope.multiStakeholderEnabled, orgScope.jobFilterField, stableJobFilterOrgIds]);
 
   const addJob = useCallback(async (job: Partial<JobData>) => {
     if (!canCreateJobs) {

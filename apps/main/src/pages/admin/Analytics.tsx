@@ -15,7 +15,6 @@ import { useDrivers } from "@/hooks/useDrivers";
 import { useJobs } from "@/hooks/useJobs";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { withDemoFallback, demoVehicleStatusBreakdown, demoTopDrivers, demoMaintenanceByType } from "@/lib/demoChartData";
 
 interface StatCardProps {
   title: string;
@@ -83,19 +82,9 @@ export default function Analytics() {
     { name: "Offline", value: drivers.filter(d => d.status === "offline").length, color: "hsl(var(--muted-foreground))" },
   ].filter(s => s.value > 0);
 
-  // Demo fallbacks: keep dashboards visually populated when sources are empty
-  const jobsByStatusChart = withDemoFallback(jobsByStatus, [
-    { name: "Created", value: 6, color: "hsl(var(--warning))" },
-    { name: "Assigned", value: 9, color: "hsl(var(--primary))" },
-    { name: "In Progress", value: 14, color: "hsl(var(--accent))" },
-    { name: "Completed", value: 38, color: "hsl(var(--success))" },
-  ]);
-  const vehiclesByStatusChart = withDemoFallback(vehiclesByStatus, demoVehicleStatusBreakdown.map(v => ({ name: v.name, value: v.value, color: v.fill })));
-  const driversByStatusChart = withDemoFallback(driversByStatus, [
-    { name: "Available", value: 12, color: "hsl(var(--success))" },
-    { name: "On Trip", value: 18, color: "hsl(var(--primary))" },
-    { name: "Offline", value: 5, color: "hsl(var(--muted-foreground))" },
-  ]);
+  const jobsByStatusChart = jobsByStatus;
+  const vehiclesByStatusChart = vehiclesByStatus;
+  const driversByStatusChart = driversByStatus;
 
   if (isLoading) {
     return (

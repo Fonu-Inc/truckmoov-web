@@ -3,15 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
 import { useOrgDataScope } from '@/hooks/useOrgDataScope';
-import { isFreshActivation } from "@/lib/freshActivation";
-
-// Stabilize org scope arrays
-
-// Lagos Express Logistics tenant UUID (for demo mode)
-const DEMO_TENANT_ID = "f7f5af88-fd76-4439-aae3-0461be52f63f";
-
-// Demo user IDs from authStore mockUsers
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
 
 export interface RealtimeDevice {
   id: string;
@@ -92,11 +83,7 @@ export function useSupervisorData() {
   const assetOrgIdsKey = JSON.stringify(orgScope.assetOrgIds);
   const stableAssetOrgIds = useMemo(() => orgScope.assetOrgIds, [assetOrgIdsKey]);
 
-  // Check if this is a demo user (mock login)
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !isFreshActivation() : false;
-  
-  // For demo users, always use the demo tenant; otherwise use real tenant ID
-  const tenantId = isDemoUser ? DEMO_TENANT_ID : (user?.tenantId ?? null);
+  const tenantId = user?.tenantId ?? null;
   const isPlatformAdmin = user?.role === 'platform_admin';
 
   // Fetch devices with telemetry

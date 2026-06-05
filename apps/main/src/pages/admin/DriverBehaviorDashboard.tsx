@@ -19,12 +19,6 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, PieChart, Pie, Cell,
 } from "recharts";
-import {
-  demoGeofenceAlertsTrend,
-  demoGeofenceAlertTypes,
-  demoGeofenceTopZones,
-  withDemoFallback,
-} from "@/lib/demoChartData";
 
 function ScoreGauge({ score, label, color }: { score: number; label: string; color: string }) {
   const getScoreColor = (s: number) => {
@@ -302,34 +296,38 @@ export default function DriverBehaviorDashboard() {
 
         {/* Geofence Alert Charts */}
         {(() => {
-          const trendData = withDemoFallback(
-            recentAlerts.length > 0
-              ? Object.values(
-                  recentAlerts.reduce<Record<string, { name: string; entries: number; exits: number; dwell: number }>>(
-                    (acc, a) => {
-                      const key = a.triggeredAt.toLocaleDateString("en-US", { weekday: "short" });
-                      acc[key] = acc[key] || { name: key, entries: 0, exits: 0, dwell: 0 };
-                      if (a.alertType === "entry") acc[key].entries += 1;
-                      else if (a.alertType === "exit") acc[key].exits += 1;
-                      else acc[key].dwell += 1;
-                      return acc;
-                    },
-                    {}
-                  )
+          const trendData = recentAlerts.length > 0
+            ? Object.values(
+                recentAlerts.reduce<Record<string, { name: string; entries: number; exits: number; dwell: number }>>(
+                  (acc, a) => {
+                    const key = a.triggeredAt.toLocaleDateString("en-US", { weekday: "short" });
+                    acc[key] = acc[key] || { name: key, entries: 0, exits: 0, dwell: 0 };
+                    if (a.alertType === "entry") acc[key].entries += 1;
+                    else if (a.alertType === "exit") acc[key].exits += 1;
+                    else acc[key].dwell += 1;
+                    return acc;
+                  },
+                  {}
                 )
-              : [],
-            demoGeofenceAlertsTrend
-          );
-          const typeData = withDemoFallback(
-            geofenceStats.entries + geofenceStats.exits > 0
-              ? [
-                  { name: "Entry", value: geofenceStats.entries, fill: "hsl(142 76% 36%)" },
-                  { name: "Exit", value: geofenceStats.exits, fill: "hsl(220 70% 55%)" },
-                ]
-              : [],
-            demoGeofenceAlertTypes
-          );
-          const zoneData = demoGeofenceTopZones;
+              )
+            : [];
+          const typeData = geofenceStats.entries + geofenceStats.exits > 0
+            ? [
+                { name: "Entry", value: geofenceStats.entries, fill: "hsl(142 76% 36%)" },
+                { name: "Exit", value: geofenceStats.exits, fill: "hsl(220 70% 55%)" },
+              ]
+            : [];
+          const zoneData = Object.values(
+            alerts.reduce<Record<string, { name: string; entries: number; exits: number }>>(
+              (acc, a) => {
+                acc[a.geofenceName] = acc[a.geofenceName] || { name: a.geofenceName, entries: 0, exits: 0 };
+                if (a.alertType === "entry") acc[a.geofenceName].entries += 1;
+                else if (a.alertType === "exit") acc[a.geofenceName].exits += 1;
+                return acc;
+              },
+              {}
+            )
+          ).sort((a, b) => (b.entries + b.exits) - (a.entries + a.exits)).slice(0, 5);
           return (
             <div className="grid gap-4 lg:grid-cols-3">
               <Card className="lg:col-span-2">

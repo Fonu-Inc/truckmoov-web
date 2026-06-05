@@ -1,24 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
-import { readDemoStakeholder } from '@/stores/authStore';
 import { useMemo } from 'react';
 import type { OrgMembership, UserOrgContext } from '@/types/orgRoles';
-
-// Demo tenant org ID for fallback when user isn't a real UUID
-const DEMO_ORG_ID = 'f906c47a-6d00-4166-b9e8-f47871a146c1';
-const DEMO_TENANT_ID = 'f7f5af88-fd76-4439-aae3-0461be52f63f';
-
-// Demo org IDs for stakeholder types
-const DEMO_ENTERPRISE_ORG_ID = 'e0000001-0000-0000-0000-000000000001';
-const DEMO_AGGREGATOR_ORG_ID = 'a0000001-0000-0000-0000-000000000001';
-const DEMO_OWNER_OPERATOR_ORG_ID = 'o0000001-0000-0000-0000-000000000001';
-
-/** Simple check: is the string a valid UUID v4? */
-function isValidUuid(id: string | undefined): boolean {
-  if (!id) return false;
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-}
 
 /**
  * Fetches the current user's organization memberships and org-scoped roles.
@@ -26,7 +10,6 @@ function isValidUuid(id: string | undefined): boolean {
  */
 export function useOrgContext(): UserOrgContext & { isLoading: boolean } {
   const { user, isAuthenticated } = useAuthStore();
-  const isDemoUser = !!user?.id && !isValidUuid(user.id);
 
   const { data: rawMemberships = [], isLoading: membershipsLoading } = useQuery({
     queryKey: ['user-org-memberships', user?.id],
@@ -45,7 +28,7 @@ export function useOrgContext(): UserOrgContext & { isLoading: boolean } {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user?.id && isAuthenticated && !isDemoUser,
+    enabled: !!user?.id && isAuthenticated,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -65,68 +48,11 @@ export function useOrgContext(): UserOrgContext & { isLoading: boolean } {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user?.id && isAuthenticated && !isDemoUser,
+    enabled: !!user?.id && isAuthenticated,
     staleTime: 5 * 60 * 1000,
   });
 
   const memberships: OrgMembership[] = useMemo(() => {
-    // Demo fallback: when the user ID isn't a real UUID, return the demo org
-    if (isDemoUser) {
-      const stakeholder = readDemoStakeholder();
-      
-      if (stakeholder === 'ENTERPRISE') {
-        return [{
-          orgId: DEMO_ENTERPRISE_ORG_ID,
-          orgName: 'Dangote Industries',
-          orgType: 'ENTERPRISE',
-          roleKeys: ['ADMIN'],
-          roleScope: 'ORG',
-        }];
-      }
-      if (stakeholder === 'AGGREGATOR') {
-        return [{
-          orgId: DEMO_AGGREGATOR_ORG_ID,
-          orgName: 'West Africa Logistics Network',
-          orgType: 'AGGREGATOR',
-          roleKeys: ['ADMIN'],
-          roleScope: 'CROSS_ORG',
-        }];
-      }
-      if (stakeholder === 'OWNER_OPERATOR') {
-        return [{
-          orgId: DEMO_OWNER_OPERATOR_ORG_ID,
-          orgName: 'Chidi Trucking',
-          orgType: 'OWNER_OPERATOR',
-          roleKeys: ['ADMIN'],
-          roleScope: 'ORG',
-        }];
-      }
-
-      // Platform admin demo: show neutral label
-      if (user?.role === 'platform_admin') {
-        return [{
-          orgId: DEMO_ORG_ID,
-          orgName: 'Platform Administration',
-          orgType: 'FLEET_PROVIDER',
-          roleKeys: ['ADMIN'],
-          roleScope: 'ORG',
-        }];
-      }
-
-      const role = user?.role;
-      const demoRoleKey = role === 'tenant_admin' ? 'ADMIN'
-        : role === 'operations_manager' ? 'OPERATIONS_MANAGER'
-        : role === 'dispatcher' ? 'DISPATCHER'
-        : 'ADMIN';
-      return [{
-        orgId: DEMO_ORG_ID,
-        orgName: 'Lagos Express Logistics',
-        orgType: 'FLEET_PROVIDER',
-        roleKeys: [demoRoleKey],
-        roleScope: 'ORG',
-      }];
-    }
-
     return rawMemberships.map((m: any) => {
       const org = m.organizations;
       const roles = rawRoles.filter((r: any) => r.org_id === m.org_id);
@@ -138,7 +64,7 @@ export function useOrgContext(): UserOrgContext & { isLoading: boolean } {
         roleScope: roles[0]?.org_role_definitions?.role_scope || 'ORG',
       };
     });
-  }, [rawMemberships, rawRoles, isDemoUser, user?.role]);
+  }, [rawMemberships, rawRoles]);
 
   const orgIds = useMemo(() => memberships.map(m => m.orgId), [memberships]);
 

@@ -17,7 +17,7 @@ import {
 } from "@/components/shadcn/popover";
 import { Check, ChevronDown, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuthStore, readDemoStakeholder } from "@/stores/authStore";
+import { useAuthStore } from "@/stores/authStore";
 import { useOnboardingStore } from "@/stores/onboardingStore";
 import {
   getRoleQuestionnaire,
@@ -36,7 +36,6 @@ type Answers = Record<string, AnswerValue>;
  */
 export function RoleQuestionnaireModal() {
   const { user } = useAuthStore();
-  const stakeholder = readDemoStakeholder();
   const {
     showQuestionnaire,
     completeQuestionnaire,
@@ -45,8 +44,8 @@ export function RoleQuestionnaireModal() {
   } = useOnboardingStore();
 
   const questionnaire = useMemo(
-    () => getRoleQuestionnaire(user?.role, stakeholder),
-    [user?.role, stakeholder],
+    () => getRoleQuestionnaire(user?.role),
+    [user?.role],
   );
 
   const [answers, setAnswers] = useState<Answers>({});

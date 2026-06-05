@@ -91,22 +91,9 @@ const REPORTER_NAMES: Record<string, string> = {
 const reporterName = (ticket: SupportTicket & { reporterName?: string }) =>
   ticket.reporterName || REPORTER_NAMES[ticket.createdBy] || shortId(ticket.createdBy);
 
-const DEMO_TICKETS: DemoTicket[] = [
-  { id: "tkt-10000001-aaaa", tenantId: "demo", category: "device_tracking", subject: "GPS tracker offline on TRK-204", description: "Device stopped reporting since 06:42. Last known position Apapa.", status: "open", priority: "high", contextType: "device", createdBy: "usr-21f4a8c0", assignedTo: "usr-7c12d9a1", createdAt: new Date(Date.now() - 1000 * 60 * 35).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000002-bbbb", tenantId: "demo", category: "sim_connectivity", subject: "SIM not activating after swap", description: "ICCID 8923440100… stuck in 'pending activation' for 4h.", status: "in_progress", priority: "medium", contextType: "sim", createdBy: "usr-9a3b1c44", assignedTo: "usr-44ee01b2", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000003-cccc", tenantId: "demo", category: "billing", subject: "Wallet top-up not reflecting", description: "₦250,000 top-up via MoMo not credited to wallet.", status: "escalated", priority: "critical", contextType: "billing", createdBy: "usr-55cd0091", assignedTo: "usr-bd771122", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000004-dddd", tenantId: "demo", category: "messaging", subject: "WhatsApp template rejected", description: "Template 'oo_job_offer_v3' rejected by Meta with policy violation.", status: "waiting_on_tenant", priority: "medium", contextType: "whatsapp", createdBy: "usr-ab991122", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000005-eeee", tenantId: "demo", category: "account_access", subject: "Cannot invite supervisor", description: "Invite emails bouncing for new supervisor accounts.", status: "open", priority: "low", contextType: "none", createdBy: "usr-31aa55b9", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000006-ffff", tenantId: "demo", category: "device_tracking", subject: "Excessive harsh-braking alerts", description: "Driver DRV-118 generating false harsh-braking events.", status: "in_progress", priority: "medium", contextType: "vehicle", createdBy: "usr-7711eecc", assignedTo: "usr-7c12d9a1", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000007-0000", tenantId: "demo", category: "billing", subject: "Invoice PDF won't download", description: "INV-2026-0421 returns 500 when generating PDF.", status: "resolved", priority: "low", contextType: "billing", createdBy: "usr-cc220011", assignedTo: "usr-bd771122", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000008-1111", tenantId: "demo", category: "sim_connectivity", subject: "High data usage anomaly", description: "SIM consumed 12GB in 24h — possible misuse on TRK-077.", status: "open", priority: "high", contextType: "sim", createdBy: "usr-66aa00ee", assignedTo: "usr-44ee01b2", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 50).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000009-2222", tenantId: "demo", category: "other", subject: "Request: bulk vehicle import template", description: "Need updated CSV template with new compliance columns.", status: "closed", priority: "low", contextType: "none", createdBy: "usr-aa11bbcc", assignedTo: "usr-99ff8822", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 96).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000010-3333", tenantId: "demo", category: "messaging", subject: "SMS sender ID pending approval", description: "Sender ID 'LAGEXP' awaiting MTN approval for 5 days.", status: "waiting_on_tenant", priority: "medium", contextType: "whatsapp", createdBy: "usr-12340987", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 120).toISOString(), updatedAt: new Date().toISOString() },
-];
-
 export function MyTickets() {
   const { tickets: realTickets, isLoading } = useSupportTickets();
-  const tickets = realTickets.length > 0 ? realTickets : DEMO_TICKETS;
+  const tickets: SupportTicket[] = realTickets;
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");

@@ -68,7 +68,6 @@ import {
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
 import { Vehicle } from "@/types";
-import { mockVehicles } from "@/data/mockData";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 import { WritableAction } from "@/components/auth/WritableAction";
@@ -129,8 +128,7 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
     fuelLevel: v.fuelLevel || undefined,
   }));
 
-  // Fallback to demo data if DB is empty (so the table shows populated state)
-  const vehicles: Vehicle[] = dbMappedVehicles.length > 0 ? dbMappedVehicles : mockVehicles;
+  const vehicles: Vehicle[] = dbMappedVehicles;
 
   const filteredVehicles = vehicles.filter((vehicle) => {
     const matchesSearch =

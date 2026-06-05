@@ -3,17 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import type { Json } from "@/integrations/supabase/types";
-import { mockAlerts } from "@/data/mockData";
 import { useOrgDataScope } from "@/hooks/useOrgDataScope";
-import { isFreshActivation } from "@/lib/freshActivation";
-
-// Stabilize org scope arrays
-
-// Lagos Express Logistics tenant UUID (for demo mode)
-const DEMO_TENANT_ID = "f7f5af88-fd76-4439-aae3-0461be52f63f";
-
-// Demo user IDs from authStore mockUsers
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
 
 export interface AlertData {
   id: string;
@@ -40,38 +30,12 @@ export function useAlerts() {
   const assetOrgIdsKey = JSON.stringify(orgScope.assetOrgIds);
   const stableAssetOrgIds = useMemo(() => orgScope.assetOrgIds, [assetOrgIdsKey]);
 
-  // Check if this is a demo user (mock login)
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !isFreshActivation() : false;
-  
-  // For demo users, always use the demo tenant; otherwise use real tenant ID
-  const tenantId = isDemoUser ? DEMO_TENANT_ID : (user?.tenantId ?? null);
+  const tenantId = user?.tenantId ?? null;
   const isPlatformAdmin = user?.role === "platform_admin";
 
   const fetchAlerts = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-
-    if (isDemoUser) {
-      const mapped: AlertData[] = (mockAlerts || []).map((a) => ({
-        id: a.id,
-        tenantId: DEMO_TENANT_ID,
-        type: a.type as AlertData["type"],
-        severity: a.severity as AlertData["severity"],
-        message: a.message,
-        vehicleId: a.vehicleId ?? null,
-        driverId: (a as any).driverId ?? null,
-        deviceId: null,
-        acknowledged: Boolean(a.acknowledged),
-        acknowledgedBy: null,
-        acknowledgedAt: a.acknowledged ? new Date((a as any).timestamp ?? Date.now()).toISOString() : null,
-        metadata: {},
-        createdAt: new Date((a as any).timestamp ?? Date.now()).toISOString(),
-      }));
-
-      setAlerts(mapped);
-      setIsLoading(false);
-      return;
-    }
 
     if (!isPlatformAdmin && !tenantId) {
       setAlerts([]);
@@ -117,27 +81,7 @@ export function useAlerts() {
         createdAt: a.created_at,
       }));
 
-      if (mapped.length === 0) {
-        // Frontend demo fallback so empty tenants still render alerts
-        const fallback: AlertData[] = (mockAlerts || []).map((a) => ({
-          id: a.id,
-          tenantId: tenantId ?? "",
-          type: a.type as AlertData["type"],
-          severity: a.severity as AlertData["severity"],
-          message: a.message,
-          vehicleId: a.vehicleId ?? null,
-          driverId: (a as any).driverId ?? null,
-          deviceId: null,
-          acknowledged: Boolean(a.acknowledged),
-          acknowledgedBy: null,
-          acknowledgedAt: a.acknowledged ? new Date((a as any).timestamp ?? Date.now()).toISOString() : null,
-          metadata: {},
-          createdAt: new Date((a as any).timestamp ?? Date.now()).toISOString(),
-        }));
-        setAlerts(fallback);
-      } else {
-        setAlerts(mapped);
-      }
+      setAlerts(mapped);
     } catch (err) {
       console.error("Error fetching alerts:", err);
       setError(err as Error);
@@ -145,7 +89,7 @@ export function useAlerts() {
     } finally {
       setIsLoading(false);
     }
-  }, [isDemoUser, isPlatformAdmin, tenantId, orgScope.multiStakeholderEnabled, stableAssetOrgIds]);
+  }, [isPlatformAdmin, tenantId, orgScope.multiStakeholderEnabled, stableAssetOrgIds]);
 
   const acknowledgeAlert = useCallback(async (id: string) => {
     try {

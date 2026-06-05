@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiGet } from "@/lib/backendApi";
 import { useAuthStore } from "@/stores/authStore";
-import { isFreshActivation } from "@/lib/freshActivation";
-
 export interface KYCVerificationStatus {
   isLoading: boolean;
   isVerified: boolean;
@@ -10,45 +8,17 @@ export interface KYCVerificationStatus {
   tenantName?: string;
 }
 
-// Demo user IDs from authStore mockUsers
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1", "inst1"];
-
 export function useKYCVerification(tenantId?: string) {
   const { user } = useAuthStore();
   const effectiveTenantId = tenantId || user?.tenantId || null;
 
-  // Fresh activations must report KYC as pending so the banner shows.
-  const freshActivation = isFreshActivation();
-  // Demo users are always considered KYC-verified (unless freshly activated).
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !freshActivation : false;
-  const isFreshDemoActivation = user?.id ? DEMO_USER_IDS.includes(user.id) && freshActivation : false;
-
   const [verificationStatus, setVerificationStatus] = useState<KYCVerificationStatus>({
-    isLoading: !isDemoUser,
-    isVerified: isDemoUser,
-    status: isDemoUser ? 'verified' : null,
-    tenantName: isDemoUser ? 'Lagos Express Logistics' : undefined,
+    isLoading: true,
+    isVerified: false,
+    status: null,
   });
 
   useEffect(() => {
-    // Skip API call for demo users — they're always verified
-    if (isDemoUser) {
-      setVerificationStatus({
-        isLoading: false,
-        isVerified: true,
-        status: 'verified',
-        tenantName: 'Lagos Express Logistics',
-      });
-      return;
-    }
-
-    // Fresh activations reuse a demo identity for routing, but must start as
-    // unverified so the KYC reminder remains active after an explicit skip.
-    if (isFreshDemoActivation) {
-      setVerificationStatus({ isLoading: false, isVerified: false, status: 'pending' });
-      return;
-    }
-
     if (!effectiveTenantId) {
       setVerificationStatus({ isLoading: false, isVerified: false, status: null });
       return;
@@ -70,7 +40,7 @@ export function useKYCVerification(tenantId?: string) {
         console.error("Error checking verification:", err);
         setVerificationStatus({ isLoading: false, isVerified: false, status: null });
       });
-  }, [effectiveTenantId, isDemoUser, isFreshDemoActivation]);
+  }, [effectiveTenantId]);
 
   return verificationStatus;
 }

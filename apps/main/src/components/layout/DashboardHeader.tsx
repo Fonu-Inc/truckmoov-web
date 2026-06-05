@@ -11,7 +11,7 @@ import { KeyboardShortcutsDialog } from "@/components/KeyboardShortcutsDialog";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSidebarStore } from "@/stores/sidebarStore";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAuthStore, readDemoStakeholder } from "@/stores/authStore";
+import { useAuthStore } from "@/stores/authStore";
 import { useOrgContext } from "@/hooks/useOrgContext";
 import { useActiveOrgStore } from "@/stores/activeOrgStore";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
@@ -49,8 +49,7 @@ export function DashboardHeader({ title, onRefresh }: DashboardHeaderProps) {
     "enable_multi_stakeholder_model",
     user?.tenantId
   );
-  const demoStakeholder = readDemoStakeholder();
-  const multiStakeholderEnabled = flagEnabled || !!demoStakeholder;
+  const multiStakeholderEnabled = flagEnabled;
 
   const sidebarTitle = useMemo(() => {
     const config = getSidebarConfig(user, activeOrg, multiStakeholderEnabled);

@@ -210,18 +210,6 @@ export default function Settings() {
     fetchTenantData();
   }, [user?.tenantId]);
 
-  // Demo tenant ID for Lagos Express Logistics
-  const DEMO_TENANT_ID = 'f7f5af88-fd76-4439-aae3-0461be52f63f';
-  
-  // Demo users for Lagos Express Logistics
-  const demoUsers: TenantUser[] = [
-    { id: '1', name: 'Olumide Adeyemi', email: 'olumide@lagosexpresslogistics.ng', role: 'admin', status: 'active', lastActive: '5 min ago' },
-    { id: '2', name: 'Adebayo Ogundimu', email: 'adebayo@lagosexpresslogistics.ng', role: 'manager', status: 'active', lastActive: '1 hour ago' },
-    { id: '3', name: 'Chidinma Okonkwo', email: 'chidinma@lagosexpresslogistics.ng', role: 'supervisor', status: 'active', lastActive: '2 hours ago' },
-    { id: '4', name: 'Emeka Nwosu', email: 'emeka@lagosexpresslogistics.ng', role: 'dispatcher', status: 'active', lastActive: '30 min ago' },
-    { id: '5', name: 'Ngozi Eze', email: 'ngozi@lagosexpresslogistics.ng', role: 'viewer', status: 'active', lastActive: 'Yesterday' },
-  ];
-
   // Fetch tenant users
   useEffect(() => {
     const fetchTenantUsers = async () => {
@@ -244,14 +232,6 @@ export default function Settings() {
           throw profilesError;
         }
         console.log('Fetched profiles:', profiles);
-
-        // If no profiles found and this is the demo tenant, use demo data
-        if ((!profiles || profiles.length === 0) && user.tenantId === DEMO_TENANT_ID) {
-          console.log('Using demo users for demo tenant');
-          setTenantUsers(demoUsers);
-          setIsLoadingUsers(false);
-          return;
-        }
 
         if (!profiles || profiles.length === 0) {
           console.log('No profiles found');
@@ -287,12 +267,7 @@ export default function Settings() {
         setTenantUsers(users);
       } catch (error) {
         console.error('Error fetching tenant users:', error);
-        // Fallback to demo users for demo tenant on error
-        if (user.tenantId === DEMO_TENANT_ID) {
-          setTenantUsers(demoUsers);
-        } else {
-          setTenantUsers([]);
-        }
+        setTenantUsers([]);
       } finally {
         setIsLoadingUsers(false);
       }
@@ -388,22 +363,6 @@ export default function Settings() {
   const handleSaveUser = async () => {
     if (!editingUser) return;
 
-    // Check if this is a demo user (demo users have string IDs like '1', '2', etc.)
-    const isDemoUser = editingUser.id.length < 10;
-    
-    if (isDemoUser) {
-      // For demo users, just update local state
-      setTenantUsers(prev => prev.map(u => 
-        u.id === editingUser.id 
-          ? { ...u, name: editName, role: editRole }
-          : u
-      ));
-      toast.success("User updated successfully");
-      setIsEditDialogOpen(false);
-      setEditingUser(null);
-      return;
-    }
-
     setIsUpdatingUser(true);
     try {
       console.log('Updating user:', editingUser.id, 'Name:', editName, 'Role:', editRole);
@@ -497,17 +456,6 @@ export default function Settings() {
   // Remove user
   const handleRemoveUser = async () => {
     if (!removingUser) return;
-    
-    // Check if this is a demo user
-    const isDemoUser = removingUser.id.length < 10;
-    
-    if (isDemoUser) {
-      setTenantUsers(prev => prev.filter(u => u.id !== removingUser.id));
-      toast.success("User removed successfully");
-      setIsRemoveDialogOpen(false);
-      setRemovingUser(null);
-      return;
-    }
 
     console.log('Removing user:', removingUser.id, removingUser.name);
     setIsRemovingUser(true);

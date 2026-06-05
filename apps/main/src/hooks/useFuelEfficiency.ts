@@ -3,10 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
 import { useFuelTransactions } from './useFuelTransactions';
-import { isFreshActivation } from "@/lib/freshActivation";
-
-const DEMO_TENANT_ID = "f7f5af88-fd76-4439-aae3-0461be52f63f";
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
 
 export interface VehicleFuelEfficiency {
   vehicle_id: string;
@@ -47,8 +43,7 @@ export function useFuelEfficiency(startDate?: Date, endDate?: Date) {
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuthStore();
 
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !isFreshActivation() : false;
-  const tenantId = isDemoUser ? DEMO_TENANT_ID : user?.tenantId;
+  const tenantId = user?.tenantId;
 
   // Fetch efficiency threshold from tenant settings
   useEffect(() => {

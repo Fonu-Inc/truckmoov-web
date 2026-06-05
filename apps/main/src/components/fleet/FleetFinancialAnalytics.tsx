@@ -51,7 +51,6 @@ import {
 } from "recharts";
 import { VehicleFinancialConfigDialog } from "./VehicleFinancialConfigDialog";
 import { VehiclePLStatementBuilder } from "./VehiclePLStatementBuilder";
-import { withDemoFallback } from "@/lib/demoChartData";
 import { PeriodFilter, PeriodValue } from "./PeriodFilter";
 
 const TIER_COLORS = {
@@ -185,12 +184,7 @@ export function FleetFinancialAnalytics() {
     fill: TIER_COLORS[tier as keyof typeof TIER_COLORS],
   }));
 
-  const pieDataChart = withDemoFallback(pieData, [
-    { name: "Excellent", value: 6, fill: TIER_COLORS.excellent },
-    { name: "Good", value: 11, fill: TIER_COLORS.good },
-    { name: "Marginal", value: 4, fill: TIER_COLORS.marginal },
-    { name: "Loss-Making", value: 2, fill: TIER_COLORS["loss-making"] },
-  ]);
+  const pieDataChart = pieData;
 
   // Cost breakdown for bar chart
   const costBreakdown = profitabilityData.reduce((acc, v) => {
@@ -210,16 +204,7 @@ export function FleetFinancialAnalytics() {
     { name: "Depreciation", value: costBreakdown.depreciation, fill: "#64748b" },
   ];
 
-  const costChartDataDemo = withDemoFallback(
-    costChartData.filter(c => c.value > 0),
-    [
-      { name: "Fuel", value: 2_400_000, fill: "#f59e0b" },
-      { name: "Maintenance", value: 1_180_000, fill: "#3b82f6" },
-      { name: "Wages", value: 3_600_000, fill: "#8b5cf6" },
-      { name: "Insurance", value: 480_000, fill: "#22c55e" },
-      { name: "Depreciation", value: 920_000, fill: "#64748b" },
-    ]
-  );
+  const costChartDataDemo = costChartData.filter(c => c.value > 0);
 
   const chartConfig = {
     fuel: { label: "Fuel", color: "#f59e0b" },

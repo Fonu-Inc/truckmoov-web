@@ -6,10 +6,6 @@ import { useAuthStore } from "@/stores/authStore";
 import { useOrgDataScope } from "@/hooks/useOrgDataScope";
 import { useWritePermissions } from "@/hooks/useWritePermissions";
 import { mockDrivers } from "@/data/mockData";
-import { isFreshActivation } from "@/lib/freshActivation";
-
-// Demo user IDs from authStore mockUsers
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
 
 export interface DriverData {
   id: string;
@@ -88,34 +84,7 @@ export function useDrivers() {
   const stableAssetOrgIds = useMemo(() => orgScope.assetOrgIds, [assetOrgIdsKey]);
   const isPlatformAdmin = user?.role === "platform_admin";
 
-  // Check if this is a demo user (mock login)
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !isFreshActivation() : false;
-
   const fetchDrivers = useCallback(async () => {
-    // Demo users get mock driver fixtures (backend doesn't store demo data)
-    if (isDemoUser) {
-      setDrivers(
-        mockDrivers.map((d) => ({
-          id: d.id,
-          tenantId: "",
-          name: d.name,
-          phone: d.phone,
-          email: d.email ?? null,
-          licenseNumber: d.licenseNumber,
-          licenseExpiry: d.licenseExpiry ? d.licenseExpiry.toISOString().split("T")[0] : null,
-          status: d.status as DriverData["status"],
-          rating: d.rating,
-          totalTrips: d.totalTrips,
-          currentVehicleId: d.currentVehicle ?? null,
-          communicationPreference: d.communicationPreference ?? "whatsapp",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }))
-      );
-      setIsLoading(false);
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
     try {
@@ -151,7 +120,7 @@ export function useDrivers() {
     } finally {
       setIsLoading(false);
     }
-  }, [isDemoUser]);
+  }, []);
 
   const addDriver = useCallback(async (driver: Partial<DriverData>) => {
     if (!canCreateAssets) {
@@ -161,8 +130,8 @@ export function useDrivers() {
     try {
       const targetTenantId = (isPlatformAdmin ? driver.tenantId ?? user?.tenantId : user?.tenantId) ?? undefined;
 
-      // Quota enforcement (skip for demo users — they don't hit real backend)
-      if (targetTenantId && !isDemoUser) {
+      // Quota enforcement
+      if (targetTenantId) {
         const [{ data: tRow }, { count: driverCount }] = await Promise.all([
           supabase.from("tenants").select("driver_quota").eq("id", targetTenantId).single(),
           supabase.from("drivers").select("id", { count: "exact", head: true }).eq("tenant_id", targetTenantId),
@@ -190,7 +159,7 @@ export function useDrivers() {
       toast.error("Failed to add driver");
       return false;
     }
-  }, [isPlatformAdmin, user?.tenantId, isDemoUser, canCreateAssets]);
+  }, [isPlatformAdmin, user?.tenantId, canCreateAssets]);
 
   const updateDriver = useCallback(async (id: string, updates: Partial<DriverData>) => {
     if (!canUpdateAssets) {

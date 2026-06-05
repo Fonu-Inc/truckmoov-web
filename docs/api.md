@@ -25,8 +25,8 @@ Use a local backend URL for development when needed.
 ```text
 packages/api/src/
 ├── lib/
-│   ├── token.ts          — TOKEN_KEY constant, getToken / setToken / clearToken
-│   ├── axios-instance.ts — configured axios instance with JWT request interceptor
+│   ├── auth-store.ts     — zustand session store (accessToken, refreshToken, user, setSession, logout)
+│   ├── axios-instance.ts — axios instance with token injection and 401-refresh interceptors
 │   └── query-client.ts   — shared QueryClient singleton
 └── [service-name]/
     ├── types.ts
@@ -37,12 +37,53 @@ packages/api/src/
 ## Available import paths
 
 ```ts
-import { getToken, setToken, clearToken } from "@truckmoov/api/lib/token"
+import { useAuthStore }                   from "@truckmoov/api/lib/auth-store"
 import { axiosInstance }                  from "@truckmoov/api/lib/axios-instance"
 import { queryClient }                    from "@truckmoov/api/lib/query-client"
 import type { ServerResponse, ServerErrorResponse } from "@truckmoov/api/lib/types"
 import { ... }                            from "@truckmoov/api/auth"
 ```
+
+## Auth session
+
+The shared auth session is managed by a zustand store persisted to `localStorage` under the key `truckmoov_auth`.
+
+```ts
+import { useAuthStore } from "@truckmoov/api/lib/auth-store"
+
+// Inside a React component
+const { user, logout } = useAuthStore()
+
+// Outside React (e.g. in mutation callbacks)
+const { accessToken } = useAuthStore.getState()
+```
+
+### Store shape
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `accessToken` | `string \| null` | JWT access token |
+| `refreshToken` | `string \| null` | Refresh token |
+| `user` | `AuthUser \| null` | `{ id, email, role, tenantId }` |
+| `setSession(session)` | action | Stores tokens and user after a successful login |
+| `logout()` | action | Clears all session state from the store and localStorage |
+
+### Token injection
+
+The axios instance automatically reads `accessToken` from the store and adds `Authorization: Bearer {token}` to every outgoing request. No manual header management is needed.
+
+### Automatic token refresh
+
+When a request returns 401 the axios instance:
+1. Calls `POST /auth/refresh` with the stored `refreshToken` (using a separate bare axios instance to avoid interceptor loops)
+2. Stores the new session via `setSession`
+3. Retries the original request with the new token
+
+Concurrent 401 responses are queued and replayed once the single refresh resolves. If the refresh itself fails, `logout()` is called and all queued requests reject with `{ error: 'TOKEN_REFRESH_FAILED', statusCode: 401 }`.
+
+### Login / logout mutations
+
+`useLogin` and `useSystemLogin` call `setSession` automatically on success. `useLogout` calls `logout()` automatically on success. Components do not need to manage the store directly for these flows.
 
 ## Service structure
 

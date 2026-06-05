@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { demoFuelTransactions } from '@/lib/demoFleetData';
 
 export interface FuelTransaction {
   id: string;
@@ -52,8 +51,7 @@ export function useFuelTransactions(tenantId: string = 'default') {
         .order('transaction_date', { ascending: false });
 
       if (fetchError) throw fetchError;
-      const rows = data || [];
-      setTransactions(rows.length > 0 ? rows : (demoFuelTransactions as unknown as FuelTransaction[]));
+      setTransactions(data || []);
       setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch fuel transactions';

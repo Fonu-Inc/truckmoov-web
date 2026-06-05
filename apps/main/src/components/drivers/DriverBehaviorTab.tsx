@@ -193,73 +193,6 @@ function GeofenceAlertItem({ alert }: { alert: GeofenceAlert }) {
   );
 }
 
-// ─── Demo fallback data ───────────────────────────────────────────────
-const DEMO_TENANT_ID = "demo-tenant";
-const now = Date.now();
-const minutes = (m: number) => new Date(now - m * 60_000);
-
-const DEMO_DRIVER_SCORES: DriverScore[] = [
-  {
-    driverId: "drv-001", driverName: "Adebayo Okonkwo",
-    overallScore: 92, brakingScore: 94, accelerationScore: 90, corneringScore: 95, speedingScore: 89,
-    totalEvents: 7,
-    eventBreakdown: { harshBraking: 2, harshAcceleration: 1, harshCornering: 1, overspeeding: 3 },
-    trend: 'improving', recentEvents: [],
-  },
-  {
-    driverId: "drv-002", driverName: "Chinedu Eze",
-    overallScore: 85, brakingScore: 88, accelerationScore: 82, corneringScore: 86, speedingScore: 84,
-    totalEvents: 12,
-    eventBreakdown: { harshBraking: 4, harshAcceleration: 3, harshCornering: 2, overspeeding: 3 },
-    trend: 'stable', recentEvents: [],
-  },
-  {
-    driverId: "drv-003", driverName: "Ibrahim Suleiman",
-    overallScore: 78, brakingScore: 75, accelerationScore: 80, corneringScore: 82, speedingScore: 74,
-    totalEvents: 18,
-    eventBreakdown: { harshBraking: 5, harshAcceleration: 4, harshCornering: 3, overspeeding: 6 },
-    trend: 'declining', recentEvents: [],
-  },
-  {
-    driverId: "drv-004", driverName: "Tunde Bakare",
-    overallScore: 71, brakingScore: 68, accelerationScore: 72, corneringScore: 75, speedingScore: 69,
-    totalEvents: 24,
-    eventBreakdown: { harshBraking: 7, harshAcceleration: 5, harshCornering: 4, overspeeding: 8 },
-    trend: 'declining', recentEvents: [],
-  },
-  {
-    driverId: "drv-005", driverName: "Femi Adeyemi",
-    overallScore: 88, brakingScore: 90, accelerationScore: 86, corneringScore: 89, speedingScore: 87,
-    totalEvents: 9,
-    eventBreakdown: { harshBraking: 2, harshAcceleration: 2, harshCornering: 2, overspeeding: 3 },
-    trend: 'improving', recentEvents: [],
-  },
-];
-
-const DEMO_BEHAVIOR_EVENTS: DriverBehaviorEvent[] = [
-  { id: "e1", deviceId: "dev-001", driverId: "drv-003", eventType: 'overspeeding', severity: 'critical', speed: 118, createdAt: minutes(8), tenantId: DEMO_TENANT_ID },
-  { id: "e2", deviceId: "dev-002", driverId: "drv-004", eventType: 'harsh_braking', severity: 'high', speed: 72, createdAt: minutes(22), tenantId: DEMO_TENANT_ID },
-  { id: "e3", deviceId: "dev-003", driverId: "drv-002", eventType: 'harsh_cornering', severity: 'medium', speed: 54, createdAt: minutes(41), tenantId: DEMO_TENANT_ID },
-  { id: "e4", deviceId: "dev-004", driverId: "drv-001", eventType: 'harsh_acceleration', severity: 'low', speed: 38, createdAt: minutes(68), tenantId: DEMO_TENANT_ID },
-  { id: "e5", deviceId: "dev-001", driverId: "drv-003", eventType: 'overspeeding', severity: 'high', speed: 102, createdAt: minutes(95), tenantId: DEMO_TENANT_ID },
-  { id: "e6", deviceId: "dev-005", driverId: "drv-005", eventType: 'harsh_braking', severity: 'medium', speed: 61, createdAt: minutes(140), tenantId: DEMO_TENANT_ID },
-  { id: "e7", deviceId: "dev-002", driverId: "drv-004", eventType: 'overspeeding', severity: 'critical', speed: 124, createdAt: minutes(180), tenantId: DEMO_TENANT_ID },
-  { id: "e8", deviceId: "dev-003", driverId: "drv-002", eventType: 'harsh_acceleration', severity: 'medium', speed: 47, createdAt: minutes(220), tenantId: DEMO_TENANT_ID },
-  { id: "e9", deviceId: "dev-004", driverId: "drv-001", eventType: 'harsh_cornering', severity: 'low', speed: 32, createdAt: minutes(285), tenantId: DEMO_TENANT_ID },
-  { id: "e10", deviceId: "dev-005", driverId: "drv-005", eventType: 'overspeeding', severity: 'high', speed: 98, createdAt: minutes(360), tenantId: DEMO_TENANT_ID },
-];
-
-const DEMO_GEOFENCE_ALERTS: GeofenceAlert[] = [
-  { id: "g1", deviceId: "dev-001-fleet", geofenceName: "Apapa Port Zone", alertType: 'entry', latitude: 6.4474, longitude: 3.3903, triggeredAt: minutes(5), tenantId: DEMO_TENANT_ID },
-  { id: "g2", deviceId: "dev-002-fleet", geofenceName: "Lagos HQ Depot", alertType: 'exit', latitude: 6.5244, longitude: 3.3792, triggeredAt: minutes(18), tenantId: DEMO_TENANT_ID },
-  { id: "g3", deviceId: "dev-003-fleet", geofenceName: "Tin Can Island", alertType: 'entry', latitude: 6.4400, longitude: 3.3550, triggeredAt: minutes(34), tenantId: DEMO_TENANT_ID },
-  { id: "g4", deviceId: "dev-004-fleet", geofenceName: "Ikeja Warehouse", alertType: 'dwell', latitude: 6.6018, longitude: 3.3515, triggeredAt: minutes(52), tenantId: DEMO_TENANT_ID },
-  { id: "g5", deviceId: "dev-005-fleet", geofenceName: "Abuja Distribution Hub", alertType: 'exit', latitude: 9.0765, longitude: 7.3986, triggeredAt: minutes(75), tenantId: DEMO_TENANT_ID },
-  { id: "g6", deviceId: "dev-001-fleet", geofenceName: "Lekki Toll Gate", alertType: 'entry', latitude: 6.4474, longitude: 3.5644, triggeredAt: minutes(110), tenantId: DEMO_TENANT_ID },
-  { id: "g7", deviceId: "dev-002-fleet", geofenceName: "Port Harcourt Terminal", alertType: 'entry', latitude: 4.8156, longitude: 7.0498, triggeredAt: minutes(165), tenantId: DEMO_TENANT_ID },
-  { id: "g8", deviceId: "dev-003-fleet", geofenceName: "Kano Logistics Park", alertType: 'exit', latitude: 12.0022, longitude: 8.5920, triggeredAt: minutes(220), tenantId: DEMO_TENANT_ID },
-];
-
 export function DriverBehaviorTab() {
   const { 
     events: realEvents, 
@@ -281,28 +214,12 @@ export function DriverBehaviorTab() {
 
   const [activeTab, setActiveTab] = useState("scores");
 
-  // Demo fallback when no real data
-  const useDemo = !behaviorLoading && realScores.length === 0 && realEvents.length === 0;
-  const driverScores = useDemo ? DEMO_DRIVER_SCORES : realScores;
-  const events = useDemo ? DEMO_BEHAVIOR_EVENTS : realEvents;
-  const alerts = useDemo || realAlerts.length === 0 ? DEMO_GEOFENCE_ALERTS : realAlerts;
-  const unreadCount = useDemo ? 3 : realUnreadCount;
-
-  const behaviorStats = useDemo
-    ? {
-        averageScore: Math.round(DEMO_DRIVER_SCORES.reduce((s, d) => s + d.overallScore, 0) / DEMO_DRIVER_SCORES.length),
-        last24h: DEMO_BEHAVIOR_EVENTS.length,
-        total: DEMO_BEHAVIOR_EVENTS.length,
-        critical: DEMO_BEHAVIOR_EVENTS.filter(e => e.severity === 'critical').length,
-      }
-    : realBehaviorStats;
-
-  const geofenceStats = useDemo || realAlerts.length === 0
-    ? {
-        entries: DEMO_GEOFENCE_ALERTS.filter(a => a.alertType === 'entry').length,
-        exits: DEMO_GEOFENCE_ALERTS.filter(a => a.alertType === 'exit').length,
-      }
-    : realGeofenceStats;
+  const driverScores = realScores;
+  const events = realEvents;
+  const alerts = realAlerts;
+  const unreadCount = realUnreadCount;
+  const behaviorStats = realBehaviorStats;
+  const geofenceStats = realGeofenceStats;
 
   const handleRefresh = () => {
     refreshBehavior();

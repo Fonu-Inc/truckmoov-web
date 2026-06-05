@@ -14,7 +14,7 @@ import {
 } from "@/components/shadcn/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuthStore, readDemoStakeholder, type DemoStakeholderType } from "@/stores/authStore";
+import { useAuthStore } from "@/stores/authStore";
 import {
   Building2,
   CheckCircle2,
@@ -63,70 +63,7 @@ const DEFAULT_DOCS = [
   { value: "other", label: "Other Document", required: false },
 ];
 
-function getStakeholderConfig(s: DemoStakeholderType, legacyRole?: string): StakeholderKYCConfig {
-  if (s === "AGGREGATOR") {
-    return {
-      audience: "Aggregator Admin",
-      orgNameLabel: "Aggregator / Network Name *",
-      orgNamePlaceholder: "e.g. Lagos Drivers Network",
-      registrationLabel: "Registration Number (if any)",
-      taxIdLabel: "Tax Identification Number (TIN)",
-      industryLabel: "Network Type / Service Category",
-      employeesLabel: "Number of Partner Drivers / Vehicles",
-      showBusinessType: false,
-      showYearEstablished: true,
-      showEmployees: true,
-      showWebsite: false,
-      documents: [
-        { value: "director_id", label: "Operator ID / Passport", required: true },
-        { value: "proof_of_address", label: "Proof of Address", required: true },
-        { value: "business_license", label: "Aggregator Permit / Network Agreement", required: true },
-        { value: "tax_clearance", label: "Tax Clearance Certificate", required: false },
-        { value: "insurance_certificate", label: "Insurance Certificate", required: false },
-        { value: "other", label: "Other Document", required: false },
-      ],
-    };
-  }
-  if (s === "OWNER_OPERATOR") {
-    return {
-      audience: "Owner-Operator",
-      orgNameLabel: "Operator Name *",
-      orgNamePlaceholder: "e.g. Chukwuemeka Okafor",
-      registrationLabel: "NIN / National ID Number *",
-      taxIdLabel: "Driver's License Number *",
-      industryLabel: "Primary Vehicle Type",
-      employeesLabel: "Number of Vehicles You Own",
-      showBusinessType: false,
-      showYearEstablished: false,
-      showEmployees: true,
-      showWebsite: false,
-      documents: [
-        { value: "director_id", label: "National ID / NIN Slip", required: true },
-        { value: "business_license", label: "Driver's License", required: true },
-        { value: "insurance_certificate", label: "Vehicle Insurance Certificate", required: true },
-        { value: "proof_of_address", label: "Proof of Residential Address", required: true },
-        { value: "vat_certificate", label: "Vehicle Registration Document", required: true },
-        { value: "other", label: "Other Document", required: false },
-      ],
-    };
-  }
-  if (s === "ENTERPRISE") {
-    return {
-      audience: "Enterprise Admin",
-      orgNameLabel: "Organization Name *",
-      orgNamePlaceholder: "e.g. Acme Logistics Ltd",
-      registrationLabel: "Registration Number *",
-      taxIdLabel: "Tax Identification Number (TIN) *",
-      industryLabel: "Industry",
-      employeesLabel: "Number of Employees",
-      showBusinessType: true,
-      showYearEstablished: true,
-      showEmployees: true,
-      showWebsite: true,
-      documents: DEFAULT_DOCS,
-    };
-  }
-  // Fleet Provider (default for tenant admins without an explicit stakeholder)
+function getStakeholderConfig(): StakeholderKYCConfig {
   return {
     audience: "Fleet Provider",
     orgNameLabel: "Fleet Provider Name *",
@@ -264,8 +201,7 @@ const emptyBusinessInfo = (tenantId: string): BusinessInfo => ({
 
 export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: string; onContinue?: () => void; onSkip?: () => void }) {
   const { user } = useAuthStore();
-  const stakeholder = readDemoStakeholder();
-  const cfg = useMemo(() => getStakeholderConfig(stakeholder, user?.role), [stakeholder, user?.role]);
+  const cfg = useMemo(() => getStakeholderConfig(), []);
   const requiredDocs = useMemo(() => cfg.documents.filter((d) => d.required), [cfg]);
 
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);

@@ -21,32 +21,19 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useAuthStore } from "@/stores/authStore";
-import { isFreshActivation } from "@/lib/freshActivation";
-
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
 
 export default function LiveMap() {
   const { vehicles, isLoading: vehiclesLoading, refetch: refetchVehicles } = useVehicles();
   const { drivers } = useDrivers();
   const { alerts } = useAlerts();
   const { user } = useAuthStore();
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !isFreshActivation() : false;
-  
+
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
   const [showGeofences, setShowGeofences] = useState(true);
   const [showRoutes, setShowRoutes] = useState(true);
   const [showAlerts, setShowAlerts] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [geofenceDialogOpen, setGeofenceDialogOpen] = useState(false);
-
-  // For demo users, use mock vehicle data that matches FleetMap's internal mock
-  const demoSidebarVehicles = [
-    { id: "LAG-234-XY", vehicleId: "LAG-234-XY", model: "Mercedes Actros 2545", driver: "Chukwuemeka Okafor", driverId: "", phone: "+234 801 234 5678", status: "moving", speed: 45, fuel: 72, destination: "Victoria Island" },
-    { id: "LAG-567-AB", vehicleId: "LAG-567-AB", model: "MAN TGS 33.480", driver: "Adebayo Johnson", driverId: "", phone: "+234 802 345 6789", status: "moving", speed: 62, fuel: 45, destination: "Lekki Phase 1" },
-    { id: "LAG-890-CD", vehicleId: "LAG-890-CD", model: "Volvo FH16 750", driver: "Unassigned", driverId: "", phone: "", status: "stopped", speed: 0, fuel: 30, destination: "Maintenance Bay" },
-    { id: "LAG-112-EF", vehicleId: "LAG-112-EF", model: "Scania R500 6x4", driver: "Ngozi Obi", driverId: "", phone: "+234 804 567 8901", status: "moving", speed: 28, fuel: 92, destination: "Ajah" },
-    { id: "LAG-445-GH", vehicleId: "LAG-445-GH", model: "DAF XF 480 FT", driver: "Tunde Bakare", driverId: "", phone: "+234 805 678 9012", status: "moving", speed: 55, fuel: 65, destination: "Agege" },
-  ];
 
   // Map real vehicles with driver info for the map component
   const realVehiclesWithDrivers = vehicles.map(v => {
@@ -66,7 +53,7 @@ export default function LiveMap() {
     };
   });
 
-  const vehiclesWithDrivers = isDemoUser ? demoSidebarVehicles : realVehiclesWithDrivers;
+  const vehiclesWithDrivers = realVehiclesWithDrivers;
 
   // Build FleetMapVehicle[] for the map (with position placeholders — real positions come from telemetry)
   const mapVehicles: FleetMapVehicle[] = vehiclesWithDrivers.map(v => ({
@@ -105,7 +92,7 @@ export default function LiveMap() {
     severity: a.severity === "high" ? "error" : a.severity === "medium" ? "warning" : "info",
   }));
 
-  if (vehiclesLoading && !isDemoUser) {
+  if (vehiclesLoading) {
     return (
       <DashboardLayout title="Live Fleet Map" subtitle="Real-time vehicle tracking and monitoring">
         <div className="flex items-center justify-center h-64">
@@ -115,7 +102,7 @@ export default function LiveMap() {
     );
   }
 
-  if (vehicles.length === 0 && !isDemoUser) {
+  if (vehicles.length === 0) {
     return (
       <DashboardLayout title="Live Fleet Map" subtitle="Real-time vehicle tracking and monitoring">
         <EmptyState
@@ -285,16 +272,8 @@ export default function LiveMap() {
                             className="w-full text-xs gap-1.5"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const pos = mapVehicles.find(mv => mv.id === vehicle.id)?.position
-                                ?? (isDemoUser ? demoSidebarVehicles.find(dv => dv.id === vehicle.id) ? undefined : undefined : undefined);
-                              const demoPositions: Record<string, [number, number]> = {
-                                "LAG-234-XY": [6.5244, 3.3792],
-                                "LAG-567-AB": [6.4550, 3.3941],
-                                "LAG-890-CD": [6.5833, 3.3500],
-                                "LAG-112-EF": [6.4698, 3.5852],
-                                "LAG-445-GH": [6.6018, 3.3515],
-                              };
-                              const coords = pos ?? demoPositions[vehicle.id] ?? [6.5244, 3.3792];
+                              const pos = mapVehicles.find(mv => mv.id === vehicle.id)?.position;
+                              const coords = pos ?? [6.5244, 3.3792] as [number, number];
                               window.open(
                                 `https://www.google.com/maps/dir/?api=1&destination=${coords[0]},${coords[1]}`,
                                 "_blank"
@@ -379,7 +358,7 @@ export default function LiveMap() {
                 showGeofences={showGeofences}
                 showRoutes={showRoutes}
                 showAlerts={showAlerts}
-                externalVehicles={isDemoUser ? undefined : mapVehicles}
+                externalVehicles={mapVehicles}
               />
             </CardContent>
           </Card>

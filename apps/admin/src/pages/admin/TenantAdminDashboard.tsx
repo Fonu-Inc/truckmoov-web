@@ -40,7 +40,6 @@ import { useNavigate } from "react-router-dom";
 import { useMemo } from "react";
 import { format, subDays, startOfDay, isWithinInterval } from "date-fns";
 import { Badge } from "@/components/shadcn/badge";
-import { withDemoFallback, demoTripsByDay, demoVehicleStatusBreakdown } from "@/lib/demoChartData";
 
 export default function TenantAdminDashboard() {
   const navigate = useNavigate();
@@ -144,15 +143,8 @@ export default function TenantAdminDashboard() {
 
   const hasNoData = totalVehicles === 0 && totalDrivers === 0 && jobs.length === 0;
 
-  // Demo fallback: show realistic dummy chart data when source arrays are empty
-  const tripChartData = withDemoFallback(
-    jobs.length > 0 ? tripData : [],
-    demoTripsByDay.map((d) => ({ day: d.name, trips: d.completed + d.inProgress, completed: d.completed }))
-  );
-  const vehicleStatusChartData = withDemoFallback(
-    vehicleStatusData,
-    demoVehicleStatusBreakdown.map((d) => ({ name: d.name, value: d.value, color: d.fill }))
-  );
+  const tripChartData = jobs.length > 0 ? tripData : [];
+  const vehicleStatusChartData = vehicleStatusData;
 
   return (
     <DashboardLayout

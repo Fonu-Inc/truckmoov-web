@@ -3,8 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { apiGet, apiPost, getToken } from "@/lib/backendApi";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { isFreshActivation } from "@/lib/freshActivation";
-
 interface BackendTenant {
   id: string;
   companyName: string;
@@ -43,8 +41,6 @@ function mapBackendTenant(t: BackendTenant): TenantData {
   };
 }
 
-// Demo user IDs from authStore mockUsers
-const DEMO_USER_IDS = ["pa1", "ta1", "om1", "s1", "dp1", "vf1", "d1"];
 
 export interface TenantData {
   id: string;
@@ -97,39 +93,7 @@ export function useTenants() {
   const hasFetched = useRef(false);
   const { user } = useAuthStore();
 
-  // Check if this is a demo user (mock login)
-  const isDemoUser = user?.id ? DEMO_USER_IDS.includes(user.id) && !isFreshActivation() : false;
-
   const fetchTenants = useCallback(async () => {
-    // Demo users get mock tenant fixtures (backend doesn't store demo data)
-    if (isDemoUser) {
-      const { mockTenants } = await import("@/data/mockData");
-      setTenants(
-        mockTenants.map((t) => ({
-          id: t.id,
-          name: t.name,
-          slug: t.name.toLowerCase().replace(/\s+/g, "-"),
-          email: `admin@${t.name.toLowerCase().replace(/\s+/g, "")}.com`,
-          phone: null,
-          address: null,
-          billingEmail: null,
-          primaryContactName: null,
-          plan: t.plan as TenantData["plan"],
-          status: t.status as TenantData["status"],
-          vehicleCount: t.vehicleCount,
-          driverCount: t.driverCount,
-          deviceCount: 0,
-          simCount: 0,
-          features: {},
-          createdAt: t.createdAt.toISOString(),
-          monthlyRevenueNgn: 0,
-          lastActiveAt: null,
-        }))
-      );
-      setIsLoading(false);
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
     try {
@@ -143,7 +107,7 @@ export function useTenants() {
     } finally {
       setIsLoading(false);
     }
-  }, [isDemoUser]);
+  }, []);
 
   const updateTenantStatus = useCallback(async (tenantId: string, newStatus: TenantData["status"]) => {
     try {
@@ -239,16 +203,6 @@ export function useTenants() {
 
   // Listen for auth state changes and fetch when authenticated
   useEffect(() => {
-    // Demo users can fetch directly without Supabase session
-    // Platform admin demo user should see all tenants
-    if (isDemoUser && user?.role === 'platform_admin') {
-      if (!hasFetched.current) {
-        hasFetched.current = true;
-        fetchTenants();
-      }
-      return;
-    }
-
     // Check current session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
@@ -266,20 +220,18 @@ export function useTenants() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const wasAuthenticated = isAuthenticated;
       setIsAuthenticated(!!session);
-      
+
       if (session && !wasAuthenticated) {
-        // User just logged in - fetch data
         hasFetched.current = true;
         fetchTenants();
-      } else if (!session && !isDemoUser) {
-        // User logged out - clear data (but not for demo users)
+      } else if (!session) {
         setTenants([]);
         hasFetched.current = false;
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchTenants, isAuthenticated, isDemoUser, user?.role]);
+  }, [fetchTenants, isAuthenticated]);
 
   return {
     tenants,
