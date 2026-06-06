@@ -20,7 +20,6 @@ import {
   SelectValue,
 } from '@/components/shadcn/select';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { 
   Mail, 
   CheckCircle2, 
@@ -79,14 +78,6 @@ export function KYCNotificationHistory() {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('kyc_notification_logs')
-        .select('*')
-        .order('sent_at', { ascending: false })
-        .limit(100);
-
-      if (error) throw error;
-      const real = (data || []) as NotificationLog[];
       const DEMO_LOGS: NotificationLog[] = [
         { id: "dn-1", tenant_id: "demo-t3", tenant_email: "compliance@nairobifleet.co.ke", tenant_name: "Nairobi Fleet Group", document_name: "Nairobi_Fleet_Cert_Incorp.pdf", document_type: "certificate_of_incorporation", notification_type: "approved", rejection_reason: null, email_subject: "Your KYC document has been approved", delivery_status: "delivered", error_message: null, resend_message_id: "msg_re_a8sk1", sent_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(), delivered_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7 + 1000 * 12).toISOString() },
         { id: "dn-2", tenant_id: "demo-t3", tenant_email: "compliance@nairobifleet.co.ke", tenant_name: "Nairobi Fleet Group", document_name: "Nairobi_Fleet_KRA_Compliance.pdf", document_type: "tax_clearance", notification_type: "approved", rejection_reason: null, email_subject: "Your KYC document has been approved", delivery_status: "delivered", error_message: null, resend_message_id: "msg_re_a8sk2", sent_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7 + 1000 * 60).toISOString(), delivered_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7 + 1000 * 70).toISOString() },
@@ -98,7 +89,7 @@ export function KYCNotificationHistory() {
         { id: "dn-8", tenant_id: "demo-t4", tenant_email: "ops@capetowntruck.co.za", tenant_name: "Cape Town Trucking", document_name: "CTT_VAT_Reg.pdf", document_type: "vat_certificate", notification_type: "rejected", rejection_reason: "Wrong document type uploaded — please attach VAT certificate.", email_subject: "Action required: KYC document rejected", delivery_status: "bounced", error_message: "550 5.1.1 Mailbox does not exist", resend_message_id: "msg_re_ctt09", sent_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), delivered_at: null },
         { id: "dn-9", tenant_id: "demo-t6", tenant_email: "admin@abujahaulage.ng", tenant_name: "Abuja Haulage Co.", document_name: "Abuja_Haulage_Insurance_2025.pdf", document_type: "insurance_certificate", notification_type: "approved", rejection_reason: null, email_subject: "Your KYC document has been approved", delivery_status: "failed", error_message: "Resend API timeout", resend_message_id: null, sent_at: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(), delivered_at: null },
       ];
-      setLogs(real.length > 0 ? real : DEMO_LOGS);
+      setLogs(DEMO_LOGS);
     } catch (error) {
       console.error('Error fetching notification logs:', error);
       toast.error('Failed to load notification history');

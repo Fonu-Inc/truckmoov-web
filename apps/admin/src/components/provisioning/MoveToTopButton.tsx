@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/shadcn/button";
 import { ArrowUpToLine, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface Props {
@@ -28,50 +27,8 @@ export function MoveToTopButton({
   const [busy, setBusy] = useState(false);
 
   const handleClick = async () => {
-    setBusy(true);
-    try {
-      // Fetch current minimum priority_order for pending requests in this table
-      const client = supabase as unknown as {
-        from: (t: string) => {
-          select: (c: string) => {
-            order: (c: string, opts: { ascending: boolean; nullsFirst?: boolean }) => {
-              limit: (n: number) => {
-                maybeSingle: () => Promise<{ data: { priority_order?: number | null } | null }>;
-              };
-            };
-          };
-          update: (v: Record<string, unknown>) => {
-            eq: (c: string, v: string) => Promise<{ error: { message: string } | null }>;
-          };
-        };
-      };
-      const { data: minRow } = await client
-        .from(table)
-        .select("priority_order")
-        .order("priority_order", { ascending: true, nullsFirst: false })
-        .limit(1)
-        .maybeSingle();
-
-      const currentMin = minRow?.priority_order ?? 0;
-      const newPriority = (currentMin || 0) - 1;
-
-      const { error } = await client
-        .from(table)
-        .update({ priority_order: newPriority })
-        .eq("id", requestId);
-
-      if (error) throw error;
-
-      toast.success("Moved to top of queue", {
-        description: "Request will be processed next.",
-      });
-      onMoved?.();
-    } catch (err) {
-      console.error("Move to top failed:", err);
-      toast.error("Failed to reprioritise request");
-    } finally {
-      setBusy(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   return (
@@ -91,6 +48,5 @@ export function MoveToTopButton({
     </Button>
   );
 }
-
 
 

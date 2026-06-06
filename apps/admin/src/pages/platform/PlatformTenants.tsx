@@ -136,7 +136,6 @@ import { TenantDetailsSheet } from "@/components/platform/TenantDetailsSheet";
 import { TerminateTenantDialog } from "@/components/platform/TerminateTenantDialog";
 import { TenantKYCVerification } from "@/components/platform/TenantKYCVerification";
 import { useTenants, TenantData } from "@/hooks/useTenants";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Tenant {
   id: string;
@@ -261,30 +260,8 @@ export default function PlatformTenants() {
   }, [refetchDbTenants]);
 
 
-  // Fetch org types per tenant using SECURITY DEFINER RPC (bypasses RLS)
+  // Org types per tenant — stubbed pending API migration
   const [tenantOrgTypesState, setTenantOrgTypesState] = useState<Record<string, string[]>>({});
-  useEffect(() => {
-    if (dbTenants.length === 0) return;
-    const isMockData = dbTenants.some(t => !t.id.includes('-'));
-    if (isMockData) {
-      const map: Record<string, string[]> = {};
-      dbTenants.forEach(t => { map[t.id] = ['FLEET_PROVIDER']; });
-      setTenantOrgTypesState(map);
-      return;
-    }
-    const fetchOrgTypes = async () => {
-      const { data, error } = await supabase.rpc('get_tenant_org_types');
-      if (error || !data) return;
-      const map: Record<string, string[]> = {};
-      (data as any[]).forEach((row) => {
-        if (row.tenant_id && row.org_types) {
-          map[row.tenant_id] = row.org_types;
-        }
-      });
-      setTenantOrgTypesState(map);
-    };
-    fetchOrgTypes();
-  }, [dbTenants]);
 
   // Filter live database tenants
   const filteredDbTenants = dbTenants.filter((tenant) => {
@@ -463,43 +440,9 @@ export default function PlatformTenants() {
     setDeleteConfirmDbTenant(null);
   };
 
-  const handleResendInvitation = async (tenant: TenantData) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("You must be logged in to resend invitations");
-        return;
-      }
-
-      toast.loading("Sending invitation email...", { id: "resend-invitation" });
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/resend-tenant-invitation`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${session.access_token}` },
-          body: JSON.stringify({ tenantId: tenant.id }) }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to resend invitation");
-      }
-
-      toast.success(`Welcome email sent to ${tenant.email}`, { id: "resend-invitation" });
-      
-      addNotification({
-        type: "system",
-        title: "Invitation Sent",
-        message: `Welcome email resent to ${tenant.name}`,
-        severity: "success" });
-    } catch (error) {
-      console.error("Error resending invitation:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to resend invitation", { id: "resend-invitation" });
-    }
+  const handleResendInvitation = async (_tenant: TenantData) => {
+    toast.info('Coming soon');
+    return;
   };
 
 

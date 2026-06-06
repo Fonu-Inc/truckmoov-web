@@ -1,8 +1,6 @@
 import { useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
-export type DeviceLifecycleStatus = 
+export type DeviceLifecycleStatus =
   | 'registered'
   | 'config_pending'
   | 'configured'
@@ -94,122 +92,36 @@ export const validTransitions: Record<DeviceLifecycleStatus, DeviceLifecycleStat
 };
 
 export function useDeviceLifecycle() {
-  // Transition device to new state
   const transitionDevice = useCallback(async (
-    deviceId: string,
-    newStatus: DeviceLifecycleStatus
+    _deviceId: string,
+    _newStatus: DeviceLifecycleStatus
   ): Promise<LifecycleTransitionResult> => {
-    try {
-      const { data, error } = await supabase.rpc('transition_device_lifecycle', {
-        p_device_id: deviceId,
-        p_new_status: newStatus,
-      }) as { data: LifecycleTransitionResult | null; error: unknown };
-
-      if (error) throw error;
-
-      const result = data as LifecycleTransitionResult || { success: false, error: 'No response' };
-      
-      if (result.success) {
-        toast.success('Device status updated', {
-          description: `Transitioned to ${lifecycleStatusConfig[newStatus].label}`,
-        });
-      } else {
-        toast.error('Transition failed', {
-          description: result.error,
-        });
-      }
-
-      return result;
-    } catch (err) {
-      console.error('Error transitioning device:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      toast.error('Failed to update status', { description: errorMessage });
-      return { success: false, error: errorMessage };
-    }
+    return { success: false, error: 'Not implemented' };
   }, []);
 
-  // Check if device can be assigned to vehicle
   const canAssignToVehicle = useCallback(async (
-    deviceId: string,
-    vehicleId: string
+    _deviceId: string,
+    _vehicleId: string
   ): Promise<AssignmentValidation> => {
-    try {
-      const { data, error } = await supabase.rpc('can_assign_device_to_vehicle', {
-        p_device_id: deviceId,
-        p_vehicle_id: vehicleId,
-      }) as { data: AssignmentValidation | null; error: unknown };
-
-      if (error) throw error;
-
-      return data as AssignmentValidation || { can_assign: false, reason: 'No response' };
-    } catch (err) {
-      console.error('Error checking assignment:', err);
-      return { 
-        can_assign: false, 
-        reason: err instanceof Error ? err.message : 'Validation failed' 
-      };
-    }
+    return { can_assign: false, reason: 'Not implemented' };
   }, []);
 
-  // Mark device as configured (by installer)
-  const markAsConfigured = useCallback(async (deviceId: string) => {
-    // First transition to config_pending if still registered
-    const device = await supabase
-      .from('devices')
-      .select('lifecycle_status')
-      .eq('id', deviceId)
-      .single();
+  const markAsConfigured = useCallback(async (_deviceId: string) => {
+    return { success: false, error: 'Not implemented' };
+  }, []);
 
-    if (device.data?.lifecycle_status === 'registered') {
-      await transitionDevice(deviceId, 'config_pending');
-    }
+  const markAsFaulty = useCallback(async (_deviceId: string, _reason?: string) => {
+    return { success: false, error: 'Not implemented' };
+  }, []);
 
-    return transitionDevice(deviceId, 'configured');
-  }, [transitionDevice]);
+  const decommissionDevice = useCallback(async (_deviceId: string) => {
+    return { success: false, error: 'Not implemented' };
+  }, []);
 
-  // Mark device as faulty
-  const markAsFaulty = useCallback(async (deviceId: string, reason?: string) => {
-    const result = await transitionDevice(deviceId, 'faulty');
-    
-    if (result.success && reason) {
-      // Log the fault reason
-      await supabase.from('security_audit_logs').insert({
-        event_type: 'device_marked_faulty',
-        severity: 'warn',
-        description: `Device marked as faulty: ${reason}`,
-        metadata: { device_id: deviceId, reason },
-      });
-    }
-
-    return result;
-  }, [transitionDevice]);
-
-  // Decommission device
-  const decommissionDevice = useCallback(async (deviceId: string) => {
-    // First unassign if assigned
-    const device = await supabase
-      .from('devices')
-      .select('lifecycle_status, vehicle_id')
-      .eq('id', deviceId)
-      .single();
-
-    if (device.data?.lifecycle_status === 'assigned') {
-      // Unassign first
-      await supabase
-        .from('devices')
-        .update({ vehicle_id: null, lifecycle_status: 'assignable' })
-        .eq('id', deviceId);
-    }
-
-    return transitionDevice(deviceId, 'decommissioned');
-  }, [transitionDevice]);
-
-  // Get available transitions for a status
   const getAvailableTransitions = useCallback((currentStatus: DeviceLifecycleStatus) => {
     return validTransitions[currentStatus] || [];
   }, []);
 
-  // Check if assignment is allowed
   const isAssignable = useCallback((status: DeviceLifecycleStatus) => {
     return status === 'assignable' || status === 'verified_online';
   }, []);
@@ -226,6 +138,3 @@ export function useDeviceLifecycle() {
     validTransitions,
   };
 }
-
-
-

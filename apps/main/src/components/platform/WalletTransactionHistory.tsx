@@ -13,7 +13,6 @@ import {
 } from "@/components/shadcn/table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import {History, RefreshCw, Phone, MessageSquare, MessageCircle, ArrowUpRight, ArrowDownRight, Download} from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface WalletTransaction {
@@ -43,19 +42,6 @@ export function WalletTransactionHistory() {
   }, []);
 
   const fetchTransactions = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('wallet_transactions')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(500);
-
-    if (error) {
-      toast.error('Failed to load transactions');
-      console.error(error);
-    } else {
-      setTransactions(data || []);
-    }
     setLoading(false);
   };
 

@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { ShieldCheck, X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 
 interface VerificationStatus {
@@ -25,50 +24,7 @@ export function VerificationBanner() {
   const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
-    const checkVerificationStatus = async () => {
-      if (!user?.tenantId) {
-        setVerificationStatus({ isLoading: false, isVerified: false, status: null, hasDocuments: false });
-        return;
-      }
-
-      try {
-        // Fetch business info and KYC documents in parallel
-        const [businessInfoResult, documentsResult] = await Promise.all([
-          supabase
-            .from("tenant_business_info")
-            .select("verification_status")
-            .eq("tenant_id", user.tenantId)
-            .maybeSingle(),
-          supabase
-            .from("tenant_kyc_documents")
-            .select("id")
-            .eq("tenant_id", user.tenantId)
-            .limit(1)
-        ]);
-
-        if (businessInfoResult.error) {
-          console.error("Error fetching verification status:", businessInfoResult.error);
-          setVerificationStatus({ isLoading: false, isVerified: false, status: null, hasDocuments: false });
-          return;
-        }
-
-        const status = businessInfoResult.data?.verification_status || null;
-        const isVerified = status === "verified";
-        const hasDocuments = (documentsResult.data?.length ?? 0) > 0;
-        
-        setVerificationStatus({
-          isLoading: false,
-          isVerified,
-          status,
-          hasDocuments,
-        });
-      } catch (err) {
-        console.error("Error checking verification:", err);
-        setVerificationStatus({ isLoading: false, isVerified: false, status: null, hasDocuments: false });
-      }
-    };
-
-    checkVerificationStatus();
+    setVerificationStatus({ isLoading: false, isVerified: false, status: null, hasDocuments: false });
   }, [user?.tenantId]);
 
   // Don't show banner if loading, verified, or dismissed

@@ -61,7 +61,6 @@ import { RolePermissionsMatrix } from "@/components/settings/RolePermissionsMatr
 import { TableToolbar, type FilterField, type FilterValues } from "@/components/shadcn/table-toolbar";
 import { TenantInvoiceConfigPanel } from "@/components/settings/TenantInvoiceConfigPanel";
 import { useAuthStore } from "@/stores/authStore";
-import { supabase } from "@/integrations/supabase/client";
 import { useOrgContext } from "@/hooks/useOrgContext";
 import { useActiveOrgStore } from "@/stores/activeOrgStore";
 
@@ -179,101 +178,13 @@ export default function Settings() {
 
   // Fetch tenant data on mount
   useEffect(() => {
-    const fetchTenantData = async () => {
-      if (!user?.tenantId) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('tenants')
-          .select('*')
-          .eq('id', user.tenantId)
-          .single();
-
-        if (error) throw error;
-
-        if (data) {
-          setOrgName(data.name || '');
-          setOrgEmail(data.email || '');
-          setOrgPhone(data.phone || '');
-          setOrgAddress(data.address || '');
-        }
-      } catch (error) {
-        console.error('Error fetching tenant:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTenantData();
+    setIsLoading(false);
   }, [user?.tenantId]);
 
   // Fetch tenant users
   useEffect(() => {
-    const fetchTenantUsers = async () => {
-      if (!user?.tenantId) {
-        console.log('No tenant ID, skipping user fetch');
-        setIsLoadingUsers(false);
-        return;
-      }
-
-      console.log('Fetching users for tenant:', user.tenantId);
-      try {
-        // Fetch profiles for this tenant
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, email')
-          .eq('tenant_id', user.tenantId);
-
-        if (profilesError) {
-          console.error('Error fetching profiles:', profilesError);
-          throw profilesError;
-        }
-        console.log('Fetched profiles:', profiles);
-
-        if (!profiles || profiles.length === 0) {
-          console.log('No profiles found');
-          setTenantUsers([]);
-          setIsLoadingUsers(false);
-          return;
-        }
-
-        // Fetch roles for these users
-        const userIds = profiles.map(p => p.user_id);
-        const { data: roles, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('user_id, role')
-          .in('user_id', userIds);
-
-        if (rolesError) throw rolesError;
-
-        // Combine profiles with roles
-        const users: TenantUser[] = profiles.map(profile => {
-          const userRole = roles?.find(r => r.user_id === profile.user_id);
-          const displayRole = roleDisplayMap[userRole?.role || 'viewer_finance'] || 'viewer';
-          
-          return {
-            id: profile.user_id,
-            name: profile.full_name || 'Unknown',
-            email: profile.email,
-            role: displayRole,
-            status: 'active',
-            lastActive: 'Recently',
-          };
-        });
-
-        setTenantUsers(users);
-      } catch (error) {
-        console.error('Error fetching tenant users:', error);
-        setTenantUsers([]);
-      } finally {
-        setIsLoadingUsers(false);
-      }
-    };
-
-    fetchTenantUsers();
+    setTenantUsers([]);
+    setIsLoadingUsers(false);
   }, [user?.tenantId]);
 
   const [notifications, setNotifications] = useState({
@@ -299,44 +210,8 @@ export default function Settings() {
       toast.error("Please enter an email address");
       return;
     }
-
-    const dbRole = INVITE_ROLE_TO_DB[inviteRole] || "viewer_finance";
-
-    setIsInviting(true);
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      const response = await supabase.functions.invoke("user-invitation", {
-        body: {
-          email: inviteEmail,
-          role: dbRole,
-          inviterName: user?.name,
-          organizationName: orgName || "Lagos Express Logistics",
-        },
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message || "Failed to send invitation");
-      }
-
-      if (response.data?.error) {
-        throw new Error(response.data.error);
-      }
-
-      toast.success("Invitation Sent!", {
-        description: `An invitation email has been sent to ${inviteEmail}`,
-      });
-      setIsInviteDialogOpen(false);
-      setInviteEmail("");
-      setInviteRole(defaultInviteRole);
-    } catch (error: any) {
-      console.error("Error sending invitation:", error);
-      toast.error("Failed to send invitation", {
-        description: error.message || "Please try again later",
-      });
-    } finally {
-      setIsInviting(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const handleToggleIntegration = (integrationId: string) => {
@@ -362,89 +237,8 @@ export default function Settings() {
   // Save user changes
   const handleSaveUser = async () => {
     if (!editingUser) return;
-
-    setIsUpdatingUser(true);
-    try {
-      console.log('Updating user:', editingUser.id, 'Name:', editName, 'Role:', editRole);
-      
-      // Update profile name
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ full_name: editName, updated_at: new Date().toISOString() })
-        .eq('user_id', editingUser.id);
-
-      if (profileError) {
-        console.error('Profile update error:', profileError);
-        throw profileError;
-      }
-      console.log('Profile updated successfully');
-
-      // Map UI role to database role
-      const roleMapping: Record<string, string> = {
-        admin: "tenant_admin",
-        manager: "operations_manager",
-        supervisor: "supervisor",
-        dispatcher: "dispatcher",
-        viewer: "viewer_finance",
-      };
-      const dbRole = roleMapping[editRole] || "supervisor";
-      console.log('Mapped role:', editRole, '->', dbRole);
-
-      // First, check if user has an existing role
-      const { data: existingRole } = await supabase
-        .from('user_roles')
-        .select('id, role')
-        .eq('user_id', editingUser.id)
-        .maybeSingle();
-
-      console.log('Existing role:', existingRole);
-
-      if (existingRole) {
-        // Update existing role
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .update({ role: dbRole as "tenant_admin" | "operations_manager" | "supervisor" | "dispatcher" | "viewer_finance" | "platform_admin" })
-          .eq('user_id', editingUser.id);
-
-        if (roleError) {
-          console.error('Role update error:', roleError);
-          throw roleError;
-        }
-        console.log('Role updated successfully');
-      } else {
-        // Insert new role
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({ 
-            user_id: editingUser.id, 
-            role: dbRole as "tenant_admin" | "operations_manager" | "supervisor" | "dispatcher" | "viewer_finance" | "platform_admin"
-          });
-
-        if (roleError) {
-          console.error('Role insert error:', roleError);
-          throw roleError;
-        }
-        console.log('Role inserted successfully');
-      }
-
-      // Update local state
-      setTenantUsers(prev => prev.map(u => 
-        u.id === editingUser.id 
-          ? { ...u, name: editName, role: editRole }
-          : u
-      ));
-
-      toast.success("User updated successfully");
-      setIsEditDialogOpen(false);
-      setEditingUser(null);
-    } catch (error: any) {
-      console.error("Error updating user:", error);
-      toast.error("Failed to update user", {
-        description: error.message || "Please try again later",
-      });
-    } finally {
-      setIsUpdatingUser(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   // Open remove confirmation dialog
@@ -456,47 +250,8 @@ export default function Settings() {
   // Remove user
   const handleRemoveUser = async () => {
     if (!removingUser) return;
-
-    console.log('Removing user:', removingUser.id, removingUser.name);
-    setIsRemovingUser(true);
-    try {
-      // Remove user role (may not exist)
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', removingUser.id);
-
-      // Role deletion might fail if no role exists - that's ok
-      if (roleError) {
-        console.warn('Role deletion warning (may not exist):', roleError);
-      } else {
-        console.log('Role deleted successfully');
-      }
-
-      // Unlink user from tenant (don't delete profile, just remove tenant association)
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ tenant_id: null, updated_at: new Date().toISOString() })
-        .eq('user_id', removingUser.id);
-
-      if (profileError) {
-        console.error('Profile update error:', profileError);
-        throw profileError;
-      }
-      console.log('User unlinked from tenant successfully');
-
-      setTenantUsers(prev => prev.filter(u => u.id !== removingUser.id));
-      toast.success("User removed from organization");
-      setIsRemoveDialogOpen(false);
-      setRemovingUser(null);
-    } catch (error: any) {
-      console.error("Error removing user:", error);
-      toast.error("Failed to remove user", {
-        description: error.message || "Please try again later",
-      });
-    } finally {
-      setIsRemovingUser(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const copyApiKey = () => {

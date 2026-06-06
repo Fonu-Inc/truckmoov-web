@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Mail, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -32,21 +31,8 @@ export function ForgotPasswordDialog({ open, onOpenChange, defaultEmail = "" }: 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
-
-    setSubmitting(true);
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      if (error) throw error;
-      setSent(true);
-      toast.success("Reset link sent — check your inbox");
-    } catch (err: any) {
-      toast.error(err?.message ?? "Couldn't send reset link. Try again.");
-    } finally {
-      setSubmitting(false);
-    }
+    toast.info("Coming soon");
+    return;
   };
 
   const handleOpenChange = (next: boolean) => {

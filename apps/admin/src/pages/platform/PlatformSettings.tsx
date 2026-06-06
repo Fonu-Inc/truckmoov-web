@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/shadcn/avatar";
 import { useAuthStore } from "@/stores/authStore";
-import { supabase } from "@/integrations/supabase/client";
 import { Camera, User as UserIcon } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
@@ -109,29 +108,8 @@ export default function PlatformSettings() {
   };
 
   const handleSaveProfile = async () => {
-    if (!profileName.trim()) {
-      toast.error("Name cannot be empty");
-      return;
-    }
-    setSavingProfile(true);
-    try {
-      if (user?.id && !user.id.startsWith("demo-")) {
-        const { error } = await supabase
-          .from("profiles")
-          .update({
-            full_name: profileName.trim(),
-            phone: profilePhone.trim() || null,
-            avatar_url: profileAvatar ?? null,
-          })
-          .eq("id", user.id);
-        if (error) throw error;
-      }
-      toast.success("Profile updated");
-    } catch (err: any) {
-      toast.error(err?.message ?? "Failed to update profile");
-    } finally {
-      setSavingProfile(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const handleSave = () => {

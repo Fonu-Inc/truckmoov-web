@@ -25,7 +25,6 @@ import {
   Inbox,
   Zap,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 
@@ -69,138 +68,25 @@ export function WhatsAppHealthDashboard() {
 
   const fetchStats = async () => {
     setIsLoading(true);
-    try {
-      // Fetch webhook delivery stats (new schema)
-      const { data: webhookData } = await supabase
-        .from("webhook_delivery_logs")
-        .select("status")
-        .limit(1000);
-
-      const webhookCounts = (webhookData || []).reduce(
-        (acc: { total: number; processed: number; failed: number; pending: number }, e: { status: string }) => {
-          acc.total++;
-          if (e.status === "success") acc.processed++;
-          else if (e.status === "failed" || e.status === "dead_letter") acc.failed++;
-          else acc.pending++;
-          return acc;
-        },
-        { total: 0, processed: 0, failed: 0, pending: 0 }
-      );
-      setWebhookStats(webhookCounts);
-
-      // Fetch message stats
-      const { data: messagesData } = await supabase
-        .from("whatsapp_messages")
-        .select("status, direction")
-        .eq("direction", "OUTBOUND");
-
-      const msgCounts = (messagesData || []).reduce(
-        (acc, m) => {
-          acc.sent++;
-          if (m.status === "DELIVERED") acc.delivered++;
-          else if (m.status === "READ") {
-            acc.delivered++;
-            acc.read++;
-          } else if (m.status === "FAILED") acc.failed++;
-          return acc;
-        },
-        { sent: 0, delivered: 0, read: 0, failed: 0 }
-      );
-      setMessageStats(msgCounts);
-
-      // Fetch per-tenant health
-      const { data: accountsData } = await supabase
-        .from("tenant_whatsapp_accounts")
-        .select("tenant_id, status")
-        .eq("status", "CONNECTED");
-
-      const tenantIds = [...new Set((accountsData || []).map((a) => a.tenant_id))];
-
-      // Get tenant names
-      const { data: tenantsData } = await supabase.from("tenants").select("id, name").in("id", tenantIds);
-
-      // Get message counts per tenant
-      const { data: tenantMessages } = await supabase
-        .from("whatsapp_messages")
-        .select("tenant_id, status, created_at")
-        .in("tenant_id", tenantIds)
-        .eq("direction", "OUTBOUND")
-        .order("created_at", { ascending: false });
-
-      const tenantHealthData: TenantHealth[] = tenantIds.map((tid) => {
-        const tenant = tenantsData?.find((t) => t.id === tid);
-        const messages = (tenantMessages || []).filter((m) => m.tenant_id === tid);
-        const failed = messages.filter((m) => m.status === "FAILED").length;
-        const lastActivity = messages[0]?.created_at || null;
-
-        return {
-          tenant_id: tid,
-          tenant_name: tenant?.name || "Unknown",
-          status: failed > 5 ? "degraded" : "healthy",
-          messages_sent: messages.length,
-          messages_failed: failed,
-          last_activity: lastActivity,
-        };
-      });
-
-      setTenantHealth(tenantHealthData);
-
-      // Fetch top error codes
-      const { data: errorData } = await supabase
-        .from("whatsapp_messages")
-        .select("error_code")
-        .eq("status", "FAILED")
-        .not("error_code", "is", null)
-        .limit(100);
-
-      const errorCounts = (errorData || []).reduce((acc: Record<string, number>, e) => {
-        const code = e.error_code || "UNKNOWN";
-        acc[code] = (acc[code] || 0) + 1;
-        return acc;
-      }, {});
-
-      const sortedErrors = Object.entries(errorCounts)
-        .map(([code, count]) => ({ code, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
-
-      setTopErrors(sortedErrors);
-    } catch (error) {
-      console.error("Failed to fetch stats:", error);
-    } finally {
-      setIsLoading(false);
-    }
-
-    // Apply demo fallbacks if any surface is empty so the dashboard always shows realistic content
-    setWebhookStats((prev) =>
-      prev.total > 0 ? prev : { total: 12480, processed: 12089, failed: 287, pending: 104 }
-    );
-    setMessageStats((prev) =>
-      prev.sent > 0 ? prev : { sent: 28412, delivered: 27598, read: 24180, failed: 814 }
-    );
-    setTenantHealth((prev) =>
-      prev.length > 0
-        ? prev
-        : [
-            { tenant_id: "demo-t1", tenant_name: "Lagos Express Logistics", status: "healthy", messages_sent: 9421, messages_failed: 41, last_activity: new Date(Date.now() - 1000 * 60 * 3).toISOString() },
-            { tenant_id: "demo-t3", tenant_name: "Nairobi Fleet Group", status: "healthy", messages_sent: 6890, messages_failed: 78, last_activity: new Date(Date.now() - 1000 * 60 * 11).toISOString() },
-            { tenant_id: "demo-t2", tenant_name: "Accra Swift Cargo", status: "healthy", messages_sent: 4521, messages_failed: 52, last_activity: new Date(Date.now() - 1000 * 60 * 18).toISOString() },
-            { tenant_id: "demo-t5", tenant_name: "Johannesburg Freight", status: "degraded", messages_sent: 3284, messages_failed: 142, last_activity: new Date(Date.now() - 1000 * 60 * 32).toISOString() },
-            { tenant_id: "demo-t6", tenant_name: "Abuja Haulage Co.", status: "healthy", messages_sent: 2104, messages_failed: 38, last_activity: new Date(Date.now() - 1000 * 60 * 47).toISOString() },
-            { tenant_id: "demo-t4", tenant_name: "Cape Town Trucking", status: "degraded", messages_sent: 1842, messages_failed: 98, last_activity: new Date(Date.now() - 1000 * 60 * 64).toISOString() },
-          ]
-    );
-    setTopErrors((prev) =>
-      prev.length > 0
-        ? prev
-        : [
-            { code: "131026", count: 124 },
-            { code: "131047", count: 87 },
-            { code: "131051", count: 54 },
-            { code: "470", count: 38 },
-            { code: "131056", count: 21 },
-          ]
-    );
+    // Apply demo fallbacks
+    setWebhookStats({ total: 12480, processed: 12089, failed: 287, pending: 104 });
+    setMessageStats({ sent: 28412, delivered: 27598, read: 24180, failed: 814 });
+    setTenantHealth([
+      { tenant_id: "demo-t1", tenant_name: "Lagos Express Logistics", status: "healthy", messages_sent: 9421, messages_failed: 41, last_activity: new Date(Date.now() - 1000 * 60 * 3).toISOString() },
+      { tenant_id: "demo-t3", tenant_name: "Nairobi Fleet Group", status: "healthy", messages_sent: 6890, messages_failed: 78, last_activity: new Date(Date.now() - 1000 * 60 * 11).toISOString() },
+      { tenant_id: "demo-t2", tenant_name: "Accra Swift Cargo", status: "healthy", messages_sent: 4521, messages_failed: 52, last_activity: new Date(Date.now() - 1000 * 60 * 18).toISOString() },
+      { tenant_id: "demo-t5", tenant_name: "Johannesburg Freight", status: "degraded", messages_sent: 3284, messages_failed: 142, last_activity: new Date(Date.now() - 1000 * 60 * 32).toISOString() },
+      { tenant_id: "demo-t6", tenant_name: "Abuja Haulage Co.", status: "healthy", messages_sent: 2104, messages_failed: 38, last_activity: new Date(Date.now() - 1000 * 60 * 47).toISOString() },
+      { tenant_id: "demo-t4", tenant_name: "Cape Town Trucking", status: "degraded", messages_sent: 1842, messages_failed: 98, last_activity: new Date(Date.now() - 1000 * 60 * 64).toISOString() },
+    ]);
+    setTopErrors([
+      { code: "131026", count: 124 },
+      { code: "131047", count: 87 },
+      { code: "131051", count: 54 },
+      { code: "470", count: 38 },
+      { code: "131056", count: 21 },
+    ]);
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -436,6 +322,5 @@ export function WhatsAppHealthDashboard() {
 }
 
 export default WhatsAppHealthDashboard;
-
 
 

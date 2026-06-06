@@ -1,6 +1,3 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
 
 export type FuelAnomalyType = 'sudden_drop' | 'abnormal_consumption' | 'suspected_theft' | 'sensor_error';
@@ -28,7 +25,6 @@ export interface FuelAnomaly {
   acknowledged_at: string | null;
   notes: string | null;
   created_at: string;
-  // Joined fields
   vehicle_registration?: string;
   vehicle_make?: string;
   vehicle_model?: string;
@@ -49,113 +45,23 @@ export interface FuelLevelHistory {
 }
 
 export function useFuelAnomalies() {
-  const [anomalies, setAnomalies] = useState<FuelAnomaly[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { user } = useAuthStore();
+  const anomalies: FuelAnomaly[] = [];
+  const isLoading = false;
+  const error: string | null = null;
 
-  const tenantId = user?.tenantId;
+  const fetchAnomalies = async (_vehicleId?: string, _limit = 50) => {};
+  const acknowledgeAnomaly = async (_id: string, _notes?: string) => {};
+  const getFuelHistory = async (_vehicleId: string, _hours = 24): Promise<FuelLevelHistory[]> => [];
 
-  const fetchAnomalies = useCallback(async (vehicleId?: string, limit = 50) => {
-    const effectiveTenantId = tenantId;
-    if (!effectiveTenantId) {
-      setAnomalies([]);
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      let query = supabase
-        .from('fuel_anomaly_events')
-        .select('*')
-        .eq('tenant_id', effectiveTenantId)
-        .order('detected_at', { ascending: false })
-        .limit(limit);
-
-      if (vehicleId) {
-        query = query.eq('vehicle_id', vehicleId);
-      }
-
-      const { data, error: fetchError } = await query;
-
-      if (fetchError) throw fetchError;
-
-      setAnomalies((data || []) as FuelAnomaly[]);
-      setError(null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch fuel anomalies';
-      setError(message);
-      console.error('Error fetching fuel anomalies:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [tenantId]);
-
-  useEffect(() => {
-    fetchAnomalies();
-  }, [fetchAnomalies]);
-
-  const acknowledgeAnomaly = useCallback(async (id: string, notes?: string) => {
-    try {
-      const { error: updateError } = await supabase
-        .from('fuel_anomaly_events')
-        .update({
-          acknowledged: true,
-          acknowledged_by: user?.id || null,
-          acknowledged_at: new Date().toISOString(),
-          notes: notes || null,
-        })
-        .eq('id', id);
-
-      if (updateError) throw updateError;
-
-      setAnomalies(prev => prev.map(a => 
-        a.id === id ? { ...a, acknowledged: true, acknowledged_at: new Date().toISOString() } : a
-      ));
-
-      toast.success('Anomaly acknowledged');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to acknowledge anomaly';
-      toast.error(message);
-      throw err;
-    }
-  }, [user?.id]);
-
-  const getFuelHistory = useCallback(async (vehicleId: string, hours = 24): Promise<FuelLevelHistory[]> => {
-    const effectiveTenantId = tenantId;
-    if (!effectiveTenantId) return [];
-
-    try {
-      const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
-
-      const { data, error: fetchError } = await supabase
-        .from('fuel_level_history')
-        .select('*')
-        .eq('tenant_id', effectiveTenantId)
-        .eq('vehicle_id', vehicleId)
-        .gte('recorded_at', since)
-        .order('recorded_at', { ascending: true });
-
-      if (fetchError) throw fetchError;
-
-      return (data || []) as FuelLevelHistory[];
-    } catch (err) {
-      console.error('Error fetching fuel history:', err);
-      return [];
-    }
-  }, [tenantId]);
-
-  // Stats computed from anomalies
   const stats = {
-    total: anomalies.length,
-    unacknowledged: anomalies.filter(a => !a.acknowledged).length,
-    critical: anomalies.filter(a => a.severity === 'critical' && !a.acknowledged).length,
+    total: 0,
+    unacknowledged: 0,
+    critical: 0,
     byType: {
-      sudden_drop: anomalies.filter(a => a.anomaly_type === 'sudden_drop').length,
-      abnormal_consumption: anomalies.filter(a => a.anomaly_type === 'abnormal_consumption').length,
-      suspected_theft: anomalies.filter(a => a.anomaly_type === 'suspected_theft').length,
-      sensor_error: anomalies.filter(a => a.anomaly_type === 'sensor_error').length,
+      sudden_drop: 0,
+      abnormal_consumption: 0,
+      suspected_theft: 0,
+      sensor_error: 0,
     },
   };
 

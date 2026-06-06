@@ -61,7 +61,6 @@ import { formatDistanceToNow } from "date-fns";
 import { useDevicePermissions } from "@/hooks/useDevicePermissions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { IoTDevice } from "@/types";
 import { useOrgContext } from "@/hooks/useOrgContext";
@@ -158,90 +157,19 @@ export default function DispatcherDevices() {
   });
 
   // Handle adding device with catalog selection
-  const handleAddDevice = async (newDevice: { imei: string; catalog_id: string; manufacturer: string; model: string }) => {
-    try {
-      // Quota enforcement
-      if (tenantId) {
-        const [{ data: tRow }, { count: deviceCount }] = await Promise.all([
-          supabase.from('tenants').select('device_quota').eq('id', tenantId).single(),
-          supabase.from('devices').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId),
-        ]);
-        const quota = (tRow as { device_quota?: number } | null)?.device_quota ?? null;
-        if (quota !== null && quota !== undefined && (deviceCount ?? 0) >= quota) {
-          toast.error("Device quota exceeded", {
-            description: `Your plan allows ${quota} device${quota === 1 ? "" : "s"}. Decommission an existing device or contact your platform admin to increase the quota.`,
-            duration: 7000,
-          });
-          return;
-        }
-      }
-
-      const { error: insertError } = await supabase
-        .from('devices')
-        .insert({
-          imei: newDevice.imei,
-          manufacturer: newDevice.manufacturer,
-          model: newDevice.model,
-          catalog_id: newDevice.catalog_id,
-          lifecycle_status: "registered",
-          status: "registered", // Keep legacy status for compatibility
-          tenant_id: tenantId || "default",
-        });
-
-      if (insertError) throw insertError;
-      
-      toast.success("Device registered successfully", {
-        description: "Device is now in Registered status. Configure it to proceed.",
-      });
-      setIsAddDialogOpen(false);
-      refetch();
-    } catch (err) {
-      console.error('Error adding device:', err);
-      toast.error("Failed to add device");
-    }
+  const handleAddDevice = async (_newDevice: { imei: string; catalog_id: string; manufacturer: string; model: string }) => {
+    toast.info('Coming soon');
+    return;
   };
 
-  const handleEditDevice = async (updatedDevice: Partial<IoTDevice>) => {
-    if (!selectedDevice) return;
-    
-    try {
-      const { error: updateError } = await supabase
-        .from('devices')
-        .update({
-          imei: updatedDevice.imei,
-          manufacturer: updatedDevice.manufacturer,
-          model: updatedDevice.model,
-          firmware_version: updatedDevice.firmwareVersion,
-        })
-        .eq('id', selectedDevice.id);
-
-      if (updateError) throw updateError;
-      
-      toast.success("Device updated successfully");
-      setIsEditDialogOpen(false);
-      setSelectedDevice(null);
-      refetch();
-    } catch (err) {
-      console.error('Error updating device:', err);
-      toast.error("Failed to update device");
-    }
+  const handleEditDevice = async (_updatedDevice: Partial<IoTDevice>) => {
+    toast.info('Coming soon');
+    return;
   };
 
-  const handleDeleteDevice = async (deviceId: string) => {
-    try {
-      const { error: deleteError } = await supabase
-        .from('devices')
-        .delete()
-        .eq('id', deviceId);
-
-      if (deleteError) throw deleteError;
-      
-      toast.success("Device deleted successfully");
-      refetch();
-    } catch (err) {
-      console.error('Error deleting device:', err);
-      toast.error("Failed to delete device");
-    }
+  const handleDeleteDevice = async (_deviceId: string) => {
+    toast.info('Coming soon');
+    return;
   };
 
   // Mark device as configured (transitions to config_pending -> configured)
@@ -261,91 +189,19 @@ export default function DispatcherDevices() {
   };
 
   // Assign device to vehicle (with lifecycle validation)
-  const handleAssignDevice = async (deviceId: string, vehicleId: string) => {
-    try {
-      const { error: updateError } = await supabase
-        .from('devices')
-        .update({ 
-          vehicle_id: vehicleId,
-          lifecycle_status: 'assigned',
-          status: 'assigned',
-          assigned_at: new Date().toISOString(),
-        })
-        .eq('id', deviceId);
-
-      if (updateError) throw updateError;
-      
-      toast.success("Device assigned to vehicle");
-      setIsAssignDialogOpen(false);
-      refetch();
-    } catch (err) {
-      console.error('Error assigning device:', err);
-      toast.error("Failed to assign device");
-    }
+  const handleAssignDevice = async (_deviceId: string, _vehicleId: string) => {
+    toast.info('Coming soon');
+    return;
   };
 
-  const handleUnassignDevice = async (deviceId: string) => {
-    try {
-      const { error: updateError } = await supabase
-        .from('devices')
-        .update({ 
-          vehicle_id: null,
-          lifecycle_status: 'assignable',
-          status: 'active', // Legacy compatibility
-          assigned_at: null,
-        })
-        .eq('id', deviceId);
-
-      if (updateError) throw updateError;
-      
-      toast.success("Device unassigned from vehicle");
-      refetch();
-    } catch (err) {
-      console.error('Error unassigning device:', err);
-      toast.error("Failed to unassign device");
-    }
+  const handleUnassignDevice = async (_deviceId: string) => {
+    toast.info('Coming soon');
+    return;
   };
 
-  const handleBulkUpload = async (newDevices: Partial<IoTDevice>[]) => {
-    try {
-      // Quota enforcement
-      if (tenantId) {
-        const [{ data: tRow }, { count: deviceCount }] = await Promise.all([
-          supabase.from('tenants').select('device_quota').eq('id', tenantId).single(),
-          supabase.from('devices').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId),
-        ]);
-        const quota = (tRow as { device_quota?: number } | null)?.device_quota ?? null;
-        if (quota !== null && quota !== undefined && (deviceCount ?? 0) + newDevices.length > quota) {
-          toast.error("Device quota would be exceeded", {
-            description: `Your plan allows ${quota} device${quota === 1 ? "" : "s"}. You currently have ${deviceCount ?? 0} and tried to import ${newDevices.length}. Reduce the batch or contact your platform admin to increase the quota.`,
-            duration: 8000,
-          });
-          return;
-        }
-      }
-
-      const devicesToInsert = newDevices.map((d) => ({
-        imei: d.imei || "",
-        manufacturer: d.manufacturer || "generic",
-        model: d.model || null,
-        firmware_version: d.firmwareVersion || "1.0.0",
-        status: "registered",
-        tenant_id: tenantId || "default",
-      }));
-
-      const { error: insertError } = await supabase
-        .from('devices')
-        .insert(devicesToInsert);
-
-      if (insertError) throw insertError;
-      
-      toast.success(`${devicesToInsert.length} devices imported successfully`);
-      setIsBulkUploadOpen(false);
-      refetch();
-    } catch (err) {
-      console.error('Error bulk uploading devices:', err);
-      toast.error("Failed to import devices");
-    }
+  const handleBulkUpload = async (_newDevices: Partial<IoTDevice>[]) => {
+    toast.info('Coming soon');
+    return;
   };
 
   const getVehicleInfo = (vehicleId?: string | null) => {

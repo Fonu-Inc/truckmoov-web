@@ -40,7 +40,6 @@ import {
 } from "@/components/shadcn/alert-dialog";
 import { Users, Plus, Mail, Shield, Trash2, Clock, CheckCircle, XCircle, Search, SlidersHorizontal } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -90,35 +89,6 @@ export function PlatformTeamManagement() {
   const fetchPlatformTeam = async () => {
     setIsLoading(true);
     try {
-      // Fetch platform admins from user_roles joined with profiles
-      const { data: rolesData, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("id, user_id, role, created_at")
-        .eq("role", "platform_admin");
-
-      if (rolesError) throw rolesError;
-
-      // For each role, get the profile
-      const users: PlatformUser[] = [];
-      for (const role of rolesData || []) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("email, full_name")
-          .eq("user_id", role.user_id)
-          .single();
-
-        if (profileData) {
-          users.push({
-            id: role.id,
-            userId: role.user_id,
-            email: profileData.email,
-            fullName: profileData.full_name,
-            role: role.role,
-            createdAt: role.created_at,
-          });
-        }
-      }
-      // Demo fallback so the team table is always populated
       const DEMO_USERS: PlatformUser[] = [
         { id: "du-1", userId: "du-1", email: "platform@truckmoov.com", fullName: "Adaeze Okafor", role: "platform_admin", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 240).toISOString() },
         { id: "du-2", userId: "du-2", email: "kwame.mensah@truckmoov.com", fullName: "Kwame Mensah", role: "platform_admin", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 180).toISOString() },
@@ -126,31 +96,13 @@ export function PlatformTeamManagement() {
         { id: "du-4", userId: "du-4", email: "ibrahim.bello@truckmoov.com", fullName: "Ibrahim Bello", role: "platform_admin", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 42).toISOString() },
         { id: "du-5", userId: "du-5", email: "amina.cisse@truckmoov.com", fullName: "Aminata Cissé", role: "platform_admin", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18).toISOString() },
       ];
-      setPlatformUsers(users.length > 0 ? users : DEMO_USERS);
+      setPlatformUsers(DEMO_USERS);
 
-      // Fetch pending invitations for platform_admin role (no tenant_id)
-      const { data: invitationsData, error: invitationsError } = await supabase
-        .from("user_invitations")
-        .select("id, email, role, expires_at, created_at")
-        .eq("role", "platform_admin")
-        .is("tenant_id", null)
-        .is("accepted_at", null)
-        .gt("expires_at", new Date().toISOString());
-
-      if (invitationsError) throw invitationsError;
-
-      const mappedInvites = (invitationsData || []).map((inv) => ({
-        id: inv.id,
-        email: inv.email,
-        role: inv.role,
-        expiresAt: inv.expires_at,
-        createdAt: inv.created_at,
-      }));
       const DEMO_INVITES: PendingInvitation[] = [
         { id: "di-1", email: "tunde.ade@truckmoov.com", role: "platform_admin", expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(), createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString() },
         { id: "di-2", email: "naledi.khumalo@truckmoov.com", role: "platform_admin", expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 6).toISOString(), createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
       ];
-      setPendingInvitations(mappedInvites.length > 0 ? mappedInvites : DEMO_INVITES);
+      setPendingInvitations(DEMO_INVITES);
     } catch (err) {
       console.error("Error fetching platform team:", err);
       toast.error("Failed to fetch platform team");
@@ -164,78 +116,15 @@ export function PlatformTeamManagement() {
   }, []);
 
   const handleInvitePlatformAdmin = async () => {
-    if (!inviteEmail) {
-      toast.error("Please enter an email address");
-      return;
-    }
-
-    setIsInviting(true);
-    try {
-      const response = await supabase.functions.invoke("user-invitation", {
-        body: {
-          email: inviteEmail,
-          role: "platform_admin",
-          inviterName: user?.name || "Platform Admin",
-          organizationName: "FleetPro Platform",
-          // No tenant_id for platform admins
-        },
-      });
-
-      if (response.error) throw response.error;
-
-      toast.success("Invitation sent successfully");
-      setInviteEmail("");
-      setIsInviteDialogOpen(false);
-      fetchPlatformTeam();
-    } catch (err) {
-      console.error("Error sending invitation:", err);
-      toast.error("Failed to send invitation");
-    } finally {
-      setIsInviting(false);
-    }
+    toast.info('Coming soon');
   };
 
-  const handleRemoveUser = async (platformUser: PlatformUser) => {
-    try {
-      // Don't allow removing yourself
-      if (platformUser.userId === user?.id) {
-        toast.error("You cannot remove yourself");
-        return;
-      }
-
-      // Delete the role
-      const { error } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("id", platformUser.id);
-
-      if (error) throw error;
-
-      toast.success("User removed from platform team");
-      setUserToRemove(null);
-      fetchPlatformTeam();
-    } catch (err) {
-      console.error("Error removing user:", err);
-      toast.error("Failed to remove user");
-    }
+  const handleRemoveUser = async (_platformUser: PlatformUser) => {
+    toast.info('Coming soon');
   };
 
-  const handleCancelInvitation = async (invitation: PendingInvitation) => {
-    try {
-      const { error } = await supabase
-        .from("user_invitations")
-        .delete()
-        .eq("id", invitation.id);
-
-      if (error) throw error;
-
-      toast.success("Invitation cancelled");
-      setInvitationToCancel(null);
-      fetchPlatformTeam();
-    } catch (err) {
-      console.error("Error cancelling invitation:", err);
-      toast.error("Failed to cancel invitation");
-    }
+  const handleCancelInvitation = async (_invitation: PendingInvitation) => {
+    toast.info('Coming soon');
   };
 
   return (

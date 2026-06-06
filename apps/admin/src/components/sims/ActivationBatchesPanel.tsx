@@ -44,7 +44,6 @@ import {
   Link,
   AlertCircle,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { DeviceLinkingResolver } from "./DeviceLinkingResolver";
@@ -203,79 +202,17 @@ export function ActivationBatchesPanel() {
   });
 
   const fetchBatches = useCallback(async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('sim_activation_batches')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      const rows = (data || []) as ActivationBatch[];
-      setBatches(rows.length > 0 ? rows : DEMO_ACTIVATION_BATCHES);
-    } catch (err) {
-      console.error('Error fetching activation batches:', err);
-      setBatches(DEMO_ACTIVATION_BATCHES);
-    } finally {
-      setLoading(false);
-    }
+    setBatches(DEMO_ACTIVATION_BATCHES);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
     fetchBatches();
   }, [fetchBatches]);
 
-  const handleInitiateActivation = async (batch: ActivationBatch) => {
-    setActivating(batch.id);
-    try {
-      toast.info('Starting SIM activation...', {
-        description: `Processing ${batch.quantity} SIM(s)`,
-      });
-
-      const { data, error } = await supabase.functions.invoke('fonu-sim', {
-        body: {
-          action: 'initiate_activation',
-          batchId: batch.id,
-          tenantId: batch.tenant_id,
-          quantity: batch.quantity,
-          operator: batch.operator,
-          plan: batch.requested_plan,
-          dataLimitMb: batch.data_limit_gb ? batch.data_limit_gb * 1024 : 1000,
-          // Pass who triggered the activation for audit logging
-          triggeredById: user?.id,
-          triggeredByName: user?.name || 'Platform Admin',
-        },
-      });
-
-      if (error) throw error;
-
-      const result = data as {
-        success: boolean;
-        status: string;
-        summary: { total: number; activated: number; failed: number };
-      };
-
-      if (result.status === 'completed') {
-        toast.success('Activation Complete', {
-          description: `${result.summary.activated} SIM(s) activated successfully`,
-        });
-      } else if (result.status === 'partially_completed') {
-        toast.warning('Partial Activation', {
-          description: `${result.summary.activated} activated, ${result.summary.failed} failed`,
-        });
-      } else {
-        toast.error('Activation Failed', {
-          description: `${result.summary.failed} SIM(s) failed to activate`,
-        });
-      }
-
-      await fetchBatches();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to initiate activation';
-      toast.error(message);
-    } finally {
-      setActivating(null);
-    }
+  const handleInitiateActivation = async (_batch: ActivationBatch) => {
+    toast.info('Coming soon');
+    return;
   };
 
   const getStatusBadge = (status: string) => {

@@ -40,42 +40,6 @@ import { useDeviceSetupRequests } from "@/hooks/useDeviceSetupRequests";
 import { useSIMRequestSubmit } from "@/hooks/useSIMRequestSubmit";
 import { useOnboardingStore } from "@/stores/onboardingStore";
 import { useAuthStore } from "@/stores/authStore";
-import { supabase } from "@/integrations/supabase/client";
-
-/**
- * Resolve dashboard route based on stakeholder/role (mirrors WelcomeDashboard).
- */
-async function resolvePostActivationRoute(
-  userId: string | undefined,
-  legacyRole: string | undefined,
-): Promise<string> {
-  if (legacyRole === "platform_admin") return "/";
-  if (userId) {
-    try {
-      const { data: memberships } = await supabase
-        .from("user_org_memberships")
-        .select("organizations!user_org_memberships_org_id_fkey(organization_type)")
-        .eq("user_id", userId)
-        .eq("membership_status", "active");
-      if (memberships && memberships.length > 0) {
-        const orgTypes = memberships.map((m: { organizations?: { organization_type?: string } }) => m.organizations?.organization_type);
-        if (orgTypes.includes("ENTERPRISE")) return "/enterprise";
-        if (orgTypes.includes("AGGREGATOR")) return "/aggregator";
-        if (orgTypes.includes("OWNER_OPERATOR")) return "/owner-operator";
-      }
-    } catch (err) {
-      console.warn("Failed to resolve dashboard route:", err);
-    }
-  }
-  switch (legacyRole) {
-    case "supervisor":
-    case "dispatcher": return "/supervisor";
-    case "viewer_finance": return "/admin/fleet?tab=analytics";
-    case "installer": return "/admin/installation";
-    case "driver": return "/driver";
-    default: return "/admin";
-  }
-}
 
 /**
  * Onboarding Step 3 — "Activate Your System"

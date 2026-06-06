@@ -1,1 +1,0 @@
-ALTER VIEW public.v_platform_audit_log SET (security_invoker = true);

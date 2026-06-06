@@ -39,7 +39,6 @@ import {
   SkipForward,
   RefreshCw,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface DeviceLinkingException {
@@ -103,61 +102,9 @@ export function DeviceLinkingResolver({
   }, [open, batchId, tenantId]);
 
   const fetchUnlinkedItems = async () => {
-    setLoading(true);
-    try {
-      // Fetch SIMs that are activated but not linked to any device
-      const { data: sims, error: simsError } = await supabase
-        .from('iot_sims')
-        .select('id, iccid, msisdn, status')
-        .eq('tenant_id', tenantId)
-        .eq('status', 'active')
-        .is('device_id', null);
-
-      if (simsError) throw simsError;
-
-      // Fetch devices that don't have a SIM assigned
-      const { data: devices, error: devicesError } = await supabase
-        .from('devices')
-        .select('id, imei, model, device_config')
-        .eq('tenant_id', tenantId)
-        .is('sim_id', null);
-
-      if (devicesError) throw devicesError;
-
-      setUnlinkedSims((sims || []) as UnlinkedSIM[]);
-      
-      // Map devices and include device_name from config or mapping
-      const mappedDevices: UnlinkedDevice[] = (devices || []).map((d: any) => ({
-        id: d.id,
-        imei: d.imei,
-        model: d.model,
-        device_name: d.device_config?.device_name || `Device ${d.imei.slice(-6)}`,
-        from_mapping: d.device_config?.created_from_mapping || false,
-      }));
-      
-      // Also add devices from exceptions that weren't created
-      for (const ex of exceptions) {
-        if (ex.type === 'creation_failed' && ex.imei) {
-          const exists = mappedDevices.some(d => d.imei === ex.imei);
-          if (!exists) {
-            mappedDevices.push({
-              id: `pending_${ex.row_index}`,
-              imei: ex.imei,
-              model: null,
-              device_name: ex.device_name,
-              from_mapping: true,
-            });
-          }
-        }
-      }
-      
-      setUnlinkedDevices(mappedDevices);
-    } catch (err) {
-      console.error('Error fetching unlinked items:', err);
-      toast.error('Failed to load unlinked items');
-    } finally {
-      setLoading(false);
-    }
+    setUnlinkedSims([]);
+    setUnlinkedDevices([]);
+    setLoading(false);
   };
 
   const handleLinkSelection = (simId: string, deviceId: string) => {
@@ -216,124 +163,8 @@ export function DeviceLinkingResolver({
   };
 
   const handleSaveLinks = async () => {
-    if (manualLinks.length === 0 && skippedExceptions.length === 0) {
-      toast.info('No changes to save');
-      return;
-    }
-
-    setSaving(true);
-    let successCount = 0;
-    let failCount = 0;
-
-    try {
-      // Process manual links
-      for (const link of manualLinks) {
-        // Skip pending devices (need to create first)
-        if (link.device_id.startsWith('pending_')) {
-          // Create the device first
-          const exception = exceptions.find(
-            e => `pending_${e.row_index}` === link.device_id
-          );
-          
-          if (exception) {
-            const { data: newDevice, error: createError } = await supabase
-              .from('devices')
-              .insert({
-                imei: exception.imei,
-                manufacturer: 'Manual Resolution',
-                status: 'registered',
-                tenant_id: tenantId,
-                device_config: {
-                  device_name: exception.device_name,
-                  created_from_resolution: true,
-                },
-              })
-              .select('id')
-              .single();
-
-            if (createError) {
-              console.error('Failed to create device:', createError);
-              failCount++;
-              continue;
-            }
-
-            // Update the link with the real device ID
-            link.device_id = newDevice.id;
-          }
-        }
-
-        // Update device with SIM
-        const { error: deviceError } = await supabase
-          .from('devices')
-          .update({ sim_id: link.sim_id })
-          .eq('id', link.device_id);
-
-        if (deviceError) {
-          console.error('Failed to update device:', deviceError);
-          failCount++;
-          continue;
-        }
-
-        // Update SIM with device
-        const { error: simError } = await supabase
-          .from('iot_sims')
-          .update({ device_id: link.device_id })
-          .eq('id', link.sim_id);
-
-        if (simError) {
-          console.error('Failed to update SIM:', simError);
-          failCount++;
-          continue;
-        }
-
-        successCount++;
-      }
-
-      // Update batch to mark exceptions as resolved
-      if (skippedExceptions.length > 0 || successCount > 0) {
-        const { data: batch } = await supabase
-          .from('sim_activation_batches')
-          .select('fonu_response')
-          .eq('id', batchId)
-          .single();
-
-        if (batch?.fonu_response && typeof batch.fonu_response === 'object') {
-          const updatedResponse = { ...(batch.fonu_response as Record<string, any>) };
-          if (updatedResponse.device_linking) {
-            // Mark resolved exceptions
-            updatedResponse.device_linking.resolved_count = 
-              (updatedResponse.device_linking.resolved_count || 0) + successCount + skippedExceptions.length;
-            updatedResponse.device_linking.manual_links = manualLinks.map(l => ({
-              sim_iccid: l.sim_iccid,
-              device_imei: l.device_imei,
-            }));
-          }
-
-          await supabase
-            .from('sim_activation_batches')
-            .update({ fonu_response: updatedResponse })
-            .eq('id', batchId);
-        }
-      }
-
-      if (successCount > 0) {
-        toast.success(`Successfully linked ${successCount} SIM-device pair(s)`);
-      }
-      if (failCount > 0) {
-        toast.error(`Failed to link ${failCount} pair(s)`);
-      }
-      if (skippedExceptions.length > 0) {
-        toast.info(`Marked ${skippedExceptions.length} exception(s) as skipped`);
-      }
-
-      onResolved();
-      onOpenChange(false);
-    } catch (err) {
-      console.error('Error saving links:', err);
-      toast.error('Failed to save changes');
-    } finally {
-      setSaving(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const getSelectedDevice = (simId: string) => {

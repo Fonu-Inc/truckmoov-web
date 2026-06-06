@@ -18,8 +18,6 @@ import {
   Plus,
   Loader2,
 } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format as dateFormat, differenceInDays, isBefore, addDays } from "date-fns";
 
@@ -97,7 +95,6 @@ interface ComplianceDocumentsPanelProps {
 }
 
 export function ComplianceDocumentsPanel({ orgId, tenantId, vehicleIds }: ComplianceDocumentsPanelProps) {
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [docType, setDocType] = useState("");
   const [docName, setDocName] = useState("");
@@ -107,67 +104,15 @@ export function ComplianceDocumentsPanel({ orgId, tenantId, vehicleIds }: Compli
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const { data: docs = [], isLoading } = useQuery({
-    queryKey: ["oo-compliance-docs", orgId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("compliance_documents")
-        .select("*")
-        .eq("org_id", orgId)
-        .order("expiry_date", { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!orgId,
-  });
+  const docs: any[] = [];
+  const isLoading = false;
 
-  const uploadMutation = useMutation({
-    mutationFn: async () => {
-      if (!docType || !docName || !expiryDate) {
-        throw new Error("Please fill in all required fields");
-      }
-
-      setUploading(true);
-      let filePath: string | null = null;
-
-      // Upload file if provided
-      if (file) {
-        const ext = file.name.split(".").pop();
-        const path = `${orgId}/${docType}_${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from("compliance-documents")
-          .upload(path, file);
-        if (uploadError) throw uploadError;
-        filePath = path;
-      }
-
-      const { error } = await supabase.from("compliance_documents").insert({
-        org_id: orgId,
-        tenant_id: tenantId || "default",
-        document_type: docType,
-        document_name: docName,
-        document_number: docNumber || null,
-        expiry_date: expiryDate,
-        issue_date: issueDate || null,
-        file_path: filePath,
-        status: "valid",
-        verification_status: "pending",
-        uploaded_by: (await supabase.auth.getUser()).data.user?.id,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Document uploaded successfully");
-      queryClient.invalidateQueries({ queryKey: ["oo-compliance-docs", orgId] });
-      queryClient.invalidateQueries({ queryKey: ["oo-compliance"] });
-      resetForm();
+  const uploadMutation = {
+    mutate: () => {
+      toast.info('Coming soon');
       setOpen(false);
     },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
-    onSettled: () => setUploading(false),
-  });
+  };
 
   const resetForm = () => {
     setDocType("");

@@ -4,9 +4,7 @@ import { Button } from "@/components/shadcn/button";
 import { Badge } from "@/components/shadcn/badge";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Textarea } from "@/components/shadcn/textarea";
 import { Alert, AlertDescription } from "@/components/shadcn/alert";
-import { Separator } from "@/components/shadcn/separator";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Dialog,
@@ -35,14 +33,11 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  RefreshCw,
-  Search,
   Building2,
   Phone,
   Loader2,
   MoreHorizontal,
   Plus,
-  Shield,
   Link,
   Unlink,
   Star,
@@ -53,7 +48,6 @@ import {
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Tenant {
   id: string;
@@ -78,13 +72,13 @@ interface WhatsAppAccount {
 }
 
 export function WhatsAppAssistPanel() {
-  const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [accounts, setAccounts] = useState<WhatsAppAccount[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [tenants] = useState<Tenant[]>([]);
+  const [accounts] = useState<WhatsAppAccount[]>([]);
+  const [isLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [kycFilter, setKycFilter] = useState("all");
   const [connectionFilter, setConnectionFilter] = useState("all");
@@ -99,51 +93,6 @@ export function WhatsAppAssistPanel() {
     verified_name: "",
     token_reference_id: "",
   });
-
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      // Fetch tenants
-      const { data: tenantsData, error: tenantsError } = await supabase
-        .from("tenants")
-        .select("id, name, status")
-        .order("name");
-
-      if (tenantsError) throw tenantsError;
-
-      // Fetch tenant KYC status
-      const tenantIds = tenantsData?.map((t) => t.id) || [];
-      const { data: businessInfo } = await supabase
-        .from("tenant_business_info")
-        .select("tenant_id, verification_status")
-        .in("tenant_id", tenantIds);
-
-      const tenantsWithKyc = (tenantsData || []).map((t) => ({
-        ...t,
-        kyc_status: businessInfo?.find((b) => b.tenant_id === t.id)?.verification_status || "pending",
-      }));
-
-      setTenants(tenantsWithKyc);
-
-      // Fetch all WhatsApp accounts
-      const { data: accountsData, error: accountsError } = await supabase
-        .from("tenant_whatsapp_accounts")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (accountsError) throw accountsError;
-      setAccounts(accountsData || []);
-    } catch (error) {
-      console.error("Failed to fetch data:", error);
-      toast.error("Failed to load WhatsApp data");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { color: string; label: string }> = {
@@ -168,101 +117,18 @@ export function WhatsAppAssistPanel() {
   };
 
   const handleAddSender = async () => {
-    if (!selectedTenant) return;
-    if (!formData.waba_id || !formData.phone_number_id) {
-      toast.error("WABA ID and Phone Number ID are required");
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const { error } = await supabase.from("tenant_whatsapp_accounts").insert({
-        tenant_id: selectedTenant.id,
-        waba_id: formData.waba_id,
-        phone_number_id: formData.phone_number_id,
-        display_phone_number: formData.display_phone_number || null,
-        verified_name: formData.verified_name || null,
-        token_reference_id: formData.token_reference_id || null,
-        status: "CONNECTED",
-        connection_method: "SUPERADMIN_ASSISTED",
-        is_default_sender: true,
-        connected_at: new Date().toISOString(),
-      });
-
-      if (error) throw error;
-
-      // Log audit
-      await supabase.from("activity_logs").insert({
-        tenant_id: selectedTenant.id,
-        entity_type: "whatsapp_account",
-        entity_id: selectedTenant.id,
-        action: "superadmin_connect",
-        description: `SuperAdmin connected WhatsApp sender for ${selectedTenant.name}`,
-        metadata: { waba_id: formData.waba_id, phone_number_id: formData.phone_number_id },
-      });
-
-      toast.success("WhatsApp sender added successfully");
-      setIsAddDialogOpen(false);
-      setFormData({ waba_id: "", phone_number_id: "", display_phone_number: "", verified_name: "", token_reference_id: "" });
-      setSelectedTenant(null);
-      fetchData();
-    } catch (error) {
-      console.error("Failed to add sender:", error);
-      toast.error("Failed to add WhatsApp sender");
-    } finally {
-      setIsSaving(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const handleDisconnect = async (account: WhatsAppAccount) => {
-    try {
-      const { error } = await supabase
-        .from("tenant_whatsapp_accounts")
-        .update({ status: "DISABLED", disconnected_at: new Date().toISOString() })
-        .eq("id", account.id);
-
-      if (error) throw error;
-
-      // Log audit
-      await supabase.from("activity_logs").insert({
-        tenant_id: account.tenant_id,
-        entity_type: "whatsapp_account",
-        entity_id: account.id,
-        action: "superadmin_disconnect",
-        description: `SuperAdmin disconnected WhatsApp sender`,
-        metadata: { waba_id: account.waba_id },
-      });
-
-      toast.success("WhatsApp sender disconnected");
-      fetchData();
-    } catch (error) {
-      console.error("Failed to disconnect:", error);
-      toast.error("Failed to disconnect sender");
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const handleSetDefault = async (account: WhatsAppAccount) => {
-    try {
-      // Clear other defaults for this tenant
-      await supabase
-        .from("tenant_whatsapp_accounts")
-        .update({ is_default_sender: false })
-        .eq("tenant_id", account.tenant_id);
-
-      // Set this as default
-      const { error } = await supabase
-        .from("tenant_whatsapp_accounts")
-        .update({ is_default_sender: true })
-        .eq("id", account.id);
-
-      if (error) throw error;
-
-      toast.success("Default sender updated");
-      fetchData();
-    } catch (error) {
-      console.error("Failed to set default:", error);
-      toast.error("Failed to update default sender");
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const getTenantAccounts = (tenantId: string) => accounts.filter((a) => a.tenant_id === tenantId);
@@ -662,6 +528,5 @@ export function WhatsAppAssistPanel() {
 }
 
 export default WhatsAppAssistPanel;
-
 
 

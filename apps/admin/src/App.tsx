@@ -66,7 +66,7 @@ function PlatformAdminRoute({ children }: { children: ReactNode }) {
 
   if (!isAuthReady) return null;
   if (!accessToken) return <Navigate to="/auth" state={{ from: location }} replace />;
-  if (user?.role !== "platform_admin") return <Navigate to="/not-authorized" replace />;
+  if (user?.role !== "PLATFORM_ADMIN") return <Navigate to="/not-authorized" replace />;
 
   return <AppErrorBoundary>{children}</AppErrorBoundary>;
 }

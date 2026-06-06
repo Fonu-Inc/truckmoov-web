@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
@@ -14,35 +13,8 @@ export default function ResetPassword() {
   const [confirm, setConfirm] = useState("");
   const [show, setShow] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  // Validate that the user landed here from a recovery email
-  useEffect(() => {
-    // Supabase puts a recovery flag in the URL hash (e.g. #access_token=...&type=recovery)
-    const hash = window.location.hash || "";
-    const isRecoveryHash = hash.includes("type=recovery");
-
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && isRecoveryHash)) {
-        setReady(true);
-      }
-    });
-
-    // Also check current session in case the event already fired
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session && (isRecoveryHash || ready)) {
-        setReady(true);
-      } else if (!isRecoveryHash && !data.session) {
-        setErrorMsg("This reset link is invalid or has expired. Request a new one from the sign-in page.");
-      }
-    });
-
-    return () => {
-      sub.subscription.unsubscribe();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,20 +26,8 @@ export default function ResetPassword() {
       toast.error("Passwords don't match");
       return;
     }
-
-    setSubmitting(true);
-    try {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
-      toast.success("Password updated — please sign in");
-      // Sign out so they re-authenticate with the new password
-      await supabase.auth.signOut();
-      navigate("/auth", { replace: true });
-    } catch (err: any) {
-      toast.error(err?.message ?? "Couldn't update password");
-    } finally {
-      setSubmitting(false);
-    }
+    toast.info("Coming soon");
+    return;
   };
 
   return (

@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/shadcn/badge";
 import { Progress } from "@/components/shadcn/progress";
 import { useSupportTickets, SupportTicket } from "@/hooks/useSupportTickets";
-import { supabase } from "@/integrations/supabase/client";
 import {
   TicketCheck,
   AlertCircle,
@@ -175,32 +174,13 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export function SupportDashboard() {
   const { tickets: realTickets, isLoading } = useSupportTickets();
-  const [tenantNames, setTenantNames] = useState<Record<string, string>>({});
+  const [tenantNames] = useState<Record<string, string>>({});
 
   // Use real tickets when present, fall back to demo data otherwise
   const tickets: SupportTicket[] = realTickets.length > 0 ? realTickets : DEMO_TICKETS;
   const usingDemo = realTickets.length === 0;
 
-  // Resolve real tenant names
-  useEffect(() => {
-    if (usingDemo) return;
-    const ids = Array.from(new Set(tickets.map((t) => t.tenantId).filter(Boolean)));
-    if (ids.length === 0) return;
-    (async () => {
-      const { data } = await supabase
-        .from("tenants" as never)
-        .select("id, name")
-        .in("id", ids as string[]);
-      if (data) {
-        const map: Record<string, string> = {};
-        (data as Array<{ id: string; name: string }>).forEach((t) => {
-          map[t.id] = t.name;
-        });
-        setTenantNames(map);
-      }
-    })();
-  }, [tickets, usingDemo]);
-
+  // Tenant names are resolved via the hook in the future; for now use demo map
   const tenantName = (id: string) =>
     tenantNames[id] || DEMO_TENANT_NAMES[id] || `${id.slice(0, 8)}…`;
 

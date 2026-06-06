@@ -1,1 +1,0 @@
-ALTER TABLE public.subscription_plans ADD COLUMN IF NOT EXISTS max_sims integer;

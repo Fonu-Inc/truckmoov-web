@@ -14,7 +14,6 @@ import { Textarea } from "@/components/shadcn/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { TenantData } from "@/hooks/useTenants";
 
 interface Props {
@@ -47,36 +46,8 @@ export function TerminateTenantDialog({
   };
 
   const handleTerminate = async () => {
-    if (!canSubmit) return;
-    setSubmitting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        "tenant-termination",
-        {
-          body: {
-            tenant_id: tenant.id,
-            reason: reason.trim(),
-            confirmation,
-          },
-        }
-      );
-      if (error) throw error;
-      const sims = (data as { sims_terminated?: number })?.sims_terminated ?? 0;
-      const wa = (data as { whatsapp_retired?: number })?.whatsapp_retired ?? 0;
-      toast.success("Tenant terminated", {
-        description: `${sims} SIM(s) terminated · ${wa} WhatsApp number(s) retired · data export queued`,
-      });
-      onTerminated?.();
-      handleClose(false);
-    } catch (err) {
-      console.error("Termination failed", err);
-      toast.error("Termination failed", {
-        description:
-          err instanceof Error ? err.message : "Please try again later.",
-      });
-    } finally {
-      setSubmitting(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   return (

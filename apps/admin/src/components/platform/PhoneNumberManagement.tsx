@@ -14,7 +14,6 @@ import { Phone, Plus, MoreHorizontal, Building2, PhoneOff, Trash2, RefreshCw, Me
 import { usePlatformPhoneNumbers, PlatformPhoneNumber } from '@/hooks/usePlatformPhoneNumbers';
 import { useTenants } from '@/hooks/useTenants';
 import { useAuthStore } from '@/stores/authStore';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ExportButton } from '@/components/shadcn/export-button';
 import { TableToolbar } from '@/components/shadcn/table-toolbar';
@@ -54,43 +53,16 @@ export function PhoneNumberManagement() {
   // Fetch available numbers when dialog opens
   const fetchAvailableNumbers = async () => {
     setLoadingAvailable(true);
-    try {
-      // Call Fonu API to get available numbers
-      const { data, error } = await supabase.functions.invoke('fonu-sim', {
-        body: { action: 'list_available_numbers' },
-      });
-
-      if (error) throw error;
-
-      if (data?.numbers && Array.isArray(data.numbers)) {
-        setAvailableNumbers(data.numbers);
-      } else {
-        // Fallback: Mock data for demo if API not available
-        setAvailableNumbers([
-          { phone_number: '+234 801 000 0001', phone_number_type: 'mobile', monthly_cost_ngn: 5000, capabilities: ['sms', 'voice'] },
-          { phone_number: '+234 801 000 0002', phone_number_type: 'mobile', monthly_cost_ngn: 5000, capabilities: ['sms', 'voice'] },
-          { phone_number: '+234 801 000 0003', phone_number_type: 'mobile', monthly_cost_ngn: 5000, capabilities: ['sms', 'voice'] },
-          { phone_number: '+234 802 000 0001', phone_number_type: 'mobile', monthly_cost_ngn: 4500, capabilities: ['sms', 'voice'] },
-          { phone_number: '+234 802 000 0002', phone_number_type: 'mobile', monthly_cost_ngn: 4500, capabilities: ['sms', 'voice'] },
-          { phone_number: '+234 700 000 0001', phone_number_type: 'toll_free', monthly_cost_ngn: 15000, capabilities: ['voice'] },
-          { phone_number: '+234 1 000 0001', phone_number_type: 'local', monthly_cost_ngn: 3000, capabilities: ['sms', 'voice'] },
-        ]);
-      }
-    } catch (err) {
-      console.error('Failed to fetch available numbers:', err);
-      // Use mock data as fallback
-      setAvailableNumbers([
-        { phone_number: '+234 801 000 0001', phone_number_type: 'mobile', monthly_cost_ngn: 5000, capabilities: ['sms', 'voice'] },
-        { phone_number: '+234 801 000 0002', phone_number_type: 'mobile', monthly_cost_ngn: 5000, capabilities: ['sms', 'voice'] },
-        { phone_number: '+234 801 000 0003', phone_number_type: 'mobile', monthly_cost_ngn: 5000, capabilities: ['sms', 'voice'] },
-        { phone_number: '+234 802 000 0001', phone_number_type: 'mobile', monthly_cost_ngn: 4500, capabilities: ['sms', 'voice'] },
-        { phone_number: '+234 802 000 0002', phone_number_type: 'mobile', monthly_cost_ngn: 4500, capabilities: ['sms', 'voice'] },
-        { phone_number: '+234 700 000 0001', phone_number_type: 'toll_free', monthly_cost_ngn: 15000, capabilities: ['voice'] },
-        { phone_number: '+234 1 000 0001', phone_number_type: 'local', monthly_cost_ngn: 3000, capabilities: ['sms', 'voice'] },
-      ]);
-    } finally {
-      setLoadingAvailable(false);
-    }
+    setAvailableNumbers([
+      { phone_number: '+234 801 000 0001', phone_number_type: 'mobile', monthly_cost_ngn: 5000, capabilities: ['sms', 'voice'] },
+      { phone_number: '+234 801 000 0002', phone_number_type: 'mobile', monthly_cost_ngn: 5000, capabilities: ['sms', 'voice'] },
+      { phone_number: '+234 801 000 0003', phone_number_type: 'mobile', monthly_cost_ngn: 5000, capabilities: ['sms', 'voice'] },
+      { phone_number: '+234 802 000 0001', phone_number_type: 'mobile', monthly_cost_ngn: 4500, capabilities: ['sms', 'voice'] },
+      { phone_number: '+234 802 000 0002', phone_number_type: 'mobile', monthly_cost_ngn: 4500, capabilities: ['sms', 'voice'] },
+      { phone_number: '+234 700 000 0001', phone_number_type: 'toll_free', monthly_cost_ngn: 15000, capabilities: ['voice'] },
+      { phone_number: '+234 1 000 0001', phone_number_type: 'local', monthly_cost_ngn: 3000, capabilities: ['sms', 'voice'] },
+    ]);
+    setLoadingAvailable(false);
   };
 
   // When a number is selected from dropdown, auto-fill other fields

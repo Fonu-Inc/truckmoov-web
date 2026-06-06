@@ -42,7 +42,6 @@ import { cn } from "@/lib/utils";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 import { Textarea } from "@/components/shadcn/textarea";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { EmojiPicker } from "@/components/messaging/EmojiPicker";
 
 // Unified communication item
@@ -125,51 +124,7 @@ export default function DispatcherInbox() {
     toast.info("Polls coming soon");
   };
 
-  // Realtime subscription for messages and calls
-  useEffect(() => {
-    if (!tenantId) return;
-
-    console.log('Setting up realtime subscriptions for omnichannel inbox');
-
-    const messagesChannel = supabase
-      .channel('omnichannel-messages')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'driver_messages',
-          filter: `tenant_id=eq.${tenantId}`,
-        },
-        (payload) => {
-          console.log('Realtime message update:', payload);
-          refetch();
-        }
-      )
-      .subscribe();
-
-    const callsChannel = supabase
-      .channel('omnichannel-calls')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'driver_call_logs',
-          filter: `tenant_id=eq.${tenantId}`,
-        },
-        (payload) => {
-          console.log('Realtime call update:', payload);
-          refetch();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(callsChannel);
-    };
-  }, [tenantId, refetch]);
+  // Realtime subscription removed (Supabase migrated)
 
   // Auto-scroll to bottom when new items arrive
   useEffect(() => {

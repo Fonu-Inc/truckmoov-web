@@ -14,9 +14,8 @@ import {
   DialogTitle,
 } from '@/components/shadcn/dialog';
 import { Gauge, AlertTriangle, RotateCcw, Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAuthStore } from '@/stores/authStore';
 import {
@@ -42,97 +41,41 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
   const queryClient = useQueryClient();
   const isPlatformAdmin = user?.role === 'platform_admin';
 
-  const { data: settings, isLoading } = useQuery({
-    queryKey: ['spending-limit-settings', tenantId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tenant_wallets')
-        .select('spending_limit_enabled, monthly_spending_limit_ngn, current_month_spending_ngn, spending_limit_reset_day, spending_alert_email')
-        .eq('tenant_id', tenantId)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data;
-    }
-  });
+  const settings = null;
+  const isLoading = false;
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [confirmDisableOpen, setConfirmDisableOpen] = useState(false);
   const [monthlyLimit, setMonthlyLimit] = useState('50000');
   const [resetDay, setResetDay] = useState('1');
   const [alertEmail, setAlertEmail] = useState('');
-
-  useEffect(() => {
-    if (settings) {
-      setMonthlyLimit(settings.monthly_spending_limit_ngn?.toString() ?? '50000');
-      setResetDay(settings.spending_limit_reset_day?.toString() ?? '1');
-      setAlertEmail(settings.spending_alert_email ?? '');
-    }
-  }, [settings]);
-
-  const persistMutation = useMutation({
-    mutationFn: async (nextEnabled: boolean) => {
-      const { error } = await supabase
-        .from('tenant_wallets')
-        .upsert({
-          tenant_id: tenantId,
-          spending_limit_enabled: nextEnabled,
-          monthly_spending_limit_ngn: nextEnabled ? parseFloat(monthlyLimit) : null,
-          spending_limit_reset_day: parseInt(resetDay),
-          spending_alert_email: nextEnabled && alertEmail ? alertEmail : null
-        }, { onConflict: 'tenant_id' });
-
-      if (error) throw error;
-      return nextEnabled;
-    },
-    onSuccess: (nextEnabled) => {
-      queryClient.invalidateQueries({ queryKey: ['spending-limit-settings', tenantId] });
-      toast.success(nextEnabled ? 'Spending limit enabled' : 'Spending limit disabled');
-      setDialogOpen(false);
-      setConfirmDisableOpen(false);
-      onUpdate?.();
-    },
-    onError: (error) => {
-      toast.error('Failed to update settings: ' + (error as Error).message);
-    }
-  });
-
-  const resetMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('tenant_wallets')
-        .update({ current_month_spending_ngn: 0 })
-        .eq('tenant_id', tenantId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['spending-limit-settings', tenantId] });
-      toast.success('Monthly spending counter reset to zero');
-      onUpdate?.();
-    },
-    onError: (error) => {
-      toast.error('Failed to reset spending: ' + (error as Error).message);
-    }
-  });
+  const [isPersisting, setIsPersisting] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const handleSave = () => {
     if (!monthlyLimit || parseFloat(monthlyLimit) <= 0) {
       toast.error('Please enter a valid monthly limit');
       return;
     }
-    persistMutation.mutate(true);
+    toast.info('Coming soon');
+    return;
   };
 
   const handleDisable = () => {
-    persistMutation.mutate(false);
+    toast.info('Coming soon');
+    return;
   };
 
-  const enabled = settings?.spending_limit_enabled ?? false;
-  const currentSpending = settings?.current_month_spending_ngn ?? 0;
-  const limit = settings?.monthly_spending_limit_ngn ?? 0;
-  const spendingPercentage = limit > 0 ? Math.min((currentSpending / limit) * 100, 100) : 0;
-  const isNearLimit = spendingPercentage >= 80;
+  const handleReset = () => {
+    toast.info('Coming soon');
+    return;
+  };
+
+  const enabled = false;
+  const currentSpending = 0;
+  const limit = 0;
+  const spendingPercentage = 0;
+  const isNearLimit = false;
 
   if (isLoading) {
     return (
@@ -180,10 +123,10 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={() => resetMutation.mutate()}
-                      disabled={resetMutation.isPending}
+                      onClick={handleReset}
+                      disabled={isResetting}
                     >
-                      {resetMutation.isPending ? 'Resetting...' : 'Reset Counter'}
+                      {isResetting ? 'Resetting...' : 'Reset Counter'}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -226,7 +169,7 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
                 </div>
                 <div>
                   <p className="text-muted-foreground">Reset Day</p>
-                  <p className="font-medium text-foreground">Day {settings?.spending_limit_reset_day ?? 1}</p>
+                  <p className="font-medium text-foreground">Day 1</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Spending Cap</p>
@@ -236,12 +179,6 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
                   <p className="text-muted-foreground">Trigger</p>
                   <p className="font-medium text-foreground">Block at 100%</p>
                 </div>
-                {settings?.spending_alert_email && (
-                  <div className="col-span-2">
-                    <p className="text-muted-foreground">Alert Email</p>
-                    <p className="font-medium text-foreground truncate">{settings.spending_alert_email}</p>
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -273,7 +210,7 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
                 <Button
                   variant="destructive"
                   onClick={() => setConfirmDisableOpen(true)}
-                  disabled={persistMutation.isPending}
+                  disabled={isPersisting}
                   className="w-full"
                 >
                   Disable Spending Limit
@@ -297,12 +234,12 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={persistMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isPersisting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDisable}
-              disabled={persistMutation.isPending}
+              disabled={isPersisting}
             >
-              {persistMutation.isPending ? 'Disabling...' : 'Disable'}
+              {isPersisting ? 'Disabling...' : 'Disable'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -382,11 +319,11 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={persistMutation.isPending}>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isPersisting}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={persistMutation.isPending}>
-              {persistMutation.isPending ? 'Saving...' : enabled ? 'Save Changes' : 'Enable Spending Limit'}
+            <Button onClick={handleSave} disabled={isPersisting}>
+              {isPersisting ? 'Saving...' : enabled ? 'Save Changes' : 'Enable Spending Limit'}
             </Button>
           </DialogFooter>
         </DialogContent>

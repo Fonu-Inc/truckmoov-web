@@ -86,7 +86,6 @@ import {
   Cell,
   Legend } from "recharts";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { PostpaidBillingTab } from "@/components/platform/PostpaidBillingTab";
 import { downloadReceiptPDF } from "@/lib/receiptPdf";
 import { formatCurrency, type Currency, CURRENCIES, DEFAULT_CURRENCY, convertCurrency } from "@/lib/currency";
@@ -519,40 +518,8 @@ export default function PlatformBilling() {
   };
 
   const handleSendMomoRequest = async () => {
-    if (!momoPhone || !selectedInvoice) {
-      toast.error("Please enter a valid phone number");
-      return;
-    }
-
-    setIsProcessingPayment(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('mtn-momo-payment', {
-        body: {
-          amount: selectedInvoice.amount,
-          currency: 'NGN',
-          phoneNumber: momoPhone,
-          invoiceId: selectedInvoice.id,
-          invoiceNumber: selectedInvoice.invoiceNumber,
-          tenantName: selectedInvoice.tenant,
-          payerMessage: `Payment for ${selectedInvoice.invoiceNumber}`,
-          payeeNote: `Invoice payment from ${selectedInvoice.tenant}` } });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        toast.success(data.message || `MTN MoMo payment request sent to ${momoPhone}`);
-        setIsMomoDialogOpen(false);
-        setMomoPhone("");
-      } else {
-        toast.error(data?.error || 'Failed to send payment request');
-      }
-    } catch (error) {
-      console.error('MTN MoMo payment error:', error);
-      toast.error('Failed to send payment request. Please try again.');
-    } finally {
-      setIsProcessingPayment(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const handleViewInvoice = (invoice: Invoice) => {

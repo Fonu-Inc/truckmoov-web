@@ -2,8 +2,6 @@ import { useMemo } from 'react';
 import { useOrgContext } from '@/hooks/useOrgContext';
 import { useAuthStore } from '@/stores/authStore';
 import { useFeatureFlag } from '@/hooks/useFeatureFlag';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { computeOrgDataScope, type OrgDataScope } from '@/lib/orgPermissions';
 import { filterValidUuids } from '@/lib/uuidUtils';
 
@@ -20,36 +18,13 @@ export function useOrgDataScope(): OrgDataScope & { isReady: boolean; multiStake
   );
   const multiStakeholderEnabled = flagEnabled;
 
-  // For aggregators, fetch child org IDs
-  const isAggregator = orgCtx.hasOrgType('AGGREGATOR');
-  const aggregatorOrgIds = useMemo(
-    () => orgCtx.getByOrgType('AGGREGATOR').map((m) => m.orgId),
-    [orgCtx]
-  );
-
-  const { data: childOrgIds = [] } = useQuery({
-    queryKey: ['aggregator-children', aggregatorOrgIds],
-    queryFn: async () => {
-      if (aggregatorOrgIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from('org_relationships')
-        .select('to_org_id')
-        .in('from_org_id', aggregatorOrgIds)
-        .eq('status', 'ACTIVE');
-      if (error) throw error;
-      return (data || []).map((r) => r.to_org_id);
-    },
-    enabled: isAggregator && aggregatorOrgIds.length > 0,
-    staleTime: 5 * 60 * 1000,
-  });
+  const childOrgIds: string[] = [];
 
   const scope = useMemo(
     () => computeOrgDataScope(orgCtx.memberships, user?.role, childOrgIds),
-    [orgCtx.memberships, user?.role, childOrgIds]
+    [orgCtx.memberships, user?.role]
   );
 
-  // Sanitize org IDs going into Supabase .in() filters: demo stakeholder
-  // placeholders (e.g. "o0000001-...") are not real UUIDs and would 400.
   const sanitizedScope = useMemo<OrgDataScope>(() => ({
     ...scope,
     assetOrgIds: filterValidUuids(scope.assetOrgIds),

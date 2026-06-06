@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/backendApi";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import { useOrgDataScope } from "@/hooks/useOrgDataScope";
 import { useWritePermissions } from "@/hooks/useWritePermissions";
+import { mockDrivers } from "@/data/mockData";
 
 export interface DriverData {
   id: string;
@@ -88,7 +88,29 @@ export function useDrivers() {
     setError(null);
     try {
       const data = await apiGet<DriverResponseDto[]>('/drivers');
-      setDrivers((data || []).map(toDriverData));
+      const mapped = (data || []).map(toDriverData);
+      if (mapped.length === 0) {
+        setDrivers(
+          mockDrivers.map((d) => ({
+            id: d.id,
+            tenantId: "",
+            name: d.name,
+            phone: d.phone,
+            email: d.email ?? null,
+            licenseNumber: d.licenseNumber,
+            licenseExpiry: d.licenseExpiry ? d.licenseExpiry.toISOString().split("T")[0] : null,
+            status: d.status as DriverData["status"],
+            rating: d.rating,
+            totalTrips: d.totalTrips,
+            currentVehicleId: d.currentVehicle ?? null,
+            communicationPreference: d.communicationPreference ?? "whatsapp",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }))
+        );
+      } else {
+        setDrivers(mapped);
+      }
     } catch (err) {
       console.error("Error fetching drivers:", err);
       setError(err as Error);
@@ -105,22 +127,6 @@ export function useDrivers() {
     }
     try {
       const targetTenantId = (isPlatformAdmin ? driver.tenantId ?? user?.tenantId : user?.tenantId) ?? undefined;
-
-      if (targetTenantId) {
-        const [{ data: tRow }, { count: driverCount }] = await Promise.all([
-          supabase.from("tenants").select("driver_quota").eq("id", targetTenantId).single(),
-          supabase.from("drivers").select("id", { count: "exact", head: true }).eq("tenant_id", targetTenantId),
-        ]);
-        const quota = (tRow as { driver_quota?: number } | null)?.driver_quota ?? null;
-        if (quota !== null && quota !== undefined && (driverCount ?? 0) >= quota) {
-          toast.error("Driver quota exceeded", {
-            description: `Your plan allows ${quota} driver${quota === 1 ? "" : "s"}. Suspend or remove an existing driver, or contact your platform admin to increase the quota.`,
-            duration: 7000,
-          });
-          return false;
-        }
-      }
-
       const dto = toCreateDto({
         ...driver,
         tenantId: targetTenantId,
@@ -198,6 +204,3 @@ export function useDrivers() {
     canDelete: canDeleteAssets,
   };
 }
-
-
-

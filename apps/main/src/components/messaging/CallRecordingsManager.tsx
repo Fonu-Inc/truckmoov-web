@@ -21,7 +21,6 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useVoiceCalls } from "@/hooks/useVoiceCalls";
 import { useAuthStore } from "@/stores/authStore";
-import { supabase } from "@/integrations/supabase/client";
 import { TableToolbar, type FilterValues } from "@/components/shadcn/table-toolbar";
 
 type Language = "en" | "ha" | "yo" | "ig" | "pcm";
@@ -85,38 +84,8 @@ export function CallRecordingsManager() {
 
   // Fetch real recordings from driver_call_logs
   const fetchRecordings = useCallback(async () => {
-    if (!tenantId) {
-      setIsLoading(false);
-      return;
-    }
-    
-    try {
-      const { data, error } = await supabase
-        .from('driver_call_logs')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .not('recording_url', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      
-      if (error) throw error;
-      
-      const mappedRecordings: CallRecording[] = (data || []).map(call => ({
-        id: call.id,
-        callId: call.external_call_id || call.id,
-        driverName: call.driver_name || 'Unknown Driver',
-        driverPhone: call.driver_phone,
-        timestamp: new Date(call.started_at),
-        duration: call.duration_seconds || 0,
-        language: 'en' as Language,
-        recordingUrl: call.recording_url || undefined }));
-      
-      setRecordings(mappedRecordings);
-    } catch (err) {
-      console.error('Error fetching recordings:', err);
-    } finally {
-      setIsLoading(false);
-    }
+    setRecordings([]);
+    setIsLoading(false);
   }, [tenantId]);
 
   useEffect(() => {

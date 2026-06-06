@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
@@ -56,12 +56,12 @@ import { Progress } from "@/components/shadcn/progress";
 import { DeviceWithTelemetry, DriverBehaviorEvent } from "@/hooks/useDeviceTelemetry";
 import { DeviceLifecycleBadge } from "./DeviceLifecycleBadge";
 import { DeviceLifecycleStatus } from "@/hooks/useDeviceLifecycle";
-import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import {
   PlatformFilterPopover,
   buildEmptyDraft,
   type FilterDraft } from "@/components/shadcn/platform-filter-popover";
+import { toast } from "sonner";
 
 interface PlatformDeviceManagementProps {
   devices: DeviceWithTelemetry[];
@@ -93,7 +93,7 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
     lastSeen: { enabled: false },
     tenant: { enabled: false },
     manufacturer: { enabled: false } });
-  const [internalTenantNames, setInternalTenantNames] = useState<Record<string, string>>({});
+  const [internalTenantNames] = useState<Record<string, string>>({});
   const [selectedDevice, setSelectedDevice] = useState<DeviceWithTelemetry | null>(null);
   const [showDetailsSheet, setShowDetailsSheet] = useState(false);
   const [showTelemetrySheet, setShowTelemetrySheet] = useState(false);
@@ -101,8 +101,8 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
   const [assignTenantId, setAssignTenantId] = useState<string>("");
 
   // Use external tenant map if provided, otherwise use internal state
-  const tenantNames = externalTenantMap && Object.keys(externalTenantMap).length > 0 
-    ? externalTenantMap 
+  const tenantNames = externalTenantMap && Object.keys(externalTenantMap).length > 0
+    ? externalTenantMap
     : internalTenantNames;
 
   const resolveTenantName = useMemo(() => {
@@ -154,81 +154,6 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
     };
   }, [tenantNames]);
 
-  // Fetch tenant names for all devices - only if external map not provided
-  useEffect(() => {
-    // Skip if external map is provided
-    if (externalTenantMap && Object.keys(externalTenantMap).length > 0) return;
-    
-    let isMounted = true;
-
-    const fetchTenantNames = async () => {
-      const uniqueTenantIds = [...new Set(devices.map(d => d.tenant_id))];
-      if (uniqueTenantIds.length === 0) return;
-
-      // Fetch all tenants and match by both id and slug since devices may use either
-      const { data, error } = await supabase
-        .from("tenants")
-        .select("id, name, slug");
-
-      if (!isMounted) return;
-
-      if (error) {
-        console.error("Error fetching tenants:", error);
-      }
-
-      if (data && data.length > 0) {
-        const nameMap: Record<string, string> = {};
-        
-        // Build a lookup that works for both UUID ids and slug-based tenant_ids
-        data.forEach(tenant => {
-          nameMap[tenant.id] = tenant.name;
-          if (tenant.slug) {
-            nameMap[tenant.slug] = tenant.name;
-          }
-        });
-        
-        setInternalTenantNames(nameMap);
-      } else {
-        // Fallback: Convert slug-like IDs to readable names
-        const nameMap: Record<string, string> = {};
-        uniqueTenantIds.forEach(tid => {
-          if (tid) {
-            // Check if it's a slug (contains hyphens but not UUID length)
-            if (tid.length !== 36 && tid.includes('-')) {
-              const readableName = tid
-                .split('-')
-                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                .join(' ');
-              nameMap[tid] = readableName;
-            }
-          }
-        });
-        if (Object.keys(nameMap).length > 0) {
-          setInternalTenantNames(nameMap);
-        }
-      }
-    };
-
-    // Listen for auth state changes and fetch when authenticated
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session && devices.length > 0) {
-        fetchTenantNames();
-      }
-    });
-
-    // Also try fetching immediately if already authenticated
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && devices.length > 0) {
-        fetchTenantNames();
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, [devices, externalTenantMap]);
-
   // Get unique manufacturers from devices
   const manufacturers = ["all", ...new Set(devices.map(d => d.manufacturer))];
 
@@ -239,10 +164,10 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
       device.imei.includes(searchQuery) ||
       tenantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       device.tenant_id?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     // Get lifecycle status for filtering
     const lifecycleStatus = (device as any).lifecycle_status || device.status;
-    
+
     // Special handling for "active" filter - check operational status field
     let matchesStatus = false;
     if (statusFilter === "all") {
@@ -256,7 +181,7 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
     } else {
       matchesStatus = lifecycleStatus === statusFilter;
     }
-    
+
     // Manufacturer filter (from popover)
     const mfgFilter = filterDraft.manufacturer;
     const matchesManufacturer =
@@ -300,7 +225,7 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
+
     if (diffMins < 1) return "Just now";
     if (diffMins < 60) return `${diffMins} min ago`;
     if (diffMins < 1440) return `${Math.floor(diffMins / 60)} hours ago`;
@@ -474,7 +399,7 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
               {filteredDevices.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    {devices.length === 0 
+                    {devices.length === 0
                       ? "No devices registered across tenants."
                       : "No devices match your filters."
                     }
@@ -489,7 +414,7 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                   const secondaryStatus = showOperationalFirst
                     ? lifecycleStatus
                     : (device.status && device.status !== lifecycleStatus ? device.status : null);
-                  
+
                   return (
                     <TableRow key={device.id}>
                       <TableCell className="font-mono text-sm">{device.imei}</TableCell>
@@ -560,17 +485,8 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                               device.status === "suspended" || lifecycleStatus === "suspended" ? (
                                 <DropdownMenuItem
                                   className="text-success"
-                                  onClick={async () => {
-                                    const { toast } = await import("sonner");
-                                    if (!device.id.startsWith("demo-")) {
-                                      const { error } = await (supabase as any)
-                                        .from("devices")
-                                        .update({ status: "active" })
-                                        .eq("id", device.id);
-                                      if (error) { toast.error(error.message); return; }
-                                    }
-                                    toast.success("Device reactivated");
-                                    onRefresh?.();
+                                  onClick={() => {
+                                    toast.info('Coming soon');
                                   }}
                                 >
                                   <CheckCircle className="h-4 w-4 mr-2" />
@@ -579,17 +495,8 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                               ) : (
                                 <DropdownMenuItem
                                   className="text-warning"
-                                  onClick={async () => {
-                                    const { toast } = await import("sonner");
-                                    if (!device.id.startsWith("demo-")) {
-                                      const { error } = await (supabase as any)
-                                        .from("devices")
-                                        .update({ status: "suspended" })
-                                        .eq("id", device.id);
-                                      if (error) { toast.error(error.message); return; }
-                                    }
-                                    toast.success("Device suspended");
-                                    onRefresh?.();
+                                  onClick={() => {
+                                    toast.info('Coming soon');
                                   }}
                                 >
                                   <XCircle className="h-4 w-4 mr-2" />
@@ -599,18 +506,8 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                             ) : (
                               <DropdownMenuItem
                                 className="text-destructive"
-                                onClick={async () => {
-                                  const { toast } = await import("sonner");
-                                  if (!confirm(`Delete device ${device.imei}? This cannot be undone.`)) return;
-                                  if (!device.id.startsWith("demo-")) {
-                                    const { error } = await (supabase as any)
-                                      .from("devices")
-                                      .delete()
-                                      .eq("id", device.id);
-                                    if (error) { toast.error(error.message); return; }
-                                  }
-                                  toast.success("Device deleted");
-                                  onRefresh?.();
+                                onClick={() => {
+                                  toast.info('Coming soon');
                                 }}
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
@@ -640,7 +537,7 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
         {/* Platform Admin Note */}
         <div className="mt-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-3">
           <p className="text-xs text-muted-foreground">
-            <strong>Platform Admin View:</strong> This is a read-only overview. 
+            <strong>Platform Admin View:</strong> This is a read-only overview.
             Device registration, configuration, and vehicle assignment are managed by tenant administrators.
             Use the Device Catalog tab to manage supported manufacturers and models.
           </p>
@@ -947,25 +844,8 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
               <Button variant="outline" onClick={() => setAssignDevice(null)}>Cancel</Button>
               <Button
                 disabled={!assignTenantId}
-                onClick={async () => {
-                  const tenantName = tenantNames[assignTenantId] || "tenant";
-                  try {
-                    if (assignDevice && !assignDevice.id.startsWith("demo-")) {
-                      const { error } = await (supabase as any)
-                        .from("devices")
-                        .update({ tenant_id: assignTenantId })
-                        .eq("id", assignDevice.id);
-                      if (error) throw error;
-                    }
-                    const { toast } = await import("sonner");
-                    toast.success(`Device assigned to ${tenantName}`);
-                    setAssignDevice(null);
-                    setAssignTenantId("");
-                    onRefresh?.();
-                  } catch (e: any) {
-                    const { toast } = await import("sonner");
-                    toast.error(e?.message || "Failed to assign device");
-                  }
+                onClick={() => {
+                  toast.info('Coming soon');
                 }}
               >
                 Assign

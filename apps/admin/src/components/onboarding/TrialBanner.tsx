@@ -1,6 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuthStore } from "@/stores/authStore";
 import { Sparkles, Clock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
 import { Link } from "react-router-dom";
@@ -12,23 +9,7 @@ import { differenceInDays } from "date-fns";
  * Auto-hides for non-trial tenants and on platform/aggregator routes.
  */
 export function TrialBanner() {
-  const { user } = useAuthStore();
-  const tenantId = user?.tenantId;
-
-  const { data: tenant } = useQuery({
-    queryKey: ["trial-banner-tenant", tenantId],
-    queryFn: async () => {
-      if (!tenantId) return null;
-      const { data } = await supabase
-        .from("tenants")
-        .select("id, status, created_at")
-        .eq("id", tenantId)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !!tenantId,
-    staleTime: 5 * 60 * 1000,
-  });
+  const tenant: { id: string; status: string; created_at: string } | null = null;
 
   if (!tenant || tenant.status !== "trial") return null;
 

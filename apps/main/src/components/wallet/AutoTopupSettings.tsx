@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
@@ -22,7 +22,6 @@ import {
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
 import { RefreshCw, Zap, AlertCircle, CheckCircle2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface AutoTopupSettingsProps {
@@ -38,7 +37,6 @@ interface AutoTopupConfig {
 }
 
 export function AutoTopupSettings({ tenantId, onSettingsUpdated }: AutoTopupSettingsProps) {
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [confirmDisableOpen, setConfirmDisableOpen] = useState(false);
@@ -49,101 +47,18 @@ export function AutoTopupSettings({ tenantId, onSettingsUpdated }: AutoTopupSett
     phone: '',
   });
 
-  useEffect(() => {
-    fetchSettings();
-  }, [tenantId]);
-
-  const fetchSettings = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('tenant_wallets')
-      .select('auto_topup_enabled, auto_topup_threshold_ngn, auto_topup_amount_ngn, auto_topup_phone')
-      .eq('tenant_id', tenantId)
-      .maybeSingle();
-
-    if (!error && data) {
-      setConfig({
-        enabled: data.auto_topup_enabled || false,
-        threshold: data.auto_topup_threshold_ngn || 500,
-        amount: data.auto_topup_amount_ngn || 5000,
-        phone: data.auto_topup_phone || '',
-      });
-    }
-    setLoading(false);
-  };
-
-  const persistConfig = async (nextConfig: AutoTopupConfig) => {
-    const { data, error } = await supabase.functions.invoke('wallet-topup', {
-      body: {
-        action: 'update_auto_topup',
-        tenantId,
-        autoTopupSettings: nextConfig,
-      },
-    });
-    if (error) throw error;
-    // Accept any non-error response — some backends omit `success` flag
-    if (data && data.success === false) throw new Error(data?.error || 'Failed to update settings');
-    return data || {};
-  };
-
   const handleSaveFromDialog = async () => {
-    if (!config.phone) {
-      toast.error('Please enter a phone number for auto top-up');
-      return;
-    }
-    if (config.amount <= 0) {
-      toast.error('Please enter a valid top-up amount');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const next = { ...config, enabled: true };
-      const data = await persistConfig(next);
-      setConfig(next);
-      toast.success(data.message || 'Auto top-up enabled');
-      setDialogOpen(false);
-      onSettingsUpdated?.();
-      await fetchSettings();
-    } catch (error) {
-      console.error('Auto top-up settings error:', error);
-      toast.error('Failed to update auto top-up settings');
-    } finally {
-      setSaving(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const handleDisable = async () => {
-    setSaving(true);
-    try {
-      const next = { ...config, enabled: false };
-      const data = await persistConfig(next);
-      setConfig(next);
-      toast.success(data.message || 'Auto top-up disabled');
-      setDialogOpen(false);
-      setConfirmDisableOpen(false);
-      onSettingsUpdated?.();
-      await fetchSettings();
-    } catch (error) {
-      console.error('Auto top-up settings error:', error);
-      toast.error('Failed to disable auto top-up');
-    } finally {
-      setSaving(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const quickAmounts = [2000, 5000, 10000, 20000];
   const quickThresholds = [500, 1000, 2000, 5000];
-
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <>

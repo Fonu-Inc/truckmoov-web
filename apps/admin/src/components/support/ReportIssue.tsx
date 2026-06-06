@@ -7,7 +7,6 @@ import { Label } from "@/components/shadcn/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Badge } from "@/components/shadcn/badge";
 import { useSupportTickets, TicketCategory, ContextType, TicketPriority } from "@/hooks/useSupportTickets";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { 
   Cpu, 
@@ -78,131 +77,14 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
     loadContextOptions(selectedCategory.contextType);
   }, [category]);
 
-  const loadContextOptions = async (type: ContextType) => {
-    setIsLoadingContext(true);
-    try {
-      let options: ContextItem[] = [];
-
-      if (type === "device") {
-        const { data } = await supabase
-          .from("devices")
-          .select("id, imei, manufacturer, model, status, health_status, last_seen")
-          .eq("tenant_id", tenantId)
-          .order("created_at", { ascending: false })
-          .limit(50);
-
-        options = (data || []).map((d) => ({
-          id: d.id,
-          label: `${d.imei} - ${d.manufacturer} ${d.model || ""}`.trim(),
-          status: d.health_status || d.status,
-          extra: d.last_seen ? `Last seen: ${new Date(d.last_seen).toLocaleString()}` : "Never seen",
-        }));
-      } else if (type === "sim") {
-        const { data } = await supabase
-          .from("iot_sims")
-          .select("id, iccid, msisdn, carrier, status, data_usage_mb, data_limit_mb")
-          .eq("tenant_id", tenantId)
-          .order("created_at", { ascending: false })
-          .limit(50);
-
-        options = (data || []).map((s) => ({
-          id: s.id,
-          label: `${s.msisdn} (${s.iccid.slice(-6)})`,
-          status: s.status,
-          extra: `${s.carrier} • ${s.data_usage_mb}/${s.data_limit_mb} MB`,
-        }));
-      } else if (type === "vehicle") {
-        const { data } = await supabase
-          .from("vehicles")
-          .select("id, registration_number, make, model, status")
-          .eq("tenant_id", tenantId)
-          .order("created_at", { ascending: false })
-          .limit(50);
-
-        options = (data || []).map((v) => ({
-          id: v.id,
-          label: `${v.registration_number} - ${v.make} ${v.model}`,
-          status: v.status,
-        }));
-      }
-
-      setContextOptions(options);
-    } catch (err) {
-      console.error("Error loading context options:", err);
-    } finally {
-      setIsLoadingContext(false);
-    }
+  const loadContextOptions = async (_type: ContextType) => {
+    setIsLoadingContext(false);
+    setContextOptions([]);
   };
 
   // Load context snapshot when context is selected
-  const loadContextSnapshot = async (type: ContextType, id: string) => {
-    try {
-      let snapshot: Record<string, unknown> = {};
-
-      if (type === "device") {
-        const { data: device } = await supabase
-          .from("devices")
-          .select("*")
-          .eq("id", id)
-          .single();
-
-        if (device) {
-          snapshot = {
-            imei: device.imei,
-            manufacturer: device.manufacturer,
-            model: device.model,
-            status: device.status,
-            lifecycle_status: device.lifecycle_status,
-            health_status: device.health_status,
-            last_seen: device.last_seen,
-            signal_strength: device.signal_strength,
-            battery_level: device.battery_level,
-            firmware_version: device.firmware_version,
-            verification_status: device.verification_status,
-          };
-        }
-      } else if (type === "sim") {
-        const { data: sim } = await supabase
-          .from("iot_sims")
-          .select("*")
-          .eq("id", id)
-          .single();
-
-        if (sim) {
-          snapshot = {
-            iccid: sim.iccid,
-            msisdn: sim.msisdn,
-            carrier: sim.carrier,
-            status: sim.status,
-            data_usage_mb: sim.data_usage_mb,
-            data_limit_mb: sim.data_limit_mb,
-            network_type: sim.network_type,
-            signal_strength: sim.signal_strength,
-            last_activity: sim.last_activity,
-          };
-        }
-      } else if (type === "vehicle") {
-        const { data: vehicle } = await supabase
-          .from("vehicles")
-          .select("*")
-          .eq("id", id)
-          .single();
-
-        if (vehicle) {
-          snapshot = {
-            registration_number: vehicle.registration_number,
-            make: vehicle.make,
-            model: vehicle.model,
-            status: vehicle.status,
-            type: vehicle.type,
-          };
-        }
-      }
-
-      setContextSnapshot(snapshot);
-    } catch (err) {
-      console.error("Error loading context snapshot:", err);
-    }
+  const loadContextSnapshot = async (_type: ContextType, _id: string) => {
+    // no-op stub
   };
 
   const handleContextSelect = (id: string) => {

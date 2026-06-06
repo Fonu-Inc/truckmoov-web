@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
@@ -7,18 +7,16 @@ import { Label } from "@/components/shadcn/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Badge } from "@/components/shadcn/badge";
 import { useSupportTickets, TicketCategory, ContextType, TicketPriority } from "@/hooks/useSupportTickets";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
-import { 
-  Cpu, 
-  Wifi, 
-  Bell, 
-  CreditCard, 
-  Users, 
+import {
+  Cpu,
+  Wifi,
+  Bell,
+  CreditCard,
+  Users,
   HelpCircle,
   Loader2,
   CheckCircle2,
-  AlertTriangle
 } from "lucide-react";
 
 interface ReportIssueProps {
@@ -46,168 +44,18 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
   const { createTicket } = useSupportTickets();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoadingContext, setIsLoadingContext] = useState(false);
 
   // Form state
   const [category, setCategory] = useState<TicketCategory | null>(null);
   const [contextType, setContextType] = useState<ContextType>("none");
-  const [contextId, setContextId] = useState<string | null>(null);
-  const [contextSnapshot, setContextSnapshot] = useState<Record<string, unknown> | null>(null);
+  const [contextId] = useState<string | null>(null);
+  const [contextSnapshot] = useState<Record<string, unknown> | null>(null);
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TicketPriority>("medium");
 
-  // Context options
-  const [contextOptions, setContextOptions] = useState<ContextItem[]>([]);
-
-  const tenantId = user?.tenantId ?? null;
-
-  // Load context options when category changes
-  useEffect(() => {
-    if (!category) return;
-
-    const selectedCategory = categories.find((c) => c.value === category);
-    if (!selectedCategory || selectedCategory.contextType === "none") {
-      setContextType("none");
-      setContextOptions([]);
-      return;
-    }
-
-    setContextType(selectedCategory.contextType);
-    loadContextOptions(selectedCategory.contextType);
-  }, [category]);
-
-  const loadContextOptions = async (type: ContextType) => {
-    setIsLoadingContext(true);
-    try {
-      let options: ContextItem[] = [];
-
-      if (type === "device") {
-        const { data } = await supabase
-          .from("devices")
-          .select("id, imei, manufacturer, model, status, health_status, last_seen")
-          .eq("tenant_id", tenantId)
-          .order("created_at", { ascending: false })
-          .limit(50);
-
-        options = (data || []).map((d) => ({
-          id: d.id,
-          label: `${d.imei} - ${d.manufacturer} ${d.model || ""}`.trim(),
-          status: d.health_status || d.status,
-          extra: d.last_seen ? `Last seen: ${new Date(d.last_seen).toLocaleString()}` : "Never seen",
-        }));
-      } else if (type === "sim") {
-        const { data } = await supabase
-          .from("iot_sims")
-          .select("id, iccid, msisdn, carrier, status, data_usage_mb, data_limit_mb")
-          .eq("tenant_id", tenantId)
-          .order("created_at", { ascending: false })
-          .limit(50);
-
-        options = (data || []).map((s) => ({
-          id: s.id,
-          label: `${s.msisdn} (${s.iccid.slice(-6)})`,
-          status: s.status,
-          extra: `${s.carrier} • ${s.data_usage_mb}/${s.data_limit_mb} MB`,
-        }));
-      } else if (type === "vehicle") {
-        const { data } = await supabase
-          .from("vehicles")
-          .select("id, registration_number, make, model, status")
-          .eq("tenant_id", tenantId)
-          .order("created_at", { ascending: false })
-          .limit(50);
-
-        options = (data || []).map((v) => ({
-          id: v.id,
-          label: `${v.registration_number} - ${v.make} ${v.model}`,
-          status: v.status,
-        }));
-      }
-
-      setContextOptions(options);
-    } catch (err) {
-      console.error("Error loading context options:", err);
-    } finally {
-      setIsLoadingContext(false);
-    }
-  };
-
-  // Load context snapshot when context is selected
-  const loadContextSnapshot = async (type: ContextType, id: string) => {
-    try {
-      let snapshot: Record<string, unknown> = {};
-
-      if (type === "device") {
-        const { data: device } = await supabase
-          .from("devices")
-          .select("*")
-          .eq("id", id)
-          .single();
-
-        if (device) {
-          snapshot = {
-            imei: device.imei,
-            manufacturer: device.manufacturer,
-            model: device.model,
-            status: device.status,
-            lifecycle_status: device.lifecycle_status,
-            health_status: device.health_status,
-            last_seen: device.last_seen,
-            signal_strength: device.signal_strength,
-            battery_level: device.battery_level,
-            firmware_version: device.firmware_version,
-            verification_status: device.verification_status,
-          };
-        }
-      } else if (type === "sim") {
-        const { data: sim } = await supabase
-          .from("iot_sims")
-          .select("*")
-          .eq("id", id)
-          .single();
-
-        if (sim) {
-          snapshot = {
-            iccid: sim.iccid,
-            msisdn: sim.msisdn,
-            carrier: sim.carrier,
-            status: sim.status,
-            data_usage_mb: sim.data_usage_mb,
-            data_limit_mb: sim.data_limit_mb,
-            network_type: sim.network_type,
-            signal_strength: sim.signal_strength,
-            last_activity: sim.last_activity,
-          };
-        }
-      } else if (type === "vehicle") {
-        const { data: vehicle } = await supabase
-          .from("vehicles")
-          .select("*")
-          .eq("id", id)
-          .single();
-
-        if (vehicle) {
-          snapshot = {
-            registration_number: vehicle.registration_number,
-            make: vehicle.make,
-            model: vehicle.model,
-            status: vehicle.status,
-            type: vehicle.type,
-          };
-        }
-      }
-
-      setContextSnapshot(snapshot);
-    } catch (err) {
-      console.error("Error loading context snapshot:", err);
-    }
-  };
-
-  const handleContextSelect = (id: string) => {
-    setContextId(id);
-    loadContextSnapshot(contextType, id);
-  };
+  // Context options — empty stubs (no Supabase fetch)
+  const contextOptions: ContextItem[] = [];
 
   const handleSubmit = async () => {
     if (!category || !subject.trim() || !description.trim()) return;
@@ -262,7 +110,8 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
                   key={cat.value}
                   onClick={() => {
                     setCategory(cat.value);
-                    setStep(2);
+                    setContextType(cat.contextType);
+                    setStep(cat.contextType === "none" ? 3 : 2);
                   }}
                   className={`flex items-center gap-3 p-4 rounded-lg border text-left transition-colors hover:border-primary/50 ${
                     category === cat.value ? "border-primary bg-primary/5" : ""
@@ -288,11 +137,6 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
                 </div>
                 <CardTitle className="text-lg">Select {contextType === "device" ? "Device" : contextType === "sim" ? "SIM" : contextType === "vehicle" ? "Vehicle" : "Context"}</CardTitle>
               </div>
-              {contextId && step > 2 && (
-                <Badge variant="outline">
-                  {contextOptions.find((o) => o.id === contextId)?.label.slice(0, 30)}...
-                </Badge>
-              )}
             </div>
             {step === 2 && (
               <CardDescription>
@@ -302,45 +146,12 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
           </CardHeader>
           {step === 2 && (
             <CardContent>
-              {isLoadingContext ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : contextOptions.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>No {contextType}s found.</p>
-                  <Button variant="link" onClick={() => setStep(3)} className="mt-2">
-                    Skip this step
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {contextOptions.map((option) => (
-                    <button
-                      key={option.id}
-                      onClick={() => {
-                        handleContextSelect(option.id);
-                        setStep(3);
-                      }}
-                      className={`w-full flex items-center justify-between p-3 rounded-lg border text-left transition-colors hover:border-primary/50 ${
-                        contextId === option.id ? "border-primary bg-primary/5" : ""
-                      }`}
-                    >
-                      <div>
-                        <p className="font-medium text-sm">{option.label}</p>
-                        {option.extra && (
-                          <p className="text-xs text-muted-foreground">{option.extra}</p>
-                        )}
-                      </div>
-                      {option.status && (
-                        <Badge variant="outline" className="capitalize">
-                          {option.status}
-                        </Badge>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No {contextType}s found.</p>
+                <Button variant="link" onClick={() => setStep(3)} className="mt-2">
+                  Skip this step
+                </Button>
+              </div>
               <div className="mt-4 flex justify-end">
                 <Button variant="ghost" size="sm" onClick={() => setStep(3)}>
                   Skip - No specific {contextType}
@@ -364,24 +175,6 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
             <CardDescription>Describe your issue in detail</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Context Preview */}
-            {contextSnapshot && Object.keys(contextSnapshot).length > 0 && (
-              <div className="p-3 rounded-lg bg-muted/50 border">
-                <p className="text-sm font-medium mb-2 flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-chart-2" />
-                  Context auto-attached
-                </p>
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                  {Object.entries(contextSnapshot).slice(0, 6).map(([key, value]) => (
-                    <div key={key}>
-                      <span className="capitalize">{key.replace(/_/g, " ")}: </span>
-                      <span className="text-foreground">{String(value) || "N/A"}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <div className="space-y-2">
               <Label htmlFor="subject">Subject *</Label>
               <Input

@@ -29,7 +29,6 @@ import {
   Clock, Loader2, Phone, RefreshCw, Trash2, FileText } from "lucide-react";
 import { usePlatformSenderIdApprovals } from "@/hooks/usePlatformSenderIdApprovals";
 import type { TenantSenderId, SenderIdStatus } from "@/hooks/useTenantSenderIds";
-import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
@@ -172,16 +171,8 @@ export function SenderIdApprovalQueue() {
                             variant="ghost"
                             size="sm"
                             className="h-8 gap-1 text-xs"
-                            onClick={async () => {
-                              try {
-                                const { data, error } = await supabase.storage
-                                  .from('sender-id-documents')
-                                  .createSignedUrl(request.request_letter_url!, 60);
-                                if (error) throw error;
-                                window.open(data.signedUrl, '_blank');
-                              } catch (err) {
-                                toast.error('Failed to download document');
-                              }
+                            onClick={() => {
+                              toast.info('Coming soon');
                             }}
                           >
                             <FileText className="h-3 w-3" />

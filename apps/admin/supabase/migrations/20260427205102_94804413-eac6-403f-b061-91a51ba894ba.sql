@@ -1,1 +1,0 @@
-ALTER VIEW public.v_tenant_trial_status SET (security_invoker = true);

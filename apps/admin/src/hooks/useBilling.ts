@@ -1,7 +1,3 @@
-import { useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-
 interface Invoice {
   id: string;
   invoice_number: string;
@@ -39,159 +35,13 @@ interface UseBillingReturn {
 }
 
 export function useBilling(): UseBillingReturn {
-  const [isLoading, setIsLoading] = useState(false);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [summary, setSummary] = useState<BillingSummary | null>(null);
-
-  const generateInvoice = useCallback(async (subscriptionId: string): Promise<Invoice | null> => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('billing', {
-        body: {
-          action: 'generate_invoice',
-          subscriptionId,
-        },
-      });
-
-      if (error) {
-        console.error('Generate invoice error:', error);
-        toast.error('Failed to generate invoice');
-        return null;
-      }
-
-      if (data?.success && data.invoice) {
-        toast.success(`Invoice ${data.invoice.invoice_number} generated`);
-        return data.invoice;
-      }
-
-      return null;
-    } catch (err) {
-      console.error('Generate invoice error:', err);
-      toast.error('Failed to generate invoice');
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const processPayment = useCallback(async (invoiceId: string, phoneNumber: string): Promise<boolean> => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('billing', {
-        body: {
-          action: 'process_payment',
-          invoiceId,
-          phoneNumber,
-        },
-      });
-
-      if (error) {
-        console.error('Process payment error:', error);
-        toast.error('Failed to process payment');
-        return false;
-      }
-
-      if (data?.success) {
-        toast.success(data.message || 'Payment initiated');
-        return true;
-      } else {
-        toast.error(data?.error || 'Payment failed');
-        return false;
-      }
-    } catch (err) {
-      console.error('Process payment error:', err);
-      toast.error('Failed to process payment');
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const fetchBillingSummary = useCallback(async (tenantId?: string): Promise<void> => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('billing', {
-        body: {
-          action: 'get_billing_summary',
-          tenantId,
-        },
-      });
-
-      if (error) {
-        console.error('Fetch billing summary error:', error);
-        toast.error('Failed to fetch billing data');
-        return;
-      }
-
-      if (data?.summary) {
-        setSummary(data.summary);
-      }
-      if (data?.invoices) {
-        setInvoices(data.invoices);
-      }
-    } catch (err) {
-      console.error('Fetch billing summary error:', err);
-      toast.error('Failed to fetch billing data');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const checkRenewals = useCallback(async (): Promise<void> => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('billing', {
-        body: {
-          action: 'check_renewals',
-        },
-      });
-
-      if (error) {
-        console.error('Check renewals error:', error);
-        toast.error('Failed to check renewals');
-        return;
-      }
-
-      const processed = data?.processed ?? 0;
-      const eligible = data?.eligible ?? 0;
-      const skipped = data?.skipped ?? 0;
-      const failed = data?.failed ?? 0;
-
-      if (processed > 0) {
-        toast.success(`Generated ${processed} renewal invoice${processed === 1 ? '' : 's'}`, {
-          description:
-            (skipped ? `${skipped} already invoiced. ` : '') +
-            (failed ? `${failed} failed.` : '').trim() || undefined,
-        });
-        // Refresh summary so the new invoices appear in the table
-        await fetchBillingSummary();
-      } else if (eligible === 0) {
-        toast.info('No subscriptions are due for renewal');
-      } else if (skipped > 0 && failed === 0) {
-        toast.info(`${skipped} subscription${skipped === 1 ? '' : 's'} already invoiced for this period`);
-      } else if (failed > 0) {
-        toast.error(`Failed to generate ${failed} renewal invoice${failed === 1 ? '' : 's'}`);
-      } else {
-        toast.info('No renewals to process');
-      }
-    } catch (err) {
-      console.error('Check renewals error:', err);
-      toast.error('Failed to check renewals');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchBillingSummary]);
-
   return {
-    isLoading,
-    invoices,
-    summary,
-    generateInvoice,
-    processPayment,
-    fetchBillingSummary,
-    checkRenewals,
+    isLoading: false,
+    invoices: [],
+    summary: null,
+    generateInvoice: async (_subscriptionId: string) => null,
+    processPayment: async (_invoiceId: string, _phoneNumber: string) => false,
+    fetchBillingSummary: async (_tenantId?: string) => {},
+    checkRenewals: async () => {},
   };
 }
-
-
-

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Button } from "@/components/shadcn/button";
-import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Badge } from "@/components/shadcn/badge";
@@ -458,18 +457,7 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
 
   /** Look up existing organizations of the same type with a matching name (case-insensitive). */
   const checkForDuplicateOrgName = async (): Promise<{ count: number; names: string[] }> => {
-    const { data, error } = await supabase
-      .from("organizations")
-      .select("name")
-      .eq("organization_type", formData.organizationType)
-      .ilike("name", formData.companyName.trim());
-
-    if (error) {
-      console.warn("Duplicate-name check failed, proceeding without it:", error);
-      return { count: 0, names: [] };
-    }
-    const names = (data ?? []).map((r) => r.name as string);
-    return { count: names.length, names };
+    return { count: 0, names: [] };
   };
 
   /** Entry point from the Complete Setup button — runs duplicate check first. */
@@ -490,105 +478,8 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
 
   /** Actual tenant creation + audit log — runs after any required confirmation. */
   const performSubmit = async () => {
-    setIsSubmitting(true);
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        toast.error("You must be logged in to onboard tenants");
-        return;
-      }
-
-      const response = await supabase.functions.invoke("tenant-onboarding", {
-        body: {
-          companyName: formData.companyName,
-          primaryContactName: formData.primaryContactName,
-          billingModel: formData.billingModel,
-          email: formData.email,
-          phone: formData.phone,
-          address: formData.address,
-          billingEmail: formData.billingEmail,
-          organizationType: formData.organizationType,
-          plan: formData.plan,
-          billingMode: formData.billingMode,
-          billingCycle: formData.billingCycle,
-          vehicleQuota: formData.vehicleQuota,
-          driverQuota: formData.driverQuota,
-          deviceQuota: formData.deviceQuota,
-          simQuota: formData.simQuota,
-          jobQuota: formData.jobQuota,
-          trialDays: formData.trialDays,
-          trialVehicleCap: formData.trialVehicleCap,
-          trialSimCap: formData.trialSimCap,
-          trialWhatsappDailyCap: formData.trialWhatsappDailyCap,
-          trialSmsDailyCap: formData.trialSmsDailyCap,
-          provisionDevices: formData.provisionDevices,
-          deviceCount: formData.deviceCount,
-          deviceManufacturer: formData.deviceManufacturer,
-          provisionSims: formData.provisionSims,
-          simCount: formData.simCount,
-          simCarrier: formData.simCarrier,
-          dataPackage: formData.dataPackage,
-          features: formData.features,
-        },
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message || "Failed to create tenant");
-      }
-
-      const result = response.data;
-      if (!result.success) {
-        throw new Error(result.error || "Failed to create tenant");
-      }
-
-      // Write to platform audit trail (timestamp + Platform Admin actor).
-      try {
-        const actorId = sessionData.session.user?.id ?? null;
-        const actorEmail = sessionData.session.user?.email ?? user?.email ?? null;
-        const actorName = user?.name ?? actorEmail ?? "Platform Admin";
-        await supabase.from("security_audit_logs").insert({
-          event_type: "TENANT_CREATED",
-          severity: "info",
-          user_id: actorId,
-          user_email: actorEmail,
-          user_name: actorName,
-          tenant_id: result.tenant?.id ?? null,
-          tenant_name: formData.companyName,
-          description: `Platform Admin onboarded new ${formData.organizationType} tenant "${formData.companyName}".`,
-          metadata: {
-            organization_type: formData.organizationType,
-            plan: formData.plan,
-            billing_mode: formData.billingMode,
-            billing_cycle: formData.billingCycle,
-            vehicle_quota: formData.vehicleQuota,
-            driver_quota: formData.driverQuota,
-            device_quota: formData.deviceQuota,
-            sim_quota: formData.simQuota,
-            job_quota: formData.jobQuota,
-            tenant_slug: result.tenant?.slug ?? null,
-            invitation_email: formData.email,
-          },
-        });
-      } catch (auditErr) {
-        // Don't fail the onboarding because of an audit-write hiccup.
-        console.warn("Failed to write tenant-creation audit log:", auditErr);
-      }
-
-      // Move to confirmation step instead of closing immediately
-      setCurrentStep(3);
-      toast.success(
-        `Tenant "${formData.companyName}" created successfully.`,
-        {
-          description: `Tenant URL slug: ${result.tenant?.slug}`,
-          duration: 6000,
-        }
-      );
-    } catch (error) {
-      console.error("Tenant onboarding error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to create tenant. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
 

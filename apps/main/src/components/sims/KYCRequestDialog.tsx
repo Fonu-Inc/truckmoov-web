@@ -12,7 +12,6 @@ import { Button } from "@/components/shadcn/button";
 import { Textarea } from "@/components/shadcn/textarea";
 import { Label } from "@/components/shadcn/label";
 import { Loader2, Building2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface KYCRequestDialogProps {
@@ -41,61 +40,8 @@ export function KYCRequestDialog({
       toast.error("Please provide a reason for the KYB/KYC request");
       return;
     }
-
-    setProcessing(true);
-    try {
-      // Update the request status to kyb_required
-      const { error: updateError } = await supabase
-        .from("sim_provisioning_requests")
-        .update({
-          status: "kyb_required",
-          notes: `KYB/KYC Required: ${reason}`,
-        } as any)
-        .eq("id", requestId);
-
-      if (updateError) throw updateError;
-
-      // Log the KYC notification
-      await supabase.from("kyc_notification_logs").insert({
-        tenant_id: tenantId,
-        tenant_name: tenantName,
-        tenant_email: "", // Would need to fetch from tenant_business_info
-        notification_type: "kyc_required",
-        document_type: "sim_provisioning",
-        document_name: "SIM Provisioning Request",
-        rejection_reason: reason,
-        delivery_status: "pending",
-        sent_by: user?.id || null,
-      });
-
-      // Log to security audit: who requested KYB/KYC completion
-      await supabase.from("security_audit_logs").insert({
-        event_type: "kyb_requested",
-        severity: "info",
-        description: `KYB/KYC completion requested for ${tenantName || tenantId} regarding SIM provisioning`,
-        user_id: user?.id || null,
-        user_name: user?.name || "Platform Admin",
-        tenant_id: tenantId,
-        tenant_name: tenantName,
-        metadata: {
-          request_id: requestId,
-          reason: reason,
-        },
-      });
-
-      toast.success("KYB/KYC Completion Request Sent", {
-        description: `${tenantName || "Tenant"} has been notified to complete verification.`,
-      });
-
-      onComplete();
-      onOpenChange(false);
-      setReason("");
-    } catch (err) {
-      console.error("Error requesting KYC:", err);
-      toast.error("Failed to send KYC request");
-    } finally {
-      setProcessing(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   return (

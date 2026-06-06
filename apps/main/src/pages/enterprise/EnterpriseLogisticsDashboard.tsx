@@ -13,8 +13,6 @@ import {
   CheckCircle2,
   Eye,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { useMemo } from "react";
 import { format as dateFormat } from "date-fns";
@@ -35,50 +33,10 @@ export default function EnterpriseLogisticsDashboard() {
     [orgCtx]
   );
 
-  const { data: jobs = [], isLoading: jobsLoading } = useQuery({
-    queryKey: ["enterprise-jobs", enterpriseOrgIds],
-    queryFn: async () => {
-      let query = supabase
-        .from("jobs")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      // Filter to only jobs owned by the enterprise org
-      if (enterpriseOrgIds.length > 0) {
-        query = query.in("job_owner_org_id", enterpriseOrgIds);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user && enterpriseOrgIds.length > 0,
-  });
-
-  const { data: organizations = [] } = useQuery({
-    queryKey: ["enterprise-orgs"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("organizations")
-        .select("id, name, organization_type, tenant_id");
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user,
-  });
-
-  const { data: jobOffers = [] } = useQuery({
-    queryKey: ["enterprise-job-offers"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("job_offers")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user,
-  });
+  const jobs: any[] = [];
+  const jobsLoading = false;
+  const organizations: any[] = [];
+  const jobOffers: any[] = [];
 
   // Demo provider groups (used when no real data is available)
   const demoProviderGroups = useMemo(() => ([

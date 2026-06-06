@@ -21,11 +21,9 @@ import {
 import { useERPIntegration, ERP_PROVIDERS, type ERPConnector } from '@/hooks/useERPIntegration';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import type { Database as DB } from '@/integrations/supabase/types';
-
-type ERPProvider = DB['public']['Enums']['erp_provider'];
-type ERPAuthMethod = DB['public']['Enums']['erp_auth_method'];
-type ERPSyncScope = DB['public']['Enums']['erp_sync_scope'];
+type ERPProvider = string;
+type ERPAuthMethod = string;
+type ERPSyncScope = string;
 
 interface Props {
   tenantId: string;

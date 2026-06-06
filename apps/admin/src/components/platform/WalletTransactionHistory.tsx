@@ -1,19 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
 import { Badge } from "@/components/shadcn/badge";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/shadcn/table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import {History, RefreshCw, Phone, MessageSquare, MessageCircle, ArrowUpRight, ArrowDownRight, Download} from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface WalletTransaction {
@@ -32,42 +30,21 @@ interface WalletTransaction {
 }
 
 export function WalletTransactionHistory() {
-  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [transactions] = useState<WalletTransaction[]>([]);
+  const [loading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [commTypeFilter, setCommTypeFilter] = useState<string>('all');
 
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
-
-  const fetchTransactions = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('wallet_transactions')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(500);
-
-    if (error) {
-      toast.error('Failed to load transactions');
-      console.error(error);
-    } else {
-      setTransactions(data || []);
-    }
-    setLoading(false);
-  };
-
   const filteredTransactions = transactions.filter(tx => {
-    const matchesSearch = 
+    const matchesSearch =
       tx.tenant_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       tx.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       tx.reference_id?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesType = typeFilter === 'all' || tx.transaction_type === typeFilter;
     const matchesCommType = commTypeFilter === 'all' || tx.communication_type === commTypeFilter;
-    
+
     return matchesSearch && matchesType && matchesCommType;
   });
 
@@ -276,6 +253,5 @@ export function WalletTransactionHistory() {
     </Card>
   );
 }
-
 
 

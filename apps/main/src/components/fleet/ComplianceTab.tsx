@@ -40,7 +40,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useComplianceDocuments, ComplianceDocument } from "@/hooks/useComplianceDocuments";
 import { useFleetReminders } from "@/hooks/useFleetReminders";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 
 const statusColors: Record<string, string> = {
@@ -51,10 +50,10 @@ const statusColors: Record<string, string> = {
 export function ComplianceTab() {
   const { user } = useAuthStore();
   const tenantId = user?.tenantId || '';
-  
+
   const { documents, isLoading, addDocument, updateDocument, deleteDocument, setReminderDays, getStats } = useComplianceDocuments(tenantId);
   const { sendReminders, isSending } = useFleetReminders(tenantId);
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [docTypeFilter, setDocTypeFilter] = useState("all");
@@ -85,7 +84,7 @@ export function ComplianceTab() {
   const [renewalFile, setRenewalFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const renewalFileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [newDocument, setNewDocument] = useState({
     entityType: "vehicle" as "vehicle" | "driver",
     entityName: "",
@@ -169,47 +168,13 @@ export function ComplianceTab() {
   };
 
   const handleDownload = async (doc: ComplianceDocument) => {
-    if (doc.file_path) {
-      try {
-        const { data, error } = await supabase.storage
-          .from('compliance-documents')
-          .download(doc.file_path);
-        
-        if (error) throw error;
-        
-        const url = URL.createObjectURL(data);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = doc.file_path.split('/').pop() || 'document';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        toast.success(`Downloaded ${doc.document_type}`);
-      } catch (err) {
-        console.error('Receipt error:', err);
-        toast.error('Failed to download document');
-      }
-    } else {
-      toast.info('No file attached to this document');
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const uploadFile = async (file: File, docId: string): Promise<string | null> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${docId}/${Date.now()}.${fileExt}`;
-    
-    const { data, error } = await supabase.storage
-      .from('compliance-documents')
-      .upload(fileName, file);
-    
-    if (error) {
-      console.error('Upload error:', error);
-      throw error;
-    }
-    
-    return fileName;
+    toast.info('Coming soon');
+    return null;
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -271,28 +236,8 @@ export function ComplianceTab() {
 
   const handleRenewalSubmit = async () => {
     if (selectedDocument) {
-      setIsUploading(true);
-      try {
-        let filePath = selectedDocument.file_path;
-        
-        if (renewalFile) {
-          filePath = await uploadFile(renewalFile, selectedDocument.id);
-        }
-
-        await updateDocument(selectedDocument.id, {
-          expiry_date: addDays(new Date(), 365).toISOString(),
-          issue_date: new Date().toISOString(),
-          file_path: filePath });
-        
-        toast.success('Document renewed successfully');
-        setIsRenewalDialogOpen(false);
-        setSelectedDocument(null);
-        setRenewalFile(null);
-      } catch (err) {
-        console.error('Renewal error:', err);
-      } finally {
-        setIsUploading(false);
-      }
+      toast.info('Coming soon');
+      return;
     }
   };
 
@@ -773,7 +718,7 @@ export function ComplianceTab() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Entity Name</Label>
-              <Input 
+              <Input
                 placeholder="e.g., LAG-234-XY or Driver Name"
                 value={newDocument.entityName}
                 onChange={(e) => setNewDocument({ ...newDocument, entityName: e.target.value })}
@@ -835,7 +780,7 @@ export function ComplianceTab() {
             </div>
             <div className="space-y-2">
               <Label>Document Number</Label>
-              <Input 
+              <Input
                 placeholder="Enter document number"
                 value={newDocument.documentNumber}
                 onChange={(e) => setNewDocument({ ...newDocument, documentNumber: e.target.value })}
@@ -844,7 +789,7 @@ export function ComplianceTab() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Issue Date</Label>
-                <Input 
+                <Input
                   type="date"
                   value={newDocument.issueDate}
                   onChange={(e) => setNewDocument({ ...newDocument, issueDate: e.target.value })}
@@ -852,7 +797,7 @@ export function ComplianceTab() {
               </div>
               <div className="space-y-2">
                 <Label>Expiry Date</Label>
-                <Input 
+                <Input
                   type="date"
                   value={newDocument.expiryDate}
                   onChange={(e) => setNewDocument({ ...newDocument, expiryDate: e.target.value })}
@@ -868,7 +813,7 @@ export function ComplianceTab() {
                 accept=".pdf,.jpg,.jpeg,.png"
                 className="hidden"
               />
-              <div 
+              <div
                 className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
                 onClick={() => fileInputRef.current?.click()}
               >
@@ -876,9 +821,9 @@ export function ComplianceTab() {
                   <div className="flex items-center justify-center gap-2">
                     <File className="h-5 w-5 text-primary" />
                     <span className="text-sm font-medium">{selectedFile.name}</span>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-5 w-5"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -962,7 +907,7 @@ export function ComplianceTab() {
                 <div>
                   <Label className="text-muted-foreground text-xs">Issue Date</Label>
                   <p className="font-medium">
-                    {selectedDocument.issue_date 
+                    {selectedDocument.issue_date
                       ? format(new Date(selectedDocument.issue_date), "MMM dd, yyyy")
                       : '—'}
                   </p>
@@ -1000,7 +945,7 @@ export function ComplianceTab() {
               accept=".pdf,.jpg,.jpeg,.png"
               className="hidden"
             />
-            <div 
+            <div
               className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
               onClick={() => renewalFileInputRef.current?.click()}
             >
@@ -1008,9 +953,9 @@ export function ComplianceTab() {
                 <div className="flex items-center justify-center gap-2">
                   <File className="h-5 w-5 text-primary" />
                   <span className="text-sm font-medium">{renewalFile.name}</span>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-5 w-5"
                     onClick={(e) => {
                       e.stopPropagation();

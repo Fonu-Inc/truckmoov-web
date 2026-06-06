@@ -7,12 +7,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
-import { 
-  MoreVertical, RefreshCw, Copy, Trash2, MessageSquare, 
+import {
+  MoreVertical, RefreshCw, Copy, Trash2, MessageSquare,
   Phone, CheckCircle, XCircle, Clock
 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 
 interface MessageActionsProps {
@@ -41,51 +40,8 @@ export function MessageActions({
   const canResend = status === 'failed' || status === 'pending';
 
   const handleResend = async () => {
-    setIsResending(true);
-    try {
-      // Call the appropriate edge function based on message type
-      if (messageType === 'whatsapp') {
-        const { error } = await supabase.functions.invoke('fonu-sms', {
-          body: {
-            action: 'send_whatsapp',
-            phoneNumber: driverPhone,
-            message: content,
-            driverId,
-            driverName,
-            senderName: 'System Retry',
-          },
-        });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.functions.invoke('fonu-sms', {
-          body: {
-            action: 'send_sms',
-            phoneNumber: driverPhone,
-            message: content,
-            driverId,
-            driverName,
-            senderName: 'System Retry',
-          },
-        });
-        if (error) throw error;
-      }
-
-      // Update original message status
-      await supabase
-        .from('driver_messages')
-        .update({ status: 'resent', updated_at: new Date().toISOString() })
-        .eq('id', messageId);
-
-      toast.success("Message resent successfully");
-      onResend?.();
-    } catch (error: any) {
-      console.error('Resend error:', error);
-      toast.error("Failed to resend message", {
-        description: error.message,
-      });
-    } finally {
-      setIsResending(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const handleCopyContent = () => {
@@ -113,7 +69,7 @@ export function MessageActions({
   return (
     <div className="flex items-center gap-2">
       {getStatusBadge()}
-      
+
       {canResend && (
         <TooltipWrapper content="Resend message">
           <Button

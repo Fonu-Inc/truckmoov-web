@@ -19,7 +19,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format as dateFormat, differenceInDays, isBefore, addDays } from "date-fns";
 
@@ -109,52 +108,13 @@ export function ComplianceDocumentsPanel({ orgId, tenantId, vehicleIds }: Compli
 
   const { data: docs = [], isLoading } = useQuery({
     queryKey: ["oo-compliance-docs", orgId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("compliance_documents")
-        .select("*")
-        .eq("org_id", orgId)
-        .order("expiry_date", { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: async () => [],
     enabled: !!orgId,
   });
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
-      if (!docType || !docName || !expiryDate) {
-        throw new Error("Please fill in all required fields");
-      }
-
-      setUploading(true);
-      let filePath: string | null = null;
-
-      // Upload file if provided
-      if (file) {
-        const ext = file.name.split(".").pop();
-        const path = `${orgId}/${docType}_${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from("compliance-documents")
-          .upload(path, file);
-        if (uploadError) throw uploadError;
-        filePath = path;
-      }
-
-      const { error } = await supabase.from("compliance_documents").insert({
-        org_id: orgId,
-        tenant_id: tenantId || "default",
-        document_type: docType,
-        document_name: docName,
-        document_number: docNumber || null,
-        expiry_date: expiryDate,
-        issue_date: issueDate || null,
-        file_path: filePath,
-        status: "valid",
-        verification_status: "pending",
-        uploaded_by: (await supabase.auth.getUser()).data.user?.id,
-      });
-      if (error) throw error;
+      toast.info('Coming soon');
     },
     onSuccess: () => {
       toast.success("Document uploaded successfully");

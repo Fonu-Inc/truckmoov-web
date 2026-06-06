@@ -57,7 +57,6 @@ import {
 } from "@/components/shadcn/platform-filter-popover";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { useTenants } from "@/hooks/useTenants";
 import { useTenantKYCCache } from "@/hooks/useTenantKYCCache";
@@ -141,8 +140,8 @@ const KycCell = ({ status }: { status: string | null }) => {
 export function DeviceProvisioningQueue() {
   const { user } = useAuthStore();
   const { tenants } = useTenants();
-  const [reqs, setReqs] = useState<DeviceReq[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [reqs] = useState<DeviceReq[]>([]);
+  const [loading] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [filterDraft, setFilterDraft] = useState<FilterDraft>({
@@ -178,31 +177,6 @@ export function DeviceProvisioningQueue() {
 
   const tenantIds = useMemo(() => reqs.map((r) => r.tenant_id), [reqs]);
   const kycCache = useTenantKYCCache(tenantIds);
-
-  const fetchAll = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("device_setup_requests")
-        .select(
-          "id,tenant_id,requesting_org_id,requester_user_id,requester_name,manufacturer,model,imei,needs_sim,vehicle_name,priority,status,rejection_reason,configurator_notes,resulting_device_id,created_at,quantity,use_case,provisioning_checklist,provisioning_started_at,provisioning_completed_at"
-        )
-        .order("created_at", { ascending: false })
-        .limit(500);
-      if (error) throw error;
-      setReqs((data || []) as DeviceReq[]);
-    } catch (err) {
-      console.error("Device provisioning fetch error:", err);
-      toast.error("Failed to load device provisioning requests");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void fetchAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const pending = reqs.filter((r) =>
     ["pending_review", "assigned", "awaiting_heartbeat"].includes(r.status),
@@ -245,110 +219,16 @@ export function DeviceProvisioningQueue() {
     setActionNote("");
   };
 
-  /**
-   * Approve a device request directly (no notes prompt).
-   * The platform admin clicking Approve is the trigger that starts the
-   * External Provisioning Engine — no extra confirmation step.
-   */
   const approveDirect = async (id: string) => {
-    if (!user) return;
-    try {
-      const update: Record<string, unknown> = {
-        status: "pending_review",
-        assigned_to_user_id: user.id,
-        assigned_to_name: user.name || null,
-        assigned_at: new Date().toISOString(),
-      };
-      const { error } = await supabase
-        .from("device_setup_requests")
-        .update(update)
-        .eq("id", id);
-      if (error) throw error;
-
-      await supabase.from("device_setup_request_events").insert({
-        request_id: id,
-        event_type: "assigned",
-        new_status: "pending_review",
-        actor_id: user.id,
-        actor_name: user.name || null,
-        notes: null,
-      } as never);
-
-      try {
-        await supabase.functions.invoke("device-setup-notify", {
-          body: { requestId: id, newStatus: "pending_review", actorName: user.name || undefined },
-        });
-      } catch (e) {
-        console.warn("device-setup-notify failed (non-blocking):", e);
-      }
-
-      toast.success("Request approved — provisioning engine started");
-
-      // Engine only kicks off after explicit approval click
-      startDeviceProvisioningSimulation(id).catch((e) =>
-        console.warn("Provisioning sim failed (non-blocking):", e),
-      );
-
-      await fetchAll();
-    } catch (err) {
-      console.error("Approve failed:", err);
-      toast.error(err instanceof Error ? err.message : "Approve failed");
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const runAction = async () => {
     if (!action || !user) return;
-    setBusy(true);
-    try {
-      const newStatus =
-        action.action === "reject" ? "rejected" : "completed";
-      const update: Record<string, unknown> = { status: newStatus };
-      if (action.action === "reject") {
-        if (!actionNote.trim()) {
-          toast.error("Rejection reason is required");
-          setBusy(false);
-          return;
-        }
-        update.rejection_reason = actionNote.trim();
-      } else if (actionNote.trim()) {
-        update.configurator_notes = actionNote.trim();
-      }
-      const { error } = await supabase
-        .from("device_setup_requests")
-        .update(update)
-        .eq("id", action.id);
-      if (error) throw error;
-
-      await supabase.from("device_setup_request_events").insert({
-        request_id: action.id,
-        event_type: action.action === "reject" ? "rejected" : "completed",
-        new_status: newStatus,
-        actor_id: user.id,
-        actor_name: user.name || null,
-        notes: actionNote.trim() || null,
-      } as never);
-
-      try {
-        await supabase.functions.invoke("device-setup-notify", {
-          body: { requestId: action.id, newStatus, actorName: user.name || undefined },
-        });
-      } catch (e) {
-        console.warn("device-setup-notify failed (non-blocking):", e);
-      }
-
-      toast.success(
-        action.action === "reject" ? "Request rejected" : "Request marked fulfilled",
-      );
-
-      setAction(null);
-      setActionNote("");
-      await fetchAll();
-    } catch (err) {
-      console.error("Action failed:", err);
-      toast.error(err instanceof Error ? err.message : "Action failed");
-    } finally {
-      setBusy(false);
-    }
+    toast.info('Coming soon');
+    setAction(null);
+    setActionNote("");
   };
 
   const statusOptions = [

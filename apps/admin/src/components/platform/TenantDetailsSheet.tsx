@@ -48,7 +48,6 @@ import {
 import { format } from "date-fns";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -71,33 +70,16 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
   // Fetch Owner-Operator orgs under this tenant for vehicle cap management
   const { data: ooOrgs = [] } = useQuery({
     queryKey: ["tenant-oo-orgs", tenant?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("organizations")
-        .select("id, name, organization_type, max_vehicles, status")
-        .eq("tenant_id", tenant!.id)
-        .eq("organization_type", "OWNER_OPERATOR")
-        .order("name");
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!tenant?.id && open });
+    enabled: false,
+    queryFn: async () => [] as any[],
+  });
 
   // Fetch vehicle counts per org
   const { data: vehicleCounts = {} } = useQuery({
-    queryKey: ["tenant-oo-vehicle-counts", ooOrgs.map(o => o.id)],
-    queryFn: async () => {
-      const counts: Record<string, number> = {};
-      for (const org of ooOrgs) {
-        const { count } = await supabase
-          .from("vehicles")
-          .select("id", { count: "exact", head: true })
-          .eq("owning_org_id", org.id);
-        counts[org.id] = count ?? 0;
-      }
-      return counts;
-    },
-    enabled: ooOrgs.length > 0 });
+    queryKey: ["tenant-oo-vehicle-counts", ooOrgs.map((o: any) => o.id)],
+    enabled: false,
+    queryFn: async () => ({} as Record<string, number>),
+  });
 
   const [editingCaps, setEditingCaps] = useState<Record<string, number>>({});
   const [savingOrgId, setSavingOrgId] = useState<string | null>(null);
@@ -114,364 +96,109 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
   // Tenant-level vehicle quota + active vehicle count
   const { data: tenantQuotaData } = useQuery({
     queryKey: ["tenant-vehicle-quota", tenant?.id],
-    queryFn: async () => {
-      const [{ data: tRow }, { count }] = await Promise.all([
-        supabase.from("tenants").select("vehicle_quota").eq("id", tenant!.id).single(),
-        supabase
-          .from("vehicles")
-          .select("id", { count: "exact", head: true })
-          .eq("tenant_id", tenant!.id)
-          .eq("status", "active"),
-      ]);
-      return { quota: tRow?.vehicle_quota ?? 25, activeCount: count ?? 0 };
-    },
-    enabled: !!tenant?.id && open });
+    enabled: false,
+    queryFn: async () => ({ quota: 25, activeCount: 0 }),
+  });
 
   const handleSaveQuota = async () => {
-    if (!tenant || editingQuota === null) return;
-    if (editingQuota < 1) {
-      toast.error("Quota must be at least 1");
-      return;
-    }
-    const oldValue = tenantQuotaData?.quota ?? null;
-    setSavingQuota(true);
-    const { error } = await supabase
-      .from("tenants")
-      .update({ vehicle_quota: editingQuota, vehicle_quota_notifications: {} })
-      .eq("id", tenant.id);
-    if (error) {
-      setSavingQuota(false);
-      toast.error("Failed to update vehicle quota");
-      return;
-    }
-
-    // Audit log: old/new value + Platform Admin actor.
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const actorId = sessionData.session?.user?.id ?? null;
-      const actorEmail = sessionData.session?.user?.email ?? null;
-      await supabase.from("security_audit_logs").insert({
-        event_type: "TENANT_VEHICLE_QUOTA_UPDATED",
-        severity: "info",
-        user_id: actorId,
-        user_email: actorEmail,
-        user_name: actorEmail ?? "Platform Admin",
-        tenant_id: tenant.id,
-        tenant_name: tenant.name,
-        description: `Vehicle quota changed from ${oldValue ?? "—"} to ${editingQuota} for tenant "${tenant.name}".`,
-        metadata: {
-          old_value: oldValue,
-          new_value: editingQuota,
-          field: "vehicle_quota" } });
-    } catch (auditErr) {
-      console.warn("Failed to write quota audit log:", auditErr);
-    }
-
-    setSavingQuota(false);
-    toast.success(`Vehicle quota updated to ${editingQuota}`);
-    setEditingQuota(null);
-    queryClient.invalidateQueries({ queryKey: ["tenant-vehicle-quota"] });
-    queryClient.invalidateQueries({ queryKey: ["tenants"] });
+    toast.info('Coming soon');
+    return;
   };
 
 
   // Operational quotas (driver, device, sim) + current counts
   const { data: opQuotaData } = useQuery({
     queryKey: ["tenant-op-quotas", tenant?.id],
-    queryFn: async () => {
-      const [{ data: tRow }, { count: driverCount }, { count: deviceCount }, { count: simCount }] = await Promise.all([
-        supabase
-          .from("tenants")
-          .select("driver_quota, device_quota, sim_quota")
-          .eq("id", tenant!.id)
-          .single(),
-        supabase.from("drivers").select("id", { count: "exact", head: true }).eq("tenant_id", tenant!.id),
-        supabase.from("devices").select("id", { count: "exact", head: true }).eq("tenant_id", tenant!.id),
-        supabase.from("iot_sims").select("id", { count: "exact", head: true }).eq("tenant_id", tenant!.id),
-      ]);
-      const row = (tRow ?? {}) as { driver_quota?: number; device_quota?: number; sim_quota?: number };
-      return {
-        driver: { quota: row.driver_quota ?? 30, count: driverCount ?? 0 },
-        device: { quota: row.device_quota ?? 25, count: deviceCount ?? 0 },
-        sim: { quota: row.sim_quota ?? 25, count: simCount ?? 0 } };
-    },
-    enabled: !!tenant?.id && open });
+    enabled: false,
+    queryFn: async () => ({
+      driver: { quota: 30, count: 0 },
+      device: { quota: 25, count: 0 },
+      sim: { quota: 25, count: 0 },
+    }),
+  });
 
   const handleSaveOpQuota = async (kind: "driver" | "device" | "sim") => {
-    if (!tenant) return;
-    const newValue = editingOpQuota[kind];
-    if (newValue === null || newValue < 1) {
-      toast.error("Quota must be at least 1");
-      return;
-    }
-    const oldValue = opQuotaData?.[kind].quota ?? null;
-    const column = `${kind}_quota`;
-    const notifColumn = `${kind}_quota_notifications`;
-    setSavingOpQuota(kind);
-    const { error } = await supabase
-      .from("tenants")
-      .update({ [column]: newValue, [notifColumn]: {} } as never)
-      .eq("id", tenant.id);
-    if (error) {
-      setSavingOpQuota(null);
-      toast.error(`Failed to update ${kind} quota`);
-      return;
-    }
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const actorId = sessionData.session?.user?.id ?? null;
-      const actorEmail = sessionData.session?.user?.email ?? null;
-      await supabase.from("security_audit_logs").insert({
-        event_type: `TENANT_${kind.toUpperCase()}_QUOTA_UPDATED`,
-        severity: "info",
-        user_id: actorId,
-        user_email: actorEmail,
-        user_name: actorEmail ?? "Platform Admin",
-        tenant_id: tenant.id,
-        tenant_name: tenant.name,
-        description: `${kind.charAt(0).toUpperCase() + kind.slice(1)} quota changed from ${oldValue ?? "—"} to ${newValue} for tenant "${tenant.name}".`,
-        metadata: { old_value: oldValue, new_value: newValue, field: column } });
-    } catch (auditErr) {
-      console.warn("Failed to write quota audit log:", auditErr);
-    }
-    setSavingOpQuota(null);
-    toast.success(`${kind.charAt(0).toUpperCase() + kind.slice(1)} quota updated to ${newValue}`);
-    setEditingOpQuota((prev) => ({ ...prev, [kind]: null }));
-    queryClient.invalidateQueries({ queryKey: ["tenant-op-quotas"] });
+    toast.info('Coming soon');
+    return;
   };
 
   // Fetch current billing model
   const { data: tenantBillingData } = useQuery({
     queryKey: ["tenant-billing-model", tenant?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("tenants")
-        .select("billing_model, billing_cycle_day")
-        .eq("id", tenant!.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!tenant?.id && open });
+    enabled: false,
+    queryFn: async () => null as any,
+  });
 
   // Vehicles list
   const { data: tenantVehicles = [], isLoading: loadingVehicles } = useQuery({
     queryKey: ["tenant-vehicles-list", tenant?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vehicles")
-        .select("id, plate_number, make, model, status, created_at")
-        .eq("tenant_id", tenant!.id)
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: !!tenant?.id && open });
+    enabled: false,
+    queryFn: async () => [] as any[],
+  });
 
   // SIMs list
   const { data: tenantSims = [], isLoading: loadingSims } = useQuery({
     queryKey: ["tenant-sims-list", tenant?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("iot_sims")
-        .select("id, msisdn, iccid, status, provider, created_at")
-        .eq("tenant_id", tenant!.id)
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: !!tenant?.id && open });
+    enabled: false,
+    queryFn: async () => [] as any[],
+  });
 
   // Devices list
   const { data: tenantDevices = [], isLoading: loadingDevices } = useQuery({
     queryKey: ["tenant-devices-list", tenant?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("devices")
-        .select("id, imei, manufacturer, model, status, lifecycle_status, vehicle_id, created_at")
-        .eq("tenant_id", tenant!.id)
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: !!tenant?.id && open });
+    enabled: false,
+    queryFn: async () => [] as any[],
+  });
 
   // Device setup requests
   const { data: tenantDeviceRequests = [], isLoading: loadingDeviceRequests } = useQuery({
     queryKey: ["tenant-device-requests-list", tenant?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("device_setup_requests")
-        .select("id, manufacturer, model, imei, status, vehicle_name, created_at")
-        .eq("tenant_id", tenant!.id)
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: !!tenant?.id && open });
+    enabled: false,
+    queryFn: async () => [] as any[],
+  });
 
   // Audit log
   const { data: tenantAuditLog = [], isLoading: loadingAudit } = useQuery({
     queryKey: ["tenant-audit-log", tenant?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("security_audit_logs")
-        .select("id, event_type, description, severity, metadata, created_at, user_id, user_name")
-        .eq("tenant_id", tenant!.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: !!tenant?.id && open });
+    enabled: false,
+    queryFn: async () => [] as any[],
+  });
 
   // Trial status (from view)
   const { data: trialStatus, refetch: refetchTrial } = useQuery({
     queryKey: ["tenant-trial-status", tenant?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("v_tenant_trial_status")
-        .select("*")
-        .eq("tenant_id", tenant!.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!tenant?.id && open });
+    enabled: false,
+    queryFn: async () => null as any,
+  });
 
   // Comprehensive billing summary: subscription + plan + last payment
   const { data: billingSummary } = useQuery({
     queryKey: ["tenant-billing-summary", tenant?.id],
-    queryFn: async () => {
-      const [{ data: sub }, { data: lastPayment }] = await Promise.all([
-        supabase
-          .from("tenant_subscriptions")
-          .select(
-            "id, status, current_period_start, current_period_end, auto_renew, payment_method, plan_id, created_at, subscription_plans:plan_id (name, tier, billing_cycle, price_ngn, yearly_price_ngn)"
-          )
-          .eq("tenant_id", tenant!.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        supabase
-          .from("payment_transactions")
-          .select("id, status, amount_ngn, payment_method, created_at")
-          .eq("tenant_id", tenant!.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-      ]);
-      return { sub, lastPayment };
-    },
-    enabled: !!tenant?.id && open });
+    enabled: false,
+    queryFn: async () => ({ sub: null, lastPayment: null }),
+  });
 
   const [extendDays, setExtendDays] = useState<number>(14);
   const [savingTrial, setSavingTrial] = useState(false);
 
   const handleExtendTrial = async () => {
-    if (!tenant) return;
-    setSavingTrial(true);
-    const baseEnd = trialStatus?.trial_ends_at ? new Date(trialStatus.trial_ends_at) : new Date();
-    const newEnd = new Date(Math.max(baseEnd.getTime(), Date.now()) + extendDays * 86400_000);
-    const { error } = await supabase
-      .from("tenants")
-      .update({
-        trial_ends_at: newEnd.toISOString(),
-        trial_extended_count: ((trialStatus as any)?.trial_extended_count ?? 0) + 1,
-        trial_expiry_alert_sent_at: null,
-        updated_at: new Date().toISOString() })
-      .eq("id", tenant.id);
-    setSavingTrial(false);
-    if (error) {
-      toast.error("Failed to extend trial");
-      return;
-    }
-    toast.success(`Trial extended by ${extendDays} days`);
-    await supabase.from("security_audit_logs").insert([{
-      tenant_id: tenant.id,
-      tenant_name: tenant.name,
-      event_type: "TRIAL_EXTENDED",
-      severity: "info",
-      description: `Trial extended by ${extendDays} days for ${tenant.name}.`,
-      metadata: { extra_days: extendDays, new_trial_ends_at: newEnd.toISOString() } }]);
-    refetchTrial();
-    queryClient.invalidateQueries({ queryKey: ["tenants"] });
+    toast.info('Coming soon');
+    return;
   };
 
   const handleConvertTrial = async () => {
-    if (!tenant) return;
-    setSavingTrial(true);
-    const { error } = await supabase
-      .from("tenants")
-      .update({
-        status: "active",
-        trial_converted_at: new Date().toISOString(),
-        updated_at: new Date().toISOString() })
-      .eq("id", tenant.id);
-    setSavingTrial(false);
-    if (error) {
-      toast.error("Failed to convert trial");
-      return;
-    }
-    toast.success("Tenant converted to paid Active");
-    await supabase.from("security_audit_logs").insert([{
-      tenant_id: tenant.id,
-      tenant_name: tenant.name,
-      event_type: "TRIAL_CONVERTED_MANUAL",
-      severity: "info",
-      description: `Trial manually converted to paid Active for ${tenant.name}.`,
-      metadata: {} }]);
-    refetchTrial();
-    queryClient.invalidateQueries({ queryKey: ["tenants"] });
+    toast.info('Coming soon');
+    return;
   };
 
   const handleSaveBillingModel = async (newModel: string) => {
-    if (!tenant) return;
-    setSavingBillingModel(true);
-    setBillingModel(newModel);
-    const { error } = await supabase
-      .from("tenants")
-      .update({ billing_model: newModel as any })
-      .eq("id", tenant.id);
-    setSavingBillingModel(false);
-    if (error) {
-      toast.error("Failed to update billing model");
-      setBillingModel(null);
-      return;
-    }
-    toast.success(`Billing model updated to ${newModel}`);
-    queryClient.invalidateQueries({ queryKey: ["tenant-billing-model"] });
-    queryClient.invalidateQueries({ queryKey: ["tenants"] });
+    toast.info('Coming soon');
+    return;
   };
 
   const handleSaveVehicleCap = async (orgId: string) => {
-    const newCap = editingCaps[orgId];
-    if (newCap === undefined) return;
-    if (newCap < 1 || newCap > 10) {
-      toast.error("Vehicle cap must be between 1 and 10");
-      return;
-    }
-    setSavingOrgId(orgId);
-    const { error } = await supabase
-      .from("organizations")
-      .update({ max_vehicles: newCap })
-      .eq("id", orgId);
-    setSavingOrgId(null);
-    if (error) {
-      toast.error("Failed to update vehicle cap");
-      return;
-    }
-    toast.success(`Vehicle cap updated to ${newCap}`);
-    setEditingCaps(prev => {
-      const next = { ...prev };
-      delete next[orgId];
-      return next;
-    });
-    queryClient.invalidateQueries({ queryKey: ["tenant-oo-orgs"] });
+    toast.info('Coming soon');
+    return;
   };
 
   if (!tenant) return null;
@@ -561,22 +288,7 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={async () => {
-                    const { error } = await supabase
-                      .from("tenants")
-                      .update({ status: "active", updated_at: new Date().toISOString() })
-                      .eq("id", tenant.id);
-                    if (error) { toast.error("Failed to activate tenant"); return; }
-                    await supabase.from("security_audit_logs").insert({
-                      event_type: "TENANT_ACTIVATED",
-                      severity: "info",
-                      tenant_id: tenant.id,
-                      tenant_name: tenant.name,
-                      description: `Tenant "${tenant.name}" activated by Platform Admin.`,
-                      metadata: { previous_status: tenant.status } });
-                    toast.success("Tenant activated");
-                    queryClient.invalidateQueries({ queryKey: ["tenants"] });
-                  }}
+                  onClick={() => { toast.info('Coming soon'); }}
                   className="gap-2 border-success/40 text-success hover:bg-success/10"
                 >
                   <CheckCircle className="h-4 w-4" />
@@ -586,22 +298,7 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={async () => {
-                    const { error } = await supabase
-                      .from("tenants")
-                      .update({ status: "suspended", updated_at: new Date().toISOString() })
-                      .eq("id", tenant.id);
-                    if (error) { toast.error("Failed to suspend tenant"); return; }
-                    await supabase.from("security_audit_logs").insert({
-                      event_type: "TENANT_SUSPENDED",
-                      severity: "warning",
-                      tenant_id: tenant.id,
-                      tenant_name: tenant.name,
-                      description: `Tenant "${tenant.name}" suspended by Platform Admin.`,
-                      metadata: { previous_status: tenant.status } });
-                    toast.success("Tenant suspended");
-                    queryClient.invalidateQueries({ queryKey: ["tenants"] });
-                  }}
+                  onClick={() => { toast.info('Coming soon'); }}
                   className="gap-2 border-warning/40 text-warning hover:bg-warning/10"
                 >
                   <Clock className="h-4 w-4" />

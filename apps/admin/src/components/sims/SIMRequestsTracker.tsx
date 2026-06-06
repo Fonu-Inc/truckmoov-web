@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
@@ -175,31 +174,13 @@ export function SIMRequestsTracker({ onNewRequest }: SIMRequestsTrackerProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const fetchRequests = async () => {
-    if (!user?.tenantId) return;
-    
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("sim_provisioning_requests")
-        .select("*")
-        .eq("tenant_id", user.tenantId)
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      if (error) throw error;
-      const rows = data || [];
-      setRequests(rows.length > 0 ? rows : (DEMO_SIM_REQUESTS as unknown as SIMRequest[]));
-    } catch (err) {
-      console.error("Error fetching SIM requests:", err);
-      setRequests(DEMO_SIM_REQUESTS as unknown as SIMRequest[]);
-    } finally {
-      setLoading(false);
-    }
+    setRequests(DEMO_SIM_REQUESTS as unknown as SIMRequest[]);
+    setLoading(false);
   };
 
   useEffect(() => {
-    fetchRequests();
-  }, [user?.tenantId]);
+    void fetchRequests();
+  }, []);
 
   const getStatusInfo = (status: string) => {
     return statusConfig[status] || statusConfig.pending;

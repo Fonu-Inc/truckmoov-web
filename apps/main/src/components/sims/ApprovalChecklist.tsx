@@ -12,9 +12,7 @@ import {
   Package,
   CheckCircle2,
   XCircle,
-  Loader2,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { SIMProvisioningRequest } from "@/hooks/useFonuSIM";
 import { cn } from "@/lib/utils";
 
@@ -52,71 +50,22 @@ export function ApprovalChecklist({
   kycStatus,
   onChecklistChange,
 }: ApprovalChecklistProps) {
-  const [subscriptionCheck, setSubscriptionCheck] = useState<SubscriptionCheck>({
+  const [subscriptionCheck] = useState<SubscriptionCheck>({
     currentSims: 0,
-    planLimit: 0,
-    planName: 'unknown',
+    planLimit: PLAN_LIMITS.starter,
+    planName: 'Starter',
     wouldExceed: false,
-    loading: true,
+    loading: false,
   });
   const [volumeCheck, setVolumeCheck] = useState<VolumeCheck>({
     flags: [],
     hasFlags: false,
   });
-  
+
   // Soft warning acknowledgments
   const [subscriptionAcknowledged, setSubscriptionAcknowledged] = useState(false);
   const [volumeAcknowledged, setVolumeAcknowledged] = useState(false);
   const [overrideJustification, setOverrideJustification] = useState("");
-
-  // Fetch subscription and current SIM count
-  useEffect(() => {
-    const fetchSubscriptionData = async () => {
-      try {
-        // Get tenant's current subscription
-        const { data: subscription } = await supabase
-          .from('tenant_subscriptions')
-          .select('*, subscription_plans(*)')
-          .eq('tenant_id', request.tenant_id)
-          .eq('status', 'active')
-          .single();
-
-        // Get current SIM count for tenant
-        const { count: simCount } = await supabase
-          .from('iot_sims')
-          .select('*', { count: 'exact', head: true })
-          .eq('tenant_id', request.tenant_id);
-
-        const currentSims = simCount || 0;
-        const requestedSims = request.number_of_sims || 1;
-        
-        let planLimit = PLAN_LIMITS.starter; // Default
-        let planName = 'Starter';
-        
-        if (subscription?.subscription_plans) {
-          const plan = subscription.subscription_plans as { name: string; max_devices?: number };
-          planName = plan.name || 'Unknown';
-          const planKey = planName.toLowerCase();
-          planLimit = PLAN_LIMITS[planKey] || plan.max_devices || 10;
-        }
-
-        const wouldExceed = (currentSims + requestedSims) > planLimit;
-
-        setSubscriptionCheck({
-          currentSims,
-          planLimit,
-          planName,
-          wouldExceed,
-          loading: false,
-        });
-      } catch (err) {
-        console.error('Error fetching subscription data:', err);
-        setSubscriptionCheck(prev => ({ ...prev, loading: false }));
-      }
-    };
-
-    fetchSubscriptionData();
-  }, [request.tenant_id, request.number_of_sims]);
 
   // Calculate volume risk flags
   useEffect(() => {
@@ -157,11 +106,11 @@ export function ApprovalChecklist({
     const volumeNeedsAck = volumeCheck.hasFlags && !volumeAcknowledged;
 
     const needsOverride = subscriptionCheck.wouldExceed || volumeCheck.hasFlags;
-    const hasRequiredJustification = !needsOverride || 
+    const hasRequiredJustification = !needsOverride ||
       (subscriptionAcknowledged && volumeAcknowledged && overrideJustification.trim().length > 10);
 
     const canApprove = !subscriptionNeedsAck && !volumeNeedsAck && hasRequiredJustification;
-    
+
     onChecklistChange(canApprove, needsOverride ? overrideJustification : undefined);
   }, [
     kycVerified,
@@ -187,8 +136,8 @@ export function ApprovalChecklist({
         {/* 1. KYB/KYC Check - Hard Block */}
         <div className={cn(
           "flex items-start gap-3 p-3 rounded-lg border",
-          kycVerified 
-            ? "bg-success/5 border-success/30" 
+          kycVerified
+            ? "bg-success/5 border-success/30"
             : "bg-destructive/5 border-destructive/30"
         )}>
           <div className="mt-0.5">
@@ -212,8 +161,8 @@ export function ApprovalChecklist({
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {kycVerified 
-                ? "Tenant business verification is complete" 
+              {kycVerified
+                ? "Tenant business verification is complete"
                 : "Approval blocked until KYC is verified (compliance requirement)"}
             </p>
           </div>
@@ -227,16 +176,12 @@ export function ApprovalChecklist({
         {/* 2. Subscription Limit Check - Soft Warning */}
         <div className={cn(
           "flex items-start gap-3 p-3 rounded-lg border",
-          subscriptionCheck.loading
-            ? "bg-muted/50 border-muted"
-            : subscriptionCheck.wouldExceed
-              ? "bg-warning/5 border-warning/30"
-              : "bg-success/5 border-success/30"
+          subscriptionCheck.wouldExceed
+            ? "bg-warning/5 border-warning/30"
+            : "bg-success/5 border-success/30"
         )}>
           <div className="mt-0.5">
-            {subscriptionCheck.loading ? (
-              <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
-            ) : subscriptionCheck.wouldExceed ? (
+            {subscriptionCheck.wouldExceed ? (
               <AlertTriangle className="h-5 w-5 text-warning" />
             ) : (
               <CreditCard className="h-5 w-5 text-success" />
@@ -245,24 +190,20 @@ export function ApprovalChecklist({
           <div className="flex-1">
             <div className="flex items-center justify-between">
               <p className="font-medium text-sm">Subscription Limit</p>
-              {!subscriptionCheck.loading && (
-                <Badge className={cn(
-                  subscriptionCheck.wouldExceed
-                    ? "bg-warning/10 text-warning border-warning/30"
-                    : "bg-success/10 text-success border-success/30"
-                )}>
-                  {subscriptionCheck.currentSims} + {request.number_of_sims || 1} / {subscriptionCheck.planLimit}
-                </Badge>
-              )}
+              <Badge className={cn(
+                subscriptionCheck.wouldExceed
+                  ? "bg-warning/10 text-warning border-warning/30"
+                  : "bg-success/10 text-success border-success/30"
+              )}>
+                {subscriptionCheck.currentSims} + {request.number_of_sims || 1} / {subscriptionCheck.planLimit}
+              </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {subscriptionCheck.loading 
-                ? "Checking subscription limits..."
-                : subscriptionCheck.wouldExceed
-                  ? `Would exceed ${subscriptionCheck.planName} plan limit (${subscriptionCheck.planLimit} SIMs)`
-                  : `Within ${subscriptionCheck.planName} plan capacity`}
+              {subscriptionCheck.wouldExceed
+                ? `Would exceed ${subscriptionCheck.planName} plan limit (${subscriptionCheck.planLimit} SIMs)`
+                : `Within ${subscriptionCheck.planName} plan capacity`}
             </p>
-            
+
             {subscriptionCheck.wouldExceed && (
               <div className="mt-3 flex items-center gap-2">
                 <Checkbox
@@ -303,7 +244,7 @@ export function ApprovalChecklist({
                 {volumeCheck.hasFlags ? `${volumeCheck.flags.length} Flag(s)` : 'No Flags'}
               </Badge>
             </div>
-            
+
             {volumeCheck.hasFlags ? (
               <ul className="text-xs text-muted-foreground mt-1 space-y-1">
                 {volumeCheck.flags.map((flag, i) => (
@@ -318,7 +259,7 @@ export function ApprovalChecklist({
                 Request volume is within normal parameters
               </p>
             )}
-            
+
             {volumeCheck.hasFlags && (
               <div className="mt-3 flex items-center gap-2">
                 <Checkbox

@@ -9,7 +9,6 @@ import { Badge } from '@/components/shadcn/badge';
 import { Progress } from '@/components/shadcn/progress';
 import { Separator } from '@/components/shadcn/separator';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import {Building2, FileText, Upload, CheckCircle2, Clock, XCircle, AlertCircle, Trash2, Eye, Shield, FileCheck, Loader2, UploadCloud, Download} from 'lucide-react';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
@@ -123,64 +122,16 @@ export function TenantKYCVerification({ tenantId, readOnly = false }: { tenantId
   const [docStatusFilter, setDocStatusFilter] = useState('all');
 
   useEffect(() => {
-    fetchBusinessInfo();
-    fetchDocuments();
+    setLoading(false);
   }, [tenantId]);
 
-  const fetchBusinessInfo = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('tenant_business_info')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .maybeSingle();
+  const fetchBusinessInfo = async () => {};
 
-      if (error) throw error;
-      if (data) {
-        setBusinessInfo(data as BusinessInfo);
-      }
-    } catch (error) {
-      console.error('Error fetching business info:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchDocuments = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('tenant_kyc_documents')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setDocuments((data || []) as KYCDocument[]);
-    } catch (error) {
-      console.error('Error fetching documents:', error);
-    }
-  };
+  const fetchDocuments = async () => {};
 
   const handleSaveBusinessInfo = async () => {
-    setSaving(true);
-    try {
-      const { error } = businessInfo.id
-        ? await supabase
-            .from('tenant_business_info')
-            .update(businessInfo)
-            .eq('id', businessInfo.id)
-        : await supabase
-            .from('tenant_business_info')
-            .insert(businessInfo);
-
-      if (error) throw error;
-      toast.success('Business information saved successfully');
-      fetchBusinessInfo();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to save business information');
-    } finally {
-      setSaving(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const REQUIRED_BIZ_FIELDS: { key: keyof BusinessInfo; label: string }[] = [
@@ -215,29 +166,8 @@ export function TenantKYCVerification({ tenantId, readOnly = false }: { tenantId
   );
 
   const handleSubmitKYC = async () => {
-    if (!isKycComplete) {
-      toast.error('Please complete all required fields and documents');
-      return;
-    }
-    setSaving(true);
-    try {
-      const payload = { ...businessInfo, verification_status: 'under_review' };
-      const { error } = businessInfo.id
-        ? await supabase
-            .from('tenant_business_info')
-            .update(payload)
-            .eq('id', businessInfo.id)
-        : await supabase.from('tenant_business_info').insert(payload);
-
-      if (error) throw error;
-      toast.success('KYC submitted successfully', {
-        description: 'Your KYC is now under review.' });
-      fetchBusinessInfo();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to submit KYC');
-    } finally {
-      setSaving(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -248,77 +178,18 @@ export function TenantKYCVerification({ tenantId, readOnly = false }: { tenantId
   };
 
   const uploadKycFile = async (file: File) => {
-    if (!selectedDocType) {
-      toast.error('Please select a document type first');
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('File too large', { description: 'Max file size is 10MB.' });
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${tenantId}/${selectedDocType}_${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('kyc-documents')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { error: dbError } = await supabase
-        .from('tenant_kyc_documents')
-        .insert({
-          tenant_id: tenantId,
-          document_type: selectedDocType,
-          document_name: file.name,
-          file_path: fileName,
-          file_size: file.size,
-          mime_type: file.type,
-          status: 'pending' });
-
-      if (dbError) throw dbError;
-
-      toast.success('Document uploaded successfully');
-      setSelectedDocType('');
-      fetchDocuments();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to upload document');
-    } finally {
-      setUploading(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const handleDeleteDocument = async (doc: KYCDocument) => {
-    try {
-      await supabase.storage.from('kyc-documents').remove([doc.file_path]);
-      
-      const { error } = await supabase
-        .from('tenant_kyc_documents')
-        .delete()
-        .eq('id', doc.id);
-
-      if (error) throw error;
-      toast.success('Document deleted');
-      fetchDocuments();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete document');
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const handleViewDocument = async (doc: KYCDocument) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from('kyc-documents')
-        .createSignedUrl(doc.file_path, 3600);
-
-      if (error) throw error;
-      window.open(data.signedUrl, '_blank');
-    } catch (error: any) {
-      toast.error('Failed to open document');
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const getStatusBadge = (status: string) => {

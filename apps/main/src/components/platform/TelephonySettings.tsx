@@ -40,7 +40,6 @@ import {
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 interface ConnectionStatus {
   api: "connected" | "disconnected" | "error";
@@ -172,25 +171,8 @@ export function TelephonySettings() {
   }, []);
 
   const handleTestConnection = async () => {
-    setIsTesting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("fonu-voice", {
-        body: { action: "test_connection" },
-      });
-
-      if (error) {
-        setConnectionStatus((prev) => ({ ...prev, api: "error", lastCheck: new Date() }));
-        toast.error("Connection test failed");
-      } else {
-        setConnectionStatus((prev) => ({ ...prev, api: "connected", lastCheck: new Date() }));
-        toast.success("Fonu API connection successful");
-      }
-    } catch (err) {
-      setConnectionStatus((prev) => ({ ...prev, api: "error", lastCheck: new Date() }));
-      toast.error("Failed to test connection");
-    } finally {
-      setIsTesting(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const handleRefreshStats = async () => {

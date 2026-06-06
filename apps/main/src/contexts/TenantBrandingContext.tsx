@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
 import { TenantBranding } from '@/hooks/useTenantBranding';
 
@@ -81,59 +80,14 @@ export function TenantBrandingProvider({ children }: { children: React.ReactNode
   const tenantId = user?.tenantId || (!isPlatformAdmin ? 'f7f5af88-fd76-4439-aae3-0461be52f63f' : null);
 
   const fetchBranding = useCallback(async () => {
-    if (!tenantId || isPlatformAdmin) {
-      clearBrandingFromDOM();
-      setBranding(null);
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('tenant_branding')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        setBranding(data as TenantBranding);
-        applyBrandingToDOM(data as TenantBranding);
-      } else {
-        clearBrandingFromDOM();
-        setBranding(null);
-      }
-    } catch (error) {
-      console.error('Error fetching tenant branding:', error);
-      clearBrandingFromDOM();
-    }
+    clearBrandingFromDOM();
+    setBranding(null);
   }, [tenantId, isPlatformAdmin]);
 
   useEffect(() => {
     fetchBranding();
     return () => clearBrandingFromDOM();
   }, [fetchBranding]);
-
-  // Listen for branding changes in realtime
-  useEffect(() => {
-    if (!tenantId || isPlatformAdmin) return;
-
-    const channel = supabase
-      .channel(`branding-${tenantId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tenant_branding',
-          filter: `tenant_id=eq.${tenantId}`,
-        },
-        () => fetchBranding()
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [tenantId, isPlatformAdmin, fetchBranding]);
 
   return (
     <TenantBrandingContext.Provider

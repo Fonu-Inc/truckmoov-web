@@ -17,7 +17,6 @@ import {
   Languages, PhoneCall
 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { useTenantSenderIds } from "@/hooks/useTenantSenderIds";
 import { SenderIdManagement } from "./SenderIdManagement";
@@ -61,49 +60,7 @@ export function TenantCommunicationSettings() {
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!user?.tenantId) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        // Fetch config and assigned numbers in parallel
-        const [configResult, numbersResult] = await Promise.all([
-          supabase.rpc('get_tenant_communication_config', { p_tenant_id: user.tenantId }),
-          supabase
-            .from('platform_phone_numbers')
-            .select('id, phone_number, phone_number_type, capabilities, status, monthly_cost_ngn')
-            .eq('tenant_id', user.tenantId)
-            .eq('status', 'assigned')
-        ]);
-
-        if (configResult.error) throw configResult.error;
-
-        if (configResult.data && typeof configResult.data === 'object' && !Array.isArray(configResult.data)) {
-          const configData = configResult.data as Record<string, unknown>;
-          setConfig({
-            id: (configData.id as string) || undefined,
-            sms_sender_id: (configData.sms_sender_id as string) || null,
-            voice_caller_id: (configData.voice_caller_id as string) || null,
-            whatsapp_fallback_to_sms: (configData.whatsapp_fallback_to_sms as boolean) ?? false,
-            sms_fallback_timeout_seconds: (configData.sms_fallback_timeout_seconds as number) ?? 300,
-            enable_delivery_notifications: (configData.enable_delivery_notifications as boolean) ?? true,
-            enable_read_receipts: (configData.enable_read_receipts as boolean) ?? true,
-            default_message_language: (configData.default_message_language as string) || 'en' });
-        }
-
-        if (numbersResult.data) {
-          setAssignedNumbers(numbersResult.data as AssignedPhoneNumber[]);
-        }
-      } catch (error) {
-        console.error('Error fetching communication config:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
+    setIsLoading(false);
   }, [user?.tenantId]);
 
   const handleChange = (key: keyof CommunicationConfig, value: any) => {
@@ -112,55 +69,8 @@ export function TenantCommunicationSettings() {
   };
 
   const handleSave = async () => {
-    if (!user?.tenantId) {
-      toast.error("Unable to save settings");
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const payload = {
-        tenant_id: user.tenantId,
-        sms_sender_id: config.sms_sender_id || null,
-        voice_caller_id: config.voice_caller_id || null,
-        whatsapp_fallback_to_sms: config.whatsapp_fallback_to_sms,
-        sms_fallback_timeout_seconds: config.sms_fallback_timeout_seconds,
-        enable_delivery_notifications: config.enable_delivery_notifications,
-        enable_read_receipts: config.enable_read_receipts,
-        default_message_language: config.default_message_language,
-        updated_at: new Date().toISOString() };
-
-      if (config.id) {
-        // Update existing
-        const { error } = await supabase
-          .from('tenant_communication_config')
-          .update(payload)
-          .eq('id', config.id);
-
-        if (error) throw error;
-      } else {
-        // Insert new
-        const { data, error } = await supabase
-          .from('tenant_communication_config')
-          .insert(payload)
-          .select('id')
-          .single();
-
-        if (error) throw error;
-        if (data) {
-          setConfig(prev => ({ ...prev, id: data.id }));
-        }
-      }
-
-      toast.success("Communication settings saved");
-      setHasChanges(false);
-    } catch (error: any) {
-      console.error('Error saving communication config:', error);
-      toast.error("Failed to save settings", {
-        description: error.message });
-    } finally {
-      setIsSaving(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   // Demo fallback when tenant has no assigned numbers yet

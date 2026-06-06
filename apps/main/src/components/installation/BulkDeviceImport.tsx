@@ -19,7 +19,6 @@ import {
   SelectValue } from '@/components/shadcn/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/shadcn/alert';
 import { DeviceCatalogEntry } from '@/hooks/useDeviceCatalog';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
 import { toast } from 'sonner';
 import {Upload, FileSpreadsheet, Check, X, AlertCircle, Loader2, Download} from 'lucide-react';
@@ -43,7 +42,7 @@ interface ImportRow {
 export function BulkDeviceImport({ catalog, onImportComplete }: BulkDeviceImportProps) {
   const { user } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [file, setFile] = useState<File | null>(null);
   const [parsedRows, setParsedRows] = useState<ImportRow[]>([]);
   const [importing, setImporting] = useState(false);
@@ -54,11 +53,11 @@ export function BulkDeviceImport({ catalog, onImportComplete }: BulkDeviceImport
     if (!selectedFile) return;
 
     setFile(selectedFile);
-    
+
     // Parse CSV
     const text = await selectedFile.text();
     const lines = text.split('\n').filter(line => line.trim());
-    
+
     if (lines.length < 2) {
       toast.error('File must contain header row and at least one data row');
       return;
@@ -67,40 +66,40 @@ export function BulkDeviceImport({ catalog, onImportComplete }: BulkDeviceImport
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
     const requiredHeaders = ['manufacturer', 'model', 'imei'];
     const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
-    
+
     if (missingHeaders.length > 0) {
       toast.error(`Missing required columns: ${missingHeaders.join(', ')}`);
       return;
     }
 
     const rows: ImportRow[] = [];
-    
+
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map(v => v.trim());
       const row: Record<string, string> = {};
-      
+
       headers.forEach((header, index) => {
         row[header] = values[index] || '';
       });
 
       const errors: string[] = [];
-      
+
       // Validate required fields
       if (!row.manufacturer) errors.push('Manufacturer is required');
       if (!row.model) errors.push('Model is required');
       if (!row.imei) errors.push('IMEI is required');
       if (row.imei && !/^\d{15}$/.test(row.imei)) errors.push('IMEI must be 15 digits');
-      
+
       // Validate against catalog
-      const catalogMatch = catalog.find(c => 
+      const catalogMatch = catalog.find(c =>
         c.manufacturer.toLowerCase() === row.manufacturer.toLowerCase() &&
         c.model.toLowerCase() === row.model.toLowerCase()
       );
-      
+
       if (!catalogMatch && row.manufacturer && row.model) {
         errors.push('Model not found in catalog');
       }
-      
+
       if (catalogMatch?.status === 'blocked') {
         errors.push('Model is blocked');
       }
@@ -126,57 +125,14 @@ export function BulkDeviceImport({ catalog, onImportComplete }: BulkDeviceImport
       return;
     }
 
-    setImporting(true);
-    setImportProgress(0);
-
-    let successCount = 0;
-    let errorCount = 0;
-
-    for (let i = 0; i < validRows.length; i++) {
-      const row = validRows[i];
-      
-      try {
-        const { error } = await supabase.from('devices').insert({
-          imei: row.imei,
-          manufacturer: row.manufacturer,
-          model: row.model,
-          lifecycle_status: 'config_pending',
-          status: 'config_pending',
-          tenant_id: user?.tenantId || 'default' });
-
-        if (error) throw error;
-        successCount++;
-      } catch (err) {
-        console.error('Error importing device:', err);
-        errorCount++;
-      }
-
-      setImportProgress(Math.round(((i + 1) / validRows.length) * 100));
-    }
-
-    setImporting(false);
-    
-    if (successCount > 0) {
-      toast.success(`Successfully imported ${successCount} devices`);
-      onImportComplete();
-    }
-    
-    if (errorCount > 0) {
-      toast.error(`Failed to import ${errorCount} devices`);
-    }
-
-    // Reset state
-    setFile(null);
-    setParsedRows([]);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const downloadTemplate = () => {
     const headers = ['manufacturer', 'model', 'imei', 'device_name', 'intended_vehicle_plate', 'intended_sim'];
     const exampleRow = ['Teltonika', 'FMC130', '123456789012345', 'Truck GPS 01', 'LAG-123-AB', ''];
-    
+
     const csv = [headers.join(','), exampleRow.join(',')].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -211,7 +167,7 @@ export function BulkDeviceImport({ catalog, onImportComplete }: BulkDeviceImport
             onChange={handleFileSelect}
             className="hidden"
           />
-          
+
           {!file ? (
             <>
               <FileSpreadsheet className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -237,8 +193,8 @@ export function BulkDeviceImport({ catalog, onImportComplete }: BulkDeviceImport
               <p className="text-sm text-muted-foreground mb-4">
                 {parsedRows.length} rows parsed
               </p>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => {
                   setFile(null);
@@ -322,7 +278,7 @@ export function BulkDeviceImport({ catalog, onImportComplete }: BulkDeviceImport
                 <Progress value={importProgress} />
               </div>
             ) : (
-              <Button 
+              <Button
                 onClick={handleImport}
                 disabled={validCount === 0}
                 className="w-full"

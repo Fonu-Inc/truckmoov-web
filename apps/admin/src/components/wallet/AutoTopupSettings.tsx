@@ -22,7 +22,6 @@ import {
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
 import { RefreshCw, Zap, AlertCircle, CheckCircle2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface AutoTopupSettingsProps {
@@ -50,40 +49,16 @@ export function AutoTopupSettings({ tenantId, onSettingsUpdated }: AutoTopupSett
   });
 
   useEffect(() => {
-    fetchSettings();
+    void fetchSettings();
   }, [tenantId]);
 
   const fetchSettings = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('tenant_wallets')
-      .select('auto_topup_enabled, auto_topup_threshold_ngn, auto_topup_amount_ngn, auto_topup_phone')
-      .eq('tenant_id', tenantId)
-      .maybeSingle();
-
-    if (!error && data) {
-      setConfig({
-        enabled: data.auto_topup_enabled || false,
-        threshold: data.auto_topup_threshold_ngn || 500,
-        amount: data.auto_topup_amount_ngn || 5000,
-        phone: data.auto_topup_phone || '',
-      });
-    }
     setLoading(false);
   };
 
-  const persistConfig = async (nextConfig: AutoTopupConfig) => {
-    const { data, error } = await supabase.functions.invoke('wallet-topup', {
-      body: {
-        action: 'update_auto_topup',
-        tenantId,
-        autoTopupSettings: nextConfig,
-      },
-    });
-    if (error) throw error;
-    // Accept any non-error response — some backends omit `success` flag
-    if (data && data.success === false) throw new Error(data?.error || 'Failed to update settings');
-    return data || {};
+  const persistConfig = async (_nextConfig: AutoTopupConfig): Promise<Record<string, unknown>> => {
+    toast.info('Coming soon');
+    return {};
   };
 
   const handleSaveFromDialog = async () => {

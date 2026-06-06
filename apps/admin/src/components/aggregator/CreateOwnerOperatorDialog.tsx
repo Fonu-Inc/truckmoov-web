@@ -20,7 +20,6 @@ import {
 } from "@/components/shadcn/select";
 import { Loader2, User, Phone, FileText, Truck } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useOrgContext } from "@/hooks/useOrgContext";
 import { ORG_TYPES } from "@/types/orgRoles";
 
@@ -53,77 +52,8 @@ export function CreateOwnerOperatorDialog({
   };
 
   const handleSubmit = async () => {
-    if (!form.name.trim() || !form.phone.trim()) {
-      toast.error("Name and phone are required");
-      return;
-    }
-
-    if (!aggregatorOrgId) {
-      toast.error("No aggregator organization found for your account");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      // Get the aggregator's tenant_id
-      const { data: aggOrg, error: aggError } = await supabase
-        .from("organizations")
-        .select("tenant_id")
-        .eq("id", aggregatorOrgId)
-        .single();
-
-      if (aggError) throw aggError;
-
-      // Create the Owner-Operator organization
-      const { data: newOrg, error: orgError } = await supabase
-        .from("organizations")
-        .insert({
-          name: form.name.trim(),
-          organization_type: "OWNER_OPERATOR" as any,
-          parent_organization_id: aggregatorOrgId,
-          tenant_id: aggOrg.tenant_id,
-          status: "ACTIVE" as any,
-          max_vehicles: parseInt(form.maxVehicles, 10),
-          metadata: {
-            primary_contact: form.contactName.trim() || null,
-            phone: form.phone.trim(),
-            compliance_notes: form.complianceNotes.trim() || null,
-          },
-        })
-        .select()
-        .single();
-
-      if (orgError) throw orgError;
-
-      // Create the org_relationship (Aggregator → Owner-Operator)
-      const { error: relError } = await supabase
-        .from("org_relationships")
-        .insert({
-          tenant_id: aggOrg.tenant_id,
-          from_org_id: aggregatorOrgId,
-          to_org_id: newOrg.id,
-          relationship_type: "AGGREGATED_FLEET" as any,
-          status: "ACTIVE" as any,
-          start_date: new Date().toISOString().split("T")[0],
-          permissions: {
-            can_dispatch: true,
-            can_view_assets: true,
-            can_edit_assets: false,
-          },
-        });
-
-      if (relError) throw relError;
-
-      toast.success(`Owner-Operator "${form.name}" created successfully`);
-      setForm({ name: "", contactName: "", phone: "", maxVehicles: "3", complianceNotes: "" });
-      onOpenChange(false);
-      onCreated();
-    } catch (err: any) {
-      console.error("Error creating owner-operator:", err);
-      toast.error(err.message || "Failed to create owner-operator");
-    } finally {
-      setIsSubmitting(false);
-    }
+    toast.info("Coming soon");
+    return;
   };
 
   return (

@@ -52,7 +52,6 @@ import { cn } from "@/lib/utils";
 import { useDrivers, DriverData } from "@/hooks/useDrivers";
 import { toast } from "sonner";
 import { useDriverCommunications } from "@/hooks/useDriverCommunications";
-import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useFonuCall } from "@/contexts/FonuCallContext";
 
@@ -234,33 +233,8 @@ export default function SupervisorDrivers() {
   const [isRetrying, setIsRetrying] = useState(false);
   
   const handleManualRetry = async () => {
-    setIsRetrying(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('retry-messages', {
-        body: { source: 'manual' },
-      });
-      
-      if (error) throw error;
-      
-      if (data.processed === 0) {
-        toast.info('No pending messages to retry');
-      } else if (data.sent > 0) {
-        toast.success(`Successfully sent ${data.sent} message(s)`, {
-          description: data.pending > 0 ? `${data.pending} still pending` : undefined,
-        });
-      } else {
-        toast.warning('Messages still pending', {
-          description: 'API may still be unavailable. Will retry automatically.',
-        });
-      }
-      
-      await refetch();
-    } catch (err) {
-      console.error('Manual retry error:', err);
-      toast.error('Failed to retry messages');
-    } finally {
-      setIsRetrying(false);
-    }
+    toast.info("Coming soon");
+    return;
   };
 
   const pendingMessages = messages.filter(m => m.status === 'pending');

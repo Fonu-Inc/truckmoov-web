@@ -1,1 +1,0 @@
-ALTER TABLE public.tenant_business_info ADD COLUMN IF NOT EXISTS billing_email text;

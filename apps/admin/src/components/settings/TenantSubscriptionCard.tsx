@@ -32,7 +32,6 @@ import {
 import { useTenantSubscription, TenantPlan } from "@/hooks/useTenantSubscription";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuthStore } from "@/stores/authStore";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -81,82 +80,9 @@ export function TenantSubscriptionCard() {
   const [downgradeDialogOpen, setDowngradeDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
 
-  const handleContactSales = async (plan: TenantPlan, action: 'upgrade' | 'downgrade') => {
-    if (!user?.tenantId || !user?.id) {
-      toast.error("Unable to create request. Please try again.");
-      return;
-    }
-
-    setIsSubmitting(plan.id);
-    try {
-      // Create the support ticket
-      const { data: ticketData, error } = await supabase
-        .from('support_tickets')
-        .insert([{
-          tenant_id: user.tenantId,
-          created_by: user.id,
-          category: 'billing_subscription' as const,
-          subject: `Plan ${action === 'upgrade' ? 'Upgrade' : 'Downgrade'} Request: ${currentPlan?.name} → ${plan.name}`,
-          description: `Request to ${action} from ${currentPlan?.name} plan to ${plan.name} plan.\n\nCurrent Plan: ${currentPlan?.name} (₦${currentPlan?.price_ngn?.toLocaleString()}/${currentPlan?.billing_cycle})\nRequested Plan: ${plan.name} (₦${plan.price_ngn.toLocaleString()}/${plan.billing_cycle})\n\nCurrent Usage:\n- Vehicles: ${usageStats.vehicles.current}/${usageStats.vehicles.limit || '∞'}\n- Drivers: ${usageStats.drivers.current}/${usageStats.drivers.limit || '∞'}\n- Devices: ${usageStats.devices.current}/${usageStats.devices.limit || '∞'}`,
-          status: 'open' as const,
-          priority: 'medium' as const,
-          context_type: 'billing' as const,
-          context_snapshot: JSON.parse(JSON.stringify({
-            current_plan_name: currentPlan?.name,
-            current_plan_price: currentPlan?.price_ngn,
-            requested_plan_name: plan.name,
-            requested_plan_price: plan.price_ngn,
-            action,
-            usage: {
-              vehicles: `${usageStats.vehicles.current}/${usageStats.vehicles.limit || '∞'}`,
-              drivers: `${usageStats.drivers.current}/${usageStats.drivers.limit || '∞'}`,
-              devices: `${usageStats.devices.current}/${usageStats.devices.limit || '∞'}`,
-            },
-          })),
-        }])
-        .select('id')
-        .single();
-
-      if (error) throw error;
-
-      // Send notification to Platform Admins (fire and forget)
-      supabase.functions.invoke('billing-ticket-notification', {
-        body: {
-          ticketId: ticketData.id,
-          tenantId: user.tenantId,
-          tenantName: tenant?.name || 'Unknown Tenant',
-          requestedBy: user.name || user.email || 'Unknown User',
-          requestedByEmail: user.email,
-          action,
-          currentPlan: currentPlan?.name || 'Unknown',
-          currentPlanPrice: currentPlan?.price_ngn || 0,
-          requestedPlan: plan.name,
-          requestedPlanPrice: plan.price_ngn,
-          currentUsage: {
-            vehicles: `${usageStats.vehicles.current}/${usageStats.vehicles.limit || '∞'}`,
-            drivers: `${usageStats.drivers.current}/${usageStats.drivers.limit || '∞'}`,
-            devices: `${usageStats.devices.current}/${usageStats.devices.limit || '∞'}`,
-          },
-        },
-      }).catch(err => {
-        console.warn('Failed to send billing notification:', err);
-      });
-
-      toast.success("Plan change request submitted!", {
-        description: "Our sales team will contact you within 24 hours.",
-      });
-      
-      if (action === 'upgrade') {
-        setUpgradeDialogOpen(false);
-      } else {
-        setDowngradeDialogOpen(false);
-      }
-    } catch (error) {
-      console.error('Error creating support ticket:', error);
-      toast.error("Failed to submit request. Please try again.");
-    } finally {
-      setIsSubmitting(null);
-    }
+  const handleContactSales = async (_plan: TenantPlan, _action: 'upgrade' | 'downgrade') => {
+    toast.info('Coming soon');
+    return;
   };
 
   if (isLoading) {

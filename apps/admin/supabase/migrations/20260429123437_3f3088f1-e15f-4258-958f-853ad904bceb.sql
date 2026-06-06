@@ -1,2 +1,0 @@
-ALTER TABLE public.device_setup_requests ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'normal';
-CREATE INDEX IF NOT EXISTS idx_device_setup_requests_priority ON public.device_setup_requests(priority);

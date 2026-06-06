@@ -1,1 +1,0 @@
-ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS primary_contact_name TEXT;

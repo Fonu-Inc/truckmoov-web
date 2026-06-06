@@ -1,1 +1,0 @@
-ALTER TYPE public.support_escalation_target RENAME VALUE 'truckmoov_internal' TO 'fleetpro_internal';

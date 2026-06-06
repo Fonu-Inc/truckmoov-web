@@ -40,7 +40,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useComplianceDocuments, ComplianceDocument } from "@/hooks/useComplianceDocuments";
 import { useFleetReminders } from "@/hooks/useFleetReminders";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 
 const statusColors: Record<string, string> = {
@@ -168,48 +167,14 @@ export function ComplianceTab() {
     setIsReminderDialogOpen(true);
   };
 
-  const handleDownload = async (doc: ComplianceDocument) => {
-    if (doc.file_path) {
-      try {
-        const { data, error } = await supabase.storage
-          .from('compliance-documents')
-          .download(doc.file_path);
-        
-        if (error) throw error;
-        
-        const url = URL.createObjectURL(data);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = doc.file_path.split('/').pop() || 'document';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        toast.success(`Downloaded ${doc.document_type}`);
-      } catch (err) {
-        console.error('Receipt error:', err);
-        toast.error('Failed to download document');
-      }
-    } else {
-      toast.info('No file attached to this document');
-    }
+  const handleDownload = async (_doc: ComplianceDocument) => {
+    toast.info('Coming soon');
+    return;
   };
 
-  const uploadFile = async (file: File, docId: string): Promise<string | null> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${docId}/${Date.now()}.${fileExt}`;
-    
-    const { data, error } = await supabase.storage
-      .from('compliance-documents')
-      .upload(fileName, file);
-    
-    if (error) {
-      console.error('Upload error:', error);
-      throw error;
-    }
-    
-    return fileName;
+  const uploadFile = async (_file: File, _docId: string): Promise<string | null> => {
+    toast.info('Coming soon');
+    return null;
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

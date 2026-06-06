@@ -7,7 +7,6 @@ import { Badge } from "@/components/shadcn/badge";
 import { Switch } from "@/components/shadcn/switch";
 import { Separator } from "@/components/shadcn/separator";
 import { Phone, MessageSquare, MessageCircle, Save, RefreshCw, DollarSign } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface CommunicationRate {
@@ -32,22 +31,8 @@ export function CommunicationPricing() {
 
   const fetchRates = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('communication_rates')
-      .select('*')
-      .order('communication_type');
-
-    if (error) {
-      toast.error('Failed to load communication rates');
-      console.error(error);
-    } else {
-      setRates(data || []);
-      const initialEdits: Record<string, number> = {};
-      data?.forEach(rate => {
-        initialEdits[rate.id] = rate.rate_ngn;
-      });
-      setEditedRates(initialEdits);
-    }
+    setRates([]);
+    setEditedRates({});
     setLoading(false);
   };
 
@@ -56,43 +41,12 @@ export function CommunicationPricing() {
     setEditedRates(prev => ({ ...prev, [id]: numValue }));
   };
 
-  const handleToggleActive = async (id: string, isActive: boolean) => {
-    const { error } = await supabase
-      .from('communication_rates')
-      .update({ is_active: isActive })
-      .eq('id', id);
-
-    if (error) {
-      toast.error('Failed to update rate status');
-    } else {
-      toast.success('Rate status updated');
-      fetchRates();
-    }
+  const handleToggleActive = async (_id: string, _isActive: boolean) => {
+    toast.info('Coming soon');
   };
 
   const handleSaveRates = async () => {
-    setSaving(true);
-    
-    try {
-      for (const rate of rates) {
-        if (editedRates[rate.id] !== rate.rate_ngn) {
-          const { error } = await supabase
-            .from('communication_rates')
-            .update({ rate_ngn: editedRates[rate.id] })
-            .eq('id', rate.id);
-
-          if (error) throw error;
-        }
-      }
-      
-      toast.success('All rates updated successfully');
-      fetchRates();
-    } catch (error) {
-      toast.error('Failed to save rates');
-      console.error(error);
-    } finally {
-      setSaving(false);
-    }
+    toast.info('Coming soon');
   };
 
   const getIcon = (type: string) => {

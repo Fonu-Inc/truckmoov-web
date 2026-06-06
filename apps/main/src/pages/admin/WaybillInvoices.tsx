@@ -17,7 +17,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shadcn/ta
 import { toast } from 'sonner';
 import { useWaybillInvoice, type WaybillRecord, type WaybillInvoice, type PricingRule, type InvoiceShare } from '@/hooks/useWaybillInvoice';
 import { useWaybillRealtimeEvents } from '@/hooks/useWaybillRealtimeEvents';
-import { supabase } from '@/integrations/supabase/client';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import {FileText, Upload, Scan, Plus, Eye, Send, Settings2, Loader2, CheckCircle2, XCircle, Clock, AlertTriangle, ImageIcon, Truck, MapPin, Calendar, Package, User, DollarSign, ArrowRight, Pencil, Trash2, ToggleLeft, ToggleRight, Mail, MessageSquare, Save, Search, SlidersHorizontal, MoreHorizontal, Share2, Download, Receipt} from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/shadcn/popover';
@@ -813,24 +812,9 @@ export default function WaybillInvoices() {
                 onRecordShare={(channel, recipient) => recordInvoiceShare(selectedInvoice.id, channel, recipient)}
                 onGeneratePDF={() => generateInvoicePDF(selectedInvoice.id)}
                 onGetPdfUrl={(path) => getInvoicePdfUrl(path)}
-                onSendEmail={async (invoiceId, data) => {
-                  try {
-                    const { data: result, error } = await supabase.functions.invoke('send-invoice-email', {
-                      body: { invoiceId, ...data } });
-                    if (error) throw error;
-                    if (result?.success) {
-                      toast.success(result.message || 'Invoice sent!');
-                      fetchInvoices();
-                      return true;
-                    } else {
-                      toast.error(result?.error || 'Failed to send invoice');
-                      return false;
-                    }
-                  } catch (err) {
-                    console.error('Send invoice email error:', err);
-                    toast.error('Failed to send invoice email');
-                    return false;
-                  }
+                onSendEmail={async (_invoiceId, _data) => {
+                  toast.info('Coming soon');
+                  return false;
                 }}
               />
             )}
@@ -868,17 +852,7 @@ export default function WaybillInvoices() {
 }
 
 function WaybillThumbnail({ waybill }: { waybill: WaybillRecord }) {
-  const [url, setUrl] = useState<string | null>(waybill.image_url || null);
-  useEffect(() => {
-    if (!waybill.image_url && waybill.image_storage_path) {
-      supabase.storage
-        .from('waybill-images')
-        .createSignedUrl(waybill.image_storage_path, 3600)
-        .then(({ data }) => {
-          if (data?.signedUrl) setUrl(data.signedUrl);
-        });
-    }
-  }, [waybill.image_url, waybill.image_storage_path]);
+  const url = waybill.image_url || null;
   if (!url) return <ImageIcon className="h-4 w-4 text-muted-foreground/50 m-auto" />;
   return <img src={url} alt="Waybill" className="h-full w-full object-cover" />;
 }
@@ -918,17 +892,7 @@ function WaybillDetailView({ waybill, onExtract, onGenerateInvoice, onApprove, o
     setEditing(false);
   };
 
-  const [previewUrl, setPreviewUrl] = useState<string | null>(waybill.image_url);
-  useEffect(() => {
-    if (waybill.image_storage_path && !waybill.image_url) {
-      supabase.storage
-        .from('waybill-images')
-        .createSignedUrl(waybill.image_storage_path, 3600)
-        .then(({ data }) => {
-          if (data?.signedUrl) setPreviewUrl(data.signedUrl);
-        });
-    }
-  }, [waybill.image_storage_path, waybill.image_url]);
+  const previewUrl = waybill.image_url || null;
 
   return (
     <>

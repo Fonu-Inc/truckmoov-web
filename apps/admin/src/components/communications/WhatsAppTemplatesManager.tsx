@@ -57,7 +57,6 @@ import {
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 interface WhatsAppTemplate {
   id: string;
@@ -116,23 +115,7 @@ export function WhatsAppTemplatesManager({ tenantId }: WhatsAppTemplatesManagerP
   });
 
   const fetchTemplates = async () => {
-    if (!tenantId) return;
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("whatsapp_templates")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setTemplates(data || []);
-    } catch (error) {
-      console.error("Failed to fetch templates:", error);
-      toast.error("Failed to load templates");
-    } finally {
-      setIsLoading(false);
-    }
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -197,87 +180,18 @@ export function WhatsAppTemplatesManager({ tenantId }: WhatsAppTemplatesManagerP
   };
 
   const handleSave = async () => {
-    if (!formData.name || !formData.body_text) {
-      toast.error("Name and body text are required");
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const templateData = {
-        tenant_id: tenantId,
-        name: formData.name,
-        language: formData.language,
-        category: formData.category,
-        body_text: formData.body_text,
-        header_type: formData.header_type || null,
-        header_content: formData.header_content || null,
-        footer_text: formData.footer_text || null,
-        content_json: {
-          body: formData.body_text,
-          header: formData.header_content ? { type: formData.header_type, content: formData.header_content } : null,
-          footer: formData.footer_text || null,
-        },
-        status: "DRAFT" as const,
-        updated_at: new Date().toISOString(),
-      };
-
-      if (editingTemplate) {
-        const { error } = await supabase
-          .from("whatsapp_templates")
-          .update(templateData)
-          .eq("id", editingTemplate.id);
-        if (error) throw error;
-        toast.success("Template updated");
-      } else {
-        const { error } = await supabase.from("whatsapp_templates").insert([templateData]);
-        if (error) throw error;
-        toast.success("Template created");
-      }
-
-      setIsDialogOpen(false);
-      fetchTemplates();
-    } catch (error) {
-      console.error("Failed to save template:", error);
-      toast.error("Failed to save template");
-    } finally {
-      setIsSaving(false);
-    }
+    toast.info("Coming soon");
+    return;
   };
 
-  const handleDelete = async (template: WhatsAppTemplate) => {
-    try {
-      const { error } = await supabase.from("whatsapp_templates").delete().eq("id", template.id);
-      if (error) throw error;
-      toast.success("Template deleted");
-      fetchTemplates();
-    } catch (error) {
-      console.error("Failed to delete template:", error);
-      toast.error("Failed to delete template");
-    }
+  const handleDelete = async (_template: WhatsAppTemplate) => {
+    toast.info("Coming soon");
+    return;
   };
 
-  const handleDuplicate = async (template: WhatsAppTemplate) => {
-    try {
-      const { error } = await supabase.from("whatsapp_templates").insert([{
-        tenant_id: tenantId,
-        name: `${template.name}_copy`,
-        language: template.language,
-        category: template.category,
-        body_text: template.body_text,
-        header_type: template.header_type,
-        header_content: template.header_content,
-        footer_text: template.footer_text,
-        content_json: { body: template.body_text },
-        status: "DRAFT" as const,
-      }]);
-      if (error) throw error;
-      toast.success("Template duplicated");
-      fetchTemplates();
-    } catch (error) {
-      console.error("Failed to duplicate template:", error);
-      toast.error("Failed to duplicate template");
-    }
+  const handleDuplicate = async (_template: WhatsAppTemplate) => {
+    toast.info("Coming soon");
+    return;
   };
 
   const filteredTemplates = displayTemplates.filter((t) => {

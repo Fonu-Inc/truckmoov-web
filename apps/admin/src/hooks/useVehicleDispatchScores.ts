@@ -1,5 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
 
 export interface VehicleDispatchScore {
@@ -20,23 +18,9 @@ export interface VehicleDispatchScore {
 export function useVehicleDispatchScores() {
   const { user } = useAuthStore();
 
-  const { data: dispatchScores, isLoading, error, refetch } = useQuery({
-    queryKey: ['vehicle-dispatch-scores', user?.tenantId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('vehicle_dispatch_scores')
-        .select('*')
-        .order('overall_score', { ascending: false });
+  const dispatchScores = [] as VehicleDispatchScore[] | undefined;
 
-      if (error) throw error;
-      return data as VehicleDispatchScore[];
-    },
-    enabled: !!user?.tenantId,
-  });
-
-  const getScoreForVehicle = (vehicleId: string) => {
-    return dispatchScores?.find(s => s.vehicle_id === vehicleId);
-  };
+  const getScoreForVehicle = (_vehicleId: string) => undefined;
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600';
@@ -45,27 +29,17 @@ export function useVehicleDispatchScores() {
     return 'text-red-600';
   };
 
-  const getTopVehicles = (limit: number = 5) => {
-    return dispatchScores
-      ?.filter(s => s.is_dispatch_recommended)
-      .slice(0, limit);
-  };
-
-  const getVehiclesWithWarnings = () => {
-    return dispatchScores?.filter(s => s.risk_warnings.length > 0);
-  };
+  const getTopVehicles = (_limit: number = 5) => [] as VehicleDispatchScore[];
+  const getVehiclesWithWarnings = () => [] as VehicleDispatchScore[];
 
   return {
     dispatchScores,
-    isLoading,
-    error,
-    refetch,
+    isLoading: false,
+    error: null,
+    refetch: () => {},
     getScoreForVehicle,
     getScoreColor,
     getTopVehicles,
     getVehiclesWithWarnings,
   };
 }
-
-
-

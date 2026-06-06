@@ -1,7 +1,5 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ComplianceDocumentsPanel } from "@/components/owner-operator/ComplianceDocumentsPanel";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useOrgContext } from "@/hooks/useOrgContext";
 import { useMemo } from "react";
 
@@ -12,20 +10,7 @@ export default function OwnerOperatorDocuments() {
     [orgCtx]
   );
 
-  // Fetch vehicles to get their IDs for compliance docs
-  const { data: vehicles = [] } = useQuery({
-    queryKey: ["oo-vehicles-docs", ownerOrg?.orgId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vehicles")
-        .select("id, tenant_id")
-        .eq("owning_org_id", ownerOrg!.orgId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!ownerOrg?.orgId,
-  });
-
+  const vehicles: { id: string; tenant_id?: string }[] = [];
   const tenantId = vehicles[0]?.tenant_id;
 
   return (

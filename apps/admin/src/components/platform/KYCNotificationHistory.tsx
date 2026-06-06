@@ -20,7 +20,6 @@ import {
   SelectValue,
 } from '@/components/shadcn/select';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { 
   Mail, 
   CheckCircle2, 
@@ -79,14 +78,7 @@ export function KYCNotificationHistory() {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('kyc_notification_logs')
-        .select('*')
-        .order('sent_at', { ascending: false })
-        .limit(100);
-
-      if (error) throw error;
-      const real = (data || []) as NotificationLog[];
+      const real: NotificationLog[] = [];
       const DEMO_LOGS: NotificationLog[] = [
         { id: "dn-1", tenant_id: "demo-t3", tenant_email: "compliance@nairobifleet.co.ke", tenant_name: "Nairobi Fleet Group", document_name: "Nairobi_Fleet_Cert_Incorp.pdf", document_type: "certificate_of_incorporation", notification_type: "approved", rejection_reason: null, email_subject: "Your KYC document has been approved", delivery_status: "delivered", error_message: null, resend_message_id: "msg_re_a8sk1", sent_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(), delivered_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7 + 1000 * 12).toISOString() },
         { id: "dn-2", tenant_id: "demo-t3", tenant_email: "compliance@nairobifleet.co.ke", tenant_name: "Nairobi Fleet Group", document_name: "Nairobi_Fleet_KRA_Compliance.pdf", document_type: "tax_clearance", notification_type: "approved", rejection_reason: null, email_subject: "Your KYC document has been approved", delivery_status: "delivered", error_message: null, resend_message_id: "msg_re_a8sk2", sent_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7 + 1000 * 60).toISOString(), delivered_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7 + 1000 * 70).toISOString() },

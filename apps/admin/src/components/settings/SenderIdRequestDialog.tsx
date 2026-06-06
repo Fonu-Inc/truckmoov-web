@@ -19,7 +19,6 @@ import {
 import {Upload, FileText, X, Loader2, Download} from "lucide-react";
 import { useTenantSenderIds, type SenderIdType } from "@/hooks/useTenantSenderIds";
 import { useAuthStore } from "@/stores/authStore";
-import { supabase } from "@/integrations/supabase/client";
 import { generateSenderIdRequestLetter } from "@/utils/senderIdTemplateGenerator";
 import { toast } from "sonner";
 
@@ -33,7 +32,7 @@ export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDia
   const { requestSenderId } = useTenantSenderIds();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<{ name: string; url: string } | null>(null);
   const [formData, setFormData] = useState({
     sender_id: "",
@@ -72,58 +71,19 @@ export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDia
       return;
     }
 
-    if (!user?.tenantId) {
-      toast.error("Unable to upload file");
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.tenantId}/${Date.now()}_request_letter.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('sender-id-documents')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from('sender-id-documents')
-        .getPublicUrl(fileName);
-
-      setUploadedFile({
-        name: file.name,
-        url: fileName, // Store the path, not the public URL (bucket is private)
-      });
-      toast.success("Request letter uploaded");
-    } catch (error: any) {
-      console.error("Upload error:", error);
-      toast.error(error.message || "Failed to upload file");
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const handleRemoveFile = async () => {
     if (!uploadedFile) return;
-
-    try {
-      await supabase.storage
-        .from('sender-id-documents')
-        .remove([uploadedFile.url]);
-      setUploadedFile(null);
-    } catch (error) {
-      console.error("Failed to remove file:", error);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.sender_id.trim()) {
       toast.error("Please enter a sender ID");
       return;
@@ -134,28 +94,11 @@ export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDia
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      await requestSenderId({
-        sender_id: formData.sender_id.trim(),
-        sender_type: formData.sender_type,
-        request_notes: formData.request_notes.trim() || undefined,
-        request_letter_url: uploadedFile.url });
-      onOpenChange(false);
-      setFormData({ sender_id: "", sender_type: "sms", request_notes: "" });
-      setUploadedFile(null);
-    } catch {
-      // Error handled in hook
-    } finally {
-      setIsSubmitting(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const handleClose = () => {
-    // Clean up uploaded file if closing without submitting
-    if (uploadedFile && !isSubmitting) {
-      handleRemoveFile();
-    }
     onOpenChange(false);
     setFormData({ sender_id: "", sender_type: "sms", request_notes: "" });
     setUploadedFile(null);
@@ -170,7 +113,7 @@ export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDia
             Submit a sender ID for approval. Download the template letter, edit it with your company details, then upload the signed version.
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -220,7 +163,7 @@ export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDia
                 Download Template
               </Button>
             </div>
-            
+
             <p className="text-sm text-muted-foreground">
               Download the template, fill in your company details (highlighted in yellow), print on company letterhead, sign, scan, and upload.
             </p>
@@ -293,8 +236,8 @@ export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDia
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isSubmitting || !formData.sender_id.trim() || !uploadedFile}
             >
               {isSubmitting ? "Submitting..." : "Submit Request"}
@@ -305,6 +248,5 @@ export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDia
     </Dialog>
   );
 }
-
 
 

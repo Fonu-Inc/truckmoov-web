@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { ShieldCheck, X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 
 interface VerificationStatus {
@@ -16,60 +15,13 @@ interface VerificationStatus {
 export function VerificationBanner() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>({
-    isLoading: true,
+  const [verificationStatus] = useState<VerificationStatus>({
+    isLoading: false,
     isVerified: false,
     status: null,
     hasDocuments: false,
   });
   const [isDismissed, setIsDismissed] = useState(false);
-
-  useEffect(() => {
-    const checkVerificationStatus = async () => {
-      if (!user?.tenantId) {
-        setVerificationStatus({ isLoading: false, isVerified: false, status: null, hasDocuments: false });
-        return;
-      }
-
-      try {
-        // Fetch business info and KYC documents in parallel
-        const [businessInfoResult, documentsResult] = await Promise.all([
-          supabase
-            .from("tenant_business_info")
-            .select("verification_status")
-            .eq("tenant_id", user.tenantId)
-            .maybeSingle(),
-          supabase
-            .from("tenant_kyc_documents")
-            .select("id")
-            .eq("tenant_id", user.tenantId)
-            .limit(1)
-        ]);
-
-        if (businessInfoResult.error) {
-          console.error("Error fetching verification status:", businessInfoResult.error);
-          setVerificationStatus({ isLoading: false, isVerified: false, status: null, hasDocuments: false });
-          return;
-        }
-
-        const status = businessInfoResult.data?.verification_status || null;
-        const isVerified = status === "verified";
-        const hasDocuments = (documentsResult.data?.length ?? 0) > 0;
-        
-        setVerificationStatus({
-          isLoading: false,
-          isVerified,
-          status,
-          hasDocuments,
-        });
-      } catch (err) {
-        console.error("Error checking verification:", err);
-        setVerificationStatus({ isLoading: false, isVerified: false, status: null, hasDocuments: false });
-      }
-    };
-
-    checkVerificationStatus();
-  }, [user?.tenantId]);
 
   // Don't show banner if loading, verified, or dismissed
   if (verificationStatus.isLoading || verificationStatus.isVerified || isDismissed) {
@@ -78,7 +30,7 @@ export function VerificationBanner() {
 
   // Don't show if status is "pending" AND they have uploaded documents (actually submitted, waiting for review)
   // Also show "in progress" for "under_review" status
-  if ((verificationStatus.status === "pending" && verificationStatus.hasDocuments) || 
+  if ((verificationStatus.status === "pending" && verificationStatus.hasDocuments) ||
       verificationStatus.status === "under_review") {
     return (
       <Alert variant="mtn" className="relative border-warning/30 bg-warning/5">
@@ -104,8 +56,8 @@ export function VerificationBanner() {
           Your account is pending until KYC verification is complete. Submit your business documents to activate your account and unlock all platform features.
         </span>
         <div className="flex items-center gap-2">
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             onClick={() => navigate("/admin/settings")}
             className="whitespace-nowrap"
           >

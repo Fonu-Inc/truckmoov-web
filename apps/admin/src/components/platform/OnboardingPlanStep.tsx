@@ -20,7 +20,6 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/currency";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 
@@ -396,29 +395,10 @@ function UsageRatesStrip() {
   const [loadingSummary, setLoadingSummary] = useState(true);
 
   useEffect(() => {
-    supabase
-      .from("usage_summary_items")
-      .select("icon_key, label")
-      .eq("is_active", true)
-      .order("sort_order")
-      .then(({ data }) => {
-        setSummaryItems(data || []);
-        setLoadingSummary(false);
-      });
+    setLoadingSummary(false);
   }, []);
 
   const toggleExpand = () => {
-    if (!expanded && rates.length === 0) {
-      setLoadingRates(true);
-      supabase
-        .from("communication_rates")
-        .select("communication_type, rate_ngn, rate_unit, description")
-        .eq("is_active", true)
-        .then(({ data }) => {
-          setRates(data || []);
-          setLoadingRates(false);
-        });
-    }
     setExpanded((v) => !v);
   };
 

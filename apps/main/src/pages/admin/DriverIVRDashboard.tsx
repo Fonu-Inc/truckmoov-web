@@ -5,9 +5,8 @@ import { Badge } from '@/components/shadcn/badge';
 import { Button } from '@/components/shadcn/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shadcn/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/shadcn/table';
-import { supabase } from '@/integrations/supabase/client';
 import { Phone, PhoneCall, PhoneOff, PhoneMissed, Check, X, Clock, RefreshCw, TrendingUp, Users, Activity } from 'lucide-react';
-import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+import { format } from 'date-fns';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface IVRCall {
@@ -34,37 +33,12 @@ export default function DriverIVRDashboard() {
 
   const fetchCalls = async () => {
     setIsLoading(true);
-    const startDate = startOfDay(subDays(new Date(), parseInt(dateRange)));
-    
-    const { data, error } = await supabase
-      .from('driver_ivr_calls')
-      .select('*')
-      .gte('created_at', startDate.toISOString())
-      .order('created_at', { ascending: false })
-      .limit(500);
-
-    if (!error && data) {
-      setCalls(data as IVRCall[]);
-    }
+    // Coming soon
     setIsLoading(false);
   };
 
   useEffect(() => {
     fetchCalls();
-
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel('ivr-calls-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'driver_ivr_calls' },
-        () => fetchCalls()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [dateRange]);
 
   const stats = useMemo(() => {

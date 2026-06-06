@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Switch } from "@/components/shadcn/switch";
 import { Button } from "@/components/shadcn/button";
 import { Save } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 
@@ -31,32 +30,11 @@ export function TenantInvoiceConfigPanel() {
     tax_rate_percent: 7.5,
     tax_label: "VAT",
   });
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (!tenantId) return;
-    setLoading(true);
-    supabase
-      .from("tenant_invoice_config")
-      .select("payment_terms_days, ncc_levy_enabled, ncc_levy_percent, ncc_levy_label, tax_enabled, tax_rate_percent, tax_label")
-      .eq("tenant_id", tenantId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setCfg((c) => ({ ...c, ...data }));
-        setLoading(false);
-      });
-  }, [tenantId]);
-
   const save = async () => {
-    if (!tenantId) return;
-    setSaving(true);
-    const { error } = await supabase
-      .from("tenant_invoice_config")
-      .upsert({ tenant_id: tenantId, ...cfg }, { onConflict: "tenant_id" });
-    setSaving(false);
-    if (error) toast.error(error.message);
-    else toast.success("Invoice settings saved");
+    toast.info('Coming soon');
+    return;
   };
 
   return (
@@ -128,7 +106,7 @@ export function TenantInvoiceConfigPanel() {
         </div>
 
         <div className="flex justify-end">
-          <Button variant="gradient" onClick={save} disabled={saving || loading}>
+          <Button variant="gradient" onClick={save} disabled={saving}>
             <Save className="h-4 w-4 mr-2" />
             {saving ? "Saving..." : "Save Invoice Settings"}
           </Button>

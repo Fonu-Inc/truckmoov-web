@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import { 
+import {
   FileText,
   Clock,
   CheckCircle,
@@ -48,23 +47,23 @@ interface SIMRequestsTrackerProps {
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  pending: { 
-    label: "Pending Review", 
+  pending: {
+    label: "Pending Review",
     color: "bg-warning/10 text-warning border-warning/30",
     icon: <Clock className="h-3 w-3" />
   },
-  approved: { 
-    label: "Approved", 
+  approved: {
+    label: "Approved",
     color: "bg-success/10 text-success border-success/30",
     icon: <CheckCircle className="h-3 w-3" />
   },
-  rejected: { 
-    label: "Rejected", 
+  rejected: {
+    label: "Rejected",
     color: "bg-destructive/10 text-destructive border-destructive/30",
     icon: <XCircle className="h-3 w-3" />
   },
-  completed: { 
-    label: "Completed", 
+  completed: {
+    label: "Completed",
     color: "bg-success/10 text-success border-success/30",
     icon: <CheckCircle className="h-3 w-3" />
   },
@@ -170,36 +169,9 @@ const DEMO_SIM_REQUESTS = [
 
 export function SIMRequestsTracker({ onNewRequest }: SIMRequestsTrackerProps) {
   const { user } = useAuthStore();
-  const [requests, setRequests] = useState<SIMRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [requests] = useState<SIMRequest[]>(DEMO_SIM_REQUESTS as unknown as SIMRequest[]);
+  const [loading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  const fetchRequests = async () => {
-    if (!user?.tenantId) return;
-    
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("sim_provisioning_requests")
-        .select("*")
-        .eq("tenant_id", user.tenantId)
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      if (error) throw error;
-      const rows = data || [];
-      setRequests(rows.length > 0 ? rows : (DEMO_SIM_REQUESTS as unknown as SIMRequest[]));
-    } catch (err) {
-      console.error("Error fetching SIM requests:", err);
-      setRequests(DEMO_SIM_REQUESTS as unknown as SIMRequest[]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchRequests();
-  }, [user?.tenantId]);
 
   const getStatusInfo = (status: string) => {
     return statusConfig[status] || statusConfig.pending;
@@ -248,8 +220,8 @@ export function SIMRequestsTracker({ onNewRequest }: SIMRequestsTrackerProps) {
               const statusInfo = getStatusInfo(request.status);
               const isExpanded = expandedId === request.id;
               const deviceMappingData = request.device_mapping_data;
-              const deviceMappingCount = Array.isArray(deviceMappingData) 
-                ? deviceMappingData.length 
+              const deviceMappingCount = Array.isArray(deviceMappingData)
+                ? deviceMappingData.length
                 : 0;
 
               return (

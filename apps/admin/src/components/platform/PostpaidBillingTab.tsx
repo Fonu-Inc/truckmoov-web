@@ -20,8 +20,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Separator } from "@/components/shadcn/separator";
 import { ExportButton } from "@/components/shadcn/export-button";
@@ -66,7 +64,6 @@ interface PostpaidBillingTabProps {
 
 export function PostpaidBillingTab({ currency, getDisplayAmount }: PostpaidBillingTabProps) {
   const { postpaidInvoices: rawInvoices, isLoading, runBillingCycle } = usePostpaidBilling();
-  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [creditDialogOpen, setCreditDialogOpen] = useState(false);
@@ -84,26 +81,8 @@ export function PostpaidBillingTab({ currency, getDisplayAmount }: PostpaidBilli
   const [billingCycleError, setBillingCycleError] = useState<string | null>(null);
 
   // Fetch all postpaid tenants with their credit limits
-  const { data: rawTenants = [] } = useQuery({
-    queryKey: ['postpaid-tenants'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('id, name, billing_model, billing_cycle_day, status')
-        .eq('billing_model', 'postpaid');
-      if (error) throw error;
-      return data || [];
-    } });
-
-  const { data: rawCreditLimits = [] } = useQuery({
-    queryKey: ['all-credit-limits'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('credit_limits')
-        .select('*');
-      if (error) throw error;
-      return data || [];
-    } });
+  const rawTenants: any[] = [];
+  const rawCreditLimits: any[] = [];
 
   // Demo fallback so platform admins always see realistic content
   const DEMO_TENANTS = [
@@ -136,35 +115,12 @@ export function PostpaidBillingTab({ currency, getDisplayAmount }: PostpaidBilli
   const creditLimits = rawCreditLimits.length > 0 ? rawCreditLimits : (DEMO_CREDIT_LIMITS as any);
   const postpaidInvoices = rawInvoices.length > 0 ? rawInvoices : DEMO_INVOICES;
 
-  const upsertCreditLimit = useMutation({
-    mutationFn: async (params: { tenantId: string; limit: number; threshold: number; action: string }) => {
-      const existing = creditLimits.find(c => c.tenant_id === params.tenantId);
-      if (existing) {
-        const { error } = await supabase
-          .from('credit_limits')
-          .update({
-            credit_limit_ngn: params.limit,
-            warning_threshold_percent: params.threshold,
-            hard_limit_action: params.action as any })
-          .eq('tenant_id', params.tenantId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('credit_limits')
-          .insert({
-            tenant_id: params.tenantId,
-            credit_limit_ngn: params.limit,
-            warning_threshold_percent: params.threshold,
-            hard_limit_action: params.action as any });
-        if (error) throw error;
-      }
+  const upsertCreditLimit = {
+    mutate: (_params: { tenantId: string; limit: number; threshold: number; action: string }) => {
+      toast.info('Coming soon');
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['all-credit-limits'] });
-      toast.success('Credit limit updated');
-      setCreditDialogOpen(false);
-    },
-    onError: (e) => toast.error('Failed to update credit limit', { description: e.message }) });
+    isPending: false,
+  };
 
   const tenantNameById = (id: string) =>
     postpaidTenants.find((t) => t.id === id)?.name || id;

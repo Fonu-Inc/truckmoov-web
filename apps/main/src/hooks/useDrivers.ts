@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/backendApi";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import { useOrgDataScope } from "@/hooks/useOrgDataScope";
@@ -91,7 +90,6 @@ export function useDrivers() {
       const data = await apiGet<DriverResponseDto[]>('/drivers');
       const mapped = (data || []).map(toDriverData);
       if (mapped.length === 0) {
-        // Frontend demo fallback so empty tenants still render a populated roster
         setDrivers(
           mockDrivers.map((d) => ({
             id: d.id,
@@ -129,23 +127,6 @@ export function useDrivers() {
     }
     try {
       const targetTenantId = (isPlatformAdmin ? driver.tenantId ?? user?.tenantId : user?.tenantId) ?? undefined;
-
-      // Quota enforcement
-      if (targetTenantId) {
-        const [{ data: tRow }, { count: driverCount }] = await Promise.all([
-          supabase.from("tenants").select("driver_quota").eq("id", targetTenantId).single(),
-          supabase.from("drivers").select("id", { count: "exact", head: true }).eq("tenant_id", targetTenantId),
-        ]);
-        const quota = (tRow as { driver_quota?: number } | null)?.driver_quota ?? null;
-        if (quota !== null && quota !== undefined && (driverCount ?? 0) >= quota) {
-          toast.error("Driver quota exceeded", {
-            description: `Your plan allows ${quota} driver${quota === 1 ? "" : "s"}. Suspend or remove an existing driver, or contact your platform admin to increase the quota.`,
-            duration: 7000,
-          });
-          return false;
-        }
-      }
-
       const dto = toCreateDto({
         ...driver,
         tenantId: targetTenantId,

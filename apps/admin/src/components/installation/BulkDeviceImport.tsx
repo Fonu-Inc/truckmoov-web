@@ -19,7 +19,6 @@ import {
   SelectValue } from '@/components/shadcn/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/shadcn/alert';
 import { DeviceCatalogEntry } from '@/hooks/useDeviceCatalog';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
 import { toast } from 'sonner';
 import {Upload, FileSpreadsheet, Check, X, AlertCircle, Loader2, Download} from 'lucide-react';
@@ -120,57 +119,8 @@ export function BulkDeviceImport({ catalog, onImportComplete }: BulkDeviceImport
   };
 
   const handleImport = async () => {
-    const validRows = parsedRows.filter(r => r.valid);
-    if (validRows.length === 0) {
-      toast.error('No valid rows to import');
-      return;
-    }
-
-    setImporting(true);
-    setImportProgress(0);
-
-    let successCount = 0;
-    let errorCount = 0;
-
-    for (let i = 0; i < validRows.length; i++) {
-      const row = validRows[i];
-      
-      try {
-        const { error } = await supabase.from('devices').insert({
-          imei: row.imei,
-          manufacturer: row.manufacturer,
-          model: row.model,
-          lifecycle_status: 'config_pending',
-          status: 'config_pending',
-          tenant_id: user?.tenantId || 'default' });
-
-        if (error) throw error;
-        successCount++;
-      } catch (err) {
-        console.error('Error importing device:', err);
-        errorCount++;
-      }
-
-      setImportProgress(Math.round(((i + 1) / validRows.length) * 100));
-    }
-
-    setImporting(false);
-    
-    if (successCount > 0) {
-      toast.success(`Successfully imported ${successCount} devices`);
-      onImportComplete();
-    }
-    
-    if (errorCount > 0) {
-      toast.error(`Failed to import ${errorCount} devices`);
-    }
-
-    // Reset state
-    setFile(null);
-    setParsedRows([]);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const downloadTemplate = () => {

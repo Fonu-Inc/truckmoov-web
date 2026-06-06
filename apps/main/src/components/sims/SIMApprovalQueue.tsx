@@ -28,7 +28,6 @@ import {
   type FilterDraft,
 } from "@/components/shadcn/platform-filter-popover";
 import { useSIMProvisioningRequests, SIMProvisioningRequest } from "@/hooks/useFonuSIM";
-import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { SIMRequestDetailsDialog } from "./SIMRequestDetailsDialog";

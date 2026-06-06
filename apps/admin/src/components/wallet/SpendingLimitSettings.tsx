@@ -14,7 +14,6 @@ import {
   DialogTitle,
 } from '@/components/shadcn/dialog';
 import { Gauge, AlertTriangle, RotateCcw, Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -44,16 +43,7 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['spending-limit-settings', tenantId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tenant_wallets')
-        .select('spending_limit_enabled, monthly_spending_limit_ngn, current_month_spending_ngn, spending_limit_reset_day, spending_alert_email')
-        .eq('tenant_id', tenantId)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data;
-    }
+    queryFn: async () => null,
   });
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -71,49 +61,20 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
   }, [settings]);
 
   const persistMutation = useMutation({
-    mutationFn: async (nextEnabled: boolean) => {
-      const { error } = await supabase
-        .from('tenant_wallets')
-        .upsert({
-          tenant_id: tenantId,
-          spending_limit_enabled: nextEnabled,
-          monthly_spending_limit_ngn: nextEnabled ? parseFloat(monthlyLimit) : null,
-          spending_limit_reset_day: parseInt(resetDay),
-          spending_alert_email: nextEnabled && alertEmail ? alertEmail : null
-        }, { onConflict: 'tenant_id' });
-
-      if (error) throw error;
-      return nextEnabled;
+    mutationFn: async (_nextEnabled: boolean) => {
+      toast.info('Coming soon');
+      return _nextEnabled;
     },
-    onSuccess: (nextEnabled) => {
-      queryClient.invalidateQueries({ queryKey: ['spending-limit-settings', tenantId] });
-      toast.success(nextEnabled ? 'Spending limit enabled' : 'Spending limit disabled');
+    onSuccess: () => {
       setDialogOpen(false);
       setConfirmDisableOpen(false);
-      onUpdate?.();
     },
-    onError: (error) => {
-      toast.error('Failed to update settings: ' + (error as Error).message);
-    }
   });
 
   const resetMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from('tenant_wallets')
-        .update({ current_month_spending_ngn: 0 })
-        .eq('tenant_id', tenantId);
-
-      if (error) throw error;
+      toast.info('Coming soon');
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['spending-limit-settings', tenantId] });
-      toast.success('Monthly spending counter reset to zero');
-      onUpdate?.();
-    },
-    onError: (error) => {
-      toast.error('Failed to reset spending: ' + (error as Error).message);
-    }
   });
 
   const handleSave = () => {

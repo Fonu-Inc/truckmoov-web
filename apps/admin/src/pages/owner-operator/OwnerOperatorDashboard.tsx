@@ -24,8 +24,6 @@ import {
   FileWarning,
   ChevronRight,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { useOrgContext } from "@/hooks/useOrgContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -73,68 +71,18 @@ export default function OwnerOperatorDashboard() {
   const { data: vehicleCap } = useOwnerOperatorVehicleCap(ownerOrg?.orgId);
 
   // Fetch jobs assigned to this owner-operator's org
-  const { data: jobs = [], isLoading: jobsLoading } = useQuery({
-    queryKey: ["oo-jobs", ownerOrg?.orgId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("jobs")
-        .select("*")
-        .eq("executing_org_id", ownerOrg!.orgId)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!ownerOrg?.orgId,
-  });
+  const jobs: any[] = [];
+  const jobsLoading = false;
 
   // Fetch vehicles owned by this org
-  const { data: vehicles = [] } = useQuery({
-    queryKey: ["oo-vehicles", ownerOrg?.orgId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vehicles")
-        .select("id, registration_number, make, model, year, status, owning_org_id, tenant_id")
-        .eq("owning_org_id", ownerOrg!.orgId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!ownerOrg?.orgId,
-  });
+  const vehicles: any[] = [];
 
   // Fetch pending job offers
-  const { data: pendingOffers = [] } = useQuery({
-    queryKey: ["oo-job-offers", ownerOrg?.orgId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("job_offers")
-        .select("id, job_id, target_org_id, offered_rate_ngn, status, created_at")
-        .eq("target_org_id", ownerOrg!.orgId)
-        .eq("status", "PENDING")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!ownerOrg?.orgId,
-  });
+  const pendingOffers: any[] = [];
 
   // Fetch compliance documents for expiry reminders
-  const tenantId = vehicles[0]?.tenant_id;
-  const { data: complianceDocs = [] } = useQuery({
-    queryKey: ["oo-compliance", tenantId, vehicles.map(v => v.id)],
-    queryFn: async () => {
-      const vehicleIds = vehicles.map(v => v.id);
-      if (vehicleIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from("compliance_documents")
-        .select("id, document_name, document_type, expiry_date, status, vehicle_id, vehicle_name")
-        .in("vehicle_id", vehicleIds)
-        .order("expiry_date", { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: vehicles.length > 0,
-  });
+  const tenantId: string | undefined = undefined;
+  const complianceDocs: any[] = [];
 
   // Derived data
   const activeJob = jobs.find(j => ["assigned", "accepted", "in_progress", "arrived_pickup", "arrived_dropoff"].includes(j.status));

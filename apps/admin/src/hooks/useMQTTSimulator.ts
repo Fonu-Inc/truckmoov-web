@@ -259,7 +259,7 @@ export function useMQTTSimulator() {
     return { newInsideGeofences, alerts };
   }, []);
 
-  const wsUrl = `wss://yntqriwlxuytworbzuux.supabase.co/functions/v1/mqtt-bridge`;
+  const wsUrl = ``; // TODO: configure MQTT bridge URL via API
 
   // Add message to logs
   const addMessageLog = useCallback((log: Omit<MessageLog, 'id' | 'timestamp'>) => {

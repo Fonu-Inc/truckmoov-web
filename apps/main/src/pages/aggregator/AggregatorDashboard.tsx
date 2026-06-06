@@ -54,7 +54,6 @@ import { ExportButton } from "@/components/shadcn/export-button";
 import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import { Search, SlidersHorizontal as FilterIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { useOrgContext } from "@/hooks/useOrgContext";
 import { CreateOwnerOperatorDialog } from "@/components/aggregator/CreateOwnerOperatorDialog";
@@ -107,19 +106,7 @@ export default function AggregatorDashboard() {
   // Fetch linked organizations (owner-operators under this aggregator)
   const { data: linkedOrgs = [], isLoading, refetch: refetchOrgs } = useQuery({
     queryKey: ["aggregator-linked-orgs", aggregatorOrgIds],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("org_relationships")
-        .select(`
-          id, relationship_type, status,
-          to_org:organizations!org_relationships_to_org_id_fkey(id, name, organization_type)
-        `)
-        .in("from_org_id", aggregatorOrgIds)
-        .eq("status", "ACTIVE");
-
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: async () => [],
     enabled: !!user && aggregatorOrgIds.length > 0,
   });
 
@@ -131,22 +118,7 @@ export default function AggregatorDashboard() {
   // Fetch jobs assigned to aggregator's execution scope (self + children)
   const { data: jobs = [] } = useQuery({
     queryKey: ["aggregator-jobs", aggregatorOrgIds, childOrgIds],
-    queryFn: async () => {
-      const allOrgIds = [...aggregatorOrgIds, ...childOrgIds];
-      let query = supabase
-        .from("jobs")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      if (allOrgIds.length > 0) {
-        query = query.in("executing_org_id", allOrgIds);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: async () => [],
     enabled: !!user && aggregatorOrgIds.length > 0,
   });
 

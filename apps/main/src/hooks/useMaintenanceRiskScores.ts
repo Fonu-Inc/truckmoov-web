@@ -1,6 +1,4 @@
-import { useState, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useCallback } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 
 export interface MaintenanceRiskScore {
@@ -24,69 +22,15 @@ export interface MaintenanceRiskScore {
 }
 
 export function useMaintenanceRiskScores() {
-  const { user } = useAuthStore();
-  const queryClient = useQueryClient();
-  const [isComputing, setIsComputing] = useState(false);
+  const riskScores: MaintenanceRiskScore[] = [];
+  const isLoading = false;
+  const error = null;
+  const isComputing = false;
 
-  const { data: riskScores, isLoading, error, refetch } = useQuery({
-    queryKey: ['maintenance-risk-scores', user?.tenantId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('maintenance_risk_scores')
-        .select('*')
-        .order('overall_risk_score', { ascending: false });
+  const computeRiskScore = useCallback(async (_vehicleId: string) => null, []);
+  const computeAllRiskScores = useCallback(async () => {}, []);
 
-      if (error) throw error;
-      return data as MaintenanceRiskScore[];
-    },
-    enabled: !!user?.tenantId,
-  });
-
-  const computeRiskScore = useCallback(async (vehicleId: string) => {
-    setIsComputing(true);
-    try {
-      const { data, error } = await supabase.rpc('compute_vehicle_maintenance_risk', {
-        p_vehicle_id: vehicleId,
-      });
-
-      if (error) throw error;
-      await refetch();
-      return data;
-    } finally {
-      setIsComputing(false);
-    }
-  }, [refetch]);
-
-  const computeAllRiskScores = useCallback(async () => {
-    if (!user?.tenantId) return;
-    
-    setIsComputing(true);
-    try {
-      // Get all vehicles for tenant
-      const { data: vehicles, error: vehiclesError } = await supabase
-        .from('vehicles')
-        .select('id')
-        .eq('tenant_id', user.tenantId)
-        .neq('status', 'decommissioned');
-
-      if (vehiclesError) throw vehiclesError;
-
-      // Compute risk for each vehicle
-      for (const vehicle of vehicles || []) {
-        await supabase.rpc('compute_vehicle_maintenance_risk', {
-          p_vehicle_id: vehicle.id,
-        });
-      }
-
-      await refetch();
-    } finally {
-      setIsComputing(false);
-    }
-  }, [user?.tenantId, refetch]);
-
-  const getVehicleRiskScore = useCallback((vehicleId: string) => {
-    return riskScores?.find(score => score.vehicle_id === vehicleId);
-  }, [riskScores]);
+  const getVehicleRiskScore = useCallback((_vehicleId: string) => undefined, []);
 
   const getRiskLevelColor = (level: string) => {
     switch (level) {
@@ -107,6 +51,6 @@ export function useMaintenanceRiskScores() {
     computeAllRiskScores,
     getVehicleRiskScore,
     getRiskLevelColor,
-    refetch,
+    refetch: () => {},
   };
 }

@@ -14,7 +14,6 @@ import { useMemo, useState } from "react";
 import { TableToolbar, type FilterField, type FilterValues } from "@/components/shadcn/table-toolbar";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { PaymentGateModal } from "@/components/onboarding/PaymentGateModal";
-import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -263,29 +262,9 @@ function PostpaidInvoicesTable({ invoices }: { invoices: PostpaidInvoiceRow[] })
     });
   }, [invoices, search, status, filters]);
 
-  const handlePaid = async (method: string) => {
-    if (!payingInvoice) return;
-    // Demo invoices have ids that start with "demo-" — just close.
-    if (String(payingInvoice.id).startsWith("demo-")) {
-      toast.success(`Invoice ${payingInvoice.invoice_number} paid`);
-      setPayingInvoice(null);
-      return;
-    }
-    const { data, error } = await supabase.rpc("pay_postpaid_invoice", {
-      p_invoice_id: payingInvoice.id,
-      p_payment_method: method,
-      p_payment_reference: null,
-    });
-    if (error || (data as { success?: boolean } | null)?.success === false) {
-      toast.error("Payment could not be recorded", {
-        description: error?.message || (data as { error?: string } | null)?.error,
-      });
-      return;
-    }
-    toast.success(`Invoice ${payingInvoice.invoice_number} marked paid`);
-    queryClient.invalidateQueries({ queryKey: ["postpaid-invoices"] });
-    queryClient.invalidateQueries({ queryKey: ["credit-limit"] });
-    setPayingInvoice(null);
+  const handlePaid = async (_method: string) => {
+    toast.info('Coming soon');
+    return;
   };
 
   return (

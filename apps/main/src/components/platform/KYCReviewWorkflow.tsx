@@ -28,7 +28,6 @@ import {
   TableHeader,
   TableRow } from '@/components/shadcn/table';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { 
   Shield, 
   CheckCircle2, 
@@ -122,17 +121,6 @@ export function KYCReviewWorkflow() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [businessRes, docsRes] = await Promise.all([
-        supabase.from('tenant_business_info').select('*').order('created_at', { ascending: false }),
-        supabase.from('tenant_kyc_documents').select('*').order('created_at', { ascending: false }),
-      ]);
-
-      if (businessRes.error) throw businessRes.error;
-      if (docsRes.error) throw docsRes.error;
-
-      const realBusiness = (businessRes.data || []) as BusinessInfo[];
-      const realDocs = (docsRes.data || []) as KYCDocument[];
-
       const DEMO_BUSINESS: BusinessInfo[] = [
         { id: "db-1", tenant_id: "demo-t1", company_name: "Lagos Express Logistics Ltd", registration_number: "RC-2841029", tax_id: "TIN-1029384756", business_type: "Limited Liability Company", industry: "Logistics & Haulage", address_line1: "12 Apapa Road", city: "Lagos", state: "Lagos", country: "Nigeria", phone: "+234 802 123 4567", email: "compliance@lagosexpress.ng", verification_status: "under_review", created_at: new Date(Date.now() - 1000 * 60 * 60 * 22).toISOString() },
         { id: "db-2", tenant_id: "demo-t4", company_name: "Cape Town Trucking (Pty) Ltd", registration_number: "2018/485102/07", tax_id: "VAT-4830127584", business_type: "Private Company", industry: "Freight Trucking", address_line1: "45 Voortrekker Road", city: "Cape Town", state: "Western Cape", country: "South Africa", phone: "+27 21 555 0142", email: "ops@capetowntruck.co.za", verification_status: "pending", created_at: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString() },
@@ -158,8 +146,8 @@ export function KYCReviewWorkflow() {
         { id: "dd-13", tenant_id: "demo-t5", document_type: "tax_clearance", document_name: "JHB_Freight_TCC.pdf", file_path: "demo/jhb-tcc.pdf", file_size: 254000, mime_type: "application/pdf", status: "rejected", rejection_reason: "Document expired before submission.", reviewed_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), expires_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(), created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString() },
       ];
 
-      setBusinessInfoList(realBusiness.length > 0 ? realBusiness : DEMO_BUSINESS);
-      setDocuments(realDocs.length > 0 ? realDocs : DEMO_DOCS);
+      setBusinessInfoList(DEMO_BUSINESS);
+      setDocuments(DEMO_DOCS);
     } catch (error) {
       console.error('Error fetching KYC data:', error);
       toast.error('Failed to load KYC data');
@@ -182,17 +170,8 @@ export function KYCReviewWorkflow() {
     }
   };
 
-  const handleViewDocument = async (doc: KYCDocument) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from('kyc-documents')
-        .createSignedUrl(doc.file_path, 3600);
-
-      if (error) throw error;
-      window.open(data.signedUrl, '_blank');
-    } catch (error: any) {
-      toast.error('Failed to open document');
-    }
+  const handleViewDocument = async (_doc: KYCDocument) => {
+    toast.info('Coming soon');
   };
 
   const handleOpenReview = (doc: KYCDocument, action: 'approve' | 'reject') => {
@@ -202,115 +181,12 @@ export function KYCReviewWorkflow() {
     setReviewDialogOpen(true);
   };
 
-  const sendKYCNotification = async (
-    tenantEmail: string,
-    tenantName: string,
-    tenantId: string,
-    documentId: string,
-    documentName: string,
-    documentType: string,
-    status: 'approved' | 'rejected',
-    feedback?: string
-  ) => {
-    try {
-      const { error } = await supabase.functions.invoke('kyc-notification', {
-        body: {
-          tenantEmail,
-          tenantName,
-          tenantId,
-          documentId,
-          documentName,
-          documentType,
-          status,
-          feedback } });
-
-      if (error) {
-        console.error('Failed to send notification email:', error);
-      } else {
-        console.log('KYC notification email sent successfully');
-      }
-    } catch (err) {
-      console.error('Error sending KYC notification:', err);
-    }
-  };
-
   const handleSubmitReview = async () => {
-    if (!selectedDocument) return;
-
-    setSubmitting(true);
-    try {
-      const { error } = await supabase
-        .from('tenant_kyc_documents')
-        .update({
-          status: reviewAction === 'approve' ? 'approved' : 'rejected',
-          rejection_reason: reviewAction === 'reject' ? reviewComment : null,
-          reviewed_at: new Date().toISOString() })
-        .eq('id', selectedDocument.id);
-
-      if (error) throw error;
-
-      // Get tenant info for email notification
-      const tenant = businessInfoList.find(b => b.tenant_id === selectedDocument.tenant_id);
-      
-      // Send email notification
-      if (tenant?.email) {
-        await sendKYCNotification(
-          tenant.email,
-          tenant.company_name,
-          selectedDocument.tenant_id,
-          selectedDocument.id,
-          selectedDocument.document_name,
-          DOCUMENT_TYPE_LABELS[selectedDocument.document_type] || selectedDocument.document_type,
-          reviewAction === 'approve' ? 'approved' : 'rejected',
-          reviewAction === 'reject' ? reviewComment : undefined
-        );
-        toast.success(`Document ${reviewAction === 'approve' ? 'approved' : 'rejected'} and notification sent`);
-      } else {
-        toast.success(`Document ${reviewAction === 'approve' ? 'approved' : 'rejected'} successfully`);
-        if (!tenant?.email) {
-          toast.warning('No email configured for tenant - notification not sent');
-        }
-      }
-
-      // Check if all documents for this tenant are approved
-      const tenantDocs = documents.filter(d => d.tenant_id === selectedDocument.tenant_id);
-      const otherDocs = tenantDocs.filter(d => d.id !== selectedDocument.id);
-      const allApproved = otherDocs.every(d => d.status === 'approved') && reviewAction === 'approve';
-
-      if (allApproved && otherDocs.length > 0) {
-        // Update business verification status
-        await supabase
-          .from('tenant_business_info')
-          .update({ 
-            verification_status: 'verified',
-            verified_at: new Date().toISOString() })
-          .eq('tenant_id', selectedDocument.tenant_id);
-      }
-
-      setReviewDialogOpen(false);
-      fetchData();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to submit review');
-    } finally {
-      setSubmitting(false);
-    }
+    toast.info('Coming soon');
   };
 
-  const handleUpdateTenantStatus = async (tenantId: string, status: string) => {
-    try {
-      const { error } = await supabase
-        .from('tenant_business_info')
-        .update({ 
-          verification_status: status,
-          verified_at: status === 'verified' ? new Date().toISOString() : null })
-        .eq('tenant_id', tenantId);
-
-      if (error) throw error;
-      toast.success(`Tenant verification status updated to ${status}`);
-      fetchData();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update status');
-    }
+  const handleUpdateTenantStatus = async (_tenantId: string, _status: string) => {
+    toast.info('Coming soon');
   };
 
   const pendingDocuments = documents.filter(d => d.status === 'pending');

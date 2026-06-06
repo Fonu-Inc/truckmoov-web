@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export interface Waypoint {
@@ -104,11 +103,10 @@ function localOptimize(waypoints: Waypoint[]): OptimizationResult {
 export function useRouteOptimization() {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [lastResult, setLastResult] = useState<OptimizationResult | null>(null);
-  
 
   const optimizeRoute = async (
     waypoints: Waypoint[],
-    options?: {
+    _options?: {
       vehicleCapacity?: number;
       startTime?: string;
       preferences?: OptimizationPreferences;
@@ -122,69 +120,13 @@ export function useRouteOptimization() {
     }
 
     setIsOptimizing(true);
-
-    // Helper to run the local fallback with a consistent toast
-    const runLocalFallback = (reason: 'offline' | 'error' = 'offline') => {
+    try {
       const fallback = localOptimize(waypoints);
       setLastResult(fallback);
       toast.success('Route Optimized', {
         description: `Saved ${fallback.analysis.actual_savings_km.toFixed(1)} km (${fallback.analysis.actual_savings_percentage}% improvement)`,
       });
       return fallback;
-    };
-
-    try {
-      // Use raw fetch instead of supabase.functions.invoke to avoid the SDK
-      // logging FunctionsHttpError to console (which Lovable surfaces as a runtime error).
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-
-      if (!token) {
-        return runLocalFallback();
-      }
-
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/route-optimization`;
-
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          waypoints,
-          vehicleCapacity: options?.vehicleCapacity,
-          startTime: options?.startTime,
-          preferences: options?.preferences || { minimizeDistance: true, minimizeTime: true },
-        }),
-      });
-
-      if (!res.ok) {
-        // Silent fallback for auth/edge errors
-        return runLocalFallback();
-      }
-
-      const data = await res.json().catch(() => null);
-      if (!data?.success) {
-        return runLocalFallback();
-      }
-
-      const result: OptimizationResult = {
-        optimized_waypoints: data.optimized_waypoints,
-        analysis: data.analysis,
-      };
-
-      setLastResult(result);
-
-      const savings = parseFloat(result.analysis.actual_savings_percentage);
-      toast.success('Route Optimized', {
-        description: `Saved ${result.analysis.actual_savings_km?.toFixed(1) || '0'} km (${savings > 0 ? savings.toFixed(1) : '0'}% improvement)`,
-      });
-
-      return result;
-    } catch {
-      return runLocalFallback('error');
     } finally {
       setIsOptimizing(false);
     }
@@ -196,6 +138,3 @@ export function useRouteOptimization() {
     lastResult,
   };
 }
-
-
-

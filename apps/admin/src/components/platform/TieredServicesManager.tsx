@@ -26,13 +26,12 @@ import {
 } from '@/components/shadcn/table';
 import { useSubscriptionPlans, SubscriptionPlan } from '@/hooks/useSubscriptionPlans';
 import { formatCurrency } from '@/lib/currency';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { 
-  Layers, 
-  Check, 
-  X, 
-  Edit2, 
+import {
+  Layers,
+  Check,
+  X,
+  Edit2,
   Save,
   Star,
   Truck,
@@ -489,8 +488,8 @@ export function TieredServicesManager() {
                       {plans?.map(plan => (
                         <TableHead key={plan.id} className="text-center min-w-[120px]">
                           <div className="flex flex-col items-center gap-1">
-                            <Badge 
-                              variant="outline" 
+                            <Badge
+                              variant="outline"
                               style={{ borderColor: plan.tier_badge_color, color: plan.tier_badge_color }}
                               className="text-xs"
                             >
@@ -572,8 +571,8 @@ export function TieredServicesManager() {
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base flex items-center gap-2">
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             style={{ borderColor: plan.tier_badge_color, color: plan.tier_badge_color }}
                           >
                             {plan.name}
@@ -976,55 +975,34 @@ type UsageSummaryItem = {
 
 
 function UsageSummaryItemsManager() {
-  const [items, setItems] = useState<UsageSummaryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items] = useState<UsageSummaryItem[]>([]);
+  const [loading] = useState(false);
   const [newLabel, setNewLabel] = useState('');
   const [newIcon, setNewIcon] = useState('wifi');
 
-  const fetchItems = async () => {
-    setLoading(true);
-    const { data } = await supabase
-      .from('usage_summary_items')
-      .select('*')
-      .order('sort_order');
-    setItems((data as UsageSummaryItem[]) || []);
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchItems(); }, []);
-
   const handleAdd = async () => {
-    if (!newLabel.trim()) return;
-    const nextOrder = items.length > 0 ? Math.max(...items.map(i => i.sort_order)) + 1 : 0;
-    const { error } = await supabase.from('usage_summary_items').insert({
-      icon_key: newIcon,
-      label: newLabel.trim(),
-      sort_order: nextOrder,
-    });
-    if (error) { toast.error('Failed to add item'); return; }
-    toast.success('Item added');
-    setNewLabel('');
-    fetchItems();
+    toast.info('Coming soon');
+    return;
   };
 
   const handleToggle = async (id: string, current: boolean) => {
-    await supabase.from('usage_summary_items').update({ is_active: !current }).eq('id', id);
-    fetchItems();
+    toast.info('Coming soon');
+    return;
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from('usage_summary_items').delete().eq('id', id);
-    toast.success('Item deleted');
-    fetchItems();
+    toast.info('Coming soon');
+    return;
   };
 
   const handleUpdateLabel = async (id: string, label: string) => {
-    await supabase.from('usage_summary_items').update({ label }).eq('id', id);
+    toast.info('Coming soon');
+    return;
   };
 
   const handleUpdateIcon = async (id: string, icon_key: string) => {
-    await supabase.from('usage_summary_items').update({ icon_key }).eq('id', id);
-    fetchItems();
+    toast.info('Coming soon');
+    return;
   };
 
   return (
@@ -1128,6 +1106,5 @@ function UsageSummaryItemsManager() {
     </div>
   );
 }
-
 
 

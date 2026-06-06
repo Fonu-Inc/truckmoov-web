@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { Sparkles, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
@@ -21,24 +20,7 @@ interface TrialStatus {
 export function TrialBanner() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const [trial, setTrial] = useState<TrialStatus | null>(null);
-
-  useEffect(() => {
-    const tenantId = (user as any)?.tenantId ?? (user as any)?.tenant_id;
-    if (!tenantId) return;
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase
-        .from("v_tenant_trial_status")
-        .select("status, trial_ends_at, days_remaining, trial_vehicle_cap, trial_sim_cap, is_expired")
-        .eq("tenant_id", tenantId)
-        .maybeSingle();
-      if (!cancelled && !error && data) setTrial(data as TrialStatus);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+  const [trial] = useState<TrialStatus | null>(null);
 
   if (!trial || trial.status !== "trial") return null;
 

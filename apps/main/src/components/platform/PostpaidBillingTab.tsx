@@ -20,7 +20,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
-import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Separator } from "@/components/shadcn/separator";
@@ -86,24 +85,11 @@ export function PostpaidBillingTab({ currency, getDisplayAmount }: PostpaidBilli
   // Fetch all postpaid tenants with their credit limits
   const { data: rawTenants = [] } = useQuery({
     queryKey: ['postpaid-tenants'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('id, name, billing_model, billing_cycle_day, status')
-        .eq('billing_model', 'postpaid');
-      if (error) throw error;
-      return data || [];
-    } });
+    queryFn: async () => [] });
 
   const { data: rawCreditLimits = [] } = useQuery({
     queryKey: ['all-credit-limits'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('credit_limits')
-        .select('*');
-      if (error) throw error;
-      return data || [];
-    } });
+    queryFn: async () => [] });
 
   // Demo fallback so platform admins always see realistic content
   const DEMO_TENANTS = [
@@ -137,27 +123,8 @@ export function PostpaidBillingTab({ currency, getDisplayAmount }: PostpaidBilli
   const postpaidInvoices = rawInvoices.length > 0 ? rawInvoices : DEMO_INVOICES;
 
   const upsertCreditLimit = useMutation({
-    mutationFn: async (params: { tenantId: string; limit: number; threshold: number; action: string }) => {
-      const existing = creditLimits.find(c => c.tenant_id === params.tenantId);
-      if (existing) {
-        const { error } = await supabase
-          .from('credit_limits')
-          .update({
-            credit_limit_ngn: params.limit,
-            warning_threshold_percent: params.threshold,
-            hard_limit_action: params.action as any })
-          .eq('tenant_id', params.tenantId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('credit_limits')
-          .insert({
-            tenant_id: params.tenantId,
-            credit_limit_ngn: params.limit,
-            warning_threshold_percent: params.threshold,
-            hard_limit_action: params.action as any });
-        if (error) throw error;
-      }
+    mutationFn: async (_params: { tenantId: string; limit: number; threshold: number; action: string }) => {
+      toast.info('Coming soon');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-credit-limits'] });

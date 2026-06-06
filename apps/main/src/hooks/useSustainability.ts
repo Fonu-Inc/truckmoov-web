@@ -1,7 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
-import { toast } from 'sonner';
 
 export interface EmissionProfile {
   id: string;
@@ -73,149 +70,27 @@ export interface EvChargingSession {
 
 export function useSustainability() {
   const { user } = useAuthStore();
-  const qc = useQueryClient();
 
-  // CO2 Emission Logs
-  const co2Logs = useQuery({
-    queryKey: ['co2-emission-logs', user?.tenantId],
-    queryFn: async () => {
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      const { data, error } = await supabase
-        .from('co2_emission_logs')
-        .select('*')
-        .gte('trip_date', thirtyDaysAgo)
-        .order('trip_date', { ascending: false })
-        .limit(500);
-      if (error) throw error;
-      return data as Co2Log[];
-    },
-    enabled: !!user?.tenantId,
-  });
-
-  // Emission Profiles
-  const emissionProfiles = useQuery({
-    queryKey: ['vehicle-emission-profiles', user?.tenantId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('vehicle_emission_profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data as EmissionProfile[];
-    },
-    enabled: !!user?.tenantId,
-  });
-
-  // Eco Driving Scores
-  const ecoScores = useQuery({
-    queryKey: ['eco-driving-scores', user?.tenantId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('eco_driving_scores')
-        .select('*')
-        .order('eco_score', { ascending: false });
-      if (error) throw error;
-      return data as EcoDrivingScore[];
-    },
-    enabled: !!user?.tenantId,
-  });
-
-  // Sustainability Targets
-  const targets = useQuery({
-    queryKey: ['sustainability-targets', user?.tenantId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('fleet_sustainability_targets')
-        .select('*')
-        .maybeSingle();
-      if (error) throw error;
-      return data as SustainabilityTarget | null;
-    },
-    enabled: !!user?.tenantId,
-  });
-
-  // EV Charging Sessions
-  const evSessions = useQuery({
-    queryKey: ['ev-charging-sessions', user?.tenantId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ev_charging_sessions')
-        .select('*')
-        .order('started_at', { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      return data as EvChargingSession[];
-    },
-    enabled: !!user?.tenantId,
-  });
-
-  // Save emission profile
-  const saveProfile = useMutation({
-    mutationFn: async (profile: Partial<EmissionProfile> & { vehicle_id: string; tenant_id: string }) => {
-      const { data, error } = await supabase
-        .from('vehicle_emission_profiles')
-        .upsert(profile as any, { onConflict: 'tenant_id,vehicle_id' })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['vehicle-emission-profiles'] });
-      toast.success('Emission profile saved');
-    },
-    onError: (e) => toast.error('Failed to save profile', { description: e.message }),
-  });
-
-  // Save sustainability target
-  const saveTarget = useMutation({
-    mutationFn: async (target: Partial<SustainabilityTarget> & { tenant_id: string }) => {
-      const { data, error } = await supabase
-        .from('fleet_sustainability_targets')
-        .upsert(target, { onConflict: 'tenant_id' })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['sustainability-targets'] });
-      toast.success('Sustainability target updated');
-    },
-    onError: (e) => toast.error('Failed to save target', { description: e.message }),
-  });
-
-  // Computed stats
-  const totalCo2 = co2Logs.data?.reduce((sum, l) => sum + Number(l.co2_emitted_kg), 0) || 0;
-  const totalDistance = co2Logs.data?.reduce((sum, l) => sum + Number(l.distance_km), 0) || 0;
-  const avgCo2PerKm = totalDistance > 0 ? totalCo2 / totalDistance : 0;
-  const evCount = emissionProfiles.data?.filter(p => p.is_zero_emission).length || 0;
-  const totalProfiled = emissionProfiles.data?.length || 0;
-
-  // Daily trend from logs
-  const dailyTrend = co2Logs.data?.reduce((acc, l) => {
-    const date = l.trip_date;
-    if (!acc[date]) acc[date] = { date, co2: 0, distance: 0 };
-    acc[date].co2 += Number(l.co2_emitted_kg);
-    acc[date].distance += Number(l.distance_km);
-    return acc;
-  }, {} as Record<string, { date: string; co2: number; distance: number }>) || {};
-
-  const trendData = Object.values(dailyTrend).sort((a, b) => a.date.localeCompare(b.date));
+  const stubQuery = { data: [] as any[], isLoading: false, error: null, refetch: () => {} };
+  const stubMutation = {
+    mutate: (_arg: any) => {},
+    mutateAsync: async (_arg: any) => {},
+    isPending: false,
+  };
 
   return {
-    co2Logs,
-    emissionProfiles,
-    ecoScores,
-    targets,
-    evSessions,
-    saveProfile,
-    saveTarget,
-    totalCo2,
-    totalDistance,
-    avgCo2PerKm,
-    evCount,
-    totalProfiled,
-    trendData,
+    co2Logs: { ...stubQuery, data: undefined as Co2Log[] | undefined },
+    emissionProfiles: { ...stubQuery, data: undefined as EmissionProfile[] | undefined },
+    ecoScores: { ...stubQuery, data: undefined as EcoDrivingScore[] | undefined },
+    targets: { ...stubQuery, data: null as SustainabilityTarget | null | undefined },
+    evSessions: { ...stubQuery, data: undefined as EvChargingSession[] | undefined },
+    saveProfile: stubMutation,
+    saveTarget: stubMutation,
+    totalCo2: 0,
+    totalDistance: 0,
+    avgCo2PerKm: 0,
+    evCount: 0,
+    totalProfiled: 0,
+    trendData: [] as { date: string; co2: number; distance: number }[],
   };
 }

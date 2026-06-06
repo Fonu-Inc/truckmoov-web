@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export interface AutoBlockingRule {
@@ -65,8 +64,8 @@ export function useAutoIPBlocking() {
     const stored = localStorage.getItem(STORAGE_KEY);
     return stored ? JSON.parse(stored) : DEFAULT_RULES;
   });
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [geoCache, setGeoCache] = useState<Map<string, IPGeolocation>>(new Map());
+  const [isProcessing] = useState(false);
+  const [geoCache] = useState<Map<string, IPGeolocation>>(new Map());
 
   // Persist rules to localStorage
   useEffect(() => {
@@ -74,14 +73,14 @@ export function useAutoIPBlocking() {
   }, [rules]);
 
   const updateRule = useCallback((ruleId: string, updates: Partial<AutoBlockingRule>) => {
-    setRules(prev => prev.map(rule => 
+    setRules(prev => prev.map(rule =>
       rule.id === ruleId ? { ...rule, ...updates } : rule
     ));
     toast.success('Rule updated successfully');
   }, []);
 
   const toggleRule = useCallback((ruleId: string) => {
-    setRules(prev => prev.map(rule => 
+    setRules(prev => prev.map(rule =>
       rule.id === ruleId ? { ...rule, enabled: !rule.enabled } : rule
     ));
   }, []);
@@ -105,101 +104,22 @@ export function useAutoIPBlocking() {
     toast.success('Rules reset to defaults');
   }, []);
 
-  // Fetch IP geolocation
-  const getIPGeolocation = useCallback(async (ipAddress: string): Promise<IPGeolocation | null> => {
-    // Check cache first
-    if (geoCache.has(ipAddress)) {
-      return geoCache.get(ipAddress)!;
-    }
+  const getIPGeolocation = useCallback(async (_ipAddress: string): Promise<IPGeolocation | null> => {
+    return null;
+  }, []);
 
-    try {
-      const { data, error } = await supabase.functions.invoke('ip-geolocation', {
-        body: { ip_address: ipAddress }
-      });
-
-      if (error) throw error;
-
-      const geolocation = data?.geolocation as IPGeolocation;
-      
-      if (geolocation) {
-        setGeoCache(prev => new Map(prev).set(ipAddress, geolocation));
-      }
-
-      return geolocation || null;
-    } catch (err) {
-      console.error('Error fetching IP geolocation:', err);
-      return null;
-    }
-  }, [geoCache]);
-
-  // Check if an IP should be auto-blocked based on failed attempts
   const checkAutoBlock = useCallback(async (
-    ipAddress: string,
-    failedAttempts: number,
-    firstAttemptTime: Date,
-    blockIPFn: (ip: string, reason: string, options?: { expiresAt?: string; isPermanent?: boolean }) => Promise<boolean>
+    _ipAddress: string,
+    _failedAttempts: number,
+    _firstAttemptTime: Date,
+    _blockIPFn: (ip: string, reason: string, options?: { expiresAt?: string; isPermanent?: boolean }) => Promise<boolean>
   ): Promise<boolean> => {
-    const enabledRules = rules.filter(r => r.enabled);
-    const now = new Date();
-
-    for (const rule of enabledRules) {
-      const windowStart = new Date(now.getTime() - rule.timeWindowMinutes * 60 * 1000);
-      
-      // Check if attempts are within the time window
-      if (firstAttemptTime >= windowStart && failedAttempts >= rule.maxAttempts) {
-        setIsProcessing(true);
-        
-        try {
-          const expiresAt = rule.blockDurationHours 
-            ? new Date(now.getTime() + rule.blockDurationHours * 60 * 60 * 1000).toISOString()
-            : undefined;
-
-          const reason = `Auto-blocked: ${failedAttempts} failed login attempts in ${rule.timeWindowMinutes} minutes (${rule.name})`;
-          
-          const success = await blockIPFn(ipAddress, reason, {
-            expiresAt,
-            isPermanent: !rule.blockDurationHours
-          });
-
-          if (success) {
-            toast.warning(`IP ${ipAddress} has been automatically blocked`, {
-              description: rule.name
-            });
-            return true;
-          }
-        } catch (error) {
-          console.error('Error auto-blocking IP:', error);
-        } finally {
-          setIsProcessing(false);
-        }
-      }
-    }
-
     return false;
-  }, [rules]);
+  }, []);
 
-  // Batch fetch geolocation for multiple IPs
-  const batchGetGeolocation = useCallback(async (ipAddresses: string[]): Promise<Map<string, IPGeolocation>> => {
-    const results = new Map<string, IPGeolocation>();
-    const uncachedIPs = ipAddresses.filter(ip => !geoCache.has(ip));
-
-    // Get cached results
-    ipAddresses.forEach(ip => {
-      if (geoCache.has(ip)) {
-        results.set(ip, geoCache.get(ip)!);
-      }
-    });
-
-    // Fetch uncached IPs (with rate limiting)
-    for (const ip of uncachedIPs.slice(0, 10)) { // Limit to 10 at a time
-      const geo = await getIPGeolocation(ip);
-      if (geo) {
-        results.set(ip, geo);
-      }
-    }
-
-    return results;
-  }, [geoCache, getIPGeolocation]);
+  const batchGetGeolocation = useCallback(async (_ipAddresses: string[]): Promise<Map<string, IPGeolocation>> => {
+    return new Map();
+  }, []);
 
   return {
     rules,

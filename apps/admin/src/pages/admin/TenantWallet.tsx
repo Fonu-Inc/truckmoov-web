@@ -23,7 +23,6 @@ import {Wallet, CreditCard, Phone, MessageSquare, MessageCircle, ArrowUpRight, A
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { Separator } from "@/components/shadcn/separator";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import { UsageAnalyticsChart } from "@/components/wallet/UsageAnalyticsChart";
@@ -173,93 +172,12 @@ export default function TenantWallet() {
   }, [tenantId]);
 
   const fetchData = async () => {
-    setLoading(true);
-    await Promise.all([fetchWallet(), fetchTransactions(), fetchRates()]);
     setLoading(false);
   };
 
-  const fetchWallet = async () => {
-    const { data, error } = await supabase.rpc('get_wallet_balance', {
-      p_tenant_id: tenantId
-    });
-
-    if (!error && data && typeof data === 'object') {
-      const walletData = data as Record<string, unknown>;
-      setWalletInfo({
-        balance: Number(walletData.balance) || 0,
-        credit_enabled: Boolean(walletData.credit_enabled),
-        credit_limit: Number(walletData.credit_limit) || 0,
-        low_balance_threshold: Number(walletData.low_balance_threshold) || 1000
-      });
-    }
-  };
-
-  const fetchTransactions = async () => {
-    const { data, error } = await supabase
-      .from('wallet_transactions')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .order('created_at', { ascending: false })
-      .limit(100);
-
-    if (!error) {
-      setTransactions(data || []);
-    }
-  };
-
-  const fetchRates = async () => {
-    const { data, error } = await supabase
-      .from('communication_rates')
-      .select('communication_type, rate_ngn, rate_unit')
-      .eq('is_active', true);
-
-    if (!error) {
-      setRates(data || []);
-    }
-  };
-
   const handleTopup = async () => {
-    if (!topupAmount || !phoneNumber) {
-      toast.error('Please enter amount and phone number');
-      return;
-    }
-
-    const amount = parseFloat(topupAmount);
-    if (isNaN(amount) || amount <= 0) {
-      toast.error('Please enter a valid amount');
-      return;
-    }
-
-    setTopupLoading(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('wallet-topup', {
-        body: {
-          action: 'initiate_topup',
-          amount,
-          phoneNumber,
-          tenantId,
-          tenantName: user?.name
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        toast.success(data.message || 'Top-up successful!');
-        setTopupDialogOpen(false);
-        setTopupAmount('');
-        setPhoneNumber('');
-        fetchData();
-      } else {
-        toast.error(data?.error || 'Top-up failed');
-      }
-    } catch (error) {
-      console.error('Top-up error:', error);
-      toast.error('Failed to process top-up');
-    } finally {
-      setTopupLoading(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
   const getTypeIcon = (commType: string | null) => {

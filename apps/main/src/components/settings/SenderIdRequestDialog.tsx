@@ -19,7 +19,6 @@ import {
 import {Upload, FileText, X, Loader2, Download} from "lucide-react";
 import { useTenantSenderIds, type SenderIdType } from "@/hooks/useTenantSenderIds";
 import { useAuthStore } from "@/stores/authStore";
-import { supabase } from "@/integrations/supabase/client";
 import { generateSenderIdRequestLetter } from "@/utils/senderIdTemplateGenerator";
 import { toast } from "sonner";
 
@@ -77,48 +76,16 @@ export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDia
       return;
     }
 
-    setIsUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.tenantId}/${Date.now()}_request_letter.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('sender-id-documents')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from('sender-id-documents')
-        .getPublicUrl(fileName);
-
-      setUploadedFile({
-        name: file.name,
-        url: fileName, // Store the path, not the public URL (bucket is private)
-      });
-      toast.success("Request letter uploaded");
-    } catch (error: any) {
-      console.error("Upload error:", error);
-      toast.error(error.message || "Failed to upload file");
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+    toast.info('Coming soon');
+    setIsUploading(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
   const handleRemoveFile = async () => {
     if (!uploadedFile) return;
-
-    try {
-      await supabase.storage
-        .from('sender-id-documents')
-        .remove([uploadedFile.url]);
-      setUploadedFile(null);
-    } catch (error) {
-      console.error("Failed to remove file:", error);
-    }
+    setUploadedFile(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { Badge } from "@/components/shadcn/badge";
@@ -13,7 +13,6 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import {
   Building2,
@@ -22,11 +21,9 @@ import {
   XCircle,
   AlertCircle,
   Shield,
-  Loader2,
   UploadCloud,
   FileText,
   Trash2,
-  Save,
   Info,
   MapPin,
   Phone as PhoneIcon,
@@ -191,116 +188,37 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
   const cfg = FLEET_PROVIDER_KYC_CONFIG;
   const requiredDocs = useMemo(() => cfg.documents.filter((d) => d.required), []);
 
-  const [businessInfo, setBusinessInfo] = useState<BusinessInfo | null>(null);
-  const [documents, setDocuments] = useState<KYCDocument[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [uploadingType, setUploadingType] = useState<string | null>(null);
-  const [dragOverType, setDragOverType] = useState<string | null>(null);
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo>(() => {
+    const base = emptyBusinessInfo(tenantId);
+    return {
+      ...base,
+      email: user?.email || null,
+      billing_email: user?.email || null,
+      phone: user?.phone || null,
+    };
+  });
+  const [documents] = useState<KYCDocument[]>([]);
   const [selectedDocType, setSelectedDocType] = useState<string>("");
   const [isDropzoneDragging, setIsDropzoneDragging] = useState(false);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
-
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenantId]);
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const [{ data: bi }, { data: docs }] = await Promise.all([
-        supabase.from("tenant_business_info").select("*").eq("tenant_id", tenantId).maybeSingle(),
-        supabase
-          .from("tenant_kyc_documents")
-          .select("id, document_type, document_name, file_size, status, created_at")
-          .eq("tenant_id", tenantId),
-      ]);
-      const existing = (bi as BusinessInfo | null) ?? emptyBusinessInfo(tenantId);
-      // Pre-fill from the user's signup so they don't re-enter known info.
-      const derivedOrgName =
-        existing.company_name ||
-        (user?.name
-          ? cfg.audience === "Owner-Operator"
-            ? user.name
-            : `${user.name.split(" ")[0]}'s ${cfg.audience === "Aggregator Admin" ? "Network" : "Fleet"}`
-          : null);
-      setBusinessInfo({
-        ...existing,
-        company_name: existing.company_name || derivedOrgName,
-        email: existing.email || user?.email || null,
-        billing_email: existing.billing_email || existing.email || user?.email || null,
-        phone: existing.phone || user?.phone || null,
-      });
-      setDocuments((docs ?? []) as KYCDocument[]);
-    } catch (err) {
-      console.error("Failed to load KYC data", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const updateField = <K extends keyof BusinessInfo>(key: K, value: BusinessInfo[K]) => {
     setBusinessInfo((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
   const saveBusinessInfo = async () => {
-    if (!businessInfo) return;
-    setSaving(true);
-    try {
-      const payload = { ...businessInfo, tenant_id: tenantId };
-      const { error } = await supabase
-        .from("tenant_business_info")
-        .upsert(payload, { onConflict: "tenant_id" });
-      if (error) throw error;
-      toast.success("Business information saved");
-      void load();
-    } catch (err: any) {
-      toast.error(err.message ?? "Failed to save");
-    } finally {
-      setSaving(false);
-    }
+    toast.info('Coming soon');
+    return;
   };
 
-  const uploadFile = async (docType: string, file: File) => {
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("File too large", { description: "Max file size is 10MB." });
-      return;
-    }
-    setUploadingType(docType);
-    try {
-      const ext = file.name.split(".").pop();
-      const path = `${tenantId}/${docType}_${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("kyc-documents").upload(path, file);
-      if (upErr) throw upErr;
-      const { error: dbErr } = await supabase.from("tenant_kyc_documents").insert({
-        tenant_id: tenantId,
-        document_type: docType,
-        document_name: file.name,
-        file_path: path,
-        file_size: file.size,
-        mime_type: file.type,
-        status: "pending",
-      });
-      if (dbErr) throw dbErr;
-      toast.success("Document uploaded");
-      void load();
-    } catch (err: any) {
-      toast.error(err.message ?? "Upload failed");
-    } finally {
-      setUploadingType(null);
-    }
+  const uploadFile = async (_docType: string, _file: File) => {
+    toast.info('Coming soon');
+    return;
   };
 
-  const removeDocument = async (doc: KYCDocument) => {
-    try {
-      const { error } = await supabase.from("tenant_kyc_documents").delete().eq("id", doc.id);
-      if (error) throw error;
-      toast.success("Document removed");
-      void load();
-    } catch (err: any) {
-      toast.error(err.message ?? "Failed to remove");
-    }
+  const removeDocument = async (_doc: KYCDocument) => {
+    toast.info('Coming soon');
+    return;
   };
 
   const completion = useMemo(() => {
@@ -322,14 +240,6 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
     const filled = fieldKeys.filter((k) => Boolean(businessInfo[k])).length;
     return Math.round(docPct + (filled / fieldKeys.length) * 50);
   }, [businessInfo, documents, requiredDocs]);
-
-  if (loading || !businessInfo) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -665,7 +575,7 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   className="hidden"
-                  disabled={!selectedDocType || uploadingType !== null}
+                  disabled={!selectedDocType}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file && selectedDocType) {
@@ -674,22 +584,15 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
                     e.target.value = "";
                   }}
                 />
-                {uploadingType ? (
-                  <>
-                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                    <p className="text-xs text-muted-foreground">Uploading…</p>
-                  </>
-                ) : (
-                  <>
-                    <UploadCloud className="w-5 h-5 text-primary" />
-                    <p className="text-xs font-medium text-foreground">
-                      <span className="text-primary">Click to upload</span> or drag & drop
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      PDF, JPG, PNG, DOC (max 10MB)
-                    </p>
-                  </>
-                )}
+                <>
+                  <UploadCloud className="w-5 h-5 text-primary" />
+                  <p className="text-xs font-medium text-foreground">
+                    <span className="text-primary">Click to upload</span> or drag & drop
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    PDF, JPG, PNG, DOC (max 10MB)
+                  </p>
+                </>
               </label>
             </div>
           </div>

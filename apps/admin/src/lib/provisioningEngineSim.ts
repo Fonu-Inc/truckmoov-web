@@ -1,5 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
-
 /**
  * Simulated External Provisioning Engine
  *
@@ -52,14 +50,8 @@ export async function startDeviceProvisioningSimulation(requestId: string) {
 
   // Move first step to in_progress, set status to in_progress
   checklist[0].status = "in_progress";
-  await supabase
-    .from("device_setup_requests")
-    .update({
-      status: "in_progress",
-      provisioning_started_at: new Date().toISOString(),
-      provisioning_checklist: checklist as never,
-    } as never)
-    .eq("id", requestId);
+  // no-op: DB write removed (Supabase removed)
+  await Promise.resolve();
 
   for (let i = 0; i < checklist.length; i++) {
     await new Promise((r) => setTimeout(r, STEP_DELAY_MS));
@@ -68,20 +60,13 @@ export async function startDeviceProvisioningSimulation(requestId: string) {
     if (i + 1 < checklist.length) {
       checklist[i + 1].status = "in_progress";
     }
-    await supabase
-      .from("device_setup_requests")
-      .update({ provisioning_checklist: checklist as never } as never)
-      .eq("id", requestId);
+    // no-op: DB write removed (Supabase removed)
+    await Promise.resolve();
   }
 
   // Mark as completed
-  await supabase
-    .from("device_setup_requests")
-    .update({
-      status: "completed",
-      provisioning_completed_at: new Date().toISOString(),
-    } as never)
-    .eq("id", requestId);
+  // no-op: DB write removed (Supabase removed)
+  await Promise.resolve();
 }
 
 /**
@@ -92,14 +77,8 @@ export async function startSIMProvisioningSimulation(requestId: string) {
   const checklist: ProvisioningStep[] = SIM_PROVISIONING_STEPS.map((s) => ({ ...s }));
 
   checklist[0].status = "in_progress";
-  await supabase
-    .from("sim_provisioning_requests")
-    .update({
-      status: "in_progress",
-      provisioning_started_at: new Date().toISOString(),
-      provisioning_checklist: checklist as never,
-    } as never)
-    .eq("id", requestId);
+  // no-op: DB write removed (Supabase removed)
+  await Promise.resolve();
 
   for (let i = 0; i < checklist.length; i++) {
     await new Promise((r) => setTimeout(r, STEP_DELAY_MS));
@@ -108,19 +87,12 @@ export async function startSIMProvisioningSimulation(requestId: string) {
     if (i + 1 < checklist.length) {
       checklist[i + 1].status = "in_progress";
     }
-    await supabase
-      .from("sim_provisioning_requests")
-      .update({ provisioning_checklist: checklist as never } as never)
-      .eq("id", requestId);
+    // no-op: DB write removed (Supabase removed)
+    await Promise.resolve();
   }
 
-  await supabase
-    .from("sim_provisioning_requests")
-    .update({
-      status: "completed",
-      provisioning_completed_at: new Date().toISOString(),
-    } as never)
-    .eq("id", requestId);
+  // no-op: DB write removed (Supabase removed)
+  await Promise.resolve();
 }
 
 

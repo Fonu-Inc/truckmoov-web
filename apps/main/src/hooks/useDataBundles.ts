@@ -1,7 +1,3 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-
 export type BundleCycle = "monthly" | "yearly";
 
 export interface BundleCatalogItem {
@@ -40,112 +36,56 @@ export interface BundleTopupInput {
 
 /* ── Catalog (read-only for tenants, writeable for platform) ── */
 export function useBundleCatalog() {
-  return useQuery({
-    queryKey: ["bundle-catalog"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("data_bundles_catalog")
-        .select("*")
-        .order("billing_cycle", { ascending: true })
-        .order("data_mb", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as BundleCatalogItem[];
-    },
-  });
+  return {
+    data: [] as BundleCatalogItem[],
+    isLoading: false,
+    error: null,
+    refetch: () => {},
+  };
 }
 
 export function useUpsertBundle() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (b: Partial<BundleCatalogItem> & { code: string; name: string; data_mb: number; price_ngn: number; validity_days: number }) => {
-      const { error } = await supabase.from("data_bundles_catalog").upsert([b], {
-        onConflict: "code",
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["bundle-catalog"] });
-      toast.success("Bundle saved");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+  return {
+    mutate: async (_b: Partial<BundleCatalogItem> & { code: string; name: string; data_mb: number; price_ngn: number; validity_days: number }) => {},
+    mutateAsync: async (_b: any) => {},
+    isPending: false,
+  };
 }
 
 export function useToggleBundleActive() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase
-        .from("data_bundles_catalog")
-        .update({ is_active })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["bundle-catalog"] }),
-  });
+  return {
+    mutate: async (_args: { id: string; is_active: boolean }) => {},
+    mutateAsync: async (_args: any) => {},
+    isPending: false,
+  };
 }
 
 /* ── Allocations (per tenant) ── */
-export function useBundleAllocations(tenantId?: string) {
-  return useQuery({
-    queryKey: ["bundle-allocations", tenantId ?? "self"],
-    queryFn: async () => {
-      let q = supabase
-        .from("data_bundle_allocations")
-        .select("*")
-        .order("expires_at", { ascending: true });
-      if (tenantId) q = q.eq("tenant_id", tenantId);
-      const { data, error } = await q;
-      if (error) throw error;
-      return (data ?? []) as BundleAllocation[];
-    },
-    enabled: tenantId !== undefined,
-  });
+export function useBundleAllocations(_tenantId?: string) {
+  return {
+    data: [] as BundleAllocation[],
+    isLoading: false,
+    error: null,
+    refetch: () => {},
+  };
 }
 
-/* ── Top-up: insert pending row + invoke pcrf-bridge ── */
+/* ── Top-up ── */
 export function useBundleTopup() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: BundleTopupInput) => {
-      const { data: topup, error } = await supabase
-        .from("data_bundle_topups")
-        .insert({ ...input, amount_ngn: 0, status: "PENDING" })
-        .select()
-        .single();
-      if (error) throw error;
-
-      const { error: fnErr } = await supabase.functions.invoke("pcrf-bridge", {
-        body: { topup_id: topup.id },
-      });
-      if (fnErr) throw fnErr;
-      return topup;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["bundle-allocations"] });
-      qc.invalidateQueries({ queryKey: ["bundle-topups"] });
-      toast.success("Top-up requested");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+  return {
+    mutate: async (_input: BundleTopupInput) => {},
+    mutateAsync: async (_input: any) => {},
+    isPending: false,
+  };
 }
 
-export function useBundleTopups(tenantId?: string) {
-  return useQuery({
-    queryKey: ["bundle-topups", tenantId ?? "self"],
-    queryFn: async () => {
-      let q = supabase
-        .from("data_bundle_topups")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (tenantId) q = q.eq("tenant_id", tenantId);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: tenantId !== undefined,
-  });
+export function useBundleTopups(_tenantId?: string) {
+  return {
+    data: [] as any[],
+    isLoading: false,
+    error: null,
+    refetch: () => {},
+  };
 }
 
 export function formatBundleSize(mb: number): string {

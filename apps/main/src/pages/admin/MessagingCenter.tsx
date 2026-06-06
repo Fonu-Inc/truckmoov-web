@@ -48,7 +48,6 @@ import { WhatsAppBusinessSetup } from "@/components/communications/WhatsAppBusin
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Campaign {
   id: string;
@@ -102,58 +101,12 @@ export default function MessagingCenter() {
 
   // Fetch real message stats from broadcast_messages table
   const fetchStats = useCallback(async () => {
-    if (!tenantId) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('broadcast_messages')
-        .select('total_recipients, delivered_count, read_count')
-        .eq('tenant_id', tenantId);
-      
-      if (error) throw error;
-      
-      const totals = (data || []).reduce((acc, msg) => ({
-        sent: acc.sent + (msg.total_recipients || 0),
-        delivered: acc.delivered + (msg.delivered_count || 0),
-        read: acc.read + (msg.read_count || 0),
-      }), { sent: 0, delivered: 0, read: 0 });
-      
-      setMessageStats(totals);
-    } catch (err) {
-      console.error('Error fetching message stats:', err);
-    }
+    // Coming soon
   }, [tenantId]);
 
   // Fetch campaigns from broadcast_messages
   const fetchCampaigns = useCallback(async () => {
-    if (!tenantId) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('broadcast_messages')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      const mappedCampaigns: Campaign[] = (data || []).map(msg => ({
-        id: msg.id,
-        name: msg.message.substring(0, 50) + (msg.message.length > 50 ? '...' : ''),
-        channels: [msg.channel || 'sms'],
-        recipients: msg.total_recipients || 0,
-        status: 'completed' as const,
-        sent: msg.total_recipients || 0,
-        delivered: msg.delivered_count || 0,
-        read: msg.read_count || 0,
-        failed: (msg.total_recipients || 0) - (msg.delivered_count || 0),
-        createdAt: new Date(msg.created_at),
-      }));
-      
-      setCampaigns(mappedCampaigns);
-    } catch (err) {
-      console.error('Error fetching campaigns:', err);
-    }
+    // Coming soon
   }, [tenantId]);
 
   useEffect(() => {

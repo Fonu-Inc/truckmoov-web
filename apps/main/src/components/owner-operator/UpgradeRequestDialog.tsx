@@ -12,7 +12,6 @@ import { Textarea } from "@/components/shadcn/textarea";
 import { Label } from "@/components/shadcn/label";
 import { Loader2, ArrowUpCircle } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 
 interface UpgradeRequestDialogProps {
@@ -37,30 +36,7 @@ export function UpgradeRequestDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
-    try {
-      const { error } = await supabase
-        .from("org_upgrade_requests" as any)
-        .insert({
-          org_id: orgId,
-          tenant_id: tenantId,
-          requested_by: user?.id,
-          reason: reason.trim() || null,
-          current_vehicle_count: currentVehicleCount,
-        });
-
-      if (error) throw error;
-
-      toast.success("Upgrade request submitted! A platform admin will review it shortly.");
-      setReason("");
-      onOpenChange(false);
-      onSubmitted();
-    } catch (err: any) {
-      console.error("Error submitting upgrade request:", err);
-      toast.error(err.message || "Failed to submit upgrade request");
-    } finally {
-      setIsSubmitting(false);
-    }
+    toast.info('Coming soon');
   };
 
   return (

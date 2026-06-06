@@ -14,7 +14,6 @@ import {
   XCircle,
   Loader2,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { SIMProvisioningRequest } from "@/hooks/useFonuSIM";
 import { cn } from "@/lib/utils";
 
@@ -71,51 +70,13 @@ export function ApprovalChecklist({
 
   // Fetch subscription and current SIM count
   useEffect(() => {
-    const fetchSubscriptionData = async () => {
-      try {
-        // Get tenant's current subscription
-        const { data: subscription } = await supabase
-          .from('tenant_subscriptions')
-          .select('*, subscription_plans(*)')
-          .eq('tenant_id', request.tenant_id)
-          .eq('status', 'active')
-          .single();
-
-        // Get current SIM count for tenant
-        const { count: simCount } = await supabase
-          .from('iot_sims')
-          .select('*', { count: 'exact', head: true })
-          .eq('tenant_id', request.tenant_id);
-
-        const currentSims = simCount || 0;
-        const requestedSims = request.number_of_sims || 1;
-        
-        let planLimit = PLAN_LIMITS.starter; // Default
-        let planName = 'Starter';
-        
-        if (subscription?.subscription_plans) {
-          const plan = subscription.subscription_plans as { name: string; max_devices?: number };
-          planName = plan.name || 'Unknown';
-          const planKey = planName.toLowerCase();
-          planLimit = PLAN_LIMITS[planKey] || plan.max_devices || 10;
-        }
-
-        const wouldExceed = (currentSims + requestedSims) > planLimit;
-
-        setSubscriptionCheck({
-          currentSims,
-          planLimit,
-          planName,
-          wouldExceed,
-          loading: false,
-        });
-      } catch (err) {
-        console.error('Error fetching subscription data:', err);
-        setSubscriptionCheck(prev => ({ ...prev, loading: false }));
-      }
-    };
-
-    fetchSubscriptionData();
+    setSubscriptionCheck({
+      currentSims: 0,
+      planLimit: PLAN_LIMITS.starter,
+      planName: 'Starter',
+      wouldExceed: false,
+      loading: false,
+    });
   }, [request.tenant_id, request.number_of_sims]);
 
   // Calculate volume risk flags

@@ -1,7 +1,3 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-
 export interface ApiKey {
   id: string;
   name: string;
@@ -41,87 +37,13 @@ export const API_SCOPES = [
 ] as const;
 
 export function useApiKeys() {
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
-
-  const fetchApiKeys = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await supabase.functions.invoke('api-keys', {
-        method: 'GET',
-      });
-
-      if (response.error) throw new Error(response.error.message);
-      setApiKeys(response.data?.data || []);
-    } catch (error) {
-      console.error('Error fetching API keys:', error);
-      toast.error('Failed to load API keys');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const createApiKey = useCallback(async (input: CreateApiKeyInput): Promise<string | null> => {
-    try {
-      const response = await supabase.functions.invoke('api-keys', {
-        method: 'POST',
-        body: input,
-      });
-
-      if (response.error) throw new Error(response.error.message);
-
-      const createdKey = response.data?.data?.api_key;
-      if (createdKey) {
-        setNewlyCreatedKey(createdKey);
-        toast.success('API key created! Copy it now - it won\'t be shown again.');
-        await fetchApiKeys();
-        return createdKey;
-      }
-      return null;
-    } catch (error: any) {
-      console.error('Error creating API key:', error);
-      toast.error(error.message || 'Failed to create API key');
-      return null;
-    }
-  }, [fetchApiKeys]);
-
-  const revokeApiKey = useCallback(async (keyId: string): Promise<boolean> => {
-    try {
-      const response = await supabase.functions.invoke(`api-keys/${keyId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.error) throw new Error(response.error.message);
-
-      toast.success('API key revoked');
-      await fetchApiKeys();
-      return true;
-    } catch (error: any) {
-      console.error('Error revoking API key:', error);
-      toast.error(error.message || 'Failed to revoke API key');
-      return false;
-    }
-  }, [fetchApiKeys]);
-
-  const clearNewlyCreatedKey = useCallback(() => {
-    setNewlyCreatedKey(null);
-  }, []);
-
-  useEffect(() => {
-    fetchApiKeys();
-  }, [fetchApiKeys]);
-
   return {
-    apiKeys,
-    isLoading,
-    newlyCreatedKey,
-    createApiKey,
-    revokeApiKey,
-    refreshApiKeys: fetchApiKeys,
-    clearNewlyCreatedKey,
+    apiKeys: [] as ApiKey[],
+    isLoading: false,
+    newlyCreatedKey: null as string | null,
+    createApiKey: async (_input: CreateApiKeyInput): Promise<string | null> => null,
+    revokeApiKey: async (_keyId: string): Promise<boolean> => false,
+    refreshApiKeys: () => {},
+    clearNewlyCreatedKey: () => {},
   };
 }

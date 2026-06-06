@@ -9,7 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useStorageUsage } from "@/hooks/useStorageUsage";
 import { useTenantSubscription } from "@/hooks/useTenantSubscription";
 import { useAuthStore } from "@/stores/authStore";
-import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
 const AVG = {
@@ -48,35 +47,7 @@ export function StoragePanel() {
     queryKey: ["storage-breakdown", tenantId],
     enabled: !!tenantId,
     queryFn: async () => {
-      if (!tenantId) return null;
-      const [kyc, waybills, pod, compliance] = await Promise.all([
-        supabase.from("tenant_kyc_documents").select("file_size, created_at").eq("tenant_id", tenantId),
-        supabase.from("waybill_records").select("id, created_at", { count: "exact" }).eq("tenant_id", tenantId),
-        supabase.from("job_pod_media").select("id, created_at", { count: "exact" }).eq("tenant_id", tenantId),
-        supabase.from("compliance_documents").select("id, created_at", { count: "exact" }).eq("tenant_id", tenantId),
-      ]);
-
-      const kycBytes = (kyc.data ?? []).reduce((s: number, r: any) => s + (r.file_size ?? 0), 0);
-      const kycCount = (kyc.data ?? []).length;
-      const waybillCount = waybills.count ?? 0;
-      const podCount = pod.count ?? 0;
-      const complianceCount = compliance.count ?? 0;
-
-      const rows: Row[] = [
-        { key: "pod", label: "Proof of Delivery (POD) photos", icon: ImageIcon, count: podCount, bytes: podCount * AVG.pod, color: "bg-primary" },
-        { key: "waybill", label: "Waybill scans & extractions", icon: Receipt, count: waybillCount, bytes: waybillCount * AVG.waybill, color: "bg-warning" },
-        { key: "compliance", label: "Compliance documents", icon: ShieldCheck, count: complianceCount, bytes: complianceCount * AVG.compliance, color: "bg-success" },
-        { key: "kyc", label: "KYC documents", icon: FileText, count: kycCount, bytes: kycBytes, color: "bg-accent" },
-      ];
-
-      // Last 30 days additions
-      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const recent30 =
-        (kyc.data ?? []).filter((r: any) => r.created_at >= cutoff).length +
-        // counts queries didn't return rows; approximate via secondary lightweight queries
-        0;
-
-      return { rows, recent30 };
+      return null;
     },
   });
 

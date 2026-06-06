@@ -21,17 +21,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
-import { 
-  Wallet, 
-  Plus, 
-  RefreshCw, 
-  Building2, 
+import {
+  Wallet,
+  Plus,
+  RefreshCw,
+  Building2,
   CreditCard,
   AlertTriangle,
   TrendingUp,
   TrendingDown
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { TableToolbar, type FilterValues } from "@/components/shadcn/table-toolbar";
@@ -65,71 +64,28 @@ export function TenantWalletManagement() {
   }, []);
 
   const fetchWallets = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('tenant_wallets')
-      .select('*')
-      .order('balance_ngn', { ascending: true });
-
-    if (error) {
-      toast.error('Failed to load wallets');
-      console.error(error);
-    } else {
-      const real = data || [];
-      const DEMO_WALLETS: TenantWallet[] = [
-        { id: "dw-1", tenant_id: "Lagos Express Logistics", balance_ngn: 4_287_500, credit_enabled: true, credit_limit_ngn: 5_000_000, low_balance_threshold_ngn: 500_000, updated_at: new Date(Date.now() - 1000 * 60 * 12).toISOString() },
-        { id: "dw-2", tenant_id: "Nairobi Fleet Group", balance_ngn: 2_148_900, credit_enabled: true, credit_limit_ngn: 3_000_000, low_balance_threshold_ngn: 400_000, updated_at: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
-        { id: "dw-3", tenant_id: "Accra Swift Cargo", balance_ngn: 1_842_300, credit_enabled: true, credit_limit_ngn: 2_500_000, low_balance_threshold_ngn: 300_000, updated_at: new Date(Date.now() - 1000 * 60 * 45).toISOString() },
-        { id: "dw-4", tenant_id: "Johannesburg Freight", balance_ngn: 612_000, credit_enabled: true, credit_limit_ngn: 2_000_000, low_balance_threshold_ngn: 500_000, updated_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() },
-        { id: "dw-5", tenant_id: "Abuja Haulage Co.", balance_ngn: 384_200, credit_enabled: false, credit_limit_ngn: 0, low_balance_threshold_ngn: 400_000, updated_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString() },
-        { id: "dw-6", tenant_id: "Cape Town Trucking", balance_ngn: -128_400, credit_enabled: true, credit_limit_ngn: 1_500_000, low_balance_threshold_ngn: 250_000, updated_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString() },
-        { id: "dw-7", tenant_id: "Kano Northern Logistics", balance_ngn: 1_204_700, credit_enabled: false, credit_limit_ngn: 0, low_balance_threshold_ngn: 200_000, updated_at: new Date(Date.now() - 1000 * 60 * 60 * 9).toISOString() },
-        { id: "dw-8", tenant_id: "Dar es Salaam Movers", balance_ngn: 798_400, credit_enabled: true, credit_limit_ngn: 1_000_000, low_balance_threshold_ngn: 200_000, updated_at: new Date(Date.now() - 1000 * 60 * 60 * 14).toISOString() },
-      ];
-      setWallets(real.length > 0 ? real : DEMO_WALLETS);
-    }
+    const DEMO_WALLETS: TenantWallet[] = [
+      { id: "dw-1", tenant_id: "Lagos Express Logistics", balance_ngn: 4_287_500, credit_enabled: true, credit_limit_ngn: 5_000_000, low_balance_threshold_ngn: 500_000, updated_at: new Date(Date.now() - 1000 * 60 * 12).toISOString() },
+      { id: "dw-2", tenant_id: "Nairobi Fleet Group", balance_ngn: 2_148_900, credit_enabled: true, credit_limit_ngn: 3_000_000, low_balance_threshold_ngn: 400_000, updated_at: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
+      { id: "dw-3", tenant_id: "Accra Swift Cargo", balance_ngn: 1_842_300, credit_enabled: true, credit_limit_ngn: 2_500_000, low_balance_threshold_ngn: 300_000, updated_at: new Date(Date.now() - 1000 * 60 * 45).toISOString() },
+      { id: "dw-4", tenant_id: "Johannesburg Freight", balance_ngn: 612_000, credit_enabled: true, credit_limit_ngn: 2_000_000, low_balance_threshold_ngn: 500_000, updated_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() },
+      { id: "dw-5", tenant_id: "Abuja Haulage Co.", balance_ngn: 384_200, credit_enabled: false, credit_limit_ngn: 0, low_balance_threshold_ngn: 400_000, updated_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString() },
+      { id: "dw-6", tenant_id: "Cape Town Trucking", balance_ngn: -128_400, credit_enabled: true, credit_limit_ngn: 1_500_000, low_balance_threshold_ngn: 250_000, updated_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString() },
+      { id: "dw-7", tenant_id: "Kano Northern Logistics", balance_ngn: 1_204_700, credit_enabled: false, credit_limit_ngn: 0, low_balance_threshold_ngn: 200_000, updated_at: new Date(Date.now() - 1000 * 60 * 60 * 9).toISOString() },
+      { id: "dw-8", tenant_id: "Dar es Salaam Movers", balance_ngn: 798_400, credit_enabled: true, credit_limit_ngn: 1_000_000, low_balance_threshold_ngn: 200_000, updated_at: new Date(Date.now() - 1000 * 60 * 60 * 14).toISOString() },
+    ];
+    setWallets(DEMO_WALLETS);
     setLoading(false);
   };
 
   const handleTopup = async () => {
-    if (!selectedWallet || !topupAmount) return;
-    
-    setTopupLoading(true);
-    
-    const { data, error } = await supabase.rpc('topup_wallet', {
-      p_tenant_id: selectedWallet.tenant_id,
-      p_amount: parseFloat(topupAmount),
-      p_description: 'Manual top-up by platform admin'
-    });
-
-    if (error) {
-      toast.error('Failed to top up wallet');
-      console.error(error);
-    } else if (data && typeof data === 'object' && 'success' in data && data.success) {
-      toast.success(`Successfully added ₦${parseFloat(topupAmount).toLocaleString()} to wallet`);
-      setTopupDialogOpen(false);
-      setTopupAmount('');
-      setSelectedWallet(null);
-      fetchWallets();
-    } else {
-      toast.error('Top-up failed');
-    }
-    
-    setTopupLoading(false);
+    toast.info('Coming soon');
+    return;
   };
 
-  const handleToggleCredit = async (wallet: TenantWallet) => {
-    const { error } = await supabase
-      .from('tenant_wallets')
-      .update({ credit_enabled: !wallet.credit_enabled })
-      .eq('id', wallet.id);
-
-    if (error) {
-      toast.error('Failed to update credit status');
-    } else {
-      toast.success(`Credit ${wallet.credit_enabled ? 'disabled' : 'enabled'} for tenant`);
-      fetchWallets();
-    }
+  const handleToggleCredit = async (_wallet: TenantWallet) => {
+    toast.info('Coming soon');
+    return;
   };
 
   const getBalanceStatus = (wallet: TenantWallet) => {

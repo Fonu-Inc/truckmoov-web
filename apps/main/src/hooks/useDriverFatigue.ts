@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { apiGet } from '@/lib/backendApi';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 export interface FatigueAlert {
@@ -22,7 +21,6 @@ export interface FatigueAlert {
 export function useDriverFatigue(tenantId?: string) {
   const [alerts, setAlerts] = useState<FatigueAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchAlerts = async () => {
@@ -49,30 +47,12 @@ export function useDriverFatigue(tenantId?: string) {
   }, [tenantId]);
 
   const analyzeFatigue = async (
-    deviceId: string,
-    tenantId: string,
-    driverId?: string,
-    driverName?: string
+    _deviceId: string,
+    _tenantId: string,
+    _driverId?: string,
+    _driverName?: string
   ) => {
-    setIsAnalyzing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('driver-fatigue-analysis', {
-        body: { device_id: deviceId, tenant_id: tenantId, driver_id: driverId, driver_name: driverName },
-      });
-      if (error) throw error;
-      toast.success('Analysis Complete', {
-        description: `Fatigue score: ${data.alert.fatigue_score}/10 (${data.alert.risk_level})`,
-      });
-      return data;
-    } catch (error) {
-      console.error('Error analyzing fatigue:', error);
-      toast.error('Analysis Failed', {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
-      throw error;
-    } finally {
-      setIsAnalyzing(false);
-    }
+    return null;
   };
 
   const getAlertsStats = () => {
@@ -98,5 +78,5 @@ export function useDriverFatigue(tenantId?: string) {
     };
   };
 
-  return { alerts, isLoading, isAnalyzing, analyzeFatigue, getAlertsStats, refetch: fetchAlerts };
+  return { alerts, isLoading, isAnalyzing: false, analyzeFatigue, getAlertsStats, refetch: fetchAlerts };
 }

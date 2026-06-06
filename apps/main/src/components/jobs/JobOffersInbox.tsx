@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useOrgContext } from "@/hooks/useOrgContext";
 import { useOwnerOperatorJobLimit } from "@/hooks/useOwnerOperatorJobLimit";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -47,51 +46,15 @@ export function JobOffersInbox() {
   const { data: offers = [], isLoading } = useQuery({
     queryKey: ["job-offers-inbox", orgIds],
     queryFn: async () => {
-      if (orgIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from("job_offers")
-        .select(`
-          *,
-          jobs!job_offers_job_id_fkey (
-            id, reference, status, pickup_address, delivery_address,
-            cargo_type, cargo_weight, amount_ngn, deadline, created_at
-          ),
-          organizations!job_offers_job_owner_org_id_fkey (
-            id, name
-          )
-        `)
-        .in("target_org_id", orgIds)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data || [];
+      return [];
     },
     enabled: orgIds.length > 0,
   });
 
   const respondMutation = useMutation({
     mutationFn: async ({ offerId, status, note }: { offerId: string; status: string; note: string }) => {
-      const { error } = await supabase
-        .from("job_offers")
-        .update({
-          status,
-          responded_at: new Date().toISOString(),
-          response_note: note || null,
-        })
-        .eq("id", offerId);
-      if (error) throw error;
-
-      if (status === "ACCEPTED" && respondingOffer) {
-        const offer = offers.find((o) => o.id === offerId);
-        if (offer) {
-          await supabase
-            .from("jobs")
-            .update({
-              executing_org_id: offer.target_org_id,
-              status: "assigned",
-            })
-            .eq("id", offer.job_id);
-        }
-      }
+      toast.info('Coming soon');
+      return;
     },
     onSuccess: () => {
       toast.success(responseAction === "ACCEPTED" ? "Offer accepted" : "Offer declined");

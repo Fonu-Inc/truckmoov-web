@@ -24,7 +24,6 @@ import {
   Battery,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { format, differenceInDays, isBefore, addDays } from 'date-fns';
 import { VehicleLiveMap } from '@/components/owner-operator/VehicleLiveMap';
@@ -37,80 +36,36 @@ export default function OwnerOperatorVehicleDetail() {
   // Fetch vehicle
   const { data: vehicle, isLoading: vehicleLoading } = useQuery({
     queryKey: ['oo-vehicle-detail', vehicleId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('vehicles')
-        .select('*')
-        .eq('id', vehicleId!)
-        .single();
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async () => null,
     enabled: !!vehicleId,
   });
 
   // Fetch assigned device
   const { data: device } = useQuery({
     queryKey: ['oo-vehicle-device', vehicleId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('devices')
-        .select('*')
-        .eq('vehicle_id', vehicleId!)
-        .eq('lifecycle_status', 'assigned')
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async () => null,
     enabled: !!vehicleId,
   });
 
   // Fetch latest telemetry for device
   const { data: latestTelemetry } = useQuery({
     queryKey: ['oo-device-telemetry', device?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('device_telemetry')
-        .select('*')
-        .eq('device_id', device!.id)
-        .order('timestamp', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async () => null,
     enabled: !!device?.id,
-    refetchInterval: 30000, // refresh every 30s
+    refetchInterval: 30000,
   });
 
   // Fetch recent jobs for this vehicle
   const { data: recentJobs = [] } = useQuery({
     queryKey: ['oo-vehicle-jobs', vehicleId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('jobs')
-        .select('id, reference, status, pickup_address, delivery_address, amount_ngn, revenue_ngn, created_at, updated_at')
-        .eq('assigned_vehicle_id', vehicleId!)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: async () => [] as never[],
     enabled: !!vehicleId,
   });
 
   // Fetch compliance docs for this vehicle
   const { data: complianceDocs = [] } = useQuery({
     queryKey: ['oo-vehicle-compliance', vehicleId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('compliance_documents')
-        .select('id, document_name, document_type, expiry_date, status, verification_status')
-        .eq('vehicle_id', vehicleId!)
-        .order('expiry_date', { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: async () => [] as never[],
     enabled: !!vehicleId,
   });
 
