@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
-import { useDeviceSetupRequests, type DeviceSetupRequestStatus } from "@/hooks/useDeviceSetupRequests";
+type DeviceSetupRequestStatus = "pending_review" | "assigned" | "in_progress" | "awaiting_heartbeat" | "active" | "rejected" | "cancelled";
 import { useAuthStore } from "@/stores/authStore";
 
 const statusConfig: Record<DeviceSetupRequestStatus, { label: string; color: string; icon: React.ReactNode }> = {
@@ -100,7 +100,8 @@ const DEMO_DEVICE_REQUESTS = [
 ];
 
 export function DeviceRequestsTracker() {
-  const { requests: liveRequests, loading } = useDeviceSetupRequests();
+  const liveRequests: any[] = [];
+  const loading = false;
   const { user } = useAuthStore();
   const requests = liveRequests.length > 0 ? liveRequests : (DEMO_DEVICE_REQUESTS as any);
   const [expandedId, setExpandedId] = useState<string | null>(null);

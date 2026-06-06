@@ -4,8 +4,6 @@ import { Badge } from '@/components/shadcn/badge';
 import { Button } from '@/components/shadcn/button';
 import { Progress } from '@/components/shadcn/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/shadcn/tooltip';
-import { useMaintenanceRiskScores } from '@/hooks/useMaintenanceRiskScores';
-import { useVehicles } from '@/hooks/useVehicles';
 import { 
   RefreshCw, 
   AlertTriangle, 
@@ -16,8 +14,12 @@ import {
 } from 'lucide-react';
 
 export function MaintenanceRiskPanel() {
-  const { riskScores, isLoading, isComputing, computeAllRiskScores, getRiskLevelColor } = useMaintenanceRiskScores();
-  const { vehicles } = useVehicles();
+  const riskScores: any[] = [];
+  const isLoading = false;
+  const isComputing = false;
+  const computeAllRiskScores = async (..._args: any[]) => {};
+  const getRiskLevelColor = (_level: string) => '';
+  const vehicles: any[] = [];
 
   const getVehicleName = (vehicleId: string) => {
     const vehicle = vehicles?.find(v => v.id === vehicleId);

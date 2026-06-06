@@ -31,13 +31,15 @@ import {
 } from "recharts";
 import { useAuthStore } from "@/stores/authStore";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import {
-  useBundleAllocations,
-  useBundleCatalog,
-  useBundleTopup,
-  useBundleTopups,
-  formatBundleSize,
-} from "@/hooks/useDataBundles";
+const formatBundleSize = (mb: number) => {
+  if (!mb) return "0 MB";
+  if (mb >= 1024) return `${(mb / 1024).toFixed(0)} GB`;
+  return `${mb} MB`;
+};
+const useBundleAllocations = (_tenantId: any) => ({ data: [] as any[], isLoading: false });
+const useBundleCatalog = () => ({ data: [] as any[] });
+const useBundleTopups = (_tenantId: any) => ({ data: [] as any[] });
+const useBundleTopup = () => ({ mutateAsync: async (_: any) => {}, isPending: false });
 
 const CHART_COLORS = ["hsl(var(--primary))", "hsl(var(--success))", "hsl(var(--warning))", "hsl(var(--destructive))", "hsl(var(--accent))"];
 

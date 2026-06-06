@@ -55,7 +55,6 @@ import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-
 import { Search, SlidersHorizontal as FilterIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/authStore";
-import { useOrgContext } from "@/hooks/useOrgContext";
 import { CreateOwnerOperatorDialog } from "@/components/aggregator/CreateOwnerOperatorDialog";
 
 /**
@@ -96,11 +95,11 @@ export default function AggregatorDashboard() {
   const [settleNetOp, setSettleNetOp] = useState("gte");
   const [settleNetAmt, setSettleNetAmt] = useState("");
 
-  const orgCtx = useOrgContext();
+  const orgCtx = { memberships: [], isLoading: false, hasOrgRole: () => false, hasOrgType: () => false, getByOrgType: (_type: string) => [] as any[] };
 
   const aggregatorOrgIds = useMemo(
-    () => orgCtx.getByOrgType("AGGREGATOR").map((m) => m.orgId),
-    [orgCtx]
+    () => orgCtx.getByOrgType("AGGREGATOR").map((m: any) => m.orgId),
+    []
   );
 
   // Fetch linked organizations (owner-operators under this aggregator)

@@ -19,7 +19,6 @@ import {
 import {Mic, Play, Pause, FileText, Loader2, Star, ThumbsUp, ThumbsDown, Minus, Clock, AlertTriangle, Download} from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { useVoiceCalls } from "@/hooks/useVoiceCalls";
 import { useAuthStore } from "@/stores/authStore";
 import { TableToolbar, type FilterValues } from "@/components/shadcn/table-toolbar";
 
@@ -80,7 +79,8 @@ export function CallRecordingsManager() {
   const [isTranscriptDialogOpen, setIsTranscriptDialogOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState<string | null>(null);
 
-  const { isTranscribing, transcribeCall } = useVoiceCalls();
+  const isTranscribing = false;
+  const transcribeCall = async (_url: string, _callId: string, _lang: string): Promise<null> => null;
 
   // Fetch real recordings from driver_call_logs
   const fetchRecordings = useCallback(async () => {

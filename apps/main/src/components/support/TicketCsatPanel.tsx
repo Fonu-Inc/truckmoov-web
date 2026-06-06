@@ -4,7 +4,6 @@ import { Button } from "@/components/shadcn/button";
 import { Textarea } from "@/components/shadcn/textarea";
 import { Label } from "@/components/shadcn/label";
 import { Switch } from "@/components/shadcn/switch";
-import { useTicketCsat } from "@/hooks/useTicketCsat";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -16,7 +15,10 @@ interface Props {
 const RATING_LABELS = ["", "Very poor", "Poor", "OK", "Good", "Excellent"];
 
 export function TicketCsatPanel({ ticketId, ticketStatus }: Props) {
-  const { csat, isLoading, isSubmitting, submit } = useTicketCsat(ticketId);
+  const csat: any = null;
+  const isLoading = false;
+  const isSubmitting = false;
+  const submit = async (...args: any[]) => {};
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");

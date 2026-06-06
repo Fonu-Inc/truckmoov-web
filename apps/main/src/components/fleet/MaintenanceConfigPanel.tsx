@@ -15,10 +15,12 @@ import { Separator } from "@/components/shadcn/separator";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { toast } from "sonner";
 import { Settings, Wrench, Fuel, AlertTriangle, Save } from "lucide-react";
-import { useDispatchEligibility, TenantMaintenanceConfig } from "@/hooks/useDispatchEligibility";
+type TenantMaintenanceConfig = any;
 
 export function MaintenanceConfigPanel() {
-  const { getConfig, updateConfig, tenantId } = useDispatchEligibility();
+  const getConfig = async (): Promise<TenantMaintenanceConfig | null> => null;
+  const updateConfig = async (_cfg: any): Promise<boolean> => false;
+  const tenantId: string | null = null;
   const [config, setConfig] = useState<TenantMaintenanceConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);

@@ -5,7 +5,6 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Button } from "@/components/shadcn/button";
-import { usePostpaidBilling } from "@/hooks/usePostpaidBilling";
 import { formatCurrency } from "@/lib/currency";
 import {Download, Shield, TrendingUp, Clock, Zap, MessageSquare, Phone,
   MessageCircle, Bot, Cpu } from "lucide-react";

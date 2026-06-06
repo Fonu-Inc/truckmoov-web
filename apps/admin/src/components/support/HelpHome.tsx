@@ -1,11 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { useSupportPermissions } from "@/hooks/useSupportPermissions";
-import { useSupportTickets } from "@/hooks/useSupportTickets";
-import { 
-  HelpCircle, 
-  FileWarning, 
-  TicketCheck, 
+import {
+  HelpCircle,
+  FileWarning,
+  TicketCheck,
   Activity,
   ArrowRight,
   Clock,
@@ -13,13 +12,22 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
 
+interface SupportTicket {
+  id: string;
+  subject: string;
+  category: string;
+  status: string;
+}
+
 interface HelpHomeProps {
   onNavigate: (tab: string) => void;
 }
 
 export function HelpHome({ onNavigate }: HelpHomeProps) {
   const { canCreateTicket, canViewTickets } = useSupportPermissions();
-  const { tickets, isLoading } = useSupportTickets();
+
+  // Inline defaults — useSupportTickets hook deleted
+  const tickets: SupportTicket[] = [];
 
   const openTickets = tickets.filter((t) => t.status === "open" || t.status === "in_progress");
   const recentTickets = tickets.slice(0, 3);
@@ -28,7 +36,7 @@ export function HelpHome({ onNavigate }: HelpHomeProps) {
     <div className="space-y-6">
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card 
+        <Card
           className="cursor-pointer hover:border-primary/50 transition-colors"
           onClick={() => onNavigate("quick-help")}
         >
@@ -44,7 +52,7 @@ export function HelpHome({ onNavigate }: HelpHomeProps) {
         </Card>
 
         {canCreateTicket && (
-          <Card 
+          <Card
             className="cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => onNavigate("report")}
           >
@@ -61,7 +69,7 @@ export function HelpHome({ onNavigate }: HelpHomeProps) {
         )}
 
         {canViewTickets && (
-          <Card 
+          <Card
             className="cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => onNavigate("tickets")}
           >
@@ -189,6 +197,5 @@ export function HelpHome({ onNavigate }: HelpHomeProps) {
     </div>
   );
 }
-
 
 

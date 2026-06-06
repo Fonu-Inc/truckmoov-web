@@ -30,21 +30,23 @@ import {
 } from "@/components/jobs/JobsFilterDialog";
 import { DriverCommunicationActions } from "@/components/communications/DriverCommunicationActions";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { useJobs, JobData } from "@/hooks/useJobs";
+type JobData = any;
 import { useDrivers } from "@/hooks/useDrivers";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { WritableAction } from "@/components/auth/WritableAction";
-import { useOrgContext } from "@/hooks/useOrgContext";
 
 export default function JobDispatch() {
-  const { jobs, isLoading, addJob, updateJob, deleteJob } = useJobs();
+  const jobs: any[] = [];
+  const isLoading = false;
+  const addJob = async (...args: any[]) => false;
+  const updateJob = async (...args: any[]) => false;
+  const deleteJob = async (...args: any[]) => {};
   const { drivers } = useDrivers();
   const { format: formatCurrency } = useCurrency();
-  const orgCtx = useOrgContext();
-  const isEnterprise = orgCtx.hasOrgType('ENTERPRISE');
-  const isAggregator = orgCtx.hasOrgType('AGGREGATOR');
-  const isOperationsManager = orgCtx.hasOrgRole('OPERATIONS_MANAGER') && !orgCtx.hasOrgRole('ADMIN');
+  const isEnterprise = false;
+  const isAggregator = false;
+  const isOperationsManager = false;
   // Enterprise admins, aggregators, and operations managers can only RECOMMEND drivers —
   // final assignment belongs to fleet provider admins and dispatchers.
   const recommendOnly = isEnterprise || isAggregator || isOperationsManager;

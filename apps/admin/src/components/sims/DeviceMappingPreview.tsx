@@ -10,7 +10,8 @@ import {
 } from "@/components/shadcn/table";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Cpu, CheckCircle } from "lucide-react";
-import { DeviceMappingRow } from "@/hooks/useFonuSIM";
+
+type DeviceMappingRow = any;
 
 interface DeviceMappingPreviewProps {
   data: DeviceMappingRow[];

@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/shadcn/badge";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { useOrgContext } from "@/hooks/useOrgContext";
 import {
   Package,
   Building2,
@@ -25,12 +24,12 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 export default function EnterpriseLogisticsDashboard() {
   const { user } = useAuthStore();
   const { format: formatCurrency } = useCurrency();
-  const orgCtx = useOrgContext();
+  const orgCtx = { memberships: [], isLoading: false, hasOrgRole: () => false, hasOrgType: () => false, getByOrgType: (_type: string) => [] as any[] };
 
   // Get the enterprise org IDs for filtering
   const enterpriseOrgIds = useMemo(
-    () => orgCtx.getByOrgType("ENTERPRISE").map((m) => m.orgId),
-    [orgCtx]
+    () => orgCtx.getByOrgType("ENTERPRISE").map((m: any) => m.orgId),
+    []
   );
 
   const jobs: any[] = [];

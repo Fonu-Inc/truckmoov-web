@@ -1,5 +1,4 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useSupervisorData } from "@/hooks/useSupervisorData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { Badge } from "@/components/shadcn/badge";
@@ -24,7 +23,10 @@ import {
 import { useState, useMemo } from "react";
 
 export default function SupervisorReports() {
-  const { devices, alerts, stats, loading } = useSupervisorData();
+  const devices: any[] = [];
+  const alerts: any[] = [];
+  const stats = { totalDevices: 0, activeDevices: 0, totalAlerts: 0, unacknowledgedAlerts: 0, criticalAlerts: 0 };
+  const loading = false;
   const [dateRange, setDateRange] = useState("7d");
 
   // Generate chart data from real alerts

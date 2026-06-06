@@ -15,7 +15,6 @@ import {
   PieChart, Pie, Cell,
 } from "recharts";
 import { Activity, Brain, Zap, Clock, TrendingUp, AlertTriangle } from "lucide-react";
-import { useAIUsageLogs } from "@/hooks/useAIUsageLogs";
 import { useAuthStore } from "@/stores/authStore";
 import { format, parseISO, subDays } from "date-fns";
 import { TimeRangeSelect, type TimeRange } from "@/components/charts/TimeRangeSelect";
@@ -85,7 +84,9 @@ function buildDemoFeatureBreakdown(days: number) {
 
 export function AIUsageAnalyticsPanel() {
   const { user } = useAuthStore();
-  const { logs, stats, isLoading } = useAIUsageLogs(user?.tenantId, false);
+  const logs: any[] = [];
+  const stats: any = null;
+  const isLoading = false;
   const [dailyRange, setDailyRange] = useState<TimeRange>("30d");
   const [featureRange, setFeatureRange] = useState<TimeRange>("30d");
   const [featureSearch, setFeatureSearch] = useState("");

@@ -6,8 +6,6 @@ import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { useStorageUsage } from "@/hooks/useStorageUsage";
-import { useTenantSubscription } from "@/hooks/useTenantSubscription";
 import { useAuthStore } from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";
 
@@ -40,8 +38,12 @@ export function StoragePanel() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const tenantId = user?.tenantId;
-  const { currentPlan } = useTenantSubscription();
-  const { usedBytes, usedGB, limitGB, percentage, isLoading: usageLoading } = useStorageUsage();
+  const currentPlan = null;
+  const usedBytes = 0;
+  const usedGB = 0;
+  const limitGB: number | null = null;
+  const percentage = 0;
+  const usageLoading = false;
 
   const { data: breakdown, isLoading: breakdownLoading } = useQuery({
     queryKey: ["storage-breakdown", tenantId],

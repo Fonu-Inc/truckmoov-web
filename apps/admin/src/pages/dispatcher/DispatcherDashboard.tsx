@@ -4,10 +4,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AlertList } from "@/components/alerts/AlertList";
 import { DispatchPanel } from "@/components/supervisor/DispatchPanel";
-import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
-import { useJobs } from "@/hooks/useJobs";
-import { useAlerts } from "@/hooks/useAlerts";
 import {
   Truck, Users, AlertTriangle, Package, Loader2, Clock,
   CheckCircle2, XCircle, Send, MessageSquare, Phone,
@@ -48,10 +45,14 @@ export default function DispatcherDashboard() {
     "90d": 90,
   };
 
-  const { vehicles, isLoading: vehiclesLoading } = useVehicles();
+  const vehicles: any[] = [];
+  const vehiclesLoading = false;
   const { drivers, isLoading: driversLoading } = useDrivers();
-  const { jobs, isLoading: jobsLoading } = useJobs();
-  const { alerts, isLoading: alertsLoading, acknowledgeAlert } = useAlerts();
+  const jobs: any[] = [];
+  const jobsLoading = false;
+  const alerts: any[] = [];
+  const alertsLoading = false;
+  const acknowledgeAlert = async (...args: any[]) => {};
 
   const isLoading = vehiclesLoading || driversLoading || jobsLoading || alertsLoading;
 

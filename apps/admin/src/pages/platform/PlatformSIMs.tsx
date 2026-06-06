@@ -12,7 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/ta
 import { SIMAnalyticsDashboardLive } from "@/components/sims/SIMAnalyticsDashboardLive";
 import { SIMApprovalQueue } from "@/components/sims/SIMApprovalQueue";
 import { ActivationBatchesPanel } from "@/components/sims/ActivationBatchesPanel";
-import { useFonuSIM, IoTSIM } from "@/hooks/useFonuSIM";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   Table,

@@ -36,8 +36,6 @@ import { DeviceFormDialog } from "@/components/devices/DeviceFormDialog";
 import { SIMFormDialog } from "@/components/sims/SIMFormDialog";
 import { DeviceSetupRequestDialogMinimal } from "@/components/devices/DeviceSetupRequestDialogMinimal";
 import { SIMRequestFormDialogMinimal } from "@/components/sims/SIMRequestFormDialogMinimal";
-import { useDeviceSetupRequests } from "@/hooks/useDeviceSetupRequests";
-import { useSIMRequestSubmit } from "@/hooks/useSIMRequestSubmit";
 import { useOnboardingStore } from "@/stores/onboardingStore";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -162,8 +160,8 @@ export default function ActivationOnboarding() {
   const navigate = useNavigate();
   const { selectedPlan, completeOnboarding } = useOnboardingStore();
   const { user } = useAuthStore();
-  const { createRequest } = useDeviceSetupRequests();
-  const { submitRequest: submitSimRequest } = useSIMRequestSubmit();
+  const createRequest = async (...args: any[]) => null;
+  const submitSimRequest = async (...args: any[]) => null;
 
   const caps = useMemo(() => {
     if (selectedPlan && PLAN_CAPS[selectedPlan]) return PLAN_CAPS[selectedPlan];

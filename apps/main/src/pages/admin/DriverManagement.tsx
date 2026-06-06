@@ -58,11 +58,7 @@ import { DriverFormDialog } from "@/components/drivers/DriverFormDialog";
 import { DriverDetailsSheet } from "@/components/drivers/DriverDetailsSheet";
 import { DriverBulkUploadDialog } from "@/components/drivers/DriverBulkUploadDialog";
 import { DriverMessagesInbox } from "@/components/drivers/DriverMessagesInbox";
-import { useDriverCommunications } from "@/hooks/useDriverCommunications";
 import { useFonuCall } from "@/contexts/FonuCallContext";
-import { useDriverBehavior, DriverScore, DriverBehaviorEvent } from "@/hooks/useDriverBehavior";
-import { useGeofenceAlerts, GeofenceAlert } from "@/hooks/useGeofenceAlerts";
-import { useDriverFatigue, FatigueAlert } from "@/hooks/useDriverFatigue";
 import { format, differenceInDays, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { WritableAction } from "@/components/auth/WritableAction";
@@ -106,11 +102,9 @@ export default function DriverManagement() {
   const [messageContent, setMessageContent] = useState("");
 
   // Use real Fonu integration
-  const { 
-    sendSMS, 
-    sendWhatsApp, 
-    isSending, 
-  } = useDriverCommunications();
+  const sendSMS = async (...args: any[]) => {};
+  const sendWhatsApp = async (...args: any[]) => ({ success: false });
+  const isSending = false;
 
   // SIP call control (shared across app)
   const { startCall, endCall: sipEndCall, status: sipStatus, durationSeconds } = useFonuCall();

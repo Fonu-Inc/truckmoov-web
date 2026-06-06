@@ -56,7 +56,7 @@ import { Progress } from "@/components/shadcn/progress";
 import { toast } from "sonner";
 import { DeviceWithTelemetry, DriverBehaviorEvent } from "@/hooks/useDeviceTelemetry";
 import { DeviceLifecycleBadge } from "./DeviceLifecycleBadge";
-import { DeviceLifecycleStatus } from "@/hooks/useDeviceLifecycle";
+type DeviceLifecycleStatus = string;
 import { formatDistanceToNow } from "date-fns";
 import {
   PlatformFilterPopover,

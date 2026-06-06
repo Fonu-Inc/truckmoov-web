@@ -29,8 +29,7 @@ import {
   SlidersHorizontal,
   FileText,
 } from "lucide-react";
-import { useVehicles, VehicleData } from "@/hooks/useVehicles";
-import { useVehicleFinancials, VehicleProfitability } from "@/hooks/useVehicleFinancials";
+type VehicleProfitability = any;
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { 
   ChartContainer, 
@@ -68,8 +67,10 @@ const TIER_LABELS = {
 };
 
 export function FleetFinancialAnalytics() {
-  const { vehicles } = useVehicles();
-  const { configs, calculateFleetProfitability, isLoading } = useVehicleFinancials();
+  const vehicles: any[] = [];
+  const configs: any[] = [];
+  const calculateFleetProfitability = async (..._args: any[]) => [] as VehicleProfitability[];
+  const isLoading = false;
   const { format } = useCurrency();
   
   const [period, setPeriod] = useState<PeriodValue>("30");

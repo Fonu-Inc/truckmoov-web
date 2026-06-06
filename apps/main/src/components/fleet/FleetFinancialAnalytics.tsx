@@ -29,8 +29,6 @@ import {
   SlidersHorizontal,
   FileText,
 } from "lucide-react";
-import { useVehicles, VehicleData } from "@/hooks/useVehicles";
-import { useVehicleFinancials, VehicleProfitability } from "@/hooks/useVehicleFinancials";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { 
   ChartContainer, 
@@ -68,15 +66,17 @@ const TIER_LABELS = {
 };
 
 export function FleetFinancialAnalytics() {
-  const { vehicles } = useVehicles();
-  const { configs, calculateFleetProfitability, isLoading } = useVehicleFinancials();
+  const vehicles: any[] = [];
+  const configs: any[] = [];
+  const calculateFleetProfitability = async (_vehicleIds: any[], _start: Date, _end: Date): Promise<any[]> => [];
+  const isLoading = false;
   const { format } = useCurrency();
   
   const [period, setPeriod] = useState<PeriodValue>("30");
   const [profitabilityPeriod, setProfitabilityPeriod] = useState<PeriodValue>("30");
   const [costBreakdownPeriod, setCostBreakdownPeriod] = useState<PeriodValue>("30");
   const [underperformingPeriod, setUnderperformingPeriod] = useState<PeriodValue>("30");
-  const [profitabilityData, setProfitabilityData] = useState<VehicleProfitability[]>([]);
+  const [profitabilityData, setProfitabilityData] = useState<any[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
@@ -215,7 +215,7 @@ export function FleetFinancialAnalytics() {
   };
 
   // ── Dummy P&L rows (used when no real config has been computed) ──
-  const DEMO_PL: VehicleProfitability[] = [
+  const DEMO_PL: any[] = [
     { vehicle_id: "demo-1", period_start: "", period_end: "", revenue: { total: 4_850_000, jobs_completed: 38, total_km: 9_420 }, costs: { fuel: 1_180_000, maintenance: 320_000, wages: 980_000, insurance: 120_000, depreciation: 240_000, total: 2_840_000 }, profitability: { net_profit: 2_010_000, margin_percent: 41.4, score: 92, tier: "excellent" } },
     { vehicle_id: "demo-2", period_start: "", period_end: "", revenue: { total: 3_620_000, jobs_completed: 29, total_km: 7_810 }, costs: { fuel: 940_000, maintenance: 410_000, wages: 880_000, insurance: 120_000, depreciation: 240_000, total: 2_590_000 }, profitability: { net_profit: 1_030_000, margin_percent: 28.5, score: 78, tier: "good" } },
     { vehicle_id: "demo-3", period_start: "", period_end: "", revenue: { total: 2_980_000, jobs_completed: 24, total_km: 6_540 }, costs: { fuel: 880_000, maintenance: 360_000, wages: 820_000, insurance: 120_000, depreciation: 240_000, total: 2_420_000 }, profitability: { net_profit: 560_000, margin_percent: 18.8, score: 71, tier: "good" } },
@@ -230,7 +230,7 @@ export function FleetFinancialAnalytics() {
     "demo-4": "LAG-303-GH", "demo-5": "PHC-441-JK", "demo-6": "LAG-552-LM",
     "demo-7": "ABJ-660-NP", "demo-8": "PHC-771-QR",
   };
-  const displayData: VehicleProfitability[] = profitabilityData.length > 0 ? profitabilityData : DEMO_PL;
+  const displayData: any[] = profitabilityData.length > 0 ? profitabilityData : DEMO_PL;
 
   // Identify underperforming vehicles
   const underperformingVehicles = displayData

@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/shadcn/button";
 import { Badge } from "@/components/shadcn/badge";
 import { Plus, MessageSquare, Phone, Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { useTenantSenderIds, type SenderIdStatus } from "@/hooks/useTenantSenderIds";
+type SenderIdStatus = string;
 import { SenderIdRequestDialog } from "./SenderIdRequestDialog";
 import { formatDistanceToNow } from "date-fns";
 
@@ -30,7 +30,8 @@ const DEMO_SENDER_IDS: Array<{
 ];
 
 export function SenderIdManagement() {
-  const { senderIds, loading } = useTenantSenderIds();
+  const senderIds: any[] = [];
+  const loading = false;
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const isDemo = !loading && senderIds.length === 0;

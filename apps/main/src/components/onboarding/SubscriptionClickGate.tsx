@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
-import { useKycProgress } from "@/hooks/useKycProgress";
 import { useOnboardingProgress } from "@/hooks/useOnboardingProgress";
 
 /**
@@ -17,7 +16,8 @@ import { useOnboardingProgress } from "@/hooks/useOnboardingProgress";
  * users can keep browsing and complete onboarding.
  */
 export function SubscriptionClickGate() {
-  const { isVerified, isLoading: kycLoading } = useKycProgress();
+  const isVerified = false;
+  const kycLoading = false;
   const { bypassGating } = useOnboardingProgress();
   const location = useLocation();
 

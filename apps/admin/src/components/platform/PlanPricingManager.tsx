@@ -6,8 +6,6 @@ import { Label } from '@/components/shadcn/label';
 import { Badge } from '@/components/shadcn/badge';
 import { Separator } from '@/components/shadcn/separator';
 import { DollarSign, RefreshCw, Save, TrendingUp } from 'lucide-react';
-import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
-import { useFxRate } from '@/hooks/usePlatformSettings';
 import { formatDistanceToNow } from 'date-fns';
 
 interface DraftRow {
@@ -20,8 +18,13 @@ interface DraftRow {
 }
 
 export function PlanPricingManager() {
-  const { plans, isLoading, updatePlan } = useSubscriptionPlans();
-  const { rate, updatedAt, isLoading: fxLoading, update: updateFx } = useFxRate();
+  const plans: any[] = [];
+  const isLoading = false;
+  const updatePlan = { mutateAsync: async (..._args: any[]) => {} };
+  const rate = 0;
+  const updatedAt: string | null = null;
+  const fxLoading = false;
+  const updateFx = { mutateAsync: async (..._args: any[]) => {}, isPending: false };
 
   const [fxDraft, setFxDraft] = useState<string>(String(rate));
   const [drafts, setDrafts] = useState<Record<string, DraftRow>>({});

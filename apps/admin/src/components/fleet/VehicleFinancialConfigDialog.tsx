@@ -6,7 +6,8 @@ import { Label } from "@/components/shadcn/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { useVehicleFinancials, FinancialConfigInput } from "@/hooks/useVehicleFinancials";
+// useVehicleFinancials deleted — using inline type alias
+type FinancialConfigInput = any;
 import { toast } from "sonner";
 
 interface Vehicle {
@@ -27,7 +28,10 @@ export function VehicleFinancialConfigDialog({
   onOpenChange,
   vehicles,
 }: VehicleFinancialConfigDialogProps) {
-  const { configs, upsertConfig, getConfigForVehicle } = useVehicleFinancials();
+  // useVehicleFinancials deleted — inline defaults
+  const configs: any[] = [];
+  const upsertConfig = async (_input: FinancialConfigInput) => {};
+  const getConfigForVehicle = (_vehicleId: string): any => null;
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   

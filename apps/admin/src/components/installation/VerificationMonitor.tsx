@@ -22,7 +22,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger } from '@/components/shadcn/popover';
-import { ConfigQueueDevice } from '@/hooks/useInstallerConfig';
+type ConfigQueueDevice = { id: string; imei: string; manufacturer: string; model?: string; lifecycle_status: string; protocol?: string; last_seen?: string; [key: string]: any };
 import { Skeleton } from '@/components/shadcn/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import {Radio, AlertTriangle, Check, Clock, Search, SlidersHorizontal as Filter, Hourglass, ShieldCheck, Download} from 'lucide-react';

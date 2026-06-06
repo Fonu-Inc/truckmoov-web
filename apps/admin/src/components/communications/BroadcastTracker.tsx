@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useBroadcastTracking } from "@/hooks/useBroadcastTracking";
 import { mockDrivers } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -52,16 +51,14 @@ export function BroadcastTracker() {
   const [showReplyDialog, setShowReplyDialog] = useState(false);
   const [selectedReply, setSelectedReply] = useState<{ name: string; content: string } | null>(null);
 
-  const {
-    broadcasts,
-    selectedBroadcast,
-    recipients,
-    isLoading,
-    isSending,
-    sendBroadcast,
-    selectBroadcast,
-    clearSelection,
-  } = useBroadcastTracking();
+  const broadcasts: any[] = [];
+  const selectedBroadcast: any = null;
+  const recipients: any[] = [];
+  const isLoading = false;
+  const isSending = false;
+  const sendBroadcast = async (_drivers: any, _message: string, _channel: string, _sender: string) => ({ success: false });
+  const selectBroadcast = (_broadcast: any) => {};
+  const clearSelection = () => {};
 
   const handleSendBroadcast = async () => {
     if (!broadcastMessage.trim()) return;

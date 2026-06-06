@@ -30,8 +30,6 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
-import { usePlatformAIConfig } from "@/hooks/usePlatformAIConfig";
-import { useAIUsageLogs } from "@/hooks/useAIUsageLogs";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
@@ -47,8 +45,29 @@ const ANTHROPIC_MODELS = ["claude-3.5-sonnet", "claude-3-sonnet", "claude-3-haik
 const LOVABLE_MODELS = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite", "gemini-3-flash-preview"];
 
 export function PlatformAISettings() {
-  const { config, isLoading, isSaving, updateConfig } = usePlatformAIConfig();
-  const { logs, stats, isLoading: isLoadingStats, refetch: refetchStats } = useAIUsageLogs(null, true);
+  const config: any = {
+    ai_job_matching_enabled: false,
+    openai_enabled: false,
+    openai_allowed_models: [] as string[],
+    anthropic_enabled: false,
+    anthropic_allowed_models: [] as string[],
+    lovable_enabled: true,
+    lovable_allowed_models: [] as string[],
+    max_tokens_per_request: 4000,
+    max_requests_per_minute: 60,
+    max_tokens_per_day_per_tenant: 100000,
+    redact_phone_numbers: true,
+    redact_driver_names: true,
+    redact_vehicle_plates: true,
+    store_prompts_responses: false,
+    default_provider: "lovable" as "openai" | "anthropic" | "lovable",
+    default_model: "",
+  };
+  const isLoading = false;
+  const isSaving = false;
+  const updateConfig = (_updates: any) => {};
+  const logs: any[] = [];
+  const stats: any = null;
   const [activeTab, setActiveTab] = useState("providers");
   const [logSearch, setLogSearch] = useState("");
   const [logStatus, setLogStatus] = useState("all");

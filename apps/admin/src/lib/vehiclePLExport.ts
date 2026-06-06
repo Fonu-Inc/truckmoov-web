@@ -1,7 +1,14 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
-import type { VehicleProfitability } from "@/hooks/useVehicleFinancials";
+
+// Local type alias — useVehicleFinancials hook has been deleted
+export interface VehicleProfitability {
+  vehicle_id: string;
+  revenue?: { total?: number; jobs_completed?: number; total_km?: number };
+  costs?: { total?: number; fuel?: number; maintenance?: number; wages?: number; insurance?: number; depreciation?: number };
+  profitability?: { net_profit?: number; margin_percent?: number; score?: number; tier?: string };
+}
 
 export interface StatementOptions {
   title: string;

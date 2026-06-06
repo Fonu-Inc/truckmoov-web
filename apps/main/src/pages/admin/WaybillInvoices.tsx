@@ -15,8 +15,38 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Separator } from '@/components/shadcn/separator';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/shadcn/tabs';
 import { toast } from 'sonner';
-import { useWaybillInvoice, type WaybillRecord, type WaybillInvoice, type PricingRule, type InvoiceShare } from '@/hooks/useWaybillInvoice';
-import { useWaybillRealtimeEvents } from '@/hooks/useWaybillRealtimeEvents';
+type WaybillRecord = any;
+type WaybillInvoice = any;
+type PricingRule = any;
+type InvoiceShare = any;
+type InvoiceConfig = { tax_enabled: boolean; tax_rate_percent: number; tax_label: string; invoice_prefix: string; company_name?: string; company_address?: string; company_phone?: string; company_email?: string; bank_name?: string; bank_account_name?: string; bank_account_number?: string; payment_terms_days: number; notes_template?: string; auto_send_enabled?: boolean } & Record<string, any>;
+function useWaybillInvoice() {
+  return {
+    waybills: [] as WaybillRecord[],
+    invoices: [] as WaybillInvoice[],
+    pricingRules: [] as PricingRule[],
+    invoiceConfig: null as InvoiceConfig | null,
+    isLoading: false,
+    fetchWaybills: async () => {},
+    fetchInvoices: async () => {},
+    fetchPricingRules: async () => {},
+    fetchInvoiceConfig: async () => {},
+    createWaybill: async (..._args: any[]): Promise<any> => null,
+    extractWaybill: async (..._args: any[]) => {},
+    updateWaybillFields: async (..._args: any[]): Promise<any> => null,
+    generateInvoice: async (..._args: any[]): Promise<any> => null,
+    updateInvoice: (..._args: any[]) => {},
+    deleteInvoice: async (..._args: any[]) => {},
+    addPricingRule: (..._args: any[]) => {},
+    updatePricingRule: (..._args: any[]) => {},
+    deletePricingRule: (..._args: any[]) => {},
+    updateInvoiceConfig: (..._args: any[]) => {},
+    recordInvoiceShare: (..._args: any[]) => {},
+    generateInvoicePDF: async (..._args: any[]): Promise<any> => null,
+    getInvoicePdfUrl: async (..._args: any[]): Promise<string | null> => null,
+  };
+}
+function useWaybillRealtimeEvents(_opts: any) {}
 import { useCurrency } from '@/contexts/CurrencyContext';
 import {FileText, Upload, Scan, Plus, Eye, Send, Settings2, Loader2, CheckCircle2, XCircle, Clock, AlertTriangle, ImageIcon, Truck, MapPin, Calendar, Package, User, DollarSign, ArrowRight, Pencil, Trash2, ToggleLeft, ToggleRight, Mail, MessageSquare, Save, Search, SlidersHorizontal, MoreHorizontal, Share2, Download, Receipt} from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/shadcn/popover';
@@ -1678,7 +1708,7 @@ function PricingRulesPanel({ rules, onAdd, onUpdate, onDelete, formatAmount, sho
 }
 
 function InvoiceSettingsPanel({ config, onSave }: {
-  config: ReturnType<typeof useWaybillInvoice>['invoiceConfig'];
+  config: InvoiceConfig | null;
   onSave: (c: Record<string, unknown>) => void;
 }) {
   const [form, setForm] = useState({

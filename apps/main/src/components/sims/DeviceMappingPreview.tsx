@@ -10,7 +10,14 @@ import {
 } from "@/components/shadcn/table";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Cpu, CheckCircle } from "lucide-react";
-import { DeviceMappingRow } from "@/hooks/useFonuSIM";
+
+// Local type alias (hook deleted)
+type DeviceMappingRow = {
+  device_name: string;
+  imei: string;
+  serial_number?: string;
+  notes?: string;
+};
 
 interface DeviceMappingPreviewProps {
   data: DeviceMappingRow[];

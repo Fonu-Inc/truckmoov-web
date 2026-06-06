@@ -26,15 +26,23 @@ import {
 } from "@/components/shadcn/select";
 import { Job, Vehicle, Driver } from "@/types";
 import { mockVehicles, mockDrivers } from "@/data/mockData";
-import { useDriverIVR } from "@/hooks/useDriverIVR";
-import { useJobMatching, MatchResult } from "@/hooks/useJobMatching";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { 
-  Truck, User, MapPin, Star, Clock, CheckCircle, 
-  Sparkles, Route, MessageSquare, Phone, PhoneCall, Brain, 
+import {
+  Truck, User, MapPin, Star, Clock, CheckCircle,
+  Sparkles, Route, MessageSquare, Phone, PhoneCall, Brain,
   AlertCircle, ShieldCheck, Lock, ListChecks, Eye, Zap, Info
 } from "lucide-react";
 import { toast } from "sonner";
+
+type MatchResult = {
+  vehicle: Vehicle;
+  driver: Driver;
+  matchScore: number;
+  confidence?: number;
+  estimatedTime: string;
+  distance: number;
+  reasons: string[];
+};
 
 interface JobMatchingDialogProps {
   open: boolean;
@@ -56,40 +64,30 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
   const [manualVehicleId, setManualVehicleId] = useState<string>("");
   const [manualDriverId, setManualDriverId] = useState<string>("");
   
-  const { notifyNewJob, notifyUrgent, isLoading: isIVRLoading } = useDriverIVR();
+  const notifyNewJob = async (_phone: string, _details: unknown, _opts: unknown) => ({ success: false, callId: '' });
+  const notifyUrgent = async (_phone: string, _details: unknown, _opts: unknown) => ({ success: false, callId: '' });
+  const isIVRLoading = false;
   const { format: formatCurrency } = useCurrency();
-  
-  // Use the new unified hook with mode control
-  const { 
-    matches, 
-    isMatching, 
-    matchProgress, 
-    analysis, 
-    provider, 
-    model, 
-    overallConfidence, 
-    requiresApproval,
-    runMatching, 
-    reset,
-    error: matchingError,
-    // Mode control
-    effectiveMode,
-    modeDowngraded,
-    isSimulationMode,
-    isLiveMode,
-    // Execution capabilities from server
-    canSendOffers,
-    canTriggerMessaging,
-    canAssign: canAssignFromServer,
-    // Role-based permissions
-    canRunAIMatching,
-    canViewAIResults,
-    canRequestLiveMode,
-    defaultMode,
-    // Stats
-    eligibleVehicleCount,
-    eligibleDriverCount,
-  } = useJobMatching();
+
+  const matches: MatchResult[] = [];
+  const isMatching = false;
+  const matchProgress = 0;
+  const analysis: string | null = null;
+  const provider: string | null = null;
+  const model: string | null = null;
+  const overallConfidence: number | null = null;
+  const requiresApproval = false;
+  const runMatching = async (_job: Job, _vehicles: Vehicle[], _drivers: Driver[], _mode?: string) => {};
+  const reset = () => {};
+  const matchingError: string | null = null;
+  const modeDowngraded = false;
+  const isSimulationMode = true;
+  const isLiveMode = false;
+  const canRunAIMatching = false;
+  const canViewAIResults = false;
+  const defaultMode = "simulation";
+  const eligibleVehicleCount = 0;
+  const eligibleDriverCount = 0;
 
   const isManualMode = mode === "manual";
 

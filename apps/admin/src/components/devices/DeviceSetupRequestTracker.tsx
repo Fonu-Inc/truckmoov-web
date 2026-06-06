@@ -3,10 +3,9 @@ import { Badge } from '@/components/shadcn/badge';
 import { Button } from '@/components/shadcn/button';
 import { Skeleton } from '@/components/shadcn/skeleton';
 import { Separator } from '@/components/shadcn/separator';
-import {
-  DeviceSetupRequest,
-  DeviceSetupRequestStatus,
-} from '@/hooks/useDeviceSetupRequests';
+// useDeviceSetupRequests deleted — using inline type aliases
+type DeviceSetupRequest = any;
+type DeviceSetupRequestStatus = string;
 import {
   Clock,
   UserPlus,

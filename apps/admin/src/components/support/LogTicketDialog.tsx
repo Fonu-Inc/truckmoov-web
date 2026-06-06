@@ -18,15 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  useSupportTickets,
-  TicketCategory,
-  ContextType,
-  TicketPriority,
-} from "@/hooks/useSupportTickets";
 import { useAuthStore } from "@/stores/authStore";
 import { Loader2, Ticket, UploadCloud, X, FileText, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
+
+type ContextType = "device" | "sim" | "vehicle" | "whatsapp" | "billing" | "none";
+type TicketCategory = "device_tracking" | "sim_connectivity" | "messaging" | "billing" | "account_access" | "other";
+type TicketPriority = "low" | "medium" | "high" | "critical";
 
 interface LogTicketDialogProps {
   open: boolean;
@@ -57,7 +55,13 @@ const MAX_FILE_MB = 10;
 
 export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDialogProps) {
   const { user } = useAuthStore();
-  const { createTicket } = useSupportTickets();
+
+  // Inline default — useSupportTickets hook deleted
+  const createTicket = async (_payload: unknown): Promise<null> => {
+    toast.error("Ticket submission is not yet connected to the backend.");
+    return null;
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState("");
@@ -351,6 +355,5 @@ export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDial
     </Dialog>
   );
 }
-
 
 

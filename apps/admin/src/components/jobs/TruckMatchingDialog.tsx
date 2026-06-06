@@ -16,16 +16,23 @@ import {
 } from "@/components/shadcn/select";
 import { Job, Vehicle, Driver } from "@/types";
 import { mockVehicles, mockDrivers } from "@/data/mockData";
-import { useDriverIVR } from "@/hooks/useDriverIVR";
-import { useAILoadMatching, AIMatchResult } from "@/hooks/useAILoadMatching";
 import { useAIConfigPermissions } from "@/hooks/useAIConfigPermissions";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { 
-  Truck, User, MapPin, Star, Clock, CheckCircle, 
-  Sparkles, Route, MessageSquare, Phone, PhoneCall, Brain, 
+import {
+  Truck, User, MapPin, Star, Clock, CheckCircle,
+  Sparkles, Route, MessageSquare, Phone, PhoneCall, Brain,
   AlertCircle, ShieldCheck, Lock, ListChecks
 } from "lucide-react";
 import { toast } from "sonner";
+
+type AIMatchResult = {
+  vehicle: Vehicle;
+  driver: Driver;
+  matchScore: number;
+  estimatedTime: string;
+  distance: number;
+  reasons: string[];
+};
 
 interface TruckMatchingDialogProps {
   open: boolean;
@@ -42,14 +49,21 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
   const [manualVehicleId, setManualVehicleId] = useState<string>("");
   const [manualDriverId, setManualDriverId] = useState<string>("");
   const [aiError, setAiError] = useState<string | null>(null);
-  const { notifyNewJob, notifyUrgent, isLoading: isIVRLoading } = useDriverIVR();
+  const notifyNewJob = async (_phone: string, _details: unknown, _opts: unknown) => ({ success: false, callId: '' });
+  const notifyUrgent = async (_phone: string, _details: unknown, _opts: unknown) => ({ success: false, callId: '' });
+  const isIVRLoading = false;
   const { canRunAIMatching, canViewAIResults } = useAIConfigPermissions();
   const { format: formatCurrency } = useCurrency();
-  const { 
-    matches, isMatching, matchProgress, analysis, 
-    provider, model, overallConfidence, requiresApproval,
-    runMatching, reset 
-  } = useAILoadMatching();
+  const matches: AIMatchResult[] = [];
+  const isMatching = false;
+  const matchProgress = 0;
+  const analysis: string | null = null;
+  const provider: string | null = null;
+  const model: string | null = null;
+  const overallConfidence: number | null = null;
+  const requiresApproval = false;
+  const runMatching = async (_job: Job, _vehicles: Vehicle[], _drivers: Driver[]) => {};
+  const reset = () => {};
 
   const isManualMode = mode === "manual";
 

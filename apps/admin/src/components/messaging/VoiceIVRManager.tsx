@@ -36,7 +36,6 @@ import {
 import {Phone, PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneMissed, Mic, MicOff, Volume2, Play, Pause, Settings, Plus, Pencil, Trash2, MoreHorizontal, Globe, Clock, User, CheckCircle, XCircle, AlertCircle, Headphones, MessageSquare, Loader2, Delete, UserPlus, Search, Filter, Download} from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { useVoiceCalls } from "@/hooks/useVoiceCalls";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 
 type Language = "en" | "ha" | "yo" | "ig" | "pcm";
@@ -240,7 +239,9 @@ export function VoiceIVRManager() {
   const [callStatusFilter, setCallStatusFilter] = useState<string>("all");
   const [callFilters, setCallFilters] = useState<import("@/components/ui/table-toolbar").FilterValues>({});
 
-  const { isLoading: isCallLoading, initiateCall, endCall } = useVoiceCalls();
+  const isCallLoading = false;
+  const initiateCall = async (_phone: string, _lang: string): Promise<{ call_id: string } | null> => null;
+  const endCall = async (_callId: string): Promise<boolean> => true;
 
   // Active call (any ongoing call)
   const activeCall = callLogs.find((c) => c.status === "ongoing");

@@ -4,10 +4,6 @@ import { Button } from '@/components/shadcn/button';
 import { Skeleton } from '@/components/shadcn/skeleton';
 import { Separator } from '@/components/shadcn/separator';
 import {
-  DeviceSetupRequest,
-  DeviceSetupRequestStatus,
-} from '@/hooks/useDeviceSetupRequests';
-import {
   Clock,
   UserPlus,
   Play,
@@ -21,13 +17,13 @@ import {
 import { format } from 'date-fns';
 
 interface DeviceSetupRequestTrackerProps {
-  requests: DeviceSetupRequest[];
+  requests: any[];
   loading: boolean;
   onNewRequest: () => void;
   onCancelRequest: (id: string) => void;
 }
 
-const STATUS_STEPS: { key: DeviceSetupRequestStatus; label: string; icon: typeof Clock }[] = [
+const STATUS_STEPS: { key: string; label: string; icon: typeof Clock }[] = [
   { key: 'pending_review', label: 'Pending Review', icon: Clock },
   { key: 'assigned', label: 'Assigned', icon: UserPlus },
   { key: 'in_progress', label: 'In Progress', icon: Play },

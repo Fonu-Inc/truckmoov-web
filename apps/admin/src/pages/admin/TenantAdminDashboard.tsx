@@ -3,11 +3,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { VerificationBanner } from "@/components/admin/VerificationBanner";
 import { TrialBanner } from "@/components/admin/TrialBanner";
-import { useTenantDashboard } from "@/hooks/useTenantDashboard";
-import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
-import { useJobs } from "@/hooks/useJobs";
-import { useAlerts } from "@/hooks/useAlerts";
 import { useState } from "react";
 import {
   Truck,
@@ -45,11 +41,16 @@ export default function TenantAdminDashboard() {
   const navigate = useNavigate();
   const [activityRange, setActivityRange] = useState<ChartDateRange>("7d");
   const [vehicleStatusRange, setVehicleStatusRange] = useState<ChartDateRange>("7d");
-  const { data: tenantData, isLoading: tenantLoading } = useTenantDashboard();
-  const { vehicles, isLoading: vehiclesLoading } = useVehicles();
+  const tenantData: any = null;
+  const tenantLoading = false;
+  const vehicles: any[] = [];
+  const vehiclesLoading = false;
   const { drivers, isLoading: driversLoading } = useDrivers();
-  const { jobs, isLoading: jobsLoading } = useJobs();
-  const { alerts, isLoading: alertsLoading, acknowledgeAlert } = useAlerts();
+  const jobs: any[] = [];
+  const jobsLoading = false;
+  const alerts: any[] = [];
+  const alertsLoading = false;
+  const acknowledgeAlert = async (..._args: any[]) => {};
 
   const isLoading = tenantLoading || vehiclesLoading || driversLoading || jobsLoading || alertsLoading;
 

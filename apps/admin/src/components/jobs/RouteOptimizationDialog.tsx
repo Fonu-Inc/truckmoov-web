@@ -29,7 +29,18 @@ import {
   Brain, Sparkles, AlertTriangle, TrendingDown
 } from "lucide-react";
 import { toast } from "sonner";
-import { useRouteOptimization, Waypoint } from "@/hooks/useRouteOptimization";
+
+export type Waypoint = {
+  id: string;
+  type: "pickup" | "delivery" | "stop";
+  address: string;
+  lat: number;
+  lng: number;
+  jobReference?: string;
+  duration?: number;
+  estimatedArrival?: string;
+  distance?: number;
+};
 
 interface RouteOptimizationDialogProps {
   open: boolean;
@@ -289,7 +300,8 @@ export function RouteOptimizationDialog({
     savings_percentage?: string;
   } | null>(null);
   
-  const { optimizeRoute: aiOptimize, isOptimizing } = useRouteOptimization();
+  const aiOptimize = async (_waypoints: Waypoint[], _opts?: unknown) => null as null;
+  const isOptimizing = false;
 
   const sensors = useSensors(
     useSensor(PointerSensor),

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
 import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
-import { useOrgOverview } from "@/hooks/useOrgOverview";
 import {
   Building2,
   Truck,
@@ -43,13 +42,11 @@ const ORG_TYPE_BG: Record<string, string> = {
 };
 
 export function StakeholderOverviewTab() {
-  const {
-    typeSummaries,
-    orgDetails,
-    aggregatorNetworks,
-    totalOrgs,
-    isLoading,
-  } = useOrgOverview();
+  const typeSummaries: { type: string; label: string; count: number; activeCount: number; vehicleCount: number; driverCount: number; deviceCount: number }[] = [];
+  const orgDetails: { id: string; name: string; organizationType: string; status: string; vehicleCount: number; driverCount: number; deviceCount: number }[] = [];
+  const aggregatorNetworks: { aggregatorId: string; aggregatorName: string; relationshipType: string; childCount: number }[] = [];
+  const totalOrgs = 0;
+  const isLoading = false;
   const [distributionRange, setDistributionRange] = useState<ChartDateRange>("30d");
 
   if (isLoading) {

@@ -9,14 +9,12 @@ import { Separator } from "@/components/shadcn/separator";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { 
-  SupportTicket, 
-  useSupportMessages, 
-  useSupportTickets,
-  TicketStatus, 
-  EscalationType 
-} from "@/hooks/useSupportTickets";
 import { useAuthStore } from "@/stores/authStore";
+
+// Local type aliases (hook deleted)
+type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
+type EscalationType = "fleetpro_internal" | "fonu_connectivity" | "vendor_installer";
+type SupportTicket = any;
 import { formatDistanceToNow, format } from "date-fns";
 import { 
   Send, 
@@ -53,8 +51,12 @@ const escalationOptions: { value: EscalationType; label: string }[] = [
 
 export function AdminTicketSheet({ ticket, onClose }: AdminTicketSheetProps) {
   const { user } = useAuthStore();
-  const { updateTicketStatus, escalateTicket, refetch } = useSupportTickets();
-  const { messages, isLoading, sendMessage } = useSupportMessages(ticket?.id || null);
+  const updateTicketStatus = async (..._args: any[]) => {};
+  const escalateTicket = async (..._args: any[]) => {};
+  const refetch = async () => {};
+  const messages: any[] = [];
+  const isLoading = false;
+  const sendMessage = async (..._args: any[]): Promise<boolean> => false;
   
   const [newMessage, setNewMessage] = useState("");
   const [isInternal, setIsInternal] = useState(false);

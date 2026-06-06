@@ -11,8 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/s
 import { ExportButton } from "@/components/shadcn/export-button";
 import { PlatformFilterPopover, buildEmptyDraft, type FilterDraft, type FilterField } from "@/components/shadcn/platform-filter-popover";
 import { Search } from "lucide-react";
-import { useSustainability } from "@/hooks/useSustainability";
-import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useAuthStore } from "@/stores/authStore";
 import {
@@ -57,11 +55,19 @@ const FUEL_TYPE_LABELS: Record<string, string> = {
 
 export default function Sustainability() {
   const { user } = useAuthStore();
-  const {
-    co2Logs, emissionProfiles, ecoScores, targets, evSessions,
-    saveTarget, totalCo2, totalDistance, avgCo2PerKm, evCount, totalProfiled, trendData,
-  } = useSustainability();
-  const { vehicles } = useVehicles();
+  const co2Logs: any = { data: [] };
+  const emissionProfiles: any = { data: [] };
+  const ecoScores: any = { data: [] };
+  const targets: any = { data: null };
+  const evSessions: any = { data: [] };
+  const saveTarget = { mutate: async (..._args: any[]) => {}, isPending: false };
+  const totalCo2 = 0;
+  const totalDistance = 0;
+  const avgCo2PerKm = 0;
+  const evCount = 0;
+  const totalProfiled = 0;
+  const trendData: any[] = [];
+  const vehicles: any[] = [];
   const { drivers } = useDrivers();
   const [activeTab, setActiveTab] = useState("overview");
   const [trendRange, setTrendRange] = useState<ChartDateRange>("30d");

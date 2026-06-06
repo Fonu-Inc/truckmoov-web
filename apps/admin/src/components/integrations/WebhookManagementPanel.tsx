@@ -11,23 +11,21 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ScrollArea } from '@/components/shadcn/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
 import { Webhook, Plus, Copy, RefreshCw, Trash2, Check, X, Clock, AlertTriangle, ExternalLink, Eye } from 'lucide-react';
-import { useWebhookSubscriptions, WEBHOOK_EVENT_TYPES, CreateWebhookInput, WebhookDeliveryLog } from '@/hooks/useWebhookSubscriptions';
+const WEBHOOK_EVENT_TYPES: { value: string; label: string; category: string }[] = [];
+type CreateWebhookInput = any;
+type WebhookDeliveryLog = any;
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 export function WebhookManagementPanel() {
-  const {
-    subscriptions: realSubscriptions,
-    deliveryLogs: realDeliveryLogs,
-    isLoading,
-    createSubscription,
-    updateSubscription,
-    deleteSubscription,
-    regenerateSecret,
-    refreshDeliveryLogs,
-  } = useWebhookSubscriptions();
-  const subscriptions = realSubscriptions;
-  const deliveryLogs = realDeliveryLogs;
+  const subscriptions: any[] = [];
+  const deliveryLogs: any[] = [];
+  const isLoading = false;
+  const createSubscription = async (..._args: any[]) => null;
+  const updateSubscription = async (..._args: any[]) => {};
+  const deleteSubscription = async (..._args: any[]) => {};
+  const regenerateSecret = async (..._args: any[]) => {};
+  const refreshDeliveryLogs = async () => {};
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newWebhookName, setNewWebhookName] = useState('');

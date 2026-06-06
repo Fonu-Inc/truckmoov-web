@@ -5,7 +5,6 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Button } from "@/components/shadcn/button";
-import { usePostpaidBilling } from "@/hooks/usePostpaidBilling";
 import { formatCurrency } from "@/lib/currency";
 import {Download, Shield, TrendingUp, Clock, Zap, MessageSquare, Phone,
   MessageCircle, Bot, Cpu } from "lucide-react";
@@ -29,13 +28,12 @@ const eventTypeConfig: Record<string, { label: string; icon: React.ElementType }
   iot_sim_active: { label: "IoT SIM", icon: Cpu } };
 
 export function PostpaidUsageDashboard({ tenantId }: PostpaidUsageDashboardProps) {
-  const {
-    usageSummary,
-    totalCurrentUsage,
-    currentPeriod,
-    creditLimit,
-    postpaidInvoices,
-    isLoading } = usePostpaidBilling(tenantId);
+  const usageSummary: Record<string, { count: number; total: number }> = {};
+  const totalCurrentUsage = 0;
+  const currentPeriod = new Date().toLocaleString("en-US", { month: "long", year: "numeric" });
+  const creditLimit: any = null;
+  const postpaidInvoices: any[] = [];
+  const isLoading = false;
 
   if (isLoading) {
     return (

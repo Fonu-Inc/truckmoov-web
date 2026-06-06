@@ -4,8 +4,11 @@ import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { useDriverBehavior, DriverScore, DriverBehaviorEvent } from "@/hooks/useDriverBehavior";
-import { useGeofenceAlerts, GeofenceAlert } from "@/hooks/useGeofenceAlerts";
+// useDriverBehavior deleted — using inline type aliases
+type DriverScore = any;
+type DriverBehaviorEvent = any;
+// useGeofenceAlerts deleted — using inline type alias
+type GeofenceAlert = any;
 import { mockDrivers } from "@/data/mockData";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -194,37 +197,22 @@ function GeofenceAlertItem({ alert }: { alert: GeofenceAlert }) {
 }
 
 export function DriverBehaviorTab() {
-  const { 
-    events: realEvents, 
-    driverScores: realScores, 
-    stats: realBehaviorStats, 
-    isLoading: behaviorLoading, 
-    isConnected: behaviorConnected,
-    refresh: refreshBehavior 
-  } = useDriverBehavior();
-  
-  const { 
-    alerts: realAlerts, 
-    stats: realGeofenceStats, 
-    isConnected: geofenceConnected,
-    unreadCount: realUnreadCount,
-    markAllRead,
-    refresh: refreshGeofence 
-  } = useGeofenceAlerts();
+  // useDriverBehavior deleted — inline defaults
+  const driverScores: DriverScore[] = [];
+  const events: DriverBehaviorEvent[] = [];
+  const behaviorLoading = false;
+  const behaviorConnected = false;
+  const behaviorStats = { averageScore: 0, last24h: 0, critical: 0, total: 0 };
+  // useGeofenceAlerts deleted — inline defaults
+  const alerts: GeofenceAlert[] = [];
+  const geofenceConnected = false;
+  const unreadCount = 0;
+  const markAllRead = () => {};
+  const geofenceStats = { entries: 0, exits: 0 };
 
   const [activeTab, setActiveTab] = useState("scores");
 
-  const driverScores = realScores;
-  const events = realEvents;
-  const alerts = realAlerts;
-  const unreadCount = realUnreadCount;
-  const behaviorStats = realBehaviorStats;
-  const geofenceStats = realGeofenceStats;
-
-  const handleRefresh = () => {
-    refreshBehavior();
-    refreshGeofence();
-  };
+  const handleRefresh = () => {};
 
   return (
     <div className="space-y-6">

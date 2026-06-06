@@ -9,19 +9,12 @@ import { Separator } from "@/components/shadcn/separator";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { 
-  SupportTicket, 
-  useSupportMessages, 
-  useSupportTickets,
-  TicketStatus, 
-  EscalationType 
-} from "@/hooks/useSupportTickets";
 import { useAuthStore } from "@/stores/authStore";
 import { formatDistanceToNow, format } from "date-fns";
-import { 
-  Send, 
-  Loader2, 
-  User, 
+import {
+  Send,
+  Loader2,
+  User,
   ArrowUpRight,
   CheckCircle2,
   AlertTriangle,
@@ -30,6 +23,39 @@ import {
   FileText,
   ImageIcon
 } from "lucide-react";
+
+type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
+type EscalationType = "fleetpro_internal" | "fonu_connectivity" | "vendor_installer";
+
+export interface SupportTicket {
+  id: string;
+  tenantId: string;
+  category: string;
+  subject: string;
+  description: string;
+  status: TicketStatus;
+  priority: string;
+  contextType: string;
+  escalatedTo?: EscalationType | string;
+  escalatedReferenceId?: string;
+  escalationNotes?: string;
+  escalatedAt?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
+  contextSnapshot?: Record<string, unknown>;
+}
+
+interface SupportMessage {
+  id: string;
+  senderId: string;
+  senderName?: string;
+  senderRole?: string;
+  message: string;
+  isInternal?: boolean;
+  createdAt: string;
+}
 
 interface AdminTicketSheetProps {
   ticket: SupportTicket | null;
@@ -53,9 +79,15 @@ const escalationOptions: { value: EscalationType; label: string }[] = [
 
 export function AdminTicketSheet({ ticket, onClose }: AdminTicketSheetProps) {
   const { user } = useAuthStore();
-  const { updateTicketStatus, escalateTicket, refetch } = useSupportTickets();
-  const { messages, isLoading, sendMessage } = useSupportMessages(ticket?.id || null);
-  
+
+  // Inline defaults — hook deleted
+  const updateTicketStatus = async (_id: string, _status: TicketStatus) => {};
+  const escalateTicket = async (_id: string, _to: string, _ref?: string, _notes?: string) => {};
+  const refetch = async () => {};
+  const messages: SupportMessage[] = [];
+  const isLoading = false;
+  const sendMessage = async (_msg: string, _internal: boolean): Promise<boolean> => false;
+
   const [newMessage, setNewMessage] = useState("");
   const [isInternal, setIsInternal] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -522,6 +554,5 @@ export function AdminTicketSheet({ ticket, onClose }: AdminTicketSheetProps) {
     </Dialog>
   );
 }
-
 
 

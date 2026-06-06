@@ -11,7 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Checkbox } from '@/components/shadcn/checkbox';
 import { Textarea } from '@/components/shadcn/textarea';
 import { Phone, Plus, MoreHorizontal, Building2, PhoneOff, Trash2, RefreshCw, MessageSquare, PhoneCall, Search, Loader2 } from 'lucide-react';
-import { usePlatformPhoneNumbers, PlatformPhoneNumber } from '@/hooks/usePlatformPhoneNumbers';
+type PlatformPhoneNumber = any;
 import { useTenants } from '@/hooks/useTenants';
 import { useAuthStore } from '@/stores/authStore';
 import { toast } from 'sonner';
@@ -26,7 +26,15 @@ interface AvailableNumber {
 }
 
 export function PhoneNumberManagement() {
-  const { phoneNumbers, loading, provisionNumber, assignToTenant, unassignFromTenant, suspendNumber, releaseNumber, deleteNumber, refetch } = usePlatformPhoneNumbers();
+  const phoneNumbers: PlatformPhoneNumber[] = [];
+  const loading = false;
+  const provisionNumber = async (..._args: any[]) => {};
+  const assignToTenant = async (..._args: any[]) => {};
+  const unassignFromTenant = async (..._args: any[]) => {};
+  const suspendNumber = async (..._args: any[]) => {};
+  const releaseNumber = async (..._args: any[]) => {};
+  const deleteNumber = async (..._args: any[]) => {};
+  const refetch = async () => {};
   const { tenants } = useTenants();
   const { user } = useAuthStore();
   

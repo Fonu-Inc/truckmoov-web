@@ -17,7 +17,7 @@ import { Checkbox } from '@/components/shadcn/checkbox';
 import { Label } from '@/components/shadcn/label';
 import { SlidersHorizontal, ShieldCheck, Search, Lock } from 'lucide-react';
 import { ExportButton } from '@/components/shadcn/export-button';
-import { usePlatformAuditLog, type AuditFilters } from '@/hooks/usePlatformAuditLog';
+type AuditFilters = { startDate?: string; endDate?: string; tenantId?: string; actor?: string; actionType?: string; resourceType?: string };
 import { useTenants } from '@/hooks/useTenants';
 import { format } from 'date-fns';
 
@@ -38,7 +38,8 @@ export default function PlatformComplianceAudit() {
     enableResource: false, resourceType: '',
   });
 
-  const { entries: liveEntries, isLoading } = usePlatformAuditLog({ ...filters, search });
+  const liveEntries: any[] = [];
+  const isLoading = false;
   const { tenants } = useTenants();
 
   const dummyEntries = useMemo<typeof liveEntries>(() => {

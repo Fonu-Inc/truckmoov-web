@@ -30,31 +30,26 @@ import {
 } from "@/components/jobs/JobsFilterDialog";
 import { DriverCommunicationActions } from "@/components/communications/DriverCommunicationActions";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { useJobs, JobData } from "@/hooks/useJobs";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { WritableAction } from "@/components/auth/WritableAction";
-import { useOrgContext } from "@/hooks/useOrgContext";
 
 export default function JobDispatch() {
-  const { jobs, isLoading, addJob, updateJob, deleteJob } = useJobs();
+  const jobs: any[] = [];
+  const isLoading = false;
+  const addJob = async (..._args: any[]) => false;
+  const updateJob = async (..._args: any[]) => false;
+  const deleteJob = async (..._args: any[]) => {};
   const { drivers } = useDrivers();
   const { format: formatCurrency } = useCurrency();
-  const orgCtx = useOrgContext();
-  const isEnterprise = orgCtx.hasOrgType('ENTERPRISE');
-  const isAggregator = orgCtx.hasOrgType('AGGREGATOR');
-  const isOperationsManager = orgCtx.hasOrgRole('OPERATIONS_MANAGER') && !orgCtx.hasOrgRole('ADMIN');
+  const isEnterprise = false;
+  const isAggregator = false;
+  const isOperationsManager = false;
   // Enterprise admins, aggregators, and operations managers can only RECOMMEND drivers —
   // final assignment belongs to fleet provider admins and dispatchers.
   const recommendOnly = isEnterprise || isAggregator || isOperationsManager;
-  const recommendedByLabel = isEnterprise
-    ? "Enterprise Admin"
-    : isAggregator
-      ? "Aggregator"
-      : isOperationsManager
-        ? "Operations Manager"
-        : undefined;
+  const recommendedByLabel: string | undefined = undefined;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -62,7 +57,7 @@ export default function JobDispatch() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isMatchingOpen, setIsMatchingOpen] = useState(false);
   const [isCompletionOpen, setIsCompletionOpen] = useState(false);
-  const [selectedJob, setSelectedJob] = useState<JobData | null>(null);
+  const [selectedJob, setSelectedJob] = useState<any | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
 
   // ── Advanced filter state ──
@@ -171,7 +166,7 @@ export default function JobDispatch() {
     }
   };
 
-  const handleDeleteJob = async (job: JobData) => {
+  const handleDeleteJob = async (job: any) => {
     await deleteJob(job.id);
   };
 
@@ -198,22 +193,22 @@ export default function JobDispatch() {
     setIsMatchingOpen(false);
   };
 
-  const openDetails = (job: JobData) => {
+  const openDetails = (job: any) => {
     setSelectedJob(job);
     setIsDetailsOpen(true);
   };
 
-  const openEdit = (job: JobData) => {
+  const openEdit = (job: any) => {
     setSelectedJob(job);
     setIsFormOpen(true);
   };
 
-  const openMatching = (job: JobData) => {
+  const openMatching = (job: any) => {
     setSelectedJob(job);
     setIsMatchingOpen(true);
   };
 
-  const openCompletion = (job: JobData) => {
+  const openCompletion = (job: any) => {
     setSelectedJob(job);
     setIsCompletionOpen(true);
   };
@@ -249,8 +244,8 @@ export default function JobDispatch() {
     }
   };
 
-  // Map JobData to legacy Job format for components that expect it
-  const mapToLegacyJob = (job: JobData) => ({
+  // Map any to legacy Job format for components that expect it
+  const mapToLegacyJob = (job: any) => ({
     id: job.id,
     reference: job.reference,
     status: job.status,

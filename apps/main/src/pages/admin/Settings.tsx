@@ -61,7 +61,6 @@ import { RolePermissionsMatrix } from "@/components/settings/RolePermissionsMatr
 import { TableToolbar, type FilterField, type FilterValues } from "@/components/shadcn/table-toolbar";
 import { TenantInvoiceConfigPanel } from "@/components/settings/TenantInvoiceConfigPanel";
 import { useAuthStore } from "@/stores/authStore";
-import { useOrgContext } from "@/hooks/useOrgContext";
 import { useActiveOrgStore } from "@/stores/activeOrgStore";
 
 /** Invite role options scoped per organization type. */
@@ -130,7 +129,7 @@ export default function Settings() {
   const [orgAddress, setOrgAddress] = useState("");
   const [orgTimezone, setOrgTimezone] = useState("Africa/Lagos");
   const [orgLanguage, setOrgLanguage] = useState("en");
-  const { memberships } = useOrgContext();
+  const memberships: any[] = [];
   const { resolveActiveOrg } = useActiveOrgStore();
   const activeOrg = resolveActiveOrg(memberships);
   const activeOrgType = activeOrg?.orgType || "FLEET_PROVIDER";

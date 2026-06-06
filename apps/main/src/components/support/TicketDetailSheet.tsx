@@ -8,7 +8,9 @@ import {
 import { Badge } from "@/components/shadcn/badge";
 import { Label } from "@/components/shadcn/label";
 import { Separator } from "@/components/shadcn/separator";
-import { SupportTicket, TicketStatus, TicketPriority } from "@/hooks/useSupportTickets";
+type SupportTicket = any;
+type TicketStatus = any;
+type TicketPriority = any;
 import { formatDistanceToNow, format } from "date-fns";
 import {
   ArrowUpRight,

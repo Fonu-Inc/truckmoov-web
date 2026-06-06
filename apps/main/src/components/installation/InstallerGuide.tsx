@@ -8,7 +8,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/shadcn/accordion';
-import { DeviceCatalogEntry } from '@/hooks/useDeviceCatalog';
+type DeviceCatalogEntry = any;
 import { Skeleton } from '@/components/shadcn/skeleton';
 import {
   Search,

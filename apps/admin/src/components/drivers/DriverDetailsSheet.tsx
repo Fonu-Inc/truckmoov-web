@@ -14,8 +14,11 @@ import {
   Shield, Fuel, Route, Activity, Brain, Car, Zap, RotateCcw,
   Gauge, Coffee, TrendingDown, Minus, RefreshCw, Loader2, Play
 } from "lucide-react";
-import { useDriverBehavior, DriverScore, DriverBehaviorEvent } from "@/hooks/useDriverBehavior";
-import { useDriverFatigue, FatigueAlert } from "@/hooks/useDriverFatigue";
+// useDriverBehavior deleted — using inline type aliases
+type DriverScore = any;
+type DriverBehaviorEvent = any;
+// useDriverFatigue deleted — using inline type alias
+type FatigueAlert = any;
 import { useMemo, useState } from "react";
 import { mockVehicles } from "@/data/mockData";
 import { toast } from "sonner";
@@ -144,8 +147,14 @@ function normalizeDeviceId(deviceId?: string) {
 }
 
 export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetailsSheetProps) {
-  const { events, driverScores } = useDriverBehavior();
-  const { alerts: fatigueAlerts, analyzeFatigue, isAnalyzing, refetch: refetchFatigue } = useDriverFatigue();
+  // useDriverBehavior deleted — inline defaults
+  const events: DriverBehaviorEvent[] = [];
+  const driverScores: DriverScore[] = [];
+  // useDriverFatigue deleted — inline defaults
+  const fatigueAlerts: FatigueAlert[] = [];
+  const isAnalyzing = false;
+  const analyzeFatigue = async (_deviceId: string, _tenantId: string, _driverId: string, _driverName: string) => {};
+  const refetchFatigue = () => {};
   const [isRunningAnalysis, setIsRunningAnalysis] = useState(false);
 
   // Find device ID(s) associated with this driver via their assigned vehicle

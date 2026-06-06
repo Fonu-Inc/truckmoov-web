@@ -18,16 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/shadcn/select';
-import { useDeviceCatalog } from '@/hooks/useDeviceCatalog';
-import { useVehicles } from '@/hooks/useVehicles';
-import { CreateDeviceSetupRequest } from '@/hooks/useDeviceSetupRequests';
 import { Cpu, Upload, Loader2 } from 'lucide-react';
 import { SimBundlePicker, SimBundleValue, formatSimBundle } from './SimBundlePicker';
 
 interface DeviceSetupRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: CreateDeviceSetupRequest) => Promise<unknown>;
+  onSubmit: (data: any) => Promise<unknown>;
   onUploadFile?: (file: File, requestId: string, type: 'device_photo' | 'receipt') => Promise<string | null>;
 }
 
@@ -37,8 +34,10 @@ export function DeviceSetupRequestDialog({
   onSubmit,
   onUploadFile,
 }: DeviceSetupRequestDialogProps) {
-  const { getManufacturers, getModelsForManufacturer, catalog } = useDeviceCatalog();
-  const { vehicles } = useVehicles();
+  const getManufacturers = (): string[] => [];
+  const getModelsForManufacturer = (_manufacturer: string): any[] => [];
+  const catalog: any[] = [];
+  const vehicles: any[] = [];
 
   const [manufacturer, setManufacturer] = useState('');
   const [model, setModel] = useState('');
@@ -103,7 +102,7 @@ export function DeviceSetupRequestDialog({
 
     const selectedVehicle = vehicles.find(v => v.id === vehicleId);
 
-    const data: CreateDeviceSetupRequest = {
+    const data: any = {
       manufacturer,
       quantity: Math.max(1, quantity),
       model: model || undefined,

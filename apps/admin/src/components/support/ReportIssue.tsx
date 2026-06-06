@@ -6,19 +6,22 @@ import { Textarea } from "@/components/shadcn/textarea";
 import { Label } from "@/components/shadcn/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Badge } from "@/components/shadcn/badge";
-import { useSupportTickets, TicketCategory, ContextType, TicketPriority } from "@/hooks/useSupportTickets";
 import { useAuthStore } from "@/stores/authStore";
-import { 
-  Cpu, 
-  Wifi, 
-  Bell, 
-  CreditCard, 
-  Users, 
+import { toast } from "sonner";
+import {
+  Cpu,
+  Wifi,
+  Bell,
+  CreditCard,
+  Users,
   HelpCircle,
   Loader2,
   CheckCircle2,
-  AlertTriangle
 } from "lucide-react";
+
+type TicketCategory = "device_tracking" | "sim_connectivity" | "messaging" | "billing" | "account_access" | "other";
+type ContextType = "device" | "sim" | "vehicle" | "whatsapp" | "billing" | "none";
+type TicketPriority = "low" | "medium" | "high" | "critical";
 
 interface ReportIssueProps {
   onSuccess: () => void;
@@ -31,7 +34,6 @@ interface ContextItem {
   extra?: string;
 }
 
-
 const categories: { value: TicketCategory; label: string; icon: React.ElementType; contextType: ContextType }[] = [
   { value: "device_tracking", label: "Device & Tracking", icon: Cpu, contextType: "device" },
   { value: "sim_connectivity", label: "SIM & Connectivity", icon: Wifi, contextType: "sim" },
@@ -43,7 +45,13 @@ const categories: { value: TicketCategory; label: string; icon: React.ElementTyp
 
 export function ReportIssue({ onSuccess }: ReportIssueProps) {
   const { user } = useAuthStore();
-  const { createTicket } = useSupportTickets();
+
+  // Inline default — useSupportTickets hook deleted
+  const createTicket = async (_payload: unknown): Promise<null> => {
+    toast.error("Ticket submission is not yet connected to the backend.");
+    return null;
+  };
+
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingContext, setIsLoadingContext] = useState(false);
@@ -59,8 +67,6 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
 
   // Context options
   const [contextOptions, setContextOptions] = useState<ContextItem[]>([]);
-
-  const tenantId = user?.tenantId ?? null;
 
   // Load context options when category changes
   useEffect(() => {
@@ -320,6 +326,5 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
     </div>
   );
 }
-
 
 

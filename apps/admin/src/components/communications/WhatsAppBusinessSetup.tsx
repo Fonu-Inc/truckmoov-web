@@ -37,7 +37,16 @@ import {
 } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { toast } from "sonner";
-import { useWhatsAppAccounts, WhatsAppAccount } from "@/hooks/useWhatsAppAccounts";
+type WhatsAppAccount = {
+  id: string;
+  status: 'CONNECTED' | 'PENDING' | 'NOT_CONNECTED' | 'NEEDS_ATTENTION' | 'DISABLED';
+  is_default_sender: boolean;
+  display_phone_number: string;
+  verified_name: string;
+  quality_rating?: string;
+  connected_at?: string;
+  connection_method?: string;
+};
 import { WhatsAppTemplatesManager } from "./WhatsAppTemplatesManager";
 
 interface WhatsAppBusinessSetupProps {
@@ -45,19 +54,17 @@ interface WhatsAppBusinessSetupProps {
 }
 
 export function WhatsAppBusinessSetup({ tenantId }: WhatsAppBusinessSetupProps) {
-  const {
-    accounts,
-    isLoading,
-    canSend,
-    tenantStatus,
-    isConnecting,
-    isDisconnecting,
-    refetch,
-    startEmbeddedSignup,
-    disconnect,
-    setAsDefault,
-    sendTestMessage,
-  } = useWhatsAppAccounts(tenantId);
+  const accounts: WhatsAppAccount[] = [];
+  const isLoading = false;
+  const canSend = false;
+  const tenantStatus = 'active';
+  const isConnecting = false;
+  const isDisconnecting = false;
+  const refetch = () => {};
+  const startEmbeddedSignup = () => {};
+  const disconnect = (_id: string) => {};
+  const setAsDefault = (_id: string) => {};
+  const sendTestMessage = async (_phone: string) => {};
 
   const [testDialogOpen, setTestDialogOpen] = useState(false);
   const [testPhone, setTestPhone] = useState("");

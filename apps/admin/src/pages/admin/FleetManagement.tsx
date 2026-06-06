@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useVehicles, VehicleData } from "@/hooks/useVehicles";
+type VehicleData = any;
 import { useDrivers } from "@/hooks/useDrivers";
 import {
   Truck,
@@ -71,7 +71,6 @@ import { Vehicle } from "@/types";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 import { WritableAction } from "@/components/auth/WritableAction";
-import { useOrgContext } from "@/hooks/useOrgContext";
 
 interface FleetManagementProps {
   vehiclesOnly?: boolean;
@@ -81,8 +80,7 @@ interface FleetManagementProps {
 
 export default function FleetManagement({ vehiclesOnly = false, title, subtitle }: FleetManagementProps = {}) {
   const { requireSubscription } = useRequireSubscription();
-  const orgCtx = useOrgContext();
-  const isAggregator = orgCtx.hasOrgType('AGGREGATOR');
+  const isAggregator = false;
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(tabFromUrl || "vehicles");
@@ -97,7 +95,11 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
     setActiveTab(value);
     setSearchParams(value === "vehicles" ? {} : { tab: value }, { replace: true });
   };
-  const { vehicles: dbVehicles, isLoading, addVehicle, updateVehicle, deleteVehicle } = useVehicles();
+  const dbVehicles: VehicleData[] = [];
+  const isLoading = false;
+  const addVehicle = async (_data: any): Promise<boolean> => false;
+  const updateVehicle = async (_id: string, _data: any): Promise<boolean> => false;
+  const deleteVehicle = async (_id: string): Promise<void> => {};
   const { drivers } = useDrivers();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");

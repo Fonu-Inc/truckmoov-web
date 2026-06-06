@@ -55,14 +55,9 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { 
-  useGeofences, 
-  useGeofencePermissions,
-  type GeofenceWithAssignments,
-  type GeofenceCategory,
-  type CreateGeofenceInput,
-} from "@/hooks/useGeofences";
-import { useVehicles } from "@/hooks/useVehicles";
+type GeofenceWithAssignments = any;
+type GeofenceCategory = any;
+type CreateGeofenceInput = any;
 
 interface GeofenceManagementDialogProps {
   open: boolean;
@@ -128,17 +123,16 @@ const defaultEditForm: EditFormState = {
 };
 
 export function GeofenceManagementDialog({ open, onOpenChange, preselectedVehicleId }: GeofenceManagementDialogProps) {
-  const { 
-    geofences, 
-    isLoading, 
-    createGeofence, 
-    updateGeofence, 
-    archiveGeofence, 
-    deleteGeofence,
-    assignVehicles,
-  } = useGeofences();
-  const { canManageGeofences, canAssignGeofences } = useGeofencePermissions();
-  const { vehicles } = useVehicles();
+  const geofences: any[] = [];
+  const isLoading = false;
+  const createGeofence = { mutateAsync: async (..._args: any[]) => ({ id: "" }), isPending: false };
+  const updateGeofence = { mutateAsync: async (..._args: any[]) => {}, isPending: false };
+  const archiveGeofence = { mutateAsync: async (..._args: any[]) => {} };
+  const deleteGeofence = { mutateAsync: async (..._args: any[]) => {} };
+  const assignVehicles = { mutateAsync: async (..._args: any[]) => {}, isPending: false };
+  const canManageGeofences = false;
+  const canAssignGeofences = false;
+  const vehicles: any[] = [];
 
   const [selectedZone, setSelectedZone] = useState<GeofenceWithAssignments | null>(null);
   const [isEditing, setIsEditing] = useState(false);

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '@/stores/authStore';
-import { TenantBranding } from '@/hooks/useTenantBranding';
+type TenantBranding = any;
 
 interface TenantBrandingContextValue {
   branding: TenantBranding | null;

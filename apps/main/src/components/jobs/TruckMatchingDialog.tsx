@@ -16,9 +16,9 @@ import {
 } from "@/components/shadcn/select";
 import { Job, Vehicle, Driver } from "@/types";
 import { mockVehicles, mockDrivers } from "@/data/mockData";
-import { useDriverIVR } from "@/hooks/useDriverIVR";
-import { useAILoadMatching, AIMatchResult } from "@/hooks/useAILoadMatching";
 import { useAIConfigPermissions } from "@/hooks/useAIConfigPermissions";
+
+type AIMatchResult = any;
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { 
   Truck, User, MapPin, Star, Clock, CheckCircle, 
@@ -42,14 +42,21 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
   const [manualVehicleId, setManualVehicleId] = useState<string>("");
   const [manualDriverId, setManualDriverId] = useState<string>("");
   const [aiError, setAiError] = useState<string | null>(null);
-  const { notifyNewJob, notifyUrgent, isLoading: isIVRLoading } = useDriverIVR();
+  const notifyNewJob = async (..._args: any[]) => ({ success: false, callId: '' });
+  const notifyUrgent = async (..._args: any[]) => ({ success: false, callId: '' });
+  const isIVRLoading = false;
   const { canRunAIMatching, canViewAIResults } = useAIConfigPermissions();
   const { format: formatCurrency } = useCurrency();
-  const { 
-    matches, isMatching, matchProgress, analysis, 
-    provider, model, overallConfidence, requiresApproval,
-    runMatching, reset 
-  } = useAILoadMatching();
+  const matches: any[] = [];
+  const isMatching = false;
+  const matchProgress = 0;
+  const analysis = null;
+  const provider = null;
+  const model = null;
+  const overallConfidence = null;
+  const requiresApproval = false;
+  const runMatching = async (...args: any[]) => {};
+  const reset = () => null;
 
   const isManualMode = mode === "manual";
 

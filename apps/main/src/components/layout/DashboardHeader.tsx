@@ -12,9 +12,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSidebarStore } from "@/stores/sidebarStore";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
-import { useOrgContext } from "@/hooks/useOrgContext";
 import { useActiveOrgStore } from "@/stores/activeOrgStore";
-import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { getSidebarConfig, isNavGroup } from "@/lib/sidebarConfig";
 
 interface DashboardHeaderProps {
@@ -42,14 +40,9 @@ export function DashboardHeader({ title, onRefresh }: DashboardHeaderProps) {
   // ── Sync top-bar title with the active sidebar entry's label ──
   const location = useLocation();
   const { user } = useAuthStore();
-  const orgCtx = useOrgContext();
   const { resolveActiveOrg } = useActiveOrgStore();
-  const activeOrg = resolveActiveOrg(orgCtx.memberships);
-  const { enabled: flagEnabled } = useFeatureFlag(
-    "enable_multi_stakeholder_model",
-    user?.tenantId
-  );
-  const multiStakeholderEnabled = flagEnabled;
+  const activeOrg = resolveActiveOrg([]);
+  const multiStakeholderEnabled = false;
 
   const sidebarTitle = useMemo(() => {
     const config = getSidebarConfig(user, activeOrg, multiStakeholderEnabled);

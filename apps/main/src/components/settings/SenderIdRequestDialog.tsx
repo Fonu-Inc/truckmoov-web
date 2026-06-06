@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue } from "@/components/shadcn/select";
 import {Upload, FileText, X, Loader2, Download} from "lucide-react";
-import { useTenantSenderIds, type SenderIdType } from "@/hooks/useTenantSenderIds";
+type SenderIdType = string;
 import { useAuthStore } from "@/stores/authStore";
 import { generateSenderIdRequestLetter } from "@/utils/senderIdTemplateGenerator";
 import { toast } from "sonner";
@@ -29,7 +29,7 @@ interface SenderIdRequestDialogProps {
 
 export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDialogProps) {
   const { user } = useAuthStore();
-  const { requestSenderId } = useTenantSenderIds();
+  const requestSenderId = async (_data: any) => {};
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);

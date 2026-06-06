@@ -1,7 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { useSupportPermissions } from "@/hooks/useSupportPermissions";
-import { useSupportTickets } from "@/hooks/useSupportTickets";
 import { 
   HelpCircle, 
   FileWarning, 
@@ -19,7 +18,7 @@ interface HelpHomeProps {
 
 export function HelpHome({ onNavigate }: HelpHomeProps) {
   const { canCreateTicket, canViewTickets } = useSupportPermissions();
-  const { tickets, isLoading } = useSupportTickets();
+  const tickets: any[] = [];
 
   const openTickets = tickets.filter((t) => t.status === "open" || t.status === "in_progress");
   const recentTickets = tickets.slice(0, 3);

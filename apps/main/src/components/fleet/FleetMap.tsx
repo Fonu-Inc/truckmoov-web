@@ -6,7 +6,6 @@ import { Button } from "@/components/shadcn/button";
 import { Card, CardContent } from "@/components/shadcn/card";
 import { Truck, AlertTriangle, Navigation, Clock, Fuel, Phone, Wifi, WifiOff } from "lucide-react";
 import { useRealtimeTracking, RealtimeVehicleLocation } from "@/hooks/useRealtimeTracking";
-import { useGeofences, type Geofence } from "@/hooks/useGeofences";
 import { formatDistanceToNow } from "date-fns";
 
 // Fix for default marker icons when using Leaflet directly
@@ -199,7 +198,7 @@ const createHarshEventIcon = (severity: HarshEventSeverity) => {
 
 
 // Helper to convert database geofence to map display format
-const convertGeofenceToZone = (gf: Geofence): GeofenceZone => {
+const convertGeofenceToZone = (gf: any): GeofenceZone => {
   const geometry = gf.geometry as { type: string; coordinates: unknown } | null;
   let center: [number, number] = [6.5244, 3.3792]; // Lagos default
   
@@ -277,7 +276,7 @@ export function FleetMap({
   const [vehicles, setVehicles] = useState<Vehicle[]>(externalVehicles ?? []);
 
   // Fetch geofences from database
-  const { geofences: dbGeofences } = useGeofences();
+  const dbGeofences: any[] = [];
   
   // Convert database geofences to map display format
   const geofenceZones = useMemo(() => {

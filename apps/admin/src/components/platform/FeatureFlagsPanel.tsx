@@ -5,7 +5,6 @@ import { Button } from '@/components/shadcn/button';
 import { Switch } from '@/components/shadcn/switch';
 import { Label } from '@/components/shadcn/label';
 import { Separator } from '@/components/shadcn/separator';
-import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { useAIConfigPermissions } from '@/hooks/useAIConfigPermissions';
 import { 
   Settings2, 
@@ -18,7 +17,11 @@ import {
 } from 'lucide-react';
 
 export function FeatureFlagsPanel() {
-  const { featureFlags, isLoading, toggleFeatureFlag, getPhase3Features, getFeaturesByCategory } = useFeatureFlags();
+  const featureFlags: any[] = [];
+  const isLoading = false;
+  const toggleFeatureFlag = { mutate: (..._args: any[]) => {}, isPending: false };
+  const getPhase3Features = () => [] as any[];
+  const getFeaturesByCategory = (_cat: string) => [] as any[];
   const { isPlatformAdmin } = useAIConfigPermissions();
 
   const phase3Features = getPhase3Features();

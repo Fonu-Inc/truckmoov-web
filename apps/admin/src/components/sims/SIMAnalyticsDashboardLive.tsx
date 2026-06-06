@@ -38,7 +38,8 @@ import {
 } from "lucide-react";
 import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { IoTSIM } from "@/hooks/useFonuSIM";
+
+type IoTSIM = any;
 
 interface SIMAnalyticsDashboardProps {
   sims: IoTSIM[];

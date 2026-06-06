@@ -1,5 +1,4 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useAlerts } from "@/hooks/useAlerts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { Badge } from "@/components/shadcn/badge";
@@ -27,14 +26,12 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 export default function SupervisorAlerts() {
-  const {
-    alerts,
-    unacknowledgedAlerts,
-    criticalAlerts,
-    isLoading,
-    refetch,
-    acknowledgeAlert,
-  } = useAlerts();
+  const alerts: any[] = [];
+  const unacknowledgedAlerts: any[] = [];
+  const criticalAlerts: any[] = [];
+  const isLoading = false;
+  const refetch = async (...args: any[]) => {};
+  const acknowledgeAlert = async (...args: any[]) => {};
 
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");

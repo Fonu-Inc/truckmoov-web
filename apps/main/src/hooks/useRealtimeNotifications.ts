@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
 import { useAuthStore } from "@/stores/authStore";
-import { useOrgContext } from "@/hooks/useOrgContext";
 import { useActiveOrgStore } from "@/stores/activeOrgStore";
 import {
   getDummyNotificationsForStakeholder,
@@ -20,9 +19,8 @@ export interface PlatformNotification {
 
 export function useRealtimeNotifications() {
   const userRole = useAuthStore((s) => s.user?.role ?? null);
-  const orgCtx = useOrgContext();
   const resolveActiveOrg = useActiveOrgStore((s) => s.resolveActiveOrg);
-  const activeOrg = resolveActiveOrg(orgCtx.memberships);
+  const activeOrg = resolveActiveOrg([]);
 
   const stakeholder = useMemo(
     () => resolveStakeholderForNotifications({

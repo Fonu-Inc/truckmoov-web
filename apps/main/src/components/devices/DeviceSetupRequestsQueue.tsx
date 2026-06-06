@@ -35,10 +35,6 @@ import { Separator } from '@/components/shadcn/separator';
 import { Skeleton } from '@/components/shadcn/skeleton';
 import { cn } from '@/lib/utils';
 import {
-  DeviceSetupRequest,
-  DeviceSetupRequestStatus,
-} from '@/hooks/useDeviceSetupRequests';
-import {
   MoreHorizontal,
   UserPlus,
   Play,
@@ -58,22 +54,22 @@ import {
 import { format } from 'date-fns';
 
 interface DeviceSetupRequestsQueueProps {
-  requests: DeviceSetupRequest[];
+  requests: any[];
   loading: boolean;
   onRefresh: () => void;
   onUpdateStatus: (
     requestId: string,
-    newStatus: DeviceSetupRequestStatus,
+    newStatus: string,
     updates?: Record<string, unknown>,
     notes?: string,
   ) => Promise<unknown>;
-  onOpenWizard?: (request: DeviceSetupRequest) => void;
+  onOpenWizard?: (request: any) => void;
   isConfigurator: boolean;
   /** When true, all actions are flagged as support mode with audit logging */
   isSupportMode?: boolean;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: typeof Clock }> = {
+const STATUS_CONFIG: Record<string, { label: string; variant: any; icon: typeof Clock }> = {
   pending_review: { label: 'Pending Review', variant: 'secondary', icon: Clock },
   assigned: { label: 'Assigned', variant: 'default', icon: UserPlus },
   in_progress: { label: 'In Progress', variant: 'default', icon: Play },
@@ -100,7 +96,7 @@ export function DeviceSetupRequestsQueue({
 }: DeviceSetupRequestsQueueProps) {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState('all');
-  const [detailRequest, setDetailRequest] = useState<DeviceSetupRequest | null>(null);
+  const [detailRequest, setDetailRequest] = useState<any | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
@@ -145,7 +141,7 @@ export function DeviceSetupRequestsQueue({
   // Wrap status updates to inject support mode flags
   const handleStatusUpdate = (
     requestId: string,
-    newStatus: DeviceSetupRequestStatus,
+    newStatus: string,
     extraUpdates?: Record<string, unknown>,
     notes?: string,
   ) => {

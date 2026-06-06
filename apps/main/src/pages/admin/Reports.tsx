@@ -19,9 +19,7 @@ import {
   Truck, TrendingUp, TrendingDown, Loader2, AlertTriangle,
   CheckCircle, Clock, Wrench, Search, SlidersHorizontal, Percent, ChevronDown
 } from "lucide-react";
-import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
-import { useJobs } from "@/hooks/useJobs";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { format, subDays, subMonths, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
@@ -1555,9 +1553,11 @@ function FleetUtilizationReport({ vehicles, jobs, formatCurrency }: {
 // ─── Main Reports Page ──────────────────────────────────────────────────────
 export default function Reports() {
   const [dateRange, setDateRange] = useState("this_month");
-  const { vehicles, isLoading: vehiclesLoading } = useVehicles();
+  const vehicles: any[] = [];
+  const vehiclesLoading = false;
   const { drivers, isLoading: driversLoading } = useDrivers();
-  const { jobs, isLoading: jobsLoading } = useJobs();
+  const jobs: any[] = [];
+  const jobsLoading = false;
   const { format: formatCurrency } = useCurrency();
 
   const isLoading = vehiclesLoading || driversLoading || jobsLoading;

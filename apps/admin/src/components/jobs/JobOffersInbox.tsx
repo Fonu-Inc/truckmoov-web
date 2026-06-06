@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useOrgContext } from "@/hooks/useOrgContext";
-import { useOwnerOperatorJobLimit } from "@/hooks/useOwnerOperatorJobLimit";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Card, CardContent } from "@/components/shadcn/card";
 import { Alert, AlertDescription } from "@/components/shadcn/alert";
@@ -34,8 +32,11 @@ import { toast } from "sonner";
 import { DUMMY_JOB_OFFERS } from "@/lib/ownerOperatorDummyData";
 
 export function JobOffersInbox() {
-  const { orgIds } = useOrgContext();
-  const { isOwnerOperator, eligible, activeJobs, maxActiveJobs, reason } = useOwnerOperatorJobLimit();
+  const isOwnerOperator = false;
+  const eligible = true;
+  const activeJobs = 0;
+  const maxActiveJobs = 1;
+  const reason: string | null = null;
   const { format: formatCurrency } = useCurrency();
   const [respondingOffer, setRespondingOffer] = useState<any | null>(null);
   const [responseAction, setResponseAction] = useState<"ACCEPTED" | "DECLINED" | null>(null);

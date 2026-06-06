@@ -23,8 +23,32 @@ import {
   FileText,
   Cpu,
 } from "lucide-react";
-import { SIMProvisioningRequest, DeviceMappingRow } from "@/hooks/useFonuSIM";
 import { SIMRequestRiskFlags } from "./SIMRequestRiskFlags";
+
+// Local type aliases (hook deleted)
+type DeviceMappingRow = {
+  device_name: string;
+  imei: string;
+  serial_number?: string;
+  notes?: string;
+};
+type SIMProvisioningRequest = {
+  id: string;
+  tenant_id: string;
+  tenant_name: string | null;
+  status: string;
+  priority: string | null;
+  number_of_sims: number | null;
+  requested_data_limit_mb: number | null;
+  preferred_operator: string | null;
+  use_case: string | null;
+  notes: string | null;
+  rejected_reason: string | null;
+  fonu_request_id: string | null;
+  device_mapping_data: DeviceMappingRow[] | any;
+  created_at: string;
+  [key: string]: any;
+};
 import { DeviceMappingPreview } from "./DeviceMappingPreview";
 
 import { ProvisioningChecklistView } from "@/components/provisioning/ProvisioningChecklistView";

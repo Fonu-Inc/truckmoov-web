@@ -1,13 +1,12 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ComplianceDocumentsPanel } from "@/components/owner-operator/ComplianceDocumentsPanel";
-import { useOrgContext } from "@/hooks/useOrgContext";
 import { useMemo } from "react";
 
 export default function OwnerOperatorDocuments() {
-  const orgCtx = useOrgContext();
+  const orgCtx = { memberships: [], orgIds: [], isLoading: false, hasOrgRole: () => false, hasOrgType: () => false, getByOrgType: (_type: string) => [] as any[] };
   const ownerOrg = useMemo(
     () => orgCtx.getByOrgType("OWNER_OPERATOR")[0],
-    [orgCtx]
+    []
   );
 
   const vehicles: { id: string; tenant_id: string }[] = [];

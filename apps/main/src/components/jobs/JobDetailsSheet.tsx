@@ -12,7 +12,6 @@ import {
   Clock, CheckCircle, Hash, Activity, Weight, Banknote,
   MessageSquare, Phone, FileText,
 } from "lucide-react";
-import { useActivityLogs } from "@/hooks/useActivityLogs";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 

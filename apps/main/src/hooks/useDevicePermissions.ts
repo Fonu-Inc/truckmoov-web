@@ -1,18 +1,8 @@
 import { useAuthStore } from '@/stores/authStore';
-import { useOrgContext } from '@/hooks/useOrgContext';
 
-/**
- * Hook to check device management permissions using org-scoped RBAC.
- *
- * Permissions:
- * - ADMIN / OPERATIONS_MANAGER role keys: Full CRUD
- * - DISPATCHER / SUPERVISOR / VIEWER / FINANCE: Read-only
- * - Platform SuperAdmin: Read-only oversight
- * - Driver: No access
- */
 export function useDevicePermissions() {
   const { user } = useAuthStore();
-  const { hasOrgRole } = useOrgContext();
+  const hasOrgRole = (_key: string) => false;
 
   const isPlatformAdmin = user?.role === 'platform_admin';
   const canManage = hasOrgRole('ADMIN') || hasOrgRole('OPERATIONS_MANAGER');

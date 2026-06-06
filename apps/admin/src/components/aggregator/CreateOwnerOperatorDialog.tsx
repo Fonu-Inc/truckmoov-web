@@ -20,7 +20,6 @@ import {
 } from "@/components/shadcn/select";
 import { Loader2, User, Phone, FileText, Truck } from "lucide-react";
 import { toast } from "sonner";
-import { useOrgContext } from "@/hooks/useOrgContext";
 import { ORG_TYPES } from "@/types/orgRoles";
 
 interface CreateOwnerOperatorDialogProps {
@@ -34,9 +33,8 @@ export function CreateOwnerOperatorDialog({
   onOpenChange,
   onCreated,
 }: CreateOwnerOperatorDialogProps) {
-  const { getByOrgType } = useOrgContext();
-  const aggregatorOrgs = getByOrgType(ORG_TYPES.AGGREGATOR);
-  const aggregatorOrgId = aggregatorOrgs[0]?.orgId;
+  const aggregatorOrgs: any[] = [];
+  const aggregatorOrgId: string | undefined = undefined;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({

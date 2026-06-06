@@ -46,8 +46,9 @@ import {
 import { format, differenceInDays, addDays, addMonths } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useMaintenanceProfiles, SERVICE_TYPES, MaintenanceProfile, MaintenanceIntervalType } from "@/hooks/useMaintenanceProfiles";
-import { useVehicles } from "@/hooks/useVehicles";
+type MaintenanceProfile = any;
+type MaintenanceIntervalType = any;
+const SERVICE_TYPES: { value: string; label: string }[] = [];
 
 const statusColors: Record<string, string> = {
   upcoming: "bg-primary/20 text-primary border-primary/30",
@@ -64,8 +65,15 @@ const statusIcons: Record<string, React.ReactNode> = {
 };
 
 export function MaintenanceProfilesTab() {
-  const { profiles, groupedProfiles, stats, isLoading, addProfile, completeService, archiveProfile, fetchProfiles } = useMaintenanceProfiles();
-  const { vehicles } = useVehicles();
+  const profiles: any[] = [];
+  const groupedProfiles: any = {};
+  const stats = { overdue: 0, due: 0, upcoming: 0, total: 0 };
+  const isLoading = false;
+  const addProfile = async (..._args: any[]) => {};
+  const completeService = async (..._args: any[]) => {};
+  const archiveProfile = async (..._args: any[]) => {};
+  const fetchProfiles = async () => {};
+  const vehicles: any[] = [];
   
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");

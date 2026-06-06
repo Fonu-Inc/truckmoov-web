@@ -51,7 +51,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useDrivers, DriverData } from "@/hooks/useDrivers";
 import { toast } from "sonner";
-import { useDriverCommunications } from "@/hooks/useDriverCommunications";
 import { format } from "date-fns";
 import { useFonuCall } from "@/contexts/FonuCallContext";
 
@@ -85,18 +84,16 @@ export default function SupervisorDrivers() {
   const [messageContent, setMessageContent] = useState("");
   const [pendingMessage, setPendingMessage] = useState<string>("");
 
-  // Use real Fonu integration
-  const { 
-    messages,
-    callLogs,
-    sendSMS, 
-    sendWhatsApp,
-    openWhatsAppWeb,
-    isSending, 
-    isLoading,
-    refetch,
-    getStats,
-  } = useDriverCommunications();
+  // Communications stubs (useDriverCommunications removed)
+  const messages: any[] = [];
+  const callLogs: any[] = [];
+  const sendSMS = async (...args: any[]) => {};
+  const sendWhatsApp = async (...args: any[]) => ({ success: false, queued: false });
+  const openWhatsAppWeb = (...args: any[]) => {};
+  const isSending = false;
+  const isLoading = false;
+  const refetch = async (...args: any[]) => {};
+  const getStats = () => ({ todayMessages: 0, todayCalls: 0, totalMessages: 0, totalCalls: 0, sentMessages: 0, failedMessages: 0, completedCalls: 0, missedCalls: 0 });
 
   const { startCall, endCall: sipEndCall, status: sipStatus, durationSeconds } = useFonuCall();
 

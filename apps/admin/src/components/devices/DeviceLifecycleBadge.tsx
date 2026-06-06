@@ -1,9 +1,32 @@
 import { Badge } from "@/components/shadcn/badge";
 import { cn } from "@/lib/utils";
-import { 
-  DeviceLifecycleStatus, 
-  lifecycleStatusConfig 
-} from "@/hooks/useDeviceLifecycle";
+type DeviceLifecycleStatus =
+  | "registered"
+  | "config_pending"
+  | "configured"
+  | "verified_online"
+  | "assignable"
+  | "assigned"
+  | "faulty"
+  | "decommissioned";
+
+type LifecycleConfig = {
+  label: string;
+  color: string;
+  bgColor: string;
+  description: string;
+};
+
+const lifecycleStatusConfig: Record<DeviceLifecycleStatus, LifecycleConfig> = {
+  registered: { label: "Registered", color: "text-gray-600", bgColor: "bg-gray-100", description: "Device has been registered" },
+  config_pending: { label: "Config Pending", color: "text-yellow-600", bgColor: "bg-yellow-100", description: "Awaiting configuration" },
+  configured: { label: "Configured", color: "text-blue-600", bgColor: "bg-blue-100", description: "Device is configured" },
+  verified_online: { label: "Verified Online", color: "text-teal-600", bgColor: "bg-teal-100", description: "Device verified and online" },
+  assignable: { label: "Assignable", color: "text-green-600", bgColor: "bg-green-100", description: "Ready to be assigned" },
+  assigned: { label: "Assigned", color: "text-primary", bgColor: "bg-primary/10", description: "Assigned to a vehicle" },
+  faulty: { label: "Faulty", color: "text-red-600", bgColor: "bg-red-100", description: "Device has a fault" },
+  decommissioned: { label: "Decommissioned", color: "text-gray-400", bgColor: "bg-gray-50", description: "Device is decommissioned" },
+};
 
 interface DeviceLifecycleBadgeProps {
   status: DeviceLifecycleStatus | string;

@@ -8,7 +8,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/shadcn/accordion';
-import { DeviceCatalogEntry } from '@/hooks/useDeviceCatalog';
+type DeviceCatalogEntry = { id: string; manufacturer: string; model: string; status?: string; protocol_type: string; default_port?: number; config_instructions?: string; supports_obd?: boolean; supports_fuel?: boolean; supports_sos?: boolean; [key: string]: any };
 import { Skeleton } from '@/components/shadcn/skeleton';
 import {
   Search,

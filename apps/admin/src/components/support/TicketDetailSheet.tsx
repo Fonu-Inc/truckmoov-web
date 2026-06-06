@@ -8,7 +8,24 @@ import {
 import { Badge } from "@/components/shadcn/badge";
 import { Label } from "@/components/shadcn/label";
 import { Separator } from "@/components/shadcn/separator";
-import { SupportTicket, TicketStatus, TicketPriority } from "@/hooks/useSupportTickets";
+type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
+type TicketPriority = "low" | "medium" | "high" | "critical";
+type SupportTicket = {
+  id: string;
+  subject: string;
+  description: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  category: string;
+  contextType: string;
+  contextSnapshot?: Record<string, unknown>;
+  createdBy?: string;
+  createdAt: string;
+  escalatedTo?: string;
+  escalatedReferenceId?: string;
+  escalationNotes?: string;
+  escalatedAt?: string;
+};
 import { formatDistanceToNow, format } from "date-fns";
 import {
   ArrowUpRight,

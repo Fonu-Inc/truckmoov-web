@@ -18,9 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/shadcn/select';
-import { useDeviceCatalog } from '@/hooks/useDeviceCatalog';
-import { useVehicles } from '@/hooks/useVehicles';
-import { CreateDeviceSetupRequest } from '@/hooks/useDeviceSetupRequests';
+// useDeviceCatalog, useVehicles, useDeviceSetupRequests deleted — using inline defaults
+type CreateDeviceSetupRequest = any;
 import { Cpu, Upload, Loader2 } from 'lucide-react';
 import { SimBundlePicker, SimBundleValue, formatSimBundle } from './SimBundlePicker';
 
@@ -37,8 +36,10 @@ export function DeviceSetupRequestDialog({
   onSubmit,
   onUploadFile,
 }: DeviceSetupRequestDialogProps) {
-  const { getManufacturers, getModelsForManufacturer, catalog } = useDeviceCatalog();
-  const { vehicles } = useVehicles();
+  const getManufacturers = (): string[] => [];
+  const getModelsForManufacturer = (_manufacturer: string): any[] => [];
+  const catalog: any[] = [];
+  const vehicles: any[] = [];
 
   const [manufacturer, setManufacturer] = useState('');
   const [model, setModel] = useState('');

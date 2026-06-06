@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/shadcn/switch";
 import { Separator } from "@/components/shadcn/separator";
 import {FileText, Eye, Download} from "lucide-react";
-import type { VehicleProfitability } from "@/hooks/useVehicleFinancials";
+// useVehicleFinancials deleted — using inline type alias
+type VehicleProfitability = any;
 import { exportVehiclePLToPDF, exportVehiclePLToExcel, exportVehiclePLToCSV, type StatementOptions } from "@/lib/vehiclePLExport";
 
 interface Props {

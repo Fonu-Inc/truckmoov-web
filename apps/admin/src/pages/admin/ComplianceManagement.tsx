@@ -37,9 +37,20 @@ import {Download, Shield, FileText, AlertTriangle, CheckCircle, Clock, Calendar,
 import { format, differenceInDays, addDays } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useComplianceDocuments, ComplianceDocument } from "@/hooks/useComplianceDocuments";
-import { useFleetReminders } from "@/hooks/useFleetReminders";
 import { useAuthStore } from "@/stores/authStore";
+
+type ComplianceDocument = {
+  id: string;
+  vehicle_name?: string;
+  document_type: string;
+  document_name?: string;
+  document_number?: string;
+  issue_date?: string | null;
+  expiry_date: string;
+  status: string;
+  file_path?: string | null;
+  reminder_days?: number;
+};
 
 const statusColors: Record<string, string> = {
   valid: "bg-success/20 text-success border-success/30",
@@ -50,8 +61,16 @@ export default function ComplianceManagement() {
   const { user } = useAuthStore();
   const tenantId = user?.tenantId || '';
   
-  const { documents, isLoading, addDocument, updateDocument, deleteDocument, renewDocument, setReminderDays, getStats } = useComplianceDocuments(tenantId);
-  const { sendReminders, isSending } = useFleetReminders(tenantId);
+  const documents: ComplianceDocument[] = [];
+  const isLoading = false;
+  const addDocument = async (_data: Partial<ComplianceDocument>): Promise<ComplianceDocument | null> => { toast.info("Coming soon"); return null; };
+  const updateDocument = async (_id: string, _data: Partial<ComplianceDocument>) => { toast.info("Coming soon"); };
+  const deleteDocument = async (_id: string) => { toast.info("Coming soon"); };
+  const renewDocument = async (_id: string) => { toast.info("Coming soon"); };
+  const setReminderDays = async (_id: string, _days: number) => { toast.info("Coming soon"); };
+  const getStats = () => ({ total: 0, valid: 0, expiring: 0, expired: 0 });
+  const sendReminders = async (_type: string, _email: string) => { toast.info("Coming soon"); };
+  const isSending = false;
   
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");

@@ -55,8 +55,9 @@ import { Skeleton } from "@/components/shadcn/skeleton";
 import { Progress } from "@/components/shadcn/progress";
 import { DeviceWithTelemetry, DriverBehaviorEvent } from "@/hooks/useDeviceTelemetry";
 import { DeviceLifecycleBadge } from "./DeviceLifecycleBadge";
-import { DeviceLifecycleStatus } from "@/hooks/useDeviceLifecycle";
 import { formatDistanceToNow } from "date-fns";
+
+type DeviceLifecycleStatus = string;
 import {
   PlatformFilterPopover,
   buildEmptyDraft,

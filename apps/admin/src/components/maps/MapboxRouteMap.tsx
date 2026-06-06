@@ -20,7 +20,8 @@ import {
   Maximize2,
   Minimize2
 } from 'lucide-react';
-import { useMapboxDirections, RouteDirection, RouteWaypoint } from '@/hooks/useMapboxDirections';
+type RouteDirection = any;
+export type RouteWaypoint = { lat: number; lng: number; name?: string };
 import { cn } from '@/lib/utils';
 
 interface MapboxRouteMapProps {
@@ -86,7 +87,10 @@ export function MapboxRouteMap({
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
 
-  const { getDirections, isLoading, routeData, clearRoute } = useMapboxDirections();
+  const getDirections = async (..._args: any[]) => {};
+  const isLoading = false;
+  const routeData: any = null;
+  const clearRoute = () => {};
 
   // Initialize map
   useEffect(() => {

@@ -2,7 +2,7 @@ import { AlertTriangle, Clock, Shield, ShieldAlert } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import { Badge } from "@/components/shadcn/badge";
 import { cn } from "@/lib/utils";
-import type { DispatchEligibility } from "@/hooks/useDispatchEligibility";
+type DispatchEligibility = any;
 
 interface MaintenanceDispatchWarningProps {
   eligibility: DispatchEligibility | null;

@@ -48,8 +48,34 @@ import {
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useFuelTransactions, FuelTransaction } from "@/hooks/useFuelTransactions";
-import { useFuelEfficiency } from "@/hooks/useFuelEfficiency";
+type FuelTransaction = {
+  id: string;
+  vehicle_id: string;
+  vehicle_name: string;
+  driver_name?: string | null;
+  fuel_type: string;
+  quantity_liters: number;
+  cost_ngn: number;
+  odometer_reading?: number | null;
+  station_name?: string | null;
+  transaction_date: string;
+};
+const useFuelTransactions = () => ({
+  transactions: [] as FuelTransaction[],
+  isLoading: false,
+  addTransaction: async (_data: Partial<FuelTransaction>) => { toast.info("Coming soon"); },
+  updateTransaction: async (_id: string, _data: Partial<FuelTransaction>) => { toast.info("Coming soon"); },
+  deleteTransaction: async (_id: string) => { toast.info("Coming soon"); },
+  getStats: () => ({ totalLitres: 0, totalCost: 0, avgPricePerLitre: 0 }),
+});
+const useFuelEfficiency = () => ({
+  weeklyConsumption: [] as any[],
+  vehicleEfficiency: [] as any[],
+  fleetSummary: { lowEfficiencyVehicles: 0 },
+  efficiencyThreshold: 6,
+  exportToCSV: () => { toast.info("Coming soon"); },
+  isLoading: false,
+});
 
 export default function FuelManagement() {
   const { transactions, isLoading, addTransaction, updateTransaction, deleteTransaction, getStats } = useFuelTransactions();

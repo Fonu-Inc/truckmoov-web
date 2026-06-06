@@ -29,9 +29,10 @@ import {
   Lock,
   Loader2,
 } from "lucide-react";
-import { useTenantSubscription, TenantPlan } from "@/hooks/useTenantSubscription";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuthStore } from "@/stores/authStore";
+
+type TenantPlan = any;
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -62,17 +63,20 @@ const DEMO_PLAN: TenantPlan = {
 };
 
 export function TenantSubscriptionCard() {
-  const {
-    tenant,
-    currentPlan: realCurrentPlan,
-    planFeatures,
-    usageStats,
-    upgradeOptions,
-    downgradeOptions,
-    isLoading,
-    isApproachingLimit,
-    isAtLimit,
-  } = useTenantSubscription();
+  const tenant = null;
+  const realCurrentPlan: TenantPlan | null = null;
+  const planFeatures: any[] = [];
+  const usageStats = {
+    vehicles: { current: 0, limit: null as number | null, percentage: 0 },
+    drivers: { current: 0, limit: null as number | null, percentage: 0 },
+    devices: { current: 0, limit: null as number | null, percentage: 0 },
+    sims: { current: 0, limit: null as number | null, percentage: 0 },
+  };
+  const upgradeOptions: TenantPlan[] = [];
+  const downgradeOptions: TenantPlan[] = [];
+  const isLoading = false;
+  const isApproachingLimit = (_key: string) => false;
+  const isAtLimit = (_key: string) => false;
   const currentPlan = realCurrentPlan ?? DEMO_PLAN;
   const { user } = useAuthStore();
   const { currency } = useCurrency();

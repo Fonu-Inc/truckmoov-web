@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useOnboardingStore } from "@/stores/onboardingStore";
 import { OnboardingLayout } from "./OnboardingLayout";
-import { useFxRate } from "@/hooks/usePlatformSettings";
 import { PaymentGateModal } from "@/components/onboarding/PaymentGateModal";
 import { PostpaidActivationModal } from "@/components/onboarding/PostpaidActivationModal";
 
@@ -180,7 +179,7 @@ export default function SubscriptionOnboarding() {
   const [pickedId, setPickedId] = useState<string | null>(selectedPlan);
   const [payOpen, setPayOpen] = useState(false);
   const [postpaidOpen, setPostpaidOpen] = useState(false);
-  const { rate: fxRate } = useFxRate();
+  const fxRate = 0;
   const ngnPerUsd = fxRate || NGN_PER_USD_FALLBACK;
 
   const visiblePlans = PLANS.filter((p) => p.mode === mode);

@@ -20,7 +20,10 @@ import {
 import { Switch } from "@/components/shadcn/switch";
 import { Wifi, Loader2, AlertTriangle } from "lucide-react";
 import { toMb, type DataUnit, type BillingCycle } from "@/lib/simBundleUtils";
-import { useBundleCatalog, formatBundleSize } from "@/hooks/useDataBundles";
+
+type BundleCatalogItem = { id: string; code: string; name: string; is_active: boolean; carrier: string; billing_cycle: string; data_mb: number };
+const useBundleCatalog = () => ({ data: [] as BundleCatalogItem[] });
+const formatBundleSize = (_mb: number) => "";
 
 /**
  * Minimal SIM Request dialog used in the Get Started / Activate System flow

@@ -16,9 +16,9 @@ import {
   AccordionTrigger,
 } from '@/components/shadcn/accordion';
 import { Alert, AlertDescription, AlertTitle } from '@/components/shadcn/alert';
-import { ConfigQueueDevice } from '@/hooks/useInstallerConfig';
+type ConfigQueueDevice = { id: string; imei: string; manufacturer: string; model?: string; lifecycle_status: string; protocol?: string; last_seen?: string; [key: string]: any };
 import { DeviceLifecycleBadge } from '@/components/devices/DeviceLifecycleBadge';
-import { DeviceLifecycleStatus } from '@/hooks/useDeviceLifecycle';
+type DeviceLifecycleStatus = string;
 import { formatDistanceToNow } from 'date-fns';
 import {
   Wrench,

@@ -3,8 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/shadcn/progress";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import { useStorageUsage } from "@/hooks/useStorageUsage";
-import { useTenantSubscription } from "@/hooks/useTenantSubscription";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/shadcn/skeleton";
 
@@ -20,8 +18,12 @@ function formatBytes(bytes: number) {
 
 export function StorageUsageCard({ className }: { className?: string }) {
   const navigate = useNavigate();
-  const { usedBytes, usedGB, limitGB, percentage, isLoading } = useStorageUsage();
-  const { currentPlan } = useTenantSubscription();
+  const usedBytes = 0;
+  const usedGB = 0;
+  const limitGB: number | null = null;
+  const percentage = 0;
+  const isLoading = false;
+  const currentPlan = null;
 
   const near = limitGB !== null && percentage >= 80 && percentage < 100;
   const over = limitGB !== null && percentage >= 100;

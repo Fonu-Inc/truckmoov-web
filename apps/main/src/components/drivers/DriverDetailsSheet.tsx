@@ -14,8 +14,9 @@ import {
   Shield, Fuel, Route, Activity, Brain, Car, Zap, RotateCcw,
   Gauge, Coffee, TrendingDown, Minus, RefreshCw, Loader2, Play
 } from "lucide-react";
-import { useDriverBehavior, DriverScore, DriverBehaviorEvent } from "@/hooks/useDriverBehavior";
-import { useDriverFatigue, FatigueAlert } from "@/hooks/useDriverFatigue";
+type DriverScore = any;
+type DriverBehaviorEvent = any;
+type FatigueAlert = any;
 import { useMemo, useState } from "react";
 import { mockVehicles } from "@/data/mockData";
 import { toast } from "sonner";
@@ -144,8 +145,12 @@ function normalizeDeviceId(deviceId?: string) {
 }
 
 export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetailsSheetProps) {
-  const { events, driverScores } = useDriverBehavior();
-  const { alerts: fatigueAlerts, analyzeFatigue, isAnalyzing, refetch: refetchFatigue } = useDriverFatigue();
+  const events: any[] = [];
+  const driverScores: any[] = [];
+  const fatigueAlerts: any[] = [];
+  const analyzeFatigue = async (...args: any[]) => {};
+  const isAnalyzing = false;
+  const refetchFatigue = () => null;
   const [isRunningAnalysis, setIsRunningAnalysis] = useState(false);
 
   // Find device ID(s) associated with this driver via their assigned vehicle

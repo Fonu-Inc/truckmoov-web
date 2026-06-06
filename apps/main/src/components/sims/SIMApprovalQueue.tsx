@@ -27,13 +27,29 @@ import {
   PlatformFilterPopover,
   type FilterDraft,
 } from "@/components/shadcn/platform-filter-popover";
-import { useSIMProvisioningRequests, SIMProvisioningRequest } from "@/hooks/useFonuSIM";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { SIMRequestDetailsDialog } from "./SIMRequestDetailsDialog";
 import { KYCRequestDialog } from "./KYCRequestDialog";
-import { useTenantKYCCache } from "@/hooks/useTenantKYCCache";
 import { useTenants } from "@/hooks/useTenants";
+
+// Local type aliases (hooks deleted)
+type SIMProvisioningRequest = {
+  id: string;
+  tenant_id: string;
+  tenant_name: string | null;
+  status: string;
+  priority: string | null;
+  number_of_sims: number | null;
+  requested_data_limit_mb: number | null;
+  preferred_operator: string | null;
+  use_case: string | null;
+  created_at: string;
+  fonu_request_id: string | null;
+  [key: string]: any;
+};
+type TenantKYCInfo = { status: string | null; isVerified: boolean };
+type TenantKYCCache = Record<string, TenantKYCInfo>;
 import { KYCBadge, RequestStatusBadge, PriorityBadge } from "./SIMStatusBadges";
 import { SIMApprovalSummaryCards } from "./SIMApprovalSummaryCards";
 import { ExportButton } from "@/components/shadcn/export-button";
@@ -41,7 +57,12 @@ import { startSIMProvisioningSimulation } from "@/lib/provisioningEngineSim";
 
 export function SIMApprovalQueue() {
   const { user } = useAuthStore();
-  const { requests, loading, approveRequest, rejectRequest, refetch } = useSIMProvisioningRequests();
+  // Hooks removed — inline defaults until data source is wired up
+  const requests: SIMProvisioningRequest[] = [];
+  const loading = false;
+  const approveRequest = async (_id: string, _approvedBy: string, _userId?: string, _justification?: string) => {};
+  const rejectRequest = async (_id: string, _reason: string, _rejectedBy: string, _userId?: string) => {};
+  const refetch = () => {};
   const [selectedRequest, setSelectedRequest] = useState<SIMProvisioningRequest | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isRejectOpen, setIsRejectOpen] = useState(false);
@@ -58,7 +79,8 @@ export function SIMApprovalQueue() {
   });
 
   const tenantIds = useMemo(() => requests.map((r) => r.tenant_id), [requests]);
-  const tenantKYCCache = useTenantKYCCache(tenantIds);
+  // useTenantKYCCache removed — empty cache until data source is wired up
+  const tenantKYCCache: TenantKYCCache = {};
   const { tenants } = useTenants();
   const tenantEmailMap = useMemo(() => {
     const m: Record<string, string> = {};

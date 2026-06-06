@@ -19,7 +19,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
-import { useDriverCommunications, DriverMessage, DriverCallLog } from "@/hooks/useDriverCommunications";
+type DriverMessage = any;
+type DriverCallLog = any;
 import { cn } from "@/lib/utils";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 
@@ -57,7 +58,11 @@ const DEMO_CALLS: DriverCallLog[] = [
 ];
 
 export function DriverMessagesInbox() {
-  const { messages: liveMessages, callLogs: liveCalls, isLoading, getStats, refetch } = useDriverCommunications();
+  const liveMessages: any[] = [];
+  const liveCalls: any[] = [];
+  const isLoading = false;
+  const getStats = () => ({ todayMessages: 0, todayCalls: 0, sentMessages: 0, failedMessages: 0, totalMessages: 0, totalCalls: 0, completedCalls: 0, missedCalls: 0 });
+  const refetch = async (...args: any[]) => {};
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("messages");
 

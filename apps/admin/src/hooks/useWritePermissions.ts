@@ -5,9 +5,7 @@
  * In multi-stakeholder mode the final permission = orgType-allows AND roleKey-allows.
  */
 import { useMemo } from 'react';
-import { useOrgContext } from '@/hooks/useOrgContext';
 import { useAuthStore } from '@/stores/authStore';
-import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { resolveRoleCapabilities } from '@/lib/orgPermissions';
 
 export interface WritePermissions {
@@ -45,12 +43,8 @@ export interface WritePermissions {
 
 export function useWritePermissions(): WritePermissions {
   const { user } = useAuthStore();
-  const orgCtx = useOrgContext();
-  const { enabled: flagEnabled } = useFeatureFlag(
-    'enable_multi_stakeholder_model',
-    user?.tenantId
-  );
-  const multiStakeholderEnabled = flagEnabled;
+  const orgCtx = { memberships: [], orgIds: [], isLoading: false, hasOrgRole: () => false, hasOrgType: (_: string) => false };
+  const multiStakeholderEnabled = false;
 
   return useMemo(() => {
     const isPlatformAdmin = user?.role === 'platform_admin';

@@ -28,7 +28,8 @@ import {
   type JobsFilterValue,
 } from "@/components/jobs/JobsFilterDialog";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { useJobs, JobData } from "@/hooks/useJobs";
+type JobData = any;
+const useJobs = () => ({ jobs: [] as any[], isLoading: false, addJob: async (...args: any[]) => false as boolean, updateJob: async (...args: any[]) => false as boolean, deleteJob: async (...args: any[]) => {} });
 import { toast } from "sonner";
 
 /**

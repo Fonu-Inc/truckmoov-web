@@ -5,7 +5,6 @@ import { ScrollArea } from '@/components/shadcn/scroll-area';
 import { TimeRangeSelect, sliceByRange, type TimeRange } from '@/components/charts/TimeRangeSelect';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
 import { Activity, TrendingUp, TrendingDown, Clock, AlertTriangle, RefreshCw, Zap, CheckCircle } from 'lucide-react';
-import { useApiUsageAnalytics } from '@/hooks/useApiUsageAnalytics';
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 
@@ -14,19 +13,13 @@ export function ApiUsageAnalytics() {
   const [requestsRange, setRequestsRange] = useState<TimeRange>("30d");
   const [errorsRange, setErrorsRange] = useState<TimeRange>("30d");
   const [latencyRange, setLatencyRange] = useState<TimeRange>("30d");
-  const {
-    dailyUsage: realDaily,
-    endpointUsage: realEndpoints,
-    apiKeyUsage: realKeys,
-    summary: realSummary,
-    isLoading,
-    refreshAnalytics,
-  } = useApiUsageAnalytics(daysRange);
 
-  const dailyUsage = realDaily;
-  const endpointUsage = realEndpoints;
-  const apiKeyUsage = realKeys;
-  const summary = realSummary;
+  const dailyUsage: any[] = [];
+  const endpointUsage: any[] = [];
+  const apiKeyUsage: any[] = [];
+  const summary = { totalRequests: 0, successRate: 0, avgLatencyMs: 0, requestsToday: 0, errorRateToday: 0 };
+  const isLoading = false;
+  const refreshAnalytics = async () => {};
 
   const chartData = dailyUsage.map(d => ({
     date: format(parseISO(d.date), 'MMM d'),

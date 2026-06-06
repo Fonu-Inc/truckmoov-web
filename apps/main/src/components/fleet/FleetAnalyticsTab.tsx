@@ -14,10 +14,7 @@ import {
   Activity, Zap, ShieldAlert, Eye, RefreshCw, Wifi, WifiOff,
 } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
-import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
-import { useJobs } from "@/hooks/useJobs";
-import { useDriverBehavior } from "@/hooks/useDriverBehavior";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
@@ -118,10 +115,17 @@ function BehaviorScoreRing({ score, label, size = 60 }: { score: number; label: 
 }
 
 export function FleetAnalyticsTab() {
-  const { vehicles, isLoading: vehiclesLoading } = useVehicles();
+  const vehicles: any[] = [];
+  const isLoading_vehicles = false;
   const { drivers, isLoading: driversLoading } = useDrivers();
-  const { jobs, isLoading: jobsLoading } = useJobs();
-  const { events, driverScores, stats: behaviorStats, isConnected, isLoading: behaviorLoading, refresh } = useDriverBehavior();
+  const jobs: any[] = [];
+  const isLoading_jobs = false;
+  const events: any[] = [];
+  const driverScores: any[] = [];
+  const behaviorStats = { averageScore: 0, critical: 0, high: 0, last24h: 0 };
+  const isConnected = false;
+  const isLoading_behavior = false;
+  const refresh = () => {};
   const { format: formatCurrency } = useCurrency();
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [fleetStatusPeriod, setFleetStatusPeriod] = useState<PeriodValue>("30");
@@ -136,7 +140,7 @@ export function FleetAnalyticsTab() {
     return () => clearInterval(interval);
   }, []);
 
-  const isLoading = vehiclesLoading || driversLoading || jobsLoading || behaviorLoading;
+  const isLoading = isLoading_vehicles || driversLoading || isLoading_jobs || isLoading_behavior;
 
   if (isLoading) {
     return (

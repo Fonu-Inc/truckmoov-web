@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
 import { Progress } from "@/components/shadcn/progress";
-import { useSupportTickets, SupportTicket } from "@/hooks/useSupportTickets";
 import {
   TicketCheck,
   AlertCircle,
@@ -18,6 +17,23 @@ import {
   Timer,
 } from "lucide-react";
 
+interface SupportTicket {
+  id: string;
+  tenantId: string;
+  category: string;
+  subject: string;
+  description: string;
+  status: string;
+  priority: string;
+  contextType: string;
+  escalatedTo?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
+  contextSnapshot?: Record<string, unknown>;
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   device_tracking: "Device & Tracking",
   sim_connectivity: "SIM & Connectivity",
@@ -29,7 +45,10 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export function SupportDashboard() {
-  const { tickets: realTickets, isLoading } = useSupportTickets();
+  // Inline defaults — useSupportTickets hook deleted
+  const realTickets: SupportTicket[] = [];
+  const isLoading = false;
+
   const [tenantNames] = useState<Record<string, string>>({});
 
   const tickets: SupportTicket[] = realTickets;
@@ -425,6 +444,5 @@ export function SupportDashboard() {
     </div>
   );
 }
-
 
 

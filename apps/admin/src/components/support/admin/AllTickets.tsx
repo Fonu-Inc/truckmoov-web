@@ -12,15 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import {
-  useSupportTickets,
-  SupportTicket,
-  TicketStatus,
-  TicketPriority,
-  TicketCategory,
-  ContextType,
-} from "@/hooks/useSupportTickets";
 import { AdminTicketSheet } from "./AdminTicketSheet";
+import type { SupportTicket } from "./AdminTicketSheet";
 import { ExportButton } from "@/components/shadcn/export-button";
 import type { ExportColumn } from "@/lib/exportTable";
 import {
@@ -34,6 +27,11 @@ import {
   Eye,
   SlidersHorizontal,
 } from "lucide-react";
+
+type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
+type TicketPriority = "low" | "medium" | "high" | "critical";
+type TicketCategory = string;
+type ContextType = "device" | "sim" | "vehicle" | "whatsapp" | "billing" | "none" | string;
 
 const statusConfig: Record<TicketStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   open: { label: "Open", variant: "default" },
@@ -97,8 +95,10 @@ const tenantLabel = (ticket: DemoTicket) =>
   ticket.tenantName || TENANT_NAMES[ticket.tenantId] || `Tenant ${shortId(ticket.tenantId)}`;
 
 export function AllTickets() {
-  const { tickets: realTickets, isLoading } = useSupportTickets();
-  const tickets: DemoTicket[] = realTickets;
+  // Inline defaults — useSupportTickets hook deleted
+  const tickets: DemoTicket[] = [];
+  const isLoading = false;
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
@@ -150,8 +150,8 @@ export function AllTickets() {
     { header: "Reporter", accessor: (r) => reporterName(r) },
     { header: "Channel", accessor: (r) => channelFromContext(r.contextType) },
     { header: "Category", accessor: (r) => formatCategory(r.category) },
-    { header: "Status", accessor: (r) => statusConfig[r.status]?.label ?? r.status },
-    { header: "Priority", accessor: (r) => priorityConfig[r.priority]?.label ?? r.priority },
+    { header: "Status", accessor: (r) => statusConfig[r.status as TicketStatus]?.label ?? r.status },
+    { header: "Priority", accessor: (r) => priorityConfig[r.priority as TicketPriority]?.label ?? r.priority },
     { header: "Created", accessor: (r) => new Date(r.createdAt).toISOString() },
   ];
 
@@ -254,8 +254,8 @@ export function AllTickets() {
                   </TableHeader>
                   <TableBody>
                     {filteredTickets.map((ticket) => {
-                      const status = statusConfig[ticket.status];
-                      const priority = priorityConfig[ticket.priority];
+                      const status = statusConfig[ticket.status as TicketStatus];
+                      const priority = priorityConfig[ticket.priority as TicketPriority];
                       const reporter = reporterName(ticket);
                       const initials = reporter
                         .split(" ")
@@ -284,11 +284,11 @@ export function AllTickets() {
                           <TableCell className="text-sm">{channelFromContext(ticket.contextType)}</TableCell>
                           <TableCell className="text-sm">{formatCategory(ticket.category)}</TableCell>
                           <TableCell>
-                            <Badge variant={status.variant}>{status.label}</Badge>
+                            <Badge variant={status?.variant ?? "outline"}>{status?.label ?? ticket.status}</Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={priority.className}>
-                              {priority.label}
+                            <Badge variant="outline" className={priority?.className ?? ""}>
+                              {priority?.label ?? ticket.priority}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
@@ -324,6 +324,5 @@ export function AllTickets() {
     </>
   );
 }
-
 
 

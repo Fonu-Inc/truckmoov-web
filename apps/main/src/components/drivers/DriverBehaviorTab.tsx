@@ -4,8 +4,9 @@ import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { useDriverBehavior, DriverScore, DriverBehaviorEvent } from "@/hooks/useDriverBehavior";
-import { useGeofenceAlerts, GeofenceAlert } from "@/hooks/useGeofenceAlerts";
+type DriverScore = any;
+type DriverBehaviorEvent = any;
+type GeofenceAlert = any;
 import { mockDrivers } from "@/data/mockData";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -194,23 +195,19 @@ function GeofenceAlertItem({ alert }: { alert: GeofenceAlert }) {
 }
 
 export function DriverBehaviorTab() {
-  const { 
-    events: realEvents, 
-    driverScores: realScores, 
-    stats: realBehaviorStats, 
-    isLoading: behaviorLoading, 
-    isConnected: behaviorConnected,
-    refresh: refreshBehavior 
-  } = useDriverBehavior();
-  
-  const { 
-    alerts: realAlerts, 
-    stats: realGeofenceStats, 
-    isConnected: geofenceConnected,
-    unreadCount: realUnreadCount,
-    markAllRead,
-    refresh: refreshGeofence 
-  } = useGeofenceAlerts();
+  const realEvents: DriverBehaviorEvent[] = [];
+  const realScores: DriverScore[] = [];
+  const realBehaviorStats = { averageScore: 0, last24h: 0, critical: 0, total: 0 };
+  const behaviorLoading = false;
+  const behaviorConnected = false;
+  const refreshBehavior = () => null;
+
+  const realAlerts: GeofenceAlert[] = [];
+  const realGeofenceStats = { entries: 0, exits: 0 };
+  const geofenceConnected = false;
+  const realUnreadCount = 0;
+  const markAllRead = () => null;
+  const refreshGeofence = () => null;
 
   const [activeTab, setActiveTab] = useState("scores");
 

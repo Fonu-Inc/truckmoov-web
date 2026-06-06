@@ -29,7 +29,8 @@ import {
   Brain, Sparkles, AlertTriangle, TrendingDown
 } from "lucide-react";
 import { toast } from "sonner";
-import { useRouteOptimization, Waypoint } from "@/hooks/useRouteOptimization";
+
+type Waypoint = any;
 
 interface RouteOptimizationDialogProps {
   open: boolean;
@@ -289,7 +290,8 @@ export function RouteOptimizationDialog({
     savings_percentage?: string;
   } | null>(null);
   
-  const { optimizeRoute: aiOptimize, isOptimizing } = useRouteOptimization();
+  const aiOptimize = async (...args: any[]) => {};
+  const isOptimizing = false;
 
   const sensors = useSensors(
     useSensor(PointerSensor),

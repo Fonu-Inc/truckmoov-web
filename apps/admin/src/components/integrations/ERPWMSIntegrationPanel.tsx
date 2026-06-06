@@ -18,7 +18,8 @@ import {
   Trash2, ArrowLeftRight, ArrowUpRight, ArrowDownLeft, Play,
   Settings2, Database, Layers, CalendarClock, AlertTriangle,
 } from 'lucide-react';
-import { useERPIntegration, ERP_PROVIDERS, type ERPConnector } from '@/hooks/useERPIntegration';
+const ERP_PROVIDERS: { id: string; name: string; icon: string }[] = [];
+type ERPConnector = any;
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 type ERPProvider = string;
@@ -37,14 +38,24 @@ const SCOPE_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
 };
 
 export function ERPWMSIntegrationPanel({ tenantId }: Props) {
-  const {
-    connectors: realConnectors, mappings, syncLogs, schedules,
-    isLoading, isSyncing,
-    fetchConnectors, createConnector, deleteConnector, testConnection,
-    fetchMappings, addMapping, deleteMapping, loadDefaultMappings,
-    executeSync, fetchSyncLogs, fetchSchedules, upsertSchedule,
-  } = useERPIntegration(tenantId);
-  const connectors = realConnectors;
+  const connectors: any[] = [];
+  const mappings: any[] = [];
+  const syncLogs: any[] = [];
+  const schedules: any[] = [];
+  const isLoading = false;
+  const isSyncing = false;
+  const fetchConnectors = async () => {};
+  const createConnector = async (..._args: any[]) => null;
+  const deleteConnector = async (..._args: any[]) => {};
+  const testConnection = async (..._args: any[]) => {};
+  const fetchMappings = async (..._args: any[]) => {};
+  const addMapping = async (..._args: any[]) => {};
+  const deleteMapping = async (..._args: any[]) => {};
+  const loadDefaultMappings = async (..._args: any[]) => {};
+  const executeSync = async (..._args: any[]) => {};
+  const fetchSyncLogs = async (..._args: any[]) => {};
+  const fetchSchedules = async (..._args: any[]) => {};
+  const upsertSchedule = async (..._args: any[]) => {};
 
   const [selectedConnector, setSelectedConnector] = useState<ERPConnector | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);

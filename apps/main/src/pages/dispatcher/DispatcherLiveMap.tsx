@@ -24,11 +24,8 @@ import {
   CheckCircle2, CircleDot, Wifi, WifiOff, Radio,
 } from "lucide-react";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
-import { useAlerts } from "@/hooks/useAlerts";
-import { useJobs, type JobData } from "@/hooks/useJobs";
-import { useGeofenceRealtime } from "@/hooks/useGeofenceRealtime";
+type JobData = any;
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -67,11 +64,15 @@ const statusLabel = (j: JobData) => {
 
 export default function DispatcherLiveMap() {
   const navigate = useNavigate();
-  const { vehicles, isLoading: vehiclesLoading, refetch: refetchVehicles } = useVehicles();
+  const vehicles: any[] = [];
+  const vehiclesLoading = false;
+  const refetchVehicles = async (...args: any[]) => {};
   const { drivers } = useDrivers();
-  const { alerts } = useAlerts();
-  const { jobs, addJob, updateJob } = useJobs();
-  const { recentEvents: geofenceEvents } = useGeofenceRealtime();
+  const alerts: any[] = [];
+  const jobs: any[] = [];
+  const addJob = async (...args: any[]) => false;
+  const updateJob = async (...args: any[]) => false;
+  const geofenceEvents: any[] = [];
 
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [search, setSearch] = useState("");

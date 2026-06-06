@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useIOTSIMs, SIMCardExtended } from "@/hooks/useIOTSIMs";
+type SIMCardExtended = any;
 import { useDeviceTelemetry } from "@/hooks/useDeviceTelemetry";
 import { SIMCard } from "@/types";
 import {
@@ -25,17 +25,25 @@ import { SIMInventoryTable } from "@/components/sims/SIMInventoryTable";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";
-import { useSIMRequestSubmit } from "@/hooks/useSIMRequestSubmit";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 
 export default function SIMManagement() {
   const { requireSubscription } = useRequireSubscription();
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const { submitRequest, isSubmitting, canRequestSIM, kycStatus } = useSIMRequestSubmit();
+  const submitRequest = async (..._args: any[]) => {};
+  const isSubmitting = false;
+  const canRequestSIM = false;
+  const kycStatus = { status: "pending", isLoading: false };
 
   const tenantId = user?.tenantId || "f7f5af88-fd76-4439-aae3-0461be52f63f";
-  const { sims, loading, refetch, updateSIMStatus, assignSIMToDevice, unassignSIM, deleteSIM } = useIOTSIMs(tenantId);
+  const sims: any[] = [];
+  const loading = false;
+  const refetch = async () => {};
+  const updateSIMStatus = async (_id: string, _status: string) => {};
+  const assignSIMToDevice = async (_simId: string, _deviceId: string) => {};
+  const unassignSIM = async (_id: string) => {};
+  const deleteSIM = async (_id: string) => {};
   const { devices } = useDeviceTelemetry(tenantId);
 
   const [searchQuery, setSearchQuery] = useState("");

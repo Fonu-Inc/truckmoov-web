@@ -13,7 +13,10 @@ import { Loader2, Wifi, HardDrive } from "lucide-react";
 import { DeviceMappingUpload, DeviceMappingRow } from "./DeviceMappingUpload";
 
 import { toMb, type DataUnit, type BillingCycle } from "@/lib/simBundleUtils";
-import { useBundleCatalog, formatBundleSize } from "@/hooks/useDataBundles";
+
+type BundleCatalogItem = { id: string; code: string; name: string; is_active: boolean; carrier: string; billing_cycle: string; data_mb: number };
+const useBundleCatalog = () => ({ data: [] as BundleCatalogItem[] });
+const formatBundleSize = (_mb: number) => "";
 
 const simRequestSchema = z.object({
   numberOfSims: z.coerce.number().min(1, "At least 1 SIM required").max(100, "Maximum 100 SIMs per request"),

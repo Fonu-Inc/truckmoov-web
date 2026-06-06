@@ -41,9 +41,21 @@ import {
   Search,
   SlidersHorizontal as Filter,
 } from "lucide-react";
-import { useSMSTemplates, SMSTemplate } from "@/hooks/useSMSTemplates";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { ExportButton } from "@/components/shadcn/export-button";
+
+type SMSTemplate = {
+  id: string;
+  tenant_id: string;
+  name: string;
+  category: string;
+  content: string;
+  variables: string[];
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 const CATEGORIES = [
   { value: "job", label: "Job Notifications" },
@@ -149,7 +161,13 @@ const DUMMY_TEMPLATES: SMSTemplate[] = [
 ];
 
 export function SMSTemplatesManager() {
-  const { templates: dbTemplates, isLoading, isSaving, createTemplate, updateTemplate, deleteTemplate, duplicateTemplate } = useSMSTemplates();
+  const dbTemplates: SMSTemplate[] = [];
+  const isLoading = false;
+  const isSaving = false;
+  const createTemplate = async (_name: string, _category: string, _content: string): Promise<boolean> => { return false; };
+  const updateTemplate = async (_id: string, _name: string, _category: string, _content: string): Promise<boolean> => { return false; };
+  const deleteTemplate = (_id: string) => {};
+  const duplicateTemplate = (_template: SMSTemplate) => {};
   const templates = dbTemplates.length > 0 ? dbTemplates : DUMMY_TEMPLATES;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);

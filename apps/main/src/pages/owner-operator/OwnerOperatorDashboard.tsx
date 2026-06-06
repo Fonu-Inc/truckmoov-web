@@ -25,10 +25,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
-import { useOrgContext } from "@/hooks/useOrgContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useOwnerOperatorVehicleCap } from "@/hooks/useOwnerOperatorVehicleCap";
-import { useOwnerOperatorJobLimit } from "@/hooks/useOwnerOperatorJobLimit";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { format as dateFormat, differenceInDays, isAfter, isBefore, addDays } from "date-fns";
@@ -36,7 +33,6 @@ import { UpgradeRequestDialog } from "@/components/owner-operator/UpgradeRequest
 import { ComplianceDocumentsPanel } from "@/components/owner-operator/ComplianceDocumentsPanel";
 import { DeviceSetupRequestTracker } from "@/components/devices/DeviceSetupRequestTracker";
 import { DeviceSetupRequestDialog } from "@/components/devices/DeviceSetupRequestDialog";
-import { useDeviceSetupRequests } from "@/hooks/useDeviceSetupRequests";
 import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import {
   DUMMY_RECENT_JOBS,
@@ -55,20 +51,23 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 export default function OwnerOperatorDashboard() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const orgCtx = useOrgContext();
   const { format: formatCurrency } = useCurrency();
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showDeviceRequestDialog, setShowDeviceRequestDialog] = useState(false);
   const [earningsRange, setEarningsRange] = useState<ChartDateRange>("30d");
-  const { requests: deviceRequests, loading: deviceRequestsLoading, createRequest, updateRequestStatus, uploadFile } = useDeviceSetupRequests();
-  const { eligible: jobEligible, activeJobs, maxActiveJobs, reason: jobLimitReason } = useOwnerOperatorJobLimit();
+  const deviceRequests: any[] = [];
+  const deviceRequestsLoading = false;
+  const createRequest = async (...args: any[]) => null;
+  const updateRequestStatus = async (...args: any[]) => {};
+  const uploadFile = async (...args: any[]) => null;
+  const jobEligible = true;
+  const activeJobs = 0;
+  const maxActiveJobs = 1;
+  const jobLimitReason: string | null = null;
 
-  const ownerOrg = useMemo(
-    () => orgCtx.getByOrgType("OWNER_OPERATOR")[0],
-    [orgCtx]
-  );
+  const ownerOrg: any = null;
 
-  const { data: vehicleCap } = useOwnerOperatorVehicleCap(ownerOrg?.orgId);
+  const vehicleCap: any = null;
 
   const jobs: any[] = [];
   const jobsLoading = false;

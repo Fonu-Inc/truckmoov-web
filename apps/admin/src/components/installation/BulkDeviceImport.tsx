@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue } from '@/components/shadcn/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/shadcn/alert';
-import { DeviceCatalogEntry } from '@/hooks/useDeviceCatalog';
+type DeviceCatalogEntry = { manufacturer: string; model: string; status?: string; [key: string]: any };
 import { useAuthStore } from '@/stores/authStore';
 import { toast } from 'sonner';
 import {Upload, FileSpreadsheet, Check, X, AlertCircle, Loader2, Download} from 'lucide-react';

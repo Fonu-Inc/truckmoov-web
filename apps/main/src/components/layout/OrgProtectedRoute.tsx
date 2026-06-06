@@ -2,8 +2,6 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { useAuthStore as useApiAuthStore } from '@truckmoov/api/lib/auth-store';
-import { useOrgContext } from '@/hooks/useOrgContext';
-import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { useActiveOrgStore } from '@/stores/activeOrgStore';
 import { canAccessRoute, resolveOrgHomeRoute } from '@/lib/orgPermissions';
 import { toast } from 'sonner';
@@ -20,14 +18,10 @@ interface OrgProtectedRouteProps {
 export function OrgProtectedRoute({ children }: OrgProtectedRouteProps) {
   const { user, isAuthReady } = useAuthStore();
   const { accessToken } = useApiAuthStore();
-  const orgCtx = useOrgContext();
+  const orgCtx = { isLoading: false, memberships: [] as any[] };
   const location = useLocation();
   const { resolveActiveOrg } = useActiveOrgStore();
-  const { enabled: flagEnabled } = useFeatureFlag(
-    'enable_multi_stakeholder_model',
-    user?.tenantId
-  );
-  const multiStakeholderEnabled = flagEnabled;
+  const multiStakeholderEnabled = false;
 
   // Prevent duplicate toasts on the same denied path
   const lastDeniedPath = useRef<string | null>(null);

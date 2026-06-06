@@ -6,8 +6,6 @@ import { Button } from "@/components/shadcn/button";
 import { Progress } from "@/components/shadcn/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { useDriverBehavior, DriverScore, DriverBehaviorEvent } from "@/hooks/useDriverBehavior";
-import { useGeofenceAlerts, GeofenceAlert } from "@/hooks/useGeofenceAlerts";
 import { mockDrivers } from "@/data/mockData";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -19,6 +17,27 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, PieChart, Pie, Cell,
 } from "recharts";
+
+type DriverScore = any;
+type DriverBehaviorEvent = any;
+type GeofenceAlert = any;
+const useDriverBehavior = () => ({
+  events: [] as DriverBehaviorEvent[],
+  driverScores: [] as DriverScore[],
+  stats: { averageScore: 0, last24h: 0, total: 0, critical: 0 },
+  isLoading: false,
+  isConnected: false,
+  refresh: () => {},
+});
+const useGeofenceAlerts = () => ({
+  alerts: [] as GeofenceAlert[],
+  recentAlerts: [] as GeofenceAlert[],
+  stats: { entries: 0, exits: 0 },
+  isConnected: false,
+  unreadCount: 0,
+  markAllRead: () => {},
+  refresh: () => {},
+});
 
 function ScoreGauge({ score, label, color }: { score: number; label: string; color: string }) {
   const getScoreColor = (s: number) => {

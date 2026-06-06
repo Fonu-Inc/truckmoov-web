@@ -31,8 +31,7 @@ import { Badge } from "@/components/shadcn/badge";
 import { Separator } from "@/components/shadcn/separator";
 import { LocationPicker, LocationValue } from "@/components/maps/LocationPicker";
 import { RoutePreviewMap, RoutePoint } from "@/components/maps/RoutePreviewMap";
-import { RouteOptimizationDialog } from "@/components/jobs/RouteOptimizationDialog";
-import { useRouteOptimization, type Waypoint } from "@/hooks/useRouteOptimization";
+import { RouteOptimizationDialog, type Waypoint } from "@/components/jobs/RouteOptimizationDialog";
 import { Job } from "@/types";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -107,7 +106,8 @@ export function JobFormDialog({
   const [previewWaypoints, setPreviewWaypoints] = useState<Waypoint[] | null>(null);
   const [savings, setSavings] = useState<{ km: number; pct: string } | null>(null);
   const [appliedSavings, setAppliedSavings] = useState<{ km: number; pct: string } | null>(null);
-  const { optimizeRoute, isOptimizing } = useRouteOptimization();
+  const optimizeRoute = async (_waypoints: Waypoint[], _opts?: unknown) => null as null;
+  const isOptimizing = false;
   const justAppliedRef = useRef(false);
 
   const form = useForm<JobFormData>({

@@ -10,9 +10,7 @@ import {
 } from "recharts";
 import {TrendingUp, TrendingDown, Fuel, Truck, Users, Package, DollarSign, Clock, AlertTriangle, CheckCircle, Calendar, Gauge, Wrench, Route, Star, Loader2, BarChart3, Download} from "lucide-react";
 import { useState } from "react";
-import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
-import { useJobs } from "@/hooks/useJobs";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
@@ -48,9 +46,11 @@ function StatCard({ title, value, change, icon: Icon, trend }: StatCardProps) {
 
 export default function Analytics() {
   const [dateRange, setDateRange] = useState("30d");
-  const { vehicles, isLoading: vehiclesLoading } = useVehicles();
+  const vehicles: any[] = [];
+  const vehiclesLoading = false;
   const { drivers, isLoading: driversLoading } = useDrivers();
-  const { jobs, isLoading: jobsLoading } = useJobs();
+  const jobs: any[] = [];
+  const jobsLoading = false;
   const { format: formatCurrency } = useCurrency();
 
   const isLoading = vehiclesLoading || driversLoading || jobsLoading;

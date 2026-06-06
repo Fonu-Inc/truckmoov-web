@@ -11,10 +11,10 @@ import { Badge } from '@/components/shadcn/badge';
 import { Textarea } from '@/components/shadcn/textarea';
 import { Card, CardContent } from '@/components/shadcn/card';
 import { Separator } from '@/components/shadcn/separator';
-import { ConfigQueueDevice } from '@/hooks/useInstallerConfig';
-import { DeviceCatalogEntry } from '@/hooks/useDeviceCatalog';
+type ConfigQueueDevice = any;
+type DeviceCatalogEntry = any;
 import { DeviceLifecycleBadge } from '@/components/devices/DeviceLifecycleBadge';
-import { DeviceLifecycleStatus } from '@/hooks/useDeviceLifecycle';
+type DeviceLifecycleStatus = string;
 import {
   CheckCircle2,
   Copy,

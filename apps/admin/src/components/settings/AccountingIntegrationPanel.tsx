@@ -16,20 +16,18 @@ import {
   ArrowUpRight,
   AlertTriangle
 } from 'lucide-react';
-import { useAccountingIntegration, InvoiceSync } from '@/hooks/useAccountingIntegration';
+type InvoiceSync = any;
 import { format } from 'date-fns';
 
 export function AccountingIntegrationPanel() {
-  const {
-    integration,
-    invoiceSyncs,
-    isLoading,
-    isConnecting,
-    fetchIntegration,
-    connectSage,
-    disconnectSage,
-    fetchInvoiceSyncs,
-  } = useAccountingIntegration();
+  const integration: any = null;
+  const invoiceSyncs: any[] = [];
+  const isLoading = false;
+  const isConnecting = false;
+  const fetchIntegration = async () => {};
+  const connectSage = async () => {};
+  const disconnectSage = async () => {};
+  const fetchInvoiceSyncs = async () => {};
 
   useEffect(() => {
     fetchIntegration();

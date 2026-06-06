@@ -5,8 +5,6 @@ import { ConfigQueue } from '@/components/installation/ConfigQueue';
 import { InstallerGuide } from '@/components/installation/InstallerGuide';
 import { VerificationMonitor } from '@/components/installation/VerificationMonitor';
 import { DeviceTroubleshooting } from '@/components/installation/DeviceTroubleshooting';
-import { useInstallerConfig } from '@/hooks/useInstallerConfig';
-import { useDeviceCatalog } from '@/hooks/useDeviceCatalog';
 import {
   ListChecks,
   BookOpen,
@@ -18,17 +16,16 @@ export default function DeviceInstallation() {
   const [activeTab, setActiveTab] = useState('config-queue');
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
 
-  const {
-    configQueueDevices,
-    loading,
-    refetch,
-    markConfigured,
-    resetToConfigPending,
-    canConfigureDevices,
-    canResetDevices,
-  } = useInstallerConfig();
+  const configQueueDevices: any[] = [];
+  const loading = false;
+  const refetch = async () => {};
+  const markConfigured = async (..._args: any[]) => {};
+  const resetToConfigPending = async (..._args: any[]) => {};
+  const canConfigureDevices = () => false;
+  const canResetDevices = () => false;
 
-  const { catalog, loading: catalogLoading } = useDeviceCatalog();
+  const catalog: any[] = [];
+  const catalogLoading = false;
 
   const handleOpenTroubleshooting = (deviceId: string) => {
     setSelectedDeviceId(deviceId);

@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { useTenantSenderIds } from "@/hooks/useTenantSenderIds";
 import { SenderIdManagement } from "./SenderIdManagement";
 
 interface CommunicationConfig {
@@ -52,7 +51,9 @@ const DEFAULT_CONFIG: CommunicationConfig = {
 
 export function TenantCommunicationSettings() {
   const { user } = useAuthStore();
-  const { approvedSmsIds, approvedVoiceIds, loading: senderIdsLoading } = useTenantSenderIds();
+  const approvedSmsIds: any[] = [];
+  const approvedVoiceIds: any[] = [];
+  const senderIdsLoading = false;
   const [config, setConfig] = useState<CommunicationConfig>(DEFAULT_CONFIG);
   const [assignedNumbers, setAssignedNumbers] = useState<AssignedPhoneNumber[]>([]);
   const [isLoading, setIsLoading] = useState(true);

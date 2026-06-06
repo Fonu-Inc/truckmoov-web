@@ -5,7 +5,6 @@ import { Badge } from '@/components/shadcn/badge';
 import { Progress } from '@/components/shadcn/progress';
 import { ScrollArea } from '@/components/shadcn/scroll-area';
 import { Separator } from '@/components/shadcn/separator';
-import { useDriverFatigue, FatigueAlert } from '@/hooks/useDriverFatigue';
 import { 
   AlertTriangle, 
   Brain, 
@@ -20,6 +19,22 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { format } from 'date-fns';
+
+type FatigueAlert = {
+  id: string;
+  tenant_id: string;
+  driver_id: string;
+  driver_name?: string;
+  device_id: string;
+  fatigue_score: number | string;
+  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  driving_duration_minutes: number;
+  rest_compliance_score?: number;
+  indicators: string[];
+  recommendations: string[];
+  ai_analysis?: string;
+  created_at: string;
+};
 
 const riskLevelColors = {
   low: 'bg-green-500/20 text-green-400 border-green-500/30',
@@ -221,7 +236,10 @@ const DEMO_FATIGUE_ALERTS: FatigueAlert[] = [
 ];
 
 export function DriverFatigueTab() {
-  const { alerts: realAlerts, isLoading, getAlertsStats, refetch } = useDriverFatigue();
+  const realAlerts: FatigueAlert[] = [];
+  const isLoading = false;
+  const getAlertsStats = () => ({ total: 0, critical: 0, high: 0, medium: 0, low: 0, avgFatigueScore: 0, avgRestCompliance: 0 });
+  const refetch = async (..._args: any[]) => {};
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const useDemo = !isLoading && realAlerts.length === 0;

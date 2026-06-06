@@ -9,19 +9,13 @@ import { ApiKeyManagement } from './ApiKeyManagement';
 import { WebhookManagementPanel } from './WebhookManagementPanel';
 import { ApiUsageAnalytics } from './ApiUsageAnalytics';
 import { ApiDocumentation } from './ApiDocumentation';
-import { useApiKeys } from '@/hooks/useApiKeys';
-import { useWebhookSubscriptions } from '@/hooks/useWebhookSubscriptions';
-import { useIntegrationAudit } from '@/hooks/useIntegrationAudit';
 import { format } from 'date-fns';
 
 export function DeveloperPortal() {
-  const { apiKeys: realKeys } = useApiKeys();
-  const { subscriptions: realSubs } = useWebhookSubscriptions();
-  const { auditLogs: realLogs, isLoading: auditLoading } = useIntegrationAudit();
-
-  const apiKeys = realKeys;
-  const subscriptions = realSubs;
-  const auditLogs = realLogs;
+  const apiKeys: any[] = [];
+  const subscriptions: any[] = [];
+  const auditLogs: any[] = [];
+  const auditLoading = false;
 
   const activeKeysCount = apiKeys.filter(k => k.status === 'active').length;
   const enabledWebhooksCount = subscriptions.filter(w => w.is_enabled).length;

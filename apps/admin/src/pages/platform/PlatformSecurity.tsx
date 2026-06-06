@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -64,9 +64,47 @@ import {
   Bar } from "recharts";
 import { formatDateInTimezone, type Timezone, TIMEZONES, DEFAULT_TIMEZONE } from "@/lib/timezone";
 import { usePreferences } from "@/contexts/PreferencesContext";
-import { useIPBlocking, useSecurityAuditLogs, type BlockedIP, type SecurityAuditLog } from "@/hooks/useIPBlocking";
-import { useAutoIPBlocking, type IPGeolocation, type AutoBlockingRule } from "@/hooks/useAutoIPBlocking";
-import { useSecurityAlerts } from "@/hooks/useSecurityAlerts";
+type BlockedIP = {
+  id: string;
+  ip_address: string;
+  reason: string;
+  blocked_by: string;
+  blocked_at: string;
+  expires_at: string | null;
+  is_permanent: boolean;
+  tenant_id: string | null;
+  metadata?: Record<string, any>;
+};
+type SecurityAuditLog = {
+  id: string;
+  event_type: string;
+  severity: string;
+  user_id: string | null;
+  user_email: string | null;
+  user_name: string | null;
+  tenant_id: string | null;
+  tenant_name?: string | null;
+  description: string;
+  ip_address: string | null;
+  metadata?: Record<string, any>;
+  created_at: string;
+};
+type IPGeolocation = {
+  countryCode: string;
+  country: string;
+  city: string;
+  isp: string;
+  threat: { threatLevel: "low" | "medium" | "high" | "critical"; isProxy: boolean; isDatacenter: boolean };
+};
+type AutoBlockingRule = {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  maxAttempts: number;
+  timeWindowMinutes: number;
+  blockDurationHours: number | null;
+};
 import { GeographicHeatmap } from "@/components/security/GeographicHeatmap";
 import { IsolationCheckPanel } from "@/components/platform/IsolationCheckPanel";
 import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
@@ -473,9 +511,15 @@ export default function PlatformSecurity() {
   const [blockedIPSearch, setBlockedIPSearch] = useState("");
   const [blockedIPFilters, setBlockedIPFilters] = useState<FilterDraft>(buildEmptyDraft(BLOCKED_IP_FILTER_FIELDS));
   
-  // IP Blocking state
-  const { blockedIPs: rawBlockedIPs, isLoading: isLoadingIPs, fetchBlockedIPs, blockIP, unblockIP } = useIPBlocking();
-  const { logs: rawAuditLogs, isLoading: isLoadingLogs, fetchLogs } = useSecurityAuditLogs();
+  // IP Blocking state (hooks removed — using inline defaults)
+  const rawBlockedIPs: BlockedIP[] = [];
+  const isLoadingIPs = false;
+  const fetchBlockedIPs = async () => {};
+  const blockIP = async (_ip: string, _reason: string, _opts?: { isPermanent?: boolean }) => false;
+  const unblockIP = async (_ip: string) => false;
+  const rawAuditLogs: SecurityAuditLog[] = [];
+  const isLoadingLogs = false;
+  const fetchLogs = async () => {};
 
   // Demo fallback so platform admins always see realistic content
   const DEMO_BLOCKED_IPS: BlockedIP[] = [
@@ -502,16 +546,30 @@ export default function PlatformSecurity() {
 
   const dbBlockedIPs = rawBlockedIPs.length > 0 ? rawBlockedIPs : DEMO_BLOCKED_IPS;
   const auditLogs = rawAuditLogs.length > 0 ? rawAuditLogs : DEMO_AUDIT_LOGS;
-  const { 
-    rules: autoBlockingRules, 
-    toggleRule, 
-    updateRule, 
-    getIPGeolocation, 
-    batchGetGeolocation,
-    geoCache 
-  } = useAutoIPBlocking();
-  
-  const { config: alertConfig, updateConfig: updateAlertConfig, sendTestAlert, isSending: isSendingAlert } = useSecurityAlerts();
+  // Auto IP blocking (hook removed — using inline defaults)
+  const autoBlockingRules: AutoBlockingRule[] = [
+    { id: "rule-1", name: "Brute Force Protection", description: "Block IPs with too many failed login attempts", enabled: true, maxAttempts: 10, timeWindowMinutes: 15, blockDurationHours: 24 },
+    { id: "rule-2", name: "Rate Limit Guard", description: "Block IPs exceeding API rate limits", enabled: true, maxAttempts: 100, timeWindowMinutes: 60, blockDurationHours: 12 },
+    { id: "rule-3", name: "OTP Abuse Prevention", description: "Block IPs abusing OTP verification", enabled: false, maxAttempts: 5, timeWindowMinutes: 10, blockDurationHours: 6 },
+  ];
+  const toggleRule = (_id: string) => {};
+  const updateRule = (_id: string, _updates: Partial<AutoBlockingRule>) => {};
+  const getIPGeolocation = (_ip: string): Promise<IPGeolocation | null> => Promise.resolve(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const batchGetGeolocation = useCallback((_ips: string[]): Promise<Map<string, IPGeolocation>> => Promise.resolve(new Map()), []);
+  const geoCache = new Map<string, IPGeolocation>();
+
+  // Security alerts (hook removed — using inline defaults)
+  const [alertConfig, setAlertConfig] = useState({
+    enabled: false,
+    recipientEmail: "",
+    alertOnAutoBlock: true,
+    alertOnCriticalEvents: true,
+    alertOnSuspiciousActivity: true,
+  });
+  const updateAlertConfig = (updates: Partial<typeof alertConfig>) => setAlertConfig(prev => ({ ...prev, ...updates }));
+  const sendTestAlert = () => {};
+  const isSendingAlert = false;
   
   const [isBlockIPDialogOpen, setIsBlockIPDialogOpen] = useState(false);
   const [isUnblockDialogOpen, setIsUnblockDialogOpen] = useState(false);

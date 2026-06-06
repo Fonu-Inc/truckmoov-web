@@ -38,8 +38,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { format, differenceInDays, addDays } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useComplianceDocuments, ComplianceDocument } from "@/hooks/useComplianceDocuments";
-import { useFleetReminders } from "@/hooks/useFleetReminders";
+type ComplianceDocument = any;
 import { useAuthStore } from "@/stores/authStore";
 
 const statusColors: Record<string, string> = {

@@ -18,12 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  useSupportTickets,
-  TicketCategory,
-  ContextType,
-  TicketPriority,
-} from "@/hooks/useSupportTickets";
+// Local type aliases (hook deleted)
+type TicketCategory = "device_tracking" | "sim_connectivity" | "messaging" | "billing" | "account_access" | "other";
+type ContextType = "device" | "sim" | "vehicle" | "whatsapp" | "billing" | "none";
+type TicketPriority = "low" | "medium" | "high" | "critical";
 import { useAuthStore } from "@/stores/authStore";
 import { Loader2, Ticket, UploadCloud, X, FileText, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -57,7 +55,7 @@ const MAX_FILE_MB = 10;
 
 export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDialogProps) {
   const { user } = useAuthStore();
-  const { createTicket } = useSupportTickets();
+  const createTicket = async (..._args: any[]): Promise<any> => null;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState("");

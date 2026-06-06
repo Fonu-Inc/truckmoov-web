@@ -10,13 +10,18 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ScrollArea } from '@/components/shadcn/scroll-area';
 import { Separator } from '@/components/shadcn/separator';
 import { Key, Plus, Copy, Eye, EyeOff, Trash2, Clock, Check, AlertTriangle } from 'lucide-react';
-import { useApiKeys, API_SCOPES, CreateApiKeyInput } from '@/hooks/useApiKeys';
+const API_SCOPES: { value: string; label: string; description: string }[] = [];
+type CreateApiKeyInput = any;
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 export function ApiKeyManagement() {
-  const { apiKeys: realKeys, isLoading, newlyCreatedKey, createApiKey, revokeApiKey, clearNewlyCreatedKey } = useApiKeys();
-  const apiKeys = realKeys;
+  const apiKeys: any[] = [];
+  const isLoading = false;
+  const newlyCreatedKey: string | null = null;
+  const createApiKey = async (..._args: any[]) => null;
+  const revokeApiKey = async (..._args: any[]) => {};
+  const clearNewlyCreatedKey = () => {};
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [selectedScopes, setSelectedScopes] = useState<string[]>([]);

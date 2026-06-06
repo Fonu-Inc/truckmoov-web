@@ -6,7 +6,7 @@ import { Label } from "@/components/shadcn/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { useVehicleFinancials, FinancialConfigInput } from "@/hooks/useVehicleFinancials";
+type FinancialConfigInput = any;
 import { toast } from "sonner";
 
 interface Vehicle {

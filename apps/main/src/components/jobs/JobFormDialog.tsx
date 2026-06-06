@@ -32,7 +32,7 @@ import { Separator } from "@/components/shadcn/separator";
 import { LocationPicker, LocationValue } from "@/components/maps/LocationPicker";
 import { RoutePreviewMap, RoutePoint } from "@/components/maps/RoutePreviewMap";
 import { RouteOptimizationDialog } from "@/components/jobs/RouteOptimizationDialog";
-import { useRouteOptimization, type Waypoint } from "@/hooks/useRouteOptimization";
+type Waypoint = any;
 import { Job } from "@/types";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";

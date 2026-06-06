@@ -34,10 +34,9 @@ import { ExportButton } from '@/components/shadcn/export-button';
 import { Separator } from '@/components/shadcn/separator';
 import { Skeleton } from '@/components/shadcn/skeleton';
 import { cn } from '@/lib/utils';
-import {
-  DeviceSetupRequest,
-  DeviceSetupRequestStatus,
-} from '@/hooks/useDeviceSetupRequests';
+// useDeviceSetupRequests deleted — using inline type aliases
+type DeviceSetupRequest = any;
+type DeviceSetupRequestStatus = string;
 import {
   MoreHorizontal,
   UserPlus,

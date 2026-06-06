@@ -26,8 +26,7 @@ import {
 } from "@/components/shadcn/select";
 import { Job, Vehicle, Driver } from "@/types";
 import { mockVehicles, mockDrivers } from "@/data/mockData";
-import { useDriverIVR } from "@/hooks/useDriverIVR";
-import { useJobMatching, MatchResult } from "@/hooks/useJobMatching";
+type MatchResult = any;
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { 
   Truck, User, MapPin, Star, Clock, CheckCircle, 

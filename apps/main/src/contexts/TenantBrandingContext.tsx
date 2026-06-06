@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '@/stores/authStore';
-import { TenantBranding } from '@/hooks/useTenantBranding';
+type TenantBranding = { primary_color: string; accent_color: string; success_color: string; warning_color: string; destructive_color: string; sidebar_bg_color: string; sidebar_text_color: string; sidebar_accent_color: string; logo_url?: string | null } & Record<string, any>;
 
 interface TenantBrandingContextValue {
   branding: TenantBranding | null;

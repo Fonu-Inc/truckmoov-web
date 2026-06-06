@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
 import { Progress } from "@/components/shadcn/progress";
-import { useSupportTickets, SupportTicket } from "@/hooks/useSupportTickets";
+// Local type alias (hook deleted)
+type SupportTicket = any;
 import {
   TicketCheck,
   AlertCircle,
@@ -173,7 +174,8 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export function SupportDashboard() {
-  const { tickets: realTickets, isLoading } = useSupportTickets();
+  const realTickets: any[] = [];
+  const isLoading = false;
   const [tenantNames] = useState<Record<string, string>>({});
 
   // Use real tickets when present, fall back to demo data otherwise

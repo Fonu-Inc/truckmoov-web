@@ -17,14 +17,14 @@ import {
 import { toast } from "sonner";
 import { DriverCommunicationActions } from "@/components/communications/DriverCommunicationActions";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
-import { useAlerts } from "@/hooks/useAlerts";
 import { useAuthStore } from "@/stores/authStore";
 export default function LiveMap() {
-  const { vehicles, isLoading: vehiclesLoading, refetch: refetchVehicles } = useVehicles();
+  const vehicles: any[] = [];
+  const vehiclesLoading = false;
+  const refetchVehicles = () => {};
   const { drivers } = useDrivers();
-  const { alerts } = useAlerts();
+  const alerts: any[] = [];
   const { user } = useAuthStore();
 
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);

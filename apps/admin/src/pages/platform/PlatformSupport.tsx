@@ -6,18 +6,15 @@ import { SupportDashboard } from "@/components/support/admin/SupportDashboard";
 import { AllTickets } from "@/components/support/admin/AllTickets";
 import { EscalatedTickets } from "@/components/support/admin/EscalatedTickets";
 import { DeviceSetupRequestsQueue } from "@/components/devices/DeviceSetupRequestsQueue";
-import { useDeviceSetupRequests } from "@/hooks/useDeviceSetupRequests";
 import { ShieldAlert } from "lucide-react";
 
 export default function PlatformSupport() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const { canManageAllTickets } = useSupportPermissions();
-  const {
-    requests: deviceRequests,
-    loading: deviceRequestsLoading,
-    refetch: refetchDeviceRequests,
-    updateRequestStatus,
-  } = useDeviceSetupRequests();
+  const deviceRequests: any[] = [];
+  const deviceRequestsLoading = false;
+  const refetchDeviceRequests = async (...args: any[]) => {};
+  const updateRequestStatus = async (...args: any[]) => {};
 
   if (!canManageAllTickets) {
     return (

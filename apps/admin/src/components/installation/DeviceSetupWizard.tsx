@@ -11,10 +11,10 @@ import { Badge } from '@/components/shadcn/badge';
 import { Textarea } from '@/components/shadcn/textarea';
 import { Card, CardContent } from '@/components/shadcn/card';
 import { Separator } from '@/components/shadcn/separator';
-import { ConfigQueueDevice } from '@/hooks/useInstallerConfig';
-import { DeviceCatalogEntry } from '@/hooks/useDeviceCatalog';
+type ConfigQueueDevice = { id: string; imei: string; manufacturer: string; model?: string; lifecycle_status: string; protocol?: string; last_seen?: string; fonu_sim_id?: string; [key: string]: any };
+type DeviceCatalogEntry = { manufacturer: string; model: string; status?: string; protocol_type?: string; default_port?: number; config_instructions?: string; [key: string]: any };
 import { DeviceLifecycleBadge } from '@/components/devices/DeviceLifecycleBadge';
-import { DeviceLifecycleStatus } from '@/hooks/useDeviceLifecycle';
+type DeviceLifecycleStatus = string;
 import {
   CheckCircle2,
   Copy,

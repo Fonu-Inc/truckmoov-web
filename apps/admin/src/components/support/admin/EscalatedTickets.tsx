@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
-import { useSupportTickets, SupportTicket, EscalationType } from "@/hooks/useSupportTickets";
 import { AdminTicketSheet } from "./AdminTicketSheet";
-import { 
-  ArrowUpRight, 
+import type { SupportTicket } from "./AdminTicketSheet";
+import {
+  ArrowUpRight,
   Loader2,
   Building2,
   Wifi,
   Wrench
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+
+type EscalationType = "fleetpro_internal" | "fonu_connectivity" | "vendor_installer";
 
 const escalationConfig: Record<EscalationType, { label: string; icon: React.ElementType; color: string }> = {
   fleetpro_internal: { label: "FleetPro Internal", icon: Building2, color: "text-primary" },
@@ -108,7 +110,10 @@ const DEMO_ESCALATED: SupportTicket[] = [
 ];
 
 export function EscalatedTickets() {
-  const { tickets, isLoading } = useSupportTickets();
+  // Inline defaults — useSupportTickets hook deleted
+  const tickets: SupportTicket[] = [];
+  const isLoading = false;
+
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
 
   const realEscalated = tickets.filter((t) => t.status === "escalated" || t.escalatedTo);
@@ -275,6 +280,5 @@ export function EscalatedTickets() {
     </div>
   );
 }
-
 
 

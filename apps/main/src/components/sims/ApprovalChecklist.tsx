@@ -13,8 +13,15 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react";
-import { SIMProvisioningRequest } from "@/hooks/useFonuSIM";
 import { cn } from "@/lib/utils";
+
+// Local type alias (hook deleted)
+type SIMProvisioningRequest = {
+  number_of_sims?: number | null;
+  requested_data_limit_mb?: number | null;
+  priority?: string | null;
+  [key: string]: any;
+};
 
 interface ApprovalChecklistProps {
   request: SIMProvisioningRequest;

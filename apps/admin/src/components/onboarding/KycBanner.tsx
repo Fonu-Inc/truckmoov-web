@@ -2,7 +2,6 @@ import { AlertOctagon, ArrowRight, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/shadcn/button";
 import { useOnboardingProgress } from "@/hooks/useOnboardingProgress";
-import { useKycProgress } from "@/hooks/useKycProgress";
 import { useOnboardingStore } from "@/stores/onboardingStore";
 
 /**
@@ -23,7 +22,12 @@ import { useOnboardingStore } from "@/stores/onboardingStore";
 export function KycBanner() {
   const navigate = useNavigate();
   const { bypassGating } = useOnboardingProgress();
-  const { isVerified, isSubmitted, status, isLoading } = useKycProgress();
+  const kycProgress = null;
+  const isVerified = false;
+  const isSubmitted = false;
+  const status: string | null = null;
+  const isLoading = false;
+  void kycProgress;
   const kycSkipped = useOnboardingStore((s) => s.kycSkipped);
 
   if (bypassGating) return null;

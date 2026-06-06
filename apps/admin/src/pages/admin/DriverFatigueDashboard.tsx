@@ -6,7 +6,7 @@ import { Badge } from '@/components/shadcn/badge';
 import { Progress } from '@/components/shadcn/progress';
 import { ScrollArea } from '@/components/shadcn/scroll-area';
 import { Separator } from '@/components/shadcn/separator';
-import { useDriverFatigue, FatigueAlert } from '@/hooks/useDriverFatigue';
+type FatigueAlert = any;
 import { 
   AlertTriangle, 
   Brain, 
@@ -170,7 +170,10 @@ function AlertCard({ alert, expanded, onToggle }: {
 }
 
 export default function DriverFatigueDashboard() {
-  const { alerts, isLoading, getAlertsStats, refetch } = useDriverFatigue();
+  const alerts: any[] = [];
+  const isLoading = false;
+  const getAlertsStats = () => ({ avgFatigueScore: 0, avgRestCompliance: 0, critical: 0, high: 0, medium: 0, low: 0, total: 0 });
+  const refetch = () => {};
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const stats = getAlertsStats();
 

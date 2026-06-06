@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/shadcn/badge';
 import { Button } from '@/components/shadcn/button';
 import { Progress } from '@/components/shadcn/progress';
-import { useMaintenanceSLA } from '@/hooks/useMaintenanceSLA';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { 
   RefreshCw, 
@@ -17,7 +16,12 @@ import {
 } from 'lucide-react';
 
 export function MaintenanceSLADashboard() {
-  const { slaMetrics, isLoading, isRefreshing, refreshSLAMetrics, getCostTrendIndicator, getOverdueStatus } = useMaintenanceSLA();
+  const slaMetrics: any = null;
+  const isLoading = false;
+  const isRefreshing = false;
+  const refreshSLAMetrics = async (..._args: any[]) => {};
+  const getCostTrendIndicator = () => null as null | { direction: string; value: number; severity: string };
+  const getOverdueStatus = () => 'healthy' as string;
   const { format: formatCurrency } = useCurrency();
 
   const costTrend = getCostTrendIndicator();

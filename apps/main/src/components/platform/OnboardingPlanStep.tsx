@@ -21,7 +21,6 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
-import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 
 type OrgType = "FLEET_PROVIDER" | "ENTERPRISE" | "AGGREGATOR" | "OWNER_OPERATOR";
 type BillingCycle = "MONTHLY" | "YEARLY";
@@ -125,7 +124,9 @@ export function OnboardingPlanStep({
   networkVehicleCount,
   monthlyShipments,
 }: OnboardingPlanStepProps) {
-  const { plans: allPlans, getPlansForOrgType, isLoading } = useSubscriptionPlans();
+  const allPlans: any[] = [];
+  const getPlansForOrgType = (_orgType: string): any[] => [];
+  const isLoading = false;
   const config = ORG_TYPE_CONFIG[orgType];
 
   const plans = useMemo(() => {

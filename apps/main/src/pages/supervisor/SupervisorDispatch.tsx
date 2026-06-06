@@ -28,7 +28,7 @@ import {
   type JobsFilterValue,
 } from "@/components/jobs/JobsFilterDialog";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { useJobs, JobData } from "@/hooks/useJobs";
+type JobData = any;
 import { toast } from "sonner";
 
 /**
@@ -44,7 +44,11 @@ import { toast } from "sonner";
  *    and the card switches to the standard Assigned Driver layout.
  */
 export default function SupervisorDispatch() {
-  const { jobs, isLoading, addJob, updateJob, deleteJob } = useJobs();
+  const jobs: any[] = [];
+  const isLoading = false;
+  const addJob = async (...args: any[]) => false;
+  const updateJob = async (...args: any[]) => false;
+  const deleteJob = async (...args: any[]) => {};
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");

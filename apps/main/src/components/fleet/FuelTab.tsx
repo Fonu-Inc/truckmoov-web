@@ -50,8 +50,7 @@ import {
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useFuelTransactions, FuelTransaction } from "@/hooks/useFuelTransactions";
-import { useFuelEfficiency } from "@/hooks/useFuelEfficiency";
+type FuelTransaction = any;
 import { PeriodFilter, PeriodValue } from "./PeriodFilter";
 
 export function FuelTab() {

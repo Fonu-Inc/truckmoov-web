@@ -27,8 +27,8 @@ import {
 import { 
   MessageSquare, MoreHorizontal, CheckCircle2, XCircle, 
   Clock, Loader2, Phone, RefreshCw, Trash2, FileText } from "lucide-react";
-import { usePlatformSenderIdApprovals } from "@/hooks/usePlatformSenderIdApprovals";
-import type { TenantSenderId, SenderIdStatus } from "@/hooks/useTenantSenderIds";
+type TenantSenderId = any;
+type SenderIdStatus = string;
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
@@ -39,7 +39,13 @@ const statusConfig: Record<SenderIdStatus, { label: string; variant: "default" |
   rejected: { label: "Rejected", variant: "destructive", icon: <XCircle className="h-3 w-3" /> } };
 
 export function SenderIdApprovalQueue() {
-  const { requests, pendingCount, whitelistingCount, loading, refetch, updateStatus, deleteRequest } = usePlatformSenderIdApprovals();
+  const requests: TenantSenderId[] = [];
+  const pendingCount = 0;
+  const whitelistingCount = 0;
+  const loading = false;
+  const refetch = async () => {};
+  const updateStatus = async (_id: string, _status: SenderIdStatus, _data?: any) => {};
+  const deleteRequest = async (_id: string) => {};
   const [selectedRequest, setSelectedRequest] = useState<TenantSenderId | null>(null);
   const [actionType, setActionType] = useState<'approve' | 'reject' | 'whitelist' | null>(null);
   const [formData, setFormData] = useState({

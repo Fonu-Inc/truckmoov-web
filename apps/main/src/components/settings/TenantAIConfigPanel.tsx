@@ -28,8 +28,6 @@ import {
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
-import { useTenantAIConfig } from "@/hooks/useTenantAIConfig";
-import { usePlatformAIConfig } from "@/hooks/usePlatformAIConfig";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { format } from "date-fns";
@@ -40,9 +38,15 @@ interface TenantAIConfigPanelProps {
 }
 
 export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
-  const { config, isLoading, isSaving, isTesting, createOrUpdateConfig, testConnection } =
-    useTenantAIConfig(tenantId);
-  const { config: platformConfig, isLoading: isLoadingPlatform } = usePlatformAIConfig();
+  // Hooks removed — inline defaults until data source is wired up
+  const config: null = null;
+  const isLoading = false;
+  const isSaving = false;
+  const isTesting = false;
+  const createOrUpdateConfig = (_updates: any) => {};
+  const testConnection = () => {};
+  const platformConfig: null = null;
+  const isLoadingPlatform = false;
   const { canConfigureTenantAI, canRunAIMatching } = useAIConfigPermissions();
   const [showApiKey, setShowApiKey] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState("");

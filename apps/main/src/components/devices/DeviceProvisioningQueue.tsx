@@ -59,7 +59,6 @@ import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import { useTenants } from "@/hooks/useTenants";
-import { useTenantKYCCache } from "@/hooks/useTenantKYCCache";
 import { DeviceRequestDetailsDialog } from "./DeviceRequestDetailsDialog";
 
 type DeviceReq = {
@@ -176,7 +175,7 @@ export function DeviceProvisioningQueue() {
   const tenantEmail = (id: string) => tenantEmailMap[id] || "—";
 
   const tenantIds = useMemo(() => reqs.map((r) => r.tenant_id), [reqs]);
-  const kycCache = useTenantKYCCache(tenantIds);
+  const kycCache: Record<string, { status: string | null }> = {};
 
   const pending = reqs.filter((r) =>
     ["pending_review", "assigned", "awaiting_heartbeat"].includes(r.status),

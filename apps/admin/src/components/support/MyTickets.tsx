@@ -12,7 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import { useSupportTickets, SupportTicket, TicketStatus, TicketPriority, TicketCategory, ContextType } from "@/hooks/useSupportTickets";
 import { TicketDetailSheet } from "./TicketDetailSheet";
 import { ExportButton } from "@/components/shadcn/export-button";
 import type { ExportColumn } from "@/lib/exportTable";
@@ -23,7 +22,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
-import { toast } from "sonner";
 import {
   Search,
   AlertCircle,
@@ -40,6 +38,27 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 
+type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
+type TicketPriority = "low" | "medium" | "high" | "critical";
+type TicketCategory = string;
+type ContextType = "device" | "sim" | "vehicle" | "whatsapp" | "billing" | "none" | string;
+
+interface SupportTicket {
+  id: string;
+  tenantId: string;
+  category: TicketCategory;
+  subject: string;
+  description: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  contextType: ContextType;
+  escalatedTo?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
+  reporterName?: string;
+}
 
 const statusConfig: Record<TicketStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   open: { label: "Open", variant: "default" },
@@ -92,8 +111,10 @@ const reporterName = (ticket: SupportTicket & { reporterName?: string }) =>
   ticket.reporterName || REPORTER_NAMES[ticket.createdBy] || shortId(ticket.createdBy);
 
 export function MyTickets() {
-  const { tickets: realTickets, isLoading } = useSupportTickets();
-  const tickets: SupportTicket[] = realTickets;
+  // Inline defaults — useSupportTickets hook deleted
+  const tickets: SupportTicket[] = [];
+  const isLoading = false;
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
@@ -323,6 +344,5 @@ export function MyTickets() {
     </>
   );
 }
-
 
 

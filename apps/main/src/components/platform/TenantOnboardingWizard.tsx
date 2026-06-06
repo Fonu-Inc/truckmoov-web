@@ -55,7 +55,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { Truck as TruckIcon } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 

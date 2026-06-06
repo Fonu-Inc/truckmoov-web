@@ -23,7 +23,8 @@ import {
   FileText,
   Cpu,
 } from "lucide-react";
-import { SIMProvisioningRequest, DeviceMappingRow } from "@/hooks/useFonuSIM";
+type SIMProvisioningRequest = any;
+type DeviceMappingRow = any;
 import { SIMRequestRiskFlags } from "./SIMRequestRiskFlags";
 import { DeviceMappingPreview } from "./DeviceMappingPreview";
 

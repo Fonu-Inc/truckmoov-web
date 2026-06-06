@@ -12,14 +12,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import {
-  useSupportTickets,
-  SupportTicket,
-  TicketStatus,
-  TicketPriority,
-  TicketCategory,
-  ContextType,
-} from "@/hooks/useSupportTickets";
+// Local type aliases (hook deleted)
+type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
+type TicketPriority = "low" | "medium" | "high" | "critical";
+type TicketCategory = "device_tracking" | "sim_connectivity" | "messaging" | "billing" | "account_access" | "billing_subscription" | "other";
+type ContextType = "device" | "sim" | "vehicle" | "whatsapp" | "billing" | "none";
+type SupportTicket = any;
 import { AdminTicketSheet } from "./AdminTicketSheet";
 import { ExportButton } from "@/components/shadcn/export-button";
 import type { ExportColumn } from "@/lib/exportTable";
@@ -111,7 +109,8 @@ const DEMO_TICKETS: DemoTicket[] = [
 ];
 
 export function AllTickets() {
-  const { tickets: realTickets, isLoading } = useSupportTickets();
+  const realTickets: any[] = [];
+  const isLoading = false;
   const tickets: DemoTicket[] = realTickets.length > 0 ? realTickets : DEMO_TICKETS;
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");

@@ -36,24 +36,23 @@ import {
   Webhook,
   XCircle,
 } from "lucide-react";
-import { usePlatformIntegrationGovernance } from "@/hooks/usePlatformIntegrationGovernance";
 import { formatDistanceToNow } from "date-fns";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import { ExportButton } from "@/components/shadcn/export-button";
 
 export function IntegrationsGovernance() {
-  const {
-    apiUsage,
-    loadingApiUsage,
-    webhookHealth,
-    loadingWebhookHealth,
-    tenantStatuses,
-    loadingTenantStatuses,
-    auditLogs,
-    loadingAuditLogs,
-    disableTenantIntegrations,
-    enableTenantIntegrations,
-  } = usePlatformIntegrationGovernance();
+  const integrations: any[] = [];
+  void integrations;
+  const apiUsage: any[] = [];
+  const loadingApiUsage = false;
+  const webhookHealth: any[] = [];
+  const loadingWebhookHealth = false;
+  const tenantStatuses: any[] = [];
+  const loadingTenantStatuses = false;
+  const auditLogs: any[] = [];
+  const loadingAuditLogs = false;
+  const disableTenantIntegrations = { mutate: async (_id: string) => {}, isPending: false };
+  const enableTenantIntegrations = { mutate: async (_id: string) => {}, isPending: false };
 
   const [confirmDisable, setConfirmDisable] = useState<string | null>(null);
   const [confirmEnable, setConfirmEnable] = useState<string | null>(null);

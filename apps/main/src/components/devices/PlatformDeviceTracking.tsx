@@ -7,7 +7,6 @@ import { DeviceTelemetryPanel } from '@/components/devices/DeviceTelemetryPanel'
 import { DeviceList } from '@/components/devices/DeviceList';
 import { DeviceWithTelemetry, DriverBehaviorEvent } from '@/hooks/useDeviceTelemetry';
 import type { GeofenceZone } from '@/components/devices/DeviceRealtimeMap';
-import type { Geofence } from '@/hooks/useGeofences';
 import {AlertTriangle, RefreshCw, Play, Pause, Trash2, Download} from 'lucide-react';
 import { Skeleton } from '@/components/shadcn/skeleton';
 
@@ -28,7 +27,7 @@ interface PlatformDeviceTrackingContentProps {
   stopSimulation: () => void;
   trailHistory: Map<string, TrailPoint[]>;
   clearTrailHistory: () => void;
-  geofences?: Geofence[];
+  geofences?: any[];
 }
 
 export function PlatformDeviceTrackingContent({
@@ -42,7 +41,8 @@ export function PlatformDeviceTrackingContent({
   stopSimulation,
   trailHistory,
   clearTrailHistory,
-  geofences }: PlatformDeviceTrackingContentProps) {
+  geofences,
+}: PlatformDeviceTrackingContentProps) {
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');

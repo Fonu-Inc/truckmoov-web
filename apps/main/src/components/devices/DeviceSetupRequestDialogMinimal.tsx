@@ -18,7 +18,6 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Switch } from "@/components/shadcn/switch";
-import { useDeviceCatalog } from "@/hooks/useDeviceCatalog";
 import { Cpu, Loader2, AlertTriangle } from "lucide-react";
 import { type SimBundleValue } from "./SimBundlePicker";
 
@@ -59,7 +58,8 @@ interface Props {
 }
 
 export function DeviceSetupRequestDialogMinimal({ open, onOpenChange, onSubmit, quotaRemaining, quotaLabel }: Props) {
-  const { getManufacturers, getModelsForManufacturer } = useDeviceCatalog();
+  const getManufacturers = (): string[] => [];
+  const getModelsForManufacturer = (_manufacturer: string): { id: string; model: string }[] => [];
 
   const [quantity, setQuantity] = useState<number>(1);
   const [manufacturer, setManufacturer] = useState("");

@@ -1,5 +1,17 @@
-import { SIMCardExtended } from "@/hooks/useIOTSIMs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+
+// Local type alias (hook deleted)
+type SIMCardExtended = {
+  id: string;
+  iccid: string;
+  mobileNumber: string;
+  networkOperator: string;
+  status: string;
+  deviceId?: string;
+  dataUsage: number;
+  dataLimit: number;
+  [key: string]: any;
+};
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Badge } from "@/components/shadcn/badge";

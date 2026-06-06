@@ -6,7 +6,6 @@ import { Label } from '@/components/shadcn/label';
 import { Separator } from '@/components/shadcn/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/shadcn/avatar';
 import { Upload, RotateCcw, Save, Palette, Image as ImageIcon } from 'lucide-react';
-import { useTenantBranding } from '@/hooks/useTenantBranding';
 import { Skeleton } from '@/components/shadcn/skeleton';
 
 interface ColorFieldProps {
@@ -42,8 +41,15 @@ function ColorField({ label, value, onChange, description }: ColorFieldProps) {
   );
 }
 
+const DEFAULT_BRANDING: Record<string, string> = {};
+
 export function TenantBrandingPanel() {
-  const { branding, isLoading, isSaving, saveBranding, uploadLogo, resetToDefaults, DEFAULT_BRANDING } = useTenantBranding();
+  const branding: any = null;
+  const isLoading = false;
+  const isSaving = false;
+  const saveBranding = async (..._args: any[]) => {};
+  const uploadLogo = async (_file: File): Promise<string | null> => null;
+  const resetToDefaults = async () => {};
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [localColors, setLocalColors] = useState<Record<string, string>>({});
   const [isUploading, setIsUploading] = useState(false);

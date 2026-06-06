@@ -28,8 +28,18 @@ import {
 } from "@/components/shadcn/select";
 import { Badge } from "@/components/shadcn/badge";
 import { useEffect, useState } from "react";
-import { useDeviceCatalog, DeviceCatalogEntry } from "@/hooks/useDeviceCatalog";
 import { Gauge, Fuel, AlertTriangle, Info } from "lucide-react";
+
+interface DeviceCatalogEntry {
+  id: string;
+  manufacturer: string;
+  model: string;
+  protocol_type: string;
+  default_port?: number | null;
+  supports_obd: boolean;
+  supports_fuel: boolean;
+  supports_sos: boolean;
+}
 import { Skeleton } from "@/components/shadcn/skeleton";
 
 const deviceSchema = z.object({
@@ -52,7 +62,10 @@ export function DeviceFormDialogWithCatalog({
   onSubmit,
   title,
 }: DeviceFormDialogWithCatalogProps) {
-  const { catalog, loading, getManufacturers, getModelsForManufacturer } = useDeviceCatalog();
+  const catalog: DeviceCatalogEntry[] = [];
+  const loading = false;
+  const getManufacturers = (): string[] => [];
+  const getModelsForManufacturer = (_manufacturer: string): DeviceCatalogEntry[] => [];
   const [selectedManufacturer, setSelectedManufacturer] = useState<string>("");
   const [selectedCatalogEntry, setSelectedCatalogEntry] = useState<DeviceCatalogEntry | null>(null);
 

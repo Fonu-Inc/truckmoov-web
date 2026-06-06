@@ -7,7 +7,8 @@ import { DeviceTelemetryPanel } from '@/components/devices/DeviceTelemetryPanel'
 import { DeviceList } from '@/components/devices/DeviceList';
 import { DeviceWithTelemetry, DriverBehaviorEvent } from '@/hooks/useDeviceTelemetry';
 import type { GeofenceZone } from '@/components/devices/DeviceRealtimeMap';
-import type { Geofence } from '@/hooks/useGeofences';
+// useGeofences deleted — using inline type alias
+type Geofence = any;
 import {AlertTriangle, RefreshCw, Play, Pause, Trash2, Download} from 'lucide-react';
 import { Skeleton } from '@/components/shadcn/skeleton';
 

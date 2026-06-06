@@ -1,4 +1,4 @@
-import { SIMCardExtended } from "@/hooks/useIOTSIMs";
+type SIMCardExtended = any;
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";

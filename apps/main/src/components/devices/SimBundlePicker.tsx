@@ -9,7 +9,6 @@ import {
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
 import { Smartphone, Database } from "lucide-react";
-import { useBundleCatalog } from "@/hooks/useDataBundles";
 
 export type DataUnit = "KB" | "MB" | "GB";
 export type BillingCycle = "monthly" | "yearly";
@@ -41,7 +40,7 @@ export function SimBundlePicker({
   iccid,
   onIccidChange,
 }: Props) {
-  const { data: catalog = [] } = useBundleCatalog();
+  const catalog: any[] = [];
   const availableBundles = useMemo(
     () =>
       catalog.filter(

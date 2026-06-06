@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
-import { useSupportTickets, SupportTicket, EscalationType } from "@/hooks/useSupportTickets";
+// Local type aliases (hook deleted)
+type EscalationType = "fleetpro_internal" | "fonu_connectivity" | "vendor_installer";
+type SupportTicket = any;
 import { AdminTicketSheet } from "./AdminTicketSheet";
 import { 
   ArrowUpRight, 
@@ -108,7 +110,8 @@ const DEMO_ESCALATED: SupportTicket[] = [
 ];
 
 export function EscalatedTickets() {
-  const { tickets, isLoading } = useSupportTickets();
+  const tickets: any[] = [];
+  const isLoading = false;
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
 
   const realEscalated = tickets.filter((t) => t.status === "escalated" || t.escalatedTo);

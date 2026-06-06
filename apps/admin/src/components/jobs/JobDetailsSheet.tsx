@@ -12,7 +12,6 @@ import {
   Clock, CheckCircle, Hash, Activity, Weight, Banknote,
   MessageSquare, Phone, FileText,
 } from "lucide-react";
-import { useActivityLogs } from "@/hooks/useActivityLogs";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 
@@ -61,11 +60,8 @@ function FieldLabel({ icon: Icon, children }: { icon: React.ElementType; childre
 
 export function JobDetailsSheet({ open, onOpenChange, job }: JobDetailsSheetProps) {
   const { format: formatCurrency } = useCurrency();
-  const { logs: activityLogs, isLoading: isLoadingActivity } = useActivityLogs({
-    entityType: 'job',
-    entityId: job?.id || '',
-    enabled: open && !!job,
-  });
+  const activityLogs: any[] = [];
+  const isLoadingActivity = false;
 
   if (!job) return null;
 

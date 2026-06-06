@@ -10,17 +10,13 @@ import {
   Users,
   Phone,
 } from "lucide-react";
-import { useDriverCommunications } from "@/hooks/useDriverCommunications";
-import { useAuthStore } from "@/stores/authStore";
 
 export default function DispatcherMessages() {
   const [activeTab, setActiveTab] = useState("inbox");
-  const { user } = useAuthStore();
-  const tenantId = user?.tenantId || '';
-  
+
   // Get real stats from the communications hook
-  const { getStats, messages } = useDriverCommunications(tenantId);
-  const stats = getStats();
+  const messages: any[] = [];
+  const stats = { todayMessages: 0, todayCalls: 0 };
   
   // Count active conversations (unique drivers with messages in last 24 hours)
   const activeConversations = new Set(

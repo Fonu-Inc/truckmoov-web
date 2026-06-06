@@ -1,4 +1,3 @@
-import { useOrgContext } from '@/hooks/useOrgContext';
 import { useActiveOrgStore } from '@/stores/activeOrgStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -15,18 +14,16 @@ import {
 } from '@/components/shadcn/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { getSidebarConfig, getAllowedRoutes } from '@/lib/sidebarConfig';
-import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 
 export function OrgSwitcher() {
-  const { memberships } = useOrgContext();
+  const memberships: any[] = [];
   const { activeOrgId, setActiveOrg, resolveActiveOrg } = useActiveOrgStore();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthStore();
 
-  const { enabled: flagEnabled } = useFeatureFlag('enable_multi_stakeholder_model', user?.tenantId);
-  const multiStakeholderEnabled = flagEnabled;
+  const multiStakeholderEnabled = false;
 
   // Only show switcher for multi-org users
   if (memberships.length <= 1) return null;

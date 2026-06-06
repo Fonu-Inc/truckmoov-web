@@ -2,10 +2,7 @@ import { cn } from "@/lib/utils";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
-import { useJobOfferNotifications } from "@/hooks/useJobOfferNotifications";
-import { useOrgContext } from "@/hooks/useOrgContext";
 import { useActiveOrgStore } from "@/stores/activeOrgStore";
-import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { useTenantBrandingContext } from "@/contexts/TenantBrandingContext";
 import {
   getSidebarConfig,
@@ -39,15 +36,13 @@ export function DashboardSidebar() {
   const { collapsed, toggle } = useSidebarStore();
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const { unreadCount, clearUnread } = useRealtimeMessages();
-  const { pendingCount: jobOfferCount } = useJobOfferNotifications();
+  const jobOfferCount = 0;
   const { logoUrl } = useTenantBrandingContext();
 
-  const orgCtx = useOrgContext();
   const { resolveActiveOrg } = useActiveOrgStore();
-  const activeOrg = resolveActiveOrg(orgCtx.memberships);
+  const activeOrg = resolveActiveOrg([]);
 
-  const { enabled: flagEnabled } = useFeatureFlag('enable_multi_stakeholder_model', user?.tenantId);
-  const multiStakeholderEnabled = flagEnabled;
+  const multiStakeholderEnabled = false;
 
   // ── Centralized sidebar resolution ──
   const sidebarConfig: SidebarConfig = useMemo(

@@ -14,8 +14,9 @@ import {
   XCircle,
   Loader2,
 } from "lucide-react";
-import { SIMProvisioningRequest } from "@/hooks/useFonuSIM";
 import { cn } from "@/lib/utils";
+
+type SIMProvisioningRequest = any;
 
 interface ApprovalChecklistProps {
   request: SIMProvisioningRequest;

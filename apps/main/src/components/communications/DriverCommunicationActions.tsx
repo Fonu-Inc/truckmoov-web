@@ -28,7 +28,6 @@ import {
   Mail,
   X,
 } from "lucide-react";
-import { useDriverCommunications } from "@/hooks/useDriverCommunications";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -47,7 +46,13 @@ export function DriverCommunicationActions({
   variant = "buttons",
   size = "default",
 }: DriverCommunicationActionsProps) {
-  const { sendSMS, sendWhatsApp, initiateCall, endCall, isSending, isCalling, activeCallId } = useDriverCommunications();
+  const sendSMS = async (...args: any[]) => {};
+  const sendWhatsApp = async (...args: any[]) => {};
+  const initiateCall = async (...args: any[]): Promise<any> => null;
+  const endCall = async (...args: any[]) => {};
+  const isSending = false;
+  const isCalling = false;
+  const activeCallId: string | null = null;
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
   const [isCallDialogOpen, setIsCallDialogOpen] = useState(false);
   const [messageContent, setMessageContent] = useState("");

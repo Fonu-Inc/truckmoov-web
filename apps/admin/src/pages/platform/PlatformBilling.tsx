@@ -72,7 +72,6 @@ import {
   type FilterField } from "@/components/shadcn/platform-filter-popover";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { useBilling } from "@/hooks/useBilling";
 import {
   AreaChart,
   Area,
@@ -368,7 +367,12 @@ export default function PlatformBilling() {
   const [isSubDialogOpen, setIsSubDialogOpen] = useState(false);
 
 
-  const { isLoading: isBillingLoading, summary, fetchBillingSummary, checkRenewals, processPayment, generateInvoice } = useBilling();
+  const isBillingLoading = false;
+  const summary: any = null;
+  const fetchBillingSummary = async (...args: any[]) => {};
+  const checkRenewals = async (...args: any[]) => {};
+  const processPayment = async (...args: any[]) => {};
+  const generateInvoice = async (...args: any[]) => null as any;
   const [generatingFor, setGeneratingFor] = useState<string | null>(null);
   const [isCreateInvoiceOpen, setIsCreateInvoiceOpen] = useState(false);
   const [createInvoiceSubId, setCreateInvoiceSubId] = useState<string>("");

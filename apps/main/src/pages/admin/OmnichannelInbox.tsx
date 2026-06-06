@@ -36,7 +36,6 @@ import {
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { format, formatDistanceToNow } from "date-fns";
-import { useDriverCommunications, DriverMessage, DriverCallLog } from "@/hooks/useDriverCommunications";
 import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/lib/utils";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
@@ -91,17 +90,15 @@ const statusColors: Record<string, string> = {
 export default function OmnichannelInbox() {
   const { user } = useAuthStore();
   const tenantId = user?.tenantId || '';
-  const { 
-    messages, 
-    callLogs, 
-    isLoading, 
-    isSending, 
-    isCalling,
-    sendSMS, 
-    sendWhatsApp, 
-    initiateCall,
-    refetch 
-  } = useDriverCommunications(tenantId);
+  const messages: any[] = [];
+  const callLogs: any[] = [];
+  const isLoading = false;
+  const isSending = false;
+  const isCalling = false;
+  const sendSMS = async (...args: any[]) => {};
+  const sendWhatsApp = async (...args: any[]) => ({ success: false });
+  const initiateCall = async (...args: any[]) => {};
+  const refetch = async (...args: any[]) => {};
   
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);

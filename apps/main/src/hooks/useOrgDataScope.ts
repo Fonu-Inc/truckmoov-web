@@ -1,7 +1,5 @@
 import { useMemo } from 'react';
-import { useOrgContext } from '@/hooks/useOrgContext';
 import { useAuthStore } from '@/stores/authStore';
-import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { computeOrgDataScope, type OrgDataScope } from '@/lib/orgPermissions';
 import { filterValidUuids } from '@/lib/uuidUtils';
 
@@ -11,12 +9,8 @@ import { filterValidUuids } from '@/lib/uuidUtils';
  */
 export function useOrgDataScope(): OrgDataScope & { isReady: boolean; multiStakeholderEnabled: boolean } {
   const { user } = useAuthStore();
-  const orgCtx = useOrgContext();
-  const { enabled: flagEnabled } = useFeatureFlag(
-    'enable_multi_stakeholder_model',
-    user?.tenantId
-  );
-  const multiStakeholderEnabled = flagEnabled;
+  const orgCtx = { memberships: [], orgIds: [], isLoading: false, hasOrgRole: () => false };
+  const multiStakeholderEnabled = false;
 
   const childOrgIds: string[] = [];
 

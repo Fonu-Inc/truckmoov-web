@@ -6,7 +6,7 @@ import { Button } from "@/components/shadcn/button";
 import { Card, CardContent } from "@/components/shadcn/card";
 import { Truck, AlertTriangle, Navigation, Clock, Fuel, Phone, Wifi, WifiOff } from "lucide-react";
 import { useRealtimeTracking, RealtimeVehicleLocation } from "@/hooks/useRealtimeTracking";
-import { useGeofences, type Geofence } from "@/hooks/useGeofences";
+type Geofence = any;
 import { formatDistanceToNow } from "date-fns";
 
 // Fix for default marker icons when using Leaflet directly
@@ -277,7 +277,7 @@ export function FleetMap({
   const [vehicles, setVehicles] = useState<Vehicle[]>(externalVehicles ?? []);
 
   // Fetch geofences from database
-  const { geofences: dbGeofences } = useGeofences();
+  const dbGeofences: any[] = [];
   
   // Convert database geofences to map display format
   const geofenceZones = useMemo(() => {

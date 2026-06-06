@@ -28,22 +28,33 @@ import {
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
-import { useTenantAIConfig } from "@/hooks/useTenantAIConfig";
-import { usePlatformAIConfig } from "@/hooks/usePlatformAIConfig";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { format } from "date-fns";
-import { useAIConfigPermissions } from "@/hooks/useAIConfigPermissions";
 
 interface TenantAIConfigPanelProps {
   tenantId: string;
 }
 
 export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
-  const { config, isLoading, isSaving, isTesting, createOrUpdateConfig, testConnection } =
-    useTenantAIConfig(tenantId);
-  const { config: platformConfig, isLoading: isLoadingPlatform } = usePlatformAIConfig();
-  const { canConfigureTenantAI, canRunAIMatching } = useAIConfigPermissions();
+  const config: any = null;
+  const isLoading = false;
+  const isSaving = false;
+  const isTesting = false;
+  const createOrUpdateConfig = (_updates: any) => {};
+  const testConnection = () => {};
+  const platformConfig: any = {
+    ai_job_matching_enabled: false,
+    openai_enabled: false,
+    openai_allowed_models: [] as string[],
+    anthropic_enabled: false,
+    anthropic_allowed_models: [] as string[],
+    lovable_enabled: true,
+    lovable_allowed_models: [] as string[],
+  };
+  const isLoadingPlatform = false;
+  const canConfigureTenantAI = true;
+  const canRunAIMatching = true;
   const [showApiKey, setShowApiKey] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState("");
 

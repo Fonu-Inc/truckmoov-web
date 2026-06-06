@@ -18,11 +18,7 @@ import {
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { DriverCommunicationActions } from "@/components/communications/DriverCommunicationActions";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { useVehicles } from "@/hooks/useVehicles";
 import { useDrivers } from "@/hooks/useDrivers";
-import { useAlerts } from "@/hooks/useAlerts";
-import { useJobs } from "@/hooks/useJobs";
-import { useGeofenceRealtime } from "@/hooks/useGeofenceRealtime";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -40,11 +36,15 @@ const FILTER_STORAGE_KEY = "supervisor.liveMap.statusFilters";
 
 export default function SupervisorLiveMap() {
   const navigate = useNavigate();
-  const { vehicles, isLoading: vehiclesLoading, refetch: refetchVehicles } = useVehicles();
+  const vehicles: any[] = [];
+  const vehiclesLoading = false;
+  const refetchVehicles = async (...args: any[]) => {};
   const { drivers } = useDrivers();
-  const { alerts } = useAlerts();
-  const { jobs, addJob } = useJobs();
-  const { recentEvents: geofenceEvents, stats: geofenceStats } = useGeofenceRealtime();
+  const alerts: any[] = [];
+  const jobs: any[] = [];
+  const addJob = async (...args: any[]) => false;
+  const geofenceEvents: any[] = [];
+  const geofenceStats = { entries: 0, exits: 0 };
 
   const [selectedVehicleIds, setSelectedVehicleIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");

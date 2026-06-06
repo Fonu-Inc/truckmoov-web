@@ -1,6 +1,7 @@
 import { Badge } from "@/components/shadcn/badge";
 import { AlertTriangle, ShieldAlert, TrendingUp, Database } from "lucide-react";
-import { SIMProvisioningRequest } from "@/hooks/useFonuSIM";
+
+type SIMProvisioningRequest = any;
 
 interface RiskFlag {
   type: "high" | "medium" | "low";

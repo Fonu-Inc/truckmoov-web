@@ -6,7 +6,10 @@ import { Textarea } from "@/components/shadcn/textarea";
 import { Label } from "@/components/shadcn/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Badge } from "@/components/shadcn/badge";
-import { useSupportTickets, TicketCategory, ContextType, TicketPriority } from "@/hooks/useSupportTickets";
+// Local type aliases (hook deleted)
+type TicketCategory = "device_tracking" | "sim_connectivity" | "messaging" | "billing" | "account_access" | "other";
+type ContextType = "device" | "sim" | "vehicle" | "whatsapp" | "billing" | "none";
+type TicketPriority = "low" | "medium" | "high" | "critical";
 import { useAuthStore } from "@/stores/authStore";
 import {
   Cpu,
@@ -41,7 +44,7 @@ const categories: { value: TicketCategory; label: string; icon: React.ElementTyp
 
 export function ReportIssue({ onSuccess }: ReportIssueProps) {
   const { user } = useAuthStore();
-  const { createTicket } = useSupportTickets();
+  const createTicket = async (..._args: any[]): Promise<any> => null;
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
