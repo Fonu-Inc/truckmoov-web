@@ -330,11 +330,22 @@ export type UploadedMedia = {
 export type AuthSystemSettings = {
   platformName?: string
   supportEmail?: string
-  defaults?: Record<string, unknown>
-  features?: Record<string, unknown>
-  retention?: Record<string, unknown>
+  defaults?: {
+    timezone?: string
+    language?: string
+  }
+  features?: {
+    allowNewTenantRegistration?: boolean
+    maintenanceMode?: boolean
+    enableBetaFeatures?: boolean
+  }
+  retention?: {
+    gpsDataRetentionDays?: number
+    logRetentionDays?: number
+    backupFrequency?: string
+  }
   updatedAt?: string
-  updatedByUserId?: string
+  updatedByUserId?: string | null
 }
 
 import type { ServerResponse } from '../lib/types'
