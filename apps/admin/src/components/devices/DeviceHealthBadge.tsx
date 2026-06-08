@@ -1,93 +1,33 @@
-import React from 'react';
-import { Badge } from '@/components/shadcn/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/shadcn/tooltip';
-import { Circle, AlertCircle, WifiOff } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { Badge } from "@/components/shadcn/badge";
+import { cn } from "@/lib/utils";
 
-export type DeviceHealthStatus = 'online' | 'degraded' | 'offline';
+export type DeviceHealthStatus = "healthy" | "warning" | "critical" | "offline" | null;
 
 interface DeviceHealthBadgeProps {
-  healthStatus: DeviceHealthStatus | null;
+  healthStatus: DeviceHealthStatus | string | null;
   lastSeen?: string | null;
   showLabel?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md";
 }
 
-const healthConfig: Record<DeviceHealthStatus, {
-  label: string;
-  color: string;
-  bgColor: string;
-  icon: React.ElementType;
-  description: string;
-}> = {
-  online: {
-    label: 'Online',
-    color: 'text-green-500',
-    bgColor: 'bg-green-500/10 border-green-500/20',
-    icon: Circle,
-    description: 'Device is actively sending telemetry'
-  },
-  degraded: {
-    label: 'Degraded',
-    color: 'text-amber-500',
-    bgColor: 'bg-amber-500/10 border-amber-500/20',
-    icon: AlertCircle,
-    description: 'Device heartbeat delayed (3-10 min)'
-  },
-  offline: {
-    label: 'Offline',
-    color: 'text-red-500',
-    bgColor: 'bg-red-500/10 border-red-500/20',
-    icon: WifiOff,
-    description: 'No telemetry received for 10+ minutes'
-  }
+const STATUS_CONFIG: Record<string, { label: string; dot: string }> = {
+  healthy: { label: "Healthy", dot: "bg-green-500" },
+  warning: { label: "Warning", dot: "bg-amber-500" },
+  critical: { label: "Critical", dot: "bg-red-500" },
+  offline: { label: "Offline", dot: "bg-gray-400" },
 };
 
-export function DeviceHealthBadge({ 
-  healthStatus, 
-  lastSeen, 
-  showLabel = true,
-  size = 'md' 
-}: DeviceHealthBadgeProps) {
-  const status = healthStatus || 'offline';
-  const config = healthConfig[status];
-  const Icon = config.icon;
-  
-  const iconSize = size === 'sm' ? 'h-3 w-3' : size === 'lg' ? 'h-5 w-5' : 'h-4 w-4';
-  const textSize = size === 'sm' ? 'text-xs' : size === 'lg' ? 'text-sm' : 'text-xs';
-
-  const lastSeenText = lastSeen 
-    ? formatDistanceToNow(new Date(lastSeen), { addSuffix: true })
-    : 'Never';
+export function DeviceHealthBadge({ healthStatus, showLabel = false, size = "sm" }: DeviceHealthBadgeProps) {
+  const key = (healthStatus as string) ?? "offline";
+  const config = STATUS_CONFIG[key] ?? STATUS_CONFIG.offline;
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Badge 
-            variant="outline" 
-            className={`${config.bgColor} ${textSize} gap-1.5 cursor-help border`}
-          >
-            <Icon className={`${iconSize} ${config.color} ${status === 'online' ? 'animate-pulse' : ''}`} />
-            {showLabel && (
-              <span className={config.color}>{config.label}</span>
-            )}
-          </Badge>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
-          <div className="space-y-1">
-            <p className="font-medium">{config.label}</p>
-            <p className="text-xs text-muted-foreground">{config.description}</p>
-            <p className="text-xs">
-              <span className="text-muted-foreground">Last seen: </span>
-              <span className="font-mono">{lastSeenText}</span>
-            </p>
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Badge
+      variant="outline"
+      className={cn("gap-1.5", size === "md" ? "text-xs px-2 py-0.5" : "text-[10px] px-1.5 py-0")}
+    >
+      <span className={cn("rounded-full shrink-0", config.dot, size === "md" ? "h-2 w-2" : "h-1.5 w-1.5")} />
+      {showLabel && config.label}
+    </Badge>
   );
 }
-
-
-

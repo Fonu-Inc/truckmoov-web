@@ -30,7 +30,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import { useLiveAgentSession } from "@/hooks/useLiveAgentSession";
-import { LiveAgentPanel } from "./LiveAgentPanel";
 
 type Msg = { role: "user" | "assistant"; content: string };
 type View = "home" | "topic" | "messages";
@@ -185,7 +184,7 @@ export function SupportChatWidget({ open: controlledOpen, onOpenChange }: Suppor
   const [activeTopicId, setActiveTopicId] = useState<string | null>(null);
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(null);
 
-  const { session: liveSession, joinQueue } = useLiveAgentSession();
+  const { joinQueue } = useLiveAgentSession();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -616,11 +615,7 @@ export function SupportChatWidget({ open: controlledOpen, onOpenChange }: Suppor
             )}
 
             {/* MESSAGES view */}
-            {tab === "messages" && liveSession && (
-              <LiveAgentPanel />
-            )}
-
-            {tab === "messages" && !liveSession && (
+            {tab === "messages" && (
               <>
                 <ScrollArea className="flex-1 px-4 py-4" ref={scrollRef as any}>
                   <div className="space-y-4">

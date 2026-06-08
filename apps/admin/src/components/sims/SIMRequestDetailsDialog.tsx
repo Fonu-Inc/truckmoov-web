@@ -25,8 +25,6 @@ import {
 } from "lucide-react";
 type SIMProvisioningRequest = any;
 type DeviceMappingRow = any;
-import { SIMRequestRiskFlags } from "./SIMRequestRiskFlags";
-import { DeviceMappingPreview } from "./DeviceMappingPreview";
 
 import { ProvisioningChecklistView } from "@/components/provisioning/ProvisioningChecklistView";
 import type { ProvisioningStep } from "@/lib/provisioningEngineSim";
@@ -150,11 +148,6 @@ export function SIMRequestDetailsDialog({
             />
           )}
 
-          {/* Risk flags — only shown for terminal/non-engine states (rejected, kyb_required) */}
-          {!["pending", "in_progress", "approved", "approved_pending_activation"].includes(request.status) && (
-            <SIMRequestRiskFlags request={request} kycStatus={kycStatus} />
-          )}
-
           <Separator />
 
           {/* Request Overview */}
@@ -234,14 +227,6 @@ export function SIMRequestDetailsDialog({
                 <p className="text-xs text-muted-foreground">Fonu Request Reference</p>
                 <p className="font-mono text-xs bg-muted p-2 rounded-md">{request.fonu_request_id}</p>
               </div>
-            </>
-          )}
-
-          {/* Device Mapping Preview */}
-          {deviceMappingData && deviceMappingData.length > 0 && (
-            <>
-              <Separator />
-              <DeviceMappingPreview data={deviceMappingData} />
             </>
           )}
 
