@@ -155,7 +155,7 @@ export type CreateSystemAdminPayload = {
 export type UpdateAdminStatusPayload = {
   id: string
   data: {
-    status: string
+    accountStatus: string
   }
 }
 
