@@ -2,15 +2,13 @@ import React, { Component, ReactNode, useEffect } from "react";
 import { Toaster as Sonner } from "@/components/shadcn/sonner";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@truckmoov/api/lib/query-client";
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { useAuthStore } from "./stores/authStore";
-import { useAuthStore as useApiAuthStore } from "@truckmoov/api/lib/auth-store";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
 import { TenantBrandingProvider } from "./contexts/TenantBrandingContext";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { FonuCallProvider } from "./contexts/FonuCallContext";
-import { KeyboardShortcutsDialog } from "./components/KeyboardShortcutsDialog";
 import { GlobalSupportChat } from "./components/support/GlobalSupportChat";
 import AuthPage from "./pages/AuthPage";
 import ResetPassword from "./pages/ResetPassword";
@@ -59,18 +57,6 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { hasError: bo
   }
 }
 
-function PlatformAdminRoute({ children }: { children: ReactNode }) {
-  const { user, isAuthReady } = useAuthStore();
-  const { accessToken } = useApiAuthStore();
-  const location = useLocation();
-
-  if (!isAuthReady) return null;
-  if (!accessToken) return <Navigate to="/auth" state={{ from: location }} replace />;
-  if (user?.role !== "PLATFORM_ADMIN") return <Navigate to="/not-authorized" replace />;
-
-  return <AppErrorBoundary>{children}</AppErrorBoundary>;
-}
-
 const App = () => {
   useEffect(() => {
     void useAuthStore.getState().bootstrapFromSession();
@@ -83,28 +69,29 @@ const App = () => {
           <PreferencesProvider>
             <TenantBrandingProvider>
               <Sonner />
-              {/* <KeyboardShortcutsDialog /> */}
               <FonuCallProvider>
                 <BrowserRouter>
-                  <Routes>
-                    <Route path="/auth" element={<AuthPage />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="/not-authorized" element={<NotAuthorized />} />
-                    <Route path="/" element={<PlatformAdminRoute><PlatformDashboard /></PlatformAdminRoute>} />
-                    <Route path="/tenants" element={<PlatformAdminRoute><PlatformTenants /></PlatformAdminRoute>} />
-                    <Route path="/devices" element={<PlatformAdminRoute><PlatformDevices /></PlatformAdminRoute>} />
-                    <Route path="/sims" element={<PlatformAdminRoute><PlatformSIMs /></PlatformAdminRoute>} />
-                    <Route path="/data-bundles" element={<PlatformAdminRoute><PlatformDataBundles /></PlatformAdminRoute>} />
-                    <Route path="/simulator" element={<PlatformAdminRoute><DeviceSimulator /></PlatformAdminRoute>} />
-                    <Route path="/communications" element={<PlatformAdminRoute><PlatformCommunications /></PlatformAdminRoute>} />
-                    <Route path="/messaging" element={<PlatformAdminRoute><PlatformMessagingCenter /></PlatformAdminRoute>} />
-                    <Route path="/billing" element={<PlatformAdminRoute><PlatformBilling /></PlatformAdminRoute>} />
-                    <Route path="/security" element={<PlatformAdminRoute><PlatformSecurity /></PlatformAdminRoute>} />
-                    <Route path="/compliance-audit" element={<PlatformAdminRoute><PlatformComplianceAudit /></PlatformAdminRoute>} />
-                    <Route path="/settings" element={<PlatformAdminRoute><PlatformSettings /></PlatformAdminRoute>} />
-                    <Route path="/support" element={<PlatformAdminRoute><PlatformSupport /></PlatformAdminRoute>} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                  <AppErrorBoundary>
+                    <Routes>
+                      <Route path="/auth" element={<AuthPage />} />
+                      <Route path="/reset-password" element={<ResetPassword />} />
+                      <Route path="/not-authorized" element={<NotAuthorized />} />
+                      <Route path="/" element={<PlatformDashboard />} />
+                      <Route path="/tenants" element={<PlatformTenants />} />
+                      <Route path="/devices" element={<PlatformDevices />} />
+                      <Route path="/sims" element={<PlatformSIMs />} />
+                      <Route path="/data-bundles" element={<PlatformDataBundles />} />
+                      <Route path="/simulator" element={<DeviceSimulator />} />
+                      <Route path="/communications" element={<PlatformCommunications />} />
+                      <Route path="/messaging" element={<PlatformMessagingCenter />} />
+                      <Route path="/billing" element={<PlatformBilling />} />
+                      <Route path="/security" element={<PlatformSecurity />} />
+                      <Route path="/compliance-audit" element={<PlatformComplianceAudit />} />
+                      <Route path="/settings" element={<PlatformSettings />} />
+                      <Route path="/support" element={<PlatformSupport />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </AppErrorBoundary>
                   <GlobalSupportChat />
                 </BrowserRouter>
               </FonuCallProvider>
@@ -117,6 +104,3 @@ const App = () => {
 };
 
 export default App;
-
-
-

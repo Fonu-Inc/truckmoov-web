@@ -70,7 +70,6 @@ import {
 import { Vehicle } from "@/types";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
-import { WritableAction } from "@/components/auth/WritableAction";
 
 interface FleetManagementProps {
   vehiclesOnly?: boolean;
@@ -258,8 +257,7 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
         <TabsContent value="vehicles" className="space-y-6" forceMount={vehiclesOnly ? true : undefined}>
         {/* Primary actions - only on Vehicles tab. Aggregators cannot add vehicles. */}
         {!isAggregator && (
-          <WritableAction permission="canCreateAssets">
-            <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setIsBulkUploadOpen(true)}>
                 <Upload className="mr-2 h-4 w-4" />
                 Bulk Import
@@ -269,7 +267,6 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
                 Add Vehicle
               </Button>
             </div>
-          </WritableAction>
         )}
 
         {/* KPIs */}

@@ -44,7 +44,6 @@ import {
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/shadcn/alert-dialog';
-import { useWritePermissions } from '@/hooks/useWritePermissions';
 import { format } from 'date-fns';
 import { ExportButton } from '@/components/shadcn/export-button';
 
@@ -108,7 +107,7 @@ export default function WaybillInvoices() {
     generateInvoice, updateInvoice, deleteInvoice, addPricingRule, updatePricingRule,
     deletePricingRule, updateInvoiceConfig, recordInvoiceShare, generateInvoicePDF, getInvoicePdfUrl } = useWaybillInvoice();
   const { format: formatAmount } = useCurrency();
-  const { canDeleteAssets } = useWritePermissions();
+  const canDeleteAssets = true;
   const [invoiceToDelete, setInvoiceToDelete] = useState<WaybillInvoice | null>(null);
 
   const displayWaybills = waybills.length > 0 ? waybills : DEMO_WAYBILLS;

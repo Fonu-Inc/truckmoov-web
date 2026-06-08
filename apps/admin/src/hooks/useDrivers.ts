@@ -3,7 +3,6 @@ import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/backendApi";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import { useOrgDataScope } from "@/hooks/useOrgDataScope";
-import { useWritePermissions } from "@/hooks/useWritePermissions";
 import { mockDrivers } from "@/data/mockData";
 
 export interface DriverData {
@@ -77,7 +76,7 @@ export function useDrivers() {
   const [error, setError] = useState<Error | null>(null);
   const { user } = useAuthStore();
   const orgScope = useOrgDataScope();
-  const { canCreateAssets, canUpdateAssets, canDeleteAssets } = useWritePermissions();
+  const canCreateAssets = true, canUpdateAssets = true, canDeleteAssets = true;
 
   const assetOrgIdsKey = JSON.stringify(orgScope.assetOrgIds);
   const stableAssetOrgIds = useMemo(() => orgScope.assetOrgIds, [assetOrgIdsKey]);

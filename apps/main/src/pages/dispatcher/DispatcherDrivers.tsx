@@ -65,7 +65,6 @@ type GeofenceAlert = any;
 type FatigueAlert = any;
 import { format, differenceInDays, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { WritableAction } from "@/components/auth/WritableAction";
 
 const statusColors: Record<string, string> = {
   available: "bg-success/20 text-success border-success/30",
@@ -318,8 +317,7 @@ export default function DispatcherDrivers() {
                 <Inbox className="h-4 w-4 mr-2" />
                 {showInbox ? "Hide Inbox" : "Message Inbox"}
               </Button>
-              <WritableAction permission="canCreateAssets">
-                <Button variant="outline" onClick={() => setIsBulkUploadOpen(true)}>
+              <Button variant="outline" onClick={() => setIsBulkUploadOpen(true)}>
                   <Upload className="h-4 w-4 mr-2" />
                   Bulk Upload
                 </Button>
@@ -327,7 +325,6 @@ export default function DispatcherDrivers() {
                   <Plus className="h-4 w-4 mr-2" />
                   Add Driver
                 </Button>
-              </WritableAction>
             </div>
 
         {/* Message Inbox */}

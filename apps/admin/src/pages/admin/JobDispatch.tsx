@@ -33,7 +33,6 @@ import { EmptyState } from "@/components/dashboard/EmptyState";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
-import { WritableAction } from "@/components/auth/WritableAction";
 
 export default function JobDispatch() {
   const jobs: any[] = [];
@@ -273,8 +272,7 @@ export default function JobDispatch() {
     <DashboardLayout title="Shipments">
       <div className="space-y-6">
         {/* Page header — primary CTA top-right, above KPIs */}
-        <WritableAction permission="canCreateJobs">
-          <div className="flex justify-end">
+        <div className="flex justify-end">
             <Button
               variant="gradient"
               onClick={() => {
@@ -286,7 +284,6 @@ export default function JobDispatch() {
               Create Job
             </Button>
           </div>
-        </WritableAction>
 
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
