@@ -2,6 +2,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import {
+  type AdminInvite,
   getSystemAdminInvitesQueryOptions,
   getSystemAdminsQueryOptions,
   useCreateSystemAdminInvite,
@@ -16,7 +17,6 @@ interface AdminUser {
   role: string;
   accountStatus: "enabled" | "disabled" | string;
   status: "active" | "inactive" | string;
-  lastActiveAt?: string;
   profile?: {
     fullName?: string;
     phoneNumber?: string;
@@ -103,8 +103,7 @@ export function PlatformTeamManagement() {
   const admins: AdminUser[] = rawAdmins?.users ?? [];
 
   const invitesQuery = useQuery(getSystemAdminInvitesQueryOptions());
-  const rawInvites = invitesQuery.data?.data;
-  const invites: Record<string, unknown>[] = Array.isArray(rawInvites) ? (rawInvites as Record<string, unknown>[]) : [];
+  const invites: AdminInvite[] = invitesQuery.data?.data?.invites ?? [];
 
   const createInvite = useCreateSystemAdminInvite();
   const deleteInvite = useDeleteSystemAdminInvite();
@@ -113,11 +112,9 @@ export function PlatformTeamManagement() {
 
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [userToRemove, setUserToRemove] = useState<AdminUser | null>(null);
-  const [invitationToCancel, setInvitationToCancel] = useState<Record<string, unknown> | null>(null);
+  const [invitationToCancel, setInvitationToCancel] = useState<AdminInvite | null>(null);
   const [teamSearch, setTeamSearch] = useState("");
   const [teamRoleFilter, setTeamRoleFilter] = useState<string[]>([]);
-  const [teamDateFrom, setTeamDateFrom] = useState("");
-  const [teamDateTo, setTeamDateTo] = useState("");
 
   const inviteForm = useForm<InviteFormValues>({
     resolver: zodResolver(inviteSchema),
@@ -129,11 +126,6 @@ export function PlatformTeamManagement() {
     const name = getAdminDisplayName(admin).toLowerCase();
     if (q && !(name.includes(q) || admin.email.toLowerCase().includes(q))) return false;
     if (teamRoleFilter.length > 0 && !teamRoleFilter.includes(admin.role)) return false;
-    if (admin.lastActiveAt) {
-      const ts = new Date(admin.lastActiveAt).getTime();
-      if (teamDateFrom && ts < new Date(teamDateFrom).getTime()) return false;
-      if (teamDateTo && ts > new Date(teamDateTo).getTime() + 86400000) return false;
-    }
     return true;
   });
 
@@ -164,7 +156,7 @@ export function PlatformTeamManagement() {
 
   const handleRemoveUser = (admin: AdminUser) => {
     updateStatus.mutate(
-      { id: admin.userId, data: { status: "inactive" } },
+      { id: admin.userId, data: { accountStatus: "disabled" } },
       {
         onSuccess: () => {
           toast.success("Admin removed");
@@ -175,9 +167,9 @@ export function PlatformTeamManagement() {
     );
   };
 
-  const handleCancelInvitation = (invite: Record<string, unknown>) => {
+  const handleCancelInvitation = (invite: AdminInvite) => {
     deleteInvite.mutate(
-      { id: invite.id as string },
+      { id: invite.id },
       {
         onSuccess: () => {
           toast.success("Invitation cancelled");
@@ -188,9 +180,9 @@ export function PlatformTeamManagement() {
     );
   };
 
-  const handleResendInvite = (invite: Record<string, unknown>) => {
+  const handleResendInvite = (invite: AdminInvite) => {
     resendInvite.mutate(
-      { id: invite.id as string },
+      { id: invite.id },
       {
         onSuccess: () => toast.success("Invitation resent"),
         onError: (e) => toast.error(e.message),
@@ -302,9 +294,9 @@ export function PlatformTeamManagement() {
                   <Button variant="outline" size="sm" className="gap-2">
                     <SlidersHorizontal className="h-4 w-4" />
                     Filter
-                    {(teamRoleFilter.length > 0 || teamDateFrom || teamDateTo) && (
+                    {teamRoleFilter.length > 0 && (
                       <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                        {teamRoleFilter.length + (teamDateFrom ? 1 : 0) + (teamDateTo ? 1 : 0)}
+                        {teamRoleFilter.length}
                       </Badge>
                     )}
                   </Button>
@@ -330,22 +322,11 @@ export function PlatformTeamManagement() {
                       ))}
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground">Date added</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input type="date" value={teamDateFrom} onChange={(e) => setTeamDateFrom(e.target.value)} />
-                      <Input type="date" value={teamDateTo} onChange={(e) => setTeamDateTo(e.target.value)} />
-                    </div>
-                  </div>
                   <div className="flex justify-between pt-2 border-t">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        setTeamRoleFilter([]);
-                        setTeamDateFrom("");
-                        setTeamDateTo("");
-                      }}
+                      onClick={() => setTeamRoleFilter([])}
                     >
                       Show All
                     </Button>
@@ -384,7 +365,6 @@ export function PlatformTeamManagement() {
                   <TableHead>User</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Added</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -422,13 +402,6 @@ export function PlatformTeamManagement() {
                         <Badge variant={admin.accountStatus === "enabled" ? "default" : "secondary"}>
                           {admin.accountStatus === "enabled" ? "Enabled" : "Disabled"}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {admin.lastActiveAt
-                            ? format(new Date(admin.lastActiveAt), "MMM dd, yyyy")
-                            : "—"}
-                        </span>
                       </TableCell>
                       <TableCell className="text-right">
                         {isSelf ? (
@@ -491,17 +464,17 @@ export function PlatformTeamManagement() {
                 </TableHeader>
                 <TableBody>
                   {invites.map((invite) => (
-                    <TableRow key={invite.id as string}>
+                    <TableRow key={invite.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Mail className="h-4 w-4 text-muted-foreground" />
-                          <span>{invite.email as string}</span>
+                          <span>{invite.email}</span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <span className="text-sm text-muted-foreground">
                           {invite.expiresAt
-                            ? format(new Date(invite.expiresAt as string), "MMM dd, yyyy")
+                            ? format(new Date(invite.expiresAt), "MMM dd, yyyy")
                             : "—"}
                         </span>
                       </TableCell>
@@ -563,7 +536,7 @@ export function PlatformTeamManagement() {
             <AlertDialogTitle>Cancel Invitation?</AlertDialogTitle>
             <AlertDialogDescription>
               This will cancel the invitation sent to{" "}
-              <strong>{invitationToCancel?.email as string}</strong>. They will no longer be able to join using that link.
+              <strong>{invitationToCancel?.email}</strong>. They will no longer be able to join using that link.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

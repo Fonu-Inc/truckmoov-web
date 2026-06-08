@@ -387,6 +387,20 @@ export type SystemSimBatchesListResponse = ServerResponse<Record<string, unknown
 export type SystemSubscriptionPlansResponse = ServerResponse<Record<string, unknown>[]>
 export type SystemFeatureFlagsResponse = ServerResponse<Record<string, unknown>[]>
 export type SystemFeatureFlagResponse = ServerResponse<Record<string, unknown>>
-export type SystemAdminInvitesResponse = ServerResponse<Record<string, unknown>[]>
+export interface AdminInvite {
+  id: string;
+  email: string;
+  role: string;
+  tenantId: string;
+  invitedBy: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export type SystemAdminInvitesResponse = ServerResponse<{
+  total: number;
+  invites: AdminInvite[];
+  generatedAt: string;
+}>
 export type SystemAdminInviteResponse = ServerResponse<Record<string, unknown>>
 export type SystemAdminInviteCancelResponse = ServerResponse<Record<string, unknown>>

@@ -82,6 +82,7 @@ import type { ActivityLogQuery, SystemTenantsQuery } from './types'
 
 export type {
   ActivityLogQuery,
+  AdminInvite,
   ApproveSIMRequestPayload,
   AuthSession,
   AuthUser,
