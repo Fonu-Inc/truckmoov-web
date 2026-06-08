@@ -282,7 +282,7 @@ export default function SupervisorLiveMap() {
 
   const handleHarshEventPlayback = (event: HarshEvent) => {
     if (event.vehicleId) {
-      navigate(`/admin/fleet/${event.vehicleId}/history?playbackFrom=${encodeURIComponent(event.timestamp)}&offsetMinutes=-2`);
+      navigate(`/fleet/${event.vehicleId}/history?playbackFrom=${encodeURIComponent(event.timestamp)}&offsetMinutes=-2`);
     } else {
       toast.message(`Route playback for ${event.vehicleRegistration} from 2 minutes before event`);
     }
@@ -306,7 +306,7 @@ export default function SupervisorLiveMap() {
           title="No vehicles to track"
           description="Add vehicles to your fleet to see them on the live map"
           actionLabel="View Fleet"
-          actionHref="/admin/fleet"
+          actionHref="/fleet"
         />
       </DashboardLayout>
     );
@@ -729,7 +729,7 @@ export default function SupervisorLiveMap() {
                               size="sm"
                               variant="outline"
                               className="flex-1"
-                              onClick={() => navigate(`/admin/fleet/${v.vehicleId}/history`)}
+                              onClick={() => navigate(`/fleet/${v.vehicleId}/history`)}
                             >
                               <History className="h-3.5 w-3.5 mr-1.5" />
                               View History

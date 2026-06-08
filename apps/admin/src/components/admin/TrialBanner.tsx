@@ -47,7 +47,7 @@ export function TrialBanner() {
       <Button
         size="sm"
         variant={urgent ? "default" : "outline"}
-        onClick={() => navigate("/admin/billing")}
+        onClick={() => navigate("/billing")}
       >
         Add payment method
       </Button>

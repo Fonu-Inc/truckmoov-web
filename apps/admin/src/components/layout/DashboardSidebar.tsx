@@ -2,7 +2,6 @@ import { cn } from "@/lib/utils";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
-import { useActiveOrgStore } from "@/stores/activeOrgStore";
 import { useTenantBrandingContext } from "@/contexts/TenantBrandingContext";
 import {
   getSidebarConfig,
@@ -13,12 +12,9 @@ import {
 } from "@/lib/sidebarConfig";
 import {
   Truck,
-  HelpCircle,
-  Ticket,
   Headphones,
   LogOut,
   ChevronDown,
-  Building2,
 } from "lucide-react";
 import mtnLogoDark from "@/assets/mtn-logo-dark.svg";
 import { useState, useMemo } from "react";
@@ -31,7 +27,7 @@ import {
 } from "@/components/shadcn/collapsible";
 
 export function DashboardSidebar() {
-  const { user, logout } = useAuthStore();
+  const logout = useAuthStore((state) => state.logout);
   const location = useLocation();
   const { collapsed, toggle } = useSidebarStore();
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -39,15 +35,10 @@ export function DashboardSidebar() {
   const jobOfferCount = 0;
   const { logoUrl } = useTenantBrandingContext();
 
-  const { resolveActiveOrg } = useActiveOrgStore();
-  const activeOrg = resolveActiveOrg([]);
-
-  const multiStakeholderEnabled = false;
-
   // ── Centralized sidebar resolution ──
   const sidebarConfig: SidebarConfig = useMemo(
-    () => getSidebarConfig(user, activeOrg, multiStakeholderEnabled),
-    [user, activeOrg, multiStakeholderEnabled]
+    () => getSidebarConfig(),
+    []
   );
 
   // Onboarding sidebar group fully removed — no gating computed here.
@@ -210,7 +201,6 @@ export function DashboardSidebar() {
 
   // ── Org type label for the badge ──
   const orgLabel = sidebarConfig.orgTypeLabel;
-  const orgName = activeOrg?.orgName;
 
   return (
     <aside
@@ -246,21 +236,15 @@ export function DashboardSidebar() {
       </div>
 
       {/* Org Badge — dynamic logo or dummy enterprise icon */}
-      {!collapsed && (orgName || logoUrl) && (
+      {logoUrl && !collapsed && (
         <div className="mx-3 mt-3 flex items-center gap-3 rounded-2xl border border-sidebar-border bg-sidebar-accent/40 px-3 py-2.5">
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt={orgName || "Organization"}
-              className="h-10 w-10 shrink-0 rounded-full object-cover bg-background ring-2 ring-primary/60"
-            />
-          ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-transparent ring-2 ring-primary">
-              <Building2 className="h-5 w-5 text-primary" />
-            </div>
-          )}
+          <img
+            src={logoUrl}
+            alt="Platform"
+            className="h-10 w-10 shrink-0 rounded-full object-cover bg-background ring-2 ring-primary/60"
+          />
           <div className="flex-1 min-w-0">
-            <p className="truncate text-sm font-semibold text-sidebar-foreground">{orgName || "Organization"}</p>
+            <p className="truncate text-sm font-semibold text-sidebar-foreground">Platform</p>
             <p className="truncate text-[10px] font-medium text-primary uppercase tracking-wide">{orgLabel}</p>
           </div>
         </div>
@@ -279,30 +263,24 @@ export function DashboardSidebar() {
       {/* Footer Section (user moved to top bar) */}
       <div className="border-t border-sidebar-border p-3">
         <div className="space-y-0.5">
-          {(() => {
-            const isPlatformAdmin = user?.role === 'platform_admin';
-            const supportLabel = isPlatformAdmin ? "Support & Incident" : "Ticketing & Support";
-            const supportHref = isPlatformAdmin ? "/support" : "/help";
-            const SupportIcon = isPlatformAdmin ? Headphones : Ticket;
-            return collapsed ? (
-              <TooltipWrapper content={supportLabel} side="right">
-                <NavLink
-                  to={supportHref}
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                >
-                  <SupportIcon className="h-[18px] w-[18px]" />
-                </NavLink>
-              </TooltipWrapper>
-            ) : (
+          {collapsed ? (
+            <TooltipWrapper content="Support & Incident" side="right">
               <NavLink
-                to={supportHref}
+                to="/support"
                 className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
               >
-                <SupportIcon className="h-[18px] w-[18px]" />
-                <span>{supportLabel}</span>
+                <Headphones className="h-[18px] w-[18px]" />
               </NavLink>
-            );
-          })()}
+            </TooltipWrapper>
+          ) : (
+            <NavLink
+              to="/support"
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+            >
+              <Headphones className="h-[18px] w-[18px]" />
+              <span>Support & Incident</span>
+            </NavLink>
+          )}
           {collapsed ? (
             <TooltipWrapper content="Sign Out" side="right">
               <button
@@ -326,6 +304,3 @@ export function DashboardSidebar() {
     </aside>
   );
 }
-
-
-

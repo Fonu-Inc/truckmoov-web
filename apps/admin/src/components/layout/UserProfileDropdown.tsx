@@ -25,34 +25,7 @@ export function UserProfileDropdown() {
   };
 
   const handleSettingsClick = () => {
-    if (user?.role === "platform_admin") {
-      navigate("/settings");
-    } else {
-      navigate("/admin/settings");
-    }
-  };
-
-  const getRoleLabel = (role?: string) => {
-    switch (role) {
-      case "platform_admin":
-        return "Platform Admin";
-      case "tenant_admin":
-        return "Admin";
-      case "operations_manager":
-        return "Operations Manager";
-      case "supervisor":
-        return "Supervisor";
-      case "dispatcher":
-        return "Dispatcher";
-      case "viewer_finance":
-        return "Finance";
-      case "driver":
-        return "Driver";
-      case "installer":
-        return "Installer";
-      default:
-        return "User";
-    }
+    navigate("/settings");
   };
 
   const getInitials = (name?: string) => {
@@ -77,7 +50,7 @@ export function UserProfileDropdown() {
               {user?.name || "User"}
             </span>
             <span className="text-[10px] font-medium text-primary truncate max-w-[140px]">
-              {getRoleLabel(user?.role)}
+              Platform Admin
             </span>
           </span>
         </Button>
@@ -90,7 +63,7 @@ export function UserProfileDropdown() {
               {user?.email || "user@example.com"}
             </p>
             <p className="text-xs leading-none text-muted-foreground mt-1">
-              {getRoleLabel(user?.role)}
+              Platform Admin
             </p>
           </div>
         </DropdownMenuLabel>
@@ -125,6 +98,5 @@ export function UserProfileDropdown() {
     </DropdownMenu>
   );
 }
-
 
 

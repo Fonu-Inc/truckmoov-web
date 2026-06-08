@@ -166,10 +166,10 @@ export default function TenantAdminDashboard() {
           <CardContent>
             <div className="flex gap-3 overflow-x-auto pb-2 -mb-2 snap-x snap-mandatory [scrollbar-width:thin]">
               {[
-                { title: "Manage Fleet", desc: "Vehicles, schedules, maintenance and fuel.", icon: Truck, cta: "Open fleet", to: "/admin/fleet" },
-                { title: "Manage Drivers", desc: "Driver roster, status, licenses and ratings.", icon: Users, cta: "Open drivers", to: "/admin/drivers" },
-                { title: "Create Job", desc: "Dispatch a new shipment to your fleet.", icon: Package, cta: "Open jobs", to: "/admin/jobs" },
-                { title: "View Analytics", desc: "Performance, utilization and trends.", icon: TrendingUp, cta: "Open analytics", to: "/admin/fleet?tab=analytics" },
+                { title: "Manage Fleet", desc: "Vehicles, schedules, maintenance and fuel.", icon: Truck, cta: "Open fleet", to: "/fleet" },
+                { title: "Manage Drivers", desc: "Driver roster, status, licenses and ratings.", icon: Users, cta: "Open drivers", to: "/drivers" },
+                { title: "Create Job", desc: "Dispatch a new shipment to your fleet.", icon: Package, cta: "Open jobs", to: "/jobs" },
+                { title: "View Analytics", desc: "Performance, utilization and trends.", icon: TrendingUp, cta: "Open analytics", to: "/fleet?tab=analytics" },
               ].map((qa) => (
                 <button
                   key={qa.title}
@@ -307,7 +307,7 @@ export default function TenantAdminDashboard() {
                 </CardTitle>
                 <CardDescription>Currently assigned and in-progress deliveries.</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/admin/jobs")}>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/jobs")}>
                 View All
               </Button>
             </CardHeader>
@@ -318,7 +318,7 @@ export default function TenantAdminDashboard() {
                   title="No active jobs"
                   description="All caught up! Create a new job when ready"
                   actionLabel="Create Job"
-                  onAction={() => navigate("/admin/jobs")}
+                  onAction={() => navigate("/jobs")}
                   className="py-8"
                 />
               ) : (

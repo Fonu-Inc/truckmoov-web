@@ -184,7 +184,7 @@ export function StoragePanel() {
                       ? `You're over the ${limitGB} GB storage limit on ${currentPlan?.name}. New uploads may be blocked — upgrade to add capacity.`
                       : `You've used ${percentage.toFixed(0)}% of your ${limitGB} GB storage. Consider upgrading soon to avoid disruption.`}
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => navigate("/admin/settings?tab=subscription")}>
+                  <Button size="sm" variant="outline" onClick={() => navigate("/settings?tab=subscription")}>
                     Upgrade plan
                   </Button>
                 </div>

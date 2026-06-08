@@ -24,10 +24,10 @@ async function resolveDashboardRoute(
     case "platform_admin": return "/";
     case "supervisor":
     case "dispatcher": return "/supervisor";
-    case "viewer_finance": return "/admin/fleet?tab=analytics";
-    case "installer": return "/admin/installation";
+    case "viewer_finance": return "/fleet?tab=analytics";
+    case "installer": return "/installation";
     case "driver": return "/driver";
-    default: return "/admin";
+    default: return "/";
   }
 }
 
@@ -40,21 +40,21 @@ interface QuickAction {
 }
 
 const FLEET_PROVIDER_ACTIONS: QuickAction[] = [
-  { id: "add-vehicle", title: "Add a vehicle", description: "Register vehicles you'll be managing.", icon: Truck, to: "/admin/fleet" },
-  { id: "add-driver", title: "Add a driver", description: "Invite drivers to receive job offers.", icon: Users, to: "/admin/drivers" },
-  { id: "request-sim", title: "Request a SIM", description: "Order MTN SIMs for your IoT devices.", icon: Smartphone, to: "/admin/sims" },
-  { id: "request-device", title: "Request a device", description: "Order IoT trackers from the platform.", icon: Cpu, to: "/admin/devices" },
-  { id: "invite-dispatchers", title: "Invite dispatchers", description: "Bring your dispatch team on board.", icon: Users, to: "/admin/users" },
-  { id: "live-map", title: "Open Live Map", description: "Track vehicles in real-time.", icon: Map, to: "/admin/map" },
-  { id: "maintenance", title: "Schedule maintenance", description: "Set service intervals to keep vehicles road-worthy.", icon: Wrench, to: "/admin/maintenance" },
-  { id: "settings", title: "Configure preferences", description: "Set timezone, currency and notification rules.", icon: SettingsIcon, to: "/admin/settings" },
+  { id: "add-vehicle", title: "Add a vehicle", description: "Register vehicles you'll be managing.", icon: Truck, to: "/fleet" },
+  { id: "add-driver", title: "Add a driver", description: "Invite drivers to receive job offers.", icon: Users, to: "/drivers" },
+  { id: "request-sim", title: "Request a SIM", description: "Order MTN SIMs for your IoT devices.", icon: Smartphone, to: "/sims" },
+  { id: "request-device", title: "Request a device", description: "Order IoT trackers from the platform.", icon: Cpu, to: "/devices" },
+  { id: "invite-dispatchers", title: "Invite dispatchers", description: "Bring your dispatch team on board.", icon: Users, to: "/users" },
+  { id: "live-map", title: "Open Live Map", description: "Track vehicles in real-time.", icon: Map, to: "/map" },
+  { id: "maintenance", title: "Schedule maintenance", description: "Set service intervals to keep vehicles road-worthy.", icon: Wrench, to: "/maintenance" },
+  { id: "settings", title: "Configure preferences", description: "Set timezone, currency and notification rules.", icon: SettingsIcon, to: "/settings" },
 ];
 
 const DISPATCHER_ACTIONS: QuickAction[] = [
-  { id: "create-jobs", title: "Create jobs", description: "Build and dispatch loads to drivers.", icon: ClipboardList, to: "/admin/jobs" },
-  { id: "assign-drivers", title: "Assign drivers", description: "Match drivers to active jobs.", icon: Users, to: "/admin/jobs" },
-  { id: "live-map", title: "Open Live Map", description: "Track vehicles in real-time.", icon: Map, to: "/admin/map" },
-  { id: "messages", title: "Open messaging", description: "Talk to drivers via SMS, voice or WhatsApp.", icon: Users, to: "/admin/messaging" },
+  { id: "create-jobs", title: "Create jobs", description: "Build and dispatch loads to drivers.", icon: ClipboardList, to: "/jobs" },
+  { id: "assign-drivers", title: "Assign drivers", description: "Match drivers to active jobs.", icon: Users, to: "/jobs" },
+  { id: "live-map", title: "Open Live Map", description: "Track vehicles in real-time.", icon: Map, to: "/map" },
+  { id: "messages", title: "Open messaging", description: "Talk to drivers via SMS, voice or WhatsApp.", icon: Users, to: "/messaging" },
 ];
 
 function getActionsFor(role: string | undefined): QuickAction[] {

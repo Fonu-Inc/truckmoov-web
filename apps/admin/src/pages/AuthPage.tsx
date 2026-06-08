@@ -3,6 +3,7 @@ import type { ChangeEvent } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck, Truck } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import * as z from "zod";
 
@@ -17,6 +18,7 @@ import {
   FormMessage,
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
+import { useAuthStore } from "@/stores/authStore";
 import { AuthBrandingPanel } from "@truckmoov/reusables/components/layouts/AuthBrandingPanel";
 
 const adminSignInSchema = z.object({
@@ -85,6 +87,7 @@ function PasswordFieldControl({
 
 export default function AuthPage() {
   const systemLogin = useSystemLogin();
+  const navigate = useNavigate();
 
   const form = useForm<AdminSignInFormValues>({
     resolver: zodResolver(adminSignInSchema),
@@ -103,8 +106,10 @@ export default function AuthPage() {
         }
       },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
+          await useAuthStore.getState().bootstrapFromSession();
           toast.success("System login request completed.");
+          navigate("/", { replace: true });
         },
         onError: (error) => {
           toast.error(error.message);

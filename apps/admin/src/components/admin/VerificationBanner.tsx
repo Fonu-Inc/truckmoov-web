@@ -62,7 +62,7 @@ export function VerificationBanner() {
         <div className="flex items-center gap-2">
           <Button 
             size="sm" 
-            onClick={() => navigate("/admin/settings")}
+            onClick={() => navigate("/settings")}
             className="whitespace-nowrap"
           >
             Start Verification

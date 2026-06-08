@@ -333,7 +333,7 @@ export function SubscriptionInvoicesPanel() {
   };
 
   const handleCopyLink = (inv: SubscriptionInvoice) => {
-    const link = `${window.location.origin}/admin/settings?tab=subscription&invoice=${inv.invoiceNumber}`;
+    const link = `${window.location.origin}/settings?tab=subscription&invoice=${inv.invoiceNumber}`;
     navigator.clipboard?.writeText(link).then(
       () => toast.success("Invoice link copied to clipboard"),
       () => toast.error("Failed to copy link"),

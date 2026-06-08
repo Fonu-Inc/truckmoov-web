@@ -4,15 +4,12 @@ import { Button } from "@/components/shadcn/button";
 import { NotificationCenter } from "@/components/platform/NotificationCenter";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import { UserProfileDropdown } from "./UserProfileDropdown";
-import { OrgSwitcher } from "./OrgSwitcher";
 import { ShortcutTooltip } from "@/components/shadcn/shortcut-tooltip";
 import { SHORTCUTS, useGlobalShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { KeyboardShortcutsDialog } from "@/components/KeyboardShortcutsDialog";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSidebarStore } from "@/stores/sidebarStore";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useAuthStore } from "@/stores/authStore";
-import { useActiveOrgStore } from "@/stores/activeOrgStore";
+import { useLocation } from "react-router-dom";
 import { getSidebarConfig, isNavGroup } from "@/lib/sidebarConfig";
 
 interface DashboardHeaderProps {
@@ -35,17 +32,12 @@ export function DashboardHeader({ title, onRefresh }: DashboardHeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const { collapsed, toggle } = useSidebarStore();
-  const navigate = useNavigate();
 
   // ── Sync top-bar title with the active sidebar entry's label ──
   const location = useLocation();
-  const { user } = useAuthStore();
-  const { resolveActiveOrg } = useActiveOrgStore();
-  const activeOrg = resolveActiveOrg([]);
-  const multiStakeholderEnabled = false;
 
   const sidebarTitle = useMemo(() => {
-    const config = getSidebarConfig(user, activeOrg, multiStakeholderEnabled);
+    const config = getSidebarConfig();
     const path = location.pathname;
     // Find the deepest matching entry (prefer exact, then longest-prefix)
     let best: { label: string; len: number } | null = null;
@@ -62,7 +54,7 @@ export function DashboardHeader({ title, onRefresh }: DashboardHeaderProps) {
       }
     }
     return best?.label ?? title;
-  }, [user, activeOrg, multiStakeholderEnabled, location.pathname, title]);
+  }, [location.pathname, title]);
 
   useGlobalShortcuts({
     onSearch: () => {
@@ -99,8 +91,6 @@ export function DashboardHeader({ title, onRefresh }: DashboardHeaderProps) {
       </div>
 
       <div className="flex items-center gap-1.5">
-        <OrgSwitcher />
-
         {/* Dynamic Search */}
         <div className="hidden md:flex items-center">
           {searchOpen ? (
@@ -163,6 +153,3 @@ export function DashboardHeader({ title, onRefresh }: DashboardHeaderProps) {
     </header>
   );
 }
-
-
-

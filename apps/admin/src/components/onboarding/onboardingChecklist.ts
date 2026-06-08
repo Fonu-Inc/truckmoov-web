@@ -36,7 +36,7 @@ const KYC_GROUP: OnboardingGroup = {
   icon: ShieldCheck,
   priority: true,
   actions: [
-    { id: "start-kyc", label: "Start KYC", to: "/admin/settings?tab=kyc" },
+    { id: "start-kyc", label: "Start KYC", to: "/settings?tab=kyc" },
   ],
 };
 
@@ -56,8 +56,8 @@ export function getOnboardingGroups(
       hint: "See how your fleet is performing day to day",
       icon: BarChart3,
       actions: [
-        { id: "view-analytics", label: "View Analytics", to: "/admin/analytics" },
-        { id: "monitor-performance", label: "Monitor Performance", to: "/admin/dashboard" },
+        { id: "view-analytics", label: "View Analytics", to: "/analytics" },
+        { id: "monitor-performance", label: "Monitor Performance", to: "/dashboard" },
       ],
     });
     return groups;
@@ -71,8 +71,8 @@ export function getOnboardingGroups(
       hint: "Create jobs and assign them to drivers",
       icon: ClipboardList,
       actions: [
-        { id: "create-jobs", label: "Create Jobs", to: "/admin/jobs" },
-        { id: "assign-drivers", label: "Assign Drivers", to: "/admin/jobs" },
+        { id: "create-jobs", label: "Create Jobs", to: "/jobs" },
+        { id: "assign-drivers", label: "Assign Drivers", to: "/jobs" },
       ],
     });
     return groups;
@@ -85,9 +85,9 @@ export function getOnboardingGroups(
     hint: "Add the vehicles and drivers you'll be managing",
     icon: Truck,
     actions: [
-      { id: "add-vehicles", label: "Add Vehicles", to: "/admin/fleet" },
-      { id: "assign-drivers", label: "Assign Drivers", to: "/admin/drivers" },
-      { id: "invite-dispatchers", label: "Invite Dispatchers", to: "/admin/users" },
+      { id: "add-vehicles", label: "Add Vehicles", to: "/fleet" },
+      { id: "assign-drivers", label: "Assign Drivers", to: "/drivers" },
+      { id: "invite-dispatchers", label: "Invite Dispatchers", to: "/users" },
     ],
   });
 

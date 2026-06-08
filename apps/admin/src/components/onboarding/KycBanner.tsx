@@ -40,7 +40,7 @@ export function KycBanner() {
   const awaitingApproval =
     status === "under_review" || (isSubmitted && status !== "rejected");
 
-  const goToKyc = () => navigate("/admin/settings?tab=kyc");
+  const goToKyc = () => navigate("/settings?tab=kyc");
 
   // Awaiting-approval state keeps the original tone (it is informational, not urgent)
   if (awaitingApproval) {

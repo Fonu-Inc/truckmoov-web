@@ -317,7 +317,7 @@ export default function DispatcherLiveMap() {
           title="No vehicles to track"
           description="Add vehicles to your fleet to start dispatching"
           actionLabel="View Fleet"
-          actionHref="/admin/fleet"
+          actionHref="/fleet"
         />
       </DashboardLayout>
     );

@@ -88,7 +88,7 @@ export function StorageUsageCard({ className }: { className?: string }) {
                   size="sm"
                   variant="ghost"
                   className="h-6 text-xs"
-                  onClick={() => navigate("/admin/settings?tab=billing")}
+                  onClick={() => navigate("/settings?tab=billing")}
                 >
                   Upgrade
                 </Button>

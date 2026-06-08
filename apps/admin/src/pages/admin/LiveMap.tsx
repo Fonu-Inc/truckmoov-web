@@ -109,7 +109,7 @@ export default function LiveMap() {
           title="No vehicles to track"
           description="Add vehicles to your fleet to see them on the live map"
           actionLabel="Add Vehicle"
-          actionHref="/admin/fleet"
+          actionHref="/fleet"
         />
       </DashboardLayout>
     );

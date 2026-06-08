@@ -1582,7 +1582,7 @@ export default function Reports() {
           title="No data for reports"
           description="Add vehicles, drivers, and jobs to generate reports"
           actionLabel="Go to Fleet"
-          actionHref="/admin/fleet"
+          actionHref="/fleet"
         />
       </DashboardLayout>
     );

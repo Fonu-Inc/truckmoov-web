@@ -126,7 +126,7 @@ export default function DispatcherSIMs() {
       toast.error("KYC Verification Required", {
         description: "Complete your business verification before requesting SIM cards.",
       });
-      navigate("/admin/settings");
+      navigate("/settings");
       return;
     }
     setIsRequestDialogOpen(true);

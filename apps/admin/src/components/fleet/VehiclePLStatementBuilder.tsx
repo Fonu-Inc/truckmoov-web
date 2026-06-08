@@ -62,7 +62,7 @@ export function VehiclePLStatementBuilder({ open, onOpenChange, data, vehicleNam
         jobs: d.revenue?.jobs_completed || 0,
         km: d.revenue?.total_km || 0 })) };
     sessionStorage.setItem("vpl_statement_preview", JSON.stringify(payload));
-    window.open("/admin/fleet/pl-statement", "_blank");
+    window.open("/fleet/pl-statement", "_blank");
   };
 
   return (
