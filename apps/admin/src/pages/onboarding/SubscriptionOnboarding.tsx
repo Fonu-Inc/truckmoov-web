@@ -220,7 +220,7 @@ export default function SubscriptionOnboarding() {
     toast.success("Subscription activated", {
       description: `${picked.name} plan is now active. Welcome aboard!`,
     });
-    navigate("/onboarding/kyc");
+    navigate("/");
   };
 
   return (
@@ -464,6 +464,5 @@ export default function SubscriptionOnboarding() {
     </OnboardingLayout>
   );
 }
-
 
 

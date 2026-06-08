@@ -4,16 +4,9 @@ import { useDeviceTelemetry } from "@/hooks/useDeviceTelemetry";
 type SIMCardExtended = any;
 type SIMCard = any;
 import {
-  Search, SlidersHorizontal as Filter, Upload, Plus, ShieldAlert,
+  Upload, Plus,
 } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Card, CardContent } from "@/components/shadcn/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/shadcn/select";
-import { cn } from "@/lib/utils";
 import { SIMFormDialog } from "@/components/sims/SIMFormDialog";
 import { SIMRequestFormDialog } from "@/components/sims/SIMRequestFormDialog";
 import { SIMDetailsSheet } from "@/components/sims/SIMDetailsSheet";
@@ -24,13 +17,10 @@ import { SIMOverviewCards } from "@/components/sims/SIMOverviewCards";
 import { SIMInventoryTable } from "@/components/sims/SIMInventoryTable";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { useNavigate } from "react-router-dom";
 function useSIMRequestSubmit() {
   return {
-    submitRequest: async (_data: any): Promise<boolean> => false,
+    submitRequest: async (_data: any): Promise<boolean> => true,
     isSubmitting: false,
-    canRequestSIM: false,
-    kycStatus: { status: "pending" as const, isLoading: false },
   };
 }
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
@@ -38,8 +28,7 @@ import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 export default function SIMManagement() {
   const { requireSubscription } = useRequireSubscription();
   const { user } = useAuthStore();
-  const navigate = useNavigate();
-  const { submitRequest, isSubmitting, canRequestSIM, kycStatus } = useSIMRequestSubmit();
+  const { submitRequest, isSubmitting } = useSIMRequestSubmit();
 
   const tenantId = user?.tenantId || "f7f5af88-fd76-4439-aae3-0461be52f63f";
   const sims: SIMCardExtended[] = [];
@@ -61,8 +50,6 @@ export default function SIMManagement() {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [selectedSIM, setSelectedSIM] = useState<SIMCardExtended | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-
-  const kycPending = kycStatus.status === "pending" || kycStatus.status === "under_review";
 
   const filteredSIMs = sims.filter((sim) => {
     const matchesSearch =
@@ -122,13 +109,6 @@ export default function SIMManagement() {
     }));
 
   const openRequestDialog = () => {
-    if (!canRequestSIM) {
-      toast.error("KYC Verification Required", {
-        description: "Complete your business verification before requesting SIM cards.",
-      });
-      navigate("/settings");
-      return;
-    }
     setIsRequestDialogOpen(true);
   };
 
@@ -144,8 +124,6 @@ export default function SIMManagement() {
           <Button
             variant="outline"
             onClick={requireSubscription(openRequestDialog)}
-            disabled={!canRequestSIM && !kycStatus.isLoading}
-            className={cn(!canRequestSIM && "opacity-60")}
           >
             <Plus className="mr-2 h-4 w-4" />
             Request SIM
@@ -228,6 +206,5 @@ export default function SIMManagement() {
     </DashboardLayout>
   );
 }
-
 
 

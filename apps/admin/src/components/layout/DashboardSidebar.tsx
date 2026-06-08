@@ -64,8 +64,7 @@ export function DashboardSidebar() {
       };
     });
 
-    // "Get Started" sidebar group intentionally removed — onboarding guidance
-    // is delivered via the persistent KycBanner and contextual redirects only.
+    // "Get Started" sidebar group intentionally removed.
     return baseEntries;
   }, [sidebarConfig, unreadCount, jobOfferCount]);
 

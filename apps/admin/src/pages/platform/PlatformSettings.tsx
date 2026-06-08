@@ -591,7 +591,7 @@ export default function PlatformSettings() {
                         <FormItem>
                           <FormLabel>Platform Name</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input {...field} disabled />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -604,7 +604,7 @@ export default function PlatformSettings() {
                         <FormItem>
                           <FormLabel>Support Email</FormLabel>
                           <FormControl>
-                            <Input type="email" {...field} />
+                            <Input type="email" {...field} disabled />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

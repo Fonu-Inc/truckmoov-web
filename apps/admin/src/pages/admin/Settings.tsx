@@ -40,14 +40,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/shadcn/dialog";
-import { 
+import {
   Building2, Bell, Users, Plug, Save, Upload, Plus,
   MoreHorizontal, Pencil, Trash2, Mail, Phone, Clock, MapPin,
-  CheckCircle, XCircle, FileCheck, Bot, Wrench, CreditCard, BarChart3, Palette, Receipt, HardDrive
+  CheckCircle, XCircle, Bot, Wrench, CreditCard, BarChart3, Palette, Receipt, HardDrive
 } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { toast } from "sonner";
-import { TenantKYCVerification } from "@/components/platform/TenantKYCVerification";
 import { TenantAIConfigPanel } from "@/components/settings/TenantAIConfigPanel";
 import { AIUsageAnalyticsPanel } from "@/components/settings/AIUsageAnalyticsPanel";
 import { MaintenanceConfigPanel } from "@/components/fleet/MaintenanceConfigPanel";
@@ -333,10 +332,6 @@ export default function Settings() {
             <Receipt className="h-4 w-4" />
             <span className="hidden sm:inline">Invoicing</span>
           </TabsTrigger>
-          <TabsTrigger value="kyc" className="flex items-center gap-2">
-            <FileCheck className="h-4 w-4" />
-            <span className="hidden sm:inline">KYC</span>
-          </TabsTrigger>
           <TabsTrigger value="fleet" className="flex items-center gap-2">
             <Wrench className="h-4 w-4" />
             <span className="hidden sm:inline">Fleet</span>
@@ -502,11 +497,6 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-        </TabsContent>
-
-        {/* KYC Verification Tab */}
-        <TabsContent value="kyc" className="space-y-6">
-          <TenantKYCVerification tenantId={user?.tenantId || ''} />
         </TabsContent>
 
         <TabsContent value="invoicing" className="space-y-6">
@@ -938,6 +928,5 @@ export default function Settings() {
     </DashboardLayout>
   );
 }
-
 
 

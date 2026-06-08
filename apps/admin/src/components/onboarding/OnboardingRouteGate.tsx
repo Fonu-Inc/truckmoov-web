@@ -5,16 +5,11 @@ interface OnboardingRouteGateProps {
 }
 
 /**
- * Soft gate: never blocks navigation. Until KYC + Subscription are complete
- * the user can browse every screen in read-only mode. Write actions remain
- * gated at the action/button level (and the persistent KycBanner +
- * onboarding modals keep nudging the user toward completion).
- *
- * Bypassed for demo users and platform admins.
+ * Compatibility wrapper for routes that still use the tenant onboarding layout.
+ * The admin app does not gate navigation or actions for internal staff.
  */
 export function OnboardingRouteGate({ children }: OnboardingRouteGateProps) {
   return <>{children}</>;
 }
-
 
 

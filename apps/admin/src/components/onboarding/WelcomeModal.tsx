@@ -15,10 +15,7 @@ export function WelcomeModal() {
     // Dismiss first so the modal closes immediately and is never shown again
     // for this activation (WELCOME_SEEN is persisted in localStorage).
     dismissWelcome();
-    // Defer navigation by a tick so the dialog close transition starts cleanly
-    // and we never end up with the modal flickering back open during the route
-    // change.
-    setTimeout(() => navigate("/onboarding/subscription"), 0);
+    setTimeout(() => navigate("/"), 0);
   };
 
   return (
@@ -46,7 +43,6 @@ export function WelcomeModal() {
 
             <Button
               onClick={handleGetStarted}
-              data-allow-no-kyc
               data-allow-no-subscription
               className="h-11 rounded-full px-10 text-base font-semibold shadow-md"
             >
@@ -109,6 +105,5 @@ function ConstellationBottomLeft() {
     </svg>
   );
 }
-
 
 

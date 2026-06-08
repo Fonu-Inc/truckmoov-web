@@ -21,7 +21,6 @@ const SUB_MODAL_OPEN_KEY = "fleetpro_sub_modal_open";
 const PLAN_KEY = "fleetpro_selected_plan";
 const QUESTIONNAIRE_DONE_KEY = "fleetpro_questionnaire_done";
 const QUESTIONNAIRE_ANSWERS_KEY = "fleetpro_questionnaire_answers";
-const KYC_SKIPPED_KEY = "fleetpro_kyc_skipped";
 /** Mocked "registered emails that already have a password set". */
 const KNOWN_EMAILS_KEY = "fleetpro_known_emails";
 
@@ -39,7 +38,6 @@ const PERSISTENT_KEYS = new Set<string>([
   KNOWN_EMAILS_KEY,
   QUESTIONNAIRE_DONE_KEY,
   QUESTIONNAIRE_ANSWERS_KEY,
-  KYC_SKIPPED_KEY,
 ]);
 
 const ONBOARDING_WINDOW_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
@@ -189,8 +187,6 @@ interface OnboardingState {
   selectedPlan: string | null;
   /** Saved answers from the role-based questionnaire. */
   questionnaireAnswers: Record<string, string | string[]>;
-  /** True once the user has explicitly skipped the Verify Business step. */
-  kycSkipped: boolean;
 
   /** Called after first-time password creation. Queues Welcome modal. */
   startActivation: () => void;
@@ -220,8 +216,6 @@ interface OnboardingState {
   completeQuestionnaire: () => void;
   /** Re-evaluate visibility (e.g. after time passes / on focus). */
   refreshVisibility: () => void;
-  /** Mark KYC step as explicitly skipped (activates the persistent KYC banner). */
-  markKycSkipped: () => void;
   /** Wipe everything — call on logout. */
   reset: () => void;
 }
@@ -262,12 +256,6 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
   clickedActions: [],
   selectedPlan: readString(PLAN_KEY),
   questionnaireAnswers: readJsonObject(QUESTIONNAIRE_ANSWERS_KEY),
-  kycSkipped: readBool(KYC_SKIPPED_KEY),
-
-  markKycSkipped: () => {
-    writeBool(KYC_SKIPPED_KEY, true);
-    set({ kycSkipped: true });
-  },
 
   startActivation: () => {
     const now = Date.now();
@@ -282,7 +270,6 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
     writeStringSet(COMPLETED_ACTIONS_KEY, []);
     // Clear any leftover plan selection from a previous demo session.
     writeString(PLAN_KEY, null);
-    writeBool(KYC_SKIPPED_KEY, false);
     set({
       isNewUser: true,
       onboardingDone: false,
@@ -295,7 +282,6 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
       completedSteps: [],
       clickedActions: [],
       selectedPlan: null,
-      kycSkipped: false,
     });
   },
   openChecklist: () => {
@@ -411,7 +397,6 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
     writeJsonObject(QUESTIONNAIRE_ANSWERS_KEY, {});
     writeStringSet(COMPLETED_ACTIONS_KEY, []);
     writeString(PLAN_KEY, null);
-    writeBool(KYC_SKIPPED_KEY, false);
     set({
       isNewUser: false,
       onboardingDone: false,
@@ -425,10 +410,6 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
       completedSteps: [],
       clickedActions: [],
       selectedPlan: null,
-      kycSkipped: false,
     });
   },
 }));
-
-
-

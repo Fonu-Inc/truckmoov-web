@@ -1,7 +1,6 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { VerificationBanner } from "@/components/admin/VerificationBanner";
 import { TrialBanner } from "@/components/admin/TrialBanner";
 import { useDrivers } from "@/hooks/useDrivers";
 import { useState } from "react";
@@ -153,9 +152,7 @@ export default function TenantAdminDashboard() {
       subtitle={`${tenantName} - Overview`}
     >
       <div className="space-y-6">
-        {/* Verification Banner */}
         <TrialBanner />
-        <VerificationBanner />
 
         {/* Quick Actions container with descriptive cards (horizontal scroll) */}
         <Card>
@@ -421,6 +418,5 @@ export default function TenantAdminDashboard() {
     </DashboardLayout>
   );
 }
-
 
 
