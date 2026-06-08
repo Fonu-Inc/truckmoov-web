@@ -50,6 +50,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+import { getSystemTenantQueryOptions, useUpdateTenantStatus } from "@truckmoov/api/auth";
 
 interface TenantDetailsSheetProps {
   tenant: TenantData | null;
@@ -66,6 +67,14 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
   const { currency } = useCurrency();
   const queryClient = useQueryClient();
   const [terminateOpen, setTerminateOpen] = useState(false);
+  const updateStatusMutation = useUpdateTenantStatus();
+
+  // Fetch fresh tenant detail when the sheet opens
+  const detailQuery = useQuery({
+    ...getSystemTenantQueryOptions(tenant?.id ?? ''),
+    enabled: open && !!tenant?.id,
+  });
+  const detail = detailQuery.data?.data as Record<string, unknown> | undefined;
 
   // Fetch Owner-Operator orgs under this tenant for vehicle cap management
   const { data: ooOrgs = [] } = useQuery({
@@ -284,11 +293,12 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
               <span>{tenant.name}</span>
             </div>
             <div className="flex items-center gap-2">
-              {tenant.status === "suspended" || tenant.status === "inactive" ? (
+              {tenant.status === "suspended" ? (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => { toast.info('Coming soon'); }}
+                  disabled={updateStatusMutation.isPending}
+                  onClick={() => updateStatusMutation.mutate({ id: tenant.id, data: { status: "active" } })}
                   className="gap-2 border-success/40 text-success hover:bg-success/10"
                 >
                   <CheckCircle className="h-4 w-4" />
@@ -298,7 +308,8 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => { toast.info('Coming soon'); }}
+                  disabled={updateStatusMutation.isPending}
+                  onClick={() => updateStatusMutation.mutate({ id: tenant.id, data: { status: "suspended" } })}
                   className="gap-2 border-warning/40 text-warning hover:bg-warning/10"
                 >
                   <Clock className="h-4 w-4" />
@@ -366,13 +377,21 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Subscription Plan</p>
-                    <Badge className={planDetails[tenant.plan].color}>
-                      {planDetails[tenant.plan].name}
-                    </Badge>
+                    {detailQuery.isLoading && !detail ? (
+                      <div className="h-5 w-20 rounded bg-muted animate-pulse" />
+                    ) : (
+                      <Badge className={planDetails[(detail?.plan as keyof typeof planDetails) ?? tenant.plan]?.color ?? planDetails[tenant.plan].color}>
+                        {planDetails[(detail?.plan as keyof typeof planDetails) ?? tenant.plan]?.name ?? planDetails[tenant.plan].name}
+                      </Badge>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Tenant Status</p>
-                    {getStatusBadge(tenant.status)}
+                    {detailQuery.isLoading && !detail ? (
+                      <div className="h-5 w-16 rounded bg-muted animate-pulse" />
+                    ) : (
+                      getStatusBadge(String(detail?.status ?? tenant.status))
+                    )}
                   </div>
                 </div>
                 <Separator />
@@ -434,12 +453,12 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      {tenant.email}
+                      {String(detail?.email ?? tenant.email)}
                     </div>
-                    {tenant.phone && (
+                    {(detail?.phone ?? tenant.phone) && (
                       <div className="flex items-center gap-2 text-sm">
                         <Phone className="h-4 w-4 text-muted-foreground" />
-                        {tenant.phone}
+                        {String(detail?.phone ?? tenant.phone)}
                       </div>
                     )}
                     {fullAddress && (

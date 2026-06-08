@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Badge } from "@/components/shadcn/badge";
-import { Label } from "@/components/shadcn/label";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
@@ -13,13 +12,6 @@ import {
   TableHead,
   TableHeader,
   TableRow } from "@/components/shadcn/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter } from "@/components/shadcn/dialog";
 import {
   Select,
   SelectContent,
@@ -32,15 +24,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle } from "@/components/shadcn/alert-dialog";
 import {
   Building2,
   Search,
@@ -73,24 +56,25 @@ import {
   Smartphone,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown } from "lucide-react";
+  ArrowDown,
+  Download } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { toast } from "sonner";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { TenantOnboardingWizard } from "@/components/platform/TenantOnboardingWizard";
-import { ExportButton } from "@/components/shadcn/export-button";
+import { TenantEditDialog } from "@/components/platform/TenantEditDialog";
 import {
   PlatformFilterPopover,
   buildEmptyDraft,
   type FilterField,
   type FilterDraft } from "@/components/shadcn/platform-filter-popover";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getSystemTenantsQueryOptions,
   getSystemTenantsSummaryQueryOptions,
+  getSystemTenantsExportQueryOptions,
   useUpdateTenantStatus,
-  useUpdateTenant,
-  useDeleteTenant,
+  useResendTenantInvite,
 } from "@truckmoov/api/auth";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import { TenantDetailsSheet } from "@/components/platform/TenantDetailsSheet";
@@ -193,9 +177,10 @@ export default function PlatformTenants() {
   const { currency, format } = useCurrency();
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications, addNotification } = useRealtimeNotifications();
 
+  const queryClient = useQueryClient();
   const updateTenantStatusMutation = useUpdateTenantStatus();
-  const updateTenantMutation = useUpdateTenant();
-  const deleteTenantMutation = useDeleteTenant();
+  const resendTenantInviteMutation = useResendTenantInvite();
+  const [isExporting, setIsExporting] = useState(false);
 
   // Filter state declared before the query so params can be wired
   const [searchQuery, setSearchQuery] = useState("");
@@ -238,7 +223,6 @@ export default function PlatformTenants() {
   const [isDbDetailsSheetOpen, setIsDbDetailsSheetOpen] = useState(false);
   const [isDbEditDialogOpen, setIsDbEditDialogOpen] = useState(false);
   const [deleteConfirmDbTenant, setDeleteConfirmDbTenant] = useState<TenantData | null>(null);
-  const [dbFormData, setDbFormData] = useState<Partial<TenantData>>({});
 
   // Sorting state
   type SortKey = "name" | "orgType" | "plan" | "status" | "vehicleCount" | "simCount" | "monthlyRevenueNgn" | "lastActiveAt";
@@ -411,45 +395,41 @@ export default function PlatformTenants() {
 
   const handleOpenDbEdit = (tenant: TenantData) => {
     setSelectedDbTenant(tenant);
-    setDbFormData({
-      name: tenant.name,
-      email: tenant.email,
-      phone: tenant.phone,
-      address: tenant.address,
-      billingEmail: tenant.billingEmail,
-      plan: tenant.plan });
     setIsDbEditDialogOpen(true);
   };
 
-  const handleEditDbTenant = async () => {
-    if (!selectedDbTenant || !dbFormData.name || !dbFormData.email) {
-      toast.error("Name and email are required");
-      return;
-    }
-
+  const handleResendInvitation = async (tenant: TenantData) => {
     try {
-      await updateTenantMutation.mutateAsync({
-        id: selectedDbTenant.id,
-        data: {
-          name: dbFormData.name,
-          email: dbFormData.email,
-          phone: dbFormData.phone || null,
-          address: dbFormData.address || null,
-          billingEmail: dbFormData.billingEmail || null,
-          plan: dbFormData.plan,
-        },
-      });
-      setIsDbEditDialogOpen(false);
-      setSelectedDbTenant(null);
-      setDbFormData({});
+      await resendTenantInviteMutation.mutateAsync({ id: tenant.id });
+      toast.success(`Invitation resent to ${tenant.name}`);
     } catch {
-      // Error handled by react-query
+      // error handled by react-query
     }
   };
 
-  const handleResendInvitation = async (_tenant: TenantData) => {
-    toast.info('Coming soon');
-    return;
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const blob = await queryClient.fetchQuery(
+        getSystemTenantsExportQueryOptions({
+          params: {
+            ...(debouncedSearch ? { search: debouncedSearch } : {}),
+            ...(apiStatus ? { status: apiStatus } : {}),
+            ...(apiPlan ? { plan: apiPlan } : {}),
+          },
+        })
+      );
+      const url = URL.createObjectURL(blob as Blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "tenants.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Export failed");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
 
@@ -520,24 +500,10 @@ export default function PlatformTenants() {
                   Complete directory of tenant organizations with plan, KYC status, fleet size, and revenue.
                 </CardDescription>
               </div>
-              <ExportButton
-                filename="tenants"
-                rows={sortedDbTenants}
-                columns={[
-                  { header: "Name", accessor: (t) => t.name },
-                  { header: "Primary Contact", accessor: (t) => t.primaryContactName || "" },
-                  { header: "Email", accessor: (t) => t.email },
-                  { header: "Plan", accessor: (t) => t.plan },
-                  { header: "Status", accessor: (t) => t.status },
-                  { header: "KYC", accessor: (t) => t.businessInfo?.verificationStatus || "pending" },
-                  { header: "Vehicles", accessor: (t) => t.vehicleCount },
-                  { header: "Drivers", accessor: (t) => t.driverCount },
-                  { header: "Devices", accessor: (t) => t.deviceCount },
-                  { header: "SIMs", accessor: (t) => t.simCount },
-                  { header: "Revenue (NGN)", accessor: (t) => t.monthlyRevenueNgn || 0 },
-                  { header: "Last Active", accessor: (t) => t.lastActiveAt || "" },
-                ]}
-              />
+              <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
+                <Download className="h-4 w-4 mr-2" />
+                {isExporting ? "Exporting…" : "Export Data"}
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
@@ -796,14 +762,6 @@ export default function PlatformTenants() {
                                   <CheckCircle className="h-4 w-4 mr-2" />
                                   Activate
                                 </DropdownMenuItem>
-                              ) : tenant.status === "pending" ? (
-                                <DropdownMenuItem
-                                  onClick={() => handleDbTenantStatusChange(tenant, "active")}
-                                  className="text-success"
-                                >
-                                  <CheckCircle className="h-4 w-4 mr-2" />
-                                  Activate
-                                </DropdownMenuItem>
                               ) : null}
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
@@ -840,82 +798,11 @@ export default function PlatformTenants() {
       />
 
       {/* Edit DB Tenant Dialog */}
-      <Dialog open={isDbEditDialogOpen} onOpenChange={setIsDbEditDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit Tenant</DialogTitle>
-            <DialogDescription>
-              Update tenant information and subscription plan
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="db-name">Company Name *</Label>
-              <Input
-                id="db-name"
-                value={dbFormData.name || ""}
-                onChange={(e) => setDbFormData(prev => ({ ...prev, name: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="db-email">Email *</Label>
-              <Input
-                id="db-email"
-                type="email"
-                value={dbFormData.email || ""}
-                onChange={(e) => setDbFormData(prev => ({ ...prev, email: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="db-phone">Phone</Label>
-              <Input
-                id="db-phone"
-                value={dbFormData.phone || ""}
-                onChange={(e) => setDbFormData(prev => ({ ...prev, phone: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="db-address">Address</Label>
-              <Input
-                id="db-address"
-                value={dbFormData.address || ""}
-                onChange={(e) => setDbFormData(prev => ({ ...prev, address: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="db-billing-email">Billing Email</Label>
-              <Input
-                id="db-billing-email"
-                type="email"
-                value={dbFormData.billingEmail || ""}
-                onChange={(e) => setDbFormData(prev => ({ ...prev, billingEmail: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Subscription Plan</Label>
-              <Select
-                value={dbFormData.plan || "starter"}
-                onValueChange={(value) => setDbFormData(prev => ({ ...prev, plan: value as TenantData["plan"] }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="starter">Starter</SelectItem>
-                  <SelectItem value="professional">Professional</SelectItem>
-                  <SelectItem value="enterprise">Enterprise</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDbEditDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleEditDbTenant}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <TenantEditDialog
+        tenant={selectedDbTenant}
+        open={isDbEditDialogOpen}
+        onOpenChange={setIsDbEditDialogOpen}
+      />
 
       {/* Terminate DB Tenant Confirmation */}
       {deleteConfirmDbTenant && (

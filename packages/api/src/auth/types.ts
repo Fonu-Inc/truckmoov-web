@@ -90,6 +90,20 @@ export type UpdateDispatchPrefsPayload = {
 
 // ─── Organization admin ───────────────────────────────────────────────────────
 
+export type ResendOrgInvitePayload = {
+  data: {
+    email: string
+  }
+}
+
+export type RegisterInvitedPayload = {
+  data: {
+    inviteToken: string
+    fullName: string
+    password: string
+  }
+}
+
 export type InviteUserPayload = {
   data: {
     email: string
@@ -161,6 +175,26 @@ export type UpdateAdminStatusPayload = {
 
 export type CreateSystemAdminInvitePayload = {
   data: Record<string, unknown>
+}
+
+// ─── System admin — devices & SIMs ───────────────────────────────────────────
+
+export type SystemDevicesQuery = {
+  params?: {
+    search?: string
+    manufacturer?: string
+    status?: string
+    lifecycleStatus?: string
+  }
+}
+
+export type SystemSimsQuery = {
+  params?: {
+    search?: string
+    status?: string
+    carrier?: string
+    tenantId?: string
+  }
 }
 
 // ─── System admin — tenants ───────────────────────────────────────────────────

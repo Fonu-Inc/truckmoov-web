@@ -4,6 +4,12 @@ import { useAuthStore } from '../lib/auth-store'
 import { queryClient } from '../lib/query-client'
 import {
   approveSIMRequest,
+  exportSystemDevices,
+  exportSystemSims,
+  exportSystemTenants,
+  getAuthHealth,
+  getSubscriptionPlans,
+  getTestSentry,
   changeRole,
   completeProfile,
   createDeviceCatalogEntry,
@@ -78,7 +84,7 @@ import {
   verifyEmail,
   verifyReset,
 } from './requests'
-import type { ActivityLogQuery, SystemTenantsQuery } from './types'
+import type { ActivityLogQuery, SystemDevicesQuery, SystemSimsQuery, SystemTenantsQuery } from './types'
 
 export type {
   ActivityLogQuery,
@@ -99,8 +105,12 @@ export type {
   LoginPayload,
   LogoutPayload,
   RefreshPayload,
+  RegisterInvitedPayload,
   RegisterPayload,
   RejectSIMRequestPayload,
+  ResendOrgInvitePayload,
+  SystemDevicesQuery,
+  SystemSimsQuery,
   ResetPasswordPayload,
   RetrySimBatchPayload,
   SystemChangePasswordPayload,
@@ -136,7 +146,7 @@ export const AUTH_QUERY_KEY = {
   organizationSettings: ['organizationSettings'],
   systemAdmins: ['systemAdmins'],
   systemAdminInvites: ['systemAdminInvites'],
-  systemTenants: (payload?: SystemTenantsQuery) => ['systemTenants', payload],
+  systemTenants: (payload?: SystemTenantsQuery) => payload ? ['systemTenants', payload] : ['systemTenants'],
   systemTenant: (id: string) => ['systemTenant', id],
   systemTenantsSummary: ['systemTenantsSummary'],
   systemDevices: ['systemDevices'],
@@ -157,6 +167,9 @@ export const AUTH_QUERY_KEY = {
   systemSupportTickets: ['systemSupportTickets'],
   systemSupportTicket: (id: string) => ['systemSupportTicket', id],
   systemSupportTicketMessages: (id: string) => ['systemSupportTicketMessages', id],
+  authHealth: ['authHealth'],
+  subscriptionPlans: ['subscriptionPlans'],
+  testSentry: ['testSentry'],
 } as const
 
 // ─── Query options ────────────────────────────────────────────────────────────
@@ -347,6 +360,39 @@ export function getSupportTicketMessagesQueryOptions(id: string) {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.systemSupportTicketMessages(id),
     queryFn: () => getSupportTicketMessages({ id }),
+  })
+}
+
+export function getAuthHealthQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.authHealth, queryFn: getAuthHealth })
+}
+
+export function getSubscriptionPlansQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.subscriptionPlans, queryFn: getSubscriptionPlans })
+}
+
+export function getTestSentryQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.testSentry, queryFn: getTestSentry })
+}
+
+export function getSystemTenantsExportQueryOptions(payload?: SystemTenantsQuery) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.systemTenants(payload), 'export'],
+    queryFn: () => exportSystemTenants(payload),
+  })
+}
+
+export function getSystemDevicesExportQueryOptions(payload?: SystemDevicesQuery) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.systemDevices, 'export', payload],
+    queryFn: () => exportSystemDevices(payload),
+  })
+}
+
+export function getSystemSimsExportQueryOptions(payload?: SystemSimsQuery) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.systemSims, 'export', payload],
+    queryFn: () => exportSystemSims(payload),
   })
 }
 

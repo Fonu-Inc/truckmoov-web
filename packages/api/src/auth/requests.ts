@@ -18,6 +18,10 @@ import type {
   ForgotPasswordPayload,
   InviteActionResponse,
   InviteUserPayload,
+  RegisterInvitedPayload,
+  ResendOrgInvitePayload,
+  SystemDevicesQuery,
+  SystemSimsQuery,
   LoginPayload,
   LogoutPayload,
   MeResponse,
@@ -130,8 +134,18 @@ export async function verifyReset({ data }: VerifyResetPayload) {
   return res
 }
 
-export async function registerInvited() {
-  const { data } = await axiosInstance.post<AuthTokenResponse>('/auth/register/invited')
+export async function registerInvited({ data }: RegisterInvitedPayload) {
+  const { data: res } = await axiosInstance.post<AuthTokenResponse>('/auth/register/invited', data)
+  return res
+}
+
+export async function getAuthHealth() {
+  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/health')
+  return data
+}
+
+export async function getTestSentry() {
+  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/test-sentry')
   return data
 }
 
@@ -188,9 +202,9 @@ export async function inviteUser({ data }: InviteUserPayload) {
   return res
 }
 
-export async function resendOrgInvite() {
-  const { data } = await axiosInstance.post<InviteActionResponse>('/auth/organization/invites/resend')
-  return data
+export async function resendOrgInvite({ data }: ResendOrgInvitePayload) {
+  const { data: res } = await axiosInstance.post<InviteActionResponse>('/auth/organization/invites/resend', data)
+  return res
 }
 
 export async function changeRole({ data }: ChangeRolePayload) {
@@ -296,9 +310,10 @@ export async function getSystemTenantsSummary() {
   return data
 }
 
-export async function exportSystemTenants() {
+export async function exportSystemTenants(payload?: SystemTenantsQuery) {
   const { data } = await axiosInstance.get('/auth/system/tenants/export', {
     responseType: 'blob',
+    params: payload?.params,
   })
   return data
 }
@@ -344,9 +359,10 @@ export async function getSystemDevicesSummary() {
   return data
 }
 
-export async function exportSystemDevices() {
+export async function exportSystemDevices(payload?: SystemDevicesQuery) {
   const { data } = await axiosInstance.get('/auth/system/devices/export', {
     responseType: 'blob',
+    params: payload?.params,
   })
   return data
 }
@@ -382,9 +398,10 @@ export async function getSystemSimsSummary() {
   return data
 }
 
-export async function exportSystemSims() {
+export async function exportSystemSims(payload?: SystemSimsQuery) {
   const { data } = await axiosInstance.get('/auth/system/sims/export', {
     responseType: 'blob',
+    params: payload?.params,
   })
   return data
 }
@@ -462,6 +479,11 @@ export async function getSystemRefDataTenantOnboarding() {
 
 export async function getSystemSubscriptionPlans() {
   const { data } = await axiosInstance.get<SystemSubscriptionPlansResponse>('/auth/system/subscription-plans')
+  return data
+}
+
+export async function getSubscriptionPlans() {
+  const { data } = await axiosInstance.get<SystemSubscriptionPlansResponse>('/auth/subscription-plans')
   return data
 }
 

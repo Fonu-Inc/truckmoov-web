@@ -14,6 +14,7 @@ import { Textarea } from "@/components/shadcn/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useDeleteTenant } from "@truckmoov/api/auth";
 import { TenantData } from "@/hooks/useTenants";
 
 interface Props {
@@ -32,6 +33,7 @@ export function TerminateTenantDialog({
   const [reason, setReason] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const deleteTenantMutation = useDeleteTenant();
 
   const canSubmit =
     confirmation === "TERMINATE" && reason.trim().length >= 10 && !submitting;
@@ -47,8 +49,19 @@ export function TerminateTenantDialog({
 
   const handleTerminate = async () => {
     if (!canSubmit) return;
-    toast.info('Coming soon');
-    return;
+    setSubmitting(true);
+    try {
+      await deleteTenantMutation.mutateAsync({ id: tenant.id });
+      toast.success(`${tenant.name} has been terminated`);
+      setReason("");
+      setConfirmation("");
+      onTerminated?.();
+      onOpenChange(false);
+    } catch {
+      // error handled by react-query
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
