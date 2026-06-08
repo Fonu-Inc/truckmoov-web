@@ -12,12 +12,33 @@ import {
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
 
+const getRoleLabel = (role?: string) => {
+  switch (role) {
+    case "SUPER_ADMIN":
+      return "Super Administrator";
+    case "SYSTEM_ADMIN":
+      return "System Administrator";
+    case "PLATFORM_ADMIN":
+    case "platform_admin":
+      return "Platform Administrator";
+    default:
+      return role
+        ? role
+            .toLowerCase()
+            .split("_")
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(" ")
+        : "Administrator";
+  }
+};
+
 export function UserProfileDropdown() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const isDark = theme === "dark";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
+  const roleLabel = getRoleLabel(user?.role);
 
   const handleLogout = () => {
     logout();
@@ -43,27 +64,24 @@ export function UserProfileDropdown() {
           className="h-10 gap-2.5 rounded-full bg-secondary/60 py-1 pl-1.5 pr-4 hover:bg-secondary"
         >
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xs">
-            {getInitials(user?.name)}
+            {getInitials(roleLabel)}
           </span>
           <span className="hidden sm:flex flex-col items-start leading-tight">
             <span className="text-xs font-semibold text-foreground truncate max-w-[140px]">
-              {user?.name || "User"}
+              {roleLabel}
             </span>
-            <span className="text-[10px] font-medium text-primary truncate max-w-[140px]">
-              Platform Admin
+            <span className="text-[10px] font-medium text-primary truncate max-w-[160px]">
+              {user?.email || "user@example.com"}
             </span>
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 bg-popover border-border" align="end" forceMount>
+      <DropdownMenuContent className="w-72 bg-popover border-border" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user?.name || "User"}</p>
-            <p className="text-xs leading-none text-muted-foreground">
+          <div className="flex min-w-0 flex-col space-y-1">
+            <p className="truncate text-sm font-medium leading-none">{roleLabel}</p>
+            <p className="truncate text-xs leading-none text-muted-foreground">
               {user?.email || "user@example.com"}
-            </p>
-            <p className="text-xs leading-none text-muted-foreground mt-1">
-              Platform Admin
             </p>
           </div>
         </DropdownMenuLabel>
@@ -98,5 +116,3 @@ export function UserProfileDropdown() {
     </DropdownMenu>
   );
 }
-
-

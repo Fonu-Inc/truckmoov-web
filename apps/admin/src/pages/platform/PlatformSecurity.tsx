@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -554,11 +554,6 @@ export default function PlatformSecurity() {
   ];
   const toggleRule = (_id: string) => {};
   const updateRule = (_id: string, _updates: Partial<AutoBlockingRule>) => {};
-  const getIPGeolocation = (_ip: string): Promise<IPGeolocation | null> => Promise.resolve(null);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const batchGetGeolocation = useCallback((_ips: string[]): Promise<Map<string, IPGeolocation>> => Promise.resolve(new Map()), []);
-  const geoCache = new Map<string, IPGeolocation>();
-
   // Security alerts (hook removed — using inline defaults)
   const [alertConfig, setAlertConfig] = useState({
     enabled: false,
@@ -577,38 +572,8 @@ export default function PlatformSecurity() {
   const [newBlockIP, setNewBlockIP] = useState({ ip_address: "", reason: "", is_permanent: false });
   const [isBlocking, setIsBlocking] = useState(false);
   const [isRulesDialogOpen, setIsRulesDialogOpen] = useState(false);
-  const [ipGeoData, setIpGeoData] = useState<Map<string, IPGeolocation>>(new Map());
-  const [loadingGeoIPs, setLoadingGeoIPs] = useState<Set<string>>(new Set());
-
-  // Fetch geolocation for failed attempts
-  useEffect(() => {
-    const fetchGeolocations = async () => {
-      const ipsToFetch = failedAttempts
-        .filter(fa => !ipGeoData.has(fa.ipAddress) && !loadingGeoIPs.has(fa.ipAddress))
-        .map(fa => fa.ipAddress)
-        .slice(0, 5); // Limit batch size
-
-      if (ipsToFetch.length === 0) return;
-
-      setLoadingGeoIPs(prev => new Set([...prev, ...ipsToFetch]));
-      
-      const results = await batchGetGeolocation(ipsToFetch);
-      
-      setIpGeoData(prev => {
-        const newMap = new Map(prev);
-        results.forEach((geo, ip) => newMap.set(ip, geo));
-        return newMap;
-      });
-      
-      setLoadingGeoIPs(prev => {
-        const newSet = new Set(prev);
-        ipsToFetch.forEach(ip => newSet.delete(ip));
-        return newSet;
-      });
-    };
-
-    fetchGeolocations();
-  }, [failedAttempts, batchGetGeolocation, ipGeoData, loadingGeoIPs]);
+  const ipGeoData = useMemo(() => new Map<string, IPGeolocation>(), []);
+  const loadingGeoIPs = useMemo(() => new Set<string>(), []);
 
   const totalLogins = loginEvents.filter(e => e.eventType === "login" && e.status === "success").length;
   const totalFailedAttempts = failedAttempts.reduce((sum, fa) => sum + fa.attempts, 0);
@@ -2335,6 +2300,3 @@ export default function PlatformSecurity() {
     </DashboardLayout>
   );
 }
-
-
-
