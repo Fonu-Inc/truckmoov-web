@@ -5,11 +5,6 @@ import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Badge } from "@/components/shadcn/badge";
 import { Label } from "@/components/shadcn/label";
-import { Switch } from "@/components/shadcn/switch";
-import { Slider } from "@/components/shadcn/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { Separator } from "@/components/shadcn/separator";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
@@ -37,12 +32,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle } from "@/components/shadcn/sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,7 +77,6 @@ import {
 import { StatCard } from "@/components/dashboard/StatCard";
 import { toast } from "sonner";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { CurrencySelector } from "@/components/CurrencySelector";
 import { TenantOnboardingWizard } from "@/components/platform/TenantOnboardingWizard";
 import { ExportButton } from "@/components/shadcn/export-button";
 import {
@@ -96,6 +84,39 @@ import {
   buildEmptyDraft,
   type FilterField,
   type FilterDraft } from "@/components/shadcn/platform-filter-popover";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getSystemTenantsQueryOptions,
+  getSystemTenantsSummaryQueryOptions,
+  useUpdateTenantStatus,
+  useUpdateTenant,
+  useDeleteTenant,
+} from "@truckmoov/api/auth";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
+import { TenantDetailsSheet } from "@/components/platform/TenantDetailsSheet";
+import { TerminateTenantDialog } from "@/components/platform/TerminateTenantDialog";
+import { TenantData } from "@/hooks/useTenants";
+
+// Actual API response shapes
+type ApiTenantsPayload = {
+  total: number;
+  tenants: Record<string, unknown>[];
+  generatedAt: string;
+};
+type ApiSummaryPayload = {
+  totalTenants: number;
+  activeTenants: number;
+  monthlyRevenueNgn: number;
+  totalVehicles: number;
+  generatedAt: string;
+};
+
+const ORG_TYPE_LABELS: Record<string, string> = {
+  enterprise: "Enterprise",
+  fleet_provider: "Fleet Provider",
+  aggregator: "Aggregator",
+  owner_operator: "Owner-Operator",
+};
 
 const tenantFilterFields: FilterField[] = [
   {
@@ -103,10 +124,10 @@ const tenantFilterFields: FilterField[] = [
     label: "Organization Type",
     type: "select",
     options: [
-      { value: "ENTERPRISE", label: "Enterprise" },
-      { value: "FLEET_PROVIDER", label: "Fleet Provider" },
-      { value: "AGGREGATOR", label: "Aggregator" },
-      { value: "OWNER_OPERATOR", label: "Owner-Operator" },
+      { value: "enterprise", label: "Enterprise" },
+      { value: "fleet_provider", label: "Fleet Provider" },
+      { value: "aggregator", label: "Aggregator" },
+      { value: "owner_operator", label: "Owner-Operator" },
     ] },
   {
     key: "plan",
@@ -124,53 +145,38 @@ const tenantFilterFields: FilterField[] = [
     options: [
       { value: "verified", label: "Verified" },
       { value: "under_review", label: "Under Review" },
-      { value: "pending", label: "Pending" },
+      { value: "not_submitted", label: "Not Submitted" },
       { value: "rejected", label: "Rejected" },
     ] },
   { key: "revenue", label: "Revenue (NGN)", type: "range" },
   { key: "lastActive", label: "Last Active", type: "date" },
 ];
 
-import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
-import { TenantDetailsSheet } from "@/components/platform/TenantDetailsSheet";
-import { TerminateTenantDialog } from "@/components/platform/TerminateTenantDialog";
-import { TenantKYCVerification } from "@/components/platform/TenantKYCVerification";
-import { useTenants, TenantData } from "@/hooks/useTenants";
-
-interface Tenant {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  plan: "starter" | "professional" | "enterprise";
-  status: "active" | "pending" | "suspended" | "inactive";
-  vehicleCount: number;
-  driverCount: number;
-  deviceCount: number;
-  createdAt: string;
-  lastActive: string;
-  billingEmail: string;
-  monthlyRevenueNGN: number;
-  monthlyRevenueUSD: number;
-  usageLimits: {
-    maxVehicles: number;
-    maxDrivers: number;
-    maxDevices: number;
-    maxMessages: number;
-    dataRetentionDays: number;
-  };
-  features: {
-    liveTracking: boolean;
-    geofencing: boolean;
-    routeOptimization: boolean;
-    messaging: boolean;
-    analytics: boolean;
-    apiAccess: boolean;
+function mapApiTenant(raw: Record<string, unknown>): TenantData {
+  return {
+    id: String(raw.id ?? ""),
+    name: String(raw.name ?? ""),
+    slug: String(raw.slug ?? ""),
+    email: String(raw.email ?? ""),
+    phone: (raw.phone ?? null) as string | null,
+    address: (raw.address ?? null) as string | null,
+    billingEmail: (raw.billingEmail ?? null) as string | null,
+    primaryContactName: null,
+    plan: (raw.plan ?? "starter") as TenantData["plan"],
+    status: (raw.status ?? "pending") as TenantData["status"],
+    vehicleCount: Number(raw.vehicleCount ?? 0),
+    driverCount: Number(raw.driverCount ?? 0),
+    deviceCount: Number(raw.deviceCount ?? 0),
+    simCount: Number(raw.simCount ?? 0),
+    features: (raw.features ?? {}) as Record<string, boolean>,
+    createdAt: String(raw.createdAt ?? ""),
+    monthlyRevenueNgn: Number(raw.monthlyRevenueNgn ?? 0),
+    lastActiveAt: (raw.lastActiveAt ?? null) as string | null,
+    businessInfo: raw.businessInfo as TenantData["businessInfo"],
+    invitationStatus: raw.invitationStatus as TenantData["invitationStatus"],
   };
 }
 
-// Mock tenants removed - using live database data only
 
 const planDetails = {
   starter: { name: "Starter", priceNGN: 774500, priceUSD: 499, color: "bg-muted text-muted-foreground", maxVehicles: 10, maxDrivers: 15, maxDevices: 10, maxSims: 10 },
@@ -183,38 +189,50 @@ const getPlanLimits = (plan: string) => {
   return planDetails[validPlan] || planDetails.starter;
 };
 
-const emptyTenant: Partial<Tenant> = {
-  name: "",
-  email: "",
-  phone: "",
-  address: "",
-  plan: "starter",
-  status: "pending",
-  billingEmail: "",
-  usageLimits: {
-    maxVehicles: 10,
-    maxDrivers: 15,
-    maxDevices: 10,
-    maxMessages: 500,
-    dataRetentionDays: 90 },
-  features: {
-    liveTracking: true,
-    geofencing: false,
-    routeOptimization: false,
-    messaging: true,
-    analytics: false,
-    apiAccess: false } };
-
 export default function PlatformTenants() {
   const { currency, format } = useCurrency();
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications, addNotification } = useRealtimeNotifications();
-  
-  // Fetch real tenants from database
-  const { tenants: dbTenants, isLoading: isLoadingDbTenants, refetch: refetchDbTenants, updateTenantStatus, updateTenant: updateDbTenant, deleteTenant: deleteDbTenant } = useTenants();
-  
+
+  const updateTenantStatusMutation = useUpdateTenantStatus();
+  const updateTenantMutation = useUpdateTenant();
+  const deleteTenantMutation = useDeleteTenant();
+
+  // Filter state declared before the query so params can be wired
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [advancedFilters, setAdvancedFilters] = useState<FilterDraft>(buildEmptyDraft(tenantFilterFields));
+
+  // Debounce search to avoid a query on every keystroke
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Derive server-side filter params — search, status, plan are handled by the API
+  const apiStatus = statusFilter !== "all"
+    ? statusFilter as "active" | "pending" | "suspended" | "inactive"
+    : undefined;
+  const apiPlan = advancedFilters.plan?.enabled && advancedFilters.plan?.value
+    ? advancedFilters.plan.value as "starter" | "professional" | "enterprise"
+    : undefined;
+
+  const tenantsQuery = useQuery(getSystemTenantsQueryOptions({
+    params: {
+      ...(debouncedSearch ? { search: debouncedSearch } : {}),
+      ...(apiStatus ? { status: apiStatus } : {}),
+      ...(apiPlan ? { plan: apiPlan } : {}),
+    },
+  }));
+  const summaryQuery = useQuery(getSystemTenantsSummaryQueryOptions());
+
+  const tenantsPayload = tenantsQuery.data?.data as unknown as ApiTenantsPayload | undefined;
+  const summaryPayload = summaryQuery.data?.data as unknown as ApiSummaryPayload | undefined;
+
+  const dbTenants: TenantData[] = (tenantsPayload?.tenants ?? []).map(mapApiTenant);
+  const isLoadingDbTenants = tenantsQuery.isLoading;
+  const refetchDbTenants = tenantsQuery.refetch;
+
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [selectedDbTenant, setSelectedDbTenant] = useState<TenantData | null>(null);
   const [isDbDetailsSheetOpen, setIsDbDetailsSheetOpen] = useState(false);
@@ -260,26 +278,26 @@ export default function PlatformTenants() {
   }, [refetchDbTenants]);
 
 
-  // Org types per tenant — stubbed pending API migration
-  const [tenantOrgTypesState, setTenantOrgTypesState] = useState<Record<string, string[]>>({});
+  // Org types per tenant — derived from API response
+  const tenantOrgTypesState = useMemo<Record<string, string[]>>(() => {
+    const map: Record<string, string[]> = {};
+    (tenantsPayload?.tenants ?? []).forEach((raw) => {
+      const id = String(raw.id ?? "");
+      const types = (raw.organizationTypes as string[] | undefined) ?? [];
+      if (id && types.length > 0) map[id] = types;
+    });
+    return map;
+  }, [tenantsPayload]);
 
-  // Filter live database tenants
+  // Client-side filter — search, status, and plan are server-side (API params);
+  // org type, KYC, revenue, and last active are not supported by the API
   const filteredDbTenants = dbTenants.filter((tenant) => {
-    const matchesSearch =
-      tenant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tenant.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || tenant.status === statusFilter;
-
-    // Advanced filters
     const orgTypeF = advancedFilters.orgType;
     const orgTypes = tenantOrgTypesState[tenant.id] || [];
     const matchesOrgType = !orgTypeF?.enabled || !orgTypeF.value || orgTypes.includes(orgTypeF.value);
 
-    const planF = advancedFilters.plan;
-    const matchesPlan = !planF?.enabled || !planF.value || tenant.plan === planF.value;
-
     const kycF = advancedFilters.kyc;
-    const kycStatus = tenant.businessInfo?.verificationStatus || "pending";
+    const kycStatus = tenant.businessInfo?.verificationStatus || "not_submitted";
     const matchesKyc = !kycF?.enabled || !kycF.value || kycStatus === kycF.value;
 
     const revF = advancedFilters.revenue;
@@ -294,7 +312,7 @@ export default function PlatformTenants() {
     const matchesLast = !lastF?.enabled
       || ((!fromMs || lastMs >= fromMs) && (!toMs || lastMs <= toMs));
 
-    return matchesSearch && matchesStatus && matchesOrgType && matchesPlan && matchesKyc && matchesRev && matchesLast;
+    return matchesOrgType && matchesKyc && matchesRev && matchesLast;
   });
 
   // Apply sorting
@@ -326,12 +344,12 @@ export default function PlatformTenants() {
     return arr;
   }, [filteredDbTenants, sortKey, sortDir, tenantOrgTypesState]);
 
-  // Stats from live data
-  const totalTenants = dbTenants.length;
-  const activeTenants = dbTenants.filter((t) => t.status === "active").length;
+  // Stats — summary API for totals, list for what the summary doesn't include
+  const totalTenants = summaryPayload?.totalTenants ?? dbTenants.length;
+  const activeTenants = summaryPayload?.activeTenants ?? dbTenants.filter((t) => t.status === "active").length;
   const suspendedTenants = dbTenants.filter((t) => t.status === "suspended" || t.status === "terminated").length;
-  const totalRevenueNGN = dbTenants.reduce((sum, t) => sum + (t.monthlyRevenueNgn || 0), 0);
-  const totalVehicles = dbTenants.reduce((sum, t) => sum + (t.vehicleCount || 0), 0);
+  const totalRevenueNGN = summaryPayload?.monthlyRevenueNgn ?? dbTenants.reduce((sum, t) => sum + (t.monthlyRevenueNgn || 0), 0);
+  const totalVehicles = summaryPayload?.totalVehicles ?? dbTenants.reduce((sum, t) => sum + (t.vehicleCount || 0), 0);
   const totalSims = dbTenants.reduce((sum, t) => sum + (t.simCount || 0), 0);
   const overdueInvoices = Object.values(overdueByTenant).reduce((s, n) => s + n, 0);
 
@@ -367,26 +385,27 @@ export default function PlatformTenants() {
   };
 
 
-  const handleWizardComplete = (wizardData: any) => {
-    // Wizard now creates tenants via the API - just trigger a refetch and notification
-    refetchDbTenants();
-    
+  const handleWizardComplete = (wizardData: { companyName?: string }) => {
     addNotification({
       type: "tenant_created",
       title: "Tenant Onboarded",
-      message: `${wizardData.companyName} has been fully onboarded with ${wizardData.deviceCount} devices and ${wizardData.simCount} SIMs`,
-      severity: "success" });
+      message: `${wizardData.companyName || "New tenant"} has been onboarded successfully`,
+      severity: "success",
+    });
   };
 
   // DB Tenant handlers
   const handleDbTenantStatusChange = async (tenant: TenantData, newStatus: TenantData["status"]) => {
-    const success = await updateTenantStatus(tenant.id, newStatus);
-    if (success) {
+    try {
+      await updateTenantStatusMutation.mutateAsync({ id: tenant.id, data: { status: newStatus } });
       addNotification({
         type: "system",
         title: "Tenant Status Changed",
         message: `${tenant.name} status changed to ${newStatus}`,
-        severity: newStatus === "suspended" ? "warning" : "info" });
+        severity: newStatus === "suspended" ? "warning" : "info",
+      });
+    } catch {
+      // Error handled by react-query
     }
   };
 
@@ -408,36 +427,24 @@ export default function PlatformTenants() {
       return;
     }
 
-    const success = await updateDbTenant(selectedDbTenant.id, {
-      name: dbFormData.name,
-      email: dbFormData.email,
-      phone: dbFormData.phone || null,
-      address: dbFormData.address || null,
-      billingEmail: dbFormData.billingEmail || null,
-      plan: dbFormData.plan });
-
-    if (success) {
+    try {
+      await updateTenantMutation.mutateAsync({
+        id: selectedDbTenant.id,
+        data: {
+          name: dbFormData.name,
+          email: dbFormData.email,
+          phone: dbFormData.phone || null,
+          address: dbFormData.address || null,
+          billingEmail: dbFormData.billingEmail || null,
+          plan: dbFormData.plan,
+        },
+      });
       setIsDbEditDialogOpen(false);
       setSelectedDbTenant(null);
       setDbFormData({});
+    } catch {
+      // Error handled by react-query
     }
-  };
-
-  const handleDeleteDbTenant = async () => {
-    if (!deleteConfirmDbTenant) return;
-
-    const tenantName = deleteConfirmDbTenant.name;
-    const success = await deleteDbTenant(deleteConfirmDbTenant.id);
-    
-    if (success) {
-      addNotification({
-        type: "system",
-        title: "Tenant Deleted",
-        message: `${tenantName} has been removed from the platform`,
-        severity: "warning" });
-    }
-    
-    setDeleteConfirmDbTenant(null);
   };
 
   const handleResendInvitation = async (_tenant: TenantData) => {
@@ -461,7 +468,7 @@ export default function PlatformTenants() {
         </div>
 
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <StatCard
             title="Total Tenants"
             value={totalTenants}
@@ -653,7 +660,7 @@ export default function PlatformTenants() {
                             {(tenantOrgTypesState[tenant.id] || []).length > 0 ? (
                               tenantOrgTypesState[tenant.id].map((ot) => (
                                 <Badge key={ot} variant="outline" className="text-xs whitespace-nowrap">
-                                  {ot === 'ENTERPRISE' ? 'Enterprise' : ot === 'FLEET_PROVIDER' ? 'Fleet Provider' : ot === 'AGGREGATOR' ? 'Aggregator' : ot === 'OWNER_OPERATOR' ? 'Owner-Operator' : ot}
+                                  {ORG_TYPE_LABELS[ot] ?? ot}
                                 </Badge>
                               ))
                             ) : (
