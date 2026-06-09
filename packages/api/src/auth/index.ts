@@ -132,6 +132,9 @@ export type {
   ValidateInviteQuery,
   VerifyEmailPayload,
   VerifyResetPayload,
+  SubscriptionPlan,
+  SystemTenant,
+  SystemTenantsSummary,
 } from './types'
 
 // ─── Query keys ───────────────────────────────────────────────────────────────

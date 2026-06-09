@@ -384,6 +384,76 @@ export type AuthSystemSettings = {
 
 import type { ServerResponse } from '../lib/types'
 
+// ─── Entity types ─────────────────────────────────────────────────────────────
+
+export type SubscriptionPlan = {
+  code: string
+  tier: 'starter' | 'professional' | 'enterprise'
+  name: string
+  description: string
+  monthlyPriceNgn: number | null
+  yearlyMonthlyEquivalentNgn: number | null
+  yearlyDiscountPercent: number | null
+  maxActiveVehicles: number | null
+  customPricing: boolean
+  trialDays: number | null
+  badge: string | null
+  ctaLabel: string
+  features: string[]
+}
+
+export type SystemTenant = {
+  id: string
+  name: string
+  slug: string
+  email: string
+  phone: string | null
+  address: string | null
+  billingEmail: string | null
+  plan: 'starter' | 'professional' | 'enterprise'
+  planCode: string | null
+  status: 'active' | 'pending' | 'trial' | 'suspended' | 'inactive' | 'terminated'
+  organizationType: string | null
+  vehicleCount: number
+  driverCount: number
+  deviceCount: number
+  simCount: number
+  features: Record<string, boolean>
+  createdAt: string
+  monthlyRevenueNgn: number
+  lastActiveAt: string | null
+  primaryContactName?: string | null
+  organizationTypes?: string[]
+  businessInfo?: {
+    companyName?: string
+    registrationNumber?: string | null
+    taxId?: string | null
+    businessType?: string | null
+    industry?: string | null
+    addressLine1?: string | null
+    addressLine2?: string | null
+    city?: string | null
+    state?: string | null
+    postalCode?: string | null
+    country?: string | null
+    verificationStatus?: string | null
+    verifiedAt?: string | null
+    yearEstablished?: number | null
+  }
+  invitationStatus?: {
+    hasPendingInvitation?: boolean
+    invitationAccepted?: boolean
+  }
+}
+
+export type SystemTenantsSummary = {
+  totalTenants: number
+  activeTenants: number
+  monthlyRevenueNgn: number
+  totalVehicles: number
+  generatedAt: string
+}
+
 // ─── Response envelopes ───────────────────────────────────────────────────────
 
 export type AuthTokenResponse = ServerResponse<AuthSession>
@@ -401,8 +471,8 @@ export type StandardApiResponse = ServerResponse<unknown>
 export type InviteActionResponse = ServerResponse<Record<string, unknown>>
 export type AuthSystemSettingsResponse = ServerResponse<AuthSystemSettings>
 export type SystemDashboardResponse = ServerResponse<Record<string, unknown>>
-export type SystemTenantsListResponse = ServerResponse<Record<string, unknown>[]>
-export type SystemTenantsSummaryResponse = ServerResponse<Record<string, unknown>>
+export type SystemTenantsListResponse = ServerResponse<{ total: number; tenants: SystemTenant[]; generatedAt: string }>
+export type SystemTenantsSummaryResponse = ServerResponse<SystemTenantsSummary>
 export type SystemTenantDetailResponse = ServerResponse<Record<string, unknown>>
 export type SystemTenantDeleteResponse = ServerResponse<Record<string, unknown>>
 export type SystemTenantOnboardingResponse = ServerResponse<Record<string, unknown>>
@@ -418,7 +488,7 @@ export type SystemSimsListResponse = ServerResponse<Record<string, unknown>[]>
 export type SystemSimSummaryResponse = ServerResponse<Record<string, unknown>>
 export type SystemSimRequestsListResponse = ServerResponse<Record<string, unknown>[]>
 export type SystemSimBatchesListResponse = ServerResponse<Record<string, unknown>[]>
-export type SystemSubscriptionPlansResponse = ServerResponse<Record<string, unknown>[]>
+export type SystemSubscriptionPlansResponse = ServerResponse<{ plans: SubscriptionPlan[]; generatedAt: string }>
 export type SystemFeatureFlagsResponse = ServerResponse<Record<string, unknown>[]>
 export type SystemFeatureFlagResponse = ServerResponse<Record<string, unknown>>
 export interface AdminInvite {

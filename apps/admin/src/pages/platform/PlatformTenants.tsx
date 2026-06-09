@@ -11,53 +11,44 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from "@/components/shadcn/table";
+  TableRow
+} from "@/components/shadcn/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from "@/components/shadcn/select";
+  SelectValue
+} from "@/components/shadcn/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
+  DropdownMenuTrigger
+} from "@/components/shadcn/dropdown-menu";
 import {
   Building2,
   Search,
-  Plus,
   MoreHorizontal,
   Truck,
   Users,
-  CreditCard,
-  Calendar,
-  Mail,
   Send,
-  Phone,
-  MapPin,
-  Settings,
   Eye,
   Pencil,
   Ban,
-  RefreshCw,
-  SlidersHorizontal as Filter,
   CheckCircle,
   XCircle,
   Clock,
-  TrendingUp,
   AlertTriangle,
   Cpu,
-  MessageSquare,
   Sparkles,
-  Shield,
-  FileText,
   Smartphone,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Download } from "lucide-react";
+  Download
+} from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { toast } from "sonner";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -67,33 +58,22 @@ import {
   PlatformFilterPopover,
   buildEmptyDraft,
   type FilterField,
-  type FilterDraft } from "@/components/shadcn/platform-filter-popover";
+  type FilterDraft
+} from "@/components/shadcn/platform-filter-popover";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getSystemTenantsQueryOptions,
   getSystemTenantsSummaryQueryOptions,
   getSystemTenantsExportQueryOptions,
+  getSystemSubscriptionPlansQueryOptions,
   useUpdateTenantStatus,
   useResendTenantInvite,
+  type SubscriptionPlan,
+  type SystemTenant,
 } from "@truckmoov/api/auth";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import { TenantDetailsSheet } from "@/components/platform/TenantDetailsSheet";
 import { TerminateTenantDialog } from "@/components/platform/TerminateTenantDialog";
-import { TenantData } from "@/hooks/useTenants";
-
-// Actual API response shapes
-type ApiTenantsPayload = {
-  total: number;
-  tenants: Record<string, unknown>[];
-  generatedAt: string;
-};
-type ApiSummaryPayload = {
-  totalTenants: number;
-  activeTenants: number;
-  monthlyRevenueNgn: number;
-  totalVehicles: number;
-  generatedAt: string;
-};
 
 const ORG_TYPE_LABELS: Record<string, string> = {
   enterprise: "Enterprise",
@@ -112,7 +92,8 @@ const tenantFilterFields: FilterField[] = [
       { value: "fleet_provider", label: "Fleet Provider" },
       { value: "aggregator", label: "Aggregator" },
       { value: "owner_operator", label: "Owner-Operator" },
-    ] },
+    ]
+  },
   {
     key: "plan",
     label: "Plan",
@@ -121,7 +102,8 @@ const tenantFilterFields: FilterField[] = [
       { value: "starter", label: "Starter" },
       { value: "professional", label: "Professional" },
       { value: "enterprise", label: "Enterprise" },
-    ] },
+    ]
+  },
   {
     key: "kyc",
     label: "KYC Status",
@@ -131,46 +113,17 @@ const tenantFilterFields: FilterField[] = [
       { value: "under_review", label: "Under Review" },
       { value: "not_submitted", label: "Not Submitted" },
       { value: "rejected", label: "Rejected" },
-    ] },
+    ]
+  },
   { key: "revenue", label: "Revenue (NGN)", type: "range" },
   { key: "lastActive", label: "Last Active", type: "date" },
 ];
 
-function mapApiTenant(raw: Record<string, unknown>): TenantData {
-  return {
-    id: String(raw.id ?? ""),
-    name: String(raw.name ?? ""),
-    slug: String(raw.slug ?? ""),
-    email: String(raw.email ?? ""),
-    phone: (raw.phone ?? null) as string | null,
-    address: (raw.address ?? null) as string | null,
-    billingEmail: (raw.billingEmail ?? null) as string | null,
-    primaryContactName: null,
-    plan: (raw.plan ?? "starter") as TenantData["plan"],
-    status: (raw.status ?? "pending") as TenantData["status"],
-    vehicleCount: Number(raw.vehicleCount ?? 0),
-    driverCount: Number(raw.driverCount ?? 0),
-    deviceCount: Number(raw.deviceCount ?? 0),
-    simCount: Number(raw.simCount ?? 0),
-    features: (raw.features ?? {}) as Record<string, boolean>,
-    createdAt: String(raw.createdAt ?? ""),
-    monthlyRevenueNgn: Number(raw.monthlyRevenueNgn ?? 0),
-    lastActiveAt: (raw.lastActiveAt ?? null) as string | null,
-    businessInfo: raw.businessInfo as TenantData["businessInfo"],
-    invitationStatus: raw.invitationStatus as TenantData["invitationStatus"],
-  };
-}
-
-
-const planDetails = {
-  starter: { name: "Starter", priceNGN: 774500, priceUSD: 499, color: "bg-muted text-muted-foreground", maxVehicles: 10, maxDrivers: 15, maxDevices: 10, maxSims: 10 },
-  professional: { name: "Professional", priceNGN: 2323500, priceUSD: 1499, color: "bg-primary/10 text-primary", maxVehicles: 50, maxDrivers: 75, maxDevices: 50, maxSims: 50 },
-  enterprise: { name: "Enterprise", priceNGN: 7748500, priceUSD: 4999, color: "bg-success/10 text-success", maxVehicles: 200, maxDrivers: 250, maxDevices: 200, maxSims: 200 } };
-
-// Helper to get plan limits for database tenants
-const getPlanLimits = (plan: string) => {
-  const validPlan = plan as keyof typeof planDetails;
-  return planDetails[validPlan] || planDetails.starter;
+// Badge colours are a UI concern — not returned by the API
+const TIER_COLORS: Record<string, string> = {
+  starter: "bg-muted text-muted-foreground",
+  professional: "bg-primary/10 text-primary",
+  enterprise: "bg-success/10 text-success",
 };
 
 export default function PlatformTenants() {
@@ -211,18 +164,20 @@ export default function PlatformTenants() {
   }));
   const summaryQuery = useQuery(getSystemTenantsSummaryQueryOptions());
 
-  const tenantsPayload = tenantsQuery.data?.data as unknown as ApiTenantsPayload | undefined;
-  const summaryPayload = summaryQuery.data?.data as unknown as ApiSummaryPayload | undefined;
+  const plansQuery = useQuery(getSystemSubscriptionPlansQueryOptions());
 
-  const dbTenants: TenantData[] = (tenantsPayload?.tenants ?? []).map(mapApiTenant);
+  const tenantsPayload = tenantsQuery.data?.data;
+  const summaryPayload = summaryQuery.data?.data;
+
+  const dbTenants: SystemTenant[] = useMemo(() => tenantsPayload?.tenants ?? [], [tenantsPayload]);
   const isLoadingDbTenants = tenantsQuery.isLoading;
   const refetchDbTenants = tenantsQuery.refetch;
 
   const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [selectedDbTenant, setSelectedDbTenant] = useState<TenantData | null>(null);
+  const [selectedDbTenant, setSelectedDbTenant] = useState<SystemTenant | null>(null);
   const [isDbDetailsSheetOpen, setIsDbDetailsSheetOpen] = useState(false);
   const [isDbEditDialogOpen, setIsDbEditDialogOpen] = useState(false);
-  const [deleteConfirmDbTenant, setDeleteConfirmDbTenant] = useState<TenantData | null>(null);
+  const [deleteConfirmDbTenant, setDeleteConfirmDbTenant] = useState<SystemTenant | null>(null);
 
   // Sorting state
   type SortKey = "name" | "orgType" | "plan" | "status" | "vehicleCount" | "simCount" | "monthlyRevenueNgn" | "lastActiveAt";
@@ -243,15 +198,6 @@ export default function PlatformTenants() {
       : <ArrowDown className="h-3 w-3 ml-1 inline" />;
   };
 
-  // Overdue invoices per tenant (id -> count) — deterministic mock
-  const overdueByTenant = useMemo<Record<string, number>>(() => {
-    const map: Record<string, number> = {};
-    dbTenants.forEach((t, i) => {
-      // Mark ~25% of tenants as having overdue invoices for demo
-      if ((i % 4) === 1) map[t.id] = (i % 3) + 1;
-    });
-    return map;
-  }, [dbTenants]);
 
   // Auto-refresh every 60 seconds
   useEffect(() => {
@@ -262,13 +208,28 @@ export default function PlatformTenants() {
   }, [refetchDbTenants]);
 
 
+  const plansByTier = useMemo(() => {
+    const map: Record<string, SubscriptionPlan> = {};
+    (plansQuery.data?.data?.plans ?? []).forEach((p) => { map[p.tier] = p; });
+    return map;
+  }, [plansQuery.data]);
+
+  const getPlanLimits = (tier: string) => {
+    const p = plansByTier[tier];
+    const maxVehicles = p?.maxActiveVehicles ?? 10;
+    return {
+      maxVehicles,
+      maxDrivers: Math.ceil(maxVehicles * 1.5),
+      maxDevices: maxVehicles,
+      maxSims: maxVehicles,
+    };
+  };
+
   // Org types per tenant — derived from API response
   const tenantOrgTypesState = useMemo<Record<string, string[]>>(() => {
     const map: Record<string, string[]> = {};
     (tenantsPayload?.tenants ?? []).forEach((raw) => {
-      const id = String(raw.id ?? "");
-      const types = (raw.organizationTypes as string[] | undefined) ?? [];
-      if (id && types.length > 0) map[id] = types;
+      if (raw.id && raw.organizationTypes?.length) map[raw.id] = raw.organizationTypes;
     });
     return map;
   }, [tenantsPayload]);
@@ -328,26 +289,16 @@ export default function PlatformTenants() {
     return arr;
   }, [filteredDbTenants, sortKey, sortDir, tenantOrgTypesState]);
 
-  // Stats — summary API for totals, list for what the summary doesn't include
-  const totalTenants = summaryPayload?.totalTenants ?? dbTenants.length;
-  const activeTenants = summaryPayload?.activeTenants ?? dbTenants.filter((t) => t.status === "active").length;
-  const suspendedTenants = dbTenants.filter((t) => t.status === "suspended" || t.status === "terminated").length;
-  const totalRevenueNGN = summaryPayload?.monthlyRevenueNgn ?? dbTenants.reduce((sum, t) => sum + (t.monthlyRevenueNgn || 0), 0);
-  const totalVehicles = summaryPayload?.totalVehicles ?? dbTenants.reduce((sum, t) => sum + (t.vehicleCount || 0), 0);
-  const totalSims = dbTenants.reduce((sum, t) => sum + (t.simCount || 0), 0);
-  const overdueInvoices = Object.values(overdueByTenant).reduce((s, n) => s + n, 0);
-
-  const formatTotalRevenue = () => {
-    return currency === "NGN" 
-      ? `₦${totalRevenueNGN.toLocaleString()}` 
-      : `$${Math.round(totalRevenueNGN / 1550).toLocaleString()}`;
-  };
-
-  const formatPlanPrice = (plan: keyof typeof planDetails) => {
-    return currency === "NGN" 
-      ? `₦${planDetails[plan].priceNGN.toLocaleString()}` 
-      : `$${planDetails[plan].priceUSD}`;
-  };
+  // Stats — sourced exclusively from the summary API; show "N/A" when not available
+  const { totalTenants, activeTenants, suspendedTenants, totalRevenueNGN, totalVehicles, totalSims, overdueInvoices } = useMemo(() => ({
+    totalTenants: summaryPayload?.totalTenants ?? "N/A",
+    activeTenants: summaryPayload?.activeTenants ?? "N/A",
+    suspendedTenants: "N/A" as string | number,
+    totalRevenueNGN: summaryPayload?.monthlyRevenueNgn ?? null,
+    totalVehicles: summaryPayload?.totalVehicles ?? "N/A",
+    totalSims: "N/A" as string | number,
+    overdueInvoices: "N/A" as string | number,
+  }), [summaryPayload]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -379,7 +330,7 @@ export default function PlatformTenants() {
   };
 
   // DB Tenant handlers
-  const handleDbTenantStatusChange = async (tenant: TenantData, newStatus: TenantData["status"]) => {
+  const handleDbTenantStatusChange = async (tenant: SystemTenant, newStatus: SystemTenant["status"]) => {
     try {
       await updateTenantStatusMutation.mutateAsync({ id: tenant.id, data: { status: newStatus } });
       addNotification({
@@ -393,12 +344,12 @@ export default function PlatformTenants() {
     }
   };
 
-  const handleOpenDbEdit = (tenant: TenantData) => {
+  const handleOpenDbEdit = (tenant: SystemTenant) => {
     setSelectedDbTenant(tenant);
     setIsDbEditDialogOpen(true);
   };
 
-  const handleResendInvitation = async (tenant: TenantData) => {
+  const handleResendInvitation = async (tenant: SystemTenant) => {
     try {
       await resendTenantInviteMutation.mutateAsync({ id: tenant.id });
       toast.success(`Invitation resent to ${tenant.name}`);
@@ -482,7 +433,7 @@ export default function PlatformTenants() {
             title="Overdue Invoices"
             value={overdueInvoices}
             icon={AlertTriangle}
-            variant={overdueInvoices > 0 ? "warning" : "default"}
+            variant="default"
           />
         </div>
 
@@ -596,7 +547,6 @@ export default function PlatformTenants() {
                     {sortedDbTenants.map((tenant) => (
                       <TableRow
                         key={tenant.id}
-                        className={overdueByTenant[tenant.id] ? "bg-warning/5 hover:bg-warning/10" : undefined}
                       >
                         <TableCell>
                           <span className="font-mono text-xs px-2 py-1 rounded bg-muted text-foreground">
@@ -635,8 +585,8 @@ export default function PlatformTenants() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={planDetails[tenant.plan]?.color || "bg-muted"}>
-                            {planDetails[tenant.plan]?.name || tenant.plan}
+                          <Badge className={TIER_COLORS[tenant.plan] + " capitalize"}>
+                            {tenant.plan}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -711,13 +661,13 @@ export default function PlatformTenants() {
                           </div>
                         </TableCell>
                         <TableCell className="font-medium">
-                          {currency === "NGN" 
-                            ? `₦${(tenant.monthlyRevenueNgn || 0).toLocaleString()}` 
+                          {currency === "NGN"
+                            ? `₦${(tenant.monthlyRevenueNgn || 0).toLocaleString()}`
                             : `$${Math.round((tenant.monthlyRevenueNgn || 0) / 1550).toLocaleString()}`}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {tenant.lastActiveAt 
-                            ? new Date(tenant.lastActiveAt).toLocaleDateString() 
+                          {tenant.lastActiveAt
+                            ? new Date(tenant.lastActiveAt).toLocaleDateString()
                             : "Never"}
                         </TableCell>
                         <TableCell>
