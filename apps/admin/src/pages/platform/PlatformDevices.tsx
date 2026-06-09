@@ -7,7 +7,8 @@ import { PlatformDeviceTrackingContent } from "@/components/devices/PlatformDevi
 import { DeviceCatalogManager } from "@/components/devices/DeviceCatalogManager";
 import { DeviceProvisioningQueue } from "@/components/devices/DeviceProvisioningQueue";
 import { useDeviceTelemetry } from "@/hooks/useDeviceTelemetry";
-import { useTenants } from "@/hooks/useTenants";
+import { useQuery } from "@tanstack/react-query";
+import { getSystemDevicesSummaryQueryOptions } from "@truckmoov/api/auth";
 import {
   Cpu,
   WifiOff,
@@ -23,58 +24,34 @@ import { Skeleton } from "@/components/shadcn/skeleton";
 
 export default function PlatformDevices() {
   const [activeTab, setActiveTab] = useState("management");
-  
+  const summaryQuery = useQuery(getSystemDevicesSummaryQueryOptions());
+
   // Single source of truth for device data
-  const { 
-    devices, 
-    recentEvents, 
-    loading, 
+  const {
+    devices,
+    recentEvents,
+    loading,
     error,
-    refetch, 
-    isSimulating, 
-    startSimulation, 
-    stopSimulation, 
-    trailHistory, 
+    refetch,
+    isSimulating,
+    startSimulation,
+    stopSimulation,
+    trailHistory,
     clearTrailHistory,
   } = useDeviceTelemetry(undefined, true);
 
-  // Fetch tenants for name lookup - useTenants has proper auth handling
-  const { tenants } = useTenants();
+  // Stats are sourced from the system summary endpoint.
+  const stats = useMemo(() => {
+    const summary = summaryQuery.data?.data;
 
-  // Build tenant name lookup map (by id and slug)
-  const tenantNameMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    tenants.forEach(tenant => {
-      map[tenant.id] = tenant.name;
-      if (tenant.slug) {
-        map[tenant.slug] = tenant.name;
-      }
-    });
-    return map;
-  }, [tenants]);
-
-  // Calculate stats from actual data (support both lifecycle_status and legacy status)
-  const stats = {
-    total: devices.length,
-    verified: devices.filter(d => 
-      ['verified_online', 'assignable', 'assigned', 'active'].includes(d.lifecycle_status || d.status)
-    ).length,
-    pending: devices.filter(d => 
-      ['registered', 'config_pending', 'configured'].includes(d.lifecycle_status || d.status)
-    ).length,
-    online: devices.filter(d => {
-      if (!d.last_seen) return false;
-      const lastSeen = new Date(d.last_seen);
-      return Date.now() - lastSeen.getTime() < 5 * 60 * 1000; // 5 minutes
-    }).length,
-    faulty: devices.filter(d => (d.lifecycle_status || d.status) === 'faulty').length,
-    events24h: recentEvents.filter(e => {
-      const eventTime = new Date(e.created_at);
-      return Date.now() - eventTime.getTime() < 24 * 60 * 60 * 1000;
-    }).length,
-  };
-
-  const inventoryDevices = devices;
+    return {
+      total: summary?.totalDevices ?? "N/A",
+      verified: summary?.verifiedActiveDevices ?? "N/A",
+      pending: summary?.pendingConfigDevices ?? "N/A",
+      online: summary?.onlineNowDevices ?? "N/A",
+      faulty: summary?.faultyDevices ?? "N/A",
+    };
+  }, [summaryQuery.data]);
 
   return (
     <DashboardLayout
@@ -132,14 +109,14 @@ export default function PlatformDevices() {
                 <Cpu className="h-4 w-4" />
                 Device Inventory
               </TabsTrigger>
-              <TabsTrigger value="tracking" className="flex items-center gap-2">
+              {/* <TabsTrigger value="tracking" className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
                 Live Tracking
               </TabsTrigger>
               <TabsTrigger value="approval" className="flex items-center gap-2">
                 <ClipboardCheck className="h-4 w-4" />
                 Approval Queue
-              </TabsTrigger>
+              </TabsTrigger> */}
               <TabsTrigger value="catalog" className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4" />
                 Device Catalog
@@ -148,16 +125,11 @@ export default function PlatformDevices() {
           </div>
 
           <TabsContent value="management" className="mt-4">
-            <PlatformDeviceManagement 
-              devices={inventoryDevices}
-              loading={loading}
-              onRefresh={refetch}
-              tenantNameMap={tenantNameMap}
-            />
+            <PlatformDeviceManagement />
           </TabsContent>
 
           <TabsContent value="tracking" className="mt-4">
-            <PlatformDeviceTrackingContent 
+            <PlatformDeviceTrackingContent
               devices={devices}
               recentEvents={recentEvents}
               loading={loading}
@@ -184,6 +156,3 @@ export default function PlatformDevices() {
     </DashboardLayout>
   );
 }
-
-
-

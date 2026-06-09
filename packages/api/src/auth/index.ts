@@ -109,7 +109,10 @@ export type {
   RegisterPayload,
   RejectSIMRequestPayload,
   ResendOrgInvitePayload,
+  SystemDeviceInventoryItem,
+  SystemDeviceInventoryList,
   SystemDevicesQuery,
+  SystemDevicesSummary,
   SystemSimsQuery,
   ResetPasswordPayload,
   RetrySimBatchPayload,
@@ -152,7 +155,7 @@ export const AUTH_QUERY_KEY = {
   systemTenants: (payload?: SystemTenantsQuery) => payload ? ['systemTenants', payload] : ['systemTenants'],
   systemTenant: (id: string) => ['systemTenant', id],
   systemTenantsSummary: ['systemTenantsSummary'],
-  systemDevices: ['systemDevices'],
+  systemDevices: (payload?: SystemDevicesQuery) => payload ? ['systemDevices', payload] : ['systemDevices'],
   systemDevicesSummary: ['systemDevicesSummary'],
   systemDevicesCatalog: ['systemDevicesCatalog'],
   systemSims: ['systemSims'],
@@ -252,8 +255,11 @@ export function getSystemTenantQueryOptions(id: string) {
   })
 }
 
-export function getSystemDevicesQueryOptions() {
-  return queryOptions({ queryKey: AUTH_QUERY_KEY.systemDevices, queryFn: getSystemDevices })
+export function getSystemDevicesQueryOptions(payload?: SystemDevicesQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemDevices(payload),
+    queryFn: () => getSystemDevices(payload),
+  })
 }
 
 export function getSystemDevicesSummaryQueryOptions() {
@@ -387,7 +393,7 @@ export function getSystemTenantsExportQueryOptions(payload?: SystemTenantsQuery)
 
 export function getSystemDevicesExportQueryOptions(payload?: SystemDevicesQuery) {
   return queryOptions({
-    queryKey: [...AUTH_QUERY_KEY.systemDevices, 'export', payload],
+    queryKey: [...AUTH_QUERY_KEY.systemDevices(payload), 'export'],
     queryFn: () => exportSystemDevices(payload),
   })
 }
@@ -672,7 +678,7 @@ export function useDeleteDeviceCatalogEntry() {
     mutationFn: deleteDeviceCatalogEntry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesCatalog })
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevices })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevices() })
     },
   })
 }

@@ -349,8 +349,10 @@ export async function resendTenantInvite({ id }: { id: string }) {
 
 // ─── System admin — devices ───────────────────────────────────────────────────
 
-export async function getSystemDevices() {
-  const { data } = await axiosInstance.get<SystemDeviceInventoryListResponse>('/auth/system/devices')
+export async function getSystemDevices(payload?: SystemDevicesQuery) {
+  const { data } = await axiosInstance.get<SystemDeviceInventoryListResponse>('/auth/system/devices', {
+    params: payload?.params,
+  })
   return data
 }
 

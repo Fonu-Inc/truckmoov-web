@@ -456,6 +456,50 @@ export type SystemTenantsSummary = {
   generatedAt: string
 }
 
+export type SystemDevicesSummary = {
+  totalDevices: number
+  registeredDevices: number
+  configuredDevices: number
+  verifiedActiveDevices: number
+  pendingConfigDevices: number
+  onlineNowDevices: number
+  assignableDevices: number
+  assignedDevices: number
+  activeDevices: number
+  faultyDevices: number
+  totalCatalogModels: number
+  supportedCatalogModels: number
+  deprecatedCatalogModels: number
+  blockedCatalogModels: number
+  generatedAt: string
+}
+
+export type SystemDeviceInventoryItem = {
+  id: string
+  imei: string
+  manufacturer: string
+  model: string
+  tenantId: string | null
+  tenantName: string | null
+  lifecycleStatus: string
+  operationalStatus: string
+  signalStrength: number | null
+  batteryLevel?: number | null
+  lastSeen: string | null
+  vehicleId: string | null
+  assignedAt: string | null
+  firmwareVersion?: string | null
+  protocol?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type SystemDeviceInventoryList = {
+  total: number
+  devices: SystemDeviceInventoryItem[]
+  generatedAt: string
+}
+
 // ─── Response envelopes ───────────────────────────────────────────────────────
 
 export type AuthTokenResponse = ServerResponse<AuthSession>
@@ -484,8 +528,8 @@ export type SystemDeviceCatalogListResponse = ServerResponse<SystemDeviceCatalog
 export type SystemDeviceCatalogModelResponse = ServerResponse<SystemDeviceCatalogModel>
 export type SystemDeviceCatalogDeleteResponse = ServerResponse<Record<string, unknown>>
 export type SystemDeviceCatalogReferenceDataResponse = ServerResponse<Record<string, unknown>>
-export type SystemDeviceInventoryListResponse = ServerResponse<Record<string, unknown>[]>
-export type SystemDeviceSummaryResponse = ServerResponse<Record<string, unknown>>
+export type SystemDeviceInventoryListResponse = ServerResponse<SystemDeviceInventoryList>
+export type SystemDeviceSummaryResponse = ServerResponse<SystemDevicesSummary>
 export type SystemSimsListResponse = ServerResponse<Record<string, unknown>[]>
 export type SystemSimSummaryResponse = ServerResponse<Record<string, unknown>>
 export type SystemSimRequestsListResponse = ServerResponse<Record<string, unknown>[]>
