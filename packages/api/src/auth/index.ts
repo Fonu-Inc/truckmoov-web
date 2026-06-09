@@ -84,7 +84,7 @@ import {
   verifyEmail,
   verifyReset,
 } from './requests'
-import type { ActivityLogQuery, SystemDevicesQuery, SystemSimsQuery, SystemTenantsQuery } from './types'
+import type { ActivityLogQuery, SystemDeviceCatalogQuery, SystemDevicesQuery, SystemSimsQuery, SystemTenantsQuery } from './types'
 
 export type {
   ActivityLogQuery,
@@ -109,6 +109,8 @@ export type {
   RegisterPayload,
   RejectSIMRequestPayload,
   ResendOrgInvitePayload,
+  SystemDeviceCatalogQuery,
+  SystemDeviceCatalogModel,
   SystemDeviceInventoryItem,
   SystemDeviceInventoryList,
   SystemDevicesQuery,
@@ -157,7 +159,7 @@ export const AUTH_QUERY_KEY = {
   systemTenantsSummary: ['systemTenantsSummary'],
   systemDevices: (payload?: SystemDevicesQuery) => payload ? ['systemDevices', payload] : ['systemDevices'],
   systemDevicesSummary: ['systemDevicesSummary'],
-  systemDevicesCatalog: ['systemDevicesCatalog'],
+  systemDevicesCatalog: (payload?: SystemDeviceCatalogQuery) => payload ? ['systemDevicesCatalog', payload] : ['systemDevicesCatalog'],
   systemSims: ['systemSims'],
   systemSimsSummary: ['systemSimsSummary'],
   systemSimsRequests: ['systemSimsRequests'],
@@ -269,10 +271,10 @@ export function getSystemDevicesSummaryQueryOptions() {
   })
 }
 
-export function getSystemDevicesCatalogQueryOptions() {
+export function getSystemDevicesCatalogQueryOptions(payload?: SystemDeviceCatalogQuery) {
   return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemDevicesCatalog,
-    queryFn: getSystemDevicesCatalog,
+    queryKey: AUTH_QUERY_KEY.systemDevicesCatalog(payload),
+    queryFn: () => getSystemDevicesCatalog(payload),
   })
 }
 
@@ -659,7 +661,7 @@ export function useCreateDeviceCatalogEntry() {
   return useMutation({
     mutationFn: createDeviceCatalogEntry,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesCatalog })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesCatalog() })
     },
   })
 }
@@ -668,7 +670,7 @@ export function useUpdateDeviceCatalogEntry() {
   return useMutation({
     mutationFn: updateDeviceCatalogEntry,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesCatalog })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesCatalog() })
     },
   })
 }
@@ -677,7 +679,7 @@ export function useDeleteDeviceCatalogEntry() {
   return useMutation({
     mutationFn: deleteDeviceCatalogEntry,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesCatalog })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevicesCatalog() })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevices() })
     },
   })

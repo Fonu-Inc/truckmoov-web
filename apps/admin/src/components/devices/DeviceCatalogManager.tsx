@@ -1,8 +1,44 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getSystemDevicesCatalogQueryOptions,
+  useDeleteDeviceCatalogEntry,
+  useCreateDeviceCatalogEntry,
+  useUpdateDeviceCatalogEntry,
+} from "@truckmoov/api/auth";
+import type { SystemDeviceCatalogModel } from "@truckmoov/api/auth";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Badge } from "@/components/shadcn/badge";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/shadcn/form";
 import {
   Table,
   TableBody,
@@ -12,206 +48,232 @@ import {
   TableRow,
 } from "@/components/shadcn/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/shadcn/dialog";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/shadcn/dropdown-menu";
-import { Label } from "@/components/shadcn/label";
 import { Textarea } from "@/components/shadcn/textarea";
-import { Checkbox } from "@/components/shadcn/checkbox";
 import {
+  AlertTriangle,
+  Archive,
   BookOpen,
+  Edit,
+  Fuel,
+  Gauge,
   Search,
   Plus,
   MoreHorizontal,
-  Wifi,
-  Server,
-  Gauge,
-  Fuel,
-  AlertTriangle,
-  RefreshCw,
-  Check,
-  X,
-  Edit,
   Trash2,
-  Archive,
+  X,
 } from "lucide-react";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import { ExportButton } from "@/components/shadcn/export-button";
-type CatalogStatus = "supported" | "deprecated" | "blocked";
-type ProtocolType = "tcp" | "http" | "mqtt" | "udp";
-type DeviceCatalogEntry = {
-  id: string;
-  manufacturer: string;
-  model: string;
-  protocol_type: ProtocolType;
-  default_port?: number | null;
-  supports_obd: boolean;
-  supports_fuel: boolean;
-  supports_sos: boolean;
-  config_instructions?: string;
-  status: CatalogStatus;
+
+type CatalogStatusFilter = "all" | "supported" | "deprecated" | "blocked";
+type DeviceFeature = "obd2" | "fuel" | "sos";
+
+const DEVICE_CATALOG_FORM_ID = "device-catalog-form";
+const EDIT_DEVICE_CATALOG_FORM_ID = "edit-device-catalog-form";
+const DEVICE_FEATURE_OPTIONS: Array<{
+  value: DeviceFeature;
+  label: string;
+  icon: typeof Gauge;
+}> = [
+  { value: "obd2", label: "OBD-II", icon: Gauge },
+  { value: "fuel", label: "Fuel", icon: Fuel },
+  { value: "sos", label: "SOS", icon: AlertTriangle },
+];
+const protocolBadgeClass: Record<string, string> = {
+  TCP: "border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-50",
+  HTTP: "border-emerald-100 bg-emerald-50 text-emerald-700 hover:bg-emerald-50",
+  MQTT: "border-purple-100 bg-purple-50 text-purple-700 hover:bg-purple-50",
+  UDP: "border-amber-100 bg-amber-50 text-amber-700 hover:bg-amber-50",
 };
-type CreateCatalogEntry = Omit<DeviceCatalogEntry, "id">;
+const statusBadgeClass: Record<string, string> = {
+  supported: "border-emerald-500/40 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/15",
+  deprecated: "border-amber-500/40 bg-amber-500/15 text-amber-400 hover:bg-amber-500/15",
+  blocked: "border-destructive/40 bg-destructive/15 text-destructive hover:bg-destructive/15",
+};
+const statusLabel: Record<string, string> = {
+  supported: "Supported",
+  deprecated: "Deprecated",
+  blocked: "Blocked",
+};
+const featureIconClass: Record<string, string> = {
+  obd2: "text-blue-500",
+  fuel: "text-amber-500",
+  sos: "text-red-500",
+};
+
+const deviceCatalogFormSchema = z.object({
+  manufacturer: z.string().trim().min(1, "Manufacturer is required."),
+  model: z.string().trim().min(1, "Model is required."),
+  protocolType: z.enum(["TCP", "HTTP", "MQTT", "UDP"]),
+  defaultPort: z.number().int().positive("Default port must be positive.").optional(),
+  supportedFeatures: z.array(z.enum(["obd2", "fuel", "sos"])),
+  status: z.enum(["supported", "deprecated", "blocked"]),
+  configurationInstructions: z.string().optional(),
+});
+
+const editDeviceCatalogFormSchema = deviceCatalogFormSchema.omit({ status: true });
+
+type DeviceCatalogFormValues = z.infer<typeof deviceCatalogFormSchema>;
+type EditDeviceCatalogFormValues = z.infer<typeof editDeviceCatalogFormSchema>;
+
+const defaultCatalogFormValues: DeviceCatalogFormValues = {
+  manufacturer: "",
+  model: "",
+  protocolType: "TCP",
+  defaultPort: undefined,
+  supportedFeatures: [],
+  status: "supported",
+  configurationInstructions: "",
+};
+const defaultEditCatalogFormValues: EditDeviceCatalogFormValues = {
+  manufacturer: "",
+  model: "",
+  protocolType: "TCP",
+  defaultPort: undefined,
+  supportedFeatures: [],
+  configurationInstructions: "",
+};
+
+function getCatalogFormValues(model: SystemDeviceCatalogModel): EditDeviceCatalogFormValues {
+  const protocolType = ["TCP", "HTTP", "MQTT", "UDP"].includes(model.protocolType)
+    ? model.protocolType as EditDeviceCatalogFormValues["protocolType"]
+    : "TCP";
+  const supportedFeatures = model.supportedFeatures.filter(
+    (feature): feature is DeviceFeature => ["obd2", "fuel", "sos"].includes(feature),
+  );
+
+  return {
+    manufacturer: model.manufacturer,
+    model: model.model,
+    protocolType,
+    defaultPort: model.defaultPort || undefined,
+    supportedFeatures,
+    configurationInstructions: model.configurationInstructions ?? "",
+  };
+}
 
 export function DeviceCatalogManager() {
-  const catalog: DeviceCatalogEntry[] = [];
-  const loading = false;
-  const refetch = () => {};
-  const createEntry = async (_data: CreateCatalogEntry) => {};
-  const updateEntry = async (_id: string, _data: Partial<CreateCatalogEntry>) => {};
-  const deleteEntry = async (_id: string) => {};
-  
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<DeviceCatalogEntry | null>(null);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [entryToDelete, setEntryToDelete] = useState<DeviceCatalogEntry | null>(null);
-
-  // Form state
-  const [formData, setFormData] = useState<CreateCatalogEntry>({
-    manufacturer: "",
-    model: "",
-    protocol_type: "tcp",
-    default_port: undefined,
-    supports_obd: false,
-    supports_fuel: false,
-    supports_sos: false,
-    config_instructions: "",
-    status: "supported",
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<CatalogStatusFilter>("all");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editingModel, setEditingModel] = useState<SystemDeviceCatalogModel | null>(null);
+  const createCatalogEntry = useCreateDeviceCatalogEntry();
+  const updateCatalogEntry = useUpdateDeviceCatalogEntry();
+  const deleteCatalogEntry = useDeleteDeviceCatalogEntry();
+  const form = useForm<DeviceCatalogFormValues>({
+    resolver: zodResolver(deviceCatalogFormSchema),
+    defaultValues: defaultCatalogFormValues,
+  });
+  const editForm = useForm<EditDeviceCatalogFormValues>({
+    resolver: zodResolver(editDeviceCatalogFormSchema),
+    defaultValues: defaultEditCatalogFormValues,
   });
 
-  const filteredCatalog = catalog.filter((entry) => {
-    const matchesSearch =
-      entry.manufacturer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      entry.model.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || entry.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  const getStatusBadge = (status: CatalogStatus) => {
-    switch (status) {
-      case "supported":
-        return <Badge className="bg-success/10 text-success border-success/30">Supported</Badge>;
-      case "deprecated":
-        return <Badge className="bg-warning/10 text-warning border-warning/30">Deprecated</Badge>;
-      case "blocked":
-        return <Badge variant="destructive">Blocked</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
+  const searchParam = debouncedSearchQuery.trim();
+  const catalogQueryPayload =
+    searchParam || statusFilter !== "all"
+      ? {
+          params: {
+            ...(searchParam ? { search: searchParam } : {}),
+            ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+          },
+        }
+      : undefined;
+  const catalogQuery = useQuery(getSystemDevicesCatalogQueryOptions(catalogQueryPayload));
+  const models = catalogQuery.data?.data.models ?? [];
 
-  const getProtocolBadge = (protocol: ProtocolType) => {
-    const colors: Record<ProtocolType, string> = {
-      tcp: "bg-blue-100 text-blue-700",
-      http: "bg-green-100 text-green-700",
-      mqtt: "bg-purple-100 text-purple-700",
-      udp: "bg-amber-100 text-amber-700",
-    };
-    return (
-      <Badge variant="outline" className={colors[protocol]}>
-        {protocol.toUpperCase()}
-      </Badge>
+  function handleCreateSubmit(values: DeviceCatalogFormValues) {
+    createCatalogEntry.mutate(
+      {
+        data: {
+          manufacturer: values.manufacturer,
+          model: values.model,
+          protocolType: values.protocolType,
+          defaultPort: values.defaultPort,
+          supportedFeatures: values.supportedFeatures,
+          status: values.status,
+          configurationInstructions: values.configurationInstructions?.trim() || undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          form.reset(defaultCatalogFormValues);
+          setCreateDialogOpen(false);
+        },
+      },
     );
-  };
+  }
 
-  const handleOpenCreate = () => {
-    setEditingEntry(null);
-    setFormData({
-      manufacturer: "",
-      model: "",
-      protocol_type: "tcp",
-      default_port: undefined,
-      supports_obd: false,
-      supports_fuel: false,
-      supports_sos: false,
-      config_instructions: "",
-      status: "supported",
-    });
-    setDialogOpen(true);
-  };
+  function handleOpenEdit(model: SystemDeviceCatalogModel) {
+    setEditingModel(model);
+    editForm.reset(getCatalogFormValues(model));
+  }
 
-  const handleOpenEdit = (entry: DeviceCatalogEntry) => {
-    setEditingEntry(entry);
-    setFormData({
-      manufacturer: entry.manufacturer,
-      model: entry.model,
-      protocol_type: entry.protocol_type,
-      default_port: entry.default_port || undefined,
-      supports_obd: entry.supports_obd,
-      supports_fuel: entry.supports_fuel,
-      supports_sos: entry.supports_sos,
-      config_instructions: entry.config_instructions || "",
-      status: entry.status,
-    });
-    setDialogOpen(true);
-  };
-
-  const handleSubmit = async () => {
-    try {
-      if (editingEntry) {
-        await updateEntry(editingEntry.id, formData);
-      } else {
-        await createEntry(formData);
-      }
-      setDialogOpen(false);
-    } catch (err) {
-      // Error handled in hook
+  function handleEditDialogOpenChange(open: boolean) {
+    if (!open) {
+      setEditingModel(null);
+      editForm.reset(defaultEditCatalogFormValues);
     }
-  };
+  }
 
-  const handleDelete = async () => {
-    if (entryToDelete) {
-      await deleteEntry(entryToDelete.id);
-      setDeleteConfirmOpen(false);
-      setEntryToDelete(null);
+  function handleEditSubmit(values: EditDeviceCatalogFormValues) {
+    if (!editingModel) {
+      return;
     }
-  };
 
-  const handleStatusChange = async (entry: DeviceCatalogEntry, newStatus: CatalogStatus) => {
-    await updateEntry(entry.id, { status: newStatus });
-  };
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Device Catalog</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-64 w-full" />
-          </div>
-        </CardContent>
-      </Card>
+    updateCatalogEntry.mutate(
+      {
+        id: editingModel.id,
+        data: {
+          manufacturer: values.manufacturer,
+          model: values.model,
+          protocolType: values.protocolType,
+          defaultPort: values.defaultPort,
+          supportedFeatures: values.supportedFeatures,
+          configurationInstructions: values.configurationInstructions?.trim() || undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          setEditingModel(null);
+          editForm.reset(defaultEditCatalogFormValues);
+        },
+      },
     );
+  }
+
+  function handleMarkDeprecated(model: SystemDeviceCatalogModel) {
+    updateCatalogEntry.mutate({
+      id: model.id,
+      data: { status: "deprecated" },
+    });
+  }
+
+  function handleBlockModel(model: SystemDeviceCatalogModel) {
+    updateCatalogEntry.mutate({
+      id: model.id,
+      data: { status: "blocked" },
+    });
+  }
+
+  function handleDeleteModel(model: SystemDeviceCatalogModel) {
+    deleteCatalogEntry.mutate({ id: model.id });
   }
 
   return (
     <>
-      {/* Add Device Model button placed above the catalog container, right-aligned */}
       <div className="flex items-center justify-end mb-4">
-        <Button onClick={handleOpenCreate}>
+        <Button onClick={() => setCreateDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Device Model
         </Button>
@@ -229,21 +291,7 @@ export function DeviceCatalogManager() {
                 Manage supported device manufacturers and models
               </CardDescription>
             </div>
-            <ExportButton
-              filename="device-catalog"
-              label="Export Data"
-              rows={filteredCatalog}
-              columns={[
-                { header: 'Manufacturer', accessor: (e) => e.manufacturer },
-                { header: 'Model', accessor: (e) => e.model },
-                { header: 'Protocol', accessor: (e) => e.protocol_type },
-                { header: 'Port', accessor: (e) => e.default_port ?? '' },
-                { header: 'OBD', accessor: (e) => (e.supports_obd ? 'Yes' : 'No') },
-                { header: 'Fuel', accessor: (e) => (e.supports_fuel ? 'Yes' : 'No') },
-                { header: 'SOS', accessor: (e) => (e.supports_sos ? 'Yes' : 'No') },
-                { header: 'Status', accessor: (e) => e.status },
-              ]}
-            />
+            <Button variant="outline">Export Data</Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -254,10 +302,13 @@ export function DeviceCatalogManager() {
                 placeholder="Search manufacturer or model..."
                 className="pl-10"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(event) => setSearchQuery(event.target.value)}
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => setStatusFilter(value as CatalogStatusFilter)}
+            >
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
@@ -270,100 +321,112 @@ export function DeviceCatalogManager() {
             </Select>
           </div>
 
-          <div className="rounded-lg border">
+          <div className="overflow-hidden rounded-lg border">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Manufacturer</TableHead>
-                  <TableHead>Model</TableHead>
-                  <TableHead>Protocol</TableHead>
-                  <TableHead>Port</TableHead>
-                  <TableHead>Features</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="h-14 px-5 text-muted-foreground">Manufacturer</TableHead>
+                  <TableHead className="h-14 px-5 text-muted-foreground">Model</TableHead>
+                  <TableHead className="h-14 px-5 text-muted-foreground">Protocol</TableHead>
+                  <TableHead className="h-14 px-5 text-muted-foreground">Port</TableHead>
+                  <TableHead className="h-14 px-5 text-muted-foreground">Features</TableHead>
+                  <TableHead className="h-14 px-5 text-muted-foreground">Status</TableHead>
+                  <TableHead className="h-14 w-[56px] px-5"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCatalog.length === 0 ? (
+                {catalogQuery.isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      {catalog.length === 0
-                        ? "No device models in catalog. Add your first model."
-                        : "No models match your search."}
+                    <TableCell colSpan={7} className="px-5 py-8 text-center text-muted-foreground">
+                      Loading device catalog...
+                    </TableCell>
+                  </TableRow>
+                ) : models.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="px-5 py-8 text-center text-muted-foreground">
+                      No device models in catalog.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredCatalog.map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell className="font-medium">{entry.manufacturer}</TableCell>
-                      <TableCell>{entry.model}</TableCell>
-                      <TableCell>{getProtocolBadge(entry.protocol_type)}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {entry.default_port || "—"}
+                  models.map((model) => (
+                    <TableRow key={model.id} className="h-[72px]">
+                      <TableCell className="px-5 font-semibold text-foreground">{model.manufacturer}</TableCell>
+                      <TableCell className="px-5 font-semibold text-foreground">{model.model}</TableCell>
+                      <TableCell className="px-5">
+                        <Badge
+                          variant="outline"
+                          className={`h-6 rounded-md px-2 text-xs font-bold ${
+                            protocolBadgeClass[model.protocolType] ?? "border-muted bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {model.protocolType}
+                        </Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          {entry.supports_obd && (
-                            <span title="OBD Support">
-                              <Gauge className="h-4 w-4 text-blue-500" />
-                            </span>
-                          )}
-                          {entry.supports_fuel && (
-                            <span title="Fuel Monitoring">
-                              <Fuel className="h-4 w-4 text-amber-500" />
-                            </span>
-                          )}
-                          {entry.supports_sos && (
-                            <span title="SOS Button">
-                              <AlertTriangle className="h-4 w-4 text-red-500" />
-                            </span>
-                          )}
-                          {!entry.supports_obd && !entry.supports_fuel && !entry.supports_sos && (
+                      <TableCell className="px-5 text-muted-foreground">
+                        {model.defaultPort}
+                      </TableCell>
+                      <TableCell className="px-5">
+                        <div className="flex items-center gap-1.5">
+                          {model.supportedFeatures.length > 0 ? (
+                            model.supportedFeatures.map((feature) => (
+                              <span key={feature} title={feature}>
+                                {feature === "obd2" ? (
+                                  <Gauge className={`h-4 w-4 ${featureIconClass[feature]}`} />
+                                ) : feature === "fuel" ? (
+                                  <Fuel className={`h-4 w-4 ${featureIconClass[feature]}`} />
+                                ) : feature === "sos" ? (
+                                  <AlertTriangle className={`h-4 w-4 ${featureIconClass[feature]}`} />
+                                ) : null}
+                              </span>
+                            ))
+                          ) : (
                             <span className="text-muted-foreground text-sm">Basic</span>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{getStatusBadge(entry.status)}</TableCell>
-                      <TableCell>
+                      <TableCell className="px-5">
+                        <Badge
+                          variant="outline"
+                          className={`h-6 rounded-md px-2 text-xs font-bold ${
+                            statusBadgeClass[model.status] ?? "border-muted bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {statusLabel[model.status] ?? model.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="px-5 text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenEdit(entry)}>
-                              <Edit className="h-4 w-4 mr-2" />
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem onClick={() => handleOpenEdit(model)}>
+                              <Edit className="mr-2 h-4 w-4" />
                               Edit
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {entry.status !== "supported" && (
-                              <DropdownMenuItem onClick={() => handleStatusChange(entry, "supported")}>
-                                <Check className="h-4 w-4 mr-2" />
-                                Mark Supported
-                              </DropdownMenuItem>
-                            )}
-                            {entry.status !== "deprecated" && (
-                              <DropdownMenuItem onClick={() => handleStatusChange(entry, "deprecated")}>
-                                <Archive className="h-4 w-4 mr-2" />
-                                Mark Deprecated
-                              </DropdownMenuItem>
-                            )}
-                            {entry.status !== "blocked" && (
-                              <DropdownMenuItem onClick={() => handleStatusChange(entry, "blocked")}>
-                                <X className="h-4 w-4 mr-2" />
-                                Block Model
-                              </DropdownMenuItem>
-                            )}
+                            <DropdownMenuItem
+                              disabled={updateCatalogEntry.isPending}
+                              onClick={() => handleMarkDeprecated(model)}
+                            >
+                              <Archive className="mr-2 h-4 w-4" />
+                              Mark Deprecated
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              disabled={updateCatalogEntry.isPending}
+                              onClick={() => handleBlockModel(model)}
+                            >
+                              <X className="mr-2 h-4 w-4" />
+                              Block Model
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => {
-                                setEntryToDelete(entry);
-                                setDeleteConfirmOpen(true);
-                              }}
+                              className="text-destructive focus:text-destructive"
+                              disabled={deleteCatalogEntry.isPending}
+                              onClick={() => handleDeleteModel(model)}
                             >
-                              <Trash2 className="h-4 w-4 mr-2" />
+                              <Trash2 className="mr-2 h-4 w-4" />
                               Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -378,167 +441,350 @@ export function DeviceCatalogManager() {
         </CardContent>
       </Card>
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[550px]">
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="sm:max-w-[620px]">
           <DialogHeader>
-            <DialogTitle>
-              {editingEntry ? "Edit Device Model" : "Add Device Model"}
-            </DialogTitle>
+            <DialogTitle>Add Device Model</DialogTitle>
             <DialogDescription>
-              {editingEntry
-                ? "Update the device model configuration."
-                : "Add a new device model to the catalog."}
+              Add a new device model to the catalog.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="manufacturer">Manufacturer</Label>
-                <Input
-                  id="manufacturer"
-                  value={formData.manufacturer}
-                  onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
-                  placeholder="e.g., Teltonika"
+          <Form {...form}>
+            <form
+              id={DEVICE_CATALOG_FORM_ID}
+              onSubmit={form.handleSubmit(handleCreateSubmit)}
+              className="space-y-5"
+            >
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="manufacturer"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Manufacturer</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Teltonika" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="model"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Model</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., FMC130" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="model">Model</Label>
-                <Input
-                  id="model"
-                  value={formData.model}
-                  onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                  placeholder="e.g., FMC130"
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="protocolType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Protocol Type</FormLabel>
+                      <Select name={field.name} value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select protocol" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="TCP">TCP</SelectItem>
+                          <SelectItem value="HTTP">HTTP</SelectItem>
+                          <SelectItem value="MQTT">MQTT</SelectItem>
+                          <SelectItem value="UDP">UDP</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="defaultPort"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Default Port</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="e.g., 5001"
+                          value={field.value ?? ""}
+                          onBlur={field.onBlur}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            field.onChange(value ? Number(value) : undefined);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="protocol">Protocol Type</Label>
-                <Select
-                  value={formData.protocol_type}
-                  onValueChange={(v) => setFormData({ ...formData, protocol_type: v as ProtocolType })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select protocol" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="tcp">TCP</SelectItem>
-                    <SelectItem value="http">HTTP</SelectItem>
-                    <SelectItem value="mqtt">MQTT</SelectItem>
-                    <SelectItem value="udp">UDP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="port">Default Port</Label>
-                <Input
-                  id="port"
-                  type="number"
-                  value={formData.default_port || ""}
-                  onChange={(e) => setFormData({ ...formData, default_port: e.target.value ? parseInt(e.target.value) : undefined })}
-                  placeholder="e.g., 5001"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Supported Features</Label>
-              <div className="flex gap-6">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="obd"
-                    checked={formData.supports_obd}
-                    onCheckedChange={(checked) => setFormData({ ...formData, supports_obd: checked as boolean })}
-                  />
-                  <label htmlFor="obd" className="text-sm flex items-center gap-1">
-                    <Gauge className="h-4 w-4" />
-                    OBD-II
-                  </label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="fuel"
-                    checked={formData.supports_fuel}
-                    onCheckedChange={(checked) => setFormData({ ...formData, supports_fuel: checked as boolean })}
-                  />
-                  <label htmlFor="fuel" className="text-sm flex items-center gap-1">
-                    <Fuel className="h-4 w-4" />
-                    Fuel
-                  </label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="sos"
-                    checked={formData.supports_sos}
-                    onCheckedChange={(checked) => setFormData({ ...formData, supports_sos: checked as boolean })}
-                  />
-                  <label htmlFor="sos" className="text-sm flex items-center gap-1">
-                    <AlertTriangle className="h-4 w-4" />
-                    SOS
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(v) => setFormData({ ...formData, status: v as CatalogStatus })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="supported">Supported</SelectItem>
-                  <SelectItem value="deprecated">Deprecated</SelectItem>
-                  <SelectItem value="blocked">Blocked</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="instructions">Configuration Instructions</Label>
-              <Textarea
-                id="instructions"
-                value={formData.config_instructions}
-                onChange={(e) => setFormData({ ...formData, config_instructions: e.target.value })}
-                placeholder="Markdown-formatted configuration instructions..."
-                rows={4}
+              <FormField
+                control={form.control}
+                name="supportedFeatures"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Supported Features</FormLabel>
+                    <div className="flex flex-wrap gap-5">
+                      {DEVICE_FEATURE_OPTIONS.map(({ value, label, icon: Icon }) => (
+                        <FormItem key={value} className="flex items-center gap-2 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value.includes(value)}
+                              onCheckedChange={(checked) => {
+                                const nextValue = checked
+                                  ? [...field.value, value]
+                                  : field.value.filter((feature) => feature !== value);
+                                field.onChange(nextValue);
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="flex items-center gap-1 font-normal">
+                            <Icon className="h-4 w-4" />
+                            {label}
+                          </FormLabel>
+                        </FormItem>
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-          </div>
+
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select name={field.name} value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="supported">Supported</SelectItem>
+                        <SelectItem value="deprecated">Deprecated</SelectItem>
+                        <SelectItem value="blocked">Blocked</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="configurationInstructions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Configuration Instructions</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Markdown-formatted configuration instructions..."
+                        rows={5}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setCreateDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={!formData.manufacturer || !formData.model}>
-              {editingEntry ? "Save Changes" : "Add Model"}
+            <Button
+              type="submit"
+              form={DEVICE_CATALOG_FORM_ID}
+              loading={createCatalogEntry.isPending}
+            >
+              Add Model
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <DialogContent className="sm:max-w-[400px]">
+      <Dialog open={editingModel !== null} onOpenChange={handleEditDialogOpenChange}>
+        <DialogContent className="sm:max-w-[620px]">
           <DialogHeader>
-            <DialogTitle>Delete Device Model</DialogTitle>
+            <DialogTitle>Edit Device Model</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete {entryToDelete?.manufacturer} {entryToDelete?.model}?
-              This action cannot be undone.
+              Update the device model catalog details.
             </DialogDescription>
           </DialogHeader>
+
+          <Form {...editForm}>
+            <form
+              id={EDIT_DEVICE_CATALOG_FORM_ID}
+              onSubmit={editForm.handleSubmit(handleEditSubmit)}
+              className="space-y-5"
+            >
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={editForm.control}
+                  name="manufacturer"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Manufacturer</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Teltonika" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editForm.control}
+                  name="model"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Model</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., FMC130" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={editForm.control}
+                  name="protocolType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Protocol Type</FormLabel>
+                      <Select name={field.name} value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select protocol" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="TCP">TCP</SelectItem>
+                          <SelectItem value="HTTP">HTTP</SelectItem>
+                          <SelectItem value="MQTT">MQTT</SelectItem>
+                          <SelectItem value="UDP">UDP</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editForm.control}
+                  name="defaultPort"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Default Port</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="e.g., 5001"
+                          value={field.value ?? ""}
+                          onBlur={field.onBlur}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            field.onChange(value ? Number(value) : undefined);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={editForm.control}
+                name="supportedFeatures"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Supported Features</FormLabel>
+                    <div className="flex flex-wrap gap-5">
+                      {DEVICE_FEATURE_OPTIONS.map(({ value, label, icon: Icon }) => (
+                        <FormItem key={value} className="flex items-center gap-2 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value.includes(value)}
+                              onCheckedChange={(checked) => {
+                                const nextValue = checked
+                                  ? [...field.value, value]
+                                  : field.value.filter((feature) => feature !== value);
+                                field.onChange(nextValue);
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="flex items-center gap-1 font-normal">
+                            <Icon className="h-4 w-4" />
+                            {label}
+                          </FormLabel>
+                        </FormItem>
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={editForm.control}
+                name="configurationInstructions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Configuration Instructions</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Markdown-formatted configuration instructions..."
+                        rows={5}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleEditDialogOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
+            <Button
+              type="submit"
+              form={EDIT_DEVICE_CATALOG_FORM_ID}
+              loading={updateCatalogEntry.isPending}
+            >
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -546,6 +792,3 @@ export function DeviceCatalogManager() {
     </>
   );
 }
-
-
-

@@ -188,6 +188,13 @@ export type SystemDevicesQuery = {
   }
 }
 
+export type SystemDeviceCatalogQuery = {
+  params?: {
+    search?: string
+    status?: 'supported' | 'deprecated' | 'blocked'
+  }
+}
+
 export type SystemSimsQuery = {
   params?: {
     search?: string
@@ -234,12 +241,20 @@ export type UpdateTenantStatusPayload = {
 // ─── System admin — devices ───────────────────────────────────────────────────
 
 export type CreateDeviceCatalogPayload = {
-  data: Record<string, unknown>
+  data: {
+    manufacturer: string
+    model: string
+    protocolType: string
+    defaultPort?: number
+    supportedFeatures: string[]
+    status: string
+    configurationInstructions?: string
+  }
 }
 
 export type UpdateDeviceCatalogPayload = {
   id: string
-  data: Record<string, unknown>
+  data: Partial<CreateDeviceCatalogPayload['data']>
 }
 
 // ─── System admin — SIMs ──────────────────────────────────────────────────────
@@ -356,6 +371,12 @@ export type SystemDeviceCatalogModel = {
   configurationInstructions?: string
   createdAt: string
   updatedAt: string
+}
+
+export type SystemDeviceCatalogList = {
+  total: number
+  models: SystemDeviceCatalogModel[]
+  generatedAt: string
 }
 
 export type UploadedMedia = {
@@ -524,7 +545,7 @@ export type SystemTenantDeleteResponse = ServerResponse<Record<string, unknown>>
 export type SystemTenantOnboardingResponse = ServerResponse<Record<string, unknown>>
 export type SystemTenantOnboardingReferenceDataResponse = ServerResponse<Record<string, unknown>>
 export type SystemTenantInviteActionResponse = ServerResponse<Record<string, unknown>>
-export type SystemDeviceCatalogListResponse = ServerResponse<SystemDeviceCatalogModel[]>
+export type SystemDeviceCatalogListResponse = ServerResponse<SystemDeviceCatalogList>
 export type SystemDeviceCatalogModelResponse = ServerResponse<SystemDeviceCatalogModel>
 export type SystemDeviceCatalogDeleteResponse = ServerResponse<Record<string, unknown>>
 export type SystemDeviceCatalogReferenceDataResponse = ServerResponse<Record<string, unknown>>

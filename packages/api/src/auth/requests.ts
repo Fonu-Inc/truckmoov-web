@@ -20,6 +20,7 @@ import type {
   InviteUserPayload,
   RegisterInvitedPayload,
   ResendOrgInvitePayload,
+  SystemDeviceCatalogQuery,
   SystemDevicesQuery,
   SystemSimsQuery,
   LoginPayload,
@@ -369,8 +370,10 @@ export async function exportSystemDevices(payload?: SystemDevicesQuery) {
   return data
 }
 
-export async function getSystemDevicesCatalog() {
-  const { data } = await axiosInstance.get<SystemDeviceCatalogListResponse>('/auth/system/devices/catalog')
+export async function getSystemDevicesCatalog(payload?: SystemDeviceCatalogQuery) {
+  const { data } = await axiosInstance.get<SystemDeviceCatalogListResponse>('/auth/system/devices/catalog', {
+    params: payload?.params,
+  })
   return data
 }
 
