@@ -14,11 +14,10 @@ import { Textarea } from "@/components/shadcn/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useDeleteTenant } from "@truckmoov/api/auth";
-import { TenantData } from "@/hooks/useTenants";
+import { SystemTenant, useDeleteTenant } from "@truckmoov/api/auth";
 
 interface Props {
-  tenant: TenantData;
+  tenant: SystemTenant;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onTerminated?: () => void;

@@ -29,8 +29,16 @@ import {
 } from "@/components/shadcn/select";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useUpdateTenant } from "@truckmoov/api/auth";
-import { TenantData } from "@/hooks/useTenants";
+import { SystemTenant, useUpdateTenant } from "@truckmoov/api/auth";
+
+const organizationRoleOptions = [
+  { value: "FLEET_PROVIDER", label: "Fleet Provider" },
+  { value: "ENTERPRISE", label: "Enterprise" },
+  { value: "AGGREGATOR", label: "Aggregator" },
+  { value: "OWNER_OPERATOR", label: "Owner-Operator" },
+] as const;
+
+type OrganizationRole = (typeof organizationRoleOptions)[number]["value"];
 
 const schema = z.object({
   name: z.string().min(1, "Company name is required"),
@@ -42,16 +50,30 @@ const schema = z.object({
     .email("Invalid billing email")
     .optional()
     .or(z.literal("")),
-  plan: z.enum(["starter", "professional", "enterprise"]),
+  organizationType: z.enum(["FLEET_PROVIDER", "ENTERPRISE", "AGGREGATOR", "OWNER_OPERATOR"]),
 });
 
 type FormValues = z.infer<typeof schema>;
 
 interface Props {
-  tenant: TenantData | null;
+  tenant: SystemTenant | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+const normalizeOrganizationType = (value?: string | null): OrganizationRole | null => {
+  if (!value) return null;
+  const normalized = value.toUpperCase();
+  return organizationRoleOptions.some((option) => option.value === normalized)
+    ? (normalized as OrganizationRole)
+    : null;
+};
+
+const getTenantOrganizationType = (tenant: SystemTenant): OrganizationRole => (
+  normalizeOrganizationType(tenant.organizationType)
+    ?? normalizeOrganizationType(tenant.organizationTypes?.[0])
+    ?? "FLEET_PROVIDER"
+);
 
 export function TenantEditDialog({ tenant, open, onOpenChange }: Props) {
   const updateTenantMutation = useUpdateTenant();
@@ -64,7 +86,7 @@ export function TenantEditDialog({ tenant, open, onOpenChange }: Props) {
       phone: "",
       address: "",
       billingEmail: "",
-      plan: "starter",
+      organizationType: "FLEET_PROVIDER",
     },
   });
 
@@ -76,7 +98,7 @@ export function TenantEditDialog({ tenant, open, onOpenChange }: Props) {
         phone: tenant.phone ?? "",
         address: tenant.address ?? "",
         billingEmail: tenant.billingEmail ?? "",
-        plan: tenant.plan ?? "starter",
+        organizationType: getTenantOrganizationType(tenant),
       });
     }
   }, [tenant, form]);
@@ -92,9 +114,7 @@ export function TenantEditDialog({ tenant, open, onOpenChange }: Props) {
           phoneNumber: values.phone || null,
           businessAddress: values.address || null,
           billingEmail: values.billingEmail || null,
-        },
-        subscription: {
-          planCode: values.plan,
+          organizationType: values.organizationType,
         },
       },
     });
@@ -108,7 +128,7 @@ export function TenantEditDialog({ tenant, open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle>Edit Tenant</DialogTitle>
           <DialogDescription>
-            Update tenant information and subscription plan
+            Update tenant information and organization role
           </DialogDescription>
         </DialogHeader>
 
@@ -186,10 +206,10 @@ export function TenantEditDialog({ tenant, open, onOpenChange }: Props) {
 
             <FormField
               control={form.control}
-              name="plan"
+              name="organizationType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Subscription Plan</FormLabel>
+                  <FormLabel>Organization Role</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -197,9 +217,11 @@ export function TenantEditDialog({ tenant, open, onOpenChange }: Props) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="starter">Starter</SelectItem>
-                      <SelectItem value="professional">Professional</SelectItem>
-                      <SelectItem value="enterprise">Enterprise</SelectItem>
+                      {organizationRoleOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

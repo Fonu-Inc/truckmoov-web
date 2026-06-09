@@ -105,6 +105,13 @@ const COMPANY_PLACEHOLDER: Record<OrgType, string> = {
   OWNER_OPERATOR: "e.g. Musa's Haulage",
 };
 
+const API_ORG_TYPE: Record<OrgType, string> = {
+  ENTERPRISE: "enterprise",
+  FLEET_PROVIDER: "fleet_provider",
+  AGGREGATOR: "aggregator",
+  OWNER_OPERATOR: "owner_operator",
+};
+
 export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: TenantOnboardingWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [duplicateInfo, setDuplicateInfo] = useState<{ count: number; names: string[] } | null>(null);
@@ -159,26 +166,11 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
       await createTenant.mutateAsync({
         data: {
           company: {
-            name: values.companyName,
-            primaryContactName: values.primaryContactName,
-            contactEmail: values.email,
+            companyName: values.companyName,
+            email: values.email,
             billingEmail: values.billingEmail,
-            contactPhone: values.phone,
-            organizationType: values.organizationType,
-          },
-          subscription: {
-            plan: "starter",
-            billingModel: "SUBSCRIPTION",
-            billingMode: "PREPAID",
-            billingCycle: "MONTHLY",
-          },
-          features: {
-            liveTracking: true,
-            geofencing: false,
-            routeOptimization: false,
-            messaging: true,
-            analytics: false,
-            apiAccess: false,
+            phoneNumber: values.phone,
+            organizationType: API_ORG_TYPE[values.organizationType],
           },
         },
       });

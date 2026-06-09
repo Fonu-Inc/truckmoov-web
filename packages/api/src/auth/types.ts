@@ -209,11 +209,13 @@ export type SystemTenantsQuery = {
 
 export type CreateTenantPayload = {
   data: {
-    company: Record<string, unknown>
-    subscription: Record<string, unknown>
-    deviceProvisioning?: Record<string, unknown>
-    simAssignment?: Record<string, unknown>
-    features?: Record<string, unknown>
+    company: {
+      "companyName": string,
+      "email": string,
+      "phoneNumber": string,
+      "billingEmail": string,
+      "organizationType": string
+    }
   }
 }
 

@@ -4,7 +4,8 @@ import {
   DialogContent as SheetContent,
   DialogDescription as SheetDescription,
   DialogHeader as SheetHeader,
-  DialogTitle as SheetTitle } from "@/components/shadcn/dialog";
+  DialogTitle as SheetTitle
+} from "@/components/shadcn/dialog";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { Card } from "@/components/shadcn/card";
@@ -44,16 +45,17 @@ import {
   Zap,
   Package,
   Copy,
-  RefreshCw } from "lucide-react";
+  RefreshCw
+} from "lucide-react";
 import { format } from "date-fns";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { getSystemTenantQueryOptions, useUpdateTenantStatus } from "@truckmoov/api/auth";
+import { getSystemTenantQueryOptions, SystemTenant, useUpdateTenantStatus } from "@truckmoov/api/auth";
 
 interface TenantDetailsSheetProps {
-  tenant: TenantData | null;
+  tenant: SystemTenant | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -61,7 +63,8 @@ interface TenantDetailsSheetProps {
 const planDetails = {
   starter: { name: "Starter", priceNGN: 774500, priceUSD: 499, color: "bg-muted text-muted-foreground" },
   professional: { name: "Professional", priceNGN: 2323500, priceUSD: 1499, color: "bg-primary/10 text-primary" },
-  enterprise: { name: "Enterprise", priceNGN: 7748500, priceUSD: 4999, color: "bg-success/10 text-success" } };
+  enterprise: { name: "Enterprise", priceNGN: 7748500, priceUSD: 4999, color: "bg-success/10 text-success" }
+};
 
 export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetailsSheetProps) {
   const { currency } = useCurrency();
@@ -99,7 +102,8 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
   const [editingOpQuota, setEditingOpQuota] = useState<Record<"driver" | "device" | "sim", number | null>>({
     driver: null,
     device: null,
-    sim: null });
+    sim: null
+  });
   const [savingOpQuota, setSavingOpQuota] = useState<"driver" | "device" | "sim" | null>(null);
 
   // Tenant-level vehicle quota + active vehicle count
@@ -270,15 +274,15 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
 
   const fullAddress = tenant.businessInfo
     ? [
-        tenant.businessInfo.addressLine1,
-        tenant.businessInfo.addressLine2,
-        tenant.businessInfo.city,
-        tenant.businessInfo.state,
-        tenant.businessInfo.postalCode,
-        tenant.businessInfo.country,
-      ]
-        .filter(Boolean)
-        .join(", ")
+      tenant.businessInfo.addressLine1,
+      tenant.businessInfo.addressLine2,
+      tenant.businessInfo.city,
+      tenant.businessInfo.state,
+      tenant.businessInfo.postalCode,
+      tenant.businessInfo.country,
+    ]
+      .filter(Boolean)
+      .join(", ")
     : tenant.address;
 
   return (
@@ -558,7 +562,8 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                             onChange={(e) =>
                               setEditingOpQuota((prev) => ({
                                 ...prev,
-                                [key]: Math.max(1, Number(e.target.value) || 1) }))
+                                [key]: Math.max(1, Number(e.target.value) || 1)
+                              }))
                             }
                             className="w-24 h-8 text-sm"
                           />
@@ -628,7 +633,8 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                                   value={currentCap}
                                   onChange={(e) => setEditingCaps(prev => ({
                                     ...prev,
-                                    [org.id]: Math.min(10, Math.max(1, Number(e.target.value) || 1)) }))}
+                                    [org.id]: Math.min(10, Math.max(1, Number(e.target.value) || 1))
+                                  }))}
                                   className="w-20 h-8 text-sm"
                                 />
                                 <span className="text-xs text-muted-foreground">/ 10 max</span>
@@ -666,9 +672,8 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                     {Object.entries(tenant.features).map(([feature, enabled]) => (
                       <div
                         key={feature}
-                        className={`flex items-center gap-2 text-sm p-2 rounded-lg ${
-                          enabled ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
-                        }`}
+                        className={`flex items-center gap-2 text-sm p-2 rounded-lg ${enabled ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                          }`}
                       >
                         {enabled ? (
                           <CheckCircle className="h-4 w-4" />
@@ -981,18 +986,18 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                     paymentStatus.tone === "success"
                       ? "bg-success/10 text-success border-success/30"
                       : paymentStatus.tone === "warning"
-                      ? "bg-warning/10 text-warning border-warning/30"
-                      : paymentStatus.tone === "destructive"
-                      ? "bg-destructive/10 text-destructive border-destructive/30"
-                      : "bg-muted text-muted-foreground";
+                        ? "bg-warning/10 text-warning border-warning/30"
+                        : paymentStatus.tone === "destructive"
+                          ? "bg-destructive/10 text-destructive border-destructive/30"
+                          : "bg-muted text-muted-foreground";
                   const subToneClass =
                     subStatus === "active"
                       ? "bg-success/10 text-success border-success/30"
                       : subStatus === "pending" || subStatus === "trial"
-                      ? "bg-warning/10 text-warning border-warning/30"
-                      : subStatus === "expired" || subStatus === "suspended" || subStatus === "terminated"
-                      ? "bg-destructive/10 text-destructive border-destructive/30"
-                      : "bg-muted text-muted-foreground";
+                        ? "bg-warning/10 text-warning border-warning/30"
+                        : subStatus === "expired" || subStatus === "suspended" || subStatus === "terminated"
+                          ? "bg-destructive/10 text-destructive border-destructive/30"
+                          : "bg-muted text-muted-foreground";
 
                   return (
                     <div className="space-y-3">
@@ -1008,10 +1013,10 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                             <p className="text-sm text-muted-foreground">
                               {currency === "NGN"
                                 ? `₦${Number(
-                                    cycleRaw === "yearly" && plan?.yearly_price_ngn
-                                      ? plan.yearly_price_ngn
-                                      : plan?.price_ngn ?? planDetails[tenant.plan]?.priceNGN ?? 0
-                                  ).toLocaleString()}`
+                                  cycleRaw === "yearly" && plan?.yearly_price_ngn
+                                    ? plan.yearly_price_ngn
+                                    : plan?.price_ngn ?? planDetails[tenant.plan]?.priceNGN ?? 0
+                                ).toLocaleString()}`
                                 : `$${planDetails[tenant.plan]?.priceUSD?.toLocaleString() ?? "—"}`}
                               {" / "}
                               {cycleRaw === "yearly" ? "year" : "month"}
@@ -1063,8 +1068,8 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                               {sub?.auto_renew === undefined || sub?.auto_renew === null
                                 ? "—"
                                 : sub.auto_renew
-                                ? "Enabled"
-                                : "Disabled"}
+                                  ? "Enabled"
+                                  : "Disabled"}
                             </p>
                           </div>
                           {lastPayment && (
@@ -1113,8 +1118,8 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                       {(billingModel || tenantBillingData?.billing_model) === "postpaid"
                         ? "Tenant is billed for actual usage at the end of each billing cycle."
                         : (billingModel || tenantBillingData?.billing_model) === "prepaid"
-                        ? "Tenant pre-loads wallet balance and usage is deducted in real-time."
-                        : "Tenant pays a fixed subscription fee per billing cycle."}
+                          ? "Tenant pre-loads wallet balance and usage is deducted in real-time."
+                          : "Tenant pays a fixed subscription fee per billing cycle."}
                     </p>
                   </Card>
                 </div>
