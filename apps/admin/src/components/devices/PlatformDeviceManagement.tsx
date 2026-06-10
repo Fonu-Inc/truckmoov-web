@@ -25,6 +25,7 @@ import {
 import { Progress } from "@/components/shadcn/progress";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  getSystemDeviceQueryOptions,
   getSystemDevicesExportQueryOptions,
   getSystemDevicesQueryOptions,
   getSystemDevicesSummaryQueryOptions,
@@ -73,11 +74,12 @@ const lifecycleStatuses = [
 ];
 
 const operationalStatuses = [
-  { value: "active", label: "Active" },
+  { value: "registered", label: "Registered" },
+  { value: "configured", label: "Configured" },
   { value: "assigned", label: "Assigned" },
-  { value: "inactive", label: "Inactive" },
-  { value: "suspended", label: "Suspended" },
+  { value: "active", label: "Active" },
   { value: "faulty", label: "Faulty" },
+  { value: "decommissioned", label: "Decommissioned" },
 ];
 
 type DeviceFilterDraft = {
@@ -156,10 +158,10 @@ export function PlatformDeviceManagement() {
     params: {
       ...(debouncedSearchQuery.trim() ? { search: debouncedSearchQuery.trim() } : {}),
       ...(appliedFilters.operationalStatus.enabled && appliedFilters.operationalStatus.value
-        ? { status: appliedFilters.operationalStatus.value }
+        ? { status: appliedFilters.operationalStatus.value as NonNullable<SystemDevicesQuery["params"]>["status"] }
         : {}),
       ...(appliedFilters.lifecycleStatus.enabled && appliedFilters.lifecycleStatus.value
-        ? { lifecycleStatus: appliedFilters.lifecycleStatus.value }
+        ? { lifecycleStatus: appliedFilters.lifecycleStatus.value as NonNullable<SystemDevicesQuery["params"]>["lifecycleStatus"] }
         : {}),
       ...(appliedFilters.manufacturer.enabled && appliedFilters.manufacturer.value.trim()
         ? { manufacturer: appliedFilters.manufacturer.value.trim() }
@@ -168,6 +170,10 @@ export function PlatformDeviceManagement() {
   }), [appliedFilters, debouncedSearchQuery]);
 
   const devicesQuery = useQuery(getSystemDevicesQueryOptions(devicesQueryPayload));
+  const selectedDeviceDetailQuery = useQuery({
+    ...getSystemDeviceQueryOptions(selectedDevice?.id ?? ""),
+    enabled: Boolean(selectedDevice?.id),
+  });
   const summary = summaryQuery.data?.data;
   const devices = useMemo<SystemDeviceInventoryItem[]>(
     () => devicesQuery.data?.data?.devices ?? [],
@@ -185,8 +191,9 @@ export function PlatformDeviceManagement() {
     [appliedFilters],
   );
 
-  const selectedSignal = selectedDevice?.signalStrength ?? 0;
-  const selectedBattery = selectedDevice?.batteryLevel ?? 0;
+  const detailDevice = selectedDeviceDetailQuery.data?.data ?? selectedDevice;
+  const selectedSignal = detailDevice?.signalStrength ?? 0;
+  const selectedBattery = detailDevice?.batteryLevel ?? 0;
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -281,7 +288,7 @@ export function PlatformDeviceManagement() {
                       className="h-3.5 w-3.5"
                     />
                     <span className="text-xs font-medium text-muted-foreground">
-                      Operational Status
+                      Status
                     </span>
                   </label>
                   <Select
@@ -295,7 +302,7 @@ export function PlatformDeviceManagement() {
                     }
                   >
                     <SelectTrigger className="h-9 text-xs">
-                      <SelectValue placeholder="Select operational status" />
+                      <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
                       {operationalStatuses.map((status) => (
@@ -522,44 +529,47 @@ export function PlatformDeviceManagement() {
                 <Cpu className="h-7 w-7" />
               </span>
               <span>
-                <span className="block text-xl">{selectedDevice?.manufacturer} {selectedDevice?.model}</span>
+                <span className="block text-xl">{detailDevice?.manufacturer} {detailDevice?.model}</span>
                 <span className="block font-mono text-sm font-normal text-muted-foreground">
-                  IMEI: {selectedDevice?.imei}
+                  IMEI: {detailDevice?.imei}
                 </span>
               </span>
             </DialogTitle>
             <DialogDescription className="sr-only">Device details</DialogDescription>
           </DialogHeader>
 
-          {selectedDevice && (
+          {detailDevice && (
             <div className="mt-6 space-y-4">
+              {selectedDeviceDetailQuery.isLoading && (
+                <p className="text-sm text-muted-foreground">Loading latest device details...</p>
+              )}
               <div className="grid gap-6 rounded-lg border bg-card p-5 sm:grid-cols-2">
                 <div>
                   <p className="text-sm text-muted-foreground">Lifecycle / Operational</p>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <Badge className={getStatusBadgeClass(selectedDevice.lifecycleStatus)}>
-                      {formatStatusLabel(selectedDevice.lifecycleStatus)}
+                    <Badge className={getStatusBadgeClass(detailDevice.lifecycleStatus)}>
+                      {formatStatusLabel(detailDevice.lifecycleStatus)}
                     </Badge>
-                    {selectedDevice.operationalStatus && selectedDevice.operationalStatus !== selectedDevice.lifecycleStatus && (
-                      <Badge className={getStatusBadgeClass(selectedDevice.operationalStatus)}>
-                        {formatStatusLabel(selectedDevice.operationalStatus)}
+                    {detailDevice.operationalStatus && detailDevice.operationalStatus !== detailDevice.lifecycleStatus && (
+                      <Badge className={getStatusBadgeClass(detailDevice.operationalStatus)}>
+                        {formatStatusLabel(detailDevice.operationalStatus)}
                       </Badge>
                     )}
                   </div>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Last Seen</p>
-                  <p className="mt-2 font-semibold">{formatLastSeen(selectedDevice.lastSeen)}</p>
+                  <p className="mt-2 font-semibold">{formatLastSeen(detailDevice.lastSeen)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Tenant</p>
                   <p className="mt-2 max-w-[220px] truncate font-semibold">
-                    {selectedDevice.tenantName ?? selectedDevice.tenantId ?? "Unknown tenant"}
+                    {detailDevice.tenantName ?? detailDevice.tenantId ?? "Unknown tenant"}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Protocol</p>
-                  <p className="mt-2 font-semibold uppercase">{selectedDevice.protocol ?? "N/A"}</p>
+                  <p className="mt-2 font-semibold uppercase">{detailDevice.protocol ?? "N/A"}</p>
                 </div>
               </div>
 
@@ -572,7 +582,7 @@ export function PlatformDeviceManagement() {
                         <Signal className="h-4 w-4 text-muted-foreground" />
                         Signal Strength
                       </div>
-                      <span className="font-semibold">{selectedDevice.signalStrength ?? 0}%</span>
+                      <span className="font-semibold">{detailDevice.signalStrength ?? 0}%</span>
                     </div>
                     <Progress value={selectedSignal} />
                   </div>
@@ -583,9 +593,9 @@ export function PlatformDeviceManagement() {
                         Battery Level
                       </div>
                       <span className="font-semibold">
-                        {selectedDevice.batteryLevel === null || selectedDevice.batteryLevel === undefined
+                        {detailDevice.batteryLevel === null || detailDevice.batteryLevel === undefined
                           ? "N/A"
-                          : `${selectedDevice.batteryLevel}%`}
+                          : `${detailDevice.batteryLevel}%`}
                       </span>
                     </div>
                     <Progress value={selectedBattery} variant="warning" />
@@ -598,15 +608,15 @@ export function PlatformDeviceManagement() {
                 <div className="mt-4 space-y-3">
                   <div className="flex items-center justify-between gap-4 text-sm">
                     <span className="text-muted-foreground">Firmware Version</span>
-                    <span className="font-mono font-semibold">{selectedDevice.firmwareVersion ?? "N/A"}</span>
+                    <span className="font-mono font-semibold">{detailDevice.firmwareVersion ?? "N/A"}</span>
                   </div>
                   <div className="flex items-center justify-between gap-4 text-sm">
                     <span className="text-muted-foreground">Manufacturer</span>
-                    <span className="font-semibold">{selectedDevice.manufacturer}</span>
+                    <span className="font-semibold">{detailDevice.manufacturer}</span>
                   </div>
                   <div className="flex items-center justify-between gap-4 text-sm">
                     <span className="text-muted-foreground">Model</span>
-                    <span className="font-semibold">{selectedDevice.model}</span>
+                    <span className="font-semibold">{detailDevice.model}</span>
                   </div>
                 </div>
               </div>

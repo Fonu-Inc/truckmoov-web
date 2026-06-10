@@ -90,13 +90,7 @@ const DATE_RANGE_OPTIONS: Record<ChartDateRange, string> = {
 const platformConfigurationSchema = z.object({
   platformName: z.string().trim().min(1, "Platform name is required."),
   supportEmail: z.string().trim().email("Enter a valid support email."),
-  timezone: z.enum([
-    "Africa/Lagos",
-    "Africa/Johannesburg",
-    "UTC",
-    "Europe/London",
-    "America/New_York",
-  ]),
+  timezone: z.enum(["Africa/Lagos", "UTC"]),
   language: z.enum(["en", "ha", "yo", "ig", "fr"]),
   allowNewTenantRegistration: z.boolean(),
   maintenanceMode: z.boolean(),
@@ -626,11 +620,12 @@ export default function PlatformSettings() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="Africa/Lagos">Africa/Lagos (WAT, GMT+1)</SelectItem>
-                              <SelectItem value="Africa/Johannesburg">Africa/Johannesburg (SAST)</SelectItem>
-                              <SelectItem value="UTC">UTC</SelectItem>
-                              <SelectItem value="Europe/London">Europe/London</SelectItem>
-                              <SelectItem value="America/New_York">America/New_York</SelectItem>
+                              <SelectItem value="Africa/Lagos">
+                                WAT - West Africa Time (Africa/Lagos, GMT+1) - default
+                              </SelectItem>
+                              <SelectItem value="UTC">
+                                UTC - Coordinated Universal Time (GMT+0)
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />

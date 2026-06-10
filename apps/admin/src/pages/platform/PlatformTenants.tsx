@@ -14,13 +14,6 @@ import {
   TableRow
 } from "@/components/shadcn/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/shadcn/select";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -84,6 +77,17 @@ const ORG_TYPE_LABELS: Record<string, string> = {
 
 const tenantFilterFields: FilterField[] = [
   {
+    key: "status",
+    label: "Status",
+    type: "select",
+    options: [
+      { value: "active", label: "Active" },
+      { value: "pending", label: "Trial" },
+      { value: "suspended", label: "Suspended" },
+      { value: "inactive", label: "Inactive" },
+    ]
+  },
+  {
     key: "orgType",
     label: "Organization Type",
     type: "select",
@@ -109,9 +113,10 @@ const tenantFilterFields: FilterField[] = [
     label: "KYC Status",
     type: "select",
     options: [
-      { value: "verified", label: "Verified" },
-      { value: "under_review", label: "Under Review" },
       { value: "not_submitted", label: "Not Submitted" },
+      { value: "pending", label: "Pending" },
+      { value: "under_review", label: "Under Review" },
+      { value: "verified", label: "Verified" },
       { value: "rejected", label: "Rejected" },
     ]
   },
@@ -137,7 +142,6 @@ export default function PlatformTenants() {
 
   // Filter state declared before the query so params can be wired
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [advancedFilters, setAdvancedFilters] = useState<FilterDraft>(buildEmptyDraft(tenantFilterFields));
 
   // Debounce search to avoid a query on every keystroke
@@ -147,12 +151,30 @@ export default function PlatformTenants() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Derive server-side filter params — search, status, plan are handled by the API
-  const apiStatus = statusFilter !== "all"
-    ? statusFilter as "active" | "pending" | "suspended" | "inactive"
+  // Derive server-side filter params.
+  const apiStatus = advancedFilters.status?.enabled && advancedFilters.status?.value
+    ? advancedFilters.status.value as "active" | "pending" | "suspended" | "inactive"
     : undefined;
   const apiPlan = advancedFilters.plan?.enabled && advancedFilters.plan?.value
     ? advancedFilters.plan.value as "starter" | "professional" | "enterprise"
+    : undefined;
+  const apiOrganizationType = advancedFilters.orgType?.enabled && advancedFilters.orgType?.value
+    ? advancedFilters.orgType.value as "fleet_provider" | "enterprise" | "aggregator" | "owner_operator"
+    : undefined;
+  const apiKycStatus = advancedFilters.kyc?.enabled && advancedFilters.kyc?.value
+    ? advancedFilters.kyc.value as "not_submitted" | "pending" | "under_review" | "verified" | "rejected"
+    : undefined;
+  const apiRevenueFrom = advancedFilters.revenue?.enabled && advancedFilters.revenue?.from
+    ? Number(advancedFilters.revenue.from)
+    : undefined;
+  const apiRevenueTo = advancedFilters.revenue?.enabled && advancedFilters.revenue?.to
+    ? Number(advancedFilters.revenue.to)
+    : undefined;
+  const apiLastActiveFrom = advancedFilters.lastActive?.enabled && advancedFilters.lastActive?.from
+    ? advancedFilters.lastActive.from
+    : undefined;
+  const apiLastActiveTo = advancedFilters.lastActive?.enabled && advancedFilters.lastActive?.to
+    ? advancedFilters.lastActive.to
     : undefined;
 
   const tenantsQuery = useQuery(getSystemTenantsQueryOptions({
@@ -160,6 +182,12 @@ export default function PlatformTenants() {
       ...(debouncedSearch ? { search: debouncedSearch } : {}),
       ...(apiStatus ? { status: apiStatus } : {}),
       ...(apiPlan ? { plan: apiPlan } : {}),
+      ...(apiOrganizationType ? { organizationType: apiOrganizationType } : {}),
+      ...(apiKycStatus ? { kycStatus: apiKycStatus } : {}),
+      ...(apiRevenueFrom !== undefined ? { revenueFrom: apiRevenueFrom } : {}),
+      ...(apiRevenueTo !== undefined ? { revenueTo: apiRevenueTo } : {}),
+      ...(apiLastActiveFrom ? { lastActiveFrom: apiLastActiveFrom } : {}),
+      ...(apiLastActiveTo ? { lastActiveTo: apiLastActiveTo } : {}),
     },
   }));
   const summaryQuery = useQuery(getSystemTenantsSummaryQueryOptions());
@@ -234,38 +262,12 @@ export default function PlatformTenants() {
     return map;
   }, [tenantsPayload]);
 
-  // Client-side filter — search, status, and plan are server-side (API params);
-  // org type, KYC, revenue, and last active are not supported by the API
-  const filteredDbTenants = dbTenants.filter((tenant) => {
-    const orgTypeF = advancedFilters.orgType;
-    const orgTypes = tenantOrgTypesState[tenant.id] || [];
-    const matchesOrgType = !orgTypeF?.enabled || !orgTypeF.value || orgTypes.includes(orgTypeF.value);
-
-    const kycF = advancedFilters.kyc;
-    const kycStatus = tenant.businessInfo?.verificationStatus || "not_submitted";
-    const matchesKyc = !kycF?.enabled || !kycF.value || kycStatus === kycF.value;
-
-    const revF = advancedFilters.revenue;
-    const rev = tenant.monthlyRevenueNgn || 0;
-    const matchesRev = !revF?.enabled
-      || ((!revF.from || rev >= Number(revF.from)) && (!revF.to || rev <= Number(revF.to)));
-
-    const lastF = advancedFilters.lastActive;
-    const lastMs = tenant.lastActiveAt ? new Date(tenant.lastActiveAt).getTime() : 0;
-    const fromMs = lastF?.from ? new Date(lastF.from).getTime() : 0;
-    const toMs = lastF?.to ? new Date(lastF.to).getTime() + 86400000 : 0;
-    const matchesLast = !lastF?.enabled
-      || ((!fromMs || lastMs >= fromMs) && (!toMs || lastMs <= toMs));
-
-    return matchesOrgType && matchesKyc && matchesRev && matchesLast;
-  });
-
   // Apply sorting
   const sortedDbTenants = useMemo(() => {
-    const arr = [...filteredDbTenants];
+    const arr = [...dbTenants];
     arr.sort((a, b) => {
-      let av: any;
-      let bv: any;
+      let av: string | number;
+      let bv: string | number;
       switch (sortKey) {
         case "name": av = a.name?.toLowerCase() || ""; bv = b.name?.toLowerCase() || ""; break;
         case "orgType":
@@ -287,17 +289,16 @@ export default function PlatformTenants() {
       return 0;
     });
     return arr;
-  }, [filteredDbTenants, sortKey, sortDir, tenantOrgTypesState]);
+  }, [dbTenants, sortKey, sortDir, tenantOrgTypesState]);
 
   // Stats — sourced exclusively from the summary API; show "N/A" when not available
-  const { totalTenants, activeTenants, suspendedTenants, totalRevenueNGN, totalVehicles, totalSims, overdueInvoices } = useMemo(() => ({
+  const { totalTenants, activeTenants, suspendedTenants, totalVehicles, totalSims, overdueInvoices } = useMemo(() => ({
     totalTenants: summaryPayload?.totalTenants ?? "N/A",
     activeTenants: summaryPayload?.activeTenants ?? "N/A",
-    suspendedTenants: "N/A" as string | number,
-    totalRevenueNGN: summaryPayload?.monthlyRevenueNgn ?? null,
+    suspendedTenants: summaryPayload?.suspendedTenants ?? "N/A",
     totalVehicles: summaryPayload?.totalVehicles ?? "N/A",
-    totalSims: "N/A" as string | number,
-    overdueInvoices: "N/A" as string | number,
+    totalSims: summaryPayload?.totalSims ?? "N/A",
+    overdueInvoices: summaryPayload?.overdueInvoices ?? "N/A",
   }), [summaryPayload]);
 
   const getStatusBadge = (status: string) => {
@@ -367,6 +368,12 @@ export default function PlatformTenants() {
             ...(debouncedSearch ? { search: debouncedSearch } : {}),
             ...(apiStatus ? { status: apiStatus } : {}),
             ...(apiPlan ? { plan: apiPlan } : {}),
+            ...(apiOrganizationType ? { organizationType: apiOrganizationType } : {}),
+            ...(apiKycStatus ? { kycStatus: apiKycStatus } : {}),
+            ...(apiRevenueFrom !== undefined ? { revenueFrom: apiRevenueFrom } : {}),
+            ...(apiRevenueTo !== undefined ? { revenueTo: apiRevenueTo } : {}),
+            ...(apiLastActiveFrom ? { lastActiveFrom: apiLastActiveFrom } : {}),
+            ...(apiLastActiveTo ? { lastActiveTo: apiLastActiveTo } : {}),
           },
         })
       );
@@ -468,19 +475,6 @@ export default function PlatformTenants() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="pending">Trial</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
-                  <SelectItem value="terminated">Terminated</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
               <PlatformFilterPopover
                 entity="tenants"
                 fields={tenantFilterFields}

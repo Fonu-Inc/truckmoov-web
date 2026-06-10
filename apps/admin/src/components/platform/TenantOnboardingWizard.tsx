@@ -167,6 +167,7 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
         data: {
           company: {
             companyName: values.companyName,
+            contactName: values.primaryContactName,
             email: values.email,
             billingEmail: values.billingEmail,
             phoneNumber: values.phone,
@@ -220,18 +221,16 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
               return (
                 <div
                   key={step.id}
-                  className={`flex items-center gap-1 text-xs ${
-                    isActive ? "text-primary font-medium" : isCompleted ? "text-success" : "text-muted-foreground"
-                  }`}
+                  className={`flex items-center gap-1 text-xs ${isActive ? "text-primary font-medium" : isCompleted ? "text-success" : "text-muted-foreground"
+                    }`}
                 >
                   <div
-                    className={`h-6 w-6 rounded-full flex items-center justify-center text-xs ${
-                      isActive
+                    className={`h-6 w-6 rounded-full flex items-center justify-center text-xs ${isActive
                         ? "bg-primary text-primary-foreground"
                         : isCompleted
-                        ? "bg-success text-success-foreground"
-                        : "bg-muted"
-                    }`}
+                          ? "bg-success text-success-foreground"
+                          : "bg-muted"
+                      }`}
                   >
                     {isCompleted ? <Check className="h-3 w-3" /> : step.id}
                   </div>
@@ -264,9 +263,8 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
                           {orgTypeOptions.map((opt) => (
                             <Card
                               key={opt.value}
-                              className={`cursor-pointer transition-all hover:border-primary/50 ${
-                                orgType === opt.value ? "border-primary ring-2 ring-primary/20" : ""
-                              }`}
+                              className={`cursor-pointer transition-all hover:border-primary/50 ${orgType === opt.value ? "border-primary ring-2 ring-primary/20" : ""
+                                }`}
                               onClick={() =>
                                 form.setValue("organizationType", opt.value, { shouldValidate: true })
                               }

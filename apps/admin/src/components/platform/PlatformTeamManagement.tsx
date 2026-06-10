@@ -6,6 +6,7 @@ import {
   getSystemAdminInvitesQueryOptions,
   getSystemAdminsQueryOptions,
   useCreateSystemAdminInvite,
+  useDeleteSystemAdmin,
   useDeleteSystemAdminInvite,
   useResendSystemAdminInvite,
   useUpdateSystemAdminStatus,
@@ -107,6 +108,7 @@ export function PlatformTeamManagement() {
 
   const createInvite = useCreateSystemAdminInvite();
   const deleteInvite = useDeleteSystemAdminInvite();
+  const deleteAdmin = useDeleteSystemAdmin();
   const resendInvite = useResendSystemAdminInvite();
   const updateStatus = useUpdateSystemAdminStatus();
 
@@ -155,11 +157,11 @@ export function PlatformTeamManagement() {
   };
 
   const handleRemoveUser = (admin: AdminUser) => {
-    updateStatus.mutate(
-      { id: admin.userId, data: { accountStatus: "disabled" } },
+    deleteAdmin.mutate(
+      { id: admin.userId },
       {
-        onSuccess: () => {
-          toast.success("Admin removed");
+        onSuccess: (res) => {
+          toast.success(res.message || "Admin deleted");
           setUserToRemove(null);
         },
         onError: (e) => toast.error(e.message),
@@ -522,8 +524,9 @@ export function PlatformTeamManagement() {
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => userToRemove && handleRemoveUser(userToRemove)}
+              disabled={deleteAdmin.isPending}
             >
-              Delete
+              {deleteAdmin.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

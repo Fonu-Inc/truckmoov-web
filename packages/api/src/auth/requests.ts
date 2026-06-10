@@ -14,6 +14,7 @@ import type {
   CreateTenantPayload,
   CreateTicketMessagePayload,
   DispatcherPreferencesResponse,
+  DeleteSystemAdminPayload,
   EscalateTicketPayload,
   ForgotPasswordPayload,
   InviteActionResponse,
@@ -34,6 +35,7 @@ import type {
   RefreshPayload,
   RegisterPayload,
   RejectSIMRequestPayload,
+  RemoveOrganizationUserResponse,
   ResetPasswordPayload,
   RetrySimBatchPayload,
   StandardApiResponse,
@@ -46,6 +48,7 @@ import type {
   SystemDeviceCatalogListResponse,
   SystemDeviceCatalogModelResponse,
   SystemDeviceCatalogReferenceDataResponse,
+  SystemDeviceDetailResponse,
   SystemDeviceInventoryListResponse,
   SystemDeviceSummaryResponse,
   SystemFeatureFlagResponse,
@@ -273,6 +276,11 @@ export async function updateSystemAdminStatus({ id, data }: UpdateAdminStatusPay
   return res
 }
 
+export async function deleteSystemAdmin({ id }: DeleteSystemAdminPayload) {
+  const { data } = await axiosInstance.delete<RemoveOrganizationUserResponse>(`/auth/system/admins/${id}`)
+  return data
+}
+
 export async function systemChangePassword({ data }: SystemChangePasswordPayload) {
   const { data: res } = await axiosInstance.patch<StandardApiResponse>('/auth/system/change-password', data)
   return res
@@ -359,6 +367,11 @@ export async function getSystemDevices(payload?: SystemDevicesQuery) {
 
 export async function getSystemDevicesSummary() {
   const { data } = await axiosInstance.get<SystemDeviceSummaryResponse>('/auth/system/devices/summary')
+  return data
+}
+
+export async function getSystemDevice({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<SystemDeviceDetailResponse>(`/auth/system/devices/${id}`)
   return data
 }
 

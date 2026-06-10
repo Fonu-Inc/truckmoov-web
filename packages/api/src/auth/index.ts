@@ -1,15 +1,9 @@
-import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
+import { queryOptions, useMutation } from '@tanstack/react-query'
 
 import { useAuthStore } from '../lib/auth-store'
 import { queryClient } from '../lib/query-client'
 import {
   approveSIMRequest,
-  exportSystemDevices,
-  exportSystemSims,
-  exportSystemTenants,
-  getAuthHealth,
-  getSubscriptionPlans,
-  getTestSentry,
   changeRole,
   completeProfile,
   createDeviceCatalogEntry,
@@ -19,22 +13,29 @@ import {
   createTenant,
   deleteDeviceCatalogEntry,
   deleteOrganizationUser,
+  deleteSystemAdmin,
   deleteSystemAdminInvite,
   deleteTenant,
   escalateSupportTicket,
+  exportSystemDevices,
+  exportSystemSims,
+  exportSystemTenants,
   forgotPassword,
   getActivityLog,
+  getAuthHealth,
   getDispatchPreferences,
   getMe,
   getNotificationPreferences,
   getOrganizationSettings,
   getOrganizationUsers,
   getProfile,
+  getSubscriptionPlans,
   getSupportTicketMessages,
   getSystemActivityLog,
   getSystemAdminInvites,
   getSystemAdmins,
   getSystemDashboard,
+  getSystemDevice,
   getSystemDevices,
   getSystemDevicesCatalog,
   getSystemDevicesSummary,
@@ -42,9 +43,9 @@ import {
   getSystemRefDataDeviceCatalog,
   getSystemRefDataTenantOnboarding,
   getSystemSettings,
+  getSystemSims,
   getSystemSimsBatches,
   getSystemSimsRequests,
-  getSystemSims,
   getSystemSimsSummary,
   getSystemSubscriptionPlans,
   getSystemSupportDashboard,
@@ -53,9 +54,11 @@ import {
   getSystemTenant,
   getSystemTenants,
   getSystemTenantsSummary,
+  getTestSentry,
   inviteUser,
   login,
   logout,
+  refresh,
   register,
   registerInvited,
   rejectSIMRequest,
@@ -66,7 +69,6 @@ import {
   retrySimBatch,
   systemChangePassword,
   systemLogin,
-  refresh,
   updateDeviceCatalogEntry,
   updateDispatchPreferences,
   updateFeatureFlag,
@@ -84,7 +86,13 @@ import {
   verifyEmail,
   verifyReset,
 } from './requests'
-import type { ActivityLogQuery, SystemDeviceCatalogQuery, SystemDevicesQuery, SystemSimsQuery, SystemTenantsQuery } from './types'
+import type {
+  ActivityLogQuery,
+  SystemDeviceCatalogQuery,
+  SystemDevicesQuery,
+  SystemSimsQuery,
+  SystemTenantsQuery,
+} from './types'
 
 export type {
   ActivityLogQuery,
@@ -99,6 +107,7 @@ export type {
   CreateSystemAdminPayload,
   CreateTenantPayload,
   CreateTicketMessagePayload,
+  DeleteSystemAdminPayload,
   EscalateTicketPayload,
   ForgotPasswordPayload,
   InviteUserPayload,
@@ -108,22 +117,28 @@ export type {
   RegisterInvitedPayload,
   RegisterPayload,
   RejectSIMRequestPayload,
+  RemoveOrganizationUserData,
   ResendOrgInvitePayload,
-  SystemDeviceCatalogQuery,
+  ResetPasswordPayload,
+  RetrySimBatchPayload,
+  SubscriptionPlan,
+  SystemChangePasswordPayload,
   SystemDeviceCatalogModel,
+  SystemDeviceCatalogQuery,
+  SystemDeviceDetail,
+  SystemDeviceDetailResponse,
   SystemDeviceInventoryItem,
   SystemDeviceInventoryList,
   SystemDevicesQuery,
   SystemDevicesSummary,
+  SystemLoginPayload,
   SystemSimItem,
   SystemSimsList,
   SystemSimsQuery,
   SystemSimsSummary,
-  ResetPasswordPayload,
-  RetrySimBatchPayload,
-  SystemChangePasswordPayload,
-  SystemLoginPayload,
+  SystemTenant,
   SystemTenantsQuery,
+  SystemTenantsSummary,
   UpdateAdminStatusPayload,
   UpdateDeviceCatalogPayload,
   UpdateDispatchPrefsPayload,
@@ -140,280 +155,59 @@ export type {
   ValidateInviteQuery,
   VerifyEmailPayload,
   VerifyResetPayload,
-  SubscriptionPlan,
-  SystemTenant,
-  SystemTenantsSummary,
 } from './types'
-
-// ─── Query keys ───────────────────────────────────────────────────────────────
 
 export const AUTH_QUERY_KEY = {
   me: ['me'],
   profile: ['profile'],
   notificationPreferences: ['notificationPreferences'],
   dispatchPreferences: ['dispatchPreferences'],
-  activityLog: (payload?: ActivityLogQuery) => ['activityLog', payload],
+
   organizationUsers: ['organizationUsers'],
   organizationSettings: ['organizationSettings'],
+
+  activityLog: (payload?: ActivityLogQuery) => ['activityLog', payload],
+
   systemAdmins: ['systemAdmins'],
   systemAdminInvites: ['systemAdminInvites'],
-  systemTenants: (payload?: SystemTenantsQuery) => payload ? ['systemTenants', payload] : ['systemTenants'],
+
+  systemTenants: (payload?: SystemTenantsQuery) =>
+    payload ? ['systemTenants', payload] : ['systemTenants'],
   systemTenant: (id: string) => ['systemTenant', id],
   systemTenantsSummary: ['systemTenantsSummary'],
-  systemDevices: (payload?: SystemDevicesQuery) => payload ? ['systemDevices', payload] : ['systemDevices'],
+
+  systemDevices: (payload?: SystemDevicesQuery) =>
+    payload ? ['systemDevices', payload] : ['systemDevices'],
+  systemDevice: (id: string) => ['systemDevice', id],
   systemDevicesSummary: ['systemDevicesSummary'],
-  systemDevicesCatalog: (payload?: SystemDeviceCatalogQuery) => payload ? ['systemDevicesCatalog', payload] : ['systemDevicesCatalog'],
+  systemDevicesCatalog: (payload?: SystemDeviceCatalogQuery) =>
+    payload ? ['systemDevicesCatalog', payload] : ['systemDevicesCatalog'],
+
   systemSims: (payload?: SystemSimsQuery) => payload ? ['systemSims', payload] : ['systemSims'],
   systemSimsSummary: ['systemSimsSummary'],
   systemSimsRequests: ['systemSimsRequests'],
   systemSimsBatches: ['systemSimsBatches'],
+
   systemFeatureFlags: ['systemFeatureFlags'],
   systemSettings: ['systemSettings'],
+
   systemDashboard: ['systemDashboard'],
   systemActivityLog: ['systemActivityLog'],
   systemRefDataDeviceCatalog: ['systemRefDataDeviceCatalog'],
   systemRefDataTenantOnboarding: ['systemRefDataTenantOnboarding'],
   systemSubscriptionPlans: ['systemSubscriptionPlans'],
+  subscriptionPlans: ['subscriptionPlans'],
+
   systemSupportDashboard: ['systemSupportDashboard'],
   systemSupportTickets: ['systemSupportTickets'],
   systemSupportTicket: (id: string) => ['systemSupportTicket', id],
   systemSupportTicketMessages: (id: string) => ['systemSupportTicketMessages', id],
+
   authHealth: ['authHealth'],
-  subscriptionPlans: ['subscriptionPlans'],
   testSentry: ['testSentry'],
 } as const
 
-// ─── Query options ────────────────────────────────────────────────────────────
-
-export function getMeQueryOptions() {
-  return queryOptions({ queryKey: AUTH_QUERY_KEY.me, queryFn: getMe })
-}
-
-export function getProfileQueryOptions() {
-  return queryOptions({ queryKey: AUTH_QUERY_KEY.profile, queryFn: getProfile })
-}
-
-export function getNotificationPreferencesQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.notificationPreferences,
-    queryFn: getNotificationPreferences,
-  })
-}
-
-export function getDispatchPreferencesQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.dispatchPreferences,
-    queryFn: getDispatchPreferences,
-  })
-}
-
-export function getActivityLogQueryOptions(payload?: ActivityLogQuery) {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.activityLog(payload),
-    queryFn: () => getActivityLog(payload),
-  })
-}
-
-export function getOrganizationUsersQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.organizationUsers,
-    queryFn: getOrganizationUsers,
-  })
-}
-
-export function getOrganizationSettingsQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.organizationSettings,
-    queryFn: getOrganizationSettings,
-  })
-}
-
-export function getSystemAdminsQueryOptions() {
-  return queryOptions({ queryKey: AUTH_QUERY_KEY.systemAdmins, queryFn: getSystemAdmins })
-}
-
-export function getSystemAdminInvitesQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemAdminInvites,
-    queryFn: getSystemAdminInvites,
-  })
-}
-
-export function getSystemTenantsQueryOptions(payload?: SystemTenantsQuery) {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemTenants(payload),
-    queryFn: () => getSystemTenants(payload),
-  })
-}
-
-export function getSystemTenantsSummaryQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemTenantsSummary,
-    queryFn: getSystemTenantsSummary,
-  })
-}
-
-export function getSystemTenantQueryOptions(id: string) {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemTenant(id),
-    queryFn: () => getSystemTenant({ id }),
-  })
-}
-
-export function getSystemDevicesQueryOptions(payload?: SystemDevicesQuery) {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemDevices(payload),
-    queryFn: () => getSystemDevices(payload),
-  })
-}
-
-export function getSystemDevicesSummaryQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemDevicesSummary,
-    queryFn: getSystemDevicesSummary,
-  })
-}
-
-export function getSystemDevicesCatalogQueryOptions(payload?: SystemDeviceCatalogQuery) {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemDevicesCatalog(payload),
-    queryFn: () => getSystemDevicesCatalog(payload),
-  })
-}
-
-export function getSystemSimsQueryOptions(payload?: SystemSimsQuery) {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemSims(payload),
-    queryFn: () => getSystemSims(payload),
-  })
-}
-
-export function getSystemSimsSummaryQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemSimsSummary,
-    queryFn: getSystemSimsSummary,
-  })
-}
-
-export function getSystemSimsRequestsQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemSimsRequests,
-    queryFn: getSystemSimsRequests,
-  })
-}
-
-export function getSystemSimsBatchesQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemSimsBatches,
-    queryFn: getSystemSimsBatches,
-  })
-}
-
-export function getSystemFeatureFlagsQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemFeatureFlags,
-    queryFn: getSystemFeatureFlags,
-  })
-}
-
-export function getSystemSettingsQueryOptions() {
-  return queryOptions({ queryKey: AUTH_QUERY_KEY.systemSettings, queryFn: getSystemSettings })
-}
-
-export function getSystemDashboardQueryOptions() {
-  return queryOptions({ queryKey: AUTH_QUERY_KEY.systemDashboard, queryFn: getSystemDashboard })
-}
-
-export function getSystemActivityLogQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemActivityLog,
-    queryFn: getSystemActivityLog,
-  })
-}
-
-export function getSystemRefDataDeviceCatalogQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemRefDataDeviceCatalog,
-    queryFn: getSystemRefDataDeviceCatalog,
-  })
-}
-
-export function getSystemRefDataTenantOnboardingQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemRefDataTenantOnboarding,
-    queryFn: getSystemRefDataTenantOnboarding,
-  })
-}
-
-export function getSystemSubscriptionPlansQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemSubscriptionPlans,
-    queryFn: getSystemSubscriptionPlans,
-  })
-}
-
-export function getSystemSupportDashboardQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemSupportDashboard,
-    queryFn: getSystemSupportDashboard,
-  })
-}
-
-export function getSystemSupportTicketsQueryOptions() {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemSupportTickets,
-    queryFn: getSystemSupportTickets,
-  })
-}
-
-export function getSystemSupportTicketQueryOptions(id: string) {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemSupportTicket(id),
-    queryFn: () => getSystemSupportTicket({ id }),
-  })
-}
-
-export function getSupportTicketMessagesQueryOptions(id: string) {
-  return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemSupportTicketMessages(id),
-    queryFn: () => getSupportTicketMessages({ id }),
-  })
-}
-
-export function getAuthHealthQueryOptions() {
-  return queryOptions({ queryKey: AUTH_QUERY_KEY.authHealth, queryFn: getAuthHealth })
-}
-
-export function getSubscriptionPlansQueryOptions() {
-  return queryOptions({ queryKey: AUTH_QUERY_KEY.subscriptionPlans, queryFn: getSubscriptionPlans })
-}
-
-export function getTestSentryQueryOptions() {
-  return queryOptions({ queryKey: AUTH_QUERY_KEY.testSentry, queryFn: getTestSentry })
-}
-
-export function getSystemTenantsExportQueryOptions(payload?: SystemTenantsQuery) {
-  return queryOptions({
-    queryKey: [...AUTH_QUERY_KEY.systemTenants(payload), 'export'],
-    queryFn: () => exportSystemTenants(payload),
-  })
-}
-
-export function getSystemDevicesExportQueryOptions(payload?: SystemDevicesQuery) {
-  return queryOptions({
-    queryKey: [...AUTH_QUERY_KEY.systemDevices(payload), 'export'],
-    queryFn: () => exportSystemDevices(payload),
-  })
-}
-
-export function getSystemSimsExportQueryOptions(payload?: SystemSimsQuery) {
-  return queryOptions({
-    queryKey: [...AUTH_QUERY_KEY.systemSims(payload), 'export'],
-    queryFn: () => exportSystemSims(payload),
-  })
-}
-
-// ─── Mutations — public auth ──────────────────────────────────────────────────
+// Public auth/session
 
 export function useRegister() {
   return useMutation({ mutationFn: register })
@@ -465,11 +259,42 @@ export function useRegisterInvited() {
   return useMutation({ mutationFn: registerInvited })
 }
 
+export function useLogout() {
+  return useMutation({
+    mutationFn: logout,
+    onSuccess: () => {
+      useAuthStore.getState().logout()
+    },
+  })
+}
+
 export function useUploadMedia() {
   return useMutation({ mutationFn: uploadMedia })
 }
 
-// ─── Mutations — profile & preferences ───────────────────────────────────────
+// Profile and preferences
+
+export function getMeQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.me, queryFn: getMe })
+}
+
+export function getProfileQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.profile, queryFn: getProfile })
+}
+
+export function getNotificationPreferencesQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.notificationPreferences,
+    queryFn: getNotificationPreferences,
+  })
+}
+
+export function getDispatchPreferencesQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.dispatchPreferences,
+    queryFn: getDispatchPreferences,
+  })
+}
 
 export function useUpdateProfile() {
   return useMutation({
@@ -499,7 +324,21 @@ export function useUpdateDispatchPreferences() {
   })
 }
 
-// ─── Mutations — organization admin ───────────────────────────────────────────
+// Organization users/settings
+
+export function getOrganizationUsersQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.organizationUsers,
+    queryFn: getOrganizationUsers,
+  })
+}
+
+export function getOrganizationSettingsQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.organizationSettings,
+    queryFn: getOrganizationSettings,
+  })
+}
 
 export function useInviteUser() {
   return useMutation({
@@ -519,15 +358,6 @@ export function useChangeRole() {
     mutationFn: changeRole,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.organizationUsers })
-    },
-  })
-}
-
-export function useLogout() {
-  return useMutation({
-    mutationFn: logout,
-    onSuccess: () => {
-      useAuthStore.getState().logout()
     },
   })
 }
@@ -568,7 +398,34 @@ export function useUpdateOrganizationSettings() {
   })
 }
 
-// ─── Mutations — system admin: admins & invites ───────────────────────────────
+// Activity log
+
+export function getActivityLogQueryOptions(payload?: ActivityLogQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.activityLog(payload),
+    queryFn: () => getActivityLog(payload),
+  })
+}
+
+export function getSystemActivityLogQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemActivityLog,
+    queryFn: getSystemActivityLog,
+  })
+}
+
+// System admins and admin invites
+
+export function getSystemAdminsQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.systemAdmins, queryFn: getSystemAdmins })
+}
+
+export function getSystemAdminInvitesQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemAdminInvites,
+    queryFn: getSystemAdminInvites,
+  })
+}
 
 export function useCreateSystemAdmin() {
   return useMutation({
@@ -582,6 +439,15 @@ export function useCreateSystemAdmin() {
 export function useUpdateSystemAdminStatus() {
   return useMutation({
     mutationFn: updateSystemAdminStatus,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemAdmins })
+    },
+  })
+}
+
+export function useDeleteSystemAdmin() {
+  return useMutation({
+    mutationFn: deleteSystemAdmin,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemAdmins })
     },
@@ -614,7 +480,35 @@ export function useResendSystemAdminInvite() {
   return useMutation({ mutationFn: resendSystemAdminInvite })
 }
 
-// ─── Mutations — system admin: tenants ───────────────────────────────────────
+// System tenants
+
+export function getSystemTenantsQueryOptions(payload?: SystemTenantsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemTenants(payload),
+    queryFn: () => getSystemTenants(payload),
+  })
+}
+
+export function getSystemTenantsSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemTenantsSummary,
+    queryFn: getSystemTenantsSummary,
+  })
+}
+
+export function getSystemTenantQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemTenant(id),
+    queryFn: () => getSystemTenant({ id }),
+  })
+}
+
+export function getSystemTenantsExportQueryOptions(payload?: SystemTenantsQuery) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.systemTenants(payload), 'export'],
+    queryFn: () => exportSystemTenants(payload),
+  })
+}
 
 export function useCreateTenant() {
   return useMutation({
@@ -661,7 +555,42 @@ export function useResendTenantInvite() {
   return useMutation({ mutationFn: resendTenantInvite })
 }
 
-// ─── Mutations — system admin: devices ───────────────────────────────────────
+// System devices and device catalog
+
+export function getSystemDevicesQueryOptions(payload?: SystemDevicesQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemDevices(payload),
+    queryFn: () => getSystemDevices(payload),
+  })
+}
+
+export function getSystemDeviceQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemDevice(id),
+    queryFn: () => getSystemDevice({ id }),
+  })
+}
+
+export function getSystemDevicesSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemDevicesSummary,
+    queryFn: getSystemDevicesSummary,
+  })
+}
+
+export function getSystemDevicesCatalogQueryOptions(payload?: SystemDeviceCatalogQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemDevicesCatalog(payload),
+    queryFn: () => getSystemDevicesCatalog(payload),
+  })
+}
+
+export function getSystemDevicesExportQueryOptions(payload?: SystemDevicesQuery) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.systemDevices(payload), 'export'],
+    queryFn: () => exportSystemDevices(payload),
+  })
+}
 
 export function useCreateDeviceCatalogEntry() {
   return useMutation({
@@ -691,14 +620,49 @@ export function useDeleteDeviceCatalogEntry() {
   })
 }
 
-// ─── Mutations — system admin: SIMs ──────────────────────────────────────────
+// System SIMs
+
+export function getSystemSimsQueryOptions(payload?: SystemSimsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSims(payload),
+    queryFn: () => getSystemSims(payload),
+  })
+}
+
+export function getSystemSimsSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSimsSummary,
+    queryFn: getSystemSimsSummary,
+  })
+}
+
+export function getSystemSimsRequestsQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSimsRequests,
+    queryFn: getSystemSimsRequests,
+  })
+}
+
+export function getSystemSimsBatchesQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSimsBatches,
+    queryFn: getSystemSimsBatches,
+  })
+}
+
+export function getSystemSimsExportQueryOptions(payload?: SystemSimsQuery) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.systemSims(payload), 'export'],
+    queryFn: () => exportSystemSims(payload),
+  })
+}
 
 export function useApproveSIMRequest() {
   return useMutation({
     mutationFn: approveSIMRequest,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsRequests })
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSims })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSims() })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsSummary })
     },
   })
@@ -722,7 +686,18 @@ export function useRetrySimBatch() {
   })
 }
 
-// ─── Mutations — system admin: feature flags & settings ──────────────────────
+// Feature flags and system settings
+
+export function getSystemFeatureFlagsQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemFeatureFlags,
+    queryFn: getSystemFeatureFlags,
+  })
+}
+
+export function getSystemSettingsQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.systemSettings, queryFn: getSystemSettings })
+}
 
 export function useUpdateFeatureFlag() {
   return useMutation({
@@ -742,7 +717,66 @@ export function useUpdateSystemSettings() {
   })
 }
 
-// ─── Mutations — system admin: support tickets ────────────────────────────────
+// Dashboard, reference data, and subscription plans
+
+export function getSystemDashboardQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.systemDashboard, queryFn: getSystemDashboard })
+}
+
+export function getSystemRefDataDeviceCatalogQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemRefDataDeviceCatalog,
+    queryFn: getSystemRefDataDeviceCatalog,
+  })
+}
+
+export function getSystemRefDataTenantOnboardingQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemRefDataTenantOnboarding,
+    queryFn: getSystemRefDataTenantOnboarding,
+  })
+}
+
+export function getSystemSubscriptionPlansQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSubscriptionPlans,
+    queryFn: getSystemSubscriptionPlans,
+  })
+}
+
+export function getSubscriptionPlansQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.subscriptionPlans, queryFn: getSubscriptionPlans })
+}
+
+// Support tickets
+
+export function getSystemSupportDashboardQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSupportDashboard,
+    queryFn: getSystemSupportDashboard,
+  })
+}
+
+export function getSystemSupportTicketsQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSupportTickets,
+    queryFn: getSystemSupportTickets,
+  })
+}
+
+export function getSystemSupportTicketQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSupportTicket(id),
+    queryFn: () => getSystemSupportTicket({ id }),
+  })
+}
+
+export function getSupportTicketMessagesQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSupportTicketMessages(id),
+    queryFn: () => getSupportTicketMessages({ id }),
+  })
+}
 
 export function useUpdateSupportTicketStatus() {
   return useMutation({
@@ -771,4 +805,14 @@ export function useCreateSupportTicketMessage() {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTicketMessages(id) })
     },
   })
+}
+
+// Diagnostics and health
+
+export function getAuthHealthQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.authHealth, queryFn: getAuthHealth })
+}
+
+export function getTestSentryQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.testSentry, queryFn: getTestSentry })
 }

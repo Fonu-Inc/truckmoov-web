@@ -177,14 +177,18 @@ export type CreateSystemAdminInvitePayload = {
   data: Record<string, unknown>
 }
 
+export type DeleteSystemAdminPayload = {
+  id: string
+}
+
 // ─── System admin — devices & SIMs ───────────────────────────────────────────
 
 export type SystemDevicesQuery = {
   params?: {
     search?: string
     manufacturer?: string
-    status?: string
-    lifecycleStatus?: string
+    status?: 'registered' | 'configured' | 'assigned' | 'active' | 'faulty' | 'decommissioned'
+    lifecycleStatus?: 'registered' | 'config_pending' | 'configured' | 'verified_online' | 'assignable' | 'assigned' | 'faulty' | 'decommissioned'
   }
 }
 
@@ -211,6 +215,12 @@ export type SystemTenantsQuery = {
     search?: string
     status?: 'active' | 'pending' | 'suspended' | 'inactive'
     plan?: 'starter' | 'professional' | 'enterprise'
+    organizationType?: 'fleet_provider' | 'enterprise' | 'aggregator' | 'owner_operator'
+    kycStatus?: 'not_submitted' | 'pending' | 'under_review' | 'verified' | 'rejected'
+    revenueFrom?: number
+    revenueTo?: number
+    lastActiveFrom?: string
+    lastActiveTo?: string
   }
 }
 
@@ -218,6 +228,7 @@ export type CreateTenantPayload = {
   data: {
     company: {
       "companyName": string,
+      "contactName": string
       "email": string,
       "phoneNumber": string,
       "billingEmail": string,
@@ -472,8 +483,11 @@ export type SystemTenant = {
 export type SystemTenantsSummary = {
   totalTenants: number
   activeTenants: number
-  monthlyRevenueNgn: number
+  suspendedTenants: number
   totalVehicles: number
+  totalSims: number
+  overdueInvoices: number | null
+  monthlyRevenueNgn: number
   generatedAt: string
 }
 
@@ -557,6 +571,32 @@ export type SystemDeviceInventoryList = {
   generatedAt: string
 }
 
+export type SystemDeviceDetail = {
+  id: string
+  imei: string
+  manufacturer: string
+  model: string
+  firmwareVersion: string | null
+  tenantId: string
+  tenantName: string
+  lifecycleStatus: string
+  operationalStatus: string
+  protocol: string | null
+  signalStrength: number | null
+  batteryLevel: number | null
+  lastSeen: string | null
+  vehicleId: string | null
+  assignedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type RemoveOrganizationUserData = {
+  message: string
+  userId: string
+  email: string
+}
+
 // ─── Response envelopes ───────────────────────────────────────────────────────
 
 export type AuthTokenResponse = ServerResponse<AuthSession>
@@ -564,7 +604,7 @@ export type MeResponse = ServerResponse<Record<string, unknown>>
 export type ProfileResponse = ServerResponse<Record<string, unknown>>
 export type OrganizationUserResponse = ServerResponse<OrganizationUser>
 export type OrganizationUsersResponse = ServerResponse<OrganizationUser[]>
-export type RemoveOrganizationUserResponse = ServerResponse<Record<string, unknown>>
+export type RemoveOrganizationUserResponse = ServerResponse<RemoveOrganizationUserData>
 export type OrganizationSettingsResponse = ServerResponse<Record<string, unknown>>
 export type NotificationPreferencesResponse = ServerResponse<Record<string, unknown>>
 export type DispatcherPreferencesResponse = ServerResponse<Record<string, unknown>>
@@ -586,6 +626,7 @@ export type SystemDeviceCatalogModelResponse = ServerResponse<SystemDeviceCatalo
 export type SystemDeviceCatalogDeleteResponse = ServerResponse<Record<string, unknown>>
 export type SystemDeviceCatalogReferenceDataResponse = ServerResponse<Record<string, unknown>>
 export type SystemDeviceInventoryListResponse = ServerResponse<SystemDeviceInventoryList>
+export type SystemDeviceDetailResponse = ServerResponse<SystemDeviceDetail>
 export type SystemDeviceSummaryResponse = ServerResponse<SystemDevicesSummary>
 export type SystemSimsListResponse = ServerResponse<SystemSimsList>
 export type SystemSimSummaryResponse = ServerResponse<SystemSimsSummary>
