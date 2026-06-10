@@ -495,6 +495,42 @@ export type SystemDevicesSummary = {
   generatedAt: string
 }
 
+export type SystemSimsSummary = {
+  total: number
+  byStatus: Record<string, number>
+  byCarrier: Record<string, number>
+  pendingRequests: number
+}
+
+export type SystemSimItem = {
+  id: string
+  iccid: string
+  imsi: string
+  msisdn: string
+  carrier: string
+  plan: string
+  status: string
+  tenantId: string
+  deviceId: string
+  dataUsageMb: number
+  dataLimitMb: number
+  smsUsage: number
+  smsLimit: number
+  monthlyCostNgn: number
+  activationDate: string
+  signalStrength: number
+  networkType: string
+  roaming: boolean
+  fonuStatus: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type SystemSimsList = {
+  total: number
+  sims: SystemSimItem[]
+}
+
 export type SystemDeviceInventoryItem = {
   id: string
   imei: string
@@ -551,8 +587,8 @@ export type SystemDeviceCatalogDeleteResponse = ServerResponse<Record<string, un
 export type SystemDeviceCatalogReferenceDataResponse = ServerResponse<Record<string, unknown>>
 export type SystemDeviceInventoryListResponse = ServerResponse<SystemDeviceInventoryList>
 export type SystemDeviceSummaryResponse = ServerResponse<SystemDevicesSummary>
-export type SystemSimsListResponse = ServerResponse<Record<string, unknown>[]>
-export type SystemSimSummaryResponse = ServerResponse<Record<string, unknown>>
+export type SystemSimsListResponse = ServerResponse<SystemSimsList>
+export type SystemSimSummaryResponse = ServerResponse<SystemSimsSummary>
 export type SystemSimRequestsListResponse = ServerResponse<Record<string, unknown>[]>
 export type SystemSimBatchesListResponse = ServerResponse<Record<string, unknown>[]>
 export type SystemSubscriptionPlansResponse = ServerResponse<{ plans: SubscriptionPlan[]; generatedAt: string }>

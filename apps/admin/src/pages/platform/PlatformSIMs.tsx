@@ -1,4 +1,12 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  getSystemSimsExportQueryOptions,
+  getSystemSimsQueryOptions,
+  getSystemSimsSummaryQueryOptions,
+  type SystemSimItem,
+  type SystemSimsQuery,
+} from "@truckmoov/api/auth";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -84,169 +92,47 @@ interface SIMCard {
   monthlyCost: number;
 }
 
-const mockSIMs: SIMCard[] = [
-  {
-    id: "sim-001",
-    iccid: "8923411012345678901",
-    msisdn: "+2348031234567",
-    imsi: "621301234567890",
-    carrier: "MTN Nigeria",
-    plan: "iot_premium",
-    status: "active",
-    tenant: "ABC Logistics",
-    tenantId: "tenant-1",
-    deviceId: "DEV-001",
-    deviceImei: "359072061234567",
-    dataUsage: 850,
-    dataLimit: 2000,
-    smsUsage: 45,
-    smsLimit: 100,
-    activationDate: "2024-01-15",
-    expiryDate: "2025-01-15",
-    lastActivity: "2 min ago",
-    signalStrength: 95,
-    networkType: "4G",
-    roaming: false,
-    monthlyCost: 15000 },
-  {
-    id: "sim-002",
-    iccid: "8923411012345678902",
-    msisdn: "+2348052345678",
-    imsi: "621302345678901",
-    carrier: "Glo",
-    plan: "data_sms",
-    status: "active",
-    tenant: "XYZ Transport",
-    tenantId: "tenant-2",
-    deviceId: "DEV-002",
-    deviceImei: "359072061234568",
-    dataUsage: 1200,
-    dataLimit: 1500,
-    smsUsage: 78,
-    smsLimit: 100,
-    activationDate: "2023-08-20",
-    expiryDate: "2024-08-20",
-    lastActivity: "5 min ago",
-    signalStrength: 72,
-    networkType: "4G",
-    roaming: false,
-    monthlyCost: 12000 },
-  {
-    id: "sim-003",
-    iccid: "8923411012345678903",
-    msisdn: "+2348073456789",
-    imsi: "621303456789012",
-    carrier: "Airtel",
-    plan: "iot_basic",
-    status: "suspended",
-    tenant: "Quick Movers",
-    tenantId: "tenant-3",
-    deviceId: "DEV-003",
-    deviceImei: "359072061234569",
-    dataUsage: 0,
-    dataLimit: 500,
-    smsUsage: 0,
-    smsLimit: 50,
-    activationDate: "2024-06-01",
-    expiryDate: "2025-06-01",
-    lastActivity: "15 days ago",
-    signalStrength: 0,
-    networkType: "3G",
-    roaming: false,
-    monthlyCost: 8000 },
-  {
-    id: "sim-004",
-    iccid: "8923411012345678904",
-    msisdn: "+2349014567890",
-    imsi: "621304567890123",
-    carrier: "MTN Nigeria",
-    plan: "data_only",
-    status: "unassigned",
-    tenant: null,
-    tenantId: null,
-    deviceId: null,
-    deviceImei: null,
-    dataUsage: 0,
-    dataLimit: 1000,
-    smsUsage: 0,
-    smsLimit: 0,
-    activationDate: null,
-    expiryDate: "2025-12-31",
-    lastActivity: "Never",
-    signalStrength: 0,
-    networkType: "4G",
-    roaming: false,
-    monthlyCost: 6000 },
-  {
-    id: "sim-005",
-    iccid: "8923411012345678905",
-    msisdn: "+2348095678901",
-    imsi: "621305678901234",
-    carrier: "9mobile",
-    plan: "data_sms_voice",
-    status: "active",
-    tenant: "ABC Logistics",
-    tenantId: "tenant-1",
-    deviceId: "DEV-005",
-    deviceImei: "359072061234571",
-    dataUsage: 450,
-    dataLimit: 2000,
-    smsUsage: 12,
-    smsLimit: 200,
-    activationDate: "2024-03-10",
-    expiryDate: "2025-03-10",
-    lastActivity: "1 hour ago",
-    signalStrength: 28,
-    networkType: "3G",
-    roaming: true,
-    monthlyCost: 18000 },
-  {
-    id: "sim-006",
-    iccid: "8923411012345678906",
-    msisdn: "+2348136789012",
-    imsi: "621306789012345",
-    carrier: "Glo",
-    plan: "iot_premium",
-    status: "active",
-    tenant: "Metro Couriers",
-    tenantId: "tenant-4",
-    deviceId: "DEV-006",
-    deviceImei: "359072061234572",
-    dataUsage: 980,
-    dataLimit: 2000,
-    smsUsage: 34,
-    smsLimit: 100,
-    activationDate: "2024-02-15",
-    expiryDate: "2025-02-15",
-    lastActivity: "10 min ago",
-    signalStrength: 88,
-    networkType: "4G",
-    roaming: false,
-    monthlyCost: 15000 },
-  {
-    id: "sim-007",
-    iccid: "8923411012345678907",
-    msisdn: "+2348027890123",
-    imsi: "621307890123456",
-    carrier: "Airtel",
-    plan: "data_sms",
-    status: "active",
-    tenant: "XYZ Transport",
-    tenantId: "tenant-2",
-    deviceId: "DEV-007",
-    deviceImei: "359072061234573",
-    dataUsage: 1100,
-    dataLimit: 1500,
-    smsUsage: 56,
-    smsLimit: 100,
-    activationDate: "2024-04-10",
-    expiryDate: "2025-04-10",
-    lastActivity: "30 min ago",
-    signalStrength: 65,
-    networkType: "4G",
-    roaming: false,
-    monthlyCost: 12000 },
-];
+const simPlans = ["data_only", "data_sms", "data_sms_voice", "iot_basic", "iot_premium"] as const;
+const simStatuses = ["active", "inactive", "suspended", "unassigned"] as const;
+const networkTypes = ["2G", "3G", "4G", "5G"] as const;
+
+const normalizePlan = (plan: string): SIMCard["plan"] =>
+  simPlans.includes(plan as SIMCard["plan"]) ? plan as SIMCard["plan"] : "data_only";
+
+const normalizeStatus = (status: string): SIMCard["status"] =>
+  simStatuses.includes(status.toLowerCase() as SIMCard["status"])
+    ? status.toLowerCase() as SIMCard["status"]
+    : "inactive";
+
+const normalizeNetworkType = (networkType: string): SIMCard["networkType"] =>
+  networkTypes.includes(networkType.toUpperCase() as SIMCard["networkType"])
+    ? networkType.toUpperCase() as SIMCard["networkType"]
+    : "4G";
+
+const mapSystemSimToRow = (sim: SystemSimItem): SIMCard => ({
+  id: sim.id,
+  iccid: sim.iccid,
+  msisdn: sim.msisdn,
+  imsi: sim.imsi,
+  carrier: sim.carrier,
+  plan: normalizePlan(sim.plan),
+  status: normalizeStatus(sim.status),
+  tenant: sim.tenantId || null,
+  tenantId: sim.tenantId || null,
+  deviceId: sim.deviceId || null,
+  deviceImei: null,
+  dataUsage: sim.dataUsageMb,
+  dataLimit: sim.dataLimitMb,
+  smsUsage: sim.smsUsage,
+  smsLimit: sim.smsLimit,
+  activationDate: sim.activationDate,
+  expiryDate: "",
+  lastActivity: sim.updatedAt,
+  signalStrength: sim.signalStrength,
+  networkType: normalizeNetworkType(sim.networkType),
+  roaming: sim.roaming,
+  monthlyCost: sim.monthlyCostNgn,
+});
 
 const carriers = ["All", "MTN Nigeria", "Glo", "Airtel", "9mobile"];
 const statuses = ["all", "active", "inactive", "suspended", "unassigned"];
@@ -259,21 +145,8 @@ const planLabels: Record<string, string> = {
   iot_basic: "IoT Basic",
   iot_premium: "IoT Premium" };
 
-const mockTenants = [
-  { id: "tenant-1", name: "ABC Logistics" },
-  { id: "tenant-2", name: "XYZ Transport" },
-  { id: "tenant-3", name: "Quick Movers" },
-  { id: "tenant-4", name: "Metro Couriers" },
-];
-
-const mockDevices = [
-  { id: "DEV-001", imei: "359072061234567", tenantId: "tenant-1" },
-  { id: "DEV-002", imei: "359072061234568", tenantId: "tenant-2" },
-  { id: "DEV-003", imei: "359072061234569", tenantId: "tenant-3" },
-  { id: "DEV-005", imei: "359072061234571", tenantId: "tenant-1" },
-  { id: "DEV-006", imei: "359072061234572", tenantId: "tenant-1" },
-  { id: "DEV-007", imei: "359072061234573", tenantId: "tenant-2" },
-];
+const tenantOptions: Array<{ id: string; name: string }> = [];
+const deviceOptions: Array<{ id: string; imei: string; tenantId: string }> = [];
 
 const emptySIM: Partial<SIMCard> = {
   iccid: "",
@@ -291,14 +164,12 @@ const emptySIM: Partial<SIMCard> = {
   monthlyCost: 35 };
 
 export default function PlatformSIMs() {
-  const [sims, setSims] = useState<SIMCard[]>(mockSIMs);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [carrierFilter, setCarrierFilter] = useState("All");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [simFilterDraft, setSimFilterDraft] = useState<FilterDraft>({
-    carrier: { enabled: false },
-    plan: { enabled: false },
-    tenant: { enabled: false } });
+    status: { enabled: false },
+    carrier: { enabled: false } });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedSIM, setSelectedSIM] = useState<SIMCard | null>(null);
   const [isDetailsSheetOpen, setIsDetailsSheetOpen] = useState(false);
@@ -309,6 +180,52 @@ export default function PlatformSIMs() {
   const [deleteConfirmSIM, setDeleteConfirmSIM] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<SIMCard>>(emptySIM);
   const [selectedSIMIds, setSelectedSIMIds] = useState<Set<string>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 400);
+
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
+  const systemSimsQueryPayload = useMemo<SystemSimsQuery>(() => {
+    const statusF = simFilterDraft.status;
+    const carrierF = simFilterDraft.carrier;
+
+    return {
+      params: {
+        ...(debouncedSearchQuery ? { search: debouncedSearchQuery } : {}),
+        ...(statusF?.enabled && statusF.value ? { status: statusF.value } : {}),
+        ...(carrierF?.enabled && carrierF.value ? { carrier: carrierF.value } : {}),
+      },
+    };
+  }, [debouncedSearchQuery, simFilterDraft]);
+
+  const systemSimsQuery = useQuery(getSystemSimsQueryOptions(systemSimsQueryPayload));
+  const systemSimsSummaryQuery = useQuery(getSystemSimsSummaryQueryOptions());
+  const summary = systemSimsSummaryQuery.data?.data;
+  const summaryStats = useMemo(() => {
+    const getStatusCount = (status: string) => {
+      if (!summary?.byStatus) return undefined;
+      return Object.entries(summary.byStatus).find(
+        ([key]) => key.toLowerCase() === status.toLowerCase(),
+      )?.[1];
+    };
+
+    return {
+      total: summary?.total ?? "N/A",
+      active: getStatusCount("active") ?? "N/A",
+      unassigned: getStatusCount("unassigned") ?? "N/A",
+      pendingRequests: summary?.pendingRequests ?? "N/A",
+      carriers: summary?.byCarrier ? Object.keys(summary.byCarrier).length : "N/A",
+    };
+  }, [summary]);
+  const sims = useMemo(
+    () => systemSimsQuery.data?.data.sims.map(mapSystemSimToRow) ?? [],
+    [systemSimsQuery.data],
+  );
 
   const toggleSIMSelection = (simId: string) => {
     setSelectedSIMIds(prev => {
@@ -332,70 +249,39 @@ export default function PlatformSIMs() {
 
   const clearSelection = () => setSelectedSIMIds(new Set());
 
-  const handleBulkActivate = () => {
-    setSims(sims.map(s => selectedSIMIds.has(s.id) && s.status !== "active" ? { ...s, status: "active" as const } : s));
-    toast.success(`${selectedSIMIds.size} SIM(s) activated`);
-    clearSelection();
-  };
+  const handleBulkActivate = () => clearSelection();
 
-  const handleBulkSuspend = () => {
-    setSims(sims.map(s => selectedSIMIds.has(s.id) && s.status === "active" ? { ...s, status: "suspended" as const } : s));
-    toast.success(`${selectedSIMIds.size} SIM(s) suspended`);
-    clearSelection();
-  };
+  const handleBulkSuspend = () => clearSelection();
 
-  const handleBulkAssign = () => {
-    setIsBulkAssignOpen(true);
-  };
+  const handleBulkAssign = () => setIsBulkAssignOpen(true);
 
   const handleBulkAssignConfirm = () => {
-    const tenant = mockTenants.find(t => t.id === formData.tenantId);
-    setSims(sims.map(s => 
-      selectedSIMIds.has(s.id) 
-        ? { 
-            ...s, 
-            tenant: tenant?.name || null, 
-            tenantId: formData.tenantId || null, 
-            status: formData.tenantId ? "active" as const : "unassigned" as const,
-            activationDate: formData.tenantId ? new Date().toISOString().split("T")[0] : null 
-          } 
-        : s
-    ));
-    toast.success(`${selectedSIMIds.size} SIM(s) assigned to ${tenant?.name || "Unassigned"}`);
     clearSelection();
     setIsBulkAssignOpen(false);
     setFormData(emptySIM);
   };
 
-  const selectedSIMs = useMemo(() => 
-    sims.filter(s => selectedSIMIds.has(s.id)), 
-    [sims, selectedSIMIds]
+  const selectedSIMs = useMemo(
+    () => sims.filter((sim) => selectedSIMIds.has(sim.id)),
+    [selectedSIMIds, sims],
   );
 
   const filteredSIMs = sims.filter((sim) => {
     const matchesSearch =
-      sim.iccid.includes(searchQuery) ||
-      sim.msisdn.includes(searchQuery) ||
-      sim.tenant?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || sim.status === statusFilter;
+      sim.iccid.includes(debouncedSearchQuery) ||
+      sim.msisdn.includes(debouncedSearchQuery) ||
+      sim.tenant?.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+
+    const statusF = simFilterDraft.status;
+    const matchesStatus = !statusF?.enabled || !statusF.value || sim.status === statusF.value;
 
     const carrierF = simFilterDraft.carrier;
     const matchesCarrier = !carrierF?.enabled || !carrierF.value || sim.carrier === carrierF.value;
 
-    const planF = simFilterDraft.plan;
-    const matchesPlan = !planF?.enabled || !planF.value || sim.plan === planF.value;
-
-    const tenantF = simFilterDraft.tenant;
-    const matchesTenant = !tenantF?.enabled || !tenantF.value || sim.tenantId === tenantF.value;
-
-    return matchesSearch && matchesStatus && matchesCarrier && matchesPlan && matchesTenant;
+    return matchesSearch && matchesStatus && matchesCarrier;
   });
 
-  const totalSIMs = sims.length;
-  const activeSIMs = sims.filter((s) => s.status === "active").length;
-  const unassignedSIMs = sims.filter((s) => s.status === "unassigned").length;
-  const totalDataUsage = sims.reduce((sum, s) => sum + s.dataUsage, 0);
-  const totalMonthlyCost = sims.reduce((sum, s) => sum + s.monthlyCost, 0);
+  const statPlaceholder = systemSimsSummaryQuery.isLoading ? "..." : "N/A";
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -427,122 +313,49 @@ export default function PlatformSIMs() {
   };
 
   const handleCreateSIM = () => {
-    if (!formData.iccid || !formData.msisdn) {
-      toast.error("ICCID and phone number are required");
-      return;
-    }
-
-    const newSIM: SIMCard = {
-      id: `sim-${Date.now()}`,
-      iccid: formData.iccid!,
-      msisdn: formData.msisdn!,
-      imsi: formData.imsi || "",
-      carrier: formData.carrier || "MTN",
-      plan: formData.plan as SIMCard["plan"],
-      status: "unassigned",
-      tenant: null,
-      tenantId: null,
-      deviceId: null,
-      deviceImei: null,
-      dataUsage: 0,
-      dataLimit: formData.dataLimit || 1000,
-      smsUsage: 0,
-      smsLimit: formData.smsLimit || 0,
-      activationDate: null,
-      expiryDate: formData.expiryDate || "",
-      lastActivity: "Never",
-      signalStrength: 0,
-      networkType: "4G",
-      roaming: false,
-      monthlyCost: formData.monthlyCost || 35 };
-
-    setSims([...sims, newSIM]);
     setIsCreateDialogOpen(false);
     setFormData(emptySIM);
-    toast.success("SIM card added successfully");
   };
 
   const handleEditSIM = () => {
-    if (!selectedSIM || !formData.iccid || !formData.msisdn) {
-      toast.error("ICCID and phone number are required");
-      return;
-    }
-
-    setSims(
-      sims.map((s) =>
-        s.id === selectedSIM.id ? { ...s, ...formData, id: s.id } as SIMCard : s
-      )
-    );
     setIsEditDialogOpen(false);
     setSelectedSIM(null);
     setFormData(emptySIM);
-    toast.success("SIM card updated successfully");
   };
 
-  const handleDeleteSIM = (simId: string) => {
-    setSims(sims.filter((s) => s.id !== simId));
+  const handleDeleteSIM = (_simId?: string) => {
     setDeleteConfirmSIM(null);
-    toast.success("SIM card deleted successfully");
   };
 
   const handleAssignSIM = () => {
-    if (!selectedSIM) return;
-
-    const tenant = mockTenants.find((t) => t.id === formData.tenantId);
-    const device = mockDevices.find((d) => d.id === formData.deviceId);
-
-    setSims(
-      sims.map((s) =>
-        s.id === selectedSIM.id
-          ? {
-              ...s,
-              tenant: tenant?.name || null,
-              tenantId: formData.tenantId || null,
-              deviceId: formData.deviceId || null,
-              deviceImei: device?.imei || null,
-              status: formData.tenantId ? "active" : "unassigned",
-              activationDate: formData.tenantId ? new Date().toISOString().split("T")[0] : null }
-          : s
-      )
-    );
     setIsAssignDialogOpen(false);
     setSelectedSIM(null);
     setFormData(emptySIM);
-    toast.success("SIM card assigned successfully");
   };
 
-  const handleStatusChange = (simId: string, newStatus: SIMCard["status"]) => {
-    setSims(sims.map((s) => (s.id === simId ? { ...s, status: newStatus } : s)));
-    toast.success(`SIM status updated to ${newStatus}`);
-  };
+  const handleStatusChange = (_simId: string, _newStatus: SIMCard["status"]) => undefined;
 
-  const handleBulkImport = (importedSims: Partial<SIMCard>[]) => {
-    const newSIMs: SIMCard[] = importedSims.map((sim, index) => ({
-      id: `sim-bulk-${Date.now()}-${index}`,
-      iccid: sim.iccid || "",
-      msisdn: sim.msisdn || "",
-      imsi: sim.imsi || "",
-      carrier: sim.carrier || "MTN",
-      plan: (sim.plan as SIMCard["plan"]) || "iot_basic",
-      status: "unassigned" as const,
-      tenant: null,
-      tenantId: null,
-      deviceId: null,
-      deviceImei: null,
-      dataUsage: 0,
-      dataLimit: sim.dataLimit || 1000,
-      smsUsage: 0,
-      smsLimit: sim.smsLimit || 0,
-      activationDate: null,
-      expiryDate: sim.expiryDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      lastActivity: "Never",
-      signalStrength: 0,
-      networkType: "4G",
-      roaming: false,
-      monthlyCost: sim.monthlyCost || 35 }));
-    setSims([...sims, ...newSIMs]);
+  const handleBulkImport = () => {
     setIsBulkImportOpen(false);
-    toast.success(`${newSIMs.length} SIM cards imported successfully`);
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const blob = await queryClient.fetchQuery(
+        getSystemSimsExportQueryOptions(systemSimsQueryPayload),
+      );
+      const url = URL.createObjectURL(blob as Blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "sims.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Export failed");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleViewDetails = (sim: SIMCard) => {
@@ -701,27 +514,27 @@ export default function PlatformSIMs() {
 
             {/* Stats */}
             <div className="grid gap-4 md:grid-cols-5">
-              <StatCard title="Total SIMs" value={totalSIMs} icon={Wifi} />
+              <StatCard title="Total SIMs" value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.total} icon={Wifi} />
               <StatCard
                 title="Active"
-                value={activeSIMs}
+                value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.active}
                 icon={CheckCircle}
                 variant="success"
               />
               <StatCard
                 title="Unassigned"
-                value={unassignedSIMs}
+                value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.unassigned}
                 icon={AlertTriangle}
                 variant="warning"
               />
               <StatCard
-                title="Data Usage"
-                value={`${(totalDataUsage / 1000).toFixed(1)} GB`}
+                title="Pending Requests"
+                value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.pendingRequests}
                 icon={TrendingUp}
               />
               <StatCard
-                title="Monthly Cost"
-                value={`₦${totalMonthlyCost.toLocaleString()}`}
+                title="Carriers"
+                value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.carriers}
                 icon={CreditCard}
               />
             </div>
@@ -737,9 +550,9 @@ export default function PlatformSIMs() {
                 </CardTitle>
                 <CardDescription>All provisioned SIMs across tenants — search, filter, assign and export</CardDescription>
               </div>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
                 <Download className="h-4 w-4 mr-2" />
-                Export Data
+                {isExporting ? "Exporting..." : "Export Data"}
               </Button>
             </div>
           </CardHeader>
@@ -754,21 +567,16 @@ export default function PlatformSIMs() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statuses.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s === "all" ? "All Status" : s.charAt(0).toUpperCase() + s.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <PlatformFilterPopover
                 entity="SIMs"
                 fields={[
+                  {
+                    key: "status",
+                    label: "Status",
+                    type: "select",
+                    options: statuses
+                      .filter((s) => s !== "all")
+                      .map((s) => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) })) },
                   {
                     key: "carrier",
                     label: "Carrier",
@@ -776,26 +584,13 @@ export default function PlatformSIMs() {
                     options: carriers
                       .filter((c) => c !== "All")
                       .map((c) => ({ value: c, label: c })) },
-                  {
-                    key: "plan",
-                    label: "Plan",
-                    type: "select",
-                    options: plans
-                      .filter((p) => p !== "all")
-                      .map((p) => ({ value: p, label: planLabels[p] || p })) },
-                  {
-                    key: "tenant",
-                    label: "Tenant",
-                    type: "select",
-                    options: mockTenants.map((t) => ({ value: t.id, label: t.name })) },
                 ]}
                 value={simFilterDraft}
                 onApply={setSimFilterDraft}
                 onReset={() =>
                   setSimFilterDraft({
-                    carrier: { enabled: false },
-                    plan: { enabled: false },
-                    tenant: { enabled: false } })
+                    status: { enabled: false },
+                    carrier: { enabled: false } })
                 }
               />
             </div>
@@ -1055,7 +850,7 @@ export default function PlatformSIMs() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {mockTenants.map((t) => (
+                  {tenantOptions.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
                       {t.name}
                     </SelectItem>
@@ -1076,7 +871,7 @@ export default function PlatformSIMs() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No device</SelectItem>
-                    {mockDevices
+                    {deviceOptions
                       .filter((d) => d.tenantId === formData.tenantId)
                       .map((d) => (
                         <SelectItem key={d.id} value={d.id}>
@@ -1336,7 +1131,7 @@ export default function PlatformSIMs() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {mockTenants.map((t) => (
+                  {tenantOptions.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
                       {t.name}
                     </SelectItem>
@@ -1360,78 +1155,26 @@ export default function PlatformSIMs() {
 }
 
 interface BulkImportContentProps {
-  onImport: (sims: Partial<SIMCard>[]) => void;
+  onImport: () => void;
   onClose: () => void;
 }
 
 function BulkImportContent({ onImport, onClose }: BulkImportContentProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [parsedData, setParsedData] = useState<Array<{ 
-    iccid: string; 
-    msisdn: string; 
-    imsi: string; 
-    carrier: string; 
-    plan: SIMCard["plan"];
-    dataLimit: number;
-    monthlyCost: number;
-    isValid: boolean; 
-    errors: string[] 
-  }>>([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  const validPlans: SIMCard["plan"][] = ["data_only", "data_sms", "data_sms_voice", "iot_basic", "iot_premium"];
-
-  const parseCSV = (content: string) => {
-    const lines = content.split("\n").filter(l => l.trim()).slice(1);
-    return lines.map(line => {
-      const [iccid, msisdn, imsi, carrier, plan, dataLimit, monthlyCost] = line.split(",").map(s => s?.trim());
-      const errors: string[] = [];
-      if (!iccid || iccid.length < 18) errors.push("Invalid ICCID (min 18 chars)");
-      if (!msisdn || !msisdn.startsWith("+")) errors.push("Phone must start with +");
-      const validPlan = validPlans.includes(plan as SIMCard["plan"]) ? plan as SIMCard["plan"] : "iot_basic";
-      return { 
-        iccid, 
-        msisdn, 
-        imsi: imsi || "", 
-        carrier: carrier || "MTN", 
-        plan: validPlan,
-        dataLimit: parseInt(dataLimit) || 1000,
-        monthlyCost: parseFloat(monthlyCost) || 35,
-        isValid: errors.length === 0, 
-        errors 
-      };
-    });
-  };
-
-  const handleFile = async (f: File) => {
-    if (!f.name.endsWith(".csv")) { 
-      toast.error("Please upload a CSV file"); 
-      return; 
-    }
+  const handleFile = (f: File) => {
     setFile(f);
-    setParsedData(parseCSV(await f.text()));
   };
 
   const handleDrop = (e: React.DragEvent) => { 
     e.preventDefault(); 
     setIsDragging(false); 
-    e.dataTransfer.files[0] && handleFile(e.dataTransfer.files[0]); 
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile) {
+      handleFile(droppedFile);
+    }
   };
-
-  const downloadTemplate = () => {
-    const blob = new Blob([
-      `ICCID,Phone Number,IMSI,Carrier,Plan,Data Limit (MB),Monthly Cost\n` +
-      `8927100012345678901,+27601234567,655101234567890,MTN,iot_premium,2000,89\n` +
-      `8927100012345678902,+27602345678,655102345678901,Vodacom,data_sms,1500,65`
-    ], { type: "text/csv" });
-    const a = document.createElement("a"); 
-    a.href = URL.createObjectURL(blob); 
-    a.download = "sim_import_template.csv"; 
-    a.click();
-  };
-
-  const validCount = parsedData.filter(r => r.isValid).length;
-  const invalidCount = parsedData.length - validCount;
 
   return (
     <div className="space-y-4">
@@ -1442,10 +1185,10 @@ function BulkImportContent({ onImport, onClose }: BulkImportContentProps) {
               <Download className="h-5 w-5 text-primary" />
               <div>
                 <p className="text-sm font-medium">Download Template</p>
-                <p className="text-xs text-muted-foreground">CSV template with sample data</p>
+                <p className="text-xs text-muted-foreground">CSV template</p>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={downloadTemplate}>
+            <Button variant="outline" size="sm">
               <Download className="mr-2 h-4 w-4" />
               Download
             </Button>
@@ -1481,13 +1224,13 @@ function BulkImportContent({ onImport, onClose }: BulkImportContentProps) {
               </div>
               <div>
                 <p className="font-medium">{file.name}</p>
-                <p className="text-xs text-muted-foreground">{parsedData.length} records found</p>
+                <p className="text-xs text-muted-foreground">Ready for import</p>
               </div>
             </div>
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => { setFile(null); setParsedData([]); }}
+              onClick={() => setFile(null)}
             >
               <XCircle className="h-4 w-4" />
             </Button>
@@ -1497,71 +1240,31 @@ function BulkImportContent({ onImport, onClose }: BulkImportContentProps) {
             <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 p-3">
               <CheckCircle className="h-5 w-5 text-success" />
               <div>
-                <p className="text-sm font-medium">{validCount} Valid</p>
+                <p className="text-sm font-medium">0 Valid</p>
                 <p className="text-xs text-muted-foreground">Ready to import</p>
               </div>
             </div>
             <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3">
               <AlertTriangle className="h-5 w-5 text-destructive" />
               <div>
-                <p className="text-sm font-medium">{invalidCount} Invalid</p>
+                <p className="text-sm font-medium">0 Invalid</p>
                 <p className="text-xs text-muted-foreground">Will be skipped</p>
               </div>
             </div>
           </div>
-
-          {parsedData.length > 0 && (
-            <div className="rounded-lg border">
-              <div className="max-h-48 overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-8">Status</TableHead>
-                      <TableHead>ICCID</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Carrier</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {parsedData.slice(0, 10).map((row, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell>
-                          {row.isValid ? (
-                            <CheckCircle className="h-4 w-4 text-success" />
-                          ) : (
-                            <XCircle className="h-4 w-4 text-destructive" />
-                          )}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">{row.iccid}</TableCell>
-                        <TableCell className="text-sm">{row.msisdn}</TableCell>
-                        <TableCell className="text-sm">{row.carrier}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              {parsedData.length > 10 && (
-                <div className="p-2 text-center text-xs text-muted-foreground border-t">
-                  And {parsedData.length - 10} more records...
-                </div>
-              )}
-            </div>
-          )}
         </>
       )}
       
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={onClose}>Cancel</Button>
         <Button 
-          onClick={() => onImport(parsedData.filter(r => r.isValid))} 
-          disabled={!file || validCount === 0}
+          onClick={onImport}
+          disabled={!file}
         >
-          Import {validCount} SIM{validCount !== 1 ? "s" : ""}
+          Import SIMs
         </Button>
       </div>
     </div>
   );
 }
-
-
 

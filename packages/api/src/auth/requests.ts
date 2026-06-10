@@ -393,8 +393,10 @@ export async function deleteDeviceCatalogEntry({ id }: { id: string }) {
 
 // ─── System admin — SIMs ──────────────────────────────────────────────────────
 
-export async function getSystemSims() {
-  const { data } = await axiosInstance.get<SystemSimsListResponse>('/auth/system/sims')
+export async function getSystemSims(payload?: SystemSimsQuery) {
+  const { data } = await axiosInstance.get<SystemSimsListResponse>('/auth/system/sims', {
+    params: payload?.params,
+  })
   return data
 }
 

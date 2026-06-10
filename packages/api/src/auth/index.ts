@@ -115,7 +115,10 @@ export type {
   SystemDeviceInventoryList,
   SystemDevicesQuery,
   SystemDevicesSummary,
+  SystemSimItem,
+  SystemSimsList,
   SystemSimsQuery,
+  SystemSimsSummary,
   ResetPasswordPayload,
   RetrySimBatchPayload,
   SystemChangePasswordPayload,
@@ -160,7 +163,7 @@ export const AUTH_QUERY_KEY = {
   systemDevices: (payload?: SystemDevicesQuery) => payload ? ['systemDevices', payload] : ['systemDevices'],
   systemDevicesSummary: ['systemDevicesSummary'],
   systemDevicesCatalog: (payload?: SystemDeviceCatalogQuery) => payload ? ['systemDevicesCatalog', payload] : ['systemDevicesCatalog'],
-  systemSims: ['systemSims'],
+  systemSims: (payload?: SystemSimsQuery) => payload ? ['systemSims', payload] : ['systemSims'],
   systemSimsSummary: ['systemSimsSummary'],
   systemSimsRequests: ['systemSimsRequests'],
   systemSimsBatches: ['systemSimsBatches'],
@@ -278,8 +281,11 @@ export function getSystemDevicesCatalogQueryOptions(payload?: SystemDeviceCatalo
   })
 }
 
-export function getSystemSimsQueryOptions() {
-  return queryOptions({ queryKey: AUTH_QUERY_KEY.systemSims, queryFn: getSystemSims })
+export function getSystemSimsQueryOptions(payload?: SystemSimsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSims(payload),
+    queryFn: () => getSystemSims(payload),
+  })
 }
 
 export function getSystemSimsSummaryQueryOptions() {
@@ -402,7 +408,7 @@ export function getSystemDevicesExportQueryOptions(payload?: SystemDevicesQuery)
 
 export function getSystemSimsExportQueryOptions(payload?: SystemSimsQuery) {
   return queryOptions({
-    queryKey: [...AUTH_QUERY_KEY.systemSims, 'export', payload],
+    queryKey: [...AUTH_QUERY_KEY.systemSims(payload), 'export'],
     queryFn: () => exportSystemSims(payload),
   })
 }
