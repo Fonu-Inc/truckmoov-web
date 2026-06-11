@@ -42,12 +42,6 @@ import {
   SelectTrigger,
   SelectValue } from "@/components/shadcn/select";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
-import {
   Dialog as Sheet,
   DialogContent as SheetContent,
   DialogDescription as SheetDescription,
@@ -62,7 +56,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle } from "@/components/shadcn/alert-dialog";
-import {Wifi, Search, Plus, MoreHorizontal, Signal, SignalLow, SignalZero, Building2, Upload, RefreshCw, SlidersHorizontal as Filter, Eye, Pencil, Trash2, Cpu, Phone, Calendar, CreditCard, TrendingUp, AlertTriangle, CheckCircle, XCircle, Smartphone, Globe, Zap, ArrowUpDown, Download} from "lucide-react";
+import {Wifi, Search, Plus, Signal, SignalLow, SignalZero, Building2, Upload, RefreshCw, SlidersHorizontal as Filter, Pencil, Cpu, Phone, Calendar, CreditCard, TrendingUp, AlertTriangle, CheckCircle, XCircle, Smartphone, Globe, Zap, ArrowUpDown, Download} from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { PlatformFilterPopover, type FilterDraft } from "@/components/shadcn/platform-filter-popover";
 import { toast } from "sonner";
@@ -333,8 +327,6 @@ export default function PlatformSIMs() {
     setFormData(emptySIM);
   };
 
-  const handleStatusChange = (_simId: string, _newStatus: SIMCard["status"]) => undefined;
-
   const handleBulkImport = () => {
     setIsBulkImportOpen(false);
   };
@@ -356,11 +348,6 @@ export default function PlatformSIMs() {
     } finally {
       setIsExporting(false);
     }
-  };
-
-  const handleViewDetails = (sim: SIMCard) => {
-    setSelectedSIM(sim);
-    setIsDetailsSheetOpen(true);
   };
 
   const handleOpenEdit = (sim: SIMCard) => {
@@ -643,7 +630,6 @@ export default function PlatformSIMs() {
                     <TableHead>Status</TableHead>
                     <TableHead>Data Usage</TableHead>
                     <TableHead>Signal</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -712,60 +698,6 @@ export default function PlatformSIMs() {
                             </span>
                           )}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewDetails(sim)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleOpenEdit(sim)}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleOpenAssign(sim)}>
-                              <ArrowUpDown className="h-4 w-4 mr-2" />
-                              {sim.tenant ? "Reassign" : "Assign"}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {sim.tenant ? (
-                              <>
-                                {sim.status === "active" && (
-                                  <DropdownMenuItem
-                                    onClick={() => handleStatusChange(sim.id, "suspended")}
-                                    className="text-warning"
-                                  >
-                                    <XCircle className="h-4 w-4 mr-2" />
-                                    Suspend
-                                  </DropdownMenuItem>
-                                )}
-                                {sim.status === "suspended" && (
-                                  <DropdownMenuItem
-                                    onClick={() => handleStatusChange(sim.id, "active")}
-                                    className="text-success"
-                                  >
-                                    <CheckCircle className="h-4 w-4 mr-2" />
-                                    Reactivate
-                                  </DropdownMenuItem>
-                                )}
-                              </>
-                            ) : (
-                              <DropdownMenuItem
-                                onClick={() => setDeleteConfirmSIM(sim.id)}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
