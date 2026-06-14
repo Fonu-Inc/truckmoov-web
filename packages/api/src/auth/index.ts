@@ -133,6 +133,8 @@ export type {
   SystemDeviceInventoryList,
   SystemDevicesQuery,
   SystemDevicesSummary,
+  SystemFeatureFlag,
+  SystemFeatureFlagsList,
   SystemLoginPayload,
   SystemSimItem,
   SystemSimsList,

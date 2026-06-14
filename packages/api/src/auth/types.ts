@@ -572,6 +572,27 @@ export type SystemSimsList = {
   sims: SystemSimItem[]
 }
 
+export type SystemFeatureFlag = {
+  id: string
+  scope: 'platform' | 'tenant'
+  tenantId: string | null
+  featureKey: string
+  featureName: string
+  featureDescription: string
+  isEnabled: boolean
+  rolloutPercentage: number
+  category: string
+  phase: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type SystemFeatureFlagsList = {
+  total: number
+  flags: SystemFeatureFlag[]
+  generatedAt: string
+}
+
 export type SystemDeviceInventoryItem = {
   id: string
   imei: string
@@ -660,8 +681,8 @@ export type SystemSimSummaryResponse = ServerResponse<SystemSimsSummary>
 export type SystemSimRequestsListResponse = ServerResponse<Record<string, unknown>[]>
 export type SystemSimBatchesListResponse = ServerResponse<Record<string, unknown>[]>
 export type SystemSubscriptionPlansResponse = ServerResponse<{ plans: SubscriptionPlan[]; generatedAt: string }>
-export type SystemFeatureFlagsResponse = ServerResponse<Record<string, unknown>[]>
-export type SystemFeatureFlagResponse = ServerResponse<Record<string, unknown>>
+export type SystemFeatureFlagsResponse = ServerResponse<SystemFeatureFlagsList>
+export type SystemFeatureFlagResponse = ServerResponse<SystemFeatureFlag>
 export interface AdminInvite {
   id: string;
   email: string;
