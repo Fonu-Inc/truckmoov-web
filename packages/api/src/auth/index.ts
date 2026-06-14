@@ -95,6 +95,7 @@ import type {
 } from './types'
 
 export type {
+  ActivityLog,
   ActivityLogQuery,
   AdminInvite,
   ApproveSIMRequestPayload,
@@ -123,6 +124,7 @@ export type {
   RetrySimBatchPayload,
   SubscriptionPlan,
   SystemChangePasswordPayload,
+  SystemDashboard,
   SystemDeviceCatalogModel,
   SystemDeviceCatalogQuery,
   SystemDeviceDetail,
@@ -192,7 +194,8 @@ export const AUTH_QUERY_KEY = {
   systemSettings: ['systemSettings'],
 
   systemDashboard: ['systemDashboard'],
-  systemActivityLog: ['systemActivityLog'],
+  systemActivityLog: (payload?: ActivityLogQuery) =>
+    payload ? ['systemActivityLog', payload] : ['systemActivityLog'],
   systemRefDataDeviceCatalog: ['systemRefDataDeviceCatalog'],
   systemRefDataTenantOnboarding: ['systemRefDataTenantOnboarding'],
   systemSubscriptionPlans: ['systemSubscriptionPlans'],
@@ -407,10 +410,10 @@ export function getActivityLogQueryOptions(payload?: ActivityLogQuery) {
   })
 }
 
-export function getSystemActivityLogQueryOptions() {
+export function getSystemActivityLogQueryOptions(payload?: ActivityLogQuery) {
   return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemActivityLog,
-    queryFn: getSystemActivityLog,
+    queryKey: AUTH_QUERY_KEY.systemActivityLog(payload),
+    queryFn: () => getSystemActivityLog(payload),
   })
 }
 

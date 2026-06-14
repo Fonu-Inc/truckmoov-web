@@ -192,6 +192,21 @@ export type SystemDevicesQuery = {
   }
 }
 
+export type ActivityLog = {
+  id: string
+  tenantId: string
+  service: string
+  action: string
+  entityType: string
+  entityId: string
+  summary: string
+  actorId: string
+  actorRole: string
+  metadata: Record<string, unknown>
+  occurredAt: string
+  recordedAt: string
+}
+
 export type SystemDeviceCatalogQuery = {
   params?: {
     search?: string
@@ -416,6 +431,18 @@ export type AuthSystemSettings = {
   updatedByUserId?: string | null
 }
 
+export type SystemDashboard = {
+  totalTenants: number
+  totalVehicles: number
+  totalDrivers: number
+  totalSensors: number
+  totalSimCards: number
+  dataUsageTodayMb: number
+  sensorGpsMessagesPerHour: number
+  unavailableMetrics: string[]
+  generatedAt: string
+}
+
 import type { ServerResponse } from '../lib/types'
 
 // ─── Entity types ─────────────────────────────────────────────────────────────
@@ -608,12 +635,12 @@ export type RemoveOrganizationUserResponse = ServerResponse<RemoveOrganizationUs
 export type OrganizationSettingsResponse = ServerResponse<Record<string, unknown>>
 export type NotificationPreferencesResponse = ServerResponse<Record<string, unknown>>
 export type DispatcherPreferencesResponse = ServerResponse<Record<string, unknown>>
-export type ActivityLogResponse = ServerResponse<Record<string, unknown>>
+export type ActivityLogResponse = ServerResponse<ActivityLog[]>
 export type UploadedMediaResponse = ServerResponse<UploadedMedia>
 export type StandardApiResponse = ServerResponse<unknown>
 export type InviteActionResponse = ServerResponse<Record<string, unknown>>
 export type AuthSystemSettingsResponse = ServerResponse<AuthSystemSettings>
-export type SystemDashboardResponse = ServerResponse<Record<string, unknown>>
+export type SystemDashboardResponse = ServerResponse<SystemDashboard>
 export type SystemTenantsListResponse = ServerResponse<{ total: number; tenants: SystemTenant[]; generatedAt: string }>
 export type SystemTenantsSummaryResponse = ServerResponse<SystemTenantsSummary>
 export type SystemTenantDetailResponse = ServerResponse<Record<string, unknown>>

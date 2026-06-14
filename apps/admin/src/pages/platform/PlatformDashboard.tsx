@@ -1,14 +1,5 @@
-import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { useTenants } from "@/hooks/useTenants";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/shadcn/select";
 import {
   Building2,
   Truck,
@@ -21,18 +12,14 @@ import {
   Cpu,
   Smartphone,
   ShieldCheck,
-  AlertTriangle,
   ChevronRight,
   Clock,
-  Globe,
-  Zap,
-  HardDrive,
   Database,
   Radio,
   MapPin,
   Eye,
 } from "lucide-react";
-import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
+import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { Badge } from "@/components/shadcn/badge";
@@ -52,34 +39,35 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { useNavigate } from "react-router-dom";
-import { useCurrency } from "@/contexts/CurrencyContext";
-import { CurrencySelector } from "@/components/CurrencySelector";
-import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getSystemActivityLogQueryOptions,
+  getSystemDashboardQueryOptions,
+} from "@truckmoov/api/auth";
+import { Link } from "react-router-dom";
 import { StakeholderOverviewTab } from "@/components/platform/StakeholderOverviewTab";
 
-// Revenue data in NGN (base currency)
 const revenueDataNGN = [
-  { month: "Jan", revenueNGN: 193750000, revenueUSD: 125000, tenants: 45 },
-  { month: "Feb", revenueNGN: 220100000, revenueUSD: 142000, tenants: 52 },
-  { month: "Mar", revenueNGN: 244900000, revenueUSD: 158000, tenants: 61 },
-  { month: "Apr", revenueNGN: 271250000, revenueUSD: 175000, tenants: 68 },
-  { month: "May", revenueNGN: 292950000, revenueUSD: 189000, tenants: 74 },
-  { month: "Jun", revenueNGN: 333250000, revenueUSD: 215000, tenants: 82 },
-  { month: "Jul", revenueNGN: 353400000, revenueUSD: 228000, tenants: 89 },
-  { month: "Aug", revenueNGN: 379750000, revenueUSD: 245000, tenants: 95 },
-  { month: "Sep", revenueNGN: 415400000, revenueUSD: 268000, tenants: 103 },
-  { month: "Oct", revenueNGN: 441750000, revenueUSD: 285000, tenants: 112 },
-  { month: "Nov", revenueNGN: 468100000, revenueUSD: 302000, tenants: 118 },
-  { month: "Dec", revenueNGN: 503750000, revenueUSD: 325000, tenants: 125 },
+  { month: "Jan", revenueNGN: 193750000, tenants: 45 },
+  { month: "Feb", revenueNGN: 220100000, tenants: 52 },
+  { month: "Mar", revenueNGN: 244900000, tenants: 61 },
+  { month: "Apr", revenueNGN: 271250000, tenants: 68 },
+  { month: "May", revenueNGN: 292950000, tenants: 74 },
+  { month: "Jun", revenueNGN: 333250000, tenants: 82 },
+  { month: "Jul", revenueNGN: 353400000, tenants: 89 },
+  { month: "Aug", revenueNGN: 379750000, tenants: 95 },
+  { month: "Sep", revenueNGN: 415400000, tenants: 103 },
+  { month: "Oct", revenueNGN: 441750000, tenants: 112 },
+  { month: "Nov", revenueNGN: 468100000, tenants: 118 },
+  { month: "Dec", revenueNGN: 503750000, tenants: 125 },
 ];
 
 const deviceStats = [
-  { manufacturer: "Teltonika", count: 3420, color: "hsl(var(--primary))" },
-  { manufacturer: "Queclink", count: 2180, color: "hsl(var(--success))" },
-  { manufacturer: "Meitrack", count: 1560, color: "hsl(var(--warning))" },
-  { manufacturer: "CalAmp", count: 890, color: "hsl(var(--destructive))" },
-  { manufacturer: "Others", count: 650, color: "hsl(var(--muted-foreground))" },
+  { manufacturer: "Teltonika", count: 3420 },
+  { manufacturer: "Queclink", count: 2180 },
+  { manufacturer: "Meitrack", count: 1560 },
+  { manufacturer: "CalAmp", count: 890 },
+  { manufacturer: "Others", count: 650 },
 ];
 
 const simCarrierData = [
@@ -108,47 +96,83 @@ const systemServices = [
   { label: "GPS Processor", status: "healthy", uptime: "99.92%", latency: "25ms", requests: "15M/day" },
 ];
 
-const recentActivities = [
-  { type: "tenant_created", message: "New tenant 'Lagos Speed Logistics' registered", time: "5 min ago", tenant: "Lagos Speed Logistics" },
-  { type: "device_provisioned", message: "50 Teltonika devices provisioned for XYZ Transport", time: "23 min ago", tenant: "XYZ Transport" },
-  { type: "sim_activated", message: "Bulk SIM activation: 100 MTN SIMs activated", time: "1 hour ago", tenant: "System" },
-  { type: "alert", message: "High CPU usage detected on GPS Processor", time: "2 hours ago", tenant: "System" },
-  { type: "payment", message: "Payment received: ₦77,485,000 from Abuja Freight", time: "3 hours ago", tenant: "Abuja Freight" },
+const topTenants = [
+  { id: "lagos-speed", name: "Lagos Speed Logistics", plan: "enterprise", vehicleCount: 420, driverCount: 385, status: "active" },
+  { id: "xyz-transport", name: "XYZ Transport", plan: "professional", vehicleCount: 318, driverCount: 302, status: "active" },
+  { id: "abuja-freight", name: "Abuja Freight", plan: "enterprise", vehicleCount: 286, driverCount: 260, status: "active" },
+  { id: "northline-haulage", name: "Northline Haulage", plan: "professional", vehicleCount: 214, driverCount: 199, status: "pending" },
+  { id: "delta-movers", name: "Delta Movers", plan: "starter", vehicleCount: 156, driverCount: 148, status: "suspended" },
 ];
 
+const quickActions = [
+  { title: "Manage Tenants", desc: "Onboard, edit and review tenant organisations.", icon: Building2, cta: "Open tenants", to: "/tenants" },
+  { title: "IoT Devices", desc: "Track inventory, lifecycle and connectivity.", icon: Cpu, cta: "Open devices", to: "/devices" },
+  { title: "SIM Management", desc: "Approve, activate and assign SIMs.", icon: Smartphone, cta: "Open SIMs", to: "/sims" },
+  { title: "Security", desc: "Review alerts, audit trail and access events.", icon: ShieldCheck, cta: "Open security", to: "/security" },
+];
+
+const plans = [
+  { plan: "Enterprise", count: 12, revenue: "NGN 92.9M/mo", color: "bg-success" },
+  { plan: "Professional", count: 45, revenue: "NGN 104.5M/mo", color: "bg-primary" },
+  { plan: "Starter", count: 68, revenue: "NGN 52.6M/mo", color: "bg-muted-foreground" },
+];
+
+const ACTIVITY_LOG_LIMIT = 5;
+
+function formatMetric(value?: number) {
+  return value == null ? "..." : value.toLocaleString();
+}
+
+function formatDataUsage(valueMb?: number) {
+  if (valueMb == null) {
+    return "...";
+  }
+
+  if (valueMb >= 1024 * 1024) {
+    return `${(valueMb / 1024 / 1024).toFixed(1)} TB`;
+  }
+
+  if (valueMb >= 1024) {
+    return `${(valueMb / 1024).toFixed(1)} GB`;
+  }
+
+  return `${valueMb.toLocaleString()} MB`;
+}
+
+function formatActivityTime(value: string) {
+  const timestamp = new Date(value).getTime();
+
+  if (Number.isNaN(timestamp)) {
+    return value;
+  }
+
+  const diffSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+
+  if (diffSeconds < 60) {
+    return "just now";
+  }
+
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) {
+    return `${diffMinutes} min ago`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+}
+
 export default function PlatformDashboard() {
-  const navigate = useNavigate();
-  const [revenueRange, setRevenueRange] = useState<ChartDateRange>("30d");
-  const [dataUsageRange, setDataUsageRange] = useState<ChartDateRange>("7d");
-  const [deviceChartRange, setDeviceChartRange] = useState<ChartDateRange>("30d");
-  const [simChartRange, setSimChartRange] = useState<ChartDateRange>("30d");
-  const { currency } = useCurrency();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications } = useRealtimeNotifications();
-  const { tenants, isLoading: tenantsLoading } = useTenants();
-
-  const activeTenants = tenants.filter((t) => t.status === "active").length;
-  const totalVehicles = tenants.reduce((sum, t) => sum + t.vehicleCount, 0);
-  const totalDrivers = tenants.reduce((sum, t) => sum + t.driverCount, 0);
-  const totalRevenue = tenants.reduce((sum, t) => sum + t.monthlyRevenueNgn, 0);
-  
-  const totalDevices = tenants.reduce((sum, t) => sum + t.deviceCount, 0);
-  const onlineDevices = Math.round(totalDevices * 0.87);
-  const totalSIMs = tenants.reduce((sum, t) => sum + t.simCount, 0);
-  const activeSIMs = Math.round(totalSIMs * 0.92);
-  const suspendedAccounts = tenants.filter((t) => t.status === "suspended").length;
-  const overdueInvoices = tenants.filter((t: any) => t.hasOverdueInvoice || t.overdueInvoices > 0).length;
-
-  // Format revenue based on selected currency
-  const formatRevenue = (amountNGN: number, amountUSD: number) => {
-    if (currency === "NGN") {
-      return `₦${(amountNGN / 1000000).toFixed(1)}M`;
-    }
-    return `$${(amountUSD / 1000).toFixed(0)}K`;
-  };
-
-  const currentMonthRevenue = currency === "NGN" 
-    ? `₦${(totalRevenue / 1000000).toFixed(1)}M`
-    : `$${Math.round(totalRevenue / 1550 / 1000)}K`;
+  const { data: systemDashboardResponse } = useQuery(getSystemDashboardQueryOptions());
+  const { data: systemActivityLogResponse, isLoading: activityLogLoading } = useQuery(
+    getSystemActivityLogQueryOptions({ params: { limit: ACTIVITY_LOG_LIMIT } })
+  );
+  const systemDashboard = systemDashboardResponse?.data;
+  const recentActivities = (systemActivityLogResponse?.data ?? []).slice(0, ACTIVITY_LOG_LIMIT);
 
   return (
     <DashboardLayout
@@ -156,9 +180,6 @@ export default function PlatformDashboard() {
       subtitle="System overview for Super Administrator"
     >
       <div className="space-y-6">
-        {/* Currency is configured globally in Settings → Billing */}
-
-        {/* Quick Actions container with descriptive cards (horizontal scroll) */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Quick Actions</CardTitle>
@@ -166,15 +187,10 @@ export default function PlatformDashboard() {
           </CardHeader>
           <CardContent>
             <div className="flex gap-3 overflow-x-auto pb-2 -mb-2 snap-x snap-mandatory [scrollbar-width:thin]">
-              {[
-                { title: "Manage Tenants", desc: "Onboard, edit and review tenant organisations.", icon: Building2, cta: "Open tenants", to: "/tenants" },
-                { title: "IoT Devices", desc: "Track inventory, lifecycle and connectivity.", icon: Cpu, cta: "Open devices", to: "/devices" },
-                { title: "SIM Management", desc: "Approve, activate and assign SIMs.", icon: Smartphone, cta: "Open SIMs", to: "/sims" },
-                { title: "Security", desc: "Review alerts, audit trail and access events.", icon: ShieldCheck, cta: "Open security", to: "/security" },
-              ].map((qa) => (
-                <button
+              {quickActions.map((qa) => (
+                <Link
                   key={qa.title}
-                  onClick={() => navigate(qa.to)}
+                  to={qa.to}
                   className="group text-left rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/50 hover:bg-muted/30 shrink-0 w-[260px] snap-start"
                 >
                   <div className="flex items-start gap-3">
@@ -189,129 +205,59 @@ export default function PlatformDashboard() {
                       </span>
                     </div>
                   </div>
-                </button>
+                </Link>
               ))}
             </div>
           </CardContent>
         </Card>
 
-        {/* Primary Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title="Active Tenants"
-            value={tenantsLoading ? "..." : activeTenants}
-            change={12}
-            changeLabel="vs last month"
+            title="Total Tenants"
+            value={formatMetric(systemDashboard?.totalTenants)}
             icon={Building2}
             variant="success"
           />
           <StatCard
             title="Total Vehicles"
-            value={totalVehicles.toLocaleString()}
-            change={8}
-            changeLabel="vs last month"
+            value={formatMetric(systemDashboard?.totalVehicles)}
             icon={Truck}
           />
           <StatCard
             title="Total Drivers"
-            value={totalDrivers.toLocaleString()}
-            change={15}
-            changeLabel="vs last month"
+            value={formatMetric(systemDashboard?.totalDrivers)}
             icon={Users}
           />
           <StatCard
-            title="Monthly Revenue"
-            value={currentMonthRevenue}
-            change={18}
-            changeLabel="vs last month"
+            title="Total SIM Cards"
+            value={formatMetric(systemDashboard?.totalSimCards)}
             icon={CreditCard}
             variant="success"
           />
+          <StatCard
+            title="IoT Devices"
+            value={formatMetric(systemDashboard?.totalSensors)}
+            icon={Cpu}
+          />
+          <StatCard
+            title="Total Drivers"
+            value={formatMetric(systemDashboard?.totalDrivers)}
+            icon={Users}
+            variant="success"
+          />
+          <StatCard
+            title="Data Usage Today"
+            value={formatDataUsage(systemDashboard?.dataUsageTodayMb)}
+            icon={Radio}
+            variant="warning"
+          />
+          <StatCard
+            title="GPS Messages/hr"
+            value={formatMetric(systemDashboard?.sensorGpsMessagesPerHour)}
+            icon={MapPin}
+          />
         </div>
 
-        {/* IoT & SIM Stats */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate("/devices")}>
-            <CardContent className="p-4">
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Cpu className="h-6 w-6 text-primary" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-muted-foreground">IoT Devices</p>
-                  <p className="text-2xl font-bold">{totalDevices.toLocaleString()}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge className="bg-success/10 text-success border-success/30 text-xs">
-                      {onlineDevices.toLocaleString()} online
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
-                  <Users className="h-6 w-6 text-success" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-muted-foreground">Total Drivers</p>
-                  <p className="text-2xl font-bold">{totalDrivers.toLocaleString()}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="outline" className="text-xs">
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                      +15% vs last month
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 rounded-lg bg-warning/10 flex items-center justify-center shrink-0">
-                  <Radio className="h-6 w-6 text-warning" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-muted-foreground">Data Usage Today</p>
-                  <p className="text-2xl font-bold">1.2 TB</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="outline" className="text-xs">
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                      +15% vs avg
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                  <MapPin className="h-6 w-6 text-muted-foreground" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-muted-foreground">GPS Messages/hr</p>
-                  <p className="text-2xl font-bold">625K</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="outline" className="text-xs">
-                      <Zap className="h-3 w-3 mr-1" />
-                      Real-time
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content Tabs */}
         <Tabs defaultValue="overview" className="space-y-4">
           <div className="flex justify-center">
             <TabsList>
@@ -323,9 +269,7 @@ export default function PlatformDashboard() {
           </div>
 
           <TabsContent value="overview" className="space-y-6">
-            {/* Charts Row */}
             <div className="grid gap-6 lg:grid-cols-2">
-              {/* Revenue Chart */}
               <Card>
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
@@ -334,9 +278,9 @@ export default function PlatformDashboard() {
                         <TrendingUp className="h-5 w-5 text-primary" />
                         Revenue & Tenant Growth
                       </CardTitle>
-                      <CardDescription>Monthly platform revenue and tenant acquisition ({currency})</CardDescription>
+                      <CardDescription>Monthly platform revenue and tenant acquisition (NGN)</CardDescription>
                     </div>
-                    <ChartDateFilter value={revenueRange} onValueChange={setRevenueRange} />
+                    <ChartDateFilter value="30d" onValueChange={() => undefined} />
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -350,15 +294,10 @@ export default function PlatformDashboard() {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                      <YAxis 
-                        stroke="hsl(var(--muted-foreground))" 
-                        fontSize={12} 
-                        tickFormatter={(value) => {
-                          if (currency === "NGN") {
-                            return `₦${(value / 1000000).toFixed(0)}M`;
-                          }
-                          return `$${(value / 1000).toFixed(0)}k`;
-                        }} 
+                      <YAxis
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        tickFormatter={(value) => `NGN ${(Number(value) / 1000000).toFixed(0)}M`}
                       />
                       <Tooltip
                         contentStyle={{
@@ -366,19 +305,11 @@ export default function PlatformDashboard() {
                           border: "1px solid hsl(var(--border))",
                           borderRadius: "8px",
                         }}
-                        formatter={(value: number, name: string) => {
-                          if (name === "revenueNGN" && currency === "NGN") {
-                            return [`₦${value.toLocaleString()}`, "Revenue"];
-                          }
-                          if (name === "revenueUSD" && currency === "USD") {
-                            return [`$${value.toLocaleString()}`, "Revenue"];
-                          }
-                          return [value, name];
-                        }}
+                        formatter={(value: number) => [`NGN ${value.toLocaleString()}`, "Revenue"]}
                       />
                       <Area
                         type="monotone"
-                        dataKey={currency === "NGN" ? "revenueNGN" : "revenueUSD"}
+                        dataKey="revenueNGN"
                         stroke="hsl(var(--primary))"
                         strokeWidth={2}
                         fillOpacity={1}
@@ -389,7 +320,6 @@ export default function PlatformDashboard() {
                 </CardContent>
               </Card>
 
-              {/* System Health */}
               <Card>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
@@ -409,13 +339,12 @@ export default function PlatformDashboard() {
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`h-2.5 w-2.5 rounded-full ${
-                            service.status === "healthy"
-                              ? "bg-success"
-                              : service.status === "warning"
+                          className={`h-2.5 w-2.5 rounded-full ${service.status === "healthy"
+                            ? "bg-success"
+                            : service.status === "warning"
                               ? "bg-warning animate-pulse"
                               : "bg-destructive"
-                          }`}
+                            }`}
                         />
                         <span className="text-sm font-medium">{service.label}</span>
                       </div>
@@ -430,37 +359,41 @@ export default function PlatformDashboard() {
               </Card>
             </div>
 
-            {/* Recent Activity */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="h-5 w-5 text-primary" />
                   Recent Platform Activity
                 </CardTitle>
-                <CardDescription>Latest events across tenants — onboarding, devices, SIMs, alerts and payments</CardDescription>
+                <CardDescription>Latest events across tenants - onboarding, devices, SIMs, alerts and payments</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {recentActivities.map((activity, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/30 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
-                          activity.type === "alert" ? "bg-warning/10" : 
-                          activity.type === "payment" ? "bg-success/10" : 
-                          "bg-primary/10"
-                        }`}>
-                          {activity.type === "tenant_created" && <Building2 className="h-4 w-4 text-primary" />}
-                          {activity.type === "device_provisioned" && <Cpu className="h-4 w-4 text-primary" />}
-                          {activity.type === "sim_activated" && <Smartphone className="h-4 w-4 text-primary" />}
-                          {activity.type === "alert" && <AlertTriangle className="h-4 w-4 text-warning" />}
-                          {activity.type === "payment" && <CreditCard className="h-4 w-4 text-success" />}
+                  {activityLogLoading && (
+                    <div className="p-3 rounded-lg border text-sm text-muted-foreground">
+                      Loading recent activity...
+                    </div>
+                  )}
+
+                  {!activityLogLoading && recentActivities.length === 0 && (
+                    <div className="p-3 rounded-lg border text-sm text-muted-foreground">
+                      No recent activity found.
+                    </div>
+                  )}
+
+                  {recentActivities.map((activity) => (
+                    <div key={activity.id} className="flex items-center justify-between gap-4 p-3 rounded-lg border hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-primary/10">
+                          <Clock className="h-4 w-4 text-primary" />
                         </div>
-                        <div>
-                          <p className="text-sm font-medium">{activity.message}</p>
-                          <p className="text-xs text-muted-foreground">{activity.tenant}</p>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{activity.summary}</p>
                         </div>
                       </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">{activity.time}</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatActivityTime(activity.occurredAt)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -473,7 +406,6 @@ export default function PlatformDashboard() {
           </TabsContent>
 
           <TabsContent value="tenants" className="space-y-6">
-            {/* Tenant Overview */}
             <div className="grid gap-6 lg:grid-cols-3">
               <Card className="lg:col-span-2">
                 <CardHeader>
@@ -485,7 +417,7 @@ export default function PlatformDashboard() {
                       </CardTitle>
                       <CardDescription>Largest tenants ranked by number of vehicles under management</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => navigate("/tenants")}>
+                    <Button variant="outline" size="sm">
                       <Eye className="h-4 w-4 mr-2" />
                       View All
                     </Button>
@@ -493,51 +425,47 @@ export default function PlatformDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {tenants
-                      .sort((a, b) => b.vehicleCount - a.vehicleCount)
-                      .slice(0, 5)
-                      .map((tenant, index) => (
-                        <div
-                          key={tenant.id}
-                          className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/30"
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
-                              #{index + 1}
-                            </div>
-                            <div>
-                              <p className="font-medium">{tenant.name}</p>
-                              <p className="text-sm text-muted-foreground capitalize">{tenant.plan} Plan</p>
-                            </div>
+                    {topTenants.map((tenant, index) => (
+                      <div
+                        key={tenant.id}
+                        className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/30"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
+                            #{index + 1}
                           </div>
-                          <div className="flex items-center gap-6 text-sm">
-                            <div className="text-right">
-                              <p className="font-medium">{tenant.vehicleCount}</p>
-                              <p className="text-muted-foreground">Vehicles</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-medium">{tenant.driverCount}</p>
-                              <p className="text-muted-foreground">Drivers</p>
-                            </div>
-                            <Badge
-                              className={
-                                tenant.status === "active"
-                                  ? "bg-success/10 text-success border-success/30"
-                                  : tenant.status === "pending"
-                                  ? "bg-warning/10 text-warning border-warning/30"
-                                  : "bg-destructive/10 text-destructive border-destructive/30"
-                              }
-                            >
-                              {tenant.status}
-                            </Badge>
+                          <div>
+                            <p className="font-medium">{tenant.name}</p>
+                            <p className="text-sm text-muted-foreground capitalize">{tenant.plan} Plan</p>
                           </div>
                         </div>
-                      ))}
+                        <div className="flex items-center gap-6 text-sm">
+                          <div className="text-right">
+                            <p className="font-medium">{tenant.vehicleCount}</p>
+                            <p className="text-muted-foreground">Vehicles</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">{tenant.driverCount}</p>
+                            <p className="text-muted-foreground">Drivers</p>
+                          </div>
+                          <Badge
+                            className={
+                              tenant.status === "active"
+                                ? "bg-success/10 text-success border-success/30"
+                                : tenant.status === "pending"
+                                  ? "bg-warning/10 text-warning border-warning/30"
+                                  : "bg-destructive/10 text-destructive border-destructive/30"
+                            }
+                          >
+                            {tenant.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Tenant by Plan */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -547,11 +475,7 @@ export default function PlatformDashboard() {
                   <CardDescription>Subscription mix and recurring revenue contribution per plan tier</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {[
-                    { plan: "Enterprise", count: 12, revenueNGN: "₦92.9M/mo", revenueUSD: "$59,988/mo", color: "bg-success" },
-                    { plan: "Professional", count: 45, revenueNGN: "₦104.5M/mo", revenueUSD: "$67,455/mo", color: "bg-primary" },
-                    { plan: "Starter", count: 68, revenueNGN: "₦52.6M/mo", revenueUSD: "$33,932/mo", color: "bg-muted-foreground" },
-                  ].map((item) => (
+                  {plans.map((item) => (
                     <div key={item.plan} className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="font-medium">{item.plan}</span>
@@ -559,7 +483,7 @@ export default function PlatformDashboard() {
                       </div>
                       <Progress value={(item.count / 125) * 100} className={`h-2 ${item.color}`} />
                       <p className="text-xs text-muted-foreground">
-                        {currency === "NGN" ? item.revenueNGN : item.revenueUSD}
+                        {item.revenue}
                       </p>
                     </div>
                   ))}
@@ -570,7 +494,6 @@ export default function PlatformDashboard() {
 
           <TabsContent value="iot" className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-2">
-              {/* Device Distribution */}
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between gap-2">
@@ -582,8 +505,8 @@ export default function PlatformDashboard() {
                       <CardDescription>Breakdown of provisioned IoT devices grouped by hardware vendor</CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
-                      <ChartDateFilter value={deviceChartRange} onValueChange={setDeviceChartRange} />
-                      <Button variant="outline" size="sm" onClick={() => navigate("/devices")}>
+                      <ChartDateFilter value="30d" onValueChange={() => undefined} />
+                      <Button variant="outline" size="sm">
                         <Eye className="h-4 w-4 mr-2" />
                         Manage
                       </Button>
@@ -609,7 +532,6 @@ export default function PlatformDashboard() {
                 </CardContent>
               </Card>
 
-              {/* SIM Distribution */}
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between gap-2">
@@ -621,8 +543,8 @@ export default function PlatformDashboard() {
                       <CardDescription>Active SIM inventory split across mobile network operators</CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
-                      <ChartDateFilter value={simChartRange} onValueChange={setSimChartRange} />
-                      <Button variant="outline" size="sm" onClick={() => navigate("/sims")}>
+                      <ChartDateFilter value="30d" onValueChange={() => undefined} />
+                      <Button variant="outline" size="sm">
                         <Eye className="h-4 w-4 mr-2" />
                         Manage
                       </Button>
@@ -671,7 +593,6 @@ export default function PlatformDashboard() {
               </Card>
             </div>
 
-            {/* Data Usage Trend */}
             <Card>
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
@@ -682,7 +603,6 @@ export default function PlatformDashboard() {
                     </CardTitle>
                     <CardDescription>Total data consumed across all SIM cards</CardDescription>
                   </div>
-                  
                 </div>
               </CardHeader>
               <CardContent>
@@ -723,6 +643,3 @@ export default function PlatformDashboard() {
     </DashboardLayout>
   );
 }
-
-
-

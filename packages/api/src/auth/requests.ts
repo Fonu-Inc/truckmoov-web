@@ -480,8 +480,10 @@ export async function getSystemDashboard() {
   return data
 }
 
-export async function getSystemActivityLog() {
-  const { data } = await axiosInstance.get<ActivityLogResponse>('/auth/system/activity-log')
+export async function getSystemActivityLog(payload?: ActivityLogQuery) {
+  const { data } = await axiosInstance.get<ActivityLogResponse>('/auth/system/activity-log', {
+    params: payload?.params,
+  })
   return data
 }
 
