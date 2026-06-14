@@ -1,28 +1,18 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
+import type { ReactNode } from "react";
+import { format } from "date-fns";
+import { ArrowUpRight, FileText, ImageIcon, Lock, Paperclip, Send } from "lucide-react";
+
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import { Textarea } from "@/components/shadcn/textarea";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Separator } from "@/components/shadcn/separator";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
+import { Separator } from "@/components/shadcn/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { useAuthStore } from "@/stores/authStore";
-import { formatDistanceToNow, format } from "date-fns";
-import {
-  Send,
-  Loader2,
-  User,
-  ArrowUpRight,
-  CheckCircle2,
-  AlertTriangle,
-  Lock,
-  Paperclip,
-  FileText,
-  ImageIcon
-} from "lucide-react";
+import { Textarea } from "@/components/shadcn/textarea";
 
 type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
 type EscalationType = "fleetpro_internal" | "fonu_connectivity" | "vendor_installer";
@@ -45,16 +35,8 @@ export interface SupportTicket {
   updatedAt: string;
   resolvedAt?: string;
   contextSnapshot?: Record<string, unknown>;
-}
-
-interface SupportMessage {
-  id: string;
-  senderId: string;
-  senderName?: string;
-  senderRole?: string;
-  message: string;
-  isInternal?: boolean;
-  createdAt: string;
+  reporterName?: string;
+  tenantName?: string;
 }
 
 interface AdminTicketSheetProps {
@@ -62,491 +44,266 @@ interface AdminTicketSheetProps {
   onClose: () => void;
 }
 
-const statusOptions: { value: TicketStatus; label: string }[] = [
-  { value: "open", label: "Open" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "waiting_on_tenant", label: "Waiting on Tenant" },
-  { value: "escalated", label: "Escalated" },
-  { value: "resolved", label: "Resolved" },
-  { value: "closed", label: "Closed" },
-];
-
 const escalationOptions: { value: EscalationType; label: string }[] = [
   { value: "fleetpro_internal", label: "FleetPro Internal" },
   { value: "fonu_connectivity", label: "Fonu Connectivity" },
   { value: "vendor_installer", label: "Vendor / Installer" },
 ];
 
+const priorityStyles: Record<string, { label: string; className: string }> = {
+  low: { label: "Low", className: "border-border bg-secondary/50 text-muted-foreground" },
+  medium: { label: "Medium", className: "border-transparent bg-primary/10 text-primary" },
+  high: { label: "High", className: "border-transparent bg-destructive/10 text-destructive" },
+  critical: { label: "Critical", className: "border-destructive/20 bg-destructive/10 text-destructive" },
+};
+
+const titleCase = (value: string) =>
+  value
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const shortId = (id: string) => id.slice(0, 8);
+
+const channelFromContext = (value: string) => {
+  switch (value) {
+    case "device":
+      return "Device";
+    case "sim":
+      return "SIM";
+    case "vehicle":
+      return "Vehicle";
+    case "whatsapp":
+      return "WhatsApp";
+    case "billing":
+      return "Billing";
+    default:
+      return "Web";
+  }
+};
+
+const initials = (name: string) =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("") || "?";
+
+const formatCreatedAt = (date: string) => {
+  const parsed = new Date(date);
+  return Number.isNaN(parsed.getTime()) ? date : format(parsed, "PPP, p");
+};
+
 export function AdminTicketSheet({ ticket, onClose }: AdminTicketSheetProps) {
-  const { user } = useAuthStore();
-
-  // Inline defaults — hook deleted
-  const updateTicketStatus = async (_id: string, _status: TicketStatus) => {};
-  const escalateTicket = async (_id: string, _to: string, _ref?: string, _notes?: string) => {};
-  const refetch = async () => {};
-  const messages: SupportMessage[] = [];
-  const isLoading = false;
-  const sendMessage = async (_msg: string, _internal: boolean): Promise<boolean> => false;
-
-  const [newMessage, setNewMessage] = useState("");
-  const [isInternal, setIsInternal] = useState(false);
-  const [isSending, setIsSending] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-
-  // Escalation form
+  const [internalNote, setInternalNote] = useState(false);
+  const [message, setMessage] = useState("");
   const [escalateTo, setEscalateTo] = useState<EscalationType | "">("");
   const [referenceId, setReferenceId] = useState("");
   const [escalationNotes, setEscalationNotes] = useState("");
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
-    setIsSending(true);
-    const success = await sendMessage(newMessage.trim(), isInternal);
-    if (success) {
-      setNewMessage("");
-      setIsInternal(false);
-    }
-    setIsSending(false);
-  };
-
-  const handleStatusChange = async (newStatus: TicketStatus) => {
-    if (!ticket) return;
-    setIsUpdating(true);
-    await updateTicketStatus(ticket.id, newStatus);
-    await refetch();
-    setIsUpdating(false);
-  };
-
-  const handleEscalate = async () => {
-    if (!ticket || !escalateTo) return;
-    setIsUpdating(true);
-    await escalateTicket(ticket.id, escalateTo, referenceId || undefined, escalationNotes || undefined);
-    await refetch();
-    setEscalateTo("");
-    setReferenceId("");
-    setEscalationNotes("");
-    setIsUpdating(false);
-  };
-
   if (!ticket) return null;
 
-  // Demo attachments — wire to real ticket attachments when storage backend is connected
-  const demoAttachments = [
+  const reporterName = ticket.reporterName || `User ${shortId(ticket.createdBy || ticket.id)}`;
+  const priority = priorityStyles[ticket.priority] ?? priorityStyles.medium;
+  const attachments = [
     { name: "screenshot-error.png", type: "image" as const, size: "248 KB" },
     { name: "device-log.txt", type: "document" as const, size: "12 KB" },
   ];
 
-  // Demo reporter directory — mirrors AllTickets so the modal shows a human name
-  const REPORTER_NAMES: Record<string, string> = {
-    "usr-21f4a8c0": "Adaeze Okafor",
-    "usr-9a3b1c44": "Tunde Bakare",
-    "usr-55cd0091": "Chinedu Eze",
-    "usr-ab991122": "Funmi Adeyemi",
-    "usr-31aa55b9": "Ibrahim Musa",
-    "usr-7711eecc": "Kemi Lawal",
-    "usr-cc220011": "Oluwaseun Bello",
-    "usr-66aa00ee": "Ngozi Uche",
-    "usr-aa11bbcc": "Yusuf Sani",
-    "usr-12340987": "Blessing Akpan",
-  };
-  const reporterDisplay = ticket.createdBy
-    ? REPORTER_NAMES[ticket.createdBy] || `User #${ticket.createdBy.slice(0, 8)}`
-    : "—";
-  const reporterInitials = reporterDisplay
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase() || "")
-    .join("") || "?";
-
-  const priorityStyles: Record<string, { label: string; className: string }> = {
-    low: { label: "Low", className: "bg-muted text-muted-foreground" },
-    medium: { label: "Medium", className: "bg-primary/10 text-primary" },
-    high: { label: "High", className: "bg-chart-5/10 text-chart-5" },
-    critical: { label: "Critical", className: "bg-destructive/10 text-destructive" },
-  };
-  const priorityLabel = priorityStyles[ticket.priority]?.label ?? ticket.priority;
-  const priorityBadgeClass = priorityStyles[ticket.priority]?.className ?? "";
-
   return (
     <Dialog open={!!ticket} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-xl p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle className="text-lg leading-tight">Manage Ticket</DialogTitle>
-          <DialogDescription className="text-xs mt-1">
+      <DialogContent className="max-h-[92vh] max-w-2xl gap-0 overflow-hidden p-0">
+        <DialogHeader className="border-b px-7 py-7">
+          <DialogTitle className="text-xl">Manage Ticket</DialogTitle>
+          <DialogDescription className="max-w-xl text-sm">
             Review the ticket details, respond to the reporter, and update the status or escalate as needed.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          <Tabs defaultValue="details">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="messages">Messages</TabsTrigger>
-              <TabsTrigger value="escalate">Escalate</TabsTrigger>
+        <div className="max-h-[calc(92vh-113px)] overflow-y-auto px-7 py-5">
+          <Tabs defaultValue="details" className="space-y-6">
+            <TabsList className="grid h-11 w-full grid-cols-3 p-1">
+              <TabsTrigger value="details" className="h-9 text-base font-semibold">
+                Details
+              </TabsTrigger>
+              <TabsTrigger value="messages" className="h-9 text-base font-semibold">
+                Messages
+              </TabsTrigger>
+              <TabsTrigger value="escalate" className="h-9 text-base font-semibold">
+                Escalate
+              </TabsTrigger>
             </TabsList>
 
-            {/* Details Tab */}
-            <TabsContent value="details" className="space-y-5 mt-5">
-              {/* Title + Ticket ID */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                <div className="space-y-1 sm:col-span-2">
-                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                    Title
-                  </Label>
-                  <p className="text-sm font-semibold leading-snug">{ticket.subject}</p>
+            <TabsContent value="details" className="mt-0 space-y-6">
+              <div className="space-y-2">
+                <FieldLabel>Title</FieldLabel>
+                <p className="font-semibold">{ticket.subject}</p>
+              </div>
+
+              <div className="space-y-2">
+                <FieldLabel>Ticket ID</FieldLabel>
+                <p className="font-mono font-semibold">#{shortId(ticket.id)}</p>
+              </div>
+
+              <div className="grid gap-x-12 gap-y-6 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <FieldLabel>Category</FieldLabel>
+                  <p className="font-semibold">{titleCase(ticket.category)}</p>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                    Ticket ID
-                  </Label>
-                  <p className="text-sm font-medium font-mono">#{ticket.id.slice(0, 8)}</p>
+                <div className="space-y-2">
+                  <FieldLabel>Priority</FieldLabel>
+                  <Badge variant="outline" className={priority.className}>
+                    {priority.label}
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  <FieldLabel>Channel</FieldLabel>
+                  <p className="font-semibold">{channelFromContext(ticket.contextType)}</p>
+                </div>
+                <div className="space-y-2">
+                  <FieldLabel>Reporter</FieldLabel>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                      {initials(reporterName)}
+                    </div>
+                    <p className="font-semibold">{reporterName}</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                <div className="space-y-1">
-                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Category</Label>
-                  <p className="text-sm font-medium capitalize">{ticket.category.replace(/_/g, " ")}</p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Priority</Label>
-                  <div>
-                    <Badge variant="outline" className={priorityBadgeClass}>
-                      {priorityLabel}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Channel</Label>
-                  <p className="text-sm font-medium capitalize">{ticket.contextType}</p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Reporter</Label>
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-[11px] font-semibold">
-                      {reporterInitials}
-                    </div>
-                    <p className="text-sm font-medium truncate">{reporterDisplay}</p>
-                  </div>
-                </div>
-                <div className="space-y-1 col-span-2">
-                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Created</Label>
-                  <p className="text-sm">{format(new Date(ticket.createdAt), "PPp")}</p>
-                </div>
+              <div className="space-y-2">
+                <FieldLabel>Created</FieldLabel>
+                <p className="font-semibold">{formatCreatedAt(ticket.createdAt)}</p>
               </div>
 
               <Separator />
 
-              <div className="space-y-2">
-                <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Issue Description
-                </Label>
-                <p className="text-sm p-3 rounded-lg bg-muted/50 leading-relaxed">{ticket.description}</p>
-              </div>
-
-              {/* Attachments */}
-              <div className="space-y-2">
-                <Label className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                  <Paperclip className="h-3 w-3" />
-                  Attachments ({demoAttachments.length})
-                </Label>
-                {demoAttachments.length === 0 ? (
-                  <div className="text-xs text-muted-foreground p-3 rounded-lg border border-dashed text-center">
-                    No images or documents attached to this ticket.
-                  </div>
-                ) : (
-                  <>
-                    {demoAttachments.some((a) => a.type === "image") && (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {demoAttachments
-                          .filter((a) => a.type === "image")
-                          .map((att) => (
-                            <a
-                              key={att.name}
-                              href="#"
-                              onClick={(e) => e.preventDefault()}
-                              className="group relative block aspect-video overflow-hidden rounded-md border bg-muted"
-                            >
-                              <div className="flex h-full w-full items-center justify-center">
-                                <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                              </div>
-                              <div className="absolute inset-x-0 bottom-0 truncate bg-background/80 px-2 py-1 text-[10px]">
-                                {att.name}
-                              </div>
-                            </a>
-                          ))}
-                      </div>
-                    )}
-                    {demoAttachments.some((a) => a.type !== "image") && (
-                      <div className="grid grid-cols-2 gap-2">
-                        {demoAttachments
-                          .filter((a) => a.type !== "image")
-                          .map((att) => (
-                            <div
-                              key={att.name}
-                              className="flex items-center gap-2 p-2.5 rounded-lg border bg-card"
-                            >
-                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
-                                <FileText className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-xs font-medium truncate">{att.name}</p>
-                                <p className="text-[10px] text-muted-foreground">{att.size}</p>
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-
-              {/* Status action bar — placed after attachments per design */}
-              <div className="flex flex-col gap-2 p-4 rounded-lg border bg-muted/40 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                    Update Ticket Status
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Change the workflow stage of this ticket.
-                  </p>
+              <div className="space-y-3">
+                <FieldLabel>Issue Description</FieldLabel>
+                <div className="rounded-md bg-secondary/60 p-4 font-semibold leading-relaxed">
+                  {ticket.description || "No description provided."}
                 </div>
-                <Select
-                  value={ticket.status}
-                  onValueChange={(v) => handleStatusChange(v as TicketStatus)}
-                  disabled={isUpdating}
-                >
-                  <SelectTrigger className="w-full sm:w-52 h-9 bg-background">
-                    <SelectValue />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Paperclip className="h-4 w-4 text-muted-foreground" />
+                  <FieldLabel>Attachments ({attachments.length})</FieldLabel>
+                </div>
+                <div className="space-y-2">
+                  <div className="relative h-28 w-48 overflow-hidden rounded-md border bg-secondary">
+                    <div className="flex h-full items-center justify-center">
+                      <ImageIcon className="h-7 w-7 text-muted-foreground" />
+                    </div>
+                    <div className="absolute inset-x-0 bottom-0 bg-background/60 px-3 py-2 text-xs font-semibold">
+                      {attachments[0].name}
+                    </div>
+                  </div>
+                  <div className="flex w-72 items-center gap-3 rounded-md border bg-secondary/60 p-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-background/60">
+                      <FileText className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">{attachments[1].name}</p>
+                      <p className="text-xs text-muted-foreground">{attachments[1].size}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="messages" className="mt-0 space-y-6">
+              <div className="space-y-3">
+                <FieldLabel>Conversation</FieldLabel>
+                <div className="flex h-80 items-center justify-center rounded-md border bg-background/40 text-muted-foreground">
+                  No messages yet.
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <FieldLabel>Reply to Tenant</FieldLabel>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="internal-note"
+                    checked={internalNote}
+                    onCheckedChange={(checked) => setInternalNote(checked === true)}
+                  />
+                  <Label htmlFor="internal-note" className="flex items-center gap-1.5 font-semibold">
+                    <Lock className="h-4 w-4" />
+                    Mark as internal note (not visible to tenant)
+                  </Label>
+                </div>
+                <div className="flex items-end gap-2">
+                  <Textarea
+                    value={message}
+                    onChange={(event) => setMessage(event.target.value)}
+                    placeholder="Type your message..."
+                    rows={4}
+                    className="resize-none"
+                  />
+                  <Button size="icon" className="h-10 w-10 shrink-0" disabled={!message.trim()}>
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="escalate" className="mt-0 space-y-6">
+              <div className="rounded-md bg-secondary/60 p-4 font-semibold leading-relaxed">
+                Escalate this ticket when it requires action from an external party. The tenant will see the escalation
+                status but cannot escalate directly.
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="escalate-target" className="font-semibold">
+                  Escalate To <span className="text-destructive">*</span>
+                </Label>
+                <Select value={escalateTo} onValueChange={(value) => setEscalateTo(value as EscalationType)}>
+                  <SelectTrigger id="escalate-target" className="h-11">
+                    <SelectValue placeholder="Select escalation target" />
                   </SelectTrigger>
                   <SelectContent>
-                    {statusOptions.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
+                    {escalationOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Context Snapshot */}
-              {ticket.contextSnapshot && Object.keys(ticket.contextSnapshot).length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                    Context Snapshot
-                  </Label>
-                  <div className="p-3 rounded-lg border bg-card">
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      {Object.entries(ticket.contextSnapshot).map(([key, value]) => (
-                        <div key={key}>
-                          <span className="text-muted-foreground capitalize">{key.replace(/_/g, " ")}: </span>
-                          <span className="text-foreground font-medium">{String(value) || "N/A"}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Escalation Info */}
-              {ticket.escalatedTo && (
-                <div className="p-3 rounded-lg border border-destructive/50 bg-destructive/5 space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-destructive">
-                    <ArrowUpRight className="h-4 w-4" />
-                    <span className="font-medium">
-                      Escalated to {ticket.escalatedTo.replace(/_/g, " ")}
-                    </span>
-                  </div>
-                  {ticket.escalatedReferenceId && (
-                    <p className="text-xs">
-                      <span className="text-muted-foreground">Reference ID: </span>
-                      {ticket.escalatedReferenceId}
-                    </p>
-                  )}
-                  {ticket.escalationNotes && (
-                    <p className="text-xs">{ticket.escalationNotes}</p>
-                  )}
-                  {ticket.escalatedAt && (
-                    <p className="text-xs text-muted-foreground">
-                      Escalated {formatDistanceToNow(new Date(ticket.escalatedAt), { addSuffix: true })}
-                    </p>
-                  )}
-                </div>
-              )}
-            </TabsContent>
-
-            {/* Messages Tab */}
-            <TabsContent value="messages" className="mt-5 space-y-4">
-              <div>
-                <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Conversation
+              <div className="space-y-2">
+                <Label htmlFor="escalate-reference" className="font-semibold">
+                  External Reference ID <span className="font-normal text-muted-foreground">(optional)</span>
                 </Label>
-                <ScrollArea className="h-72 mt-2 pr-4 rounded-lg border bg-muted/20 p-3">
-                  {isLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : messages.length === 0 ? (
-                    <div className="text-center py-8 text-sm text-muted-foreground">
-                      No messages yet.
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {messages.map((msg) => {
-                        const isOwn = msg.senderId === user?.id;
-                        return (
-                          <div
-                            key={msg.id}
-                            className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
-                          >
-                            <div
-                              className={`max-w-[80%] p-3 rounded-lg ${
-                                msg.isInternal
-                                  ? "bg-chart-5/10 border border-chart-5/20"
-                                  : isOwn
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-card border"
-                              }`}
-                            >
-                              <div className="flex items-center gap-2 mb-1">
-                                <User className="h-3 w-3" />
-                                <span className="text-xs font-medium">
-                                  {msg.senderName || "Unknown"}
-                                </span>
-                                <Badge variant="outline" className="text-[10px] py-0">
-                                  {msg.senderRole}
-                                </Badge>
-                                {msg.isInternal && (
-                                  <Badge variant="outline" className="text-[10px] py-0 border-chart-5 text-chart-5">
-                                    <Lock className="h-2 w-2 mr-1" />
-                                    Internal
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-sm">{msg.message}</p>
-                              <p className="text-[10px] opacity-70 mt-1">
-                                {format(new Date(msg.createdAt), "MMM d, h:mm a")}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </ScrollArea>
+                <Input
+                  id="escalate-reference"
+                  value={referenceId}
+                  onChange={(event) => setReferenceId(event.target.value)}
+                  placeholder="e.g., Fonu ticket #12345"
+                  className="h-11"
+                />
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Reply to Tenant
+                <Label htmlFor="escalate-notes" className="font-semibold">
+                  Escalation Notes <span className="font-normal text-muted-foreground">(optional)</span>
                 </Label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="internal"
-                    checked={isInternal}
-                    onChange={(e) => setIsInternal(e.target.checked)}
-                    className="h-4 w-4"
-                  />
-                  <Label htmlFor="internal" className="text-sm flex items-center gap-1 font-normal">
-                    <Lock className="h-3 w-3" />
-                    Mark as internal note (not visible to tenant)
-                  </Label>
-                </div>
-                <div className="flex gap-2">
-                  <Textarea
-                    placeholder="Type your message..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    rows={3}
-                    className="resize-none"
-                  />
-                  <Button
-                    size="icon"
-                    onClick={handleSendMessage}
-                    disabled={!newMessage.trim() || isSending}
-                    className="self-end"
-                  >
-                    {isSending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
+                <Textarea
+                  id="escalate-notes"
+                  value={escalationNotes}
+                  onChange={(event) => setEscalationNotes(event.target.value)}
+                  placeholder="Internal notes about the escalation..."
+                  rows={4}
+                />
               </div>
-            </TabsContent>
 
-            {/* Escalate Tab */}
-            <TabsContent value="escalate" className="space-y-4 mt-5">
-              {ticket.escalatedTo ? (
-                <div className="p-4 rounded-lg border border-chart-5/50 bg-chart-5/5 text-center">
-                  <AlertTriangle className="h-8 w-8 mx-auto text-chart-5 mb-2" />
-                  <p className="font-medium">Already Escalated</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    This ticket was escalated to {ticket.escalatedTo.replace(/_/g, " ")}
-                    {ticket.escalatedAt && (
-                      <> {formatDistanceToNow(new Date(ticket.escalatedAt), { addSuffix: true })}</>
-                    )}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="p-3 rounded-lg bg-muted/50 text-sm">
-                    Escalate this ticket when it requires action from an external party.
-                    The tenant will see the escalation status but cannot escalate directly.
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="escalate-target">Escalate To <span className="text-destructive">*</span></Label>
-                    <Select value={escalateTo} onValueChange={(v) => setEscalateTo(v as EscalationType)}>
-                      <SelectTrigger id="escalate-target">
-                        <SelectValue placeholder="Select escalation target" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {escalationOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="escalate-ref">External Reference ID <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                    <Input
-                      id="escalate-ref"
-                      placeholder="e.g., Fonu ticket #12345"
-                      value={referenceId}
-                      onChange={(e) => setReferenceId(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="escalate-notes">Escalation Notes <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                    <Textarea
-                      id="escalate-notes"
-                      placeholder="Internal notes about the escalation..."
-                      value={escalationNotes}
-                      onChange={(e) => setEscalationNotes(e.target.value)}
-                      rows={3}
-                    />
-                  </div>
-
-                  <Button
-                    className="w-full"
-                    variant="destructive"
-                    onClick={handleEscalate}
-                    disabled={!escalateTo || isUpdating}
-                  >
-                    {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    <ArrowUpRight className="mr-2 h-4 w-4" />
-                    Escalate Ticket
-                  </Button>
-                </>
-              )}
+              <Button className="h-10 w-full font-semibold" variant="destructive" disabled={!escalateTo}>
+                <ArrowUpRight className="mr-3 h-4 w-4" />
+                Escalate Ticket
+              </Button>
             </TabsContent>
           </Tabs>
         </div>
@@ -555,4 +312,6 @@ export function AdminTicketSheet({ ticket, onClose }: AdminTicketSheetProps) {
   );
 }
 
-
+function FieldLabel({ children }: { children: ReactNode }) {
+  return <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{children}</p>;
+}

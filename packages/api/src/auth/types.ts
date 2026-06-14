@@ -443,6 +443,18 @@ export type SystemDashboard = {
   generatedAt: string
 }
 
+export type SystemSupportDashboard = {
+  open: number
+  inProgress: number
+  escalated: number
+  waitingOnTenant: number
+  resolved: number
+  closed: number
+  resolvedToday: number
+  byCategory: Record<string, number>
+  topTenants: Record<string, unknown>[]
+}
+
 import type { ServerResponse } from '../lib/types'
 
 // ─── Entity types ─────────────────────────────────────────────────────────────
@@ -662,6 +674,7 @@ export type StandardApiResponse = ServerResponse<unknown>
 export type InviteActionResponse = ServerResponse<Record<string, unknown>>
 export type AuthSystemSettingsResponse = ServerResponse<AuthSystemSettings>
 export type SystemDashboardResponse = ServerResponse<SystemDashboard>
+export type SystemSupportDashboardResponse = ServerResponse<SystemSupportDashboard>
 export type SystemTenantsListResponse = ServerResponse<{ total: number; tenants: SystemTenant[]; generatedAt: string }>
 export type SystemTenantsSummaryResponse = ServerResponse<SystemTenantsSummary>
 export type SystemTenantDetailResponse = ServerResponse<Record<string, unknown>>

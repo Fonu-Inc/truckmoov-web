@@ -54,6 +54,7 @@ import type {
   SystemFeatureFlagResponse,
   SystemFeatureFlagsResponse,
   SystemLoginPayload,
+  SystemSupportDashboardResponse,
   SystemSimBatchesListResponse,
   SystemSimRequestsListResponse,
   SystemSimSummaryResponse,
@@ -512,7 +513,7 @@ export async function getSubscriptionPlans() {
 // ─── System admin — support tickets ──────────────────────────────────────────
 
 export async function getSystemSupportDashboard() {
-  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/system/support/dashboard')
+  const { data } = await axiosInstance.get<SystemSupportDashboardResponse>('/auth/system/support/dashboard')
   return data
 }
 

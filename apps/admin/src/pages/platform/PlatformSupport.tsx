@@ -1,34 +1,12 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { useSupportPermissions } from "@/hooks/useSupportPermissions";
 import { SupportDashboard } from "@/components/support/admin/SupportDashboard";
 import { AllTickets } from "@/components/support/admin/AllTickets";
 import { EscalatedTickets } from "@/components/support/admin/EscalatedTickets";
-import { DeviceSetupRequestsQueue } from "@/components/devices/DeviceSetupRequestsQueue";
-import { ShieldAlert } from "lucide-react";
 
 export default function PlatformSupport() {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const { canManageAllTickets } = useSupportPermissions();
-  const deviceRequests: any[] = [];
-  const deviceRequestsLoading = false;
-  const refetchDeviceRequests = async (...args: any[]) => {};
-  const updateRequestStatus = async (...args: any[]) => {};
-
-  if (!canManageAllTickets) {
-    return (
-      <DashboardLayout title="Access Restricted">
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-          <ShieldAlert className="h-16 w-16 text-muted-foreground mb-4" />
-          <h1 className="text-2xl font-bold text-foreground mb-2">Access Restricted</h1>
-          <p className="text-muted-foreground max-w-md">
-            You don't have permission to access the Support & Incidents management section.
-          </p>
-        </div>
-      </DashboardLayout>
-    );
-  }
 
   return (
     <DashboardLayout title="Support & Incidents" subtitle="Manage support tickets, escalations, and incident responses across all tenants">
@@ -56,14 +34,14 @@ export default function PlatformSupport() {
           </TabsContent>
 
           <TabsContent value="device-setup" className="space-y-6">
-            <DeviceSetupRequestsQueue
+            {/* <DeviceSetupRequestsQueue
               requests={deviceRequests}
               loading={deviceRequestsLoading}
               onRefresh={refetchDeviceRequests}
               onUpdateStatus={updateRequestStatus}
               isConfigurator={true}
               isSupportMode={true}
-            />
+            /> */}
           </TabsContent>
         </Tabs>
       </div>

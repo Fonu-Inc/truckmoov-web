@@ -140,6 +140,7 @@ export type {
   SystemSimsList,
   SystemSimsQuery,
   SystemSimsSummary,
+  SystemSupportDashboard,
   SystemTenant,
   SystemTenantsQuery,
   SystemTenantsSummary,
