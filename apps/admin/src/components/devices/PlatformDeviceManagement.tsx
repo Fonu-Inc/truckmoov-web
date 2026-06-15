@@ -26,7 +26,7 @@ import { Progress } from "@/components/shadcn/progress";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getSystemDeviceQueryOptions,
-  getSystemDevicesExportQueryOptions,
+  getSystemDevicesCatalogExportQueryOptions,
   getSystemDevicesQueryOptions,
   getSystemDevicesSummaryQueryOptions,
   type SystemDevicesQuery,
@@ -198,12 +198,14 @@ export function PlatformDeviceManagement() {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const blob = await queryClient.fetchQuery(getSystemDevicesExportQueryOptions(devicesQueryPayload));
+      const blob = await queryClient.fetchQuery(getSystemDevicesCatalogExportQueryOptions());
       const url = URL.createObjectURL(blob as Blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "devices.csv";
+      link.download = "device-catalog.csv";
+      document.body.appendChild(link);
       link.click();
+      link.remove();
       URL.revokeObjectURL(url);
     } catch {
       toast.error("Export failed");

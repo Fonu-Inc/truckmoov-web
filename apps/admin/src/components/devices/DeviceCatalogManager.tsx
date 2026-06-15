@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  getSystemDevicesCatalogExportQueryOptions,
   getSystemDevicesCatalogQueryOptions,
   useDeleteDeviceCatalogEntry,
   useCreateDeviceCatalogEntry,
   useUpdateDeviceCatalogEntry,
 } from "@truckmoov/api/auth";
-import type { SystemDeviceCatalogModel } from "@truckmoov/api/auth";
+import type { SystemDeviceCatalogModel, SystemDeviceCatalogQuery } from "@truckmoov/api/auth";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
@@ -59,6 +60,7 @@ import {
   AlertTriangle,
   Archive,
   BookOpen,
+  Download,
   Edit,
   Fuel,
   Gauge,
@@ -68,6 +70,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 
 type CatalogStatusFilter = "all" | "supported" | "deprecated" | "blocked";
 type DeviceFeature = "obd2" | "fuel" | "sos";
@@ -157,11 +160,13 @@ function getCatalogFormValues(model: SystemDeviceCatalogModel): EditDeviceCatalo
 }
 
 export function DeviceCatalogManager() {
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<CatalogStatusFilter>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingModel, setEditingModel] = useState<SystemDeviceCatalogModel | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const createCatalogEntry = useCreateDeviceCatalogEntry();
   const updateCatalogEntry = useUpdateDeviceCatalogEntry();
   const deleteCatalogEntry = useDeleteDeviceCatalogEntry();
@@ -180,7 +185,7 @@ export function DeviceCatalogManager() {
   }, [searchQuery]);
 
   const searchParam = debouncedSearchQuery.trim();
-  const catalogQueryPayload =
+  const catalogQueryPayload: SystemDeviceCatalogQuery | undefined =
     searchParam || statusFilter !== "all"
       ? {
           params: {
@@ -191,6 +196,25 @@ export function DeviceCatalogManager() {
       : undefined;
   const catalogQuery = useQuery(getSystemDevicesCatalogQueryOptions(catalogQueryPayload));
   const models = catalogQuery.data?.data.models ?? [];
+
+  async function handleExport() {
+    setIsExporting(true);
+    try {
+      const blob = await queryClient.fetchQuery(getSystemDevicesCatalogExportQueryOptions(catalogQueryPayload));
+      const url = URL.createObjectURL(blob as Blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "device-catalog.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Export failed");
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   function handleCreateSubmit(values: DeviceCatalogFormValues) {
     createCatalogEntry.mutate(
@@ -291,7 +315,10 @@ export function DeviceCatalogManager() {
                 Manage supported device manufacturers and models
               </CardDescription>
             </div>
-            <Button variant="outline">Export Data</Button>
+            <Button variant="outline" onClick={handleExport} disabled={isExporting}>
+              <Download className="h-4 w-4 mr-2" />
+              {isExporting ? "Exporting..." : "Export Data"}
+            </Button>
           </div>
         </CardHeader>
         <CardContent>

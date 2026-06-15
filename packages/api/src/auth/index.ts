@@ -17,6 +17,7 @@ import {
   deleteSystemAdminInvite,
   deleteTenant,
   escalateSupportTicket,
+  exportSystemDevicesCatalog,
   exportSystemDevices,
   exportSystemSims,
   exportSystemTenants,
@@ -90,6 +91,8 @@ import type {
   ActivityLogQuery,
   SystemDeviceCatalogQuery,
   SystemDevicesQuery,
+  SystemSimBatchesQuery,
+  SystemSimRequestsQuery,
   SystemSimsQuery,
   SystemTenantsQuery,
 } from './types'
@@ -136,7 +139,13 @@ export type {
   SystemFeatureFlag,
   SystemFeatureFlagsList,
   SystemLoginPayload,
+  SystemSimBatch,
+  SystemSimBatchesList,
+  SystemSimBatchesQuery,
   SystemSimItem,
+  SystemSimRequest,
+  SystemSimRequestsList,
+  SystemSimRequestsQuery,
   SystemSimsList,
   SystemSimsQuery,
   SystemSimsSummary,
@@ -190,8 +199,10 @@ export const AUTH_QUERY_KEY = {
 
   systemSims: (payload?: SystemSimsQuery) => payload ? ['systemSims', payload] : ['systemSims'],
   systemSimsSummary: ['systemSimsSummary'],
-  systemSimsRequests: ['systemSimsRequests'],
-  systemSimsBatches: ['systemSimsBatches'],
+  systemSimsRequests: (payload?: SystemSimRequestsQuery) =>
+    payload ? ['systemSimsRequests', payload] : ['systemSimsRequests'],
+  systemSimsBatches: (payload?: SystemSimBatchesQuery) =>
+    payload ? ['systemSimsBatches', payload] : ['systemSimsBatches'],
 
   systemFeatureFlags: ['systemFeatureFlags'],
   systemSettings: ['systemSettings'],
@@ -591,6 +602,13 @@ export function getSystemDevicesCatalogQueryOptions(payload?: SystemDeviceCatalo
   })
 }
 
+export function getSystemDevicesCatalogExportQueryOptions(payload?: SystemDeviceCatalogQuery) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.systemDevicesCatalog(payload), 'export'],
+    queryFn: () => exportSystemDevicesCatalog(payload),
+  })
+}
+
 export function getSystemDevicesExportQueryOptions(payload?: SystemDevicesQuery) {
   return queryOptions({
     queryKey: [...AUTH_QUERY_KEY.systemDevices(payload), 'export'],
@@ -642,17 +660,17 @@ export function getSystemSimsSummaryQueryOptions() {
   })
 }
 
-export function getSystemSimsRequestsQueryOptions() {
+export function getSystemSimsRequestsQueryOptions(payload?: SystemSimRequestsQuery) {
   return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemSimsRequests,
-    queryFn: getSystemSimsRequests,
+    queryKey: AUTH_QUERY_KEY.systemSimsRequests(payload),
+    queryFn: () => getSystemSimsRequests(payload),
   })
 }
 
-export function getSystemSimsBatchesQueryOptions() {
+export function getSystemSimsBatchesQueryOptions(payload?: SystemSimBatchesQuery) {
   return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemSimsBatches,
-    queryFn: getSystemSimsBatches,
+    queryKey: AUTH_QUERY_KEY.systemSimsBatches(payload),
+    queryFn: () => getSystemSimsBatches(payload),
   })
 }
 
@@ -667,7 +685,7 @@ export function useApproveSIMRequest() {
   return useMutation({
     mutationFn: approveSIMRequest,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsRequests })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsRequests() })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSims() })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsSummary })
     },
@@ -678,7 +696,7 @@ export function useRejectSIMRequest() {
   return useMutation({
     mutationFn: rejectSIMRequest,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsRequests })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsRequests() })
     },
   })
 }
@@ -687,7 +705,7 @@ export function useRetrySimBatch() {
   return useMutation({
     mutationFn: retrySimBatch,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsBatches })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsBatches() })
     },
   })
 }

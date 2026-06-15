@@ -27,26 +27,30 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from "@/components/shadcn/table";
+  TableRow
+} from "@/components/shadcn/table";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter } from "@/components/shadcn/dialog";
+  DialogFooter
+} from "@/components/shadcn/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from "@/components/shadcn/select";
+  SelectValue
+} from "@/components/shadcn/select";
 import {
   Dialog as Sheet,
   DialogContent as SheetContent,
   DialogDescription as SheetDescription,
   DialogHeader as SheetHeader,
-  DialogTitle as SheetTitle } from "@/components/shadcn/dialog";
+  DialogTitle as SheetTitle
+} from "@/components/shadcn/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,8 +59,9 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle } from "@/components/shadcn/alert-dialog";
-import {Wifi, Search, Plus, Signal, SignalLow, SignalZero, Building2, Upload, RefreshCw, SlidersHorizontal as Filter, Pencil, Cpu, Phone, Calendar, CreditCard, TrendingUp, AlertTriangle, CheckCircle, XCircle, Smartphone, Globe, Zap, ArrowUpDown, Download} from "lucide-react";
+  AlertDialogTitle
+} from "@/components/shadcn/alert-dialog";
+import { Wifi, Search, Plus, Signal, SignalLow, SignalZero, Building2, Upload, RefreshCw, SlidersHorizontal as Filter, Pencil, Cpu, Phone, Calendar, CreditCard, TrendingUp, AlertTriangle, CheckCircle, XCircle, Smartphone, Globe, Zap, ArrowUpDown, Download } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { PlatformFilterPopover, type FilterDraft } from "@/components/shadcn/platform-filter-popover";
 import { toast } from "sonner";
@@ -64,8 +69,8 @@ import { toast } from "sonner";
 interface SIMCard {
   id: string;
   iccid: string;
-  msisdn: string;
-  imsi: string;
+  msisdn: string | null;
+  imsi: string | null;
   carrier: string;
   plan: "data_only" | "data_sms" | "data_sms_voice" | "iot_basic" | "iot_premium";
   status: "active" | "inactive" | "suspended" | "unassigned";
@@ -80,8 +85,8 @@ interface SIMCard {
   activationDate: string | null;
   expiryDate: string;
   lastActivity: string;
-  signalStrength: number;
-  networkType: "2G" | "3G" | "4G" | "5G";
+  signalStrength: number | null;
+  networkType: "2G" | "3G" | "4G" | "5G" | null;
   roaming: boolean;
   monthlyCost: number;
 }
@@ -90,18 +95,24 @@ const simPlans = ["data_only", "data_sms", "data_sms_voice", "iot_basic", "iot_p
 const simStatuses = ["active", "inactive", "suspended", "unassigned"] as const;
 const networkTypes = ["2G", "3G", "4G", "5G"] as const;
 
-const normalizePlan = (plan: string): SIMCard["plan"] =>
-  simPlans.includes(plan as SIMCard["plan"]) ? plan as SIMCard["plan"] : "data_only";
+const normalizePlan = (plan: string): SIMCard["plan"] => {
+  const normalizedPlan = plan.toLowerCase().replace(/\s*\+\s*/g, "_").replace(/[\s-]+/g, "_");
+  return simPlans.includes(normalizedPlan as SIMCard["plan"])
+    ? normalizedPlan as SIMCard["plan"]
+    : "data_only";
+};
 
 const normalizeStatus = (status: string): SIMCard["status"] =>
   simStatuses.includes(status.toLowerCase() as SIMCard["status"])
     ? status.toLowerCase() as SIMCard["status"]
     : "inactive";
 
-const normalizeNetworkType = (networkType: string): SIMCard["networkType"] =>
-  networkTypes.includes(networkType.toUpperCase() as SIMCard["networkType"])
-    ? networkType.toUpperCase() as SIMCard["networkType"]
-    : "4G";
+const normalizeNetworkType = (networkType: string | null): SIMCard["networkType"] => {
+  if (!networkType) return null;
+  return networkTypes.includes(networkType.toUpperCase() as Exclude<SIMCard["networkType"], null>)
+    ? networkType.toUpperCase() as Exclude<SIMCard["networkType"], null>
+    : null;
+};
 
 const mapSystemSimToRow = (sim: SystemSimItem): SIMCard => ({
   id: sim.id,
@@ -137,7 +148,13 @@ const planLabels: Record<string, string> = {
   data_sms: "Data + SMS",
   data_sms_voice: "Data + SMS + Voice",
   iot_basic: "IoT Basic",
-  iot_premium: "IoT Premium" };
+  iot_premium: "IoT Premium"
+};
+
+const emptyValue = "—";
+
+const getUsagePercentage = (usage: number, limit: number) =>
+  limit > 0 ? Math.min((usage / limit) * 100, 100) : 0;
 
 const tenantOptions: Array<{ id: string; name: string }> = [];
 const deviceOptions: Array<{ id: string; imei: string; tenantId: string }> = [];
@@ -155,7 +172,8 @@ const emptySIM: Partial<SIMCard> = {
   dataLimit: 1000,
   smsLimit: 0,
   expiryDate: "",
-  monthlyCost: 35 };
+  monthlyCost: 35
+};
 
 export default function PlatformSIMs() {
   const queryClient = useQueryClient();
@@ -163,7 +181,8 @@ export default function PlatformSIMs() {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [simFilterDraft, setSimFilterDraft] = useState<FilterDraft>({
     status: { enabled: false },
-    carrier: { enabled: false } });
+    carrier: { enabled: false }
+  });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedSIM, setSelectedSIM] = useState<SIMCard | null>(null);
   const [isDetailsSheetOpen, setIsDetailsSheetOpen] = useState(false);
@@ -201,7 +220,7 @@ export default function PlatformSIMs() {
   const systemSimsSummaryQuery = useQuery(getSystemSimsSummaryQueryOptions());
   const summary = systemSimsSummaryQuery.data?.data;
   const summaryStats = useMemo(() => {
-    const getStatusCount = (status: string) => {
+    const getStatusCount = (status: string): number | undefined => {
       if (!summary?.byStatus) return undefined;
       return Object.entries(summary.byStatus).find(
         ([key]) => key.toLowerCase() === status.toLowerCase(),
@@ -210,10 +229,10 @@ export default function PlatformSIMs() {
 
     return {
       total: summary?.total ?? "N/A",
-      active: getStatusCount("active") ?? "N/A",
-      unassigned: getStatusCount("unassigned") ?? "N/A",
+      active: summary?.active ?? getStatusCount("active") ?? "N/A",
+      unassigned: summary?.unassigned ?? getStatusCount("unassigned") ?? "N/A",
       pendingRequests: summary?.pendingRequests ?? "N/A",
-      carriers: summary?.byCarrier ? Object.keys(summary.byCarrier).length : "N/A",
+      carriers: summary?.carriers ?? (summary?.byCarrier ? Object.keys(summary.byCarrier).length : "N/A"),
     };
   }, [summary]);
   const sims = useMemo(
@@ -261,10 +280,11 @@ export default function PlatformSIMs() {
   );
 
   const filteredSIMs = sims.filter((sim) => {
+    const normalizedSearchQuery = debouncedSearchQuery.toLowerCase();
     const matchesSearch =
       sim.iccid.includes(debouncedSearchQuery) ||
-      sim.msisdn.includes(debouncedSearchQuery) ||
-      sim.tenant?.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+      Boolean(sim.msisdn?.includes(debouncedSearchQuery)) ||
+      Boolean(sim.tenant?.toLowerCase().includes(normalizedSearchQuery));
 
     const statusF = simFilterDraft.status;
     const matchesStatus = !statusF?.enabled || !statusF.value || sim.status === statusF.value;
@@ -292,8 +312,8 @@ export default function PlatformSIMs() {
     }
   };
 
-  const getSignalIcon = (strength: number, status: string) => {
-    if (status !== "active") return <SignalZero className="h-4 w-4 text-muted-foreground" />;
+  const getSignalIcon = (strength: number | null, status: string) => {
+    if (status !== "active" || strength === null) return <SignalZero className="h-4 w-4 text-muted-foreground" />;
     if (strength >= 70) return <Signal className="h-4 w-4 text-success" />;
     if (strength >= 30) return <SignalLow className="h-4 w-4 text-warning" />;
     return <SignalZero className="h-4 w-4 text-destructive" />;
@@ -487,225 +507,230 @@ export default function PlatformSIMs() {
       title="IoT SIM Management"
       subtitle="Manage SIM inventory and assignments across all tenants"
     >
-        <Tabs defaultValue="inventory" className="space-y-6">
-          <div className="flex justify-center">
-            <TabsList className="grid w-full max-w-2xl grid-cols-4">
-              <TabsTrigger value="inventory">SIM Inventory</TabsTrigger>
-              <TabsTrigger value="approval">Approval Queue</TabsTrigger>
-              <TabsTrigger value="activation">Activation</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            </TabsList>
+      <Tabs defaultValue="inventory" className="space-y-6">
+        <div className="flex justify-center">
+          <TabsList className="w-fit flex">
+            <TabsTrigger value="inventory">SIM Inventory</TabsTrigger>
+            <TabsTrigger value="approval">Approval Queue</TabsTrigger>
+            <TabsTrigger value="activation">Activation</TabsTrigger>
+            {/* <TabsTrigger value="analytics">Analytics</TabsTrigger> */}
+          </TabsList>
+        </div>
+
+        <TabsContent value="inventory" className="space-y-6">
+
+          {/* Stats */}
+          <div className="grid gap-4 md:grid-cols-5">
+            <StatCard title="Total SIMs" value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.total} icon={Wifi} />
+            <StatCard
+              title="Active"
+              value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.active}
+              icon={CheckCircle}
+              variant="success"
+            />
+            <StatCard
+              title="Unassigned"
+              value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.unassigned}
+              icon={AlertTriangle}
+              variant="warning"
+            />
+            <StatCard
+              title="Pending Requests"
+              value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.pendingRequests}
+              icon={TrendingUp}
+            />
+            <StatCard
+              title="Carriers"
+              value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.carriers}
+              icon={CreditCard}
+            />
           </div>
 
-          <TabsContent value="inventory" className="space-y-6">
-
-            {/* Stats */}
-            <div className="grid gap-4 md:grid-cols-5">
-              <StatCard title="Total SIMs" value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.total} icon={Wifi} />
-              <StatCard
-                title="Active"
-                value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.active}
-                icon={CheckCircle}
-                variant="success"
-              />
-              <StatCard
-                title="Unassigned"
-                value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.unassigned}
-                icon={AlertTriangle}
-                variant="warning"
-              />
-              <StatCard
-                title="Pending Requests"
-                value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.pendingRequests}
-                icon={TrendingUp}
-              />
-              <StatCard
-                title="Carriers"
-                value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.carriers}
-                icon={CreditCard}
-              />
-            </div>
-
-        {/* Filters & Actions */}
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Wifi className="h-5 w-5 text-primary" />
-                  SIM Inventory
-                </CardTitle>
-                <CardDescription>All provisioned SIMs across tenants — search, filter, assign and export</CardDescription>
+          {/* Filters & Actions */}
+          <Card>
+            <CardHeader className="pb-4">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Wifi className="h-5 w-5 text-primary" />
+                    SIM Inventory
+                  </CardTitle>
+                  <CardDescription>All provisioned SIMs across tenants — search, filter, assign and export</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? "Exporting..." : "Export Data"}
+                </Button>
               </div>
-              <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
-                <Download className="h-4 w-4 mr-2" />
-                {isExporting ? "Exporting..." : "Export Data"}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-4 md:flex-row md:items-center mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search by ICCID, phone number, or tenant..."
-                  className="pl-10"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-4 md:flex-row md:items-center mb-6">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by ICCID, phone number, or tenant..."
+                    className="pl-10"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <PlatformFilterPopover
+                  entity="SIMs"
+                  fields={[
+                    {
+                      key: "status",
+                      label: "Status",
+                      type: "select",
+                      options: statuses
+                        .filter((s) => s !== "all")
+                        .map((s) => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))
+                    },
+                    {
+                      key: "carrier",
+                      label: "Carrier",
+                      type: "select",
+                      options: carriers
+                        .filter((c) => c !== "All")
+                        .map((c) => ({ value: c, label: c }))
+                    },
+                  ]}
+                  value={simFilterDraft}
+                  onApply={setSimFilterDraft}
+                  onReset={() =>
+                    setSimFilterDraft({
+                      status: { enabled: false },
+                      carrier: { enabled: false }
+                    })
+                  }
                 />
               </div>
-              <PlatformFilterPopover
-                entity="SIMs"
-                fields={[
-                  {
-                    key: "status",
-                    label: "Status",
-                    type: "select",
-                    options: statuses
-                      .filter((s) => s !== "all")
-                      .map((s) => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) })) },
-                  {
-                    key: "carrier",
-                    label: "Carrier",
-                    type: "select",
-                    options: carriers
-                      .filter((c) => c !== "All")
-                      .map((c) => ({ value: c, label: c })) },
-                ]}
-                value={simFilterDraft}
-                onApply={setSimFilterDraft}
-                onReset={() =>
-                  setSimFilterDraft({
-                    status: { enabled: false },
-                    carrier: { enabled: false } })
-                }
-              />
-            </div>
 
-            {/* Bulk Actions Toolbar */}
-            {selectedSIMIds.size > 0 && (
-              <div className="flex items-center gap-3 rounded-lg border bg-primary/5 p-3">
-                <div className="flex items-center gap-2">
-                  <Checkbox checked={true} />
-                  <span className="text-sm font-medium">{selectedSIMIds.size} selected</span>
+              {/* Bulk Actions Toolbar */}
+              {selectedSIMIds.size > 0 && (
+                <div className="flex items-center gap-3 rounded-lg border bg-primary/5 p-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox checked={true} />
+                    <span className="text-sm font-medium">{selectedSIMIds.size} selected</span>
+                  </div>
+                  <Separator orientation="vertical" className="h-6" />
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={handleBulkActivate}>
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Activate
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleBulkSuspend}>
+                      <XCircle className="h-4 w-4 mr-1" />
+                      Suspend
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleBulkAssign}>
+                      <ArrowUpDown className="h-4 w-4 mr-1" />
+                      Assign
+                    </Button>
+                  </div>
+                  <div className="ml-auto">
+                    <Button size="sm" variant="ghost" onClick={clearSelection}>
+                      Clear Selection
+                    </Button>
+                  </div>
                 </div>
-                <Separator orientation="vertical" className="h-6" />
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={handleBulkActivate}>
-                    <CheckCircle className="h-4 w-4 mr-1" />
-                    Activate
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={handleBulkSuspend}>
-                    <XCircle className="h-4 w-4 mr-1" />
-                    Suspend
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={handleBulkAssign}>
-                    <ArrowUpDown className="h-4 w-4 mr-1" />
-                    Assign
-                  </Button>
-                </div>
-                <div className="ml-auto">
-                  <Button size="sm" variant="ghost" onClick={clearSelection}>
-                    Clear Selection
-                  </Button>
-                </div>
-              </div>
-            )}
+              )}
 
-            <div className="rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50px]">
-                      <Checkbox 
-                        checked={selectedSIMIds.size === filteredSIMs.length && filteredSIMs.length > 0}
-                        onCheckedChange={toggleAllSIMs}
-                      />
-                    </TableHead>
-                    <TableHead>ICCID / Phone</TableHead>
-                    <TableHead>Carrier</TableHead>
-                    <TableHead>Plan</TableHead>
-                    <TableHead>Tenant</TableHead>
-                    <TableHead>Device</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Data Usage</TableHead>
-                    <TableHead>Signal</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSIMs.map((sim) => (
-                    <TableRow key={sim.id} className={selectedSIMIds.has(sim.id) ? "bg-primary/5" : ""}>
-                      <TableCell>
-                        <Checkbox 
-                          checked={selectedSIMIds.has(sim.id)}
-                          onCheckedChange={() => toggleSIMSelection(sim.id)}
+              <div className="overflow-x-auto rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectedSIMIds.size === filteredSIMs.length && filteredSIMs.length > 0}
+                          onCheckedChange={toggleAllSIMs}
                         />
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-mono text-sm">{sim.iccid}</p>
-                          <p className="text-xs text-muted-foreground">{sim.msisdn}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{sim.carrier}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">{planLabels[sim.plan]}</span>
-                      </TableCell>
-                      <TableCell>
-                        {sim.tenant ? (
-                          <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{sim.tenant}</span>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {sim.deviceId ? (
-                          <div className="flex items-center gap-2">
-                            <Cpu className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{sim.deviceId}</span>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(sim.status)}</TableCell>
-                      <TableCell>
-                        <div className="w-24">
-                          <div className="flex justify-between text-xs mb-1">
-                            <span>{sim.dataUsage} MB</span>
-                            <span className="text-muted-foreground">/ {sim.dataLimit}</span>
-                          </div>
-                          <Progress
-                            value={(sim.dataUsage / sim.dataLimit) * 100}
-                            className="h-1.5"
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getSignalIcon(sim.signalStrength, sim.status)}
-                          {sim.status === "active" && (
-                            <span className="text-xs">{sim.networkType}</span>
-                          )}
-                          {sim.roaming && (
-                            <span title="Roaming">
-                              <Globe className="h-3 w-3 text-warning" />
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
+                      </TableHead>
+                      <TableHead className="min-w-[220px]">ICCID / Phone</TableHead>
+                      <TableHead className="min-w-[140px]">Carrier</TableHead>
+                      <TableHead className="min-w-[170px]">Plan</TableHead>
+                      <TableHead className="min-w-[190px]">Tenant</TableHead>
+                      <TableHead className="min-w-[150px]">Device</TableHead>
+                      <TableHead className="min-w-[140px]">Status</TableHead>
+                      <TableHead className="min-w-[170px]">Data Usage</TableHead>
+                      <TableHead className="min-w-[120px]">Signal</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredSIMs.map((sim) => (
+                      <TableRow key={sim.id} className={selectedSIMIds.has(sim.id) ? "bg-primary/5" : ""}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedSIMIds.has(sim.id)}
+                            onCheckedChange={() => toggleSIMSelection(sim.id)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-mono text-sm font-semibold leading-5">{sim.iccid}</p>
+                            <p className="text-xs text-muted-foreground">{sim.msisdn ?? emptyValue}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="font-medium">{sim.carrier}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm font-medium">{planLabels[sim.plan]}</span>
+                        </TableCell>
+                        <TableCell>
+                          {sim.tenant ? (
+                            <div className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm font-medium">{sim.tenant}</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">{emptyValue}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {sim.deviceId ? (
+                            <div className="flex items-center gap-2">
+                              <Cpu className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm font-medium">{sim.deviceId}</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">{emptyValue}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(sim.status)}</TableCell>
+                        <TableCell>
+                          <div className="w-28">
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="font-semibold">{sim.dataUsage} MB</span>
+                              <span className="text-muted-foreground">/ {sim.dataLimit}</span>
+                            </div>
+                            <Progress
+                              value={getUsagePercentage(sim.dataUsage, sim.dataLimit)}
+                              className="h-1.5"
+                            />
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getSignalIcon(sim.signalStrength, sim.status)}
+                            {sim.status === "active" && sim.networkType ? (
+                              <span className="text-xs font-semibold">{sim.networkType}</span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">{emptyValue}</span>
+                            )}
+                            {sim.roaming && (
+                              <span title="Roaming">
+                                <Globe className="h-3 w-3 text-warning" />
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="approval">
@@ -719,7 +744,7 @@ export default function PlatformSIMs() {
         <TabsContent value="analytics">
           <SIMAnalyticsDashboardLive sims={[]} loading={false} />
         </TabsContent>
-        </Tabs>
+      </Tabs>
 
       {/* Create SIM Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -855,11 +880,11 @@ export default function PlatformSIMs() {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Phone Number</span>
-                      <span>{selectedSIM.msisdn}</span>
+                      <span>{selectedSIM.msisdn ?? emptyValue}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">IMSI</span>
-                      <span className="font-mono">{selectedSIM.imsi}</span>
+                      <span className="font-mono">{selectedSIM.imsi ?? emptyValue}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Plan</span>
@@ -901,7 +926,7 @@ export default function PlatformSIMs() {
                         </span>
                       </div>
                       <Progress
-                        value={(selectedSIM.dataUsage / selectedSIM.dataLimit) * 100}
+                        value={getUsagePercentage(selectedSIM.dataUsage, selectedSIM.dataLimit)}
                         className="h-2"
                       />
                     </div>
@@ -914,7 +939,7 @@ export default function PlatformSIMs() {
                           </span>
                         </div>
                         <Progress
-                          value={(selectedSIM.smsUsage / selectedSIM.smsLimit) * 100}
+                          value={getUsagePercentage(selectedSIM.smsUsage, selectedSIM.smsLimit)}
                           className="h-2"
                         />
                       </div>
@@ -931,12 +956,12 @@ export default function PlatformSIMs() {
                       <span className="text-muted-foreground">Signal Strength</span>
                       <div className="flex items-center gap-2">
                         {getSignalIcon(selectedSIM.signalStrength, selectedSIM.status)}
-                        <span>{selectedSIM.signalStrength}%</span>
+                        <span>{selectedSIM.signalStrength === null ? emptyValue : `${selectedSIM.signalStrength}%`}</span>
                       </div>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Network Type</span>
-                      <span>{selectedSIM.networkType}</span>
+                      <span>{selectedSIM.networkType ?? emptyValue}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Last Activity</span>
@@ -1099,9 +1124,9 @@ function BulkImportContent({ onImport, onClose }: BulkImportContentProps) {
     setFile(f);
   };
 
-  const handleDrop = (e: React.DragEvent) => { 
-    e.preventDefault(); 
-    setIsDragging(false); 
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile) {
       handleFile(droppedFile);
@@ -1125,9 +1150,9 @@ function BulkImportContent({ onImport, onClose }: BulkImportContentProps) {
               Download
             </Button>
           </div>
-          <div 
-            onDragOver={e => { e.preventDefault(); setIsDragging(true); }} 
-            onDragLeave={() => setIsDragging(false)} 
+          <div
+            onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
             className={`relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-border"}`}
           >
@@ -1137,11 +1162,11 @@ function BulkImportContent({ onImport, onClose }: BulkImportContentProps) {
             <Button variant="outline" size="sm" asChild>
               <label className="cursor-pointer">
                 Browse Files
-                <input 
-                  type="file" 
-                  accept=".csv" 
-                  onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} 
-                  className="hidden" 
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
+                  className="hidden"
                 />
               </label>
             </Button>
@@ -1159,15 +1184,15 @@ function BulkImportContent({ onImport, onClose }: BulkImportContentProps) {
                 <p className="text-xs text-muted-foreground">Ready for import</p>
               </div>
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setFile(null)}
             >
               <XCircle className="h-4 w-4" />
             </Button>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-3">
             <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 p-3">
               <CheckCircle className="h-5 w-5 text-success" />
@@ -1186,10 +1211,10 @@ function BulkImportContent({ onImport, onClose }: BulkImportContentProps) {
           </div>
         </>
       )}
-      
+
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="outline" onClick={onClose}>Cancel</Button>
-        <Button 
+        <Button
           onClick={onImport}
           disabled={!file}
         >

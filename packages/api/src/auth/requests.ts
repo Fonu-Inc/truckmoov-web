@@ -55,7 +55,9 @@ import type {
   SystemFeatureFlagsResponse,
   SystemLoginPayload,
   SystemSupportDashboardResponse,
+  SystemSimBatchesQuery,
   SystemSimBatchesListResponse,
+  SystemSimRequestsQuery,
   SystemSimRequestsListResponse,
   SystemSimSummaryResponse,
   SystemSimsListResponse,
@@ -391,6 +393,14 @@ export async function getSystemDevicesCatalog(payload?: SystemDeviceCatalogQuery
   return data
 }
 
+export async function exportSystemDevicesCatalog(payload?: SystemDeviceCatalogQuery) {
+  const { data } = await axiosInstance.get('/auth/system/devices/catalog/export', {
+    responseType: 'blob',
+    params: payload?.params,
+  })
+  return data
+}
+
 export async function createDeviceCatalogEntry({ data }: CreateDeviceCatalogPayload) {
   const { data: res } = await axiosInstance.post<SystemDeviceCatalogModelResponse>('/auth/system/devices/catalog', data)
   return res
@@ -427,8 +437,10 @@ export async function exportSystemSims(payload?: SystemSimsQuery) {
   return data
 }
 
-export async function getSystemSimsRequests() {
-  const { data } = await axiosInstance.get<SystemSimRequestsListResponse>('/auth/system/sims/requests')
+export async function getSystemSimsRequests(payload?: SystemSimRequestsQuery) {
+  const { data } = await axiosInstance.get<SystemSimRequestsListResponse>('/auth/system/sims/requests', {
+    params: payload?.params,
+  })
   return data
 }
 
@@ -442,8 +454,10 @@ export async function rejectSIMRequest({ id, data }: RejectSIMRequestPayload) {
   return res
 }
 
-export async function getSystemSimsBatches() {
-  const { data } = await axiosInstance.get<SystemSimBatchesListResponse>('/auth/system/sims/batches')
+export async function getSystemSimsBatches(payload?: SystemSimBatchesQuery) {
+  const { data } = await axiosInstance.get<SystemSimBatchesListResponse>('/auth/system/sims/batches', {
+    params: payload?.params,
+  })
   return data
 }
 

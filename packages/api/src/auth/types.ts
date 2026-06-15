@@ -304,6 +304,18 @@ export type RetrySimBatchPayload = {
   id: string
 }
 
+export type SystemSimRequestsQuery = {
+  params?: {
+    status?: 'pending' | 'approved' | 'rejected'
+  }
+}
+
+export type SystemSimBatchesQuery = {
+  params?: {
+    status?: string
+  }
+}
+
 // ─── System admin — feature flags ────────────────────────────────────────────
 
 export type UpdateFeatureFlagPayload = {
@@ -554,6 +566,9 @@ export type SystemDevicesSummary = {
 
 export type SystemSimsSummary = {
   total: number
+  active: number
+  unassigned: number
+  carriers: number
   byStatus: Record<string, number>
   byCarrier: Record<string, number>
   pendingRequests: number
@@ -562,23 +577,23 @@ export type SystemSimsSummary = {
 export type SystemSimItem = {
   id: string
   iccid: string
-  imsi: string
-  msisdn: string
+  imsi: string | null
+  msisdn: string | null
   carrier: string
   plan: string
   status: string
-  tenantId: string
-  deviceId: string
+  tenantId: string | null
+  deviceId: string | null
   dataUsageMb: number
   dataLimitMb: number
   smsUsage: number
   smsLimit: number
   monthlyCostNgn: number
-  activationDate: string
-  signalStrength: number
-  networkType: string
+  activationDate: string | null
+  signalStrength: number | null
+  networkType: string | null
   roaming: boolean
-  fonuStatus: string
+  fonuStatus: string | null
   createdAt: string
   updatedAt: string
 }
@@ -586,6 +601,58 @@ export type SystemSimItem = {
 export type SystemSimsList = {
   total: number
   sims: SystemSimItem[]
+}
+
+export type SystemSimRequest = {
+  id: string
+  tenantId: string
+  tenantName: string
+  requestType: string
+  numberOfSims: number
+  preferredOperator: string
+  requestedPlan: string
+  requestedDataLimitMb: number
+  deploymentTimeline: string | null
+  useCase: string | null
+  status: string
+  approvedBy: string | null
+  approvedByName: string | null
+  approvedAt: string | null
+  rejectedReason: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type SystemSimRequestsList = {
+  total: number
+  requests: SystemSimRequest[]
+}
+
+export type SystemSimBatch = {
+  id: string
+  requestId: string | null
+  tenantId: string
+  tenantName: string
+  activationMode: string
+  quantity: number
+  operator: string
+  requestedPlan: string
+  dataLimitGb: number
+  status: string
+  simsActivated: number
+  simsFailed: number
+  createdBy: string | null
+  createdByName: string | null
+  startedAt: string | null
+  completedAt: string | null
+  errorMessage: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type SystemSimBatchesList = {
+  total: number
+  batches: SystemSimBatch[]
 }
 
 export type SystemFeatureFlag = {
@@ -695,8 +762,8 @@ export type SystemDeviceDetailResponse = ServerResponse<SystemDeviceDetail>
 export type SystemDeviceSummaryResponse = ServerResponse<SystemDevicesSummary>
 export type SystemSimsListResponse = ServerResponse<SystemSimsList>
 export type SystemSimSummaryResponse = ServerResponse<SystemSimsSummary>
-export type SystemSimRequestsListResponse = ServerResponse<Record<string, unknown>[]>
-export type SystemSimBatchesListResponse = ServerResponse<Record<string, unknown>[]>
+export type SystemSimRequestsListResponse = ServerResponse<SystemSimRequestsList>
+export type SystemSimBatchesListResponse = ServerResponse<SystemSimBatchesList>
 export type SystemSubscriptionPlansResponse = ServerResponse<{ plans: SubscriptionPlan[]; generatedAt: string }>
 export type SystemFeatureFlagsResponse = ServerResponse<SystemFeatureFlagsList>
 export type SystemFeatureFlagResponse = ServerResponse<SystemFeatureFlag>
