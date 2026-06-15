@@ -29,13 +29,13 @@ import {
 } from "@/components/shadcn/select";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { SystemTenant, useUpdateTenant } from "@truckmoov/api/auth";
+import { SystemTenant, useUpdateTenant, type SubscriptionPlan } from "@truckmoov/api/auth";
 
 const organizationRoleOptions = [
   { value: "FLEET_PROVIDER", label: "Fleet Provider" },
   { value: "ENTERPRISE", label: "Enterprise" },
   { value: "AGGREGATOR", label: "Aggregator" },
-  { value: "OWNER_OPERATOR", label: "Owner-Operator" },
+  { value: "OWNER_OPERATOR", label: "Owner Operator" },
 ] as const;
 
 type OrganizationRole = (typeof organizationRoleOptions)[number]["value"];
@@ -51,6 +51,7 @@ const schema = z.object({
     .optional()
     .or(z.literal("")),
   organizationType: z.enum(["FLEET_PROVIDER", "ENTERPRISE", "AGGREGATOR", "OWNER_OPERATOR"]),
+  planCode: z.string().min(1, "Subscription plan is required"),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -59,6 +60,8 @@ interface Props {
   tenant: SystemTenant | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  subscriptionPlans: SubscriptionPlan[];
+  isSubscriptionPlansLoading?: boolean;
 }
 
 const normalizeOrganizationType = (value?: string | null): OrganizationRole | null => {
@@ -75,7 +78,23 @@ const getTenantOrganizationType = (tenant: SystemTenant): OrganizationRole => (
     ?? "FLEET_PROVIDER"
 );
 
-export function TenantEditDialog({ tenant, open, onOpenChange }: Props) {
+const getTenantPlanCode = (
+  tenant: SystemTenant,
+  subscriptionPlans: SubscriptionPlan[],
+): string => (
+  tenant.planCode
+    ?? subscriptionPlans.find((plan) => plan.tier === tenant.plan)?.code
+    ?? subscriptionPlans[0]?.code
+    ?? ""
+);
+
+export function TenantEditDialog({
+  tenant,
+  open,
+  onOpenChange,
+  subscriptionPlans,
+  isSubscriptionPlansLoading = false,
+}: Props) {
   const updateTenantMutation = useUpdateTenant();
 
   const form = useForm<FormValues>({
@@ -87,6 +106,7 @@ export function TenantEditDialog({ tenant, open, onOpenChange }: Props) {
       address: "",
       billingEmail: "",
       organizationType: "FLEET_PROVIDER",
+      planCode: "",
     },
   });
 
@@ -99,9 +119,10 @@ export function TenantEditDialog({ tenant, open, onOpenChange }: Props) {
         address: tenant.address ?? "",
         billingEmail: tenant.billingEmail ?? "",
         organizationType: getTenantOrganizationType(tenant),
+        planCode: getTenantPlanCode(tenant, subscriptionPlans),
       });
     }
-  }, [tenant, form]);
+  }, [tenant, form, subscriptionPlans]);
 
   const onSubmit = async (values: FormValues) => {
     if (!tenant) return;
@@ -115,6 +136,9 @@ export function TenantEditDialog({ tenant, open, onOpenChange }: Props) {
           businessAddress: values.address || null,
           billingEmail: values.billingEmail || null,
           organizationType: values.organizationType,
+        },
+        subscription: {
+          planCode: values.planCode,
         },
       },
     });
@@ -220,6 +244,41 @@ export function TenantEditDialog({ tenant, open, onOpenChange }: Props) {
                       {organizationRoleOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="planCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subscription Plan</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={isSubscriptionPlansLoading || subscriptionPlans.length === 0}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={
+                            isSubscriptionPlansLoading
+                              ? "Loading plans..."
+                              : "Select subscription plan"
+                          }
+                        />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {subscriptionPlans.map((plan) => (
+                        <SelectItem key={plan.code} value={plan.code}>
+                          {plan.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

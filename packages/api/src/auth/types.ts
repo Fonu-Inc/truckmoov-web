@@ -249,6 +249,10 @@ export type CreateTenantPayload = {
       "billingEmail": string,
       "organizationType": string
     }
+    subscription?: {
+      planCode: string
+      billingCycle: 'monthly' | 'yearly'
+    }
   }
 }
 

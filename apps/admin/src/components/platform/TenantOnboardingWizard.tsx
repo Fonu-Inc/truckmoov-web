@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
+import { Badge } from "@/components/shadcn/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Progress } from "@/components/shadcn/progress";
 import { Separator } from "@/components/shadcn/separator";
@@ -45,29 +46,24 @@ import {
   AlertTriangle,
   CheckCircle2,
   Send,
+  CreditCard,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useCreateTenant } from "@truckmoov/api/auth";
+import { useCreateTenant, type SubscriptionPlan } from "@truckmoov/api/auth";
 
 type OrgType = "FLEET_PROVIDER" | "ENTERPRISE" | "AGGREGATOR" | "OWNER_OPERATOR";
+type BillingCycle = "monthly" | "yearly";
 
 const step1Schema = z
   .object({
     organizationType: z.enum(["FLEET_PROVIDER", "ENTERPRISE", "AGGREGATOR", "OWNER_OPERATOR"]),
     companyName: z.string().min(1, "Company name is required"),
-    primaryContactName: z.string().optional(),
+    primaryContactName: z.string().min(1, "Contact name is required"),
     email: z.string().min(1, "Business email is required").email("Invalid email address"),
     billingEmail: z.string().min(1, "Billing email is required").email("Invalid billing email"),
     phone: z.string().min(1, "Phone number is required"),
-  })
-  .superRefine((data, ctx) => {
-    if (data.organizationType !== "OWNER_OPERATOR" && !data.primaryContactName?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Contact name is required",
-        path: ["primaryContactName"],
-      });
-    }
+    planCode: z.string().min(1, "Subscription plan is required"),
+    billingCycle: z.enum(["monthly", "yearly"]),
   });
 
 type Step1Values = z.infer<typeof step1Schema>;
@@ -76,19 +72,22 @@ interface TenantOnboardingWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onComplete: (data: Step1Values) => void;
+  subscriptionPlans: SubscriptionPlan[];
+  isSubscriptionPlansLoading?: boolean;
 }
 
 const orgTypeOptions: { value: OrgType; label: string; description: string; icon: string }[] = [
   { value: "FLEET_PROVIDER", label: "Fleet Provider", description: "Operates vehicles & drivers, executes transport jobs", icon: "🚛" },
   { value: "ENTERPRISE", label: "Enterprise (Cargo Owner)", description: "Creates jobs, contracts providers, monitors SLAs", icon: "🏢" },
   { value: "AGGREGATOR", label: "Aggregator", description: "Coordinates owner-operators, brokers work across fleets", icon: "🔗" },
-  { value: "OWNER_OPERATOR", label: "Owner-Operator", description: "Independent operator with own vehicle(s)", icon: "👤" },
+  { value: "OWNER_OPERATOR", label: "Owner Operator", description: "Independent operator with own vehicle(s)", icon: "👤" },
 ];
 
 const steps = [
   { id: 1, title: "Organization & Details", icon: Building2 },
-  { id: 2, title: "Review", icon: Check },
-  { id: 3, title: "Confirmation", icon: CheckCircle2 },
+  { id: 2, title: "Subscription", icon: CreditCard },
+  { id: 3, title: "Review", icon: Check },
+  { id: 4, title: "Confirmation", icon: CheckCircle2 },
 ];
 
 const NAME_LABEL: Record<OrgType, string> = {
@@ -112,7 +111,24 @@ const API_ORG_TYPE: Record<OrgType, string> = {
   OWNER_OPERATOR: "owner_operator",
 };
 
-export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: TenantOnboardingWizardProps) {
+const PLAN_BADGE_STYLES: Record<string, string> = {
+  starter: "bg-muted text-muted-foreground",
+  professional: "bg-primary/10 text-primary border-primary/30",
+  enterprise: "bg-success/10 text-success border-success/30",
+};
+
+function formatNgn(amount: number | null) {
+  if (amount === null) return "Custom";
+  return `NGN ${amount.toLocaleString()}`;
+}
+
+export function TenantOnboardingWizard({
+  open,
+  onOpenChange,
+  onComplete,
+  subscriptionPlans,
+  isSubscriptionPlansLoading = false,
+}: TenantOnboardingWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [duplicateInfo, setDuplicateInfo] = useState<{ count: number; names: string[] } | null>(null);
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
@@ -127,19 +143,47 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
       email: "",
       billingEmail: "",
       phone: "",
+      planCode: "",
+      billingCycle: "monthly",
     },
   });
 
   const progress = (currentStep / steps.length) * 100;
   const orgType = form.watch("organizationType");
+  const selectedPlanCode = form.watch("planCode");
+  const billingCycle = form.watch("billingCycle");
+  const selectedPlan = useMemo(
+    () => subscriptionPlans.find((plan) => plan.code === selectedPlanCode) ?? null,
+    [selectedPlanCode, subscriptionPlans],
+  );
+
+  useEffect(() => {
+    if (!open || form.getValues("planCode") || subscriptionPlans.length === 0) return;
+    form.setValue("planCode", subscriptionPlans[0].code, { shouldValidate: true });
+  }, [form, open, subscriptionPlans]);
 
   const handleNextStep = async () => {
-    const valid = await form.trigger();
-    if (valid) setCurrentStep(2);
+    if (currentStep === 1) {
+      const valid = await form.trigger([
+        "organizationType",
+        "companyName",
+        "primaryContactName",
+        "email",
+        "billingEmail",
+        "phone",
+      ]);
+      if (valid) setCurrentStep(2);
+      return;
+    }
+
+    if (currentStep === 2) {
+      const valid = await form.trigger(["planCode", "billingCycle"]);
+      if (valid) setCurrentStep(3);
+    }
   };
 
   const handleBack = () => {
-    if (currentStep === 2) setCurrentStep(1);
+    if (currentStep > 1 && currentStep < 4) setCurrentStep((step) => step - 1);
   };
 
   const checkForDuplicateOrgName = async (): Promise<{ count: number; names: string[] }> => {
@@ -173,9 +217,13 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
             phoneNumber: values.phone,
             organizationType: API_ORG_TYPE[values.organizationType],
           },
+          subscription: {
+            planCode: values.planCode,
+            billingCycle: values.billingCycle,
+          },
         },
       });
-      setCurrentStep(3);
+      setCurrentStep(4);
     } catch {
       toast.error("Failed to create tenant. Please try again.");
     }
@@ -311,28 +359,26 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
                     )}
                   />
 
-                  {orgType !== "OWNER_OPERATOR" && (
-                    <FormField
-                      control={form.control}
-                      name="primaryContactName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Contact Name *</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                              <Input
-                                className="pl-10"
-                                placeholder="e.g. Amaka Johnson"
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
+                  <FormField
+                    control={form.control}
+                    name="primaryContactName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Contact Name *</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              className="pl-10"
+                              placeholder="e.g. Amaka Johnson"
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
@@ -404,12 +450,149 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
             </Form>
           )}
 
-          {/* Step 2: Review */}
+          {/* Step 2: Subscription */}
           {currentStep === 2 && (
+            <Form {...form}>
+              <div className="space-y-6">
+                <div className="space-y-1">
+                  <h3 className="text-lg font-semibold">Set Subscription</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Choose the subscription plan and billing cycle for this tenant.
+                  </p>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="billingCycle"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Billing Cycle *</FormLabel>
+                      <FormControl>
+                        <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/40 p-1">
+                          {(["monthly", "yearly"] as BillingCycle[]).map((cycle) => (
+                            <Button
+                              key={cycle}
+                              type="button"
+                              variant={field.value === cycle ? "default" : "ghost"}
+                              className="capitalize"
+                              onClick={() => field.onChange(cycle)}
+                            >
+                              {cycle}
+                            </Button>
+                          ))}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="planCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subscription Plan *</FormLabel>
+                      <FormControl>
+                        <div className="space-y-3">
+                          {isSubscriptionPlansLoading ? (
+                            <div className="flex items-center justify-center rounded-lg border py-10 text-sm text-muted-foreground">
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Loading subscription plans...
+                            </div>
+                          ) : subscriptionPlans.length === 0 ? (
+                            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                              No subscription plans are configured yet.
+                            </div>
+                          ) : (
+                            <div className="grid gap-3 md:grid-cols-3">
+                              {subscriptionPlans.map((plan) => {
+                                const isSelected = field.value === plan.code;
+                                const monthlyPrice =
+                                  billingCycle === "yearly" && plan.yearlyMonthlyEquivalentNgn !== null
+                                    ? plan.yearlyMonthlyEquivalentNgn
+                                    : plan.monthlyPriceNgn;
+                                return (
+                                  <Card
+                                    key={plan.code}
+                                    className={`cursor-pointer transition-all hover:border-primary/50 ${
+                                      isSelected ? "border-primary ring-2 ring-primary/20" : ""
+                                    }`}
+                                    onClick={() => field.onChange(plan.code)}
+                                  >
+                                    <CardContent className="p-4 space-y-3">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0">
+                                          <p className="font-semibold text-sm">{plan.name}</p>
+                                          <p className="text-xs text-muted-foreground capitalize">{plan.tier}</p>
+                                        </div>
+                                        {isSelected ? (
+                                          <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                                            <Check className="h-3 w-3 text-primary-foreground" />
+                                          </div>
+                                        ) : null}
+                                      </div>
+
+                                      <div>
+                                        <p className="text-lg font-bold">
+                                          {plan.customPricing ? "Custom" : formatNgn(monthlyPrice)}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {plan.customPricing ? "Contact sales pricing" : "per month"}
+                                        </p>
+                                      </div>
+
+                                      <div className="flex flex-wrap gap-1.5">
+                                        <Badge
+                                          variant="outline"
+                                          className={`capitalize ${PLAN_BADGE_STYLES[plan.tier] ?? ""}`}
+                                        >
+                                          {plan.tier}
+                                        </Badge>
+                                        {plan.trialDays ? (
+                                          <Badge variant="secondary">{plan.trialDays}-day trial</Badge>
+                                        ) : null}
+                                        {billingCycle === "yearly" && plan.yearlyDiscountPercent ? (
+                                          <Badge className="bg-success/10 text-success border-success/30">
+                                            Save {plan.yearlyDiscountPercent}%
+                                          </Badge>
+                                        ) : null}
+                                      </div>
+
+                                      <p className="line-clamp-2 text-xs text-muted-foreground">
+                                        {plan.description}
+                                      </p>
+
+                                      <ul className="space-y-1">
+                                        {plan.features.slice(0, 3).map((feature) => (
+                                          <li key={feature} className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                                            <Check className="h-3 w-3 text-success mt-0.5 flex-shrink-0" />
+                                            <span>{feature}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </CardContent>
+                                  </Card>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </Form>
+          )}
+
+          {/* Step 3: Review */}
+          {currentStep === 3 && (
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Review Organization Details</CardTitle>
+                  <CardTitle>Review Tenant Setup</CardTitle>
                   <CardDescription>Confirm the information before creating the tenant</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -425,12 +608,10 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
                           orgType.replace("_", " ")}
                       </p>
                     </div>
-                    {orgType !== "OWNER_OPERATOR" && (
-                      <div>
-                        <p className="text-muted-foreground">Primary Contact</p>
-                        <p className="font-medium">{form.watch("primaryContactName") || "-"}</p>
-                      </div>
-                    )}
+                    <div>
+                      <p className="text-muted-foreground">Primary Contact</p>
+                      <p className="font-medium">{form.watch("primaryContactName") || "-"}</p>
+                    </div>
                     <div>
                       <p className="text-muted-foreground">Business Email</p>
                       <p className="font-medium">{form.watch("email") || "-"}</p>
@@ -443,14 +624,22 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
                       <p className="text-muted-foreground">Phone Number</p>
                       <p className="font-medium">{form.watch("phone") || "-"}</p>
                     </div>
+                    <div>
+                      <p className="text-muted-foreground">Subscription Plan</p>
+                      <p className="font-medium">{selectedPlan?.name || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Billing Cycle</p>
+                      <p className="font-medium capitalize">{form.watch("billingCycle") || "-"}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
           )}
 
-          {/* Step 3: Confirmation */}
-          {currentStep === 3 && (
+          {/* Step 4: Confirmation */}
+          {currentStep === 4 && (
             <div className="flex flex-col items-center justify-center space-y-6 py-8">
               <div className="h-16 w-16 rounded-full bg-success/10 flex items-center justify-center">
                 <CheckCircle2 className="h-8 w-8 text-success" />
@@ -483,6 +672,11 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
                         orgType.replace("_", " ")}
                     </span>
                   </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Subscription</span>
+                    <span className="font-medium ml-auto">{selectedPlan?.name || "Selected plan"}</span>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -496,18 +690,18 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
           <Button
             variant="outline"
             onClick={handleBack}
-            disabled={currentStep === 1 || currentStep === 3}
+            disabled={currentStep === 1 || currentStep === 4}
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
 
-          {currentStep === 3 ? (
+          {currentStep === 4 ? (
             <Button onClick={handleDone}>
               <Check className="h-4 w-4 mr-2" />
               Done
             </Button>
-          ) : currentStep === 2 ? (
+          ) : currentStep === 3 ? (
             <Button
               onClick={handleAttemptSubmit}
               disabled={createTenant.isPending || isCheckingDuplicate}

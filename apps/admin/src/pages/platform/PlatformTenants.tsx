@@ -732,6 +732,8 @@ export default function PlatformTenants() {
       <TenantOnboardingWizard
         open={isWizardOpen}
         onOpenChange={setIsWizardOpen}
+        subscriptionPlans={plansQuery.data?.data?.plans ?? []}
+        isSubscriptionPlansLoading={plansQuery.isLoading}
         onComplete={handleWizardComplete}
       />
       {/* Database Tenant Details Sheet */}
@@ -746,6 +748,8 @@ export default function PlatformTenants() {
         tenant={selectedDbTenant}
         open={isDbEditDialogOpen}
         onOpenChange={setIsDbEditDialogOpen}
+        subscriptionPlans={plansQuery.data?.data?.plans ?? []}
+        isSubscriptionPlansLoading={plansQuery.isLoading}
       />
 
       {/* Terminate DB Tenant Confirmation */}
