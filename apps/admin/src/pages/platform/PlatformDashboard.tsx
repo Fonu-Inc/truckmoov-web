@@ -43,6 +43,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getSystemActivityLogQueryOptions,
   getSystemDashboardQueryOptions,
+  getSystemHealthQueryOptions,
 } from "@truckmoov/api/auth";
 import { Link } from "react-router-dom";
 import { StakeholderOverviewTab } from "@/components/platform/StakeholderOverviewTab";
@@ -85,15 +86,6 @@ const dataUsageTrend = [
   { day: "Fri", usage: 398 },
   { day: "Sat", usage: 178 },
   { day: "Sun", usage: 156 },
-];
-
-const systemServices = [
-  { label: "API Gateway", status: "healthy", uptime: "99.98%", latency: "45ms", requests: "2.4M/day" },
-  { label: "Database Cluster", status: "healthy", uptime: "99.99%", latency: "12ms", requests: "8.2M/day" },
-  { label: "Message Queue", status: "healthy", uptime: "99.95%", latency: "8ms", requests: "1.1M/day" },
-  { label: "WhatsApp API", status: "healthy", uptime: "99.87%", latency: "120ms", requests: "450K/day" },
-  { label: "SMS Gateway", status: "warning", uptime: "98.50%", latency: "180ms", requests: "125K/day" },
-  { label: "GPS Processor", status: "healthy", uptime: "99.92%", latency: "25ms", requests: "15M/day" },
 ];
 
 const topTenants = [
@@ -166,12 +158,78 @@ function formatActivityTime(value: string) {
   return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
 }
 
+function formatStatusLabel(value?: string) {
+  if (!value) {
+    return "Unknown";
+  }
+
+  return value
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function formatLatency(value?: number) {
+  return value == null ? "..." : `${value.toLocaleString()}ms`;
+}
+
+function formatUptime(value?: number) {
+  if (value == null) {
+    return "...";
+  }
+
+  return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}%`;
+}
+
+function getHealthStatusClass(status?: string) {
+  const normalizedStatus = status?.toLowerCase();
+
+  if (normalizedStatus === "healthy") {
+    return "bg-success";
+  }
+
+  if (normalizedStatus === "warning" || normalizedStatus === "degraded") {
+    return "bg-warning animate-pulse";
+  }
+
+  return "bg-destructive";
+}
+
+function getHealthBadgeClass(status?: string) {
+  const normalizedStatus = status?.toLowerCase();
+
+  if (!normalizedStatus) {
+    return "bg-muted text-muted-foreground border-border";
+  }
+
+  if (normalizedStatus === "healthy") {
+    return "bg-success/10 text-success border-success/30";
+  }
+
+  if (normalizedStatus === "warning" || normalizedStatus === "degraded") {
+    return "bg-warning/10 text-warning border-warning/30";
+  }
+
+  return "bg-destructive/10 text-destructive border-destructive/30";
+}
+
 export default function PlatformDashboard() {
   const { data: systemDashboardResponse } = useQuery(getSystemDashboardQueryOptions());
+  const {
+    data: systemHealthResponse,
+    isError: systemHealthError,
+    isLoading: systemHealthLoading,
+  } = useQuery({
+    ...getSystemHealthQueryOptions(),
+    refetchInterval: 30000,
+  });
   const { data: systemActivityLogResponse, isLoading: activityLogLoading } = useQuery(
     getSystemActivityLogQueryOptions({ params: { limit: ACTIVITY_LOG_LIMIT } })
   );
   const systemDashboard = systemDashboardResponse?.data;
+  const systemHealth = systemHealthResponse?.data;
+  const systemHealthServices = systemHealth?.services ?? [];
   const recentActivities = (systemActivityLogResponse?.data ?? []).slice(0, ACTIVITY_LOG_LIMIT);
 
   return (
@@ -327,31 +385,50 @@ export default function PlatformDashboard() {
                       <Activity className="h-5 w-5 text-primary" />
                       System Health
                     </CardTitle>
-                    <Badge className="bg-success/10 text-success border-success/30">All Systems Operational</Badge>
+                    <Badge className={getHealthBadgeClass(systemHealth?.overall)}>
+                      {systemHealthLoading
+                        ? "Checking status"
+                        : systemHealthError
+                          ? "Status unavailable"
+                          : systemHealth?.overall?.toLowerCase() === "healthy"
+                            ? "All Systems Operational"
+                            : formatStatusLabel(systemHealth?.overall)}
+                    </Badge>
                   </div>
                   <CardDescription>Real-time service status and performance</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {systemServices.map((service) => (
+                  {systemHealthLoading && (
+                    <div className="p-3 rounded-lg border text-sm text-muted-foreground">
+                      Loading system health...
+                    </div>
+                  )}
+
+                  {systemHealthError && (
+                    <div className="p-3 rounded-lg border text-sm text-muted-foreground">
+                      Unable to load system health.
+                    </div>
+                  )}
+
+                  {!systemHealthLoading && !systemHealthError && systemHealthServices.length === 0 && (
+                    <div className="p-3 rounded-lg border text-sm text-muted-foreground">
+                      No service health data found.
+                    </div>
+                  )}
+
+                  {systemHealthServices.map((service) => (
                     <div
-                      key={service.label}
+                      key={service.name}
                       className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-muted/30 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div
-                          className={`h-2.5 w-2.5 rounded-full ${service.status === "healthy"
-                            ? "bg-success"
-                            : service.status === "warning"
-                              ? "bg-warning animate-pulse"
-                              : "bg-destructive"
-                            }`}
-                        />
-                        <span className="text-sm font-medium">{service.label}</span>
+                        <div className={`h-2.5 w-2.5 rounded-full ${getHealthStatusClass(service.status)}`} />
+                        <span className="text-sm font-medium">{service.name}</span>
                       </div>
                       <div className="flex items-center gap-4 text-sm">
-                        <span className="text-muted-foreground">{service.latency}</span>
-                        <span className="text-muted-foreground hidden md:inline">{service.requests}</span>
-                        <Badge variant="outline" className="text-xs">{service.uptime}</Badge>
+                        <span className="text-muted-foreground">{formatLatency(service.latencyMs)}</span>
+                        <span className="text-muted-foreground hidden md:inline">{formatStatusLabel(service.status)}</span>
+                        <Badge variant="outline" className="text-xs">{formatUptime(service.uptime)}</Badge>
                       </div>
                     </div>
                   ))}

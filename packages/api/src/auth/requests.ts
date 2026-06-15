@@ -53,6 +53,7 @@ import type {
   SystemDeviceSummaryResponse,
   SystemFeatureFlagResponse,
   SystemFeatureFlagsResponse,
+  SystemHealthResponse,
   SystemLoginPayload,
   SystemSupportDashboardResponse,
   SystemSimBatchesQuery,
@@ -492,6 +493,11 @@ export async function updateSystemSettings({ data }: UpdateSystemSettingsPayload
 
 export async function getSystemDashboard() {
   const { data } = await axiosInstance.get<SystemDashboardResponse>('/auth/system/dashboard')
+  return data
+}
+
+export async function getSystemHealth() {
+  const { data } = await axiosInstance.get<SystemHealthResponse>('/auth/system/health')
   return data
 }
 

@@ -41,6 +41,7 @@ import {
   getSystemDevicesCatalog,
   getSystemDevicesSummary,
   getSystemFeatureFlags,
+  getSystemHealth,
   getSystemRefDataDeviceCatalog,
   getSystemRefDataTenantOnboarding,
   getSystemSettings,
@@ -138,6 +139,8 @@ export type {
   SystemDevicesSummary,
   SystemFeatureFlag,
   SystemFeatureFlagsList,
+  SystemHealth,
+  SystemHealthService,
   SystemLoginPayload,
   SystemSimBatch,
   SystemSimBatchesList,
@@ -208,6 +211,7 @@ export const AUTH_QUERY_KEY = {
   systemSettings: ['systemSettings'],
 
   systemDashboard: ['systemDashboard'],
+  systemHealth: ['systemHealth'],
   systemActivityLog: (payload?: ActivityLogQuery) =>
     payload ? ['systemActivityLog', payload] : ['systemActivityLog'],
   systemRefDataDeviceCatalog: ['systemRefDataDeviceCatalog'],
@@ -745,6 +749,10 @@ export function useUpdateSystemSettings() {
 
 export function getSystemDashboardQueryOptions() {
   return queryOptions({ queryKey: AUTH_QUERY_KEY.systemDashboard, queryFn: getSystemDashboard })
+}
+
+export function getSystemHealthQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.systemHealth, queryFn: getSystemHealth })
 }
 
 export function getSystemRefDataDeviceCatalogQueryOptions() {

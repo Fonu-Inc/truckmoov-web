@@ -459,6 +459,19 @@ export type SystemDashboard = {
   generatedAt: string
 }
 
+export type SystemHealthService = {
+  name: string
+  status: string
+  latencyMs: number
+  uptime: number
+}
+
+export type SystemHealth = {
+  overall: string
+  services: SystemHealthService[]
+  generatedAt: string
+}
+
 export type SystemSupportDashboard = {
   open: number
   inProgress: number
@@ -745,6 +758,7 @@ export type StandardApiResponse = ServerResponse<unknown>
 export type InviteActionResponse = ServerResponse<Record<string, unknown>>
 export type AuthSystemSettingsResponse = ServerResponse<AuthSystemSettings>
 export type SystemDashboardResponse = ServerResponse<SystemDashboard>
+export type SystemHealthResponse = ServerResponse<SystemHealth>
 export type SystemSupportDashboardResponse = ServerResponse<SystemSupportDashboard>
 export type SystemTenantsListResponse = ServerResponse<{ total: number; tenants: SystemTenant[]; generatedAt: string }>
 export type SystemTenantsSummaryResponse = ServerResponse<SystemTenantsSummary>
