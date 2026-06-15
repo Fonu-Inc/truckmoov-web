@@ -1,12 +1,17 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getSystemSupportTicketsQueryOptions } from "@truckmoov/api/auth";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  getSystemSupportTicketSummaryQueryOptions,
+  getSystemSupportTicketsExportQueryOptions,
+  getSystemSupportTicketsQueryOptions,
+} from "@truckmoov/api/auth";
+import type { SystemSupportTicketsQuery } from "@truckmoov/api/auth";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
@@ -18,11 +23,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import type { ExportColumn } from "@/lib/exportTable";
 import {
   ArrowUpRight,
   CheckCircle2,
   CircleDot,
+  Download,
   Eye,
   Loader2,
   MessageSquare,
@@ -34,6 +39,7 @@ import { AdminTicketSheet, type SupportTicket } from "./AdminTicketSheet";
 
 type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
 type TicketPriority = "low" | "medium" | "high" | "critical";
+type TicketCategory = "device_tracking" | "billing" | "sim_connectivity" | "messaging" | "compliance" | "onboarding" | "other";
 type TicketRow = SupportTicket & {
   tenantName?: string;
   reporterName?: string;
@@ -54,6 +60,16 @@ const priorityConfig: Record<TicketPriority, { label: string; className: string 
   high: { label: "High", className: "border-transparent bg-destructive/10 text-destructive" },
   critical: { label: "Critical", className: "border-destructive/20 bg-destructive/10 text-destructive" },
 };
+
+const categoryOptions: { value: TicketCategory; label: string }[] = [
+  { value: "device_tracking", label: "Device Tracking" },
+  { value: "billing", label: "Billing" },
+  { value: "sim_connectivity", label: "Sim Connectivity" },
+  { value: "messaging", label: "Messaging" },
+  { value: "compliance", label: "Compliance" },
+  { value: "onboarding", label: "Onboarding" },
+  { value: "other", label: "Other" },
+];
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
   value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
@@ -159,62 +175,86 @@ const normalizeTicket = (raw: Record<string, unknown>): TicketRow => {
 const tenantLabel = (ticket: TicketRow) => ticket.tenantName || `Tenant ${shortId(ticket.tenantId || ticket.id)}`;
 const reporterLabel = (ticket: TicketRow) => ticket.reporterName || `User ${shortId(ticket.createdBy || ticket.id)}`;
 
+function useDebouncedValue<T>(value: T, delayMs: number) {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebounced(value), delayMs);
+    return () => window.clearTimeout(timeout);
+  }, [delayMs, value]);
+
+  return debounced;
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function AllTickets() {
-  const ticketsQuery = useQuery(getSystemSupportTicketsQueryOptions());
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [pendingStatusFilter, setPendingStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [pendingCategoryFilter, setPendingCategoryFilter] = useState("all");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<TicketRow | null>(null);
+  const debouncedSearch = useDebouncedValue(search.trim(), 350);
+
+  const queryPayload = useMemo<SystemSupportTicketsQuery>(() => {
+    const params: NonNullable<SystemSupportTicketsQuery["params"]> = {};
+    if (debouncedSearch) params.search = debouncedSearch;
+    if (statusFilter !== "all") params.status = statusFilter;
+    if (categoryFilter !== "all") params.category = categoryFilter;
+    return { params };
+  }, [categoryFilter, debouncedSearch, statusFilter]);
+
+  const summaryQuery = useQuery(getSystemSupportTicketSummaryQueryOptions());
+  const ticketsQuery = useQuery(getSystemSupportTicketsQueryOptions(queryPayload));
 
   const tickets = useMemo(
     () => extractRawTickets(ticketsQuery.data).map(normalizeTicket).filter((ticket) => ticket.id),
     [ticketsQuery.data],
   );
 
-  const filteredTickets = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return tickets.filter((ticket) => {
-      const matchesSearch =
-        !q ||
-        ticket.id.toLowerCase().includes(q) ||
-        ticket.subject.toLowerCase().includes(q) ||
-        ticket.description.toLowerCase().includes(q) ||
-        tenantLabel(ticket).toLowerCase().includes(q) ||
-        reporterLabel(ticket).toLowerCase().includes(q);
-
-      const matchesStatus =
-        statusFilter === "all" ||
-        ticket.status === statusFilter ||
-        (statusFilter === "open" && !["resolved", "closed"].includes(ticket.status)) ||
-        (statusFilter === "closed" && ["resolved", "closed"].includes(ticket.status));
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [search, statusFilter, tickets]);
-
+  const summary = summaryQuery.data?.data;
   const counts = useMemo(
     () => ({
-      total: tickets.length,
-      open: tickets.filter((ticket) => !["resolved", "closed"].includes(ticket.status)).length,
-      inProgress: tickets.filter((ticket) => ticket.status === "in_progress").length,
-      escalated: tickets.filter((ticket) => ticket.status === "escalated").length,
-      closed: tickets.filter((ticket) => ["resolved", "closed"].includes(ticket.status)).length,
+      total:
+        (summary?.open ?? 0) +
+        (summary?.inProgress ?? 0) +
+        (summary?.waitingOnTenant ?? 0) +
+        (summary?.escalated ?? 0) +
+        (summary?.resolved ?? 0) +
+        (summary?.closed ?? 0),
+      open: summary?.open ?? 0,
+      inProgress: summary?.inProgress ?? 0,
+      escalated: summary?.escalated ?? 0,
+      closed: (summary?.resolved ?? 0) + (summary?.closed ?? 0),
     }),
-    [tickets],
+    [summary],
   );
 
-  const exportColumns: ExportColumn<TicketRow>[] = [
-    { header: "Ticket ID", accessor: (ticket) => ticket.id },
-    { header: "Title", accessor: (ticket) => ticket.subject },
-    { header: "Tenant", accessor: tenantLabel },
-    { header: "Reporter", accessor: reporterLabel },
-    { header: "Channel", accessor: (ticket) => channelFromContext(ticket.contextType) },
-    { header: "Category", accessor: (ticket) => titleCase(ticket.category) },
-    { header: "Status", accessor: (ticket) => statusConfig[ticket.status as TicketStatus]?.label ?? titleCase(ticket.status) },
-    { header: "Priority", accessor: (ticket) => priorityConfig[ticket.priority as TicketPriority]?.label ?? titleCase(ticket.priority) },
-    { header: "Created", accessor: (ticket) => ticket.createdAt },
-  ];
+  async function handleExport() {
+    setIsExporting(true);
+    try {
+      const blob = await queryClient.fetchQuery(getSystemSupportTicketsExportQueryOptions(queryPayload));
+      downloadBlob(blob, "all_support_tickets.csv");
+      toast.success("Support tickets exported");
+    } catch (error) {
+      toast.error("Export failed");
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   return (
     <>
@@ -252,12 +292,20 @@ export function AllTickets() {
                   Tickets logged by tenants across the platform. Click any row to review, edit, or escalate.
                 </CardDescription>
               </div>
-              <ExportButton
-                rows={filteredTickets}
-                columns={exportColumns}
-                filename="all_support_tickets"
-                disabled={ticketsQuery.isLoading}
-              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                disabled={ticketsQuery.isLoading || isExporting}
+                className="bg-transparent border-input"
+              >
+                {isExporting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                Export Data
+              </Button>
             </div>
 
             <div className="flex flex-col gap-2 md:flex-row md:items-center">
@@ -282,7 +330,9 @@ export function AllTickets() {
                     <p className="text-sm font-semibold">Only show tickets by...</p>
                     <p className="text-xs text-muted-foreground">
                       {statusFilter === "all"
-                        ? "No filters applied"
+                        ? categoryFilter === "all"
+                          ? "No filters applied"
+                          : `Category: ${categoryOptions.find((option) => option.value === categoryFilter)?.label ?? titleCase(categoryFilter)}`
                         : `Status: ${statusConfig[statusFilter as TicketStatus]?.label ?? titleCase(statusFilter)}`}
                     </p>
                   </div>
@@ -308,11 +358,32 @@ export function AllTickets() {
                     </Select>
                   </div>
 
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="h-4 w-4 rounded border border-primary" aria-hidden="true" />
+                      <p className="text-sm font-medium text-muted-foreground">Category</p>
+                    </div>
+                    <Select value={pendingCategoryFilter} onValueChange={setPendingCategoryFilter}>
+                      <SelectTrigger className="h-10 border-border bg-background">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        {categoryOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-2 pt-2">
                     <Button
                       className="font-semibold"
                       onClick={() => {
                         setStatusFilter(pendingStatusFilter);
+                        setCategoryFilter(pendingCategoryFilter);
                         setFilterOpen(false);
                       }}
                     >
@@ -324,6 +395,8 @@ export function AllTickets() {
                       onClick={() => {
                         setPendingStatusFilter("all");
                         setStatusFilter("all");
+                        setPendingCategoryFilter("all");
+                        setCategoryFilter("all");
                         setFilterOpen(false);
                       }}
                     >
@@ -350,17 +423,17 @@ export function AllTickets() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {ticketsQuery.isLoading || ticketsQuery.isError || filteredTickets.length === 0 ? (
+                {ticketsQuery.isLoading || ticketsQuery.isFetching || ticketsQuery.isError || tickets.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9}>
                       <div className="py-12 text-center">
-                        {ticketsQuery.isLoading ? (
+                        {ticketsQuery.isLoading || ticketsQuery.isFetching ? (
                           <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-muted-foreground" />
                         ) : (
                           <MessageSquare className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
                         )}
                         <h3 className="mb-2 text-lg font-medium">
-                          {ticketsQuery.isLoading ? "Loading tickets" : "No tickets found"}
+                          {ticketsQuery.isLoading || ticketsQuery.isFetching ? "Loading tickets" : "No tickets found"}
                         </h3>
                         <p className="text-sm text-muted-foreground">
                           {ticketsQuery.isError
@@ -373,7 +446,7 @@ export function AllTickets() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredTickets.map((ticket) => {
+                  tickets.map((ticket) => {
                     const status = statusConfig[ticket.status as TicketStatus] ?? statusConfig.open;
                     const priority = priorityConfig[ticket.priority as TicketPriority] ?? priorityConfig.medium;
                     const reporter = reporterLabel(ticket);

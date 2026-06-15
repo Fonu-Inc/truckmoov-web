@@ -50,12 +50,16 @@ import type {
   SystemDeviceCatalogReferenceDataResponse,
   SystemDeviceDetailResponse,
   SystemDeviceInventoryListResponse,
+  SystemDeviceSetupRequestsListResponse,
+  SystemDeviceSetupRequestsQuery,
   SystemDeviceSummaryResponse,
   SystemFeatureFlagResponse,
   SystemFeatureFlagsResponse,
   SystemHealthResponse,
   SystemLoginPayload,
   SystemSupportDashboardResponse,
+  SystemSupportTicketSummaryResponse,
+  SystemSupportTicketsQuery,
   SystemSimBatchesQuery,
   SystemSimBatchesListResponse,
   SystemSimRequestsQuery,
@@ -537,8 +541,43 @@ export async function getSystemSupportDashboard() {
   return data
 }
 
-export async function getSystemSupportTickets() {
-  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/system/support/tickets')
+export async function getSystemSupportTicketSummary() {
+  const { data } = await axiosInstance.get<SystemSupportTicketSummaryResponse>('/auth/system/support/tickets/summary')
+  return data
+}
+
+export async function getSystemSupportTickets(payload?: SystemSupportTicketsQuery) {
+  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/system/support/tickets', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function exportSystemSupportTickets(payload?: SystemSupportTicketsQuery) {
+  const { data } = await axiosInstance.get('/auth/system/support/tickets/export', {
+    responseType: 'blob',
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getSystemEscalatedSupportTickets() {
+  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/system/support/escalated')
+  return data
+}
+
+export async function getSystemDeviceSetupRequests(payload?: SystemDeviceSetupRequestsQuery) {
+  const { data } = await axiosInstance.get<SystemDeviceSetupRequestsListResponse>('/auth/system/support/device-setup', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function exportSystemDeviceSetupRequests(payload?: SystemDeviceSetupRequestsQuery) {
+  const { data } = await axiosInstance.get('/auth/system/support/device-setup/export', {
+    responseType: 'blob',
+    params: payload?.params,
+  })
   return data
 }
 
@@ -552,8 +591,8 @@ export async function updateSupportTicketStatus({ id, data }: UpdateTicketStatus
   return res
 }
 
-export async function escalateSupportTicket({ id }: EscalateTicketPayload) {
-  const { data } = await axiosInstance.patch<StandardApiResponse>(`/auth/system/support/tickets/${id}/escalate`)
+export async function escalateSupportTicket({ id, data: body }: EscalateTicketPayload) {
+  const { data } = await axiosInstance.patch<StandardApiResponse>(`/auth/system/support/tickets/${id}/escalate`, body)
   return data
 }
 

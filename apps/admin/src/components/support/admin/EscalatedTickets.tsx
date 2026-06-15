@@ -1,133 +1,165 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { useMemo, useState } from "react";
+import type { ElementType } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getSystemEscalatedSupportTicketsQueryOptions } from "@truckmoov/api/auth";
+import { formatDistanceToNow } from "date-fns";
+import { ArrowUpRight, Building2, Loader2, Wifi, Wrench } from "lucide-react";
+
 import { Badge } from "@/components/shadcn/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { AdminTicketSheet } from "./AdminTicketSheet";
 import type { SupportTicket } from "./AdminTicketSheet";
-import {
-  ArrowUpRight,
-  Loader2,
-  Building2,
-  Wifi,
-  Wrench
-} from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 
 type EscalationType = "fleetpro_internal" | "fonu_connectivity" | "vendor_installer";
 
-const escalationConfig: Record<EscalationType, { label: string; icon: React.ElementType; color: string }> = {
+const escalationConfig: Record<EscalationType, { label: string; icon: ElementType; color: string }> = {
   fleetpro_internal: { label: "FleetPro Internal", icon: Building2, color: "text-primary" },
   fonu_connectivity: { label: "Fonu Connectivity", icon: Wifi, color: "text-chart-3" },
   vendor_installer: { label: "Vendor / Installer", icon: Wrench, color: "text-chart-5" },
 };
 
-// Demo escalated tickets — used when there are no real escalations so the screen always reflects platform-level activity
-const DEMO_ESCALATED: SupportTicket[] = [
-  {
-    id: "tkt-30000001-aaaa",
-    tenantId: "demo-tenant-lagos",
-    category: "device_tracking",
-    subject: "GPS tracker firmware crash on TRK-204",
-    description: "Device reboots every 15 minutes after firmware push v2.4.1. Affecting 3 vehicles in Apapa cluster.",
-    status: "escalated",
-    priority: "critical",
-    contextType: "device",
-    escalatedTo: "vendor_installer",
-    escalatedReferenceId: "VND-INC-88421",
-    escalationNotes: "Vendor confirmed receipt. Firmware rollback ETA 24h.",
-    escalatedAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-    createdBy: "usr-21f4a8c0",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "tkt-30000002-bbbb",
-    tenantId: "demo-tenant-abuja",
-    category: "sim_connectivity",
-    subject: "SIM batch stuck in pending activation",
-    description: "12 SIMs from latest Fonu provisioning batch failed to activate after 6h.",
-    status: "escalated",
-    priority: "high",
-    contextType: "sim",
-    escalatedTo: "fonu_connectivity",
-    escalatedReferenceId: "FONU-TKT-50217",
-    escalationNotes: "Fonu NOC investigating HLR sync delay.",
-    escalatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    createdBy: "usr-9a3b1c44",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "tkt-30000003-cccc",
-    tenantId: "demo-tenant-portharcourt",
-    category: "billing",
-    subject: "Wallet top-up reconciliation mismatch",
-    description: "₦450,000 MoMo top-up not reflecting after settlement window.",
-    status: "escalated",
-    priority: "critical",
-    contextType: "billing",
-    escalatedTo: "fleetpro_internal",
-    escalatedReferenceId: "FP-FIN-9981",
-    escalationNotes: "Finance team reviewing payment provider reconciliation file.",
-    escalatedAt: new Date(Date.now() - 1000 * 60 * 60 * 1).toISOString(),
-    createdBy: "usr-55cd0091",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "tkt-30000004-dddd",
-    tenantId: "demo-tenant-kano",
-    category: "messaging",
-    subject: "WhatsApp template policy violation",
-    description: "Template 'oo_job_offer_v3' rejected by Meta — needs internal compliance review.",
-    status: "escalated",
-    priority: "medium",
-    contextType: "whatsapp",
-    escalatedTo: "fleetpro_internal",
-    escalatedReferenceId: "FP-COMP-3340",
-    escalationNotes: "Compliance team rewriting template variables.",
-    escalatedAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-    createdBy: "usr-ab991122",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "tkt-30000005-eeee",
-    tenantId: "demo-tenant-ibadan",
-    category: "device_tracking",
-    subject: "Installer wiring fault on new fleet batch",
-    description: "5 newly installed devices report constant power loss — suspected wiring issue.",
-    status: "escalated",
-    priority: "high",
-    contextType: "device",
-    escalatedTo: "vendor_installer",
-    escalatedReferenceId: "VND-INC-88455",
-    escalationNotes: "Installer dispatching technician on Friday.",
-    escalatedAt: new Date(Date.now() - 1000 * 60 * 60 * 20).toISOString(),
-    createdBy: "usr-31aa55b9",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+const priorityStyles: Record<string, string> = {
+  low: "bg-muted text-muted-foreground",
+  medium: "bg-primary/10 text-primary",
+  high: "bg-chart-5/10 text-chart-5",
+  critical: "bg-destructive/10 text-destructive",
+};
+
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+
+const readString = (source: Record<string, unknown> | null, key: string): string | undefined => {
+  const value = source?.[key];
+  return typeof value === "string" && value.trim() ? value : undefined;
+};
+
+const readNestedString = (source: Record<string, unknown> | null, path: string[]): string | undefined => {
+  let current: unknown = source;
+  for (const key of path) {
+    current = asRecord(current)?.[key];
+  }
+  return typeof current === "string" && current.trim() ? current : undefined;
+};
+
+const titleCase = (value: string) =>
+  value
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const shortId = (id: string) => id.slice(0, 8);
+
+const normalizeTicket = (raw: Record<string, unknown>, fallbackTarget?: string): SupportTicket => ({
+  id: readString(raw, "id") ?? readString(raw, "ticketId") ?? "",
+  tenantId: readString(raw, "tenantId") ?? readNestedString(raw, ["tenant", "id"]) ?? "",
+  tenantName: readString(raw, "tenantName") ?? readNestedString(raw, ["tenant", "name"]),
+  category: readString(raw, "category") ?? "other",
+  subject: readString(raw, "subject") ?? readString(raw, "title") ?? "Untitled ticket",
+  description: readString(raw, "description") ?? readString(raw, "content") ?? "",
+  status: "escalated",
+  priority: readString(raw, "priority") ?? "medium",
+  contextType: readString(raw, "contextType") ?? readString(raw, "channel") ?? "none",
+  escalatedTo:
+    readString(raw, "escalatedTo") ??
+    readString(raw, "target") ??
+    readString(raw, "escalationParty") ??
+    fallbackTarget,
+  escalatedReferenceId: readString(raw, "escalatedReferenceId") ?? readString(raw, "referenceId"),
+  escalationNotes: readString(raw, "escalationNotes") ?? readString(raw, "notes"),
+  escalatedAt: readString(raw, "escalatedAt"),
+  createdBy: readString(raw, "createdBy") ?? readNestedString(raw, ["reporter", "id"]) ?? "",
+  createdAt: readString(raw, "createdAt") ?? new Date().toISOString(),
+  updatedAt: readString(raw, "updatedAt") ?? new Date().toISOString(),
+  resolvedAt: readString(raw, "resolvedAt"),
+  contextSnapshot: asRecord(raw.contextSnapshot) ?? undefined,
+  reporterName: readString(raw, "reporterName") ?? readNestedString(raw, ["reporter", "fullName"]),
+});
+
+const addTicket = (groups: Record<string, SupportTicket[]>, ticket: SupportTicket, fallbackTarget?: string) => {
+  if (!ticket.id) return;
+  const target = ticket.escalatedTo || fallbackTarget || "unknown";
+  groups[target] = [...(groups[target] ?? []), ticket];
+};
+
+const normalizeEscalatedResponse = (response: unknown): Record<string, SupportTicket[]> => {
+  const root = asRecord(response);
+  const data = root?.data ?? response;
+  const dataRecord = asRecord(data);
+  const groups: Record<string, SupportTicket[]> = {};
+
+  if (Array.isArray(data)) {
+    data.map(asRecord).filter(Boolean).forEach((raw) => addTicket(groups, normalizeTicket(raw)));
+    return groups;
+  }
+
+  if (!dataRecord) return groups;
+
+  const flatCandidates = [dataRecord.tickets, dataRecord.items, dataRecord.rows, dataRecord.data];
+  const flat = flatCandidates.find(Array.isArray);
+  if (Array.isArray(flat)) {
+    flat.map(asRecord).filter(Boolean).forEach((raw) => addTicket(groups, normalizeTicket(raw)));
+  }
+
+  const groupedCandidates = [dataRecord.grouped, dataRecord.groups, dataRecord.byTarget, dataRecord.byEscalationParty];
+  groupedCandidates.forEach((candidate) => {
+    if (Array.isArray(candidate)) {
+      candidate.map(asRecord).filter(Boolean).forEach((group) => {
+        const target =
+          readString(group, "escalatedTo") ??
+          readString(group, "target") ??
+          readString(group, "party") ??
+          readString(group, "key") ??
+          "unknown";
+        const tickets = [group.tickets, group.items, group.rows, group.data].find(Array.isArray);
+        if (Array.isArray(tickets)) {
+          tickets
+            .map(asRecord)
+            .filter(Boolean)
+            .forEach((raw) => addTicket(groups, normalizeTicket(raw, target), target));
+        }
+      });
+      return;
+    }
+
+    const groupedRecord = asRecord(candidate);
+    if (groupedRecord) {
+      Object.entries(groupedRecord).forEach(([target, value]) => {
+        if (Array.isArray(value)) {
+          value
+            .map(asRecord)
+            .filter(Boolean)
+            .forEach((raw) => addTicket(groups, normalizeTicket(raw, target), target));
+        }
+      });
+    }
+  });
+
+  if (Object.keys(groups).length === 0) {
+    Object.entries(dataRecord).forEach(([target, value]) => {
+      if (Array.isArray(value)) {
+        value
+          .map(asRecord)
+          .filter(Boolean)
+          .forEach((raw) => addTicket(groups, normalizeTicket(raw, target), target));
+      }
+    });
+  }
+
+  return groups;
+};
 
 export function EscalatedTickets() {
-  // Inline defaults — useSupportTickets hook deleted
-  const tickets: SupportTicket[] = [];
-  const isLoading = false;
-
+  const escalatedQuery = useQuery(getSystemEscalatedSupportTicketsQueryOptions());
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
 
-  const realEscalated = tickets.filter((t) => t.status === "escalated" || t.escalatedTo);
-  const escalatedTickets = realEscalated.length > 0 ? realEscalated : DEMO_ESCALATED;
+  const byTarget = useMemo(() => normalizeEscalatedResponse(escalatedQuery.data), [escalatedQuery.data]);
+  const escalatedTickets = useMemo(() => Object.values(byTarget).flat(), [byTarget]);
 
-  // Group by escalation target
-  const byTarget = escalatedTickets.reduce((acc, t) => {
-    const target = t.escalatedTo || "unknown";
-    if (!acc[target]) acc[target] = [];
-    acc[target].push(t);
-    return acc;
-  }, {} as Record<string, SupportTicket[]>);
+  const tenantLabel = (ticket: SupportTicket) =>
+    ticket.tenantName || `Tenant #${shortId(ticket.tenantId || ticket.id)}`;
 
-  if (isLoading) {
+  if (escalatedQuery.isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -135,12 +167,26 @@ export function EscalatedTickets() {
     );
   }
 
+  if (escalatedQuery.isError) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <ArrowUpRight className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+          <h3 className="mb-2 text-lg font-medium">Unable to Load Escalated Tickets</h3>
+          <p className="text-sm text-muted-foreground">
+            Escalated support tickets could not be loaded right now.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (escalatedTickets.length === 0) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <ArrowUpRight className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No Escalated Tickets</h3>
+          <ArrowUpRight className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+          <h3 className="mb-2 text-lg font-medium">No Escalated Tickets</h3>
           <p className="text-sm text-muted-foreground">
             There are currently no tickets that have been escalated to external parties.
           </p>
@@ -149,26 +195,8 @@ export function EscalatedTickets() {
     );
   }
 
-  // Lookup helpers — keep escalation rows readable for platform admins
-  const TENANT_NAMES: Record<string, string> = {
-    "demo-tenant-lagos": "Lagos Express Logistics",
-    "demo-tenant-abuja": "Abuja Freight Co.",
-    "demo-tenant-portharcourt": "PH Cargo Movers",
-    "demo-tenant-kano": "Kano Northern Haulage",
-    "demo-tenant-ibadan": "Ibadan Swift Transit",
-  };
-  const tenantLabel = (id: string) => TENANT_NAMES[id] || `Tenant #${id.slice(0, 8)}`;
-
-  const priorityStyles: Record<string, string> = {
-    low: "bg-muted text-muted-foreground",
-    medium: "bg-primary/10 text-primary",
-    high: "bg-chart-5/10 text-chart-5",
-    critical: "bg-destructive/10 text-destructive",
-  };
-
   return (
     <div className="space-y-6">
-      {/* Summary */}
       <div className="grid gap-4 md:grid-cols-3">
         {Object.entries(escalationConfig).map(([key, config]) => {
           const count = byTarget[key]?.length || 0;
@@ -192,10 +220,9 @@ export function EscalatedTickets() {
         })}
       </div>
 
-      {/* Grouped Lists */}
       {Object.entries(byTarget).map(([target, targetTickets]) => {
         const config = escalationConfig[target as EscalationType] || {
-          label: target,
+          label: titleCase(target),
           icon: ArrowUpRight,
           color: "text-muted-foreground",
         };
@@ -219,23 +246,19 @@ export function EscalatedTickets() {
                     key={ticket.id}
                     type="button"
                     onClick={() => setSelectedTicket(ticket)}
-                    className="w-full text-left flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                    className="flex w-full items-start gap-3 rounded-lg border bg-card p-3 text-left transition-colors hover:bg-muted/50"
                   >
-                    {/* Target icon */}
                     <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted ${config.color}`}>
                       <Icon className="h-4 w-4" />
                     </div>
 
-                    {/* Main content */}
                     <div className="min-w-0 flex-1 space-y-1.5">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <p className="font-medium text-sm truncate">{ticket.subject}</p>
-                      </div>
+                      <p className="truncate text-sm font-medium">{ticket.subject}</p>
 
                       <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                        <span className="font-mono text-muted-foreground">#{ticket.id.slice(0, 8)}</span>
-                        <span className="text-muted-foreground">•</span>
-                        <span className="text-foreground">{tenantLabel(ticket.tenantId)}</span>
+                        <span className="font-mono text-muted-foreground">#{shortId(ticket.id)}</span>
+                        <span className="text-muted-foreground">-</span>
+                        <span className="text-foreground">{tenantLabel(ticket)}</span>
                         <Badge variant="outline" className={priorityStyles[ticket.priority] ?? ""}>
                           {ticket.priority}
                         </Badge>
@@ -250,19 +273,18 @@ export function EscalatedTickets() {
                       </div>
 
                       {ticket.escalationNotes && (
-                        <p className="text-xs text-muted-foreground line-clamp-1">
-                          {ticket.escalationNotes}
-                        </p>
+                        <p className="line-clamp-1 text-xs text-muted-foreground">{ticket.escalationNotes}</p>
                       )}
                     </div>
 
-                    {/* Right meta */}
-                    <div className="flex flex-col items-end gap-1 shrink-0 text-right">
-                      <Badge variant="destructive" className="text-[10px]">Escalated</Badge>
+                    <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+                      <Badge variant="destructive" className="text-[10px]">
+                        Escalated
+                      </Badge>
                       <span className="text-[11px] text-muted-foreground">
                         {ticket.escalatedAt
                           ? formatDistanceToNow(new Date(ticket.escalatedAt), { addSuffix: true })
-                          : "—"}
+                          : "-"}
                       </span>
                     </div>
                   </button>
@@ -273,12 +295,7 @@ export function EscalatedTickets() {
         );
       })}
 
-      <AdminTicketSheet
-        ticket={selectedTicket}
-        onClose={() => setSelectedTicket(null)}
-      />
+      <AdminTicketSheet ticket={selectedTicket} onClose={() => setSelectedTicket(null)} />
     </div>
   );
 }
-
-

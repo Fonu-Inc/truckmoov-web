@@ -1,7 +1,15 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getSupportTicketMessagesQueryOptions,
+  useCreateSupportTicketMessage,
+  useEscalateSupportTicket,
+  useUpdateSupportTicketStatus,
+} from "@truckmoov/api/auth";
 import { format } from "date-fns";
-import { ArrowUpRight, FileText, ImageIcon, Lock, Paperclip, Send } from "lucide-react";
+import { ArrowUpRight, FileText, ImageIcon, Loader2, Lock, Paperclip, Send } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -16,6 +24,13 @@ import { Textarea } from "@/components/shadcn/textarea";
 
 type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
 type EscalationType = "fleetpro_internal" | "fonu_connectivity" | "vendor_installer";
+type TicketMessage = {
+  id: string;
+  message: string;
+  isInternal: boolean;
+  createdAt?: string;
+  senderName?: string;
+};
 
 export interface SupportTicket {
   id: string;
@@ -57,6 +72,15 @@ const priorityStyles: Record<string, { label: string; className: string }> = {
   critical: { label: "Critical", className: "border-destructive/20 bg-destructive/10 text-destructive" },
 };
 
+const statusOptions: { value: TicketStatus; label: string }[] = [
+  { value: "open", label: "Open" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "waiting_on_tenant", label: "Awaiting Response" },
+  { value: "escalated", label: "Escalated" },
+  { value: "resolved", label: "Resolved" },
+  { value: "closed", label: "Closed" },
+];
+
 const titleCase = (value: string) =>
   value
     .replace(/_/g, " ")
@@ -96,12 +120,122 @@ const formatCreatedAt = (date: string) => {
   return Number.isNaN(parsed.getTime()) ? date : format(parsed, "PPP, p");
 };
 
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+
+const readString = (source: Record<string, unknown> | null, key: string): string | undefined => {
+  const value = source?.[key];
+  return typeof value === "string" && value.trim() ? value : undefined;
+};
+
+const readBoolean = (source: Record<string, unknown> | null, key: string): boolean => {
+  const value = source?.[key];
+  return typeof value === "boolean" ? value : false;
+};
+
+const extractMessages = (response: unknown): TicketMessage[] => {
+  const root = asRecord(response);
+  const data = root?.data;
+  const dataRecord = asRecord(data);
+  const candidates = Array.isArray(data)
+    ? data
+    : dataRecord
+      ? [dataRecord.messages, dataRecord.items, dataRecord.rows, dataRecord.data].find(Array.isArray)
+      : [];
+
+  return (Array.isArray(candidates) ? candidates : [])
+    .map(asRecord)
+    .filter(Boolean)
+    .map((raw) => ({
+      id: readString(raw, "id") ?? readString(raw, "messageId") ?? crypto.randomUUID(),
+      message: readString(raw, "message") ?? readString(raw, "content") ?? "",
+      isInternal: readBoolean(raw, "isInternal"),
+      createdAt: readString(raw, "createdAt"),
+      senderName: readString(raw, "senderName") ?? readString(raw, "createdByName"),
+    }))
+    .filter((message) => message.message);
+};
+
 export function AdminTicketSheet({ ticket, onClose }: AdminTicketSheetProps) {
   const [internalNote, setInternalNote] = useState(false);
   const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<TicketStatus>("open");
   const [escalateTo, setEscalateTo] = useState<EscalationType | "">("");
   const [referenceId, setReferenceId] = useState("");
   const [escalationNotes, setEscalationNotes] = useState("");
+  const messagesQuery = useQuery({
+    ...getSupportTicketMessagesQueryOptions(ticket?.id ?? ""),
+    enabled: !!ticket,
+  });
+  const statusMutation = useUpdateSupportTicketStatus();
+  const messageMutation = useCreateSupportTicketMessage();
+  const escalateMutation = useEscalateSupportTicket();
+
+  useEffect(() => {
+    if (!ticket) return;
+    setStatus(ticket.status);
+    setMessage("");
+    setInternalNote(false);
+    setEscalateTo((ticket.escalatedTo as EscalationType | undefined) ?? "");
+    setReferenceId(ticket.escalatedReferenceId ?? "");
+    setEscalationNotes(ticket.escalationNotes ?? "");
+  }, [ticket]);
+
+  const messages = useMemo(() => extractMessages(messagesQuery.data), [messagesQuery.data]);
+
+  function handleStatusChange(value: TicketStatus) {
+    if (!ticket) return;
+    setStatus(value);
+    statusMutation.mutate(
+      { id: ticket.id, data: { status: value } },
+      {
+        onSuccess: () => toast.success("Ticket status updated"),
+        onError: (error) => {
+          setStatus(ticket.status);
+          toast.error(error.message);
+        },
+      },
+    );
+  }
+
+  function handleSendMessage() {
+    if (!ticket || !message.trim()) return;
+    messageMutation.mutate(
+      {
+        id: ticket.id,
+        data: {
+          message: message.trim(),
+          isInternal: internalNote,
+        },
+      },
+      {
+        onSuccess: () => {
+          setMessage("");
+          setInternalNote(false);
+          toast.success(internalNote ? "Internal note added" : "Message sent");
+        },
+        onError: (error) => toast.error(error.message),
+      },
+    );
+  }
+
+  function handleEscalate() {
+    if (!ticket || !escalateTo) return;
+    escalateMutation.mutate(
+      {
+        id: ticket.id,
+        data: {
+          escalatedTo: escalateTo,
+          referenceId: referenceId.trim() || undefined,
+          notes: escalationNotes.trim() || undefined,
+        },
+      },
+      {
+        onSuccess: () => toast.success("Ticket escalated"),
+        onError: (error) => toast.error(error.message),
+      },
+    );
+  }
 
   if (!ticket) return null;
 
@@ -212,13 +346,61 @@ export function AdminTicketSheet({ ticket, onClose }: AdminTicketSheetProps) {
                   </div>
                 </div>
               </div>
+
+              <div className="rounded-md border bg-background/40 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <FieldLabel>Update Ticket Status</FieldLabel>
+                    <p className="mt-1 text-sm text-muted-foreground">Change the workflow stage of this ticket.</p>
+                  </div>
+                  <Select value={status} onValueChange={(value) => handleStatusChange(value as TicketStatus)}>
+                    <SelectTrigger className="h-11 sm:w-56" disabled={statusMutation.isPending}>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="messages" className="mt-0 space-y-6">
               <div className="space-y-3">
                 <FieldLabel>Conversation</FieldLabel>
-                <div className="flex h-80 items-center justify-center rounded-md border bg-background/40 text-muted-foreground">
-                  No messages yet.
+                <div className="h-80 space-y-3 overflow-y-auto rounded-md border bg-background/40 p-4">
+                  {messagesQuery.isLoading ? (
+                    <div className="flex h-full items-center justify-center text-muted-foreground">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  ) : messages.length === 0 ? (
+                    <div className="flex h-full items-center justify-center text-muted-foreground">
+                      No messages yet.
+                    </div>
+                  ) : (
+                    messages.map((item) => (
+                      <div key={item.id} className="rounded-md border bg-secondary/50 p-3">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <p className="text-sm font-semibold">{item.senderName || "Support"}</p>
+                          <div className="flex items-center gap-2">
+                            {item.isInternal && (
+                              <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+                                Internal
+                              </Badge>
+                            )}
+                            {item.createdAt && (
+                              <span className="text-xs text-muted-foreground">{formatCreatedAt(item.createdAt)}</span>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-sm leading-relaxed">{item.message}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -243,8 +425,17 @@ export function AdminTicketSheet({ ticket, onClose }: AdminTicketSheetProps) {
                     rows={4}
                     className="resize-none"
                   />
-                  <Button size="icon" className="h-10 w-10 shrink-0" disabled={!message.trim()}>
-                    <Send className="h-4 w-4" />
+                  <Button
+                    size="icon"
+                    className="h-10 w-10 shrink-0"
+                    disabled={!message.trim() || messageMutation.isPending}
+                    onClick={handleSendMessage}
+                  >
+                    {messageMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
               </div>
@@ -300,8 +491,17 @@ export function AdminTicketSheet({ ticket, onClose }: AdminTicketSheetProps) {
                 />
               </div>
 
-              <Button className="h-10 w-full font-semibold" variant="destructive" disabled={!escalateTo}>
-                <ArrowUpRight className="mr-3 h-4 w-4" />
+              <Button
+                className="h-10 w-full font-semibold"
+                variant="destructive"
+                disabled={!escalateTo || escalateMutation.isPending}
+                onClick={handleEscalate}
+              >
+                {escalateMutation.isPending ? (
+                  <Loader2 className="mr-3 h-4 w-4 animate-spin" />
+                ) : (
+                  <ArrowUpRight className="mr-3 h-4 w-4" />
+                )}
                 Escalate Ticket
               </Button>
             </TabsContent>

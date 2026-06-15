@@ -17,9 +17,11 @@ import {
   deleteSystemAdminInvite,
   deleteTenant,
   escalateSupportTicket,
+  exportSystemDeviceSetupRequests,
   exportSystemDevicesCatalog,
   exportSystemDevices,
   exportSystemSims,
+  exportSystemSupportTickets,
   exportSystemTenants,
   forgotPassword,
   getActivityLog,
@@ -36,10 +38,12 @@ import {
   getSystemAdminInvites,
   getSystemAdmins,
   getSystemDashboard,
+  getSystemDeviceSetupRequests,
   getSystemDevice,
   getSystemDevices,
   getSystemDevicesCatalog,
   getSystemDevicesSummary,
+  getSystemEscalatedSupportTickets,
   getSystemFeatureFlags,
   getSystemHealth,
   getSystemRefDataDeviceCatalog,
@@ -51,6 +55,7 @@ import {
   getSystemSimsSummary,
   getSystemSubscriptionPlans,
   getSystemSupportDashboard,
+  getSystemSupportTicketSummary,
   getSystemSupportTicket,
   getSystemSupportTickets,
   getSystemTenant,
@@ -91,10 +96,12 @@ import {
 import type {
   ActivityLogQuery,
   SystemDeviceCatalogQuery,
+  SystemDeviceSetupRequestsQuery,
   SystemDevicesQuery,
   SystemSimBatchesQuery,
   SystemSimRequestsQuery,
   SystemSimsQuery,
+  SystemSupportTicketsQuery,
   SystemTenantsQuery,
 } from './types'
 
@@ -133,6 +140,9 @@ export type {
   SystemDeviceCatalogQuery,
   SystemDeviceDetail,
   SystemDeviceDetailResponse,
+  SystemDeviceSetupRequest,
+  SystemDeviceSetupRequestsList,
+  SystemDeviceSetupRequestsQuery,
   SystemDeviceInventoryItem,
   SystemDeviceInventoryList,
   SystemDevicesQuery,
@@ -153,6 +163,8 @@ export type {
   SystemSimsQuery,
   SystemSimsSummary,
   SystemSupportDashboard,
+  SystemSupportTicketSummary,
+  SystemSupportTicketsQuery,
   SystemTenant,
   SystemTenantsQuery,
   SystemTenantsSummary,
@@ -220,7 +232,12 @@ export const AUTH_QUERY_KEY = {
   subscriptionPlans: ['subscriptionPlans'],
 
   systemSupportDashboard: ['systemSupportDashboard'],
-  systemSupportTickets: ['systemSupportTickets'],
+  systemSupportTicketSummary: ['systemSupportTicketSummary'],
+  systemEscalatedSupportTickets: ['systemEscalatedSupportTickets'],
+  systemDeviceSetupRequests: (payload?: SystemDeviceSetupRequestsQuery) =>
+    payload ? ['systemDeviceSetupRequests', payload] : ['systemDeviceSetupRequests'],
+  systemSupportTickets: (payload?: SystemSupportTicketsQuery) =>
+    payload ? ['systemSupportTickets', payload] : ['systemSupportTickets'],
   systemSupportTicket: (id: string) => ['systemSupportTicket', id],
   systemSupportTicketMessages: (id: string) => ['systemSupportTicketMessages', id],
 
@@ -789,10 +806,45 @@ export function getSystemSupportDashboardQueryOptions() {
   })
 }
 
-export function getSystemSupportTicketsQueryOptions() {
+export function getSystemSupportTicketSummaryQueryOptions() {
   return queryOptions({
-    queryKey: AUTH_QUERY_KEY.systemSupportTickets,
-    queryFn: getSystemSupportTickets,
+    queryKey: AUTH_QUERY_KEY.systemSupportTicketSummary,
+    queryFn: getSystemSupportTicketSummary,
+  })
+}
+
+export function getSystemEscalatedSupportTicketsQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemEscalatedSupportTickets,
+    queryFn: getSystemEscalatedSupportTickets,
+  })
+}
+
+export function getSystemSupportTicketsQueryOptions(payload?: SystemSupportTicketsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSupportTickets(payload),
+    queryFn: () => getSystemSupportTickets(payload),
+  })
+}
+
+export function getSystemSupportTicketsExportQueryOptions(payload?: SystemSupportTicketsQuery) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.systemSupportTickets(payload), 'export'],
+    queryFn: () => exportSystemSupportTickets(payload),
+  })
+}
+
+export function getSystemDeviceSetupRequestsQueryOptions(payload?: SystemDeviceSetupRequestsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemDeviceSetupRequests(payload),
+    queryFn: () => getSystemDeviceSetupRequests(payload),
+  })
+}
+
+export function getSystemDeviceSetupRequestsExportQueryOptions(payload?: SystemDeviceSetupRequestsQuery) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.systemDeviceSetupRequests(payload), 'export'],
+    queryFn: () => exportSystemDeviceSetupRequests(payload),
   })
 }
 
@@ -814,7 +866,9 @@ export function useUpdateSupportTicketStatus() {
   return useMutation({
     mutationFn: updateSupportTicketStatus,
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTickets })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTickets() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTicketSummary })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemEscalatedSupportTickets })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTicket(id) })
     },
   })
@@ -824,7 +878,9 @@ export function useEscalateSupportTicket() {
   return useMutation({
     mutationFn: escalateSupportTicket,
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTickets })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTickets() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTicketSummary })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemEscalatedSupportTickets })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTicket(id) })
     },
   })

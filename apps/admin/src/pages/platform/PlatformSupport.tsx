@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/ta
 import { SupportDashboard } from "@/components/support/admin/SupportDashboard";
 import { AllTickets } from "@/components/support/admin/AllTickets";
 import { EscalatedTickets } from "@/components/support/admin/EscalatedTickets";
+import { DeviceSetupRequestsQueue } from "@/components/devices/DeviceSetupRequestsQueue";
 
 export default function PlatformSupport() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -34,20 +35,12 @@ export default function PlatformSupport() {
           </TabsContent>
 
           <TabsContent value="device-setup" className="space-y-6">
-            {/* <DeviceSetupRequestsQueue
-              requests={deviceRequests}
-              loading={deviceRequestsLoading}
-              onRefresh={refetchDeviceRequests}
-              onUpdateStatus={updateRequestStatus}
-              isConfigurator={true}
-              isSupportMode={true}
-            /> */}
+            <DeviceSetupRequestsQueue />
           </TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
   );
 }
-
 
 

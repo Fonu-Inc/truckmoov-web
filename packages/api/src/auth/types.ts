@@ -340,13 +340,69 @@ export type UpdateTicketStatusPayload = {
 
 export type EscalateTicketPayload = {
   id: string
+  data: {
+    escalatedTo: string
+    referenceId?: string
+    notes?: string
+  }
 }
 
 export type CreateTicketMessagePayload = {
   id: string
   data: {
-    content: string
+    message: string
+    isInternal: boolean
   }
+}
+
+export type SystemSupportTicketsQuery = {
+  params?: {
+    status?: string
+    category?: string
+    search?: string
+  }
+}
+
+export type SystemDeviceSetupRequestsQuery = {
+  params?: {
+    search?: string
+    status?: string
+  }
+}
+
+export type SystemDeviceSetupRequest = {
+  id: string
+  imei: string
+  manufacturer: string
+  model: string
+  connectionType: string
+  requesterName: string
+  needsSim: boolean
+  vehiclePlate: string
+  location: string
+  tenantId: string
+  status: 'pending_review' | 'in_progress' | 'assigned' | string
+  assignedTo?: string
+  notes?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type SystemDeviceSetupRequestsList = {
+  total: number
+  requests: SystemDeviceSetupRequest[]
+}
+
+export type SystemSupportTicketSummary = {
+  open: number
+  inProgress: number
+  escalated: number
+  waitingOnTenant: number
+  resolved: number
+  closed: number
+  resolvedToday: number
+  byCategory: Record<string, number>
+  topTenants: Record<string, unknown>[]
 }
 
 export type SystemChangePasswordPayload = {
@@ -760,6 +816,8 @@ export type AuthSystemSettingsResponse = ServerResponse<AuthSystemSettings>
 export type SystemDashboardResponse = ServerResponse<SystemDashboard>
 export type SystemHealthResponse = ServerResponse<SystemHealth>
 export type SystemSupportDashboardResponse = ServerResponse<SystemSupportDashboard>
+export type SystemSupportTicketSummaryResponse = ServerResponse<SystemSupportTicketSummary>
+export type SystemDeviceSetupRequestsListResponse = ServerResponse<SystemDeviceSetupRequestsList>
 export type SystemTenantsListResponse = ServerResponse<{ total: number; tenants: SystemTenant[]; generatedAt: string }>
 export type SystemTenantsSummaryResponse = ServerResponse<SystemTenantsSummary>
 export type SystemTenantDetailResponse = ServerResponse<Record<string, unknown>>

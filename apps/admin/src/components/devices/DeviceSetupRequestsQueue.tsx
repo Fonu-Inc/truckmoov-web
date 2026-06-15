@@ -1,9 +1,28 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
-import { Badge } from '@/components/shadcn/badge';
-import { Button } from '@/components/shadcn/button';
-import { Input } from '@/components/shadcn/input';
-import { Textarea } from '@/components/shadcn/textarea';
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  getSystemDeviceSetupRequestsExportQueryOptions,
+  getSystemDeviceSetupRequestsQueryOptions,
+} from "@truckmoov/api/auth";
+import type { SystemDeviceSetupRequest, SystemDeviceSetupRequestsQuery } from "@truckmoov/api/auth";
+import { format } from "date-fns";
+import { toast } from "sonner";
+
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import {
   Table,
   TableBody,
@@ -11,175 +30,179 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/shadcn/table';
+} from "@/components/shadcn/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/shadcn/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/shadcn/dropdown-menu';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shadcn/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/shadcn/popover';
-import { Calendar as CalendarPicker } from '@/components/shadcn/calendar';
-import { Label } from '@/components/shadcn/label';
-import { Checkbox } from '@/components/shadcn/checkbox';
-import { ExportButton } from '@/components/shadcn/export-button';
-import { Separator } from '@/components/shadcn/separator';
-import { Skeleton } from '@/components/shadcn/skeleton';
-import { cn } from '@/lib/utils';
-// useDeviceSetupRequests deleted — using inline type aliases
-type DeviceSetupRequest = any;
-type DeviceSetupRequestStatus = string;
-import {
-  MoreHorizontal,
-  UserPlus,
-  Play,
-  Radio,
-  CheckCircle2,
-  XCircle,
-  Clock,
+  Calendar,
   Cpu,
+  Download,
+  Eye,
+  Loader2,
+  MapPin,
+  MoreHorizontal,
   Search,
   SlidersHorizontal,
-  MapPin,
-  Calendar,
-  Wrench,
-  Eye,
-  ShieldAlert,
-} from 'lucide-react';
-import { format } from 'date-fns';
+  UserPlus,
+  XCircle,
+} from "lucide-react";
 
-interface DeviceSetupRequestsQueueProps {
-  requests: DeviceSetupRequest[];
-  loading: boolean;
-  onRefresh: () => void;
-  onUpdateStatus: (
-    requestId: string,
-    newStatus: DeviceSetupRequestStatus,
-    updates?: Record<string, unknown>,
-    notes?: string,
-  ) => Promise<unknown>;
-  onOpenWizard?: (request: DeviceSetupRequest) => void;
-  isConfigurator: boolean;
-  /** When true, all actions are flagged as support mode with audit logging */
-  isSupportMode?: boolean;
+type DeviceSetupStatus = "pending_review" | "in_progress" | "assigned";
+type DeviceSetupRow = SystemDeviceSetupRequest & {
+  connectionType: string;
+  requesterName: string;
+  needsSim: boolean;
+  vehiclePlate: string;
+};
+
+const STATUS_CONFIG: Record<DeviceSetupStatus, { label: string; className: string }> = {
+  pending_review: { label: "Pending Review", className: "border-transparent bg-secondary text-secondary-foreground" },
+  in_progress: { label: "In Progress", className: "border-transparent bg-primary text-primary-foreground" },
+  assigned: { label: "Assigned", className: "border-transparent bg-primary text-primary-foreground" },
+};
+
+const CONNECTION_LABELS: Record<string, string> = {
+  hardwired: "Hardwired",
+  obd: "OBD-II",
+  obd2: "OBD-II",
+  battery: "Battery",
+};
+
+const statusOptions: { value: "all" | DeviceSetupStatus; label: string }[] = [
+  { value: "all", label: "All Status" },
+  { value: "pending_review", label: "Pending Review" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "assigned", label: "Assigned" },
+];
+
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+
+const readString = (source: Record<string, unknown> | null, key: string): string | undefined => {
+  const value = source?.[key];
+  return typeof value === "string" && value.trim() ? value : undefined;
+};
+
+const readBoolean = (source: Record<string, unknown> | null, key: string): boolean => {
+  const value = source?.[key];
+  return typeof value === "boolean" ? value : false;
+};
+
+function useDebouncedValue<T>(value: T, delayMs: number) {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebounced(value), delayMs);
+    return () => window.clearTimeout(timeout);
+  }, [delayMs, value]);
+
+  return debounced;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: typeof Clock }> = {
-  pending_review: { label: 'Pending Review', variant: 'secondary', icon: Clock },
-  assigned: { label: 'Assigned', variant: 'default', icon: UserPlus },
-  in_progress: { label: 'In Progress', variant: 'default', icon: Play },
-  awaiting_heartbeat: { label: 'Awaiting Heartbeat', variant: 'outline', icon: Radio },
-  active: { label: 'Active', variant: 'default', icon: CheckCircle2 },
-  rejected: { label: 'Rejected', variant: 'destructive', icon: XCircle },
-  cancelled: { label: 'Cancelled', variant: 'secondary', icon: XCircle },
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function normalizeRequest(raw: Record<string, unknown>): DeviceSetupRow {
+  return {
+    id: readString(raw, "id") ?? "",
+    imei: readString(raw, "imei") ?? "",
+    manufacturer: readString(raw, "manufacturer") ?? "",
+    model: readString(raw, "model") ?? "",
+    connectionType: readString(raw, "connectionType") ?? readString(raw, "trackerType") ?? "",
+    requesterName: readString(raw, "requesterName") ?? readString(raw, "requester_name") ?? "",
+    needsSim: readBoolean(raw, "needsSim") || readBoolean(raw, "needs_sim"),
+    vehiclePlate: readString(raw, "vehiclePlate") ?? readString(raw, "vehicle_plate") ?? "",
+    location: readString(raw, "location") ?? "",
+    tenantId: readString(raw, "tenantId") ?? "",
+    status: readString(raw, "status") ?? "pending_review",
+    assignedTo: readString(raw, "assignedTo") ?? readString(raw, "assigned_to"),
+    notes: readString(raw, "notes") ?? readString(raw, "requesterNotes") ?? readString(raw, "requester_notes"),
+    createdAt: readString(raw, "createdAt") ?? new Date().toISOString(),
+    updatedAt: readString(raw, "updatedAt") ?? new Date().toISOString(),
+  };
+}
+
+function extractRequests(response: unknown): DeviceSetupRow[] {
+  const root = asRecord(response);
+  const data = root?.data;
+  const dataRecord = asRecord(data);
+  const candidates = Array.isArray(data)
+    ? data
+    : dataRecord
+      ? [dataRecord.requests, dataRecord.items, dataRecord.rows, dataRecord.data].find(Array.isArray)
+      : [];
+
+  return (Array.isArray(candidates) ? candidates : [])
+    .map(asRecord)
+    .filter(Boolean)
+    .map(normalizeRequest)
+    .filter((request) => request.id);
+}
+
+const formatDate = (value: string, pattern: string) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "-" : format(date, pattern);
 };
 
-const TRACKER_LABELS: Record<string, string> = {
-  obd: 'OBD-II',
-  hardwired: 'Hardwired',
-  battery: 'Battery',
-};
-
-export function DeviceSetupRequestsQueue({
-  requests,
-  loading,
-  onRefresh,
-  onUpdateStatus,
-  onOpenWizard,
-  isConfigurator,
-  isSupportMode = false,
-}: DeviceSetupRequestsQueueProps) {
-  const [search, setSearch] = useState('');
-  const [tab, setTab] = useState('all');
-  const [detailRequest, setDetailRequest] = useState<DeviceSetupRequest | null>(null);
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [showRejectDialog, setShowRejectDialog] = useState(false);
-  const [rejectingId, setRejectingId] = useState<string | null>(null);
-
-  // Applied filters
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
-  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
-  const [deviceFilter, setDeviceFilter] = useState<string>('all');
-
-  // Filter popover state
+export function DeviceSetupRequestsQueue() {
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [draftDateEnabled, setDraftDateEnabled] = useState(false);
-  const [draftDateFrom, setDraftDateFrom] = useState<Date | undefined>(undefined);
-  const [draftDateTo, setDraftDateTo] = useState<Date | undefined>(undefined);
-  const [draftDeviceEnabled, setDraftDeviceEnabled] = useState(false);
-  const [draftDevice, setDraftDevice] = useState<string>('all');
+  const [deviceFilter, setDeviceFilter] = useState("all");
+  const [pendingDeviceFilter, setPendingDeviceFilter] = useState("all");
+  const [dateFilterEnabled, setDateFilterEnabled] = useState(false);
+  const [pendingDateFilterEnabled, setPendingDateFilterEnabled] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<DeviceSetupRow | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const debouncedSearch = useDebouncedValue(search.trim(), 350);
 
-  const deviceOptions = Array.from(new Set(requests.map(r => r.manufacturer).filter(Boolean))).sort();
-  const activeFilterCount = (dateFrom ? 1 : 0) + (dateTo ? 1 : 0) + (deviceFilter !== 'all' ? 1 : 0);
+  const queryPayload = useMemo<SystemDeviceSetupRequestsQuery>(() => {
+    const params: NonNullable<SystemDeviceSetupRequestsQuery["params"]> = {};
+    if (debouncedSearch) params.search = debouncedSearch;
+    if (status !== "all") params.status = status;
+    return { params };
+  }, [debouncedSearch, status]);
 
-  const filtered = requests.filter(r => {
-    const matchSearch = !search || 
-      r.imei.toLowerCase().includes(search.toLowerCase()) ||
-      r.manufacturer.toLowerCase().includes(search.toLowerCase()) ||
-      r.requester_name?.toLowerCase().includes(search.toLowerCase()) ||
-      r.vehicle_name?.toLowerCase().includes(search.toLowerCase());
+  const requestsQuery = useQuery(getSystemDeviceSetupRequestsQueryOptions(queryPayload));
+  const requests = useMemo(() => extractRequests(requestsQuery.data), [requestsQuery.data]);
+  const deviceOptions = useMemo(
+    () => Array.from(new Set(requests.map((request) => request.manufacturer).filter(Boolean))).sort(),
+    [requests],
+  );
 
-    const created = new Date(r.created_at);
-    const matchFrom = !dateFrom || created >= new Date(dateFrom.setHours(0, 0, 0, 0));
-    const matchTo = !dateTo || created <= new Date(new Date(dateTo).setHours(23, 59, 59, 999));
-    const matchDevice = deviceFilter === 'all' || r.manufacturer === deviceFilter;
+  const visibleRequests = useMemo(() => {
+    return requests.filter((request) => {
+      const matchesDevice = deviceFilter === "all" || request.manufacturer === deviceFilter;
+      return matchesDevice;
+    });
+  }, [deviceFilter, requests]);
 
-    const matchStatus =
-      tab === 'pending' ? r.status === 'pending_review' :
-      tab === 'active' ? ['assigned', 'in_progress', 'awaiting_heartbeat'].includes(r.status) :
-      tab === 'completed' ? ['active', 'rejected', 'cancelled'].includes(r.status) :
-      true;
+  const activeFilterCount = (deviceFilter !== "all" ? 1 : 0) + (dateFilterEnabled ? 1 : 0);
 
-    return matchSearch && matchFrom && matchTo && matchDevice && matchStatus;
-  });
-
-  // Wrap status updates to inject support mode flags
-  const handleStatusUpdate = (
-    requestId: string,
-    newStatus: DeviceSetupRequestStatus,
-    extraUpdates?: Record<string, unknown>,
-    notes?: string,
-  ) => {
-    const supportUpdates = isSupportMode
-      ? { is_support_mode: true, support_actor_id: null, ...extraUpdates }
-      : extraUpdates;
-    const supportNotes = isSupportMode
-      ? `[SUPPORT MODE] ${notes || newStatus}`
-      : notes;
-    return onUpdateStatus(requestId, newStatus, supportUpdates, supportNotes);
-  };
-
-  const handleReject = async () => {
-    if (!rejectingId) return;
-    await handleStatusUpdate(rejectingId, 'rejected', { rejection_reason: rejectionReason }, rejectionReason);
-    setShowRejectDialog(false);
-    setRejectingId(null);
-    setRejectionReason('');
-  };
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader><CardTitle>Device Setup Requests</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
-        </CardContent>
-      </Card>
-    );
+  async function handleExport() {
+    setIsExporting(true);
+    try {
+      const blob = await queryClient.fetchQuery(getSystemDeviceSetupRequestsExportQueryOptions(queryPayload));
+      downloadBlob(blob, "device-setup-requests.csv");
+      toast.success("Device setup requests exported");
+    } catch (error) {
+      toast.error("Export failed");
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2">
               <Cpu className="h-5 w-5 text-primary" />
@@ -187,45 +210,38 @@ export function DeviceSetupRequestsQueue({
             </CardTitle>
             <CardDescription>Incoming requests to provision and configure new IoT devices for vehicles.</CardDescription>
           </div>
-          <ExportButton
-            rows={filtered}
-            filename="device-setup-requests"
-            columns={[
-              { header: 'IMEI', accessor: 'imei' },
-              { header: 'Manufacturer', accessor: 'manufacturer' },
-              { header: 'Model', accessor: (r) => r.model || '' },
-              { header: 'Tracker Type', accessor: (r) => TRACKER_LABELS[r.tracker_type] || r.tracker_type },
-              { header: 'Requester', accessor: (r) => r.requester_name || '' },
-              { header: 'Vehicle', accessor: (r) => r.vehicle_name || '' },
-              { header: 'City', accessor: (r) => r.installation_city || '' },
-              { header: 'State', accessor: (r) => r.installation_state || '' },
-              { header: 'Status', accessor: (r) => STATUS_CONFIG[r.status]?.label || r.status },
-              { header: 'Needs SIM', accessor: (r) => (r.needs_sim ? 'Yes' : 'No') },
-              { header: 'Created', accessor: (r) => format(new Date(r.created_at), 'yyyy-MM-dd') },
-              { header: 'Preferred Date', accessor: (r) => (r.preferred_date ? format(new Date(r.preferred_date), 'yyyy-MM-dd') : '') },
-            ]}
-          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={requestsQuery.isLoading || isExporting}
+            className="bg-transparent"
+          >
+            {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            Export Data
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search by IMEI, manufacturer, requester..."
-                className="pl-9 bg-card/50 border-border/50"
+                className="h-10 bg-transparent pl-10"
               />
             </div>
-            <Select value={tab} onValueChange={setTab}>
-              <SelectTrigger className="w-full sm:w-[200px] bg-card/50 border-border/50">
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="h-10 lg:w-56">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="active">In Progress</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
+                {statusOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Popover
@@ -233,99 +249,69 @@ export function DeviceSetupRequestsQueue({
               onOpenChange={(open) => {
                 setFilterOpen(open);
                 if (open) {
-                  // Sync drafts with applied filters when opening
-                  setDraftDateEnabled(!!(dateFrom || dateTo));
-                  setDraftDateFrom(dateFrom);
-                  setDraftDateTo(dateTo);
-                  setDraftDeviceEnabled(deviceFilter !== 'all');
-                  setDraftDevice(deviceFilter);
+                  setPendingDeviceFilter(deviceFilter);
+                  setPendingDateFilterEnabled(dateFilterEnabled);
                 }
               }}
             >
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-10 sm:h-9 bg-card/50 border-border/50">
-                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                <Button variant="outline" size="sm" className="h-10 font-semibold">
+                  <SlidersHorizontal className="mr-2 h-4 w-4" />
                   Filter
                   {activeFilterCount > 0 && (
-                    <Badge variant="secondary" className="ml-2 h-5 px-1.5">{activeFilterCount}</Badge>
+                    <Badge variant="secondary" className="ml-2 h-5 px-1.5">
+                      {activeFilterCount}
+                    </Badge>
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-80 p-4 space-y-4">
+              <PopoverContent align="end" className="w-80 space-y-4">
                 <p className="text-sm font-semibold">Only show requests by...</p>
 
-                {/* Date Range */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Checkbox
-                      id="filter-date-enabled"
-                      checked={draftDateEnabled}
-                      onCheckedChange={(v) => setDraftDateEnabled(!!v)}
+                      id="device-setup-date-filter"
+                      checked={pendingDateFilterEnabled}
+                      onCheckedChange={(checked) => setPendingDateFilterEnabled(checked === true)}
                     />
-                    <Label htmlFor="filter-date-enabled" className="text-sm font-medium cursor-pointer">
+                    <Label htmlFor="device-setup-date-filter" className="font-medium">
                       Date Range
                     </Label>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={!draftDateEnabled}
-                          className={cn("justify-start font-normal", !draftDateFrom && "text-muted-foreground")}
-                        >
-                          <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                          {draftDateFrom ? format(draftDateFrom, 'dd MMM yy') : 'From'}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarPicker mode="single" selected={draftDateFrom} onSelect={setDraftDateFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
-                      </PopoverContent>
-                    </Popover>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={!draftDateEnabled}
-                          className={cn("justify-start font-normal", !draftDateTo && "text-muted-foreground")}
-                        >
-                          <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                          {draftDateTo ? format(draftDateTo, 'dd MMM yy') : 'To'}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarPicker mode="single" selected={draftDateTo} onSelect={setDraftDateTo} initialFocus className={cn("p-3 pointer-events-auto")} />
-                      </PopoverContent>
-                    </Popover>
+                    <Button variant="outline" size="sm" disabled className="justify-start text-muted-foreground">
+                      <Calendar className="mr-2 h-4 w-4" />
+                      From
+                    </Button>
+                    <Button variant="outline" size="sm" disabled className="justify-start text-muted-foreground">
+                      <Calendar className="mr-2 h-4 w-4" />
+                      To
+                    </Button>
                   </div>
                 </div>
 
-                {/* Device */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Checkbox
-                      id="filter-device-enabled"
-                      checked={draftDeviceEnabled}
-                      onCheckedChange={(v) => setDraftDeviceEnabled(!!v)}
+                      id="device-setup-device-filter"
+                      checked={pendingDeviceFilter !== "all"}
+                      onCheckedChange={(checked) => setPendingDeviceFilter(checked === true ? pendingDeviceFilter : "all")}
                     />
-                    <Label htmlFor="filter-device-enabled" className="text-sm font-medium cursor-pointer">
+                    <Label htmlFor="device-setup-device-filter" className="font-medium">
                       Device
                     </Label>
                   </div>
-                  <Select
-                    value={draftDevice}
-                    onValueChange={setDraftDevice}
-                    disabled={!draftDeviceEnabled}
-                  >
+                  <Select value={pendingDeviceFilter} onValueChange={setPendingDeviceFilter}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select device" />
+                      <SelectValue placeholder="All devices" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All devices</SelectItem>
-                      {deviceOptions.map(d => (
-                        <SelectItem key={d} value={d}>{d}</SelectItem>
+                      {deviceOptions.map((device) => (
+                        <SelectItem key={device} value={device}>
+                          {device}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -334,10 +320,10 @@ export function DeviceSetupRequestsQueue({
                 <div className="grid grid-cols-2 gap-2 pt-2">
                   <Button
                     size="sm"
+                    className="font-semibold"
                     onClick={() => {
-                      setDateFrom(draftDateEnabled ? draftDateFrom : undefined);
-                      setDateTo(draftDateEnabled ? draftDateTo : undefined);
-                      setDeviceFilter(draftDeviceEnabled ? draftDevice : 'all');
+                      setDeviceFilter(pendingDeviceFilter);
+                      setDateFilterEnabled(pendingDateFilterEnabled);
                       setFilterOpen(false);
                     }}
                   >
@@ -346,15 +332,12 @@ export function DeviceSetupRequestsQueue({
                   <Button
                     variant="outline"
                     size="sm"
+                    className="font-semibold"
                     onClick={() => {
-                      setDateFrom(undefined);
-                      setDateTo(undefined);
-                      setDeviceFilter('all');
-                      setDraftDateEnabled(false);
-                      setDraftDateFrom(undefined);
-                      setDraftDateTo(undefined);
-                      setDraftDeviceEnabled(false);
-                      setDraftDevice('all');
+                      setDeviceFilter("all");
+                      setPendingDeviceFilter("all");
+                      setDateFilterEnabled(false);
+                      setPendingDateFilterEnabled(false);
                       setFilterOpen(false);
                     }}
                   >
@@ -365,243 +348,159 @@ export function DeviceSetupRequestsQueue({
             </Popover>
           </div>
 
-          <div className="mt-4">
-            {filtered.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Cpu className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                <p>No requests in this category</p>
-              </div>
-            ) : (
-              <div className="rounded-md border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Device</TableHead>
-                      <TableHead>Requester</TableHead>
-                      <TableHead>Vehicle</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="w-[80px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map(req => {
-                      const statusCfg = STATUS_CONFIG[req.status] || STATUS_CONFIG.pending_review;
-                      const StatusIcon = statusCfg.icon;
-                      return (
-                        <TableRow key={req.id}>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium text-sm">{req.manufacturer} {req.model}</p>
-                              <p className="text-xs text-muted-foreground font-mono">{req.imei}</p>
-                              <Badge variant="outline" className="text-xs mt-1">
-                                {TRACKER_LABELS[req.tracker_type] || req.tracker_type}
-                              </Badge>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <p className="text-sm">{req.requester_name || '—'}</p>
-                            {req.needs_sim && (
-                              <Badge variant="secondary" className="text-xs mt-1">Needs SIM</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <p className="text-sm">{req.vehicle_name || '—'}</p>
-                          </TableCell>
-                          <TableCell>
-                            {req.installation_state || req.installation_city ? (
-                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <MapPin className="h-3 w-3" />
-                                {[req.installation_city, req.installation_state].filter(Boolean).join(', ')}
-                              </div>
-                            ) : '—'}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={statusCfg.variant} className="flex items-center gap-1 w-fit">
-                              <StatusIcon className="h-3 w-3" />
-                              {statusCfg.label}
+          <div className="overflow-hidden rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Device</TableHead>
+                  <TableHead>Requester</TableHead>
+                  <TableHead>Vehicle</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="w-16" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {requestsQuery.isLoading || requestsQuery.isFetching || requestsQuery.isError || visibleRequests.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7}>
+                      <div className="py-12 text-center">
+                        {requestsQuery.isLoading || requestsQuery.isFetching ? (
+                          <Loader2 className="mx-auto mb-3 h-10 w-10 animate-spin text-muted-foreground" />
+                        ) : (
+                          <Cpu className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+                        )}
+                        <p className="font-medium">
+                          {requestsQuery.isLoading || requestsQuery.isFetching
+                            ? "Loading device setup requests"
+                            : "No device setup requests found"}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {requestsQuery.isError ? "Unable to load requests right now" : "Try adjusting your search or filters"}
+                        </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  visibleRequests.map((request) => {
+                    const statusConfig =
+                      STATUS_CONFIG[request.status as DeviceSetupStatus] ?? STATUS_CONFIG.pending_review;
+                    return (
+                      <TableRow key={request.id} className="h-[86px]">
+                        <TableCell>
+                          <div className="space-y-1">
+                            <p className="font-semibold">
+                              {[request.manufacturer, request.model].filter(Boolean).join(" ")}
+                            </p>
+                            <p className="font-mono text-xs text-muted-foreground">{request.imei}</p>
+                            <Badge variant="outline" className="text-xs">
+                              {CONNECTION_LABELS[request.connectionType] ?? request.connectionType}
                             </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-xs text-muted-foreground">
-                              {format(new Date(req.created_at), 'dd MMM yyyy')}
-                              {req.preferred_date && (
-                                <div className="flex items-center gap-1 mt-1">
-                                  <Calendar className="h-3 w-3" />
-                                  {format(new Date(req.preferred_date), 'dd MMM')}
-                                </div>
-                              )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <p className="font-semibold">{request.requesterName || "-"}</p>
+                            {request.needsSim && (
+                              <Badge variant="secondary" className="text-xs">
+                                Needs SIM
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-semibold">{request.vehiclePlate || "-"}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <MapPin className="h-3.5 w-3.5" />
+                            {request.location || "-"}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={statusConfig.className}>
+                            {statusConfig.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm text-muted-foreground">
+                            <p>{formatDate(request.createdAt, "dd MMM yyyy")}</p>
+                            <div className="mt-1 flex items-center gap-1 text-xs">
+                              <Calendar className="h-3.5 w-3.5" />
+                              {formatDate(request.updatedAt, "dd MMM")}
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setDetailRequest(req)}>
-                                  <Eye className="h-4 w-4 mr-2" /> View Details
-                                </DropdownMenuItem>
-                                {isConfigurator && req.status === 'pending_review' && (
-                                  <>
-                                    <DropdownMenuItem onClick={() => handleStatusUpdate(req.id, 'assigned')}>
-                                      <UserPlus className="h-4 w-4 mr-2" /> Assign to Me
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="text-destructive"
-                                      onClick={() => { setRejectingId(req.id); setShowRejectDialog(true); }}
-                                    >
-                                      <XCircle className="h-4 w-4 mr-2" /> Reject
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                                {isConfigurator && req.status === 'assigned' && (
-                                  <DropdownMenuItem onClick={() => {
-                                    handleStatusUpdate(req.id, 'in_progress');
-                                    onOpenWizard?.(req);
-                                  }}>
-                                    <Wrench className="h-4 w-4 mr-2" /> Start Configuration
-                                  </DropdownMenuItem>
-                                )}
-                                {isConfigurator && req.status === 'in_progress' && (
-                                  <DropdownMenuItem onClick={() => handleStatusUpdate(req.id, 'awaiting_heartbeat')}>
-                                    <Radio className="h-4 w-4 mr-2" /> Mark Awaiting Heartbeat
-                                  </DropdownMenuItem>
-                                )}
-                                {isConfigurator && req.status === 'awaiting_heartbeat' && (
-                                  <DropdownMenuItem onClick={() => handleStatusUpdate(req.id, 'active')}>
-                                    <CheckCircle2 className="h-4 w-4 mr-2" /> Mark Active
-                                  </DropdownMenuItem>
-                                )}
-                                {req.status === 'pending_review' && !isConfigurator && (
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onClick={() => handleStatusUpdate(req.id, 'cancelled')}
-                                  >
-                                    <XCircle className="h-4 w-4 mr-2" /> Cancel Request
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setSelectedRequest(request)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem disabled>
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                Assign to Me
+                              </DropdownMenuItem>
+                              <DropdownMenuItem disabled className="text-destructive">
+                                <XCircle className="mr-2 h-4 w-4" />
+                                Reject
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
 
-      {/* Detail Dialog */}
-      <Dialog open={!!detailRequest} onOpenChange={() => setDetailRequest(null)}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <Dialog open={!!selectedRequest} onOpenChange={(open) => !open && setSelectedRequest(null)}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Request Details</DialogTitle>
             <DialogDescription className="sr-only">Device setup request details</DialogDescription>
           </DialogHeader>
-          {detailRequest && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><span className="text-muted-foreground">Manufacturer</span><p className="font-medium">{detailRequest.manufacturer}</p></div>
-                <div><span className="text-muted-foreground">Model</span><p className="font-medium">{detailRequest.model || '—'}</p></div>
-                <div><span className="text-muted-foreground">IMEI</span><p className="font-mono">{detailRequest.imei}</p></div>
-                <div><span className="text-muted-foreground">Tracker Type</span><p>{TRACKER_LABELS[detailRequest.tracker_type] || detailRequest.tracker_type}</p></div>
-                <div><span className="text-muted-foreground">Vehicle</span><p>{detailRequest.vehicle_name || '—'}</p></div>
-                <div><span className="text-muted-foreground">Requester</span><p>{detailRequest.requester_name || '—'}</p></div>
+          {selectedRequest && (
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-x-10 gap-y-4 text-sm">
+                <DetailItem label="Manufacturer" value={selectedRequest.manufacturer} />
+                <DetailItem label="Model" value={selectedRequest.model} />
+                <DetailItem label="IMEI" value={selectedRequest.imei} mono />
+                <DetailItem
+                  label="Tracker Type"
+                  value={CONNECTION_LABELS[selectedRequest.connectionType] ?? selectedRequest.connectionType}
+                />
+                <DetailItem label="Vehicle" value={selectedRequest.vehiclePlate} />
+                <DetailItem label="Requester" value={selectedRequest.requesterName} />
               </div>
-              <Separator />
-              {(detailRequest.installation_state || detailRequest.installation_city) && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Installation Location</span>
-                  <p>{[detailRequest.installation_city, detailRequest.installation_state].filter(Boolean).join(', ')}</p>
-                </div>
-              )}
-              {detailRequest.preferred_date && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Preferred Date</span>
-                  <p>{format(new Date(detailRequest.preferred_date), 'dd MMMM yyyy')} {detailRequest.preferred_time && `(${detailRequest.preferred_time})`}</p>
-                </div>
-              )}
-              {detailRequest.sim_iccid && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground">SIM ICCID</span>
-                  <p className="font-mono">{detailRequest.sim_iccid}</p>
-                </div>
-              )}
-              {detailRequest.needs_sim && (
-                <Badge variant="secondary">SIM Requested</Badge>
-              )}
-              {detailRequest.requester_notes && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Notes</span>
-                  <p className="whitespace-pre-wrap">{detailRequest.requester_notes}</p>
-                </div>
-              )}
-              {detailRequest.assigned_to_name && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Assigned To</span>
-                  <p>{detailRequest.assigned_to_name}</p>
-                </div>
-              )}
-              {detailRequest.rejection_reason && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground text-destructive">Rejection Reason</span>
-                  <p className="text-destructive">{detailRequest.rejection_reason}</p>
-                </div>
-              )}
-              {detailRequest.configurator_notes && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Configurator Notes</span>
-                  <p className="whitespace-pre-wrap">{detailRequest.configurator_notes}</p>
-                </div>
-              )}
-              {detailRequest.is_support_mode && (
-                <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3">
-                  <ShieldAlert className="h-4 w-4 text-warning" />
-                  <div className="text-sm">
-                    <p className="font-medium text-warning">Support Mode</p>
-                    <p className="text-xs text-muted-foreground">
-                      This request was handled via Platform Support with audit logging.
-                      {detailRequest.support_actor_id && ` Actor: ${detailRequest.support_actor_id.slice(0, 8)}...`}
-                    </p>
-                  </div>
-                </div>
-              )}
+              <div className="border-t pt-4">
+                <DetailItem label="Installation Location" value={selectedRequest.location} />
+              </div>
+              <DetailItem label="Preferred Date" value={formatDate(selectedRequest.updatedAt, "dd MMMM yyyy")} />
+              {selectedRequest.needsSim && <Badge variant="secondary">SIM Requested</Badge>}
+              <DetailItem label="Notes" value={selectedRequest.notes || "No notes provided."} />
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Reject Dialog */}
-      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reject Request</DialogTitle>
-            <DialogDescription>Provide a reason for rejection.</DialogDescription>
-          </DialogHeader>
-          <Textarea
-            value={rejectionReason}
-            onChange={e => setRejectionReason(e.target.value)}
-            placeholder="Reason for rejection..."
-            rows={3}
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleReject} disabled={!rejectionReason.trim()}>
-              Reject Request
-            </Button>
-          </div>
         </DialogContent>
       </Dialog>
     </>
   );
 }
 
-
-
+function DetailItem({ label, value, mono }: { label: string; value?: string; mono?: boolean }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className={mono ? "font-mono font-semibold" : "font-semibold"}>{value || "-"}</p>
+    </div>
+  );
+}
