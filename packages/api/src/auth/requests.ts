@@ -34,6 +34,7 @@ import type {
   ProfileResponse,
   RefreshPayload,
   RegisterPayload,
+  RejectSystemDeviceSetupRequestPayload,
   RejectSIMRequestPayload,
   RemoveOrganizationUserResponse,
   ResetPasswordPayload,
@@ -50,6 +51,8 @@ import type {
   SystemDeviceCatalogReferenceDataResponse,
   SystemDeviceDetailResponse,
   SystemDeviceInventoryListResponse,
+  SystemDeviceSetupRequestPayload,
+  SystemDeviceSetupRequestResponse,
   SystemDeviceSetupRequestsListResponse,
   SystemDeviceSetupRequestsQuery,
   SystemDeviceSummaryResponse,
@@ -629,6 +632,21 @@ export async function getSystemDeviceSetupRequests(payload?: SystemDeviceSetupRe
   const { data } = await axiosInstance.get<SystemDeviceSetupRequestsListResponse>('/auth/system/support/device-setup', {
     params: payload?.params,
   })
+  return data
+}
+
+export async function getSystemDeviceSetupRequest({ id }: SystemDeviceSetupRequestPayload) {
+  const { data } = await axiosInstance.get<SystemDeviceSetupRequestResponse>(`/auth/system/support/device-setup/${id}`)
+  return data
+}
+
+export async function assignSystemDeviceSetupRequest({ id }: SystemDeviceSetupRequestPayload) {
+  const { data } = await axiosInstance.patch<SystemDeviceSetupRequestResponse>(`/auth/system/support/device-setup/${id}/assign`)
+  return data
+}
+
+export async function rejectSystemDeviceSetupRequest({ id, data: body }: RejectSystemDeviceSetupRequestPayload) {
+  const { data } = await axiosInstance.patch<SystemDeviceSetupRequestResponse>(`/auth/system/support/device-setup/${id}/reject`, body)
   return data
 }
 

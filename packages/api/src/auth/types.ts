@@ -406,10 +406,26 @@ export type SystemSupportTicketsQuery = {
   }
 }
 
+export type SystemDeviceSetupStatus = 'pending_review' | 'in_progress' | 'assigned' | 'rejected'
+
 export type SystemDeviceSetupRequestsQuery = {
   params?: {
     search?: string
-    status?: string
+    status?: SystemDeviceSetupStatus
+    manufacturer?: string
+    dateFrom?: string
+    dateTo?: string
+  }
+}
+
+export type SystemDeviceSetupRequestPayload = {
+  id: string
+}
+
+export type RejectSystemDeviceSetupRequestPayload = {
+  id: string
+  data: {
+    reason: string
   }
 }
 
@@ -424,9 +440,11 @@ export type SystemDeviceSetupRequest = {
   vehiclePlate: string
   location: string
   tenantId: string
-  status: 'pending_review' | 'in_progress' | 'assigned' | string
+  status: SystemDeviceSetupStatus | string
   assignedTo?: string
   notes?: string
+  preferredInstallDate?: string
+  rejectedReason?: string
   createdAt: string
   updatedAt: string
 }
@@ -868,6 +886,7 @@ export type SystemHealthResponse = ServerResponse<SystemHealth>
 export type SystemSupportDashboardResponse = ServerResponse<SystemSupportDashboard>
 export type SystemSupportTicketSummaryResponse = ServerResponse<SystemSupportTicketSummary>
 export type SystemDeviceSetupRequestsListResponse = ServerResponse<SystemDeviceSetupRequestsList>
+export type SystemDeviceSetupRequestResponse = ServerResponse<SystemDeviceSetupRequest>
 export type SystemTenantsListResponse = ServerResponse<{ total: number; tenants: SystemTenant[]; generatedAt: string }>
 export type SystemTenantsSummaryResponse = ServerResponse<SystemTenantsSummary>
 export type SystemTenantDetailResponse = ServerResponse<Record<string, unknown>>

@@ -3,6 +3,7 @@ import { queryOptions, useMutation } from '@tanstack/react-query'
 import { useAuthStore } from '../lib/auth-store'
 import { queryClient } from '../lib/query-client'
 import {
+  assignSystemDeviceSetupRequest,
   approveSIMRequest,
   changeRole,
   completeProfile,
@@ -39,6 +40,7 @@ import {
   getSystemAdminInvites,
   getSystemAdmins,
   getSystemDashboard,
+  getSystemDeviceSetupRequest,
   getSystemDeviceSetupRequests,
   getSystemDevice,
   getSystemDevices,
@@ -75,6 +77,7 @@ import {
   register,
   registerInvited,
   reassignSystemSim,
+  rejectSystemDeviceSetupRequest,
   rejectSIMRequest,
   resendOrgInvite,
   resendSystemAdminInvite,
@@ -107,6 +110,7 @@ import type {
   GetSimBatchPayload,
   SystemSimBatchesSummary,
   SystemDeviceCatalogQuery,
+  SystemDeviceSetupRequestPayload,
   SystemDeviceSetupRequestsQuery,
   SystemDevicesQuery,
   SystemSimBatchesQuery,
@@ -140,6 +144,7 @@ export type {
   RegisterInvitedPayload,
   RegisterPayload,
   ReassignSystemSimPayload,
+  RejectSystemDeviceSetupRequestPayload,
   RejectSIMRequestPayload,
   RemoveOrganizationUserData,
   ResendOrgInvitePayload,
@@ -153,9 +158,12 @@ export type {
   SystemDeviceCatalogQuery,
   SystemDeviceDetail,
   SystemDeviceDetailResponse,
+  SystemDeviceSetupRequestPayload,
+  SystemDeviceSetupRequestResponse,
   SystemDeviceSetupRequest,
   SystemDeviceSetupRequestsList,
   SystemDeviceSetupRequestsQuery,
+  SystemDeviceSetupStatus,
   SystemDeviceInventoryItem,
   SystemDeviceInventoryList,
   SystemDevicesQuery,
@@ -257,6 +265,7 @@ export const AUTH_QUERY_KEY = {
   systemEscalatedSupportTickets: ['systemEscalatedSupportTickets'],
   systemDeviceSetupRequests: (payload?: SystemDeviceSetupRequestsQuery) =>
     payload ? ['systemDeviceSetupRequests', payload] : ['systemDeviceSetupRequests'],
+  systemDeviceSetupRequest: (id: string) => ['systemDeviceSetupRequest', id],
   systemSupportTickets: (payload?: SystemSupportTicketsQuery) =>
     payload ? ['systemSupportTickets', payload] : ['systemSupportTickets'],
   systemSupportTicket: (id: string) => ['systemSupportTicket', id],
@@ -943,10 +952,37 @@ export function getSystemDeviceSetupRequestsQueryOptions(payload?: SystemDeviceS
   })
 }
 
+export function getSystemDeviceSetupRequestQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemDeviceSetupRequest(id),
+    queryFn: () => getSystemDeviceSetupRequest({ id }),
+  })
+}
+
 export function getSystemDeviceSetupRequestsExportQueryOptions(payload?: SystemDeviceSetupRequestsQuery) {
   return queryOptions({
     queryKey: [...AUTH_QUERY_KEY.systemDeviceSetupRequests(payload), 'export'],
     queryFn: () => exportSystemDeviceSetupRequests(payload),
+  })
+}
+
+export function useAssignSystemDeviceSetupRequest() {
+  return useMutation({
+    mutationFn: assignSystemDeviceSetupRequest,
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDeviceSetupRequests() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDeviceSetupRequest(id) })
+    },
+  })
+}
+
+export function useRejectSystemDeviceSetupRequest() {
+  return useMutation({
+    mutationFn: rejectSystemDeviceSetupRequest,
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDeviceSetupRequests() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDeviceSetupRequest(id) })
+    },
   })
 }
 

@@ -1,24 +1,49 @@
 import { useEffect, useMemo, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  getSystemDeviceSetupRequestQueryOptions,
   getSystemDeviceSetupRequestsExportQueryOptions,
   getSystemDeviceSetupRequestsQueryOptions,
+  useAssignSystemDeviceSetupRequest,
+  useRejectSystemDeviceSetupRequest,
 } from "@truckmoov/api/auth";
-import type { SystemDeviceSetupRequest, SystemDeviceSetupRequestsQuery } from "@truckmoov/api/auth";
+import type {
+  SystemDeviceSetupRequest,
+  SystemDeviceSetupRequestsQuery,
+  SystemDeviceSetupStatus,
+} from "@truckmoov/api/auth";
 import { format } from "date-fns";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import * as z from "zod";
 
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
@@ -31,6 +56,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
+import { Textarea } from "@/components/shadcn/textarea";
 import {
   Calendar,
   Cpu,
@@ -45,7 +71,6 @@ import {
   XCircle,
 } from "lucide-react";
 
-type DeviceSetupStatus = "pending_review" | "in_progress" | "assigned";
 type DeviceSetupRow = SystemDeviceSetupRequest & {
   connectionType: string;
   requesterName: string;
@@ -53,10 +78,41 @@ type DeviceSetupRow = SystemDeviceSetupRequest & {
   vehiclePlate: string;
 };
 
-const STATUS_CONFIG: Record<DeviceSetupStatus, { label: string; className: string }> = {
+type DeviceSetupFilterDraft = {
+  status: {
+    enabled: boolean;
+    value: SystemDeviceSetupStatus;
+  };
+  manufacturer: {
+    enabled: boolean;
+    value: string;
+  };
+  createdAt: {
+    enabled: boolean;
+    from: string;
+    to: string;
+  };
+};
+
+const REJECT_DEVICE_SETUP_REQUEST_FORM_ID = "reject-device-setup-request-form";
+
+const rejectRequestSchema = z.object({
+  reason: z.string().trim().min(1, "Rejection reason is required."),
+});
+
+type RejectRequestFormValues = z.infer<typeof rejectRequestSchema>;
+
+const emptyFilters: DeviceSetupFilterDraft = {
+  status: { enabled: false, value: "pending_review" },
+  manufacturer: { enabled: false, value: "" },
+  createdAt: { enabled: false, from: "", to: "" },
+};
+
+const STATUS_CONFIG: Record<SystemDeviceSetupStatus, { label: string; className: string }> = {
   pending_review: { label: "Pending Review", className: "border-transparent bg-secondary text-secondary-foreground" },
   in_progress: { label: "In Progress", className: "border-transparent bg-primary text-primary-foreground" },
   assigned: { label: "Assigned", className: "border-transparent bg-primary text-primary-foreground" },
+  rejected: { label: "Rejected", className: "border-transparent bg-destructive text-destructive-foreground" },
 };
 
 const CONNECTION_LABELS: Record<string, string> = {
@@ -66,11 +122,11 @@ const CONNECTION_LABELS: Record<string, string> = {
   battery: "Battery",
 };
 
-const statusOptions: { value: "all" | DeviceSetupStatus; label: string }[] = [
-  { value: "all", label: "All Status" },
+const statusOptions: { value: SystemDeviceSetupStatus; label: string }[] = [
   { value: "pending_review", label: "Pending Review" },
   { value: "in_progress", label: "In Progress" },
   { value: "assigned", label: "Assigned" },
+  { value: "rejected", label: "Rejected" },
 ];
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
@@ -85,6 +141,14 @@ const readBoolean = (source: Record<string, unknown> | null, key: string): boole
   const value = source?.[key];
   return typeof value === "boolean" ? value : false;
 };
+
+function cloneFilters(filters: DeviceSetupFilterDraft): DeviceSetupFilterDraft {
+  return {
+    status: { ...filters.status },
+    manufacturer: { ...filters.manufacturer },
+    createdAt: { ...filters.createdAt },
+  };
+}
 
 function useDebouncedValue<T>(value: T, delayMs: number) {
   const [debounced, setDebounced] = useState(value);
@@ -119,12 +183,15 @@ function normalizeRequest(raw: Record<string, unknown>): DeviceSetupRow {
     needsSim: readBoolean(raw, "needsSim") || readBoolean(raw, "needs_sim"),
     vehiclePlate: readString(raw, "vehiclePlate") ?? readString(raw, "vehicle_plate") ?? "",
     location: readString(raw, "location") ?? "",
-    tenantId: readString(raw, "tenantId") ?? "",
+    tenantId: readString(raw, "tenantId") ?? readString(raw, "tenant_id") ?? "",
     status: readString(raw, "status") ?? "pending_review",
     assignedTo: readString(raw, "assignedTo") ?? readString(raw, "assigned_to"),
     notes: readString(raw, "notes") ?? readString(raw, "requesterNotes") ?? readString(raw, "requester_notes"),
-    createdAt: readString(raw, "createdAt") ?? new Date().toISOString(),
-    updatedAt: readString(raw, "updatedAt") ?? new Date().toISOString(),
+    preferredInstallDate:
+      readString(raw, "preferredInstallDate") ?? readString(raw, "preferred_install_date") ?? readString(raw, "preferredDate"),
+    rejectedReason: readString(raw, "rejectedReason") ?? readString(raw, "rejected_reason"),
+    createdAt: readString(raw, "createdAt") ?? readString(raw, "created_at") ?? new Date().toISOString(),
+    updatedAt: readString(raw, "updatedAt") ?? readString(raw, "updated_at") ?? new Date().toISOString(),
   };
 }
 
@@ -145,46 +212,106 @@ function extractRequests(response: unknown): DeviceSetupRow[] {
     .filter((request) => request.id);
 }
 
-const formatDate = (value: string, pattern: string) => {
+const formatDate = (value: string | undefined, pattern: string) => {
+  if (!value) return "-";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "-" : format(date, pattern);
 };
 
+const formatStatusLabel = (status: string) =>
+  status
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
 export function DeviceSetupRequestsQueue() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [deviceFilter, setDeviceFilter] = useState("all");
-  const [pendingDeviceFilter, setPendingDeviceFilter] = useState("all");
-  const [dateFilterEnabled, setDateFilterEnabled] = useState(false);
-  const [pendingDateFilterEnabled, setPendingDateFilterEnabled] = useState(false);
+  const [filterDraft, setFilterDraft] = useState<DeviceSetupFilterDraft>(() => cloneFilters(emptyFilters));
+  const [appliedFilters, setAppliedFilters] = useState<DeviceSetupFilterDraft>(() => cloneFilters(emptyFilters));
   const [selectedRequest, setSelectedRequest] = useState<DeviceSetupRow | null>(null);
+  const [selectedRejectRequest, setSelectedRejectRequest] = useState<DeviceSetupRow | null>(null);
+  const [assigningRequestId, setAssigningRequestId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const debouncedSearch = useDebouncedValue(search.trim(), 350);
 
+  const assignRequest = useAssignSystemDeviceSetupRequest();
+  const rejectRequest = useRejectSystemDeviceSetupRequest();
+  const rejectForm = useForm<RejectRequestFormValues>({
+    resolver: zodResolver(rejectRequestSchema),
+    defaultValues: {
+      reason: "",
+    },
+  });
+
   const queryPayload = useMemo<SystemDeviceSetupRequestsQuery>(() => {
     const params: NonNullable<SystemDeviceSetupRequestsQuery["params"]> = {};
+    const manufacturer = appliedFilters.manufacturer.value.trim();
+
     if (debouncedSearch) params.search = debouncedSearch;
-    if (status !== "all") params.status = status;
+    if (appliedFilters.status.enabled) params.status = appliedFilters.status.value;
+    if (appliedFilters.manufacturer.enabled && manufacturer) params.manufacturer = manufacturer;
+    if (appliedFilters.createdAt.enabled && appliedFilters.createdAt.from) params.dateFrom = appliedFilters.createdAt.from;
+    if (appliedFilters.createdAt.enabled && appliedFilters.createdAt.to) params.dateTo = appliedFilters.createdAt.to;
+
     return { params };
-  }, [debouncedSearch, status]);
+  }, [appliedFilters, debouncedSearch]);
 
   const requestsQuery = useQuery(getSystemDeviceSetupRequestsQueryOptions(queryPayload));
+  const selectedRequestDetailQuery = useQuery({
+    ...getSystemDeviceSetupRequestQueryOptions(selectedRequest?.id ?? ""),
+    enabled: Boolean(selectedRequest?.id),
+  });
+
   const requests = useMemo(() => extractRequests(requestsQuery.data), [requestsQuery.data]);
-  const deviceOptions = useMemo(
-    () => Array.from(new Set(requests.map((request) => request.manufacturer).filter(Boolean))).sort(),
-    [requests],
-  );
+  const detailRequest = useMemo(() => {
+    const detailRecord = asRecord(selectedRequestDetailQuery.data?.data);
+    return detailRecord ? normalizeRequest(detailRecord) : selectedRequest;
+  }, [selectedRequest, selectedRequestDetailQuery.data]);
 
-  const visibleRequests = useMemo(() => {
-    return requests.filter((request) => {
-      const matchesDevice = deviceFilter === "all" || request.manufacturer === deviceFilter;
-      return matchesDevice;
-    });
-  }, [deviceFilter, requests]);
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (appliedFilters.status.enabled) count += 1;
+    if (appliedFilters.manufacturer.enabled && appliedFilters.manufacturer.value.trim()) count += 1;
+    if (appliedFilters.createdAt.enabled && (appliedFilters.createdAt.from || appliedFilters.createdAt.to)) count += 1;
+    return count;
+  }, [appliedFilters]);
 
-  const activeFilterCount = (deviceFilter !== "all" ? 1 : 0) + (dateFilterEnabled ? 1 : 0);
+  function closeRejectDialog() {
+    setSelectedRejectRequest(null);
+    rejectForm.reset();
+  }
+
+  function handleAssign(request: DeviceSetupRow) {
+    setAssigningRequestId(request.id);
+    assignRequest.mutate(
+      { id: request.id },
+      {
+        onSuccess: () => toast.success("Device setup request assigned"),
+        onError: (error) => toast.error(error.message),
+        onSettled: () => setAssigningRequestId(null),
+      },
+    );
+  }
+
+  function handleRejectSubmit(values: RejectRequestFormValues) {
+    if (!selectedRejectRequest) return;
+
+    rejectRequest.mutate(
+      {
+        id: selectedRejectRequest.id,
+        data: { reason: values.reason.trim() },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Device setup request rejected");
+          closeRejectDialog();
+        },
+        onError: (error) => toast.error(error.message),
+      },
+    );
+  }
 
   async function handleExport() {
     setIsExporting(true);
@@ -192,7 +319,7 @@ export function DeviceSetupRequestsQueue() {
       const blob = await queryClient.fetchQuery(getSystemDeviceSetupRequestsExportQueryOptions(queryPayload));
       downloadBlob(blob, "device-setup-requests.csv");
       toast.success("Device setup requests exported");
-    } catch (error) {
+    } catch {
       toast.error("Export failed");
     } finally {
       setIsExporting(false);
@@ -232,26 +359,11 @@ export function DeviceSetupRequestsQueue() {
                 className="h-10 bg-transparent pl-10"
               />
             </div>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="h-10 lg:w-56">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                {statusOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Popover
               open={filterOpen}
               onOpenChange={(open) => {
                 setFilterOpen(open);
-                if (open) {
-                  setPendingDeviceFilter(deviceFilter);
-                  setPendingDateFilterEnabled(dateFilterEnabled);
-                }
+                if (open) setFilterDraft(cloneFilters(appliedFilters));
               }}
             >
               <PopoverTrigger asChild>
@@ -271,50 +383,114 @@ export function DeviceSetupRequestsQueue() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Checkbox
+                      id="device-setup-status-filter"
+                      checked={filterDraft.status.enabled}
+                      onCheckedChange={(checked) =>
+                        setFilterDraft((current) => ({
+                          ...current,
+                          status: { ...current.status, enabled: checked === true },
+                        }))
+                      }
+                    />
+                    <Label htmlFor="device-setup-status-filter" className="font-medium">
+                      Status
+                    </Label>
+                  </div>
+                  <Select
+                    value={filterDraft.status.value}
+                    disabled={!filterDraft.status.enabled}
+                    onValueChange={(value) =>
+                      setFilterDraft((current) => ({
+                        ...current,
+                        status: { ...current.status, value: value as SystemDeviceSetupStatus },
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="device-setup-manufacturer-filter"
+                      checked={filterDraft.manufacturer.enabled}
+                      onCheckedChange={(checked) =>
+                        setFilterDraft((current) => ({
+                          ...current,
+                          manufacturer: { ...current.manufacturer, enabled: checked === true },
+                        }))
+                      }
+                    />
+                    <Label htmlFor="device-setup-manufacturer-filter" className="font-medium">
+                      Manufacturer
+                    </Label>
+                  </div>
+                  <Input
+                    value={filterDraft.manufacturer.value}
+                    disabled={!filterDraft.manufacturer.enabled}
+                    onChange={(event) =>
+                      setFilterDraft((current) => ({
+                        ...current,
+                        manufacturer: { ...current.manufacturer, value: event.target.value },
+                      }))
+                    }
+                    placeholder="Enter manufacturer"
+                    className="h-9 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
                       id="device-setup-date-filter"
-                      checked={pendingDateFilterEnabled}
-                      onCheckedChange={(checked) => setPendingDateFilterEnabled(checked === true)}
+                      checked={filterDraft.createdAt.enabled}
+                      onCheckedChange={(checked) =>
+                        setFilterDraft((current) => ({
+                          ...current,
+                          createdAt: { ...current.createdAt, enabled: checked === true },
+                        }))
+                      }
                     />
                     <Label htmlFor="device-setup-date-filter" className="font-medium">
                       Date Range
                     </Label>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" size="sm" disabled className="justify-start text-muted-foreground">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      From
-                    </Button>
-                    <Button variant="outline" size="sm" disabled className="justify-start text-muted-foreground">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      To
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="device-setup-device-filter"
-                      checked={pendingDeviceFilter !== "all"}
-                      onCheckedChange={(checked) => setPendingDeviceFilter(checked === true ? pendingDeviceFilter : "all")}
+                    <Input
+                      type="date"
+                      value={filterDraft.createdAt.from}
+                      disabled={!filterDraft.createdAt.enabled}
+                      onChange={(event) =>
+                        setFilterDraft((current) => ({
+                          ...current,
+                          createdAt: { ...current.createdAt, from: event.target.value },
+                        }))
+                      }
+                      className="h-9 text-sm"
                     />
-                    <Label htmlFor="device-setup-device-filter" className="font-medium">
-                      Device
-                    </Label>
+                    <Input
+                      type="date"
+                      value={filterDraft.createdAt.to}
+                      disabled={!filterDraft.createdAt.enabled}
+                      onChange={(event) =>
+                        setFilterDraft((current) => ({
+                          ...current,
+                          createdAt: { ...current.createdAt, to: event.target.value },
+                        }))
+                      }
+                      className="h-9 text-sm"
+                    />
                   </div>
-                  <Select value={pendingDeviceFilter} onValueChange={setPendingDeviceFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All devices" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All devices</SelectItem>
-                      {deviceOptions.map((device) => (
-                        <SelectItem key={device} value={device}>
-                          {device}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 pt-2">
@@ -322,8 +498,7 @@ export function DeviceSetupRequestsQueue() {
                     size="sm"
                     className="font-semibold"
                     onClick={() => {
-                      setDeviceFilter(pendingDeviceFilter);
-                      setDateFilterEnabled(pendingDateFilterEnabled);
+                      setAppliedFilters(cloneFilters(filterDraft));
                       setFilterOpen(false);
                     }}
                   >
@@ -334,10 +509,9 @@ export function DeviceSetupRequestsQueue() {
                     size="sm"
                     className="font-semibold"
                     onClick={() => {
-                      setDeviceFilter("all");
-                      setPendingDeviceFilter("all");
-                      setDateFilterEnabled(false);
-                      setPendingDateFilterEnabled(false);
+                      const next = cloneFilters(emptyFilters);
+                      setFilterDraft(next);
+                      setAppliedFilters(next);
                       setFilterOpen(false);
                     }}
                   >
@@ -362,7 +536,7 @@ export function DeviceSetupRequestsQueue() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {requestsQuery.isLoading || requestsQuery.isFetching || requestsQuery.isError || visibleRequests.length === 0 ? (
+                {requestsQuery.isLoading || requestsQuery.isFetching || requestsQuery.isError || requests.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7}>
                       <div className="py-12 text-center">
@@ -383,9 +557,12 @@ export function DeviceSetupRequestsQueue() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  visibleRequests.map((request) => {
+                  requests.map((request) => {
                     const statusConfig =
-                      STATUS_CONFIG[request.status as DeviceSetupStatus] ?? STATUS_CONFIG.pending_review;
+                      STATUS_CONFIG[request.status as SystemDeviceSetupStatus] ?? {
+                        label: formatStatusLabel(request.status),
+                        className: "border-transparent bg-secondary text-secondary-foreground",
+                      };
                     return (
                       <TableRow key={request.id} className="h-[86px]">
                         <TableCell>
@@ -442,11 +619,22 @@ export function DeviceSetupRequestsQueue() {
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Details
                               </DropdownMenuItem>
-                              <DropdownMenuItem disabled>
-                                <UserPlus className="mr-2 h-4 w-4" />
+                              <DropdownMenuItem
+                                disabled={assignRequest.isPending || rejectRequest.isPending}
+                                onClick={() => handleAssign(request)}
+                              >
+                                {assigningRequestId === request.id ? (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                  <UserPlus className="mr-2 h-4 w-4" />
+                                )}
                                 Assign to Me
                               </DropdownMenuItem>
-                              <DropdownMenuItem disabled className="text-destructive">
+                              <DropdownMenuItem
+                                disabled={rejectRequest.isPending || assignRequest.isPending}
+                                className="text-destructive"
+                                onClick={() => setSelectedRejectRequest(request)}
+                              >
                                 <XCircle className="mr-2 h-4 w-4" />
                                 Reject
                               </DropdownMenuItem>
@@ -469,27 +657,91 @@ export function DeviceSetupRequestsQueue() {
             <DialogTitle>Request Details</DialogTitle>
             <DialogDescription className="sr-only">Device setup request details</DialogDescription>
           </DialogHeader>
-          {selectedRequest && (
+          {detailRequest && (
             <div className="space-y-5">
+              {selectedRequestDetailQuery.isLoading && (
+                <p className="text-sm text-muted-foreground">Loading latest request details...</p>
+              )}
               <div className="grid grid-cols-2 gap-x-10 gap-y-4 text-sm">
-                <DetailItem label="Manufacturer" value={selectedRequest.manufacturer} />
-                <DetailItem label="Model" value={selectedRequest.model} />
-                <DetailItem label="IMEI" value={selectedRequest.imei} mono />
+                <DetailItem label="Manufacturer" value={detailRequest.manufacturer} />
+                <DetailItem label="Model" value={detailRequest.model} />
+                <DetailItem label="IMEI" value={detailRequest.imei} mono />
                 <DetailItem
                   label="Tracker Type"
-                  value={CONNECTION_LABELS[selectedRequest.connectionType] ?? selectedRequest.connectionType}
+                  value={CONNECTION_LABELS[detailRequest.connectionType] ?? detailRequest.connectionType}
                 />
-                <DetailItem label="Vehicle" value={selectedRequest.vehiclePlate} />
-                <DetailItem label="Requester" value={selectedRequest.requesterName} />
+                <DetailItem label="Vehicle" value={detailRequest.vehiclePlate} />
+                <DetailItem label="Requester" value={detailRequest.requesterName} />
               </div>
               <div className="border-t pt-4">
-                <DetailItem label="Installation Location" value={selectedRequest.location} />
+                <DetailItem label="Installation Location" value={detailRequest.location} />
               </div>
-              <DetailItem label="Preferred Date" value={formatDate(selectedRequest.updatedAt, "dd MMMM yyyy")} />
-              {selectedRequest.needsSim && <Badge variant="secondary">SIM Requested</Badge>}
-              <DetailItem label="Notes" value={selectedRequest.notes || "No notes provided."} />
+              <DetailItem
+                label="Preferred Date"
+                value={formatDate(detailRequest.preferredInstallDate ?? detailRequest.updatedAt, "dd MMMM yyyy")}
+              />
+              {detailRequest.needsSim && <Badge variant="secondary">SIM Requested</Badge>}
+              <DetailItem label="Notes" value={detailRequest.notes || "No notes provided."} />
+              {detailRequest.rejectedReason && (
+                <DetailItem label="Rejection Reason" value={detailRequest.rejectedReason} />
+              )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!selectedRejectRequest}
+        onOpenChange={(open) => {
+          if (!open && !rejectRequest.isPending) closeRejectDialog();
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reject Device Setup Request</DialogTitle>
+            <DialogDescription>Provide a reason before rejecting this device setup request.</DialogDescription>
+          </DialogHeader>
+
+          <Form {...rejectForm}>
+            <form
+              id={REJECT_DEVICE_SETUP_REQUEST_FORM_ID}
+              onSubmit={rejectForm.handleSubmit(handleRejectSubmit)}
+              className="space-y-4"
+            >
+              <FormField
+                control={rejectForm.control}
+                name="reason"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Reason</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        rows={4}
+                        placeholder="Explain why this request is being rejected."
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeRejectDialog} disabled={rejectRequest.isPending}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form={REJECT_DEVICE_SETUP_REQUEST_FORM_ID}
+              variant="destructive"
+              loading={rejectRequest.isPending}
+            >
+              Reject Request
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
