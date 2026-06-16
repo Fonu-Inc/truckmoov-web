@@ -21,6 +21,7 @@ import {
   exportSystemDevicesCatalog,
   exportSystemDevices,
   exportSystemSims,
+  exportSystemSimsRequests,
   exportSystemSupportTickets,
   exportSystemTenants,
   forgotPassword,
@@ -53,6 +54,7 @@ import {
   getSystemSims,
   getSystemSimsBatches,
   getSystemSimsRequests,
+  getSystemSimsRequestsSummary,
   getSystemSimsSummary,
   getSystemSubscriptionPlans,
   getSystemSupportDashboard,
@@ -166,6 +168,7 @@ export type {
   SystemSimRequest,
   SystemSimRequestsList,
   SystemSimRequestsQuery,
+  SystemSimRequestsSummary,
   SystemSimsList,
   SystemSimsQuery,
   SystemSimsSummary,
@@ -225,6 +228,7 @@ export const AUTH_QUERY_KEY = {
   systemSimsSummary: ['systemSimsSummary'],
   systemSimsRequests: (payload?: SystemSimRequestsQuery) =>
     payload ? ['systemSimsRequests', payload] : ['systemSimsRequests'],
+  systemSimsRequestsSummary: ['systemSimsRequestsSummary'],
   systemSimsBatches: (payload?: SystemSimBatchesQuery) =>
     payload ? ['systemSimsBatches', payload] : ['systemSimsBatches'],
 
@@ -704,6 +708,20 @@ export function getSystemSimsRequestsQueryOptions(payload?: SystemSimRequestsQue
   })
 }
 
+export function getSystemSimsRequestsSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSimsRequestsSummary,
+    queryFn: getSystemSimsRequestsSummary,
+  })
+}
+
+export function getSystemSimsRequestsExportQueryOptions(payload?: SystemSimRequestsQuery) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.systemSimsRequests(payload), 'export'],
+    queryFn: () => exportSystemSimsRequests(payload),
+  })
+}
+
 export function getSystemSimsBatchesQueryOptions(payload?: SystemSimBatchesQuery) {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.systemSimsBatches(payload),
@@ -757,6 +775,7 @@ export function useApproveSIMRequest() {
     mutationFn: approveSIMRequest,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsRequests() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsRequestsSummary })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSims() })
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsSummary })
     },
@@ -768,6 +787,9 @@ export function useRejectSIMRequest() {
     mutationFn: rejectSIMRequest,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsRequests() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsRequestsSummary })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSims() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsSummary })
     },
   })
 }

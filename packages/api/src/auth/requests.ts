@@ -65,6 +65,7 @@ import type {
   SystemSimResponse,
   SystemSimRequestsQuery,
   SystemSimRequestsListResponse,
+  SystemSimRequestsSummaryResponse,
   SystemSimSummaryResponse,
   SystemSimsListResponse,
   SystemSubscriptionPlansResponse,
@@ -473,13 +474,26 @@ export async function getSystemSimsRequests(payload?: SystemSimRequestsQuery) {
   return data
 }
 
+export async function getSystemSimsRequestsSummary() {
+  const { data } = await axiosInstance.get<SystemSimRequestsSummaryResponse>('/auth/system/sims/requests/summary')
+  return data
+}
+
+export async function exportSystemSimsRequests(payload?: SystemSimRequestsQuery) {
+  const { data } = await axiosInstance.get('/auth/system/sims/requests/export', {
+    responseType: 'blob',
+    params: payload?.params,
+  })
+  return data
+}
+
 export async function approveSIMRequest({ id }: ApproveSIMRequestPayload) {
-  const { data } = await axiosInstance.patch<StandardApiResponse>(`/auth/system/sims/requests/${id}/approve`)
+  const { data } = await axiosInstance.post<StandardApiResponse>(`/auth/system/sims/requests/${id}/approve`)
   return data
 }
 
 export async function rejectSIMRequest({ id, data }: RejectSIMRequestPayload) {
-  const { data: res } = await axiosInstance.patch<StandardApiResponse>(`/auth/system/sims/requests/${id}/reject`, data)
+  const { data: res } = await axiosInstance.post<StandardApiResponse>(`/auth/system/sims/requests/${id}/reject`, data)
   return res
 }
 

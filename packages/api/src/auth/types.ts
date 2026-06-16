@@ -332,6 +332,10 @@ export type RetrySimBatchPayload = {
 export type SystemSimRequestsQuery = {
   params?: {
     status?: 'pending' | 'approved' | 'rejected'
+    search?: string
+    organisation?: string
+    carrier?: string
+    useCase?: string
   }
 }
 
@@ -722,6 +726,13 @@ export type SystemSimRequestsList = {
   requests: SystemSimRequest[]
 }
 
+export type SystemSimRequestsSummary = {
+  totalRequested: number
+  pendingApproval: number
+  approvedThisMonth: number
+  rejectedThisMonth: number
+}
+
 export type SystemSimBatch = {
   id: string
   requestId: string | null
@@ -861,6 +872,7 @@ export type SystemSimsListResponse = ServerResponse<SystemSimsList>
 export type SystemSimResponse = ServerResponse<SystemSimItem>
 export type SystemSimSummaryResponse = ServerResponse<SystemSimsSummary>
 export type SystemSimRequestsListResponse = ServerResponse<SystemSimRequestsList>
+export type SystemSimRequestsSummaryResponse = ServerResponse<SystemSimRequestsSummary>
 export type SystemSimBatchesListResponse = ServerResponse<SystemSimBatchesList>
 export type SystemSubscriptionPlansResponse = ServerResponse<{ plans: SubscriptionPlan[]; generatedAt: string }>
 export type SystemFeatureFlagsResponse = ServerResponse<SystemFeatureFlagsList>
