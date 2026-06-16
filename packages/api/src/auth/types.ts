@@ -342,7 +342,21 @@ export type SystemSimRequestsQuery = {
 export type SystemSimBatchesQuery = {
   params?: {
     status?: string
+    search?: string
+    operator?: string
+    mode?: string
   }
+}
+
+export type GetSimBatchPayload = {
+  id: string
+}
+
+export type SystemSimBatchesSummary = {
+  pendingActivation: number
+  inProgress: number
+  totalSimsQueued: number
+  needsAttention: number
 }
 
 // ─── System admin — feature flags ────────────────────────────────────────────
@@ -874,6 +888,8 @@ export type SystemSimSummaryResponse = ServerResponse<SystemSimsSummary>
 export type SystemSimRequestsListResponse = ServerResponse<SystemSimRequestsList>
 export type SystemSimRequestsSummaryResponse = ServerResponse<SystemSimRequestsSummary>
 export type SystemSimBatchesListResponse = ServerResponse<SystemSimBatchesList>
+export type SystemSimBatchResponse = ServerResponse<SystemSimBatch>
+export type SystemSimBatchesSummaryResponse = ServerResponse<SystemSimBatchesSummary>
 export type SystemSubscriptionPlansResponse = ServerResponse<{ plans: SubscriptionPlan[]; generatedAt: string }>
 export type SystemFeatureFlagsResponse = ServerResponse<SystemFeatureFlagsList>
 export type SystemFeatureFlagResponse = ServerResponse<SystemFeatureFlag>

@@ -53,6 +53,9 @@ import {
   getSystemSim,
   getSystemSims,
   getSystemSimsBatches,
+  getSystemSimsBatchesSummary,
+  exportSystemSimsBatches,
+  getSystemSimBatch,
   getSystemSimsRequests,
   getSystemSimsRequestsSummary,
   getSystemSimsSummary,
@@ -101,6 +104,8 @@ import {
 } from './requests'
 import type {
   ActivityLogQuery,
+  GetSimBatchPayload,
+  SystemSimBatchesSummary,
   SystemDeviceCatalogQuery,
   SystemDeviceSetupRequestsQuery,
   SystemDevicesQuery,
@@ -163,6 +168,7 @@ export type {
   SystemSimBatch,
   SystemSimBatchesList,
   SystemSimBatchesQuery,
+  SystemSimBatchesSummary,
   SystemSimItem,
   SystemSimResponse,
   SystemSimRequest,
@@ -231,6 +237,8 @@ export const AUTH_QUERY_KEY = {
   systemSimsRequestsSummary: ['systemSimsRequestsSummary'],
   systemSimsBatches: (payload?: SystemSimBatchesQuery) =>
     payload ? ['systemSimsBatches', payload] : ['systemSimsBatches'],
+  systemSimsBatchesSummary: ['systemSimsBatchesSummary'] as const,
+  systemSimBatch: (id: string) => ['systemSimBatch', id],
 
   systemFeatureFlags: ['systemFeatureFlags'],
   systemSettings: ['systemSettings'],
@@ -729,6 +737,27 @@ export function getSystemSimsBatchesQueryOptions(payload?: SystemSimBatchesQuery
   })
 }
 
+export function getSystemSimsBatchesSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSimsBatchesSummary,
+    queryFn: getSystemSimsBatchesSummary,
+  })
+}
+
+export function getSystemSimBatchQueryOptions({ id }: GetSimBatchPayload) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSimBatch(id),
+    queryFn: () => getSystemSimBatch({ id }),
+  })
+}
+
+export function getSystemSimsBatchesExportQueryOptions(payload?: SystemSimBatchesQuery) {
+  return queryOptions({
+    queryKey: [...AUTH_QUERY_KEY.systemSimsBatches(payload), 'export'],
+    queryFn: () => exportSystemSimsBatches(payload),
+  })
+}
+
 export function getSystemSimsExportQueryOptions(payload?: SystemSimsQuery) {
   return queryOptions({
     queryKey: [...AUTH_QUERY_KEY.systemSims(payload), 'export'],
@@ -799,6 +828,7 @@ export function useRetrySimBatch() {
     mutationFn: retrySimBatch,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsBatches() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsBatchesSummary })
     },
   })
 }

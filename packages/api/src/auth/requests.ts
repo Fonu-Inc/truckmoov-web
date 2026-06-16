@@ -62,6 +62,9 @@ import type {
   SystemSupportTicketsQuery,
   SystemSimBatchesQuery,
   SystemSimBatchesListResponse,
+  SystemSimBatchResponse,
+  SystemSimBatchesSummaryResponse,
+  GetSimBatchPayload,
   SystemSimResponse,
   SystemSimRequestsQuery,
   SystemSimRequestsListResponse,
@@ -501,6 +504,24 @@ export async function getSystemSimsBatches(payload?: SystemSimBatchesQuery) {
   const { data } = await axiosInstance.get<SystemSimBatchesListResponse>('/auth/system/sims/batches', {
     params: payload?.params,
   })
+  return data
+}
+
+export async function getSystemSimsBatchesSummary() {
+  const { data } = await axiosInstance.get<SystemSimBatchesSummaryResponse>('/auth/system/sims/batches/summary')
+  return data
+}
+
+export async function exportSystemSimsBatches(payload?: SystemSimBatchesQuery) {
+  const { data } = await axiosInstance.get('/auth/system/sims/batches/export', {
+    responseType: 'blob',
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getSystemSimBatch({ id }: GetSimBatchPayload) {
+  const { data } = await axiosInstance.get<SystemSimBatchResponse>(`/auth/system/sims/batches/${id}`)
   return data
 }
 
