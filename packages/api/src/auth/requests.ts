@@ -62,6 +62,7 @@ import type {
   SystemSupportTicketsQuery,
   SystemSimBatchesQuery,
   SystemSimBatchesListResponse,
+  SystemSimResponse,
   SystemSimRequestsQuery,
   SystemSimRequestsListResponse,
   SystemSimSummaryResponse,
@@ -83,7 +84,10 @@ import type {
   UpdateOrgSettingsPayload,
   UpdateOrgUserPayload,
   UpdateProfilePayload,
+  ReassignSystemSimPayload,
+  SuspendSystemSimPayload,
   UpdateSystemSettingsPayload,
+  UpdateSystemSimPayload,
   UpdateTenantPayload,
   UpdateTenantStatusPayload,
   UpdateTicketStatusPayload,
@@ -426,6 +430,26 @@ export async function getSystemSims(payload?: SystemSimsQuery) {
   const { data } = await axiosInstance.get<SystemSimsListResponse>('/auth/system/sims', {
     params: payload?.params,
   })
+  return data
+}
+
+export async function getSystemSim({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<SystemSimResponse>(`/auth/system/sims/${id}`)
+  return data
+}
+
+export async function updateSystemSim({ id, data: body }: UpdateSystemSimPayload) {
+  const { data } = await axiosInstance.patch<SystemSimResponse>(`/auth/system/sims/${id}`, body)
+  return data
+}
+
+export async function reassignSystemSim({ id, data: body }: ReassignSystemSimPayload) {
+  const { data } = await axiosInstance.patch<SystemSimResponse>(`/auth/system/sims/${id}/reassign`, body)
+  return data
+}
+
+export async function suspendSystemSim({ id, data: body }: SuspendSystemSimPayload) {
+  const { data } = await axiosInstance.patch<SystemSimResponse>(`/auth/system/sims/${id}/suspend`, body)
   return data
 }
 

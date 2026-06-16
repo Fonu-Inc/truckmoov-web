@@ -49,6 +49,7 @@ import {
   getSystemRefDataDeviceCatalog,
   getSystemRefDataTenantOnboarding,
   getSystemSettings,
+  getSystemSim,
   getSystemSims,
   getSystemSimsBatches,
   getSystemSimsRequests,
@@ -68,12 +69,14 @@ import {
   refresh,
   register,
   registerInvited,
+  reassignSystemSim,
   rejectSIMRequest,
   resendOrgInvite,
   resendSystemAdminInvite,
   resendTenantInvite,
   resetPassword,
   retrySimBatch,
+  suspendSystemSim,
   systemChangePassword,
   systemLogin,
   updateDeviceCatalogEntry,
@@ -87,6 +90,7 @@ import {
   updateSupportTicketStatus,
   updateSystemAdminStatus,
   updateSystemSettings,
+  updateSystemSim,
   updateTenant,
   updateTenantStatus,
   uploadMedia,
@@ -128,11 +132,13 @@ export type {
   RefreshPayload,
   RegisterInvitedPayload,
   RegisterPayload,
+  ReassignSystemSimPayload,
   RejectSIMRequestPayload,
   RemoveOrganizationUserData,
   ResendOrgInvitePayload,
   ResetPasswordPayload,
   RetrySimBatchPayload,
+  SuspendSystemSimPayload,
   SubscriptionPlan,
   SystemChangePasswordPayload,
   SystemDashboard,
@@ -156,6 +162,7 @@ export type {
   SystemSimBatchesList,
   SystemSimBatchesQuery,
   SystemSimItem,
+  SystemSimResponse,
   SystemSimRequest,
   SystemSimRequestsList,
   SystemSimRequestsQuery,
@@ -177,6 +184,7 @@ export type {
   UpdateOrgUserPayload,
   UpdateProfilePayload,
   UpdateSystemSettingsPayload,
+  UpdateSystemSimPayload,
   UpdateTenantPayload,
   UpdateTenantStatusPayload,
   UpdateTicketStatusPayload,
@@ -213,6 +221,7 @@ export const AUTH_QUERY_KEY = {
     payload ? ['systemDevicesCatalog', payload] : ['systemDevicesCatalog'],
 
   systemSims: (payload?: SystemSimsQuery) => payload ? ['systemSims', payload] : ['systemSims'],
+  systemSim: (id: string) => ['systemSim', id],
   systemSimsSummary: ['systemSimsSummary'],
   systemSimsRequests: (payload?: SystemSimRequestsQuery) =>
     payload ? ['systemSimsRequests', payload] : ['systemSimsRequests'],
@@ -674,6 +683,13 @@ export function getSystemSimsQueryOptions(payload?: SystemSimsQuery) {
   })
 }
 
+export function getSystemSimQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSim(id),
+    queryFn: () => getSystemSim({ id }),
+  })
+}
+
 export function getSystemSimsSummaryQueryOptions() {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.systemSimsSummary,
@@ -699,6 +715,40 @@ export function getSystemSimsExportQueryOptions(payload?: SystemSimsQuery) {
   return queryOptions({
     queryKey: [...AUTH_QUERY_KEY.systemSims(payload), 'export'],
     queryFn: () => exportSystemSims(payload),
+  })
+}
+
+export function useUpdateSystemSim() {
+  return useMutation({
+    mutationFn: updateSystemSim,
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSims() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsSummary })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSim(id) })
+    },
+  })
+}
+
+export function useReassignSystemSim() {
+  return useMutation({
+    mutationFn: reassignSystemSim,
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSims() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsSummary })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSim(id) })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemDevices() })
+    },
+  })
+}
+
+export function useSuspendSystemSim() {
+  return useMutation({
+    mutationFn: suspendSystemSim,
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSims() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSimsSummary })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSim(id) })
+    },
   })
 }
 

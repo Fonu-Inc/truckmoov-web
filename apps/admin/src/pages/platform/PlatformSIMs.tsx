@@ -1,11 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import {
+  getSystemDevicesQueryOptions,
+  getSystemSimQueryOptions,
   getSystemSimsExportQueryOptions,
   getSystemSimsQueryOptions,
   getSystemSimsSummaryQueryOptions,
+  getSystemTenantsQueryOptions,
   type SystemSimItem,
   type SystemSimsQuery,
+  useReassignSystemSim,
+  useSuspendSystemSim,
+  useUpdateSystemSim,
 } from "@truckmoov/api/auth";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
@@ -21,6 +30,21 @@ import { SIMAnalyticsDashboardLive } from "@/components/sims/SIMAnalyticsDashboa
 import { SIMApprovalQueue } from "@/components/sims/SIMApprovalQueue";
 import { ActivationBatchesPanel } from "@/components/sims/ActivationBatchesPanel";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/shadcn/dropdown-menu";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from "@/components/shadcn/form";
 import {
   Table,
   TableBody,
@@ -61,7 +85,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from "@/components/shadcn/alert-dialog";
-import { Wifi, Search, Plus, Signal, SignalLow, SignalZero, Building2, Upload, RefreshCw, SlidersHorizontal as Filter, Pencil, Cpu, Phone, Calendar, CreditCard, TrendingUp, AlertTriangle, CheckCircle, XCircle, Smartphone, Globe, Zap, ArrowUpDown, Download } from "lucide-react";
+import { Wifi, Search, Plus, Signal, SignalLow, SignalZero, Building2, Upload, RefreshCw, SlidersHorizontal as Filter, Pencil, Cpu, Phone, Calendar, CreditCard, TrendingUp, AlertTriangle, CheckCircle, XCircle, Smartphone, Globe, Zap, ArrowUpDown, Download, Eye, MoreHorizontal } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { PlatformFilterPopover, type FilterDraft } from "@/components/shadcn/platform-filter-popover";
 import { toast } from "sonner";
@@ -94,6 +118,23 @@ interface SIMCard {
 const simPlans = ["data_only", "data_sms", "data_sms_voice", "iot_basic", "iot_premium"] as const;
 const simStatuses = ["active", "inactive", "suspended", "unassigned"] as const;
 const networkTypes = ["2G", "3G", "4G", "5G"] as const;
+const EDIT_SIM_FORM_ID = "edit-sim-form";
+const ASSIGN_SIM_FORM_ID = "assign-sim-form";
+
+const editSimSchema = z.object({
+  plan: z.enum(simPlans),
+  carrier: z.string().min(1, "Carrier is required."),
+  dataLimitMb: z.coerce.number().min(0, "Data limit must be 0 or higher."),
+  smsLimit: z.coerce.number().int("SMS limit must be a whole number.").min(0, "SMS limit must be 0 or higher."),
+});
+
+const assignSimSchema = z.object({
+  tenantId: z.string().min(1, "Tenant is required."),
+  deviceId: z.string().min(1, "Device is required."),
+});
+
+type EditSimFormValues = z.infer<typeof editSimSchema>;
+type AssignSimFormValues = z.infer<typeof assignSimSchema>;
 
 const normalizePlan = (plan: string): SIMCard["plan"] => {
   const normalizedPlan = plan.toLowerCase().replace(/\s*\+\s*/g, "_").replace(/[\s-]+/g, "_");
@@ -114,7 +155,11 @@ const normalizeNetworkType = (networkType: string | null): SIMCard["networkType"
     : null;
 };
 
-const mapSystemSimToRow = (sim: SystemSimItem): SIMCard => ({
+const mapSystemSimToRow = (
+  sim: SystemSimItem,
+  tenantNamesById: Map<string, string> = new Map(),
+  deviceImeisById: Map<string, string> = new Map(),
+): SIMCard => ({
   id: sim.id,
   iccid: sim.iccid,
   msisdn: sim.msisdn,
@@ -122,10 +167,10 @@ const mapSystemSimToRow = (sim: SystemSimItem): SIMCard => ({
   carrier: sim.carrier,
   plan: normalizePlan(sim.plan),
   status: normalizeStatus(sim.status),
-  tenant: sim.tenantId || null,
+  tenant: sim.tenantId ? tenantNamesById.get(sim.tenantId) ?? sim.tenantId : null,
   tenantId: sim.tenantId || null,
   deviceId: sim.deviceId || null,
-  deviceImei: null,
+  deviceImei: sim.deviceId ? deviceImeisById.get(sim.deviceId) ?? null : null,
   dataUsage: sim.dataUsageMb,
   dataLimit: sim.dataLimitMb,
   smsUsage: sim.smsUsage,
@@ -156,14 +201,11 @@ const emptyValue = "—";
 const getUsagePercentage = (usage: number, limit: number) =>
   limit > 0 ? Math.min((usage / limit) * 100, 100) : 0;
 
-const tenantOptions: Array<{ id: string; name: string }> = [];
-const deviceOptions: Array<{ id: string; imei: string; tenantId: string }> = [];
-
 const emptySIM: Partial<SIMCard> = {
   iccid: "",
   msisdn: "",
   imsi: "",
-  carrier: "MTN",
+  carrier: "MTN Nigeria",
   plan: "data_only",
   status: "unassigned",
   tenant: null,
@@ -194,6 +236,29 @@ export default function PlatformSIMs() {
   const [formData, setFormData] = useState<Partial<SIMCard>>(emptySIM);
   const [selectedSIMIds, setSelectedSIMIds] = useState<Set<string>>(new Set());
   const [isExporting, setIsExporting] = useState(false);
+  const updateSystemSimMutation = useUpdateSystemSim();
+  const reassignSystemSimMutation = useReassignSystemSim();
+  const suspendSystemSimMutation = useSuspendSystemSim();
+  const editSimForm = useForm<EditSimFormValues>({
+    resolver: zodResolver(editSimSchema),
+    mode: "onChange",
+    defaultValues: {
+      plan: "data_only",
+      carrier: "MTN Nigeria",
+      dataLimitMb: 0,
+      smsLimit: 0,
+    },
+  });
+  const assignSimForm = useForm<AssignSimFormValues>({
+    resolver: zodResolver(assignSimSchema),
+    mode: "onChange",
+    defaultValues: {
+      tenantId: "",
+      deviceId: "",
+    },
+  });
+  const selectedAssignTenantId = assignSimForm.watch("tenantId");
+  const selectedAssignDeviceId = assignSimForm.watch("deviceId");
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -218,6 +283,12 @@ export default function PlatformSIMs() {
 
   const systemSimsQuery = useQuery(getSystemSimsQueryOptions(systemSimsQueryPayload));
   const systemSimsSummaryQuery = useQuery(getSystemSimsSummaryQueryOptions());
+  const systemTenantsQuery = useQuery(getSystemTenantsQueryOptions({ params: { status: "active" } }));
+  const systemDevicesQuery = useQuery(getSystemDevicesQueryOptions());
+  const selectedSIMDetailQuery = useQuery({
+    ...getSystemSimQueryOptions(selectedSIM?.id ?? ""),
+    enabled: isDetailsSheetOpen && Boolean(selectedSIM?.id),
+  });
   const summary = systemSimsSummaryQuery.data?.data;
   const summaryStats = useMemo(() => {
     const getStatusCount = (status: string): number | undefined => {
@@ -235,9 +306,36 @@ export default function PlatformSIMs() {
       carriers: summary?.carriers ?? (summary?.byCarrier ? Object.keys(summary.byCarrier).length : "N/A"),
     };
   }, [summary]);
+  const tenantOptions = useMemo(
+    () => systemTenantsQuery.data?.data.tenants ?? [],
+    [systemTenantsQuery.data],
+  );
+  const deviceOptions = useMemo(
+    () => systemDevicesQuery.data?.data.devices ?? [],
+    [systemDevicesQuery.data],
+  );
+  const tenantNamesById = useMemo(
+    () => new Map(tenantOptions.map((tenant) => [tenant.id, tenant.name])),
+    [tenantOptions],
+  );
+  const deviceImeisById = useMemo(
+    () => new Map(deviceOptions.map((device) => [device.id, device.imei])),
+    [deviceOptions],
+  );
   const sims = useMemo(
-    () => systemSimsQuery.data?.data.sims.map(mapSystemSimToRow) ?? [],
-    [systemSimsQuery.data],
+    () => systemSimsQuery.data?.data.sims.map((sim) => mapSystemSimToRow(sim, tenantNamesById, deviceImeisById)) ?? [],
+    [deviceImeisById, systemSimsQuery.data, tenantNamesById],
+  );
+  const selectedSIMDetails = useMemo(
+    () =>
+      selectedSIMDetailQuery.data?.data
+        ? mapSystemSimToRow(selectedSIMDetailQuery.data.data, tenantNamesById, deviceImeisById)
+        : selectedSIM,
+    [deviceImeisById, selectedSIM, selectedSIMDetailQuery.data, tenantNamesById],
+  );
+  const filteredDeviceOptions = useMemo(
+    () => deviceOptions.filter((device) => device.tenantId === selectedAssignTenantId),
+    [deviceOptions, selectedAssignTenantId],
   );
 
   const toggleSIMSelection = (simId: string) => {
@@ -331,20 +429,54 @@ export default function PlatformSIMs() {
     setFormData(emptySIM);
   };
 
-  const handleEditSIM = () => {
-    setIsEditDialogOpen(false);
-    setSelectedSIM(null);
-    setFormData(emptySIM);
+  const handleEditSubmit = (values: EditSimFormValues) => {
+    if (!selectedSIM) return;
+
+    updateSystemSimMutation.mutate(
+      {
+        id: selectedSIM.id,
+        data: values,
+      },
+      {
+        onSuccess: (response) => {
+          const updatedSIM = mapSystemSimToRow(response.data, tenantNamesById, deviceImeisById);
+          setSelectedSIM(updatedSIM);
+          setIsEditDialogOpen(false);
+          editSimForm.reset();
+          toast.success("SIM updated");
+        },
+        onError: (error) => {
+          toast.error(error.message);
+        },
+      },
+    );
   };
 
   const handleDeleteSIM = (_simId?: string) => {
     setDeleteConfirmSIM(null);
   };
 
-  const handleAssignSIM = () => {
-    setIsAssignDialogOpen(false);
-    setSelectedSIM(null);
-    setFormData(emptySIM);
+  const handleAssignSubmit = (values: AssignSimFormValues) => {
+    if (!selectedSIM) return;
+
+    reassignSystemSimMutation.mutate(
+      {
+        id: selectedSIM.id,
+        data: values,
+      },
+      {
+        onSuccess: (response) => {
+          const updatedSIM = mapSystemSimToRow(response.data, tenantNamesById, deviceImeisById);
+          setSelectedSIM(updatedSIM);
+          setIsAssignDialogOpen(false);
+          assignSimForm.reset();
+          toast.success("SIM assigned");
+        },
+        onError: (error) => {
+          toast.error(error.message);
+        },
+      },
+    );
   };
 
   const handleBulkImport = () => {
@@ -372,14 +504,47 @@ export default function PlatformSIMs() {
 
   const handleOpenEdit = (sim: SIMCard) => {
     setSelectedSIM(sim);
-    setFormData({ ...sim });
+    editSimForm.reset({
+      plan: sim.plan,
+      carrier: sim.carrier,
+      dataLimitMb: sim.dataLimit,
+      smsLimit: sim.smsLimit,
+    });
     setIsEditDialogOpen(true);
   };
 
   const handleOpenAssign = (sim: SIMCard) => {
     setSelectedSIM(sim);
-    setFormData({ tenantId: sim.tenantId, deviceId: sim.deviceId });
+    assignSimForm.reset({
+      tenantId: sim.tenantId ?? "",
+      deviceId: sim.deviceId ?? "",
+    });
     setIsAssignDialogOpen(true);
+  };
+
+  const handleOpenDetails = (sim: SIMCard) => {
+    setSelectedSIM(sim);
+    setIsDetailsSheetOpen(true);
+  };
+
+  const handleToggleSuspend = (sim: SIMCard) => {
+    const suspend = sim.status !== "suspended";
+    suspendSystemSimMutation.mutate(
+      {
+        id: sim.id,
+        data: { suspend },
+      },
+      {
+        onSuccess: (response) => {
+          const updatedSIM = mapSystemSimToRow(response.data, tenantNamesById, deviceImeisById);
+          setSelectedSIM((current) => (current?.id === updatedSIM.id ? updatedSIM : current));
+          toast.success(suspend ? "SIM suspended" : "SIM reactivated");
+        },
+        onError: (error) => {
+          toast.error(error.message);
+        },
+      },
+    );
   };
 
   const updateFormData = (updates: Partial<SIMCard>) => {
@@ -653,6 +818,7 @@ export default function PlatformSIMs() {
                       <TableHead className="min-w-[140px]">Status</TableHead>
                       <TableHead className="min-w-[170px]">Data Usage</TableHead>
                       <TableHead className="min-w-[120px]">Signal</TableHead>
+                      <TableHead className="w-12"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -724,6 +890,42 @@ export default function PlatformSIMs() {
                             )}
                           </div>
                         </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleOpenDetails(sim)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenEdit(sim)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenAssign(sim)}>
+                                <ArrowUpDown className="h-4 w-4 mr-2" />
+                                Reassign
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                disabled={suspendSystemSimMutation.isPending}
+                                onClick={() => handleToggleSuspend(sim)}
+                                className={sim.status === "suspended" ? "text-success" : "text-warning"}
+                              >
+                                {sim.status === "suspended" ? (
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                ) : (
+                                  <XCircle className="h-4 w-4 mr-2" />
+                                )}
+                                {sim.status === "suspended" ? "Reactivate" : "Suspend"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -766,7 +968,13 @@ export default function PlatformSIMs() {
       </Dialog>
 
       {/* Edit SIM Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) editSimForm.reset();
+        }}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit SIM Card</DialogTitle>
@@ -774,18 +982,150 @@ export default function PlatformSIMs() {
               Update SIM card information
             </DialogDescription>
           </DialogHeader>
-          <SIMForm />
+
+          {selectedSIM && (
+            <div className="grid grid-cols-2 gap-4 rounded-lg border bg-secondary/20 p-3">
+              <div>
+                <p className="text-xs text-muted-foreground">ICCID</p>
+                <p className="font-mono text-sm font-medium">{selectedSIM.iccid}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Phone Number</p>
+                <p className="text-sm font-medium">{selectedSIM.msisdn ?? emptyValue}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">IMSI</p>
+                <p className="font-mono text-sm font-medium">{selectedSIM.imsi ?? emptyValue}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Status</p>
+                <div className="mt-1">{getStatusBadge(selectedSIM.status)}</div>
+              </div>
+            </div>
+          )}
+
+          <Form {...editSimForm}>
+            <form
+              id={EDIT_SIM_FORM_ID}
+              onSubmit={editSimForm.handleSubmit(handleEditSubmit)}
+              className="space-y-4"
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editSimForm.control}
+                  name="carrier"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Carrier</FormLabel>
+                      <Select name={field.name} value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select carrier" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="MTN Nigeria">MTN Nigeria</SelectItem>
+                          <SelectItem value="Glo">Glo</SelectItem>
+                          <SelectItem value="Airtel">Airtel</SelectItem>
+                          <SelectItem value="9mobile">9mobile</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editSimForm.control}
+                  name="plan"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Plan</FormLabel>
+                      <Select name={field.name} value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select plan" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="data_only">Data Only</SelectItem>
+                          <SelectItem value="data_sms">Data + SMS</SelectItem>
+                          <SelectItem value="data_sms_voice">Data + SMS + Voice</SelectItem>
+                          <SelectItem value="iot_basic">IoT Basic</SelectItem>
+                          <SelectItem value="iot_premium">IoT Premium</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editSimForm.control}
+                  name="dataLimitMb"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data Limit (MB)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={field.value}
+                          onBlur={field.onBlur}
+                          onChange={(event) => field.onChange(Number(event.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editSimForm.control}
+                  name="smsLimit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>SMS Limit</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={field.value}
+                          onBlur={field.onBlur}
+                          onChange={(event) => field.onChange(Number(event.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </form>
+          </Form>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleEditSIM}>Save Changes</Button>
+            <Button
+              type="submit"
+              form={EDIT_SIM_FORM_ID}
+              loading={updateSystemSimMutation.isPending}
+            >
+              Save Changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Assign SIM Dialog */}
-      <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+      <Dialog
+        open={isAssignDialogOpen}
+        onOpenChange={(open) => {
+          setIsAssignDialogOpen(open);
+          if (!open) assignSimForm.reset();
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Assign SIM Card</DialogTitle>
@@ -793,58 +1133,101 @@ export default function PlatformSIMs() {
               Assign this SIM to a tenant and device
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Tenant</Label>
-              <Select
-                value={formData.tenantId || "unassigned"}
-                onValueChange={(value) => {
-                  updateFormData({ tenantId: value === "unassigned" ? null : value, deviceId: null });
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a tenant" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {tenantOptions.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
-            {formData.tenantId && (
-              <div className="space-y-2">
-                <Label>Device</Label>
-                <Select
-                  value={formData.deviceId || "none"}
-                  onValueChange={(value) => updateFormData({ deviceId: value === "none" ? null : value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a device" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No device</SelectItem>
-                    {deviceOptions
-                      .filter((d) => d.tenantId === formData.tenantId)
-                      .map((d) => (
-                        <SelectItem key={d.id} value={d.id}>
-                          {d.id} ({d.imei})
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
+          <Form {...assignSimForm}>
+            <form
+              id={ASSIGN_SIM_FORM_ID}
+              onSubmit={assignSimForm.handleSubmit(handleAssignSubmit)}
+              className="space-y-4"
+            >
+              <FormField
+                control={assignSimForm.control}
+                name="tenantId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tenant</FormLabel>
+                    <Select
+                      name={field.name}
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        assignSimForm.setValue("deviceId", "", { shouldDirty: true, shouldValidate: true });
+                      }}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={systemTenantsQuery.isLoading ? "Loading tenants..." : "Select a tenant"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {tenantOptions.map((tenant) => (
+                          <SelectItem key={tenant.id} value={tenant.id}>
+                            {tenant.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={assignSimForm.control}
+                name="deviceId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Device</FormLabel>
+                    <Select
+                      name={field.name}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={!selectedAssignTenantId || systemDevicesQuery.isLoading}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              !selectedAssignTenantId
+                                ? "Select a tenant first"
+                                : systemDevicesQuery.isLoading
+                                  ? "Loading devices..."
+                                  : "Select a device"
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {filteredDeviceOptions.map((device) => (
+                          <SelectItem key={device.id} value={device.id}>
+                            {device.id} ({device.imei})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {selectedAssignTenantId && !systemDevicesQuery.isLoading && filteredDeviceOptions.length === 0 && (
+                <p className="text-sm text-muted-foreground">No devices are available for the selected tenant.</p>
+              )}
+            </form>
+          </Form>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAssignSIM}>Assign SIM</Button>
+            <Button
+              type="submit"
+              form={ASSIGN_SIM_FORM_ID}
+              loading={reassignSystemSimMutation.isPending}
+              disabled={!selectedAssignTenantId || !selectedAssignDeviceId}
+            >
+              Assign SIM
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -860,15 +1243,15 @@ export default function PlatformSIMs() {
               SIM Details
             </SheetTitle>
             <SheetDescription className="flex items-center gap-2">
-              {getStatusBadge(selectedSIM?.status || "")}
-              <Badge variant="outline">{selectedSIM?.carrier}</Badge>
-              {selectedSIM?.roaming && (
+              {getStatusBadge(selectedSIMDetails?.status || "")}
+              <Badge variant="outline">{selectedSIMDetails?.carrier}</Badge>
+              {selectedSIMDetails?.roaming && (
                 <Badge className="bg-warning/10 text-warning">Roaming</Badge>
               )}
             </SheetDescription>
           </SheetHeader>
 
-          {selectedSIM && (
+          {selectedSIMDetails && (
             <ScrollArea className="h-[calc(100vh-180px)] mt-6">
               <div className="space-y-6 pr-4">
                 <div className="space-y-3">
@@ -876,19 +1259,19 @@ export default function PlatformSIMs() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">ICCID</span>
-                      <span className="font-mono">{selectedSIM.iccid}</span>
+                      <span className="font-mono">{selectedSIMDetails.iccid}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Phone Number</span>
-                      <span>{selectedSIM.msisdn ?? emptyValue}</span>
+                      <span>{selectedSIMDetails.msisdn ?? emptyValue}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">IMSI</span>
-                      <span className="font-mono">{selectedSIM.imsi ?? emptyValue}</span>
+                      <span className="font-mono">{selectedSIMDetails.imsi ?? emptyValue}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Plan</span>
-                      <span>{planLabels[selectedSIM.plan]}</span>
+                      <span>{planLabels[selectedSIMDetails.plan]}</span>
                     </div>
                   </div>
                 </div>
@@ -900,15 +1283,15 @@ export default function PlatformSIMs() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Tenant</span>
-                      <span>{selectedSIM.tenant || "Unassigned"}</span>
+                      <span>{selectedSIMDetails.tenant || "Unassigned"}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Device</span>
-                      <span>{selectedSIM.deviceId || "None"}</span>
+                      <span>{selectedSIMDetails.deviceId || "None"}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Device IMEI</span>
-                      <span className="font-mono">{selectedSIM.deviceImei || "—"}</span>
+                      <span className="font-mono">{selectedSIMDetails.deviceImei || emptyValue}</span>
                     </div>
                   </div>
                 </div>
@@ -922,24 +1305,24 @@ export default function PlatformSIMs() {
                       <div className="flex justify-between text-sm mb-2">
                         <span>Data Usage</span>
                         <span>
-                          {selectedSIM.dataUsage} / {selectedSIM.dataLimit} MB
+                          {selectedSIMDetails.dataUsage} / {selectedSIMDetails.dataLimit} MB
                         </span>
                       </div>
                       <Progress
-                        value={getUsagePercentage(selectedSIM.dataUsage, selectedSIM.dataLimit)}
+                        value={getUsagePercentage(selectedSIMDetails.dataUsage, selectedSIMDetails.dataLimit)}
                         className="h-2"
                       />
                     </div>
-                    {selectedSIM.smsLimit > 0 && (
+                    {selectedSIMDetails.smsLimit > 0 && (
                       <div>
                         <div className="flex justify-between text-sm mb-2">
                           <span>SMS Usage</span>
                           <span>
-                            {selectedSIM.smsUsage} / {selectedSIM.smsLimit}
+                            {selectedSIMDetails.smsUsage} / {selectedSIMDetails.smsLimit}
                           </span>
                         </div>
                         <Progress
-                          value={getUsagePercentage(selectedSIM.smsUsage, selectedSIM.smsLimit)}
+                          value={getUsagePercentage(selectedSIMDetails.smsUsage, selectedSIMDetails.smsLimit)}
                           className="h-2"
                         />
                       </div>
@@ -955,17 +1338,17 @@ export default function PlatformSIMs() {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Signal Strength</span>
                       <div className="flex items-center gap-2">
-                        {getSignalIcon(selectedSIM.signalStrength, selectedSIM.status)}
-                        <span>{selectedSIM.signalStrength === null ? emptyValue : `${selectedSIM.signalStrength}%`}</span>
+                        {getSignalIcon(selectedSIMDetails.signalStrength, selectedSIMDetails.status)}
+                        <span>{selectedSIMDetails.signalStrength === null ? emptyValue : `${selectedSIMDetails.signalStrength}%`}</span>
                       </div>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Network Type</span>
-                      <span>{selectedSIM.networkType ?? emptyValue}</span>
+                      <span>{selectedSIMDetails.networkType ?? emptyValue}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Last Activity</span>
-                      <span>{selectedSIM.lastActivity}</span>
+                      <span>{selectedSIMDetails.lastActivity}</span>
                     </div>
                   </div>
                 </div>
@@ -977,15 +1360,15 @@ export default function PlatformSIMs() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Monthly Cost</span>
-                      <span className="font-medium">R{selectedSIM.monthlyCost}</span>
+                      <span className="font-medium">R{selectedSIMDetails.monthlyCost}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Activation Date</span>
-                      <span>{selectedSIM.activationDate || "Not activated"}</span>
+                      <span>{selectedSIMDetails.activationDate || "Not activated"}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Expiry Date</span>
-                      <span>{selectedSIM.expiryDate}</span>
+                      <span>{selectedSIMDetails.expiryDate}</span>
                     </div>
                   </div>
                 </div>
@@ -995,7 +1378,7 @@ export default function PlatformSIMs() {
                     className="flex-1"
                     onClick={() => {
                       setIsDetailsSheetOpen(false);
-                      handleOpenAssign(selectedSIM);
+                      handleOpenAssign(selectedSIMDetails);
                     }}
                   >
                     <ArrowUpDown className="h-4 w-4 mr-2" />
@@ -1005,7 +1388,7 @@ export default function PlatformSIMs() {
                     variant="outline"
                     onClick={() => {
                       setIsDetailsSheetOpen(false);
-                      handleOpenEdit(selectedSIM);
+                      handleOpenEdit(selectedSIMDetails);
                     }}
                   >
                     <Pencil className="h-4 w-4 mr-2" />
@@ -1224,4 +1607,3 @@ function BulkImportContent({ onImport, onClose }: BulkImportContentProps) {
     </div>
   );
 }
-

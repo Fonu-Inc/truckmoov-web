@@ -223,6 +223,31 @@ export type SystemSimsQuery = {
   }
 }
 
+export type UpdateSystemSimPayload = {
+  id: string
+  data: {
+    plan: string
+    carrier: string
+    dataLimitMb: number
+    smsLimit: number
+  }
+}
+
+export type ReassignSystemSimPayload = {
+  id: string
+  data: {
+    tenantId: string
+    deviceId: string
+  }
+}
+
+export type SuspendSystemSimPayload = {
+  id: string
+  data: {
+    suspend: boolean
+  }
+}
+
 // ─── System admin — tenants ───────────────────────────────────────────────────
 
 export type SystemTenantsQuery = {
@@ -833,6 +858,7 @@ export type SystemDeviceInventoryListResponse = ServerResponse<SystemDeviceInven
 export type SystemDeviceDetailResponse = ServerResponse<SystemDeviceDetail>
 export type SystemDeviceSummaryResponse = ServerResponse<SystemDevicesSummary>
 export type SystemSimsListResponse = ServerResponse<SystemSimsList>
+export type SystemSimResponse = ServerResponse<SystemSimItem>
 export type SystemSimSummaryResponse = ServerResponse<SystemSimsSummary>
 export type SystemSimRequestsListResponse = ServerResponse<SystemSimRequestsList>
 export type SystemSimBatchesListResponse = ServerResponse<SystemSimBatchesList>
