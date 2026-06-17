@@ -1,5 +1,8 @@
 import { LogOut, Settings, Sun, Moon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { getOrganizationSettingsQueryOptions } from "@truckmoov/api/auth";
+import { Avatar, AvatarImage, AvatarFallback } from "@truckmoov/reusables/components/shadcn/avatar";
 import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/shadcn/button";
 import { useTheme } from "next-themes";
@@ -18,6 +21,11 @@ export function UserProfileDropdown() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+  const { data: orgSettings } = useQuery(getOrganizationSettingsQueryOptions());
+  const branding = orgSettings?.data?.branding;
+  const orgName = branding?.organizationName;
+  const orgEmail = branding?.contactEmail ?? user?.email;
+  const logoUrl = branding?.profilePictureUrl;
   const isDark = theme === "dark";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
 
@@ -27,7 +35,7 @@ export function UserProfileDropdown() {
   };
 
   const handleSettingsClick = () => {
-    if (user?.role === "platform_admin") {
+    if (user?.role === "PLATFORM_ADMIN") {
       window.location.assign(`${PLATFORM_ADMIN_URL}/settings`);
     } else {
       navigate("/admin/settings");
@@ -36,24 +44,17 @@ export function UserProfileDropdown() {
 
   const getRoleLabel = (role?: string) => {
     switch (role) {
-      case "platform_admin":
-        return "Platform Admin";
-      case "tenant_admin":
-        return "Admin";
-      case "operations_manager":
-        return "Operations Manager";
-      case "supervisor":
-        return "Supervisor";
-      case "dispatcher":
-        return "Dispatcher";
-      case "viewer_finance":
-        return "Finance";
-      case "driver":
-        return "Driver";
-      case "installer":
-        return "Installer";
-      default:
-        return "User";
+      case "SUPER_ADMIN": return "Super Admin";
+      case "SYSTEM_ADMIN": return "System Admin";
+      case "PLATFORM_ADMIN": return "Platform Admin";
+      case "ENTERPRISE_ADMIN": return "Enterprise Admin";
+      case "AGGREGATOR_ADMIN": return "Aggregator Admin";
+      case "OWNER_OPERATOR": return "Owner Operator";
+      case "FLEET_ADMIN": return "Fleet Admin";
+      case "OPERATIONS_MANAGER": return "Operations Manager";
+      case "DISPATCHER": return "Dispatcher";
+      case "FINANCE_VIEWER": return "Finance";
+      default: return role ?? "User";
     }
   };
 
@@ -71,12 +72,15 @@ export function UserProfileDropdown() {
           variant="ghost"
           className="h-10 gap-2.5 rounded-full bg-secondary/60 py-1 pl-1.5 pr-4 hover:bg-secondary"
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xs">
-            {getInitials(user?.name)}
-          </span>
+          <Avatar className="h-7 w-7">
+            <AvatarImage src={logoUrl} alt={orgName} />
+            <AvatarFallback className="bg-primary text-primary-foreground font-bold text-xs">
+              {getInitials(orgName)}
+            </AvatarFallback>
+          </Avatar>
           <span className="hidden sm:flex flex-col items-start leading-tight">
             <span className="text-xs font-semibold text-foreground truncate max-w-[140px]">
-              {user?.name || "User"}
+              {orgName || "Organization"}
             </span>
             <span className="text-[10px] font-medium text-primary truncate max-w-[140px]">
               {getRoleLabel(user?.role)}
@@ -87,9 +91,9 @@ export function UserProfileDropdown() {
       <DropdownMenuContent className="w-56 bg-popover border-border" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user?.name || "User"}</p>
+            <p className="text-sm font-medium leading-none">{orgName || "Organization"}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              {user?.email || "user@example.com"}
+              {orgEmail || "user@example.com"}
             </p>
             <p className="text-xs leading-none text-muted-foreground mt-1">
               {getRoleLabel(user?.role)}

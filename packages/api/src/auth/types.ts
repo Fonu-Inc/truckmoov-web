@@ -873,7 +873,35 @@ export type ProfileResponse = ServerResponse<Record<string, unknown>>
 export type OrganizationUserResponse = ServerResponse<OrganizationUser>
 export type OrganizationUsersResponse = ServerResponse<OrganizationUser[]>
 export type RemoveOrganizationUserResponse = ServerResponse<RemoveOrganizationUserData>
-export type OrganizationSettingsResponse = ServerResponse<Record<string, unknown>>
+export type OrgSettingsData = {
+  tenantId: string
+  branding?: {
+    organizationName?: string
+    contactEmail?: string
+    phoneNumber?: string
+    address?: string
+    logoUrl?: string
+    profilePictureUrl?: string
+    primaryColor?: string
+    secondaryColor?: string
+    accentColor?: string
+    successColor?: string
+    warningColor?: string
+    destructiveColor?: string
+    sidebarBackground?: string
+    sidebarText?: string
+    sidebarAccent?: string
+  }
+  defaults?: {
+    timezone?: string
+    language?: string
+    currency?: string
+    dateFormat?: string
+    weekStartsOn?: string
+  }
+}
+
+export type OrganizationSettingsResponse = ServerResponse<OrgSettingsData>
 export type NotificationPreferencesResponse = ServerResponse<Record<string, unknown>>
 export type DispatcherPreferencesResponse = ServerResponse<Record<string, unknown>>
 export type ActivityLogResponse = ServerResponse<ActivityLog[]>

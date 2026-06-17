@@ -16,6 +16,9 @@ import {
 } from "lucide-react";
 import mtnLogoDark from "@/assets/mtn-logo-dark.svg";
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getOrganizationSettingsQueryOptions } from "@truckmoov/api/auth";
+import { Avatar, AvatarImage, AvatarFallback } from "@truckmoov/reusables/components/shadcn/avatar";
 import { useSidebarStore } from "@/stores/sidebarStore";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 import {
@@ -31,6 +34,10 @@ export function DashboardSidebar() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const { unreadCount, clearUnread } = useRealtimeMessages();
   const jobOfferCount = 0;
+  const { data: orgSettings } = useQuery(getOrganizationSettingsQueryOptions());
+  const branding = orgSettings?.data?.branding;
+  const orgName = branding?.organizationName;
+  const logoUrl = branding?.logoUrl;
 
   // ── Centralized sidebar resolution ──
   const sidebarConfig = useMemo(() => getSidebarConfig(user), [user]);
@@ -203,13 +210,16 @@ export function DashboardSidebar() {
       {/* Logo Header */}
       <div className="flex min-h-16 items-center border-b border-sidebar-border px-4 py-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary shadow-mtn">
-            <Truck className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <Avatar className="h-10 w-10 rounded-lg">
+            <AvatarImage src={logoUrl} alt={orgName} className="object-cover" />
+            <AvatarFallback className="bg-primary shadow-mtn rounded-lg">
+              <Truck className="h-5 w-5 text-primary-foreground" />
+            </AvatarFallback>
+          </Avatar>
           {!collapsed && (
             <div className="flex flex-col min-w-0">
               <span className="text-base font-bold text-sidebar-foreground truncate leading-tight">
-                FleetPro <span className="text-primary">Enterprise</span>
+                {orgName || "FleetPro"} <span className="text-primary">Enterprise</span>
               </span>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="text-[9px] font-medium uppercase tracking-wider text-sidebar-foreground/50">
