@@ -1,10 +1,8 @@
 import { ReactNode } from "react";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardHeader } from "./DashboardHeader";
-import { KycBanner } from "@/components/onboarding/KycBanner";
 import { TrialBanner } from "@/components/onboarding/TrialBanner";
 import { OnboardingRouteGate } from "@/components/onboarding/OnboardingRouteGate";
-import { SubscriptionClickGate } from "@/components/onboarding/SubscriptionClickGate";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/stores/sidebarStore";
 
@@ -32,12 +30,8 @@ export function DashboardLayout({
         )}
       >
         <DashboardHeader title={title} subtitle={subtitle} />
-        <SubscriptionClickGate />
-        <div data-allow-no-subscription data-trial-banner>
+        <div data-trial-banner>
           <TrialBanner />
-        </div>
-        <div data-allow-no-subscription data-kyc-banner>
-          <KycBanner />
         </div>
         <main className={cn("flex-1 p-6", fullWidth && "p-0")}>
           <OnboardingRouteGate>{children}</OnboardingRouteGate>

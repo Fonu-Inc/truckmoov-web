@@ -11,7 +11,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import { cn } from "@/lib/utils";
 import { SIMFormDialog } from "@/components/sims/SIMFormDialog";
 import { SIMRequestFormDialog } from "@/components/sims/SIMRequestFormDialog";
 import { SIMDetailsSheet } from "@/components/sims/SIMDetailsSheet";
@@ -22,7 +21,6 @@ import { SIMOverviewCards } from "@/components/sims/SIMOverviewCards";
 import { SIMInventoryTable } from "@/components/sims/SIMInventoryTable";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { useNavigate } from "react-router-dom";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 
 type SIMCardExtended = any;
@@ -30,11 +28,9 @@ type SIMCardExtended = any;
 export default function DispatcherSIMs() {
   const { requireSubscription } = useRequireSubscription();
   const { user } = useAuthStore();
-  const navigate = useNavigate();
-  const submitRequest = async (..._args: any[]) => false;
+const submitRequest = async (..._args: any[]) => false;
   const isSubmitting = false;
-  const canRequestSIM = false;
-  const kycStatus: any = { status: 'pending', isLoading: false };
+  const canRequestSIM = true;
 
   const tenantId = user?.tenantId || "f7f5af88-fd76-4439-aae3-0461be52f63f";
   const sims: SIMCardExtended[] = [];
@@ -56,8 +52,6 @@ export default function DispatcherSIMs() {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [selectedSIM, setSelectedSIM] = useState<SIMCardExtended | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-
-  const kycPending = kycStatus.status === "pending" || kycStatus.status === "under_review";
 
   const filteredSIMs = sims.filter((sim) => {
     const matchesSearch =
@@ -117,13 +111,6 @@ export default function DispatcherSIMs() {
     }));
 
   const openRequestDialog = () => {
-    if (!canRequestSIM) {
-      toast.error("KYC Verification Required", {
-        description: "Complete your business verification before requesting SIM cards.",
-      });
-      navigate("/admin/settings");
-      return;
-    }
     setIsRequestDialogOpen(true);
   };
 
@@ -139,8 +126,6 @@ export default function DispatcherSIMs() {
           <Button
             variant="outline"
             onClick={requireSubscription(openRequestDialog)}
-            disabled={!canRequestSIM && !kycStatus.isLoading}
-            className={cn(!canRequestSIM && "opacity-60")}
           >
             <Plus className="mr-2 h-4 w-4" />
             Request SIM

@@ -92,7 +92,7 @@ export function useOnboardingProgress(): OnboardingProgress {
       currentIndex,
       currentStep: currentIndex >= 0 ? steps[currentIndex] : null,
       allDone,
-      hasPlatformAccess: kycDone,
+      hasPlatformAccess: true,
       bypassGating,
     };
   }, [completedSteps, kycGroup, roleGroup, bypassGating]);
