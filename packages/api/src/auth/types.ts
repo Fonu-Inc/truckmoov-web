@@ -475,10 +475,10 @@ export type SystemChangePasswordPayload = {
 export type UserRole =
   | 'SUPER_ADMIN'
   | 'SYSTEM_ADMIN'
+  | 'PLATFORM_ADMIN'
   | 'ENTERPRISE_ADMIN'
   | 'AGGREGATOR_ADMIN'
   | 'OWNER_OPERATOR'
-  | 'PLATFORM_ADMIN'
   | 'FLEET_ADMIN'
   | 'OPERATIONS_MANAGER'
   | 'DISPATCHER'

@@ -20,6 +20,7 @@ import {
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
 import { AuthBrandingPanel } from "@truckmoov/reusables/components/layouts/AuthBrandingPanel";
+import { getPostLoginRedirectPath } from "@/lib/authRedirect";
 
 const signInSchema = z.object({
   email: z.string().trim().email("Enter a valid email address."),
@@ -111,10 +112,10 @@ export default function AuthPage() {
         }
       },
       {
-        onSuccess: () => {
+        onSuccess: (res) => {
           useAuthStore.getState().syncFromSession();
           toast.success("Login request completed.");
-          navigate("/admin", { replace: true });
+          navigate(getPostLoginRedirectPath(res.data.user.role), { replace: true });
         },
         onError: (error) => {
           toast.error(error.message);
