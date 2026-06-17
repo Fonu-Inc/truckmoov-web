@@ -12,7 +12,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSidebarStore } from "@/stores/sidebarStore";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
-import { useActiveOrgStore } from "@/stores/activeOrgStore";
 import { getSidebarConfig, isNavGroup } from "@/lib/sidebarConfig";
 
 interface DashboardHeaderProps {
@@ -40,14 +39,11 @@ export function DashboardHeader({ title, onRefresh }: DashboardHeaderProps) {
   // ── Sync top-bar title with the active sidebar entry's label ──
   const location = useLocation();
   const { user } = useAuthStore();
-  const { resolveActiveOrg } = useActiveOrgStore();
-  const activeOrg = resolveActiveOrg([]);
-  const multiStakeholderEnabled = false;
 
   const sidebarTitle = useMemo(() => {
-    const config = getSidebarConfig(user, activeOrg, multiStakeholderEnabled);
+    const config = getSidebarConfig(user);
+    if (!config) return title;
     const path = location.pathname;
-    // Find the deepest matching entry (prefer exact, then longest-prefix)
     let best: { label: string; len: number } | null = null;
     const consider = (label: string, href: string) => {
       if (path === href || path.startsWith(href + "/")) {
@@ -62,7 +58,7 @@ export function DashboardHeader({ title, onRefresh }: DashboardHeaderProps) {
       }
     }
     return best?.label ?? title;
-  }, [user, activeOrg, multiStakeholderEnabled, location.pathname, title]);
+  }, [user, location.pathname, title]);
 
   useGlobalShortcuts({
     onSearch: () => {

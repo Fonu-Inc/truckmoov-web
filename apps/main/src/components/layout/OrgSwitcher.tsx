@@ -22,8 +22,6 @@ export function OrgSwitcher() {
   const location = useLocation();
   const { user } = useAuthStore();
 
-  const multiStakeholderEnabled = false;
-
   // Only show switcher for multi-org users
   if (memberships.length <= 1) return null;
 
@@ -36,11 +34,10 @@ export function OrgSwitcher() {
     // Invalidate ALL queries to prevent stale cross-org data
     queryClient.invalidateQueries();
 
-    // Determine if the current route is allowed in the new org's sidebar
-    const newOrg = memberships.find(m => m.orgId === orgId) ?? null;
-    const newConfig = getSidebarConfig(user, newOrg, multiStakeholderEnabled);
-    const allowedRoutes = getAllowedRoutes(newConfig);
+    const newConfig = getSidebarConfig(user);
+    if (!newConfig) return;
 
+    const allowedRoutes = getAllowedRoutes(newConfig);
     const currentPath = location.pathname;
     const isRouteAllowed = allowedRoutes.some(
       (route) => currentPath === route || currentPath.startsWith(route + '/')

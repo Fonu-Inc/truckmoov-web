@@ -2,23 +2,17 @@ import { cn } from "@/lib/utils";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
-import { useActiveOrgStore } from "@/stores/activeOrgStore";
-import { useTenantBrandingContext } from "@/contexts/TenantBrandingContext";
 import {
   getSidebarConfig,
   isNavGroup,
   type SidebarNavItem,
   type SidebarNavGroup,
-  type SidebarConfig,
 } from "@/lib/sidebarConfig";
 import {
   Truck,
-  HelpCircle,
   Ticket,
-  Headphones,
   LogOut,
   ChevronDown,
-  Building2,
 } from "lucide-react";
 import mtnLogoDark from "@/assets/mtn-logo-dark.svg";
 import { useState, useMemo } from "react";
@@ -37,23 +31,14 @@ export function DashboardSidebar() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const { unreadCount, clearUnread } = useRealtimeMessages();
   const jobOfferCount = 0;
-  const { logoUrl } = useTenantBrandingContext();
-
-  const { resolveActiveOrg } = useActiveOrgStore();
-  const activeOrg = resolveActiveOrg([]);
-
-  const multiStakeholderEnabled = false;
 
   // ── Centralized sidebar resolution ──
-  const sidebarConfig: SidebarConfig = useMemo(
-    () => getSidebarConfig(user, activeOrg, multiStakeholderEnabled),
-    [user, activeOrg, multiStakeholderEnabled]
-  );
-
-  // Onboarding sidebar group fully removed — no gating computed here.
+  const sidebarConfig = useMemo(() => getSidebarConfig(user), [user]);
 
   // Apply unread badge counts
   const navItems = useMemo(() => {
+    if (!sidebarConfig) return [];
+
     const resolveBadge = (badgeKey?: string, existingBadge?: number) => {
       if (badgeKey === "messages") return unreadCount || undefined;
       if (badgeKey === "jobOffers") return jobOfferCount || undefined;
@@ -208,10 +193,6 @@ export function DashboardSidebar() {
     );
   };
 
-  // ── Org type label for the badge ──
-  const orgLabel = sidebarConfig.orgTypeLabel;
-  const orgName = activeOrg?.orgName;
-
   return (
     <aside
       className={cn(
@@ -245,27 +226,6 @@ export function DashboardSidebar() {
         </div>
       </div>
 
-      {/* Org Badge — dynamic logo or dummy enterprise icon */}
-      {!collapsed && (orgName || logoUrl) && (
-        <div className="mx-3 mt-3 flex items-center gap-3 rounded-2xl border border-sidebar-border bg-sidebar-accent/40 px-3 py-2.5">
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt={orgName || "Organization"}
-              className="h-10 w-10 shrink-0 rounded-full object-cover bg-background ring-2 ring-primary/60"
-            />
-          ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-transparent ring-2 ring-primary">
-              <Building2 className="h-5 w-5 text-primary" />
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="truncate text-sm font-semibold text-sidebar-foreground">{orgName || "Organization"}</p>
-            <p className="truncate text-[10px] font-medium text-primary uppercase tracking-wide">{orgLabel}</p>
-          </div>
-        </div>
-      )}
-
       {/* Navigation */}
       <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
         {navItems.map((entry) => {
@@ -280,10 +240,9 @@ export function DashboardSidebar() {
       <div className="border-t border-sidebar-border p-3">
         <div className="space-y-0.5">
           {(() => {
-            const isPlatformAdmin = user?.role === 'platform_admin';
-            const supportLabel = isPlatformAdmin ? "Support & Incident" : "Ticketing & Support";
+            const supportLabel = "Ticketing & Support";
             const supportHref = "/help";
-            const SupportIcon = isPlatformAdmin ? Headphones : Ticket;
+            const SupportIcon = Ticket;
             return collapsed ? (
               <TooltipWrapper content={supportLabel} side="right">
                 <NavLink
