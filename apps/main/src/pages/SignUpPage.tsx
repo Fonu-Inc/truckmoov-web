@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ChangeEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Building2, Eye, EyeOff, Lock, Mail, Truck, User } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import * as z from "zod";
 
 import { useRegister } from "@truckmoov/api/auth";
+import { useAuthStore as useApiAuthStore } from "@truckmoov/api/lib/auth-store";
+import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/shadcn/button";
 import {
   Form,
@@ -59,6 +61,7 @@ function PasswordFieldControl({
   name,
   placeholder,
   autoComplete,
+  inputRef,
 }: {
   value: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
@@ -66,6 +69,7 @@ function PasswordFieldControl({
   name: string;
   placeholder: string;
   autoComplete: string;
+  inputRef?: (instance: HTMLInputElement | null) => void;
 }) {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -80,6 +84,7 @@ function PasswordFieldControl({
           onChange={onChange}
           onBlur={onBlur}
           name={name}
+          ref={inputRef}
           className="pl-10 pr-10"
           autoComplete={autoComplete}
         />
@@ -98,6 +103,7 @@ function PasswordFieldControl({
 }
 
 export default function SignUpPage() {
+  const navigate = useNavigate();
   const register = useRegister();
 
   const form = useForm<SignUpFormValues>({
@@ -124,8 +130,11 @@ export default function SignUpPage() {
         }
       },
       {
-        onSuccess: () => {
+        onSuccess: (res) => {
+          useApiAuthStore.getState().setSession(res.data);
+          useAuthStore.getState().syncFromSession();
           toast.success("Registration request completed.");
+          navigate("/admin", { replace: true });
         },
         onError: (error) => {
           toast.error(error.message);
@@ -222,7 +231,15 @@ export default function SignUpPage() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Password</FormLabel>
-                  <PasswordFieldControl placeholder="At least 8 characters" autoComplete="new-password" {...field} />
+                  <PasswordFieldControl
+                    placeholder="At least 8 characters"
+                    autoComplete="new-password"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    inputRef={field.ref}
+                  />
                   <FormMessage />
                 </FormItem>
               )}
@@ -234,7 +251,15 @@ export default function SignUpPage() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Confirm Password</FormLabel>
-                  <PasswordFieldControl placeholder="Confirm your password" autoComplete="new-password" {...field} />
+                  <PasswordFieldControl
+                    placeholder="Confirm your password"
+                    autoComplete="new-password"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    inputRef={field.ref}
+                  />
                   <FormMessage />
                 </FormItem>
               )}

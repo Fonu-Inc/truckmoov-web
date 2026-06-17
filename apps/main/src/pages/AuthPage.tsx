@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ChangeEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Car, ChevronDown, Eye, EyeOff, Factory, Headphones, Lock, Mail, Network, Settings, Sparkles, Truck, Users, Wrench } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import * as z from "zod";
 
 import { useLogin } from "@truckmoov/api/auth";
+import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/shadcn/button";
 import {
   Form,
@@ -49,12 +50,14 @@ function PasswordFieldControl({
   onBlur,
   name,
   placeholder,
+  inputRef,
 }: {
   value: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onBlur: () => void;
   name: string;
   placeholder: string;
+  inputRef?: (instance: HTMLInputElement | null) => void;
 }) {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -69,6 +72,7 @@ function PasswordFieldControl({
           onChange={onChange}
           onBlur={onBlur}
           name={name}
+          ref={inputRef}
           className="pl-10 pr-10"
           autoComplete="current-password"
         />
@@ -87,6 +91,7 @@ function PasswordFieldControl({
 }
 
 export default function AuthPage() {
+  const navigate = useNavigate();
   const login = useLogin();
 
   const form = useForm<SignInFormValues>({
@@ -107,7 +112,9 @@ export default function AuthPage() {
       },
       {
         onSuccess: () => {
+          useAuthStore.getState().syncFromSession();
           toast.success("Login request completed.");
+          navigate("/admin", { replace: true });
         },
         onError: (error) => {
           toast.error(error.message);
@@ -156,7 +163,14 @@ export default function AuthPage() {
                       Forgot password?
                     </Link>
                   </div>
-                  <PasswordFieldControl placeholder="Password" {...field} />
+                  <PasswordFieldControl
+                    placeholder="Password"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    inputRef={field.ref}
+                  />
                   <FormMessage />
                 </FormItem>
               )}

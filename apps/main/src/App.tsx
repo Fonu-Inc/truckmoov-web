@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Toaster as Sonner } from "@/components/shadcn/sonner";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@truckmoov/api/lib/query-client";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuthStore } from "./stores/authStore";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
@@ -80,6 +80,21 @@ import DispatcherMessages from "./pages/dispatcher/DispatcherMessages";
 import DispatcherInbox from "./pages/dispatcher/DispatcherInbox";
 import DispatcherReports from "./pages/dispatcher/DispatcherReports";
 
+function ProtectedRoute() {
+  const location = useLocation();
+  const { isAuthenticated, isAuthReady } = useAuthStore();
+
+  if (!isAuthReady) {
+    return null;
+  }
+
+  if (!isAuthenticated && !location.pathname.startsWith("/auth")) {
+    return <Navigate to="/auth" replace state={{ from: location }} />;
+  }
+
+  return <Outlet />;
+}
+
 const App = () => {
   useEffect(() => {
     void useAuthStore.getState().bootstrapFromSession();
@@ -96,11 +111,13 @@ const App = () => {
               <FonuCallProvider>
                 <BrowserRouter>
                   <Routes>
-                    <Route path="/" element={<Navigate to="/auth" replace />} />
                     <Route path="/auth" element={<AuthPage />} />
                     <Route path="/auth/signup" element={<SignUpPage />} />
                     <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/auth/reset-password" element={<ResetPassword />} />
+
+                    <Route element={<ProtectedRoute />}>
+                    <Route path="/" element={<Navigate to="/admin" replace />} />
                     <Route path="/not-authorized" element={<NotAuthorized />} />
 
                     {/* Onboarding Pages */}
@@ -192,6 +209,7 @@ const App = () => {
                     <Route path="/help" element={<HelpSupport />} />
 
                     <Route path="*" element={<NotFound />} />
+                    </Route>
                   </Routes>
                   <GlobalSupportChat />
                   <div data-allow-no-subscription data-allow-no-kyc>
