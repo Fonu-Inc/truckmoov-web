@@ -4,7 +4,6 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AlertList } from "@/components/alerts/AlertList";
 import { DispatchPanel } from "@/components/supervisor/DispatchPanel";
-import { useDrivers } from "@/hooks/useDrivers";
 import {
   Truck, Users, AlertTriangle, Package, Loader2, Clock,
   CheckCircle2, XCircle, Send, MessageSquare, Phone,
@@ -47,14 +46,14 @@ export default function SupervisorDashboard() {
 
   const vehicles: any[] = [];
   const vehiclesLoading = false;
-  const { drivers, isLoading: driversLoading } = useDrivers();
+  const drivers: any[] = [];
   const jobs: any[] = [];
   const jobsLoading = false;
   const alerts: any[] = [];
   const alertsLoading = false;
   const acknowledgeAlert = async (...args: any[]) => {};
 
-  const isLoading = vehiclesLoading || driversLoading || jobsLoading || alertsLoading;
+  const isLoading = vehiclesLoading || jobsLoading || alertsLoading;
 
   const driversForPanel = useMemo(() => drivers.map((d) => ({
     id: d.id,

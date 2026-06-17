@@ -14,7 +14,6 @@ import {
   Activity, Zap, ShieldAlert, Eye, RefreshCw, Wifi, WifiOff,
 } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
-import { useDrivers } from "@/hooks/useDrivers";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
@@ -117,7 +116,7 @@ function BehaviorScoreRing({ score, label, size = 60 }: { score: number; label: 
 export function FleetAnalyticsTab() {
   const vehicles: any[] = [];
   const isLoading_vehicles = false;
-  const { drivers, isLoading: driversLoading } = useDrivers();
+  const drivers: any[] = [];
   const jobs: any[] = [];
   const isLoading_jobs = false;
   const events: any[] = [];
@@ -140,7 +139,7 @@ export function FleetAnalyticsTab() {
     return () => clearInterval(interval);
   }, []);
 
-  const isLoading = isLoading_vehicles || driversLoading || isLoading_jobs || isLoading_behavior;
+  const isLoading = isLoading_vehicles || isLoading_jobs || isLoading_behavior;
 
   if (isLoading) {
     return (

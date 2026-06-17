@@ -3,7 +3,6 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { VerificationBanner } from "@/components/admin/VerificationBanner";
 import { TrialBanner } from "@/components/admin/TrialBanner";
-import { useDrivers } from "@/hooks/useDrivers";
 import { useState } from "react";
 import {
   Truck,
@@ -45,14 +44,14 @@ export default function TenantAdminDashboard() {
   const tenantLoading = false;
   const vehicles: any[] = [];
   const vehiclesLoading = false;
-  const { drivers, isLoading: driversLoading } = useDrivers();
+  const drivers: any[] = [];
   const jobs: any[] = [];
   const jobsLoading = false;
   const alerts: any[] = [];
   const alertsLoading = false;
   const acknowledgeAlert = async (...args: any[]) => {};
 
-  const isLoading = tenantLoading || vehiclesLoading || driversLoading || jobsLoading || alertsLoading;
+  const isLoading = tenantLoading || vehiclesLoading || jobsLoading || alertsLoading;
 
   // Compute real stats
   const totalVehicles = vehicles.length;

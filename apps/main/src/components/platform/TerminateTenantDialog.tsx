@@ -14,7 +14,10 @@ import { Textarea } from "@/components/shadcn/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { TenantData } from "@/hooks/useTenants";
+
+interface TenantData {
+  name: string;
+}
 
 interface Props {
   tenant: TenantData;

@@ -24,8 +24,6 @@ import {
 } from "@/components/shadcn/dialog";
 import {
   Users,
-  Search,
-  SlidersHorizontal as Filter,
   Phone,
   MessageSquare,
   Mail,
@@ -37,7 +35,6 @@ import {
   PhoneOff,
   Send,
   Loader2,
-  Inbox,
   MessageCircle,
   TrendingUp,
   CheckCircle,
@@ -49,7 +46,6 @@ import {
   Timer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useDrivers, DriverData } from "@/hooks/useDrivers";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useFonuCall } from "@/contexts/FonuCallContext";
@@ -61,20 +57,9 @@ const statusColors: Record<string, string> = {
   suspended: "bg-destructive/20 text-destructive border-destructive/30",
 };
 
-const statusIcons: Record<string, React.ElementType> = {
-  available: Sparkles,
-  active: Clock,
-  offline: UserX,
-  suspended: XCircle,
-};
-
 export default function SupervisorDrivers() {
-  const { drivers } = useDrivers();
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDriver, setSelectedDriver] = useState<DriverData | null>(null);
-  const [activeTab, setActiveTab] = useState("drivers");
-  
+  const [activeTab, setActiveTab] = useState("messages");
+
   // Communication state
   const [isCallDialogOpen, setIsCallDialogOpen] = useState(false);
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
@@ -83,6 +68,8 @@ export default function SupervisorDrivers() {
   const [messageType, setMessageType] = useState<"sms" | "whatsapp">("whatsapp");
   const [messageContent, setMessageContent] = useState("");
   const [pendingMessage, setPendingMessage] = useState<string>("");
+  const [selectedContactName, setSelectedContactName] = useState<string | undefined>();
+  const [selectedContactPhone, setSelectedContactPhone] = useState<string | undefined>();
 
   // Use real Fonu integration
   const messages: any[] = [];
@@ -99,40 +86,6 @@ export default function SupervisorDrivers() {
 
   const stats = getStats();
 
-  const filteredDrivers = drivers.filter((driver) => {
-    const matchesStatus = statusFilter === "all" || driver.status === statusFilter;
-    const matchesSearch =
-      driver.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      driver.phone.includes(searchQuery);
-    return matchesStatus && matchesSearch;
-  });
-
-  const driverStats = {
-    total: drivers.length,
-    available: drivers.filter((d) => d.status === "available").length,
-    onJob: drivers.filter((d) => d.status === "on_trip").length,
-    offline: drivers.filter((d) => d.status === "offline").length,
-  };
-
-  // Communication handlers
-  const handleCallDriver = async (driver: DriverData) => {
-    setSelectedDriver(driver);
-    setIsCallDialogOpen(true);
-    setCallStatus("ringing");
-    try {
-      await startCall(driver.name, driver.phone, [
-        `X-Driver-ID: ${driver.id}`,
-        `X-Driver-Name: ${driver.name}`,
-      ]);
-    } catch (err) {
-      setCallStatus("ended");
-      setTimeout(() => {
-        setIsCallDialogOpen(false);
-        setCallStatus("idle");
-      }, 1000);
-    }
-  };
-
   const handleEndCall = async () => {
     setCallStatus("ended");
     sipEndCall();
@@ -142,25 +95,18 @@ export default function SupervisorDrivers() {
     }, 500);
   };
 
-  const openMessageDialog = (driver: DriverData, type: "sms" | "whatsapp") => {
-    setSelectedDriver(driver);
-    setMessageType(type);
-    setMessageContent("");
-    setIsMessageDialogOpen(true);
-  };
-
   const handleSendMessage = async () => {
-    if (!selectedDriver || !messageContent.trim()) return;
-    
+    if (!selectedContactPhone || !messageContent.trim()) return;
+
     if (messageType === "whatsapp") {
       const result = await sendWhatsApp(
-        selectedDriver.id,
-        selectedDriver.name,
-        selectedDriver.phone,
+        selectedContactPhone,
+        selectedContactName,
+        selectedContactPhone,
         messageContent,
         "Supervisor"
       );
-      
+
       // Check if API is unavailable and offer fallback
       if (!result.success && result.queued) {
         setPendingMessage(messageContent);
@@ -168,7 +114,7 @@ export default function SupervisorDrivers() {
         setIsFallbackDialogOpen(true);
         return;
       }
-      
+
       if (!result.success) {
         // Offer fallback for any failure
         setPendingMessage(messageContent);
@@ -179,9 +125,9 @@ export default function SupervisorDrivers() {
     } else {
       try {
         await sendSMS(
-          selectedDriver.id,
-          selectedDriver.name,
-          selectedDriver.phone,
+          selectedContactPhone,
+          selectedContactName,
+          selectedContactPhone,
           messageContent,
           "Supervisor"
         );
@@ -190,14 +136,14 @@ export default function SupervisorDrivers() {
         return;
       }
     }
-    
+
     setIsMessageDialogOpen(false);
     setMessageContent("");
   };
 
   const handleUseFallback = () => {
-    if (selectedDriver && pendingMessage) {
-      openWhatsAppWeb(selectedDriver.phone, selectedDriver.name, pendingMessage);
+    if (selectedContactPhone && pendingMessage) {
+      openWhatsAppWeb(selectedContactPhone, selectedContactName, pendingMessage);
     }
     setIsFallbackDialogOpen(false);
     setPendingMessage("");
@@ -219,16 +165,9 @@ export default function SupervisorDrivers() {
     }
   }, [sipStatus, lastSipStatus]);
 
-  const handleQuickWhatsApp = (driver: DriverData) => {
-    const phone = driver.phone.replace(/\s+/g, "").replace(/^\+/, "");
-    const message = encodeURIComponent(`Hello ${driver.name}, this is a message from Fleet Supervisor.`);
-    window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
-    toast.success(`Opening WhatsApp for ${driver.name}`);
-  };
-
   // Manual retry functionality
   const [isRetrying, setIsRetrying] = useState(false);
-  
+
   const handleManualRetry = async () => {
     toast.info('Coming soon');
     return;
@@ -259,8 +198,8 @@ export default function SupervisorDrivers() {
     switch (status) {
       case 'completed': return 'text-success';
       case 'in_progress': return 'text-primary';
-      case 'failed': 
-      case 'no_answer': 
+      case 'failed':
+      case 'no_answer':
       case 'busy': return 'text-destructive';
       default: return 'text-muted-foreground';
     }
@@ -272,66 +211,6 @@ export default function SupervisorDrivers() {
       subtitle="Manage and communicate with your drivers"
     >
       <div className="space-y-6">
-        {/* Stats Row */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Drivers</p>
-                  <p className="text-3xl font-bold">{driverStats.total}</p>
-                </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                  <Users className="h-6 w-6 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent" />
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Available</p>
-                  <p className="text-3xl font-bold text-success">{driverStats.available}</p>
-                </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-success/10">
-                  <Sparkles className="h-6 w-6 text-success" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent" />
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">On Job</p>
-                  <p className="text-3xl font-bold text-accent">{driverStats.onJob}</p>
-                </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10">
-                  <Clock className="h-6 w-6 text-accent" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-muted/20 to-transparent" />
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Offline</p>
-                  <p className="text-3xl font-bold text-muted-foreground">{driverStats.offline}</p>
-                </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
-                  <UserX className="h-6 w-6 text-muted-foreground" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Main Content with Tabs */}
         <Card>
           <CardHeader className="pb-4">
@@ -345,11 +224,7 @@ export default function SupervisorDrivers() {
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3 max-w-md">
-                <TabsTrigger value="drivers" className="gap-2">
-                  <Users className="h-4 w-4" />
-                  Drivers
-                </TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 max-w-sm">
                 <TabsTrigger value="messages" className="gap-2">
                   <MessageCircle className="h-4 w-4" />
                   Messages
@@ -370,124 +245,6 @@ export default function SupervisorDrivers() {
                 </TabsTrigger>
               </TabsList>
 
-              {/* Drivers Tab */}
-              <TabsContent value="drivers" className="space-y-6">
-                {/* Filters */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by name or phone..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                      <Filter className="h-4 w-4 mr-2" />
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="available">Available</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="offline">Offline</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Drivers Grid */}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {filteredDrivers.map((driver) => {
-                    const StatusIcon = statusIcons[driver.status] || UserX;
-                    return (
-                      <Card 
-                        key={driver.id} 
-                        className="group overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-primary/30"
-                      >
-                        <CardContent className="p-5">
-                          <div className="flex items-start gap-4">
-                            <div className={cn(
-                              "relative flex h-14 w-14 items-center justify-center rounded-full text-lg font-bold text-white",
-                              "bg-gradient-to-br from-primary to-accent shadow-lg transition-transform group-hover:scale-105"
-                            )}>
-                              {driver.name.split(" ").map(n => n[0]).join("")}
-                              <div className={cn(
-                                "absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-background",
-                                driver.status === 'available' && "bg-success",
-                                driver.status === 'on_trip' && "bg-accent",
-                                driver.status === 'offline' && "bg-muted-foreground",
-                                driver.status === 'on_break' && "bg-destructive",
-                              )}>
-                                <StatusIcon className="h-3 w-3 text-white" />
-                              </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-1">
-                                <p className="font-semibold truncate text-base">{driver.name}</p>
-                              </div>
-                              <p className="text-sm text-muted-foreground mb-2">
-                                {driver.phone}
-                              </p>
-                              <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
-                                <span className="flex items-center gap-1">
-                                  <Star className="h-3.5 w-3.5 text-warning fill-warning" />
-                                  <span className="font-medium">{driver.rating.toFixed(1)}</span>
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <TrendingUp className="h-3.5 w-3.5" />
-                                  {driver.totalTrips} trips
-                                </span>
-                              </div>
-                              <Badge className={cn("mb-3", statusColors[driver.status])}>
-                                {driver.status.replace("_", " ")}
-                              </Badge>
-                              <div className="flex gap-2 pt-2 border-t border-border/50">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="flex-1 gap-1.5 h-9 text-[#25D366] hover:text-[#25D366] hover:bg-[#25D366]/10 hover:border-[#25D366]/30"
-                                  onClick={() => openMessageDialog(driver, "whatsapp")}
-                                >
-                                  <MessageSquare className="h-4 w-4" />
-                                  WhatsApp
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="flex-1 gap-1.5 h-9 text-primary hover:text-primary hover:bg-primary/10 hover:border-primary/30"
-                                  onClick={() => openMessageDialog(driver, "sms")}
-                                >
-                                  <Mail className="h-4 w-4" />
-                                  SMS
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="gap-1.5 h-9 text-accent hover:text-accent hover:bg-accent/10 hover:border-accent/30 px-3"
-                                  onClick={() => handleCallDriver(driver)}
-                                >
-                                  <Phone className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-
-                  {filteredDrivers.length === 0 && (
-                    <div className="col-span-full text-center py-12 text-muted-foreground">
-                      <Users className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                      <p className="text-lg font-medium">No drivers found</p>
-                      <p className="text-sm mt-1">Try adjusting your search or filter</p>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
               {/* Messages Tab */}
               <TabsContent value="messages" className="space-y-4">
                 {/* Pending Messages Alert & Retry Button */}
@@ -502,9 +259,9 @@ export default function SupervisorDrivers() {
                         <p className="text-sm text-muted-foreground">These messages will be retried automatically every 5 minutes</p>
                       </div>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={handleManualRetry}
                       disabled={isRetrying}
                       className="gap-2 border-warning/50 text-warning hover:bg-warning/10"
@@ -564,7 +321,7 @@ export default function SupervisorDrivers() {
                       {messages.map((msg) => {
                         const retryInfo = getRetryInfo(msg);
                         const isPending = msg.status === 'pending';
-                        
+
                         return (
                           <div
                             key={msg.id}
@@ -580,7 +337,7 @@ export default function SupervisorDrivers() {
                                   "flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium text-white",
                                   "bg-gradient-to-br from-primary to-accent"
                                 )}>
-                                  {msg.driver_name?.split(" ").map(n => n[0]).join("") || "?"}
+                                  {msg.driver_name?.split(" ").map((n: string) => n[0]).join("") || "?"}
                                 </div>
                                 <div>
                                   <p className="font-medium">{msg.driver_name || 'Unknown'}</p>
@@ -619,7 +376,7 @@ export default function SupervisorDrivers() {
                               <div className="mt-2 pt-2 border-t border-warning/20 flex items-center justify-between">
                                 <span className="text-xs text-warning flex items-center gap-1">
                                   <RotateCcw className="h-3 w-3" />
-                                  {retryInfo.lastRetry 
+                                  {retryInfo.lastRetry
                                     ? `Last retry: ${format(retryInfo.lastRetry, 'HH:mm')}`
                                     : 'Waiting for retry...'
                                   }
@@ -743,11 +500,11 @@ export default function SupervisorDrivers() {
               "bg-gradient-to-br from-primary to-accent shadow-xl",
               callStatus === "ringing" && "animate-pulse"
             )}>
-              {selectedDriver?.name.split(" ").map(n => n[0]).join("")}
+              {selectedContactName?.split(" ").map(n => n[0]).join("")}
             </div>
-            <p className="text-xl font-semibold">{selectedDriver?.name}</p>
-            <p className="text-muted-foreground">{selectedDriver?.phone}</p>
-            
+            <p className="text-xl font-semibold">{selectedContactName}</p>
+            <p className="text-muted-foreground">{selectedContactPhone}</p>
+
             <div className="flex items-center gap-2 mt-6">
               {callStatus === "ringing" && (
                 <Badge variant="secondary" className="animate-pulse gap-1 px-4 py-1.5">
@@ -800,11 +557,11 @@ export default function SupervisorDrivers() {
           <div className="space-y-4 py-4">
             <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
               <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-base font-bold text-white">
-                {selectedDriver?.name.split(" ").map(n => n[0]).join("")}
+                {selectedContactName?.split(" ").map(n => n[0]).join("")}
               </div>
               <div>
-                <p className="font-semibold">{selectedDriver?.name}</p>
-                <p className="text-sm text-muted-foreground">{selectedDriver?.phone}</p>
+                <p className="font-semibold">{selectedContactName}</p>
+                <p className="text-sm text-muted-foreground">{selectedContactPhone}</p>
               </div>
             </div>
             <div className="space-y-2">
@@ -825,8 +582,8 @@ export default function SupervisorDrivers() {
             <Button variant="outline" onClick={() => setIsMessageDialogOpen(false)} disabled={isSending}>
               Cancel
             </Button>
-            <Button 
-              variant="gradient" 
+            <Button
+              variant="gradient"
               onClick={handleSendMessage}
               disabled={!messageContent.trim() || isSending}
               className="gap-2"
@@ -872,17 +629,17 @@ export default function SupervisorDrivers() {
             </div>
             <div className="flex items-center gap-3 p-3 bg-[#25D366]/5 rounded-lg border border-[#25D366]/20">
               <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-bold text-white">
-                {selectedDriver?.name.split(" ").map(n => n[0]).join("")}
+                {selectedContactName?.split(" ").map(n => n[0]).join("")}
               </div>
               <div>
-                <p className="font-medium">{selectedDriver?.name}</p>
-                <p className="text-sm text-muted-foreground">{selectedDriver?.phone}</p>
+                <p className="font-medium">{selectedContactName}</p>
+                <p className="text-sm text-muted-foreground">{selectedContactPhone}</p>
               </div>
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setIsFallbackDialogOpen(false);
                 setPendingMessage("");
@@ -890,7 +647,7 @@ export default function SupervisorDrivers() {
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleUseFallback}
               className="gap-2 bg-[#25D366] hover:bg-[#20BD5A] text-white"
             >

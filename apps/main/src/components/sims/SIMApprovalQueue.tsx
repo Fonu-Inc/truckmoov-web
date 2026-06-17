@@ -31,8 +31,6 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { SIMRequestDetailsDialog } from "./SIMRequestDetailsDialog";
 import { KYCRequestDialog } from "./KYCRequestDialog";
-import { useTenants } from "@/hooks/useTenants";
-
 // Local type aliases (hooks deleted)
 type SIMProvisioningRequest = {
   id: string;
@@ -78,15 +76,9 @@ export function SIMApprovalQueue() {
     useCase: { enabled: false },
   });
 
-  const tenantIds = useMemo(() => requests.map((r) => r.tenant_id), [requests]);
   // useTenantKYCCache removed — empty cache until data source is wired up
   const tenantKYCCache: TenantKYCCache = {};
-  const { tenants } = useTenants();
-  const tenantEmailMap = useMemo(() => {
-    const m: Record<string, string> = {};
-    tenants.forEach((t) => { if (t.email) m[t.id] = t.email; });
-    return m;
-  }, [tenants]);
+  const tenantEmailMap: Record<string, string> = {};
   const tenantEmail = (id: string) => tenantEmailMap[id] || "—";
 
   const filteredRequests = useMemo(() => {
@@ -105,7 +97,7 @@ export function SIMApprovalQueue() {
       const matchesUseCase = !useCaseF?.enabled || !useCaseF.value || r.use_case === useCaseF.value;
       return matchesSearch && matchesStatus && matchesPriority && matchesOrg && matchesCarrier && matchesUseCase;
     });
-  }, [requests, searchQuery, statusFilter, filterDraft, tenantEmailMap]);
+  }, [requests, searchQuery, statusFilter, filterDraft]);
 
   const pendingRequests = requests.filter((r) => r.status === "pending");
   const approvedRequests = requests.filter((r) => r.status === "approved");

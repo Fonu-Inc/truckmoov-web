@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/s
 import { ExportButton } from "@/components/shadcn/export-button";
 import { PlatformFilterPopover, buildEmptyDraft, type FilterDraft, type FilterField } from "@/components/shadcn/platform-filter-popover";
 import { Search } from "lucide-react";
-import { useDrivers } from "@/hooks/useDrivers";
 import { useAuthStore } from "@/stores/authStore";
 import {
   Leaf, TrendingDown, Zap, Car, Fuel, TreePine,
@@ -68,7 +67,6 @@ export default function Sustainability() {
   const totalProfiled = 0;
   const trendData: any[] = [];
   const vehicles: any[] = [];
-  const { drivers } = useDrivers();
   const [activeTab, setActiveTab] = useState("overview");
   const [trendRange, setTrendRange] = useState<ChartDateRange>("30d");
   const [fuelRange, setFuelRange] = useState<ChartDateRange>("30d");
@@ -126,7 +124,7 @@ export default function Sustainability() {
   // Eco driving leaderboard
   const ecoLeaderboard = ecoScores.data?.map(s => ({
     ...s,
-    driverName: drivers?.find(d => d.id === s.driver_id)?.name || s.driver_id.slice(0, 8),
+    driverName: s.driver_id.slice(0, 8),
   })) || [];
 
   // Target progress

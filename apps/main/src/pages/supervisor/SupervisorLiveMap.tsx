@@ -18,7 +18,6 @@ import {
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { DriverCommunicationActions } from "@/components/communications/DriverCommunicationActions";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { useDrivers } from "@/hooks/useDrivers";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +38,7 @@ export default function SupervisorLiveMap() {
   const vehicles: any[] = [];
   const vehiclesLoading = false;
   const refetchVehicles = async (...args: any[]) => {};
-  const { drivers } = useDrivers();
+  const drivers: any[] = [];
   const alerts: any[] = [];
   const jobs: any[] = [];
   const addJob = async (...args: any[]) => false;

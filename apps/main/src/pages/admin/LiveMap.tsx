@@ -17,14 +17,12 @@ import {
 import { toast } from "sonner";
 import { DriverCommunicationActions } from "@/components/communications/DriverCommunicationActions";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { useDrivers } from "@/hooks/useDrivers";
 import { useAuthStore } from "@/stores/authStore";
 
 export default function LiveMap() {
   const vehicles: any[] = [];
   const vehiclesLoading = false;
   const refetchVehicles = async (...args: any[]) => {};
-  const { drivers } = useDrivers();
   const alerts: any[] = [];
   const { user } = useAuthStore();
 
@@ -37,7 +35,7 @@ export default function LiveMap() {
 
   // Map real vehicles with driver info for the map component
   const realVehiclesWithDrivers = vehicles.map(v => {
-    const driver = v.currentDriverId ? drivers.find(d => d.id === v.currentDriverId) : null;
+    const driver: null = null;
     const modelParts = [v.make, v.model, v.year ? `(${v.year})` : null].filter(Boolean).join(" ");
     return {
       id: v.registrationNumber || v.id,

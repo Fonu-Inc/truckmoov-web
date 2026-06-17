@@ -12,7 +12,6 @@ import { Checkbox } from '@/components/shadcn/checkbox';
 import { Textarea } from '@/components/shadcn/textarea';
 import { Phone, Plus, MoreHorizontal, Building2, PhoneOff, Trash2, RefreshCw, MessageSquare, PhoneCall, Search, Loader2 } from 'lucide-react';
 type PlatformPhoneNumber = any;
-import { useTenants } from '@/hooks/useTenants';
 import { useAuthStore } from '@/stores/authStore';
 import { toast } from 'sonner';
 import { ExportButton } from '@/components/shadcn/export-button';
@@ -35,7 +34,6 @@ export function PhoneNumberManagement() {
   const releaseNumber = async (..._args: any[]) => {};
   const deleteNumber = async (..._args: any[]) => {};
   const refetch = async () => {};
-  const { tenants } = useTenants();
   const { user } = useAuthStore();
   
   const [isProvisionDialogOpen, setIsProvisionDialogOpen] = useState(false);
@@ -107,17 +105,14 @@ export function PhoneNumberManagement() {
 
   const handleAssign = async () => {
     if (!selectedNumber || !selectedTenantId) return;
-    
-    const tenant = tenants.find(t => t.id === selectedTenantId);
-    if (!tenant) return;
-    
+
     await assignToTenant(
       selectedNumber.id,
       selectedTenantId,
-      tenant.name,
+      selectedTenantId,
       user?.name || 'Platform Admin'
     );
-    
+
     setIsAssignDialogOpen(false);
     setSelectedNumber(null);
     setSelectedTenantId('');
@@ -463,13 +458,6 @@ export function PhoneNumberManagement() {
                   <SelectValue placeholder="Choose a tenant..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {tenants
-                    .filter(t => t.status === 'active')
-                    .map((tenant) => (
-                      <SelectItem key={tenant.id} value={tenant.id}>
-                        {tenant.name}
-                      </SelectItem>
-                    ))}
                 </SelectContent>
               </Select>
             </div>

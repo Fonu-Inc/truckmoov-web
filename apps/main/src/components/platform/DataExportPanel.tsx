@@ -14,7 +14,11 @@ import {Download, Package,
   ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { format, addDays, formatDistanceToNowStrict } from "date-fns";
-import type { TenantData } from "@/hooks/useTenants";
+interface TenantData {
+  id: string;
+  status: string;
+  email?: string | null;
+}
 
 interface Props {
   tenant: TenantData;

@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/shadcn/badge';
 import { Button } from '@/components/shadcn/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/shadcn/table';
-import { useDrivers } from '@/hooks/useDrivers';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import {Fuel, TrendingUp, TrendingDown, Minus, User, Download} from 'lucide-react';
 
@@ -13,13 +12,7 @@ export function DriverFuelAnalysisPanel() {
   const getEfficiencyIndicator = (_efficiency: any) => ({ color: '' });
   const getTotalPotentialSavings = () => 0;
   const getFleetAverageEfficiency = () => 0;
-  const { drivers } = useDrivers();
   const { format: formatCurrency } = useCurrency();
-
-  const getDriverName = (driverId: string) => {
-    const driver = drivers?.find(d => d.id === driverId);
-    return driver?.name || 'Unknown Driver';
-  };
 
   const getTrendIcon = (vsFleet: number) => {
     if (vsFleet > 5) return <TrendingUp className="h-4 w-4 text-green-600" />;
@@ -33,7 +26,7 @@ export function DriverFuelAnalysisPanel() {
     const csvContent = [
       ['Driver', 'Distance (km)', 'Fuel (L)', 'Efficiency (km/L)', 'vs Fleet (%)', 'Potential Savings'].join(','),
       ...efficiencyData.map(d => [
-        getDriverName(d.driver_id),
+        d.driver_id,
         d.total_distance_km.toFixed(1),
         d.total_fuel_consumed_liters.toFixed(1),
         d.avg_fuel_efficiency_km_per_liter.toFixed(2),
@@ -132,7 +125,7 @@ export function DriverFuelAnalysisPanel() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-muted-foreground" />
-                          {getDriverName(efficiency.driver_id)}
+                          {efficiency.driver_id}
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-mono">

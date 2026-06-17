@@ -31,7 +31,6 @@ import {
 import { DriverCommunicationActions } from "@/components/communications/DriverCommunicationActions";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 type JobData = any;
-import { useDrivers } from "@/hooks/useDrivers";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 
@@ -41,7 +40,6 @@ export default function JobDispatch() {
   const addJob = async (...args: any[]) => false;
   const updateJob = async (...args: any[]) => false;
   const deleteJob = async (...args: any[]) => {};
-  const { drivers } = useDrivers();
   const { format: formatCurrency } = useCurrency();
   const isEnterprise = false;
   const isAggregator = false;

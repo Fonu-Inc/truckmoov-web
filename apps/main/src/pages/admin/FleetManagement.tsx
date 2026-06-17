@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 type VehicleData = any;
-import { useDrivers } from "@/hooks/useDrivers";
 import {
   Truck,
   Plus,
@@ -100,7 +99,6 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
   const addVehicle = async (...args: any[]) => false;
   const updateVehicle = async (...args: any[]) => false;
   const deleteVehicle = async (...args: any[]) => {};
-  const { drivers } = useDrivers();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -203,12 +201,6 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
       });
     }
     setIsBulkUploadOpen(false);
-  };
-
-  const getDriverName = (driverId?: string | null) => {
-    if (!driverId) return null;
-    const driver = drivers.find((d) => d.id === driverId);
-    return driver?.name || null;
   };
 
   const statusCounts = {
@@ -438,9 +430,7 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
                       <td className="py-4 pr-6 capitalize">{vehicle.type}</td>
                       <td className="py-4 pr-6">{vehicle.year}</td>
                       <td className="py-4 pr-6">
-                        {getDriverName(vehicle.currentDriver) || (
-                          <span className="text-muted-foreground">Unassigned</span>
-                        )}
+                        <span className="text-muted-foreground">Unassigned</span>
                       </td>
                       <td className="py-4 pr-6">
                         <span
@@ -631,7 +621,7 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
           currentDriver: selectedVehicle.currentDriverId || undefined,
           fuelLevel: selectedVehicle.fuelLevel || undefined,
         } : null}
-        driverName={getDriverName(selectedVehicle?.currentDriverId)}
+        driverName={null}
       />
 
       <BulkUploadDialog

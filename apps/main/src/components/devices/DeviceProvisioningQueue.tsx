@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { startDeviceProvisioningSimulation } from "@/lib/provisioningEngineSim";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
@@ -58,7 +58,6 @@ import {
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { useTenants } from "@/hooks/useTenants";
 import { DeviceRequestDetailsDialog } from "./DeviceRequestDetailsDialog";
 
 type DeviceReq = {
@@ -138,7 +137,6 @@ const KycCell = ({ status }: { status: string | null }) => {
 
 export function DeviceProvisioningQueue() {
   const { user } = useAuthStore();
-  const { tenants } = useTenants();
   const [reqs] = useState<DeviceReq[]>([]);
   const [loading] = useState(false);
   const [search, setSearch] = useState("");
@@ -154,27 +152,12 @@ export function DeviceProvisioningQueue() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsReq, setDetailsReq] = useState<DeviceReq | null>(null);
 
-  const tenantNameMap = useMemo(() => {
-    const m: Record<string, string> = {};
-    tenants.forEach((t) => {
-      m[t.id] = t.name;
-      if (t.slug) m[t.slug] = t.name;
-    });
-    return m;
-  }, [tenants]);
-
-  const tenantEmailMap = useMemo(() => {
-    const m: Record<string, string> = {};
-    tenants.forEach((t) => {
-      if (t.email) m[t.id] = t.email;
-    });
-    return m;
-  }, [tenants]);
+  const tenantNameMap: Record<string, string> = {};
+  const tenantEmailMap: Record<string, string> = {};
 
   const tenantName = (id: string) => tenantNameMap[id] || id?.slice(0, 8) || "—";
   const tenantEmail = (id: string) => tenantEmailMap[id] || "—";
 
-  const tenantIds = useMemo(() => reqs.map((r) => r.tenant_id), [reqs]);
   const kycCache: Record<string, { status: string | null }> = {};
 
   const pending = reqs.filter((r) =>

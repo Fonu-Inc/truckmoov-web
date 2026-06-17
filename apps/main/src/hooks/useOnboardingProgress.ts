@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { ShieldCheck, type LucideIcon } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useOnboardingStore } from "@/stores/onboardingStore";
-import { useKYCVerification } from "@/hooks/useKYCVerification";
 import { getOnboardingGroups, type OnboardingGroup } from "@/components/onboarding/onboardingChecklist";
 
 export type OnboardingStepStatus = "done" | "active" | "locked";
@@ -41,7 +40,6 @@ export interface OnboardingProgress {
  */
 export function useOnboardingProgress(): OnboardingProgress {
   const { user } = useAuthStore();
-  const { isVerified: kycVerified } = useKYCVerification();
   const { completedSteps } = useOnboardingStore();
 
   const isPlatformAdmin = user?.role === "platform_admin";
@@ -54,7 +52,7 @@ export function useOnboardingProgress(): OnboardingProgress {
   const roleGroup = groups.find((g) => g.id !== "kyc" && g.id !== "subscription");
 
   return useMemo<OnboardingProgress>(() => {
-    const kycDone = kycVerified || completedSteps.includes("kyc");
+    const kycDone = completedSteps.includes("kyc");
     const roleDone = roleGroup ? completedSteps.includes(roleGroup.id) : true;
 
     const ordered: Array<{ group: OnboardingGroup | undefined; done: boolean; icon: LucideIcon }> = [
@@ -97,5 +95,5 @@ export function useOnboardingProgress(): OnboardingProgress {
       hasPlatformAccess: kycDone,
       bypassGating,
     };
-  }, [kycVerified, completedSteps, kycGroup, roleGroup, bypassGating]);
+  }, [completedSteps, kycGroup, roleGroup, bypassGating]);
 }

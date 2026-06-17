@@ -1,4 +1,30 @@
-import { TenantData } from "@/hooks/useTenants";
+export interface TenantData {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  address?: string | null;
+  status: string;
+  plan: "starter" | "professional" | "enterprise";
+  createdAt: string;
+  features: Record<string, boolean>;
+  billingEmail?: string | null;
+  businessInfo?: {
+    companyName: string;
+    registrationNumber?: string | null;
+    taxId?: string | null;
+    businessType?: string | null;
+    industry?: string | null;
+    addressLine1?: string | null;
+    addressLine2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postalCode?: string | null;
+    country?: string | null;
+    verificationStatus?: string | null;
+  } | null;
+}
+
 import {
   Dialog as Sheet,
   DialogContent as SheetContent,

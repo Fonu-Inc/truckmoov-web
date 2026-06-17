@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
@@ -19,7 +19,6 @@ import {
   Truck, TrendingUp, TrendingDown, Loader2, AlertTriangle,
   CheckCircle, Clock, Wrench, Search, SlidersHorizontal, Percent, ChevronDown
 } from "lucide-react";
-import { useDrivers } from "@/hooks/useDrivers";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { format, subDays, subMonths, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
@@ -1554,25 +1553,10 @@ function FleetUtilizationReport({ vehicles, jobs, formatCurrency }: {
 export default function Reports() {
   const [dateRange, setDateRange] = useState("this_month");
   const vehicles: any[] = [];
-  const vehiclesLoading = false;
-  const { drivers, isLoading: driversLoading } = useDrivers();
   const jobs: any[] = [];
-  const jobsLoading = false;
   const { format: formatCurrency } = useCurrency();
 
-  const isLoading = vehiclesLoading || driversLoading || jobsLoading;
-
-  if (isLoading) {
-    return (
-      <DashboardLayout title="Reports" subtitle="Exportable historical summaries and audits">
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  const hasData = vehicles.length > 0 || drivers.length > 0 || jobs.length > 0;
+  const hasData = vehicles.length > 0 || jobs.length > 0;
 
   if (!hasData) {
     return (
@@ -1619,7 +1603,7 @@ export default function Reports() {
           </TabsContent>
 
           <TabsContent value="compliance">
-            <ComplianceAuditReport vehicles={vehicles} drivers={drivers} />
+            <ComplianceAuditReport vehicles={vehicles} drivers={[]} />
           </TabsContent>
 
           <TabsContent value="fuel">
