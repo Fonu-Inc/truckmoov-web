@@ -41,6 +41,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, '') || "/api";
+const FONU_WEBHOOK_URL = `${BACKEND_BASE_URL}/webhooks/fonu`;
+
 interface ConnectionStatus {
   api: "connected" | "disconnected" | "error";
   webhook: "active" | "inactive" | "error";
@@ -692,7 +695,7 @@ export function TelephonySettings() {
                 <div className="flex gap-2">
                   <Input
                     id="webhookUrl"
-                    value={fonuSettings.webhookUrl || `https://yntqriwlxuytworbzuux.supabase.co/functions/v1/fonu-webhook`}
+                    value={fonuSettings.webhookUrl || FONU_WEBHOOK_URL}
                     onChange={(e) => setFonuSettings({ ...fonuSettings, webhookUrl: e.target.value })}
                     placeholder="https://your-domain.com/webhooks/fonu"
                     readOnly
@@ -701,7 +704,7 @@ export function TelephonySettings() {
                     variant="outline"
                     size="icon"
                     onClick={() => copyToClipboard(
-                      fonuSettings.webhookUrl || `https://yntqriwlxuytworbzuux.supabase.co/functions/v1/fonu-webhook`,
+                      fonuSettings.webhookUrl || FONU_WEBHOOK_URL,
                       "Webhook URL"
                     )}
                   >

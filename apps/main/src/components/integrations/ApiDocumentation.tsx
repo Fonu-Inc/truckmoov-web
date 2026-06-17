@@ -12,7 +12,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const API_BASE_URL = 'https://yntqriwlxuytworbzuux.supabase.co/functions/v1/external-api/v1';
+const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, '');
+const API_BASE_URL = BACKEND_BASE_URL ? `${BACKEND_BASE_URL}/v1` : '/api/v1';
 
 interface EndpointDoc {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
