@@ -82,9 +82,6 @@ export function UserProfileDropdown() {
             <span className="text-xs font-semibold text-foreground truncate max-w-[140px]">
               {orgName || "Organization"}
             </span>
-            <span className="text-[10px] font-medium text-primary truncate max-w-[140px]">
-              {getRoleLabel(user?.role)}
-            </span>
           </span>
         </Button>
       </DropdownMenuTrigger>

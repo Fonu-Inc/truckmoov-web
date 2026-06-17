@@ -127,11 +127,11 @@ const App = () => {
                       <Route path="/not-authorized" element={<NotAuthorized />} />
 
                       {/* Onboarding Pages */}
+                      <Route path="/onboarding/welcome" element={<Navigate to="/onboarding/subscription" replace />} />
                       <Route path="/onboarding/subscription" element={<SubscriptionOnboarding />} />
                       <Route path="/onboarding/kyc" element={<KycOnboarding />} />
                       <Route path="/onboarding/activate" element={<ActivationOnboarding />} />
                       <Route path="/onboarding/quick-access" element={<WelcomeDashboard />} />
-                      <Route path="/onboarding/welcome" element={<Navigate to="/onboarding/subscription" replace />} />
 
                       {/* Enterprise Routes */}
                       <Route path="/enterprise" element={<EnterpriseLogisticsDashboard />} />

@@ -13,6 +13,7 @@ import {
   Ticket,
   LogOut,
   ChevronDown,
+  Building2,
 } from "lucide-react";
 import mtnLogoDark from "@/assets/mtn-logo-dark.svg";
 import { useState, useMemo } from "react";
@@ -38,6 +39,18 @@ export function DashboardSidebar() {
   const branding = orgSettings?.data?.branding;
   const orgName = branding?.organizationName;
   const logoUrl = branding?.logoUrl;
+  const orgAvatarUrl = branding?.profilePictureUrl ?? branding?.logoUrl;
+
+  const ROLE_LABELS: Record<string, string> = {
+    ENTERPRISE_ADMIN: "ENTERPRISE",
+    FLEET_ADMIN: "FLEET",
+    AGGREGATOR_ADMIN: "AGGREGATOR",
+    OWNER_OPERATOR: "OPERATOR",
+    OPERATIONS_MANAGER: "OPERATIONS",
+    DISPATCHER: "DISPATCHER",
+    FINANCE_VIEWER: "FINANCE",
+  };
+  const roleLabel = user?.role ? (ROLE_LABELS[user.role] ?? user.role) : null;
 
   // ── Centralized sidebar resolution ──
   const sidebarConfig = useMemo(() => getSidebarConfig(user), [user]);
@@ -211,7 +224,6 @@ export function DashboardSidebar() {
       <div className="flex min-h-16 items-center border-b border-sidebar-border px-4 py-3">
         <div className="flex items-center gap-3 min-w-0">
           <Avatar className="h-10 w-10 rounded-lg">
-            <AvatarImage src={logoUrl} alt={orgName} className="object-cover" />
             <AvatarFallback className="bg-primary shadow-mtn rounded-lg">
               <Truck className="h-5 w-5 text-primary-foreground" />
             </AvatarFallback>
@@ -219,7 +231,8 @@ export function DashboardSidebar() {
           {!collapsed && (
             <div className="flex flex-col min-w-0">
               <span className="text-base font-bold text-sidebar-foreground truncate leading-tight">
-                {orgName || "FleetPro"} <span className="text-primary">Enterprise</span>
+                FleetPro
+                {/* <span className="text-primary">Enterprise</span> */}
               </span>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="text-[9px] font-medium uppercase tracking-wider text-sidebar-foreground/50">
@@ -234,6 +247,41 @@ export function DashboardSidebar() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Org Info Card */}
+      <div className="border-b border-sidebar-border p-3">
+        {collapsed ? (
+          <TooltipWrapper content={`${orgName ?? "Organization"} · ${roleLabel ?? ""}`} side="right">
+            <div className="flex justify-center py-1">
+              <Avatar className="h-9 w-9 rounded-lg">
+                <AvatarImage src={orgAvatarUrl} alt={orgName} className="object-cover" />
+                <AvatarFallback className="rounded-lg bg-sidebar-accent">
+                  <Building2 className="h-4 w-4 text-sidebar-foreground/60" />
+                </AvatarFallback>
+              </Avatar>
+            </div>
+          </TooltipWrapper>
+        ) : (
+          <div className="flex items-center gap-3 rounded-lg border border-sidebar-border bg-sidebar-accent/30 px-3 py-2.5">
+            <Avatar className="h-9 w-9 shrink-0 rounded-lg">
+              <AvatarImage src={orgAvatarUrl} alt={orgName} className="object-cover" />
+              <AvatarFallback className="rounded-lg bg-sidebar-accent">
+                <Building2 className="h-4 w-4 text-sidebar-foreground/60" />
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-sidebar-foreground leading-tight">
+                {orgName ?? "Organization"}
+              </p>
+              {roleLabel && (
+                <p className="text-[10px] font-bold uppercase tracking-wider text-primary mt-0.5">
+                  {roleLabel}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
