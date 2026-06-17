@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@truckmoov/api/lib/query-client";
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuthStore } from "./stores/authStore";
+import { getPostLoginRedirectPath } from "./lib/authRedirect";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
 import { TenantBrandingProvider } from "./contexts/TenantBrandingContext";
@@ -80,6 +81,11 @@ import DispatcherMessages from "./pages/dispatcher/DispatcherMessages";
 import DispatcherInbox from "./pages/dispatcher/DispatcherInbox";
 import DispatcherReports from "./pages/dispatcher/DispatcherReports";
 
+function RoleHomeRedirect() {
+  const user = useAuthStore((s) => s.user);
+  return <Navigate to={getPostLoginRedirectPath(user!.role)} replace />;
+}
+
 function ProtectedRoute() {
   const location = useLocation();
   const { isAuthenticated, isAuthReady } = useAuthStore();
@@ -117,98 +123,95 @@ const App = () => {
                     <Route path="/auth/reset-password" element={<ResetPassword />} />
 
                     <Route element={<ProtectedRoute />}>
-                    <Route path="/" element={<Navigate to="/admin" replace />} />
-                    <Route path="/not-authorized" element={<NotAuthorized />} />
+                      <Route path="/" element={<RoleHomeRedirect />} />
+                      <Route path="/not-authorized" element={<NotAuthorized />} />
 
-                    {/* Onboarding Pages */}
-                    <Route path="/onboarding/subscription" element={<SubscriptionOnboarding />} />
-                    <Route path="/onboarding/kyc" element={<KycOnboarding />} />
-                    <Route path="/onboarding/activate" element={<ActivationOnboarding />} />
-                    <Route path="/onboarding/quick-access" element={<WelcomeDashboard />} />
-                    <Route path="/onboarding/welcome" element={<Navigate to="/onboarding/subscription" replace />} />
+                      {/* Onboarding Pages */}
+                      <Route path="/onboarding/subscription" element={<SubscriptionOnboarding />} />
+                      <Route path="/onboarding/kyc" element={<KycOnboarding />} />
+                      <Route path="/onboarding/activate" element={<ActivationOnboarding />} />
+                      <Route path="/onboarding/quick-access" element={<WelcomeDashboard />} />
+                      <Route path="/onboarding/welcome" element={<Navigate to="/onboarding/subscription" replace />} />
 
-                    {/* Enterprise Routes */}
-                    <Route path="/enterprise" element={<EnterpriseLogisticsDashboard />} />
+                      {/* Enterprise Routes */}
+                      <Route path="/enterprise" element={<EnterpriseLogisticsDashboard />} />
 
-                    {/* Aggregator Routes */}
-                    <Route path="/aggregator" element={<AggregatorDashboard />} />
+                      {/* Aggregator Routes */}
+                      <Route path="/aggregator" element={<AggregatorDashboard />} />
 
-                    {/* Owner-Operator Routes */}
-                    <Route path="/owner-operator" element={<OwnerOperatorDashboard />} />
-                    <Route path="/owner-operator/vehicle/:vehicleId" element={<OwnerOperatorVehicleDetail />} />
-                    <Route path="/owner-operator/vehicles" element={<OwnerOperatorVehicles />} />
-                    <Route path="/owner-operator/documents" element={<OwnerOperatorDocuments />} />
-                    <Route path="/owner-operator/jobs" element={<OwnerOperatorJobs />} />
+                      {/* Owner-Operator Routes */}
+                      <Route path="/owner-operator" element={<OwnerOperatorDashboard />} />
+                      <Route path="/owner-operator/vehicle/:vehicleId" element={<OwnerOperatorVehicleDetail />} />
+                      <Route path="/owner-operator/vehicles" element={<OwnerOperatorVehicles />} />
+                      <Route path="/owner-operator/documents" element={<OwnerOperatorDocuments />} />
+                      <Route path="/owner-operator/jobs" element={<OwnerOperatorJobs />} />
 
-                    {/* Tenant Admin / Fleet Provider Routes */}
-                    <Route path="/admin" element={<TenantAdminDashboard />} />
-                    <Route path="/admin/fleet" element={<FleetManagement />} />
-                    <Route path="/admin/drivers" element={<DriverManagement />} />
-                    <Route path="/admin/devices" element={<DeviceManagement />} />
-                    <Route path="/admin/sims" element={<SIMManagement />} />
-                    <Route path="/admin/data-bundles" element={<DataBundles />} />
+                      {/* Tenant Admin / Fleet Provider Routes */}
+                      <Route path="/admin" element={<TenantAdminDashboard />} />
+                      <Route path="/admin/fleet" element={<FleetManagement />} />
+                      <Route path="/admin/drivers" element={<DriverManagement />} />
+                      <Route path="/admin/devices" element={<DeviceManagement />} />
+                      <Route path="/admin/sims" element={<SIMManagement />} />
+                      <Route path="/admin/data-bundles" element={<DataBundles />} />
 
-                    <Route path="/admin/jobs" element={<JobDispatch />} />
-                    <Route path="/admin/ivr-dashboard" element={<Navigate to="/admin/messages?tab=ivr-dashboard" replace />} />
-                    <Route path="/admin/analytics" element={<Navigate to="/admin/fleet?tab=analytics" replace />} />
-                    <Route path="/admin/map" element={<LiveMap />} />
-                    <Route path="/admin/behavior" element={<DriverBehaviorDashboard />} />
-                    <Route path="/admin/fatigue" element={<DriverFatigueDashboard />} />
-                    <Route path="/admin/messages" element={<MessagingCenter />} />
-                    <Route path="/admin/inbox" element={<OmnichannelInbox />} />
-                    <Route path="/admin/maintenance" element={<Navigate to="/admin/fleet?tab=maintenance" replace />} />
-                    <Route path="/admin/fuel" element={<Navigate to="/admin/fleet?tab=fuel" replace />} />
-                    <Route path="/admin/compliance" element={<Navigate to="/admin/fleet?tab=compliance" replace />} />
-                    <Route path="/admin/wallet" element={<TenantWallet />} />
-                    <Route path="/admin/installation" element={<DeviceInstallation />} />
-                    <Route path="/admin/integrations" element={<Integrations />} />
-                    <Route path="/admin/job-offers" element={<JobOffers />} />
-                    <Route path="/admin/subscription" element={<Navigate to="/admin/settings?tab=subscription" replace />} />
-                    <Route path="/admin/reports" element={<Reports />} />
-                    <Route path="/admin/waybill-invoices" element={<WaybillInvoices />} />
-                    <Route path="/admin/subscription-invoices" element={<SubscriptionInvoices />} />
-                    <Route path="/admin/sustainability" element={<Sustainability />} />
-                    <Route path="/admin/fleet/pl-statement" element={<VehiclePLStatementPreview />} />
-                    <Route path="/admin/settings" element={<Settings />} />
+                      <Route path="/admin/jobs" element={<JobDispatch />} />
+                      <Route path="/admin/ivr-dashboard" element={<Navigate to="/admin/messages?tab=ivr-dashboard" replace />} />
+                      <Route path="/admin/analytics" element={<Navigate to="/admin/fleet?tab=analytics" replace />} />
+                      <Route path="/admin/map" element={<LiveMap />} />
+                      <Route path="/admin/behavior" element={<DriverBehaviorDashboard />} />
+                      <Route path="/admin/fatigue" element={<DriverFatigueDashboard />} />
+                      <Route path="/admin/messages" element={<MessagingCenter />} />
+                      <Route path="/admin/inbox" element={<OmnichannelInbox />} />
+                      <Route path="/admin/maintenance" element={<Navigate to="/admin/fleet?tab=maintenance" replace />} />
+                      <Route path="/admin/fuel" element={<Navigate to="/admin/fleet?tab=fuel" replace />} />
+                      <Route path="/admin/compliance" element={<Navigate to="/admin/fleet?tab=compliance" replace />} />
+                      <Route path="/admin/wallet" element={<TenantWallet />} />
+                      <Route path="/admin/installation" element={<DeviceInstallation />} />
+                      <Route path="/admin/integrations" element={<Integrations />} />
+                      <Route path="/admin/job-offers" element={<JobOffers />} />
+                      <Route path="/admin/subscription" element={<Navigate to="/admin/settings?tab=subscription" replace />} />
+                      <Route path="/admin/reports" element={<Reports />} />
+                      <Route path="/admin/waybill-invoices" element={<WaybillInvoices />} />
+                      <Route path="/admin/subscription-invoices" element={<SubscriptionInvoices />} />
+                      <Route path="/admin/sustainability" element={<Sustainability />} />
+                      <Route path="/admin/fleet/pl-statement" element={<VehiclePLStatementPreview />} />
+                      <Route path="/admin/settings" element={<Settings />} />
 
-                    {/* Supervisor Routes */}
-                    <Route path="/supervisor" element={<SupervisorDashboard />} />
-                    <Route path="/supervisor/map" element={<SupervisorLiveMap />} />
-                    <Route path="/supervisor/dispatch" element={<SupervisorDispatch />} />
-                    <Route path="/supervisor/drivers" element={<SupervisorDrivers />} />
-                    <Route path="/supervisor/alerts" element={<SupervisorAlerts />} />
-                    <Route path="/supervisor/messages" element={<SupervisorMessages />} />
-                    <Route path="/supervisor/inbox" element={<OmnichannelInbox />} />
-                    <Route path="/supervisor/reports" element={<SupervisorReports />} />
-                    <Route path="/supervisor/*" element={<SupervisorDashboard />} />
+                      {/* Supervisor Routes */}
+                      <Route path="/supervisor" element={<SupervisorDashboard />} />
+                      <Route path="/supervisor/map" element={<SupervisorLiveMap />} />
+                      <Route path="/supervisor/dispatch" element={<SupervisorDispatch />} />
+                      <Route path="/supervisor/drivers" element={<SupervisorDrivers />} />
+                      <Route path="/supervisor/alerts" element={<SupervisorAlerts />} />
+                      <Route path="/supervisor/messages" element={<SupervisorMessages />} />
+                      <Route path="/supervisor/inbox" element={<OmnichannelInbox />} />
+                      <Route path="/supervisor/reports" element={<SupervisorReports />} />
+                      <Route path="/supervisor/*" element={<SupervisorDashboard />} />
 
-                    {/* Dispatcher Portal Routes (independent) */}
-                    <Route path="/dispatcher" element={<DispatcherDashboard />} />
-                    <Route path="/dispatcher/dispatch" element={<DispatcherDispatch />} />
-                    <Route path="/dispatcher/map" element={<DispatcherLiveMap />} />
-                    <Route path="/dispatcher/drivers" element={<DispatcherDrivers />} />
-                    <Route path="/dispatcher/devices" element={<DispatcherDevices />} />
-                    <Route path="/dispatcher/sims" element={<DispatcherSIMs />} />
-                    <Route path="/dispatcher/alerts" element={<DispatcherAlerts />} />
-                    <Route path="/dispatcher/messages" element={<DispatcherMessages />} />
-                    <Route path="/dispatcher/inbox" element={<DispatcherInbox />} />
-                    <Route path="/dispatcher/reports" element={<DispatcherReports />} />
-                    <Route path="/dispatcher/*" element={<DispatcherDashboard />} />
+                      {/* Dispatcher Portal Routes (independent) */}
+                      <Route path="/dispatcher" element={<DispatcherDashboard />} />
+                      <Route path="/dispatcher/dispatch" element={<DispatcherDispatch />} />
+                      <Route path="/dispatcher/map" element={<DispatcherLiveMap />} />
+                      <Route path="/dispatcher/drivers" element={<DispatcherDrivers />} />
+                      <Route path="/dispatcher/devices" element={<DispatcherDevices />} />
+                      <Route path="/dispatcher/sims" element={<DispatcherSIMs />} />
+                      <Route path="/dispatcher/alerts" element={<DispatcherAlerts />} />
+                      <Route path="/dispatcher/messages" element={<DispatcherMessages />} />
+                      <Route path="/dispatcher/inbox" element={<DispatcherInbox />} />
+                      <Route path="/dispatcher/reports" element={<DispatcherReports />} />
+                      <Route path="/dispatcher/*" element={<DispatcherDashboard />} />
 
-                    {/* Driver Interface */}
-                    <Route path="/driver" element={<DriverInterface />} />
+                      {/* Debug Route - No auth, no layout */}
+                      <Route path="/debug/map" element={<DebugMap />} />
 
-                    {/* Debug Route - No auth, no layout */}
-                    <Route path="/debug/map" element={<DebugMap />} />
+                      {/* Architecture Documentation - Public */}
+                      <Route path="/architecture" element={<Architecture />} />
+                      <Route path="/technical-architecture" element={<TechnicalArchitecture />} />
 
-                    {/* Architecture Documentation - Public */}
-                    <Route path="/architecture" element={<Architecture />} />
-                    <Route path="/technical-architecture" element={<TechnicalArchitecture />} />
+                      {/* Help & Support */}
+                      <Route path="/help" element={<HelpSupport />} />
 
-                    {/* Help & Support */}
-                    <Route path="/help" element={<HelpSupport />} />
-
-                    <Route path="*" element={<NotFound />} />
+                      <Route path="*" element={<NotFound />} />
                     </Route>
                   </Routes>
                   <GlobalSupportChat />

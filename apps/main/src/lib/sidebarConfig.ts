@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { AuthUser } from "@truckmoov/api/auth";
+import { ROLE_REDIRECT_MAP } from "./authRedirect";
 
 export interface SidebarNavItem {
   label: string;
@@ -152,7 +153,7 @@ const ownerOperatorEntries: SidebarEntry[] = [
 
 // ─── Operations Manager ────────────────────────────────────────
 const operationsManagerSidebar: SidebarConfig = {
-  homeRoute: "/admin",
+  homeRoute: ROLE_REDIRECT_MAP["OPERATIONS_MANAGER"]!,
   entries: [
     { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { label: "Fleet", href: "/admin/fleet", icon: Truck },
@@ -177,7 +178,7 @@ const operationsManagerSidebar: SidebarConfig = {
 
 // ─── Dispatcher ────────────────────────────────────────────────
 const dispatcherSidebar: SidebarConfig = {
-  homeRoute: "/dispatcher",
+  homeRoute: ROLE_REDIRECT_MAP["DISPATCHER"]!,
   entries: [
     { label: "Operations Center", href: "/dispatcher", icon: LayoutDashboard },
     { label: "Dispatch", href: "/dispatcher/dispatch", icon: Telescope },
@@ -201,7 +202,7 @@ const dispatcherSidebar: SidebarConfig = {
 
 // ─── Finance Viewer ────────────────────────────────────────────
 const financeViewerSidebar: SidebarConfig = {
-  homeRoute: "/admin/analytics",
+  homeRoute: ROLE_REDIRECT_MAP["FINANCE_VIEWER"]!,
   entries: [
     { label: "Dashboard", href: "/admin/analytics", icon: LayoutDashboard },
     { label: "Fleet", href: "/admin/fleet", icon: Truck },
@@ -217,13 +218,13 @@ const financeViewerSidebar: SidebarConfig = {
 export function getSidebarConfig(user: AuthUser | null): SidebarConfig | null {
   switch (user?.role) {
     case "FLEET_ADMIN":
-      return { homeRoute: "/admin", entries: fleetProviderEntries };
+      return { homeRoute: ROLE_REDIRECT_MAP["FLEET_ADMIN"]!, entries: fleetProviderEntries };
     case "ENTERPRISE_ADMIN":
-      return { homeRoute: "/enterprise", entries: enterpriseEntries };
+      return { homeRoute: ROLE_REDIRECT_MAP["ENTERPRISE_ADMIN"]!, entries: enterpriseEntries };
     case "AGGREGATOR_ADMIN":
-      return { homeRoute: "/aggregator", entries: aggregatorEntries };
+      return { homeRoute: ROLE_REDIRECT_MAP["AGGREGATOR_ADMIN"]!, entries: aggregatorEntries };
     case "OWNER_OPERATOR":
-      return { homeRoute: "/owner-operator", entries: ownerOperatorEntries };
+      return { homeRoute: ROLE_REDIRECT_MAP["OWNER_OPERATOR"]!, entries: ownerOperatorEntries };
     case "OPERATIONS_MANAGER":
       return operationsManagerSidebar;
     case "DISPATCHER":
