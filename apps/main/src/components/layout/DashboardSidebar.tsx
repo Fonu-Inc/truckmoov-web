@@ -38,8 +38,7 @@ export function DashboardSidebar() {
   const { data: orgSettings } = useQuery(getOrganizationSettingsQueryOptions());
   const branding = orgSettings?.data?.branding;
   const orgName = branding?.organizationName;
-  const logoUrl = branding?.logoUrl;
-  const orgAvatarUrl = branding?.profilePictureUrl ?? branding?.logoUrl;
+  const orgAvatarUrl = branding?.logoUrl ?? "";
 
   const ROLE_LABELS: Record<string, string> = {
     ENTERPRISE_ADMIN: "ENTERPRISE",

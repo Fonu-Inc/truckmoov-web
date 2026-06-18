@@ -4,12 +4,10 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Textarea } from "@/components/shadcn/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
 import { Switch } from "@/components/shadcn/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/shadcn/avatar";
 import { Separator } from "@/components/shadcn/separator";
 import {
   Select,
@@ -41,7 +39,7 @@ import {
   DialogTrigger,
 } from "@/components/shadcn/dialog";
 import { 
-  Building2, Bell, Users, Plug, Save, Upload, Plus,
+  Building2, Bell, Users, Plug, Plus,
   MoreHorizontal, Pencil, Trash2, Mail, Phone, Clock, MapPin,
   CheckCircle, XCircle, FileCheck, Bot, Wrench, CreditCard, BarChart3, Palette, Receipt, HardDrive
 } from "lucide-react";
@@ -60,8 +58,10 @@ import { TenantBrandingPanel } from "@/components/settings/TenantBrandingPanel";
 import { RolePermissionsMatrix } from "@/components/settings/RolePermissionsMatrix";
 import { TableToolbar, type FilterField, type FilterValues } from "@/components/shadcn/table-toolbar";
 import { TenantInvoiceConfigPanel } from "@/components/settings/TenantInvoiceConfigPanel";
+import { OrganizationSettingsForm } from "@/components/settings/OrganizationSettingsForm";
 import { useAuthStore } from "@/stores/authStore";
 import { useActiveOrgStore } from "@/stores/activeOrgStore";
+import type { OrgMembership } from "@/types/orgRoles";
 
 /** Invite role options scoped per organization type. */
 const INVITE_ROLES_BY_ORG_TYPE: Record<
@@ -116,20 +116,13 @@ export default function Settings() {
     if (tabFromUrl !== activeTab) {
       setActiveTab(tabFromUrl);
     }
-  }, [tabFromUrl]);
+  }, [activeTab, tabFromUrl]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     setSearchParams({ tab: value });
   };
-  const [orgName, setOrgName] = useState("");
-  const [orgEmail, setOrgEmail] = useState("");
-  const [orgBillingEmail, setOrgBillingEmail] = useState("");
-  const [orgPhone, setOrgPhone] = useState("");
-  const [orgAddress, setOrgAddress] = useState("");
-  const [orgTimezone, setOrgTimezone] = useState("Africa/Lagos");
-  const [orgLanguage, setOrgLanguage] = useState("en");
-  const memberships: any[] = [];
+  const memberships: OrgMembership[] = [];
   const { resolveActiveOrg } = useActiveOrgStore();
   const activeOrg = resolveActiveOrg(memberships);
   const activeOrgType = activeOrg?.orgType || "FLEET_PROVIDER";
@@ -148,7 +141,6 @@ export default function Settings() {
     }
   }, [activeOrgType]); // eslint-disable-line react-hooks/exhaustive-deps
   const [showApiKey, setShowApiKey] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [tenantUsers, setTenantUsers] = useState<TenantUser[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   
@@ -175,11 +167,6 @@ export default function Settings() {
     driver: "driver",
   };
 
-  // Fetch tenant data on mount
-  useEffect(() => {
-    setIsLoading(false);
-  }, [user?.tenantId]);
-
   // Fetch tenant users
   useEffect(() => {
     setTenantUsers([]);
@@ -197,10 +184,6 @@ export default function Settings() {
     smsAlerts: false,
     pushNotifications: true,
   });
-
-  const handleSaveOrganization = () => {
-    toast.success("Organization settings saved successfully");
-  };
 
   const [isInviting, setIsInviting] = useState(false);
 
@@ -382,133 +365,7 @@ export default function Settings() {
 
         {/* Organization Tab */}
         <TabsContent value="organization" className="space-y-6">
-          <Card className="bg-card/50 border-border/50">
-            <CardHeader>
-              <CardTitle>Organization Profile</CardTitle>
-              <CardDescription>Manage your organization's information and branding</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Logo Upload */}
-              <div className="flex items-center gap-6">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src="/placeholder.svg" />
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-2xl">TM</AvatarFallback>
-                </Avatar>
-                <div>
-                  <Button variant="outline" size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Logo
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-2">PNG, JPG up to 2MB</p>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="orgName">Organization Name</Label>
-                  <Input
-                    id="orgName"
-                    value={orgName}
-                    onChange={(e) => setOrgName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="orgEmail">Contact Email</Label>
-                  <Input
-                    id="orgEmail"
-                    type="email"
-                    value={orgEmail}
-                    onChange={(e) => setOrgEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="orgBillingEmail">Billing Email</Label>
-                  <Input
-                    id="orgBillingEmail"
-                    type="email"
-                    placeholder="billing@company.com"
-                    value={orgBillingEmail}
-                    onChange={(e) => setOrgBillingEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="orgPhone">Phone Number</Label>
-                  <Input
-                    id="orgPhone"
-                    value={orgPhone}
-                    onChange={(e) => setOrgPhone(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="orgTimezone">Timezone</Label>
-                  <Select value={orgTimezone} onValueChange={setOrgTimezone}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Africa/Lagos">Africa/Lagos (WAT, GMT+1)</SelectItem>
-                      <SelectItem value="Africa/Johannesburg">Africa/Johannesburg (SAST)</SelectItem>
-                      <SelectItem value="Africa/Nairobi">Africa/Nairobi (EAT)</SelectItem>
-                      <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="orgLanguage">Language</Label>
-                  <Select value={orgLanguage} onValueChange={setOrgLanguage}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="ha">Hausa</SelectItem>
-                      <SelectItem value="yo">Yoruba</SelectItem>
-                      <SelectItem value="ig">Igbo</SelectItem>
-                      <SelectItem value="pcm">Nigerian Pidgin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="orgAddress">Address</Label>
-                  <Textarea
-                    id="orgAddress"
-                    value={orgAddress}
-                    onChange={(e) => setOrgAddress(e.target.value)}
-                    rows={2}
-                  />
-                </div>
-                {/* US-E02-006 — Portal session timeout */}
-                <div className="space-y-2">
-                  <Label htmlFor="sessionTimeout">Portal Session Timeout</Label>
-                  <Select defaultValue="60">
-                    <SelectTrigger id="sessionTimeout">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="15">15 minutes</SelectItem>
-                      <SelectItem value="30">30 minutes</SelectItem>
-                      <SelectItem value="60">1 hour</SelectItem>
-                      <SelectItem value="240">4 hours</SelectItem>
-                      <SelectItem value="480">8 hours</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Inactive users are signed out after this period. Applies to all team members.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button variant="gradient" onClick={handleSaveOrganization}>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Changes
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
+          <OrganizationSettingsForm />
         </TabsContent>
 
         {/* KYC Verification Tab */}

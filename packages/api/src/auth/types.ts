@@ -136,10 +136,36 @@ export type UpdateUserStatusPayload = {
   }
 }
 
+export type OrganizationBrandingSettings = {
+  organizationName?: string
+  contactEmail?: string
+  phoneNumber?: string
+  address?: string
+  logoUrl?: string
+  profilePictureUrl?: string
+  primaryColor?: string
+  secondaryColor?: string
+  accentColor?: string
+  successColor?: string
+  warningColor?: string
+  destructiveColor?: string
+  sidebarBackground?: string
+  sidebarText?: string
+  sidebarAccent?: string
+}
+
+export type OrganizationDefaultSettings = {
+  timezone?: string
+  language?: string
+  currency?: string
+  dateFormat?: string
+  weekStartsOn?: string
+}
+
 export type UpdateOrgSettingsPayload = {
   data: {
-    branding?: Record<string, unknown>
-    defaults?: Record<string, unknown>
+    branding?: Partial<OrganizationBrandingSettings>
+    defaults?: Partial<OrganizationDefaultSettings>
   }
 }
 
@@ -875,30 +901,8 @@ export type OrganizationUsersResponse = ServerResponse<OrganizationUser[]>
 export type RemoveOrganizationUserResponse = ServerResponse<RemoveOrganizationUserData>
 export type OrgSettingsData = {
   tenantId: string
-  branding?: {
-    organizationName?: string
-    contactEmail?: string
-    phoneNumber?: string
-    address?: string
-    logoUrl?: string
-    profilePictureUrl?: string
-    primaryColor?: string
-    secondaryColor?: string
-    accentColor?: string
-    successColor?: string
-    warningColor?: string
-    destructiveColor?: string
-    sidebarBackground?: string
-    sidebarText?: string
-    sidebarAccent?: string
-  }
-  defaults?: {
-    timezone?: string
-    language?: string
-    currency?: string
-    dateFormat?: string
-    weekStartsOn?: string
-  }
+  branding?: OrganizationBrandingSettings
+  defaults?: OrganizationDefaultSettings
 }
 
 export type OrganizationSettingsResponse = ServerResponse<OrgSettingsData>
