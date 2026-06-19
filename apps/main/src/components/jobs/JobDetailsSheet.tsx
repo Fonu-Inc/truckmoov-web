@@ -13,6 +13,7 @@ import {
   MessageSquare, Phone, FileText,
 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useActivityLogs } from "@/hooks/useActivityLogs";
 import { toast } from "sonner";
 
 interface JobDetailsSheetProps {

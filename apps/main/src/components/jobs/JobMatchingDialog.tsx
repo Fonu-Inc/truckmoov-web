@@ -28,6 +28,8 @@ import { Job, Vehicle, Driver } from "@/types";
 import { mockVehicles, mockDrivers } from "@/data/mockData";
 type MatchResult = any;
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useDriverIVR } from "@/hooks/useDriverIVR";
+import { useJobMatching } from "@/hooks/useJobMatching";
 import { 
   Truck, User, MapPin, Star, Clock, CheckCircle, 
   Sparkles, Route, MessageSquare, Phone, PhoneCall, Brain, 
