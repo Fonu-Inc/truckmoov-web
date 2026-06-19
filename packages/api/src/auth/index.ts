@@ -35,6 +35,7 @@ import {
   getOnboardingPlans,
   getOnboardingSubscriptionCaps,
   getOrganizationSettings,
+  submitEnterpriseEnquiry,
   getOrganizationUsers,
   getProfile,
   getSubscriptionPlans,
@@ -138,6 +139,7 @@ export type {
   CreateTenantPayload,
   CreateTicketMessagePayload,
   DeleteSystemAdminPayload,
+  EnterpriseEnquiryPayload,
   EscalateTicketPayload,
   ForgotPasswordPayload,
   InviteUserPayload,
@@ -937,6 +939,10 @@ export function getOnboardingSubscriptionCapsQueryOptions() {
     queryKey: AUTH_QUERY_KEY.onboardingSubscriptionCaps,
     queryFn: getOnboardingSubscriptionCaps,
   })
+}
+
+export function useSubmitEnterpriseEnquiry() {
+  return useMutation({ mutationFn: submitEnterpriseEnquiry })
 }
 
 // Support tickets

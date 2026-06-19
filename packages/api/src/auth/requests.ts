@@ -4,6 +4,7 @@ import type {
   ActivityLogQuery,
   ActivityLogResponse,
   ApproveSIMRequestPayload,
+  EnterpriseEnquiryPayload,
   AuthSystemSettingsResponse,
   AuthTokenResponse,
   ChangeRolePayload,
@@ -613,6 +614,11 @@ export async function getOnboardingExchangeRate() {
 export async function getOnboardingSubscriptionCaps() {
   const { data } = await axiosInstance.get<OnboardingSubscriptionCapsResponse>('/auth/onboarding/subscription/caps')
   return data
+}
+
+export async function submitEnterpriseEnquiry({ data }: EnterpriseEnquiryPayload) {
+  const { data: res } = await axiosInstance.post<StandardApiResponse>('/auth/onboarding/enterprise/enquiry', data)
+  return res
 }
 
 // ─── System admin — support tickets ──────────────────────────────────────────

@@ -992,6 +992,16 @@ export type SystemSubscriptionPlansResponse = ServerResponse<{ plans: Subscripti
 export type OnboardingPlansResponse = ServerResponse<{ plans: SubscriptionPlan[] }>
 export type OnboardingExchangeRateResponse = ServerResponse<OnboardingExchangeRate>
 export type OnboardingSubscriptionCapsResponse = ServerResponse<OnboardingSubscriptionCaps>
+
+export type EnterpriseEnquiryPayload = {
+  data: {
+    name: string
+    email: string
+    phone: string
+    companyName: string
+    message: string
+  }
+}
 export type SystemFeatureFlagsResponse = ServerResponse<SystemFeatureFlagsList>
 export type SystemFeatureFlagResponse = ServerResponse<SystemFeatureFlag>
 export interface AdminInvite {

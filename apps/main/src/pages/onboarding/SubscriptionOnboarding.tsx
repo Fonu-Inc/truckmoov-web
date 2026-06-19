@@ -11,7 +11,6 @@ import {
   Cpu,
   CreditCard,
   Gauge,
-  Info,
   Loader2,
   Smartphone,
   Truck,
@@ -19,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { EnterpriseEnquiryDialog } from "@/components/onboarding/EnterpriseEnquiryDialog";
 import { Button } from "@/components/shadcn/button";
 import { Label } from "@/components/shadcn/label";
 import { Switch } from "@/components/shadcn/switch";
@@ -40,6 +40,7 @@ export default function SubscriptionOnboarding() {
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const [currencyUsd, setCurrencyUsd] = useState(false);
   const [pickedTier, setPickedTier] = useState<string | null>(null);
+  const [enquiryOpen, setEnquiryOpen] = useState(false);
 
   const plans = plansQuery.data?.data.plans ?? [];
   const picked = plans.find((plan) => plan.tier === pickedTier) ?? null;
@@ -58,15 +59,10 @@ export default function SubscriptionOnboarding() {
     return `₦${ngn.toLocaleString()}`;
   };
 
-  const pickedPrice = picked
-    ? getPrice(picked.monthlyPriceNgn, picked.yearlyMonthlyEquivalentNgn)
-    : 0;
-  const pickedAmountLabel = picked?.customPricing ? "Custom" : formatPrice(pickedPrice);
-
   const handlePay = () => {
     if (!picked) return;
     if (picked.customPricing) {
-      toast.info("Our team will reach out about your custom plan.");
+      setEnquiryOpen(true);
       return;
     }
     toast.info("Payment coming soon. Paystack integration is pending.");
@@ -280,17 +276,20 @@ export default function SubscriptionOnboarding() {
         </p>
       )}
 
-      <div className="mt-8 flex flex-col items-center gap-3 border-t border-border/60 pt-6 sm:flex-row sm:justify-between">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Info className="h-3.5 w-3.5 text-primary" />
-          Mock payment - no card will be charged.
-        </div>
+      <div className="mt-8 flex justify-end border-t border-border/60 pt-6">
         <Button onClick={handlePay} disabled={!picked} size="lg" className="min-w-[180px]">
           <CreditCard className="mr-2 h-4 w-4" />
-          Pay & Activate
+          {picked?.customPricing ? "Get in touch" : "Pay & Activate"}
         </Button>
       </div>
 
+      {picked?.customPricing && (
+        <EnterpriseEnquiryDialog
+          open={enquiryOpen}
+          onOpenChange={setEnquiryOpen}
+          planName={picked.name}
+        />
+      )}
     </OnboardingLayout>
   );
 }
