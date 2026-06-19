@@ -1,27 +1,34 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useDeviceTelemetry, DeviceWithTelemetry } from "@/hooks/useDeviceTelemetry";
-type DeviceLifecycleStatus = string;
+import type { DeviceWithTelemetry } from "@/hooks/useDeviceTelemetry";
+import {
+  useAssignDevice,
+  useCreateDevice,
+  useDeleteDevice,
+  useDevice,
+  useDevices,
+  useImportDevices,
+  useUpdateDevice,
+  useUpdateDeviceLifecycle,
+  useVehicles,
+  getValidateDeviceAssignmentQueryOptions,
+  type FleetDevice,
+} from "@truckmoov/api/fleet";
+import { queryClient } from "@truckmoov/api/lib/query-client";
 import {
   Cpu,
   Plus,
   Search,
-  SlidersHorizontal as Filter,
   Upload,
   MoreHorizontal,
   Edit,
   Trash2,
   Eye,
   Link,
-  Unlink,
   RefreshCw,
-  Wifi,
   Signal,
-  ShieldAlert,
   Loader2,
   Settings,
-  CheckCircle2,
-  AlertTriangle,
   SlidersHorizontal,
 } from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
@@ -47,47 +54,38 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { cn } from "@/lib/utils";
-import { DeviceFormDialogWithCatalog } from "@/components/devices/DeviceFormDialogWithCatalog";
 import { DeviceFormDialog } from "@/components/devices/DeviceFormDialog";
 import { DeviceSetupRequestDialog } from "@/components/devices/DeviceSetupRequestDialog";
 import { DeviceRequestsTracker } from "@/components/devices/DeviceRequestsTracker";
 import { DeviceDetailsSheet } from "@/components/devices/DeviceDetailsSheet";
 import { DeviceBulkUploadDialog } from "@/components/devices/DeviceBulkUploadDialog";
 import { AssignDeviceDialogWithLifecycle } from "@/components/devices/AssignDeviceDialogWithLifecycle";
-import { DeviceLifecycleBadge } from "@/components/devices/DeviceLifecycleBadge";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useDevicePermissions } from "@/hooks/useDevicePermissions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import { useAuthStore } from "@/stores/authStore";
 import { IoTDevice } from "@/types";
 import { DeviceSetupRequestsQueue } from "@/components/devices/DeviceSetupRequestsQueue";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 
+const KNOWN_DEVICE_MANUFACTURERS = [
+  "Teltonika",
+  "Queclink",
+  "Meitrack",
+  "CalAmp",
+  "Digital Matter",
+  "Geotab",
+  "Concox",
+  "Coban",
+];
+
 export default function DeviceManagement() {
   const { requireSubscription } = useRequireSubscription();
   const { canView, canManage, canEdit, canDelete, role } = useDevicePermissions();
-  const { user } = useAuthStore();
-  const tenantId = user?.tenantId;
-  const markAsConfigured = async (...args: any[]) => ({ success: false });
-  const isAssignable = (...args: any[]) => false;
-  
-  // Org context for aggregator detection
-  const isAggregator = false;
 
-  // Use real database data
-  const { devices, loading, error, refetch } = useDeviceTelemetry(tenantId || undefined);
-  const vehicles: any[] = [];
-  
-  // Device setup requests (used by aggregator view)
-  const setupRequests: any[] = [];
-  const setupLoading = false;
-  const refetchSetup = async (...args: any[]) => {};
-  const updateRequestStatus = async (...args: any[]) => {};
-  const createRequest = async (...args: any[]) => null;
-  const uploadFile = async (...args: any[]) => {};
-  
+  const createRequest = async (_data: unknown) => null;
+  const uploadFile = async (_file: File, _requestId: string, _type: "device_photo" | "receipt") => null;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [manufacturerFilters, setManufacturerFilters] = useState<string[]>([]);
@@ -100,17 +98,55 @@ export default function DeviceManagement() {
   const [selectedDevice, setSelectedDevice] = useState<DeviceWithTelemetry | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
+  const apiStatus = statusFilter !== "all" && statusFilter !== "assignable"
+    ? statusFilter as FleetDevice["status"]
+    : undefined;
+  const lifecycleStatus = statusFilter === "assignable" ? statusFilter : undefined;
+  const apiManufacturer = manufacturerFilters.length === 1 ? manufacturerFilters[0] : undefined;
+  const { data: devicesResponse, isLoading: loading, error: devicesError } = useDevices({
+    params: {
+      query: searchQuery.trim() || undefined,
+      status: apiStatus,
+      lifecycleStatus,
+      manufacturer: apiManufacturer,
+    },
+  });
+  const { data: vehiclesResponse } = useVehicles();
+  const { data: availableVehiclesResponse } = useVehicles({ params: { assigned: false } });
+  const { data: deviceResponse } = useDevice(selectedDevice?.id ?? "");
+  const createDevice = useCreateDevice();
+  const updateDevice = useUpdateDevice();
+  const deleteDevice = useDeleteDevice();
+  const importDevices = useImportDevices();
+  const updateLifecycle = useUpdateDeviceLifecycle();
+  const assignDevice = useAssignDevice();
+
+  const devices = useMemo<DeviceWithTelemetry[]>(() => (devicesResponse?.data ?? []).map((device) => ({
+    id: device.id,
+    imei: device.imei,
+    manufacturer: device.manufacturer,
+    model: device.model,
+    status: device.status,
+    vehicle_id: device.vehicleId,
+    tenant_id: device.tenantId,
+    last_seen: device.lastSeen,
+    signal_strength: device.signalStrength,
+    battery_level: device.batteryLevel,
+    protocol: "",
+    lifecycle_status: device.lifecycleStatus,
+    assigned_at: device.assignedAt,
+    firmware_version: device.firmwareVersion,
+  })), [devicesResponse]);
+  const vehicles = vehiclesResponse?.data ?? [];
+  const availableVehicles = availableVehiclesResponse?.data ?? [];
+  const error = devicesError?.message ?? null;
+  const detailDevice = deviceResponse?.data;
+
   const filteredDevices = useMemo(() => {
     const now = Date.now();
     return devices.filter((device) => {
-      const matchesSearch =
-        device.imei.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        device.manufacturer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (device.model?.toLowerCase() || "").includes(searchQuery.toLowerCase());
-      
-      // Support both lifecycle_status and legacy status
-      const deviceStatus = device.lifecycle_status || device.status;
-      const matchesStatus = statusFilter === "all" || deviceStatus === statusFilter;
+      const matchesSearch = true;
+      const matchesStatus = true;
       const matchesManufacturer = manufacturerFilters.length === 0 || manufacturerFilters.includes(device.manufacturer);
 
       let matchesLastSeen = true;
@@ -132,9 +168,12 @@ export default function DeviceManagement() {
 
       return matchesSearch && matchesStatus && matchesManufacturer && matchesLastSeen;
     });
-  }, [devices, searchQuery, statusFilter, manufacturerFilters, lastSeenFilters]);
+  }, [devices, manufacturerFilters, lastSeenFilters]);
 
-  const manufacturers = useMemo(() => [...new Set(devices.map((d) => d.manufacturer))], [devices]);
+  const manufacturers = useMemo(
+    () => [...new Set([...KNOWN_DEVICE_MANUFACTURERS, ...devices.map((device) => device.manufacturer)])],
+    [devices],
+  );
 
   // Lifecycle status counts
   const statusCounts = useMemo(() => {
@@ -161,7 +200,7 @@ export default function DeviceManagement() {
     manufacturer: device.manufacturer,
     model: device.model || "",
     status: device.status as IoTDevice["status"],
-    firmwareVersion: "1.0.0",
+    firmwareVersion: device.firmware_version || "",
     vehicleId: device.vehicle_id || undefined,
     lastSeen: device.last_seen ? new Date(device.last_seen) : undefined,
     signalStrength: device.signal_strength || undefined,
@@ -169,31 +208,53 @@ export default function DeviceManagement() {
   });
 
   // Handle adding device with catalog selection
-  const handleAddDevice = async (_newDevice: { imei: string; catalog_id: string; manufacturer: string; model: string }) => {
-    toast.info('Coming soon');
-    return;
+  const handleAddDevice = async (newDevice: Partial<IoTDevice>) => {
+    try {
+      await createDevice.mutateAsync({ data: {
+        imei: newDevice.imei!,
+        manufacturer: newDevice.manufacturer!,
+        model: newDevice.model!,
+        firmwareVersion: newDevice.firmwareVersion || undefined,
+      }});
+      toast.success("Device registered");
+      setIsAddDialogOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to register device");
+    }
   };
 
-  const handleEditDevice = async (_updatedDevice: Partial<IoTDevice>) => {
-    toast.info('Coming soon');
-    return;
+  const handleEditDevice = async (updatedDevice: Partial<IoTDevice>) => {
+    if (!selectedDevice) return;
+    try {
+      await updateDevice.mutateAsync({ id: selectedDevice.id, data: {
+        imei: updatedDevice.imei,
+        manufacturer: updatedDevice.manufacturer,
+        model: updatedDevice.model,
+        firmwareVersion: updatedDevice.firmwareVersion || undefined,
+      }});
+      toast.success("Device updated");
+      setIsEditDialogOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update device");
+    }
   };
 
-  const handleDeleteDevice = async (_deviceId: string) => {
-    toast.info('Coming soon');
-    return;
+  const handleDeleteDevice = async (deviceId: string) => {
+    try {
+      await deleteDevice.mutateAsync({ id: deviceId });
+      toast.success("Device deleted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete device");
+    }
   };
 
   // Mark device as configured (transitions to config_pending -> configured)
   const handleMarkConfigured = async (deviceId: string) => {
     try {
-      const result = await markAsConfigured(deviceId);
-      if (result.success) {
-        toast.success("Device marked as configured", {
-          description: "Waiting for first valid telemetry to verify device.",
-        });
-        refetch();
-      }
+      await updateLifecycle.mutateAsync({ id: deviceId, data: { lifecycleStatus: "configured" } });
+      toast.success("Device marked as configured", {
+        description: "Waiting for first valid telemetry to verify device.",
+      });
     } catch (err) {
       console.error('Error marking device configured:', err);
       toast.error("Failed to update device status");
@@ -201,73 +262,43 @@ export default function DeviceManagement() {
   };
 
   // Assign device to vehicle (with lifecycle validation)
-  const handleAssignDevice = async (_deviceId: string, _vehicleId: string) => {
-    toast.info('Coming soon');
-    return;
+  const handleAssignDevice = async (deviceId: string, vehicleId: string) => {
+    try {
+      await assignDevice.mutateAsync({ id: deviceId, data: { vehicleId } });
+      toast.success("Device assigned to vehicle");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to assign device");
+      throw err;
+    }
   };
 
-  const handleUnassignDevice = async (_deviceId: string) => {
-    toast.info('Coming soon');
-    return;
+  const handleBulkUpload = async (newDevices: Partial<IoTDevice>[]) => {
+    try {
+      const result = await importDevices.mutateAsync({ data: { items: newDevices.map((device) => ({
+        imei: device.imei,
+        manufacturer: device.manufacturer,
+        model: device.model,
+        firmwareVersion: device.firmwareVersion,
+      })) }});
+      toast.success(`${result.data.created} created, ${result.data.updated} updated`);
+      setIsBulkUploadOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to import devices");
+    }
   };
 
-  const handleBulkUpload = async (_newDevices: Partial<IoTDevice>[]) => {
-    toast.info('Coming soon');
-    return;
-  };
+  const handleValidateAssignment = useCallback(async (deviceId: string, vehicleId: string) => {
+    const response = await queryClient.fetchQuery(getValidateDeviceAssignmentQueryOptions({
+      id: deviceId,
+      params: { vehicleId },
+    }));
+    return response.data;
+  }, []);
 
   const getVehicleInfo = (vehicleId?: string | null) => {
     if (!vehicleId) return null;
     return vehicles.find((v) => v.id === vehicleId);
   };
-
-  // Access control - redirect if no view access
-  if (!canView) {
-    return (
-      <DashboardLayout title="Access Denied" subtitle="You don't have permission to view devices">
-        <Alert variant="destructive">
-          <ShieldAlert className="h-4 w-4" />
-          <AlertTitle>Access Denied</AlertTitle>
-          <AlertDescription>
-            Your role ({role}) does not have permission to access device management. 
-            Contact your administrator if you believe this is an error.
-          </AlertDescription>
-        </Alert>
-      </DashboardLayout>
-    );
-  }
-
-  // Aggregator view: show only Device Setup Requests queue
-  if (isAggregator) {
-    return (
-      <DashboardLayout
-        title="Device Setup Requests"
-        subtitle="Review and fulfill setup requests from your linked owner-operators"
-      >
-        <DeviceSetupRequestsQueue
-          requests={setupRequests}
-          loading={setupLoading}
-          onRefresh={refetchSetup}
-          onUpdateStatus={updateRequestStatus}
-          isConfigurator={true}
-        />
-      </DashboardLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <DashboardLayout title="IoT Device Management" subtitle="Provision and manage GPS tracking devices">
-        <Alert variant="destructive">
-          <ShieldAlert className="h-4 w-4" />
-          <AlertTitle>Error Loading Devices</AlertTitle>
-          <AlertDescription>
-            {error}. Please try refreshing the page.
-          </AlertDescription>
-        </Alert>
-      </DashboardLayout>
-    );
-  }
 
   return (
     <DashboardLayout title="IoT Device Management" subtitle="Provision and manage GPS tracking devices">
@@ -307,11 +338,11 @@ export default function DeviceManagement() {
                 columns={[
                   { header: "IMEI", accessor: "imei" },
                   { header: "Manufacturer", accessor: "manufacturer" },
-                  { header: "Model", accessor: (d: any) => d.model ?? "" },
-                  { header: "Status", accessor: (d: any) => d.lifecycle_status ?? d.status },
-                  { header: "Vehicle", accessor: (d: any) => getVehicleInfo(d.vehicle_id)?.registrationNumber ?? "" },
-                  { header: "Signal (%)", accessor: (d: any) => d.signal_strength ?? "" },
-                  { header: "Last Seen", accessor: (d: any) => d.last_seen ?? "" },
+                  { header: "Model", accessor: (d: DeviceWithTelemetry) => d.model ?? "" },
+                  { header: "Status", accessor: (d: DeviceWithTelemetry) => d.lifecycle_status ?? d.status },
+                  { header: "Vehicle", accessor: (d: DeviceWithTelemetry) => getVehicleInfo(d.vehicle_id)?.registrationNumber ?? "" },
+                  { header: "Signal (%)", accessor: (d: DeviceWithTelemetry) => d.signal_strength ?? "" },
+                  { header: "Last Seen", accessor: (d: DeviceWithTelemetry) => d.last_seen ?? "" },
                 ]}
               />
             </div>
@@ -455,16 +486,16 @@ export default function DeviceManagement() {
                                 device.status === "active"
                                   ? "bg-success/10"
                                   : device.status === "faulty"
-                                  ? "bg-destructive/10"
-                                  : "bg-secondary"
+                                    ? "bg-destructive/10"
+                                    : "bg-secondary"
                               )}>
                                 <Cpu className={cn(
                                   "h-5 w-5",
                                   device.status === "active"
                                     ? "text-success"
                                     : device.status === "faulty"
-                                    ? "text-destructive"
-                                    : "text-muted-foreground"
+                                      ? "text-destructive"
+                                      : "text-muted-foreground"
                                 )} />
                               </div>
                               <div>
@@ -503,7 +534,7 @@ export default function DeviceManagement() {
                                 <Signal className={cn(
                                   "h-4 w-4",
                                   device.signal_strength > 70 ? "text-success" :
-                                  device.signal_strength > 40 ? "text-warning" : "text-destructive"
+                                    device.signal_strength > 40 ? "text-warning" : "text-destructive"
                                 )} />
                                 <span className="text-sm">{device.signal_strength}%</span>
                               </div>
@@ -512,8 +543,8 @@ export default function DeviceManagement() {
                             )}
                           </td>
                           <td className="py-4 text-sm text-muted-foreground">
-                            {device.last_seen 
-                              ? formatDistanceToNow(new Date(device.last_seen), { addSuffix: true }) 
+                            {device.last_seen
+                              ? formatDistanceToNow(new Date(device.last_seen), { addSuffix: true })
                               : "Never"}
                           </td>
                           <td className="py-4 text-right">
@@ -524,17 +555,17 @@ export default function DeviceManagement() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => { 
-                                  setSelectedDevice(device); 
-                                  setIsDetailsOpen(true); 
+                                <DropdownMenuItem onClick={() => {
+                                  setSelectedDevice(device);
+                                  setIsDetailsOpen(true);
                                 }}>
                                   <Eye className="mr-2 h-4 w-4" />
                                   View Details
                                 </DropdownMenuItem>
                                 {canEdit && (
-                                  <DropdownMenuItem onClick={() => { 
-                                    setSelectedDevice(device); 
-                                    setIsEditDialogOpen(true); 
+                                  <DropdownMenuItem onClick={() => {
+                                    setSelectedDevice(device);
+                                    setIsEditDialogOpen(true);
                                   }}>
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit
@@ -549,19 +580,13 @@ export default function DeviceManagement() {
                                         Mark as Configured
                                       </DropdownMenuItem>
                                     )}
-                                    {!device.vehicle_id && isAssignable((device.lifecycle_status || device.status) as DeviceLifecycleStatus) && (
-                                      <DropdownMenuItem onClick={() => { 
-                                        setSelectedDevice(device); 
-                                        setIsAssignDialogOpen(true); 
+                                    {!device.vehicle_id && (
+                                      <DropdownMenuItem onClick={() => {
+                                        setSelectedDevice(device);
+                                        setIsAssignDialogOpen(true);
                                       }}>
                                         <Link className="mr-2 h-4 w-4" />
                                         Assign to Vehicle
-                                      </DropdownMenuItem>
-                                    )}
-                                    {device.vehicle_id && (
-                                      <DropdownMenuItem onClick={() => handleUnassignDevice(device.id)}>
-                                        <Unlink className="mr-2 h-4 w-4" />
-                                        Unassign Vehicle
                                       </DropdownMenuItem>
                                     )}
                                     <DropdownMenuItem>
@@ -613,7 +638,6 @@ export default function DeviceManagement() {
           const res = await createRequest(data);
           if (res) {
             setIsRequestDialogOpen(false);
-            refetchSetup();
           }
           return res;
         }}
@@ -646,15 +670,16 @@ export default function DeviceManagement() {
           status: selectedDevice.status,
           vehicle_id: selectedDevice.vehicle_id,
         } : null}
-        vehicles={vehicles.map(v => ({
+        vehicles={availableVehicles.map(v => ({
           id: v.id,
           registrationNumber: v.registrationNumber,
-          make: v.make,
+          make: v.make ?? "",
           model: v.model,
-          year: v.year,
-          status: v.status,
+          year: v.year ?? new Date().getFullYear(),
+          status: String(v.status),
         }))}
         onAssign={handleAssignDevice}
+        onValidate={handleValidateAssignment}
       />
 
       {selectedDevice && (() => {
@@ -663,7 +688,19 @@ export default function DeviceManagement() {
           <DeviceDetailsSheet
             open={isDetailsOpen}
             onOpenChange={setIsDetailsOpen}
-            device={convertToIoTDevice(selectedDevice)}
+            device={convertToIoTDevice(detailDevice ? {
+              ...selectedDevice,
+              imei: detailDevice.imei,
+              manufacturer: detailDevice.manufacturer,
+              model: detailDevice.model,
+              status: detailDevice.status,
+              vehicle_id: detailDevice.vehicleId,
+              last_seen: detailDevice.lastSeen,
+              signal_strength: detailDevice.signalStrength,
+              battery_level: detailDevice.batteryLevel,
+              lifecycle_status: detailDevice.lifecycleStatus,
+              firmware_version: detailDevice.firmwareVersion,
+            } : selectedDevice)}
             vehicle={vehicleData ? {
               id: vehicleData.id,
               vin: vehicleData.vin,

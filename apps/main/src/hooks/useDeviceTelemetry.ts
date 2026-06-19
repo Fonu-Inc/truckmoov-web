@@ -18,6 +18,7 @@ export interface DeviceWithTelemetry {
   first_telemetry_at?: string | null;
   verified_at?: string | null;
   assigned_at?: string | null;
+  firmware_version?: string | null;
   fonu_sim_id?: string | null;
   sim_operator?: string | null;
   sim_status_snapshot?: string | null;

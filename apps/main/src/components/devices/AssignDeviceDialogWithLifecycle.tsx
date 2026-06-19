@@ -41,6 +41,7 @@ interface AssignDeviceDialogWithLifecycleProps {
   device: Device | null;
   vehicles: Vehicle[];
   onAssign: (deviceId: string, vehicleId: string) => Promise<void>;
+  onValidate: (deviceId: string, vehicleId: string) => Promise<{ canAssign: boolean; reason: string | null }>;
 }
 
 export function AssignDeviceDialogWithLifecycle({
@@ -49,21 +50,20 @@ export function AssignDeviceDialogWithLifecycle({
   device,
   vehicles,
   onAssign,
+  onValidate,
 }: AssignDeviceDialogWithLifecycleProps) {
   const [search, setSearch] = useState("");
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const [validationResult, setValidationResult] = useState<{
     can_assign: boolean;
     reason?: string;
   } | null>(null);
 
-  const canAssignToVehicle = async (..._args: any[]) => ({ can_assign: true } as { can_assign: boolean; reason?: string });
-  const isAssignable = (_status: any): boolean => true;
-
   // Get lifecycle status (support both new and legacy)
   const lifecycleStatus = device?.lifecycle_status || device?.status || 'registered';
-  const canAttemptAssignment = isAssignable(lifecycleStatus as DeviceLifecycleStatus);
+  const canAttemptAssignment = !device?.vehicle_id;
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -71,6 +71,7 @@ export function AssignDeviceDialogWithLifecycle({
       setSearch("");
       setSelectedVehicle(null);
       setValidationResult(null);
+      setIsValidating(false);
     }
   }, [open]);
 
@@ -79,15 +80,26 @@ export function AssignDeviceDialogWithLifecycle({
     const validateAssignment = async () => {
       if (device && selectedVehicle) {
         setValidationResult(null);
-        const result = await canAssignToVehicle(device.id, selectedVehicle);
-        setValidationResult(result);
+        setIsValidating(true);
+        try {
+          const result = await onValidate(device.id, selectedVehicle);
+          setValidationResult({ can_assign: result.canAssign, reason: result.reason ?? undefined });
+        } catch (error) {
+          setValidationResult({
+            can_assign: false,
+            reason: error instanceof Error ? error.message : "Could not validate this assignment.",
+          });
+        } finally {
+          setIsValidating(false);
+        }
       } else {
         setValidationResult(null);
+        setIsValidating(false);
       }
     };
 
     validateAssignment();
-  }, [device, selectedVehicle, canAssignToVehicle]);
+  }, [device, selectedVehicle, onValidate]);
 
   const filteredVehicles = vehicles.filter((v) =>
     v.registrationNumber.toLowerCase().includes(search.toLowerCase()) ||
@@ -98,7 +110,7 @@ export function AssignDeviceDialogWithLifecycle({
     if (!device || !selectedVehicle) return;
     
     // Double-check validation
-    if (validationResult && !validationResult.can_assign) {
+    if (!validationResult?.can_assign) {
       toast.error("Assignment blocked", {
         description: validationResult.reason,
       });
@@ -210,7 +222,13 @@ export function AssignDeviceDialogWithLifecycle({
               </div>
 
               {/* Validation Result */}
-              {selectedVehicle && validationResult && (
+              {selectedVehicle && isValidating && (
+                <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Validating assignment...
+                </div>
+              )}
+              {selectedVehicle && validationResult && !isValidating && (
                 <Alert variant={validationResult.can_assign ? "default" : "destructive"}>
                   {validationResult.can_assign ? (
                     <CheckCircle2 className="h-4 w-4 text-success" />
@@ -238,7 +256,8 @@ export function AssignDeviceDialogWithLifecycle({
                 !canAttemptAssignment || 
                 !selectedVehicle || 
                 isAssigning || 
-                (validationResult && !validationResult.can_assign)
+                isValidating ||
+                !validationResult?.can_assign
               }
             >
               {isAssigning ? (

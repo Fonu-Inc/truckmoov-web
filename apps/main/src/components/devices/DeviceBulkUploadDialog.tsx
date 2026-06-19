@@ -26,35 +26,36 @@ interface ParsedRow {
   errors: string[];
 }
 
+function validateRow(row: string[]): ParsedRow {
+  const errors: string[] = [];
+  const [imei, manufacturer, model, firmwareVersion] = row.map((value) => value?.trim() || "");
+
+  if (!imei || imei.length !== 15 || !/^\d+$/.test(imei)) errors.push("IMEI must be 15 digits");
+  if (!manufacturer) errors.push("Manufacturer required");
+  if (!model) errors.push("Model required");
+
+  return {
+    imei,
+    manufacturer,
+    model,
+    firmwareVersion: firmwareVersion || "1.0.0",
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
+function parseCSV(content: string): ParsedRow[] {
+  return content
+    .split("\n")
+    .filter((line) => line.trim())
+    .slice(1)
+    .map((line) => validateRow(line.split(",")));
+}
+
 export function DeviceBulkUploadDialog({ open, onOpenChange, onUpload }: DeviceBulkUploadDialogProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedRow[]>([]);
-
-  const validateRow = (row: string[]): ParsedRow => {
-    const errors: string[] = [];
-    const [imei, manufacturer, model, firmwareVersion] = row.map((s) => s?.trim() || "");
-
-    if (!imei || imei.length !== 15 || !/^\d+$/.test(imei)) {
-      errors.push("IMEI must be 15 digits");
-    }
-    if (!manufacturer) errors.push("Manufacturer required");
-    if (!model) errors.push("Model required");
-
-    return {
-      imei,
-      manufacturer,
-      model,
-      firmwareVersion: firmwareVersion || "1.0.0",
-      isValid: errors.length === 0,
-      errors };
-  };
-
-  const parseCSV = (content: string): ParsedRow[] => {
-    const lines = content.split("\n").filter((line) => line.trim());
-    const dataRows = lines.slice(1);
-    return dataRows.map((line) => validateRow(line.split(",")));
-  };
 
   const handleFile = useCallback(async (selectedFile: File) => {
     if (!selectedFile.name.endsWith(".csv")) {

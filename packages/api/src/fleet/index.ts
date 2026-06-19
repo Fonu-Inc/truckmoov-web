@@ -169,6 +169,7 @@ export function getDeviceQueryOptions(id: string) {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.device(id),
     queryFn: () => getDevice({ id }),
+    enabled: Boolean(id),
   })
 }
 
