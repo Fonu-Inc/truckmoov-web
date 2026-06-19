@@ -82,6 +82,7 @@ export interface Tenant {
 // Vehicle
 export interface Vehicle {
   id: string;
+  plateNumber?: string;
   vin: string;
   registrationNumber: string;
   make: string;

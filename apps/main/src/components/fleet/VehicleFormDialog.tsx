@@ -29,6 +29,7 @@ import {
 import { useEffect } from "react";
 
 const vehicleSchema = z.object({
+  plateNumber: z.string().min(1, "Plate number is required").max(20, "Plate number too long"),
   vin: z.string().min(17, "VIN must be 17 characters").max(17, "VIN must be 17 characters"),
   registrationNumber: z.string().min(1, "Registration number is required").max(20, "Registration too long"),
   make: z.string().min(1, "Make is required").max(50, "Make too long"),
@@ -58,6 +59,7 @@ export function VehicleFormDialog({
   const form = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema),
     defaultValues: {
+      plateNumber: "",
       vin: "",
       registrationNumber: "",
       make: "",
@@ -71,6 +73,7 @@ export function VehicleFormDialog({
   useEffect(() => {
     if (vehicle) {
       form.reset({
+        plateNumber: vehicle.plateNumber ?? "",
         vin: vehicle.vin,
         registrationNumber: vehicle.registrationNumber,
         make: vehicle.make,
@@ -81,6 +84,7 @@ export function VehicleFormDialog({
       });
     } else {
       form.reset({
+        plateNumber: "",
         vin: "",
         registrationNumber: "",
         make: "",
@@ -111,10 +115,10 @@ export function VehicleFormDialog({
             <div className="grid gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
-                name="registrationNumber"
+                name="plateNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Registration Number</FormLabel>
+                    <FormLabel>Plate Number</FormLabel>
                     <FormControl>
                       <Input placeholder="LAG-123-XY" {...field} />
                     </FormControl>
@@ -125,18 +129,32 @@ export function VehicleFormDialog({
 
               <FormField
                 control={form.control}
-                name="vin"
+                name="registrationNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>VIN</FormLabel>
+                    <FormLabel>Registration Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="17-character VIN" maxLength={17} {...field} />
+                      <Input placeholder="RC-0001234" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="vin"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>VIN</FormLabel>
+                  <FormControl>
+                    <Input placeholder="17-character VIN" maxLength={17} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid gap-4 md:grid-cols-2">
               <FormField

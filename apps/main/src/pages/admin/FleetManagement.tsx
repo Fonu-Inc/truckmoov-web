@@ -67,9 +67,15 @@ import {
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
 import { Vehicle } from "@/types";
-import { mockVehicles } from "@/data/mockData";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
+import {
+  useVehicles,
+  useCreateVehicle,
+  useUpdateVehicle,
+  useDeleteVehicle,
+  useImportVehicles,
+} from "@truckmoov/api/fleet";
 
 interface FleetManagementProps {
   vehiclesOnly?: boolean;
@@ -94,11 +100,6 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
     setActiveTab(value);
     setSearchParams(value === "vehicles" ? {} : { tab: value }, { replace: true });
   };
-  const dbVehicles: any[] = [];
-  const isLoading = false;
-  const addVehicle = async (...args: any[]) => false;
-  const updateVehicle = async (...args: any[]) => false;
-  const deleteVehicle = async (...args: any[]) => {};
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -112,32 +113,40 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
   const [isGeofenceDialogOpen, setIsGeofenceDialogOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Convert DB vehicles to legacy Vehicle format for existing components
-  const dbMappedVehicles: Vehicle[] = dbVehicles.map((v) => ({
+  const apiStatus =
+    statusFilter === "active" || statusFilter === "inactive"
+      ? (statusFilter as "active" | "inactive")
+      : undefined;
+
+  const { data: vehiclesResp, isLoading } = useVehicles({
+    params: { query: searchQuery || undefined, status: apiStatus },
+  });
+  const { mutateAsync: createVehicleMutation } = useCreateVehicle();
+  const { mutateAsync: updateVehicleMutation } = useUpdateVehicle();
+  const { mutateAsync: deleteVehicleMutation } = useDeleteVehicle();
+  const { mutateAsync: importVehiclesMutation } = useImportVehicles();
+
+  const dbVehicles = vehiclesResp?.data ?? [];
+
+  // Convert API vehicles to the local Vehicle shape used by child components
+  const vehicles: Vehicle[] = dbVehicles.map((v) => ({
     id: v.id,
-    vin: v.vin,
+    plateNumber: v.plateNumber,
+    vin: v.vin ?? "",
     registrationNumber: v.registrationNumber,
-    make: v.make,
+    make: v.make ?? "",
     model: v.model,
-    year: v.year,
-    type: v.type as Vehicle["type"],
-    status: v.status as Vehicle["status"],
-    capacity: v.capacity || 0,
-    currentDriver: v.currentDriverId || undefined,
-    deviceId: v.deviceId || undefined,
-    fuelLevel: v.fuelLevel || undefined,
+    year: v.year ?? new Date().getFullYear(),
+    type: (String(v.type) as Vehicle["type"]) || "truck",
+    status: (String(v.status) as Vehicle["status"]) || "active",
+    capacity: v.capacity ?? 0,
+    currentDriver: v.assignedDriverId ?? undefined,
   }));
 
-  // Fallback to demo data if DB is empty (so the table shows populated state)
-  const vehicles: Vehicle[] = dbMappedVehicles.length > 0 ? dbMappedVehicles : mockVehicles;
-
+  // search + active|inactive status go to the API; maintenance/all status and type/year are client-side
   const filteredVehicles = vehicles.filter((vehicle) => {
-    const matchesSearch =
-      vehicle.registrationNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vehicle.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vehicle.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vehicle.vin.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || vehicle.status === statusFilter;
+    const matchesStatus =
+      !apiStatus && (statusFilter === "all" || vehicle.status === statusFilter);
     const matchesType =
       !filterValue.typeEnabled ||
       filterValue.type === "all" ||
@@ -146,60 +155,65 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
     const matchesYear =
       !filterValue.yearEnabled ||
       ((yMin <= 0 || vehicle.year >= yMin) && (yMax <= 0 || vehicle.year <= yMax));
-    return matchesSearch && matchesStatus && matchesType && matchesYear;
+    return (apiStatus ? true : matchesStatus) && matchesType && matchesYear;
   });
 
   const handleAddVehicle = async (newVehicle: Partial<Vehicle>) => {
-    const success = await addVehicle({
-      vin: newVehicle.vin,
-      registrationNumber: newVehicle.registrationNumber,
-      make: newVehicle.make,
-      model: newVehicle.model,
-      year: newVehicle.year,
-      type: newVehicle.type,
-      status: newVehicle.status || "active",
-      capacity: newVehicle.capacity,
+    await createVehicleMutation({
+      data: {
+        plateNumber: newVehicle.plateNumber!,
+        registrationNumber: newVehicle.registrationNumber!,
+        vin: newVehicle.vin!,
+        make: newVehicle.make!,
+        model: newVehicle.model!,
+        year: newVehicle.year!,
+        type: newVehicle.type!,
+        capacity: newVehicle.capacity,
+        status: "active",
+      },
     });
-    if (success) {
-      setIsAddDialogOpen(false);
-    }
+    setIsAddDialogOpen(false);
   };
 
   const handleEditVehicle = async (updatedVehicle: Partial<Vehicle>) => {
     if (!selectedVehicle) return;
-    const success = await updateVehicle(selectedVehicle.id, {
-      vin: updatedVehicle.vin,
-      registrationNumber: updatedVehicle.registrationNumber,
-      make: updatedVehicle.make,
-      model: updatedVehicle.model,
-      year: updatedVehicle.year,
-      type: updatedVehicle.type,
-      status: updatedVehicle.status as VehicleData["status"],
-      capacity: updatedVehicle.capacity,
+    await updateVehicleMutation({
+      id: selectedVehicle.id,
+      data: {
+        plateNumber: updatedVehicle.plateNumber,
+        registrationNumber: updatedVehicle.registrationNumber,
+        vin: updatedVehicle.vin,
+        make: updatedVehicle.make,
+        model: updatedVehicle.model,
+        year: updatedVehicle.year,
+        type: updatedVehicle.type,
+        capacity: updatedVehicle.capacity,
+      },
     });
-    if (success) {
-      setIsEditDialogOpen(false);
-      setSelectedVehicle(null);
-    }
+    setIsEditDialogOpen(false);
+    setSelectedVehicle(null);
   };
 
   const handleDeleteVehicle = async (vehicleId: string) => {
-    await deleteVehicle(vehicleId);
+    await deleteVehicleMutation({ id: vehicleId });
   };
 
   const handleBulkUpload = async (newVehicles: Partial<Vehicle>[]) => {
-    for (const v of newVehicles) {
-      await addVehicle({
-        vin: v.vin,
-        registrationNumber: v.registrationNumber,
-        make: v.make,
-        model: v.model,
-        year: v.year,
-        type: v.type,
-        status: "active",
-        capacity: v.capacity,
-      });
-    }
+    await importVehiclesMutation({
+      data: {
+        items: newVehicles.map((v) => ({
+          plateNumber: v.plateNumber ?? v.registrationNumber ?? "",
+          registrationNumber: v.registrationNumber ?? "",
+          vin: v.vin ?? "",
+          make: v.make ?? "",
+          model: v.model ?? "",
+          year: v.year ?? new Date().getFullYear(),
+          type: v.type ?? "truck",
+          capacity: v.capacity,
+          status: "active",
+        })),
+      },
+    });
     setIsBulkUploadOpen(false);
   };
 
@@ -407,7 +421,14 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredVehicles.map((vehicle) => (
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={8} className="py-12 text-center text-muted-foreground">
+                        <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                      </td>
+                    </tr>
+                  ) : null}
+                  {!isLoading && filteredVehicles.map((vehicle) => (
                     <tr key={vehicle.id} className="group transition-colors hover:bg-secondary/30">
                       <td className="py-4 pr-6">
                         <div className="flex items-center gap-3">
@@ -536,7 +557,7 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
                 </tbody>
               </table>
 
-              {filteredVehicles.length === 0 && (
+              {!isLoading && filteredVehicles.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <Truck className="h-12 w-12 mb-4 opacity-30" />
                   <p>No vehicles found</p>
@@ -591,16 +612,16 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
         onSubmit={handleEditVehicle}
         vehicle={selectedVehicle ? {
           id: selectedVehicle.id,
-          vin: selectedVehicle.vin,
+          plateNumber: selectedVehicle.plateNumber ?? "",
+          vin: selectedVehicle.vin ?? "",
           registrationNumber: selectedVehicle.registrationNumber,
-          make: selectedVehicle.make,
+          make: selectedVehicle.make ?? "",
           model: selectedVehicle.model,
-          year: selectedVehicle.year,
-          type: selectedVehicle.type as Vehicle["type"],
-          status: selectedVehicle.status,
+          year: selectedVehicle.year ?? new Date().getFullYear(),
+          type: (String(selectedVehicle.type) as Vehicle["type"]) || "truck",
+          status: (String(selectedVehicle.status) as Vehicle["status"]) || "active",
           capacity: selectedVehicle.capacity || 0,
-          currentDriver: selectedVehicle.currentDriverId || undefined,
-          fuelLevel: selectedVehicle.fuelLevel || undefined,
+          currentDriver: selectedVehicle.assignedDriverId ?? selectedVehicle.currentDriverId ?? undefined,
         } : null}
         title="Edit Vehicle"
       />
