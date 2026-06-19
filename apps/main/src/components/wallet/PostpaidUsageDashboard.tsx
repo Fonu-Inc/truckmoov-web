@@ -12,8 +12,6 @@ import { Separator } from "@/components/shadcn/separator";
 import { useMemo, useState } from "react";
 import { TableToolbar, type FilterField, type FilterValues } from "@/components/shadcn/table-toolbar";
 import { ExportButton } from "@/components/shadcn/export-button";
-import { PaymentGateModal } from "@/components/onboarding/PaymentGateModal";
-import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 interface PostpaidUsageDashboardProps {
@@ -225,8 +223,6 @@ function PostpaidInvoicesTable({ invoices }: { invoices: PostpaidInvoiceRow[] })
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string>("all");
   const [filters, setFilters] = useState<FilterValues>({});
-  const [payingInvoice, setPayingInvoice] = useState<PostpaidInvoiceRow | null>(null);
-  const queryClient = useQueryClient();
 
   const filterFields: FilterField[] = [
     {
@@ -260,11 +256,6 @@ function PostpaidInvoicesTable({ invoices }: { invoices: PostpaidInvoiceRow[] })
       return true;
     });
   }, [invoices, search, status, filters]);
-
-  const handlePaid = async (_method: string) => {
-    toast.info('Coming soon');
-    return;
-  };
 
   return (
     <Card>
@@ -353,7 +344,7 @@ function PostpaidInvoicesTable({ invoices }: { invoices: PostpaidInvoiceRow[] })
                   </TableCell>
                   <TableCell className="text-right">
                     {isUnpaid ? (
-                      <Button size="sm" onClick={() => setPayingInvoice(inv)}>
+                      <Button size="sm" onClick={() => toast.info("Payment coming soon.")}>
                         Pay
                       </Button>
                     ) : (
@@ -367,17 +358,6 @@ function PostpaidInvoicesTable({ invoices }: { invoices: PostpaidInvoiceRow[] })
         </Table>
       </CardContent>
 
-      <PaymentGateModal
-        open={!!payingInvoice}
-        onOpenChange={(v) => !v && setPayingInvoice(null)}
-        planName={payingInvoice ? `Invoice ${payingInvoice.invoice_number}` : ""}
-        amountLabel={
-          payingInvoice
-            ? formatCurrency(Number(payingInvoice.invoice_balance_ngn), 'NGN')
-            : ""
-        }
-        onConfirmed={() => handlePaid("card_or_momo")}
-      />
     </Card>
   );
 }

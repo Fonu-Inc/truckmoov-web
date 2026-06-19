@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { getOnboardingSubscriptionCapsQueryOptions } from "@truckmoov/api/auth";
 import { toast } from "sonner";
 import {
   Cpu,
@@ -36,7 +38,6 @@ import { DeviceFormDialog } from "@/components/devices/DeviceFormDialog";
 import { SIMFormDialog } from "@/components/sims/SIMFormDialog";
 import { DeviceSetupRequestDialogMinimal } from "@/components/devices/DeviceSetupRequestDialogMinimal";
 import { SIMRequestFormDialogMinimal } from "@/components/sims/SIMRequestFormDialogMinimal";
-import { useOnboardingStore } from "@/stores/onboardingStore";
 import { useAuthStore } from "@/stores/authStore";
 
 /**
@@ -54,21 +55,6 @@ import { useAuthStore } from "@/stores/authStore";
  * Plan-based caps are surfaced up-front so users do not upload 500 devices
  * only to be rejected after the fact.
  */
-
-// --- Plan-based caps -------------------------------------------------------
-// In a real backend this would come from the tenant's subscription record.
-// We map the marketing plan id (stored in onboardingStore by the Subscription
-// step) to a sensible default cap so this UI behaves correctly even before
-// the server-side limits are wired up.
-const PLAN_CAPS: Record<string, { devices: number; sims: number; label: string }> = {
-  "prepaid-starter":     { devices: 25,  sims: 25,  label: "Starter" },
-  "prepaid-professional":{ devices: 100, sims: 100, label: "Professional" },
-  "prepaid-enterprise":  { devices: 1000,sims: 1000,label: "Enterprise" },
-  "postpaid-business":   { devices: 50,  sims: 50,  label: "Business" },
-  "postpaid-corporate":  { devices: 200, sims: 200, label: "Corporate" },
-  "postpaid-enterprise": { devices: 1000,sims: 1000,label: "Enterprise" },
-};
-const DEFAULT_CAP = { devices: 25, sims: 25, label: "Trial" };
 
 // --- Dropzone --------------------------------------------------------------
 interface DropZoneProps {
@@ -158,15 +144,17 @@ function parseCsvCount(text: string): { rows: number; valid: number; invalid: nu
 // =========================================================================
 export default function ActivationOnboarding() {
   const navigate = useNavigate();
-  const { selectedPlan, completeOnboarding } = useOnboardingStore();
   const { user } = useAuthStore();
+  const capsQuery = useQuery(getOnboardingSubscriptionCapsQueryOptions());
   const createRequest = async (...args: any[]) => null;
   const submitSimRequest = async (...args: any[]) => null;
 
-  const caps = useMemo(() => {
-    if (selectedPlan && PLAN_CAPS[selectedPlan]) return PLAN_CAPS[selectedPlan];
-    return DEFAULT_CAP;
-  }, [selectedPlan]);
+  const capsData = capsQuery.data?.data;
+  const caps = {
+    devices: capsData?.maxDevices ?? null,
+    sims: capsData?.maxSims ?? null,
+    label: capsData?.planName ?? capsData?.planTier ?? capsData?.planCode ?? "Current",
+  };
 
   // --- Devices state -------------------------------------------------------
   const [deviceDialogOpen, setDeviceDialogOpen] = useState(false);
@@ -216,12 +204,12 @@ export default function ActivationOnboarding() {
     return addedSims.length + fromUploads + simRequestedQty;
   }, [addedSims, simFiles, simRequestedQty]);
 
-  const deviceOver = totalDevices > caps.devices;
-  const simOver = totalSims > caps.sims;
+  const deviceOver = caps.devices !== null && totalDevices > caps.devices;
+  const simOver = caps.sims !== null && totalSims > caps.sims;
 
   // --- Handlers ------------------------------------------------------------
   const handleAddDevice = (data: any) => {
-    if (totalDevices + 1 > caps.devices) {
+    if (caps.devices !== null && totalDevices + 1 > caps.devices) {
       toast.error(`Your ${caps.label} plan allows ${caps.devices} devices. Upgrade to add more.`);
       return;
     }
@@ -231,7 +219,7 @@ export default function ActivationOnboarding() {
   };
 
   const handleAddSim = (data: any) => {
-    if (totalSims + 1 > caps.sims) {
+    if (caps.sims !== null && totalSims + 1 > caps.sims) {
       toast.error(`Your ${caps.label} plan allows ${caps.sims} SIMs. Upgrade to add more.`);
       return;
     }
@@ -307,8 +295,8 @@ export default function ActivationOnboarding() {
             <div className="text-sm">
               <p className="font-medium">{caps.label} plan limits</p>
               <p className="text-xs text-muted-foreground">
-                Up to <span className="font-semibold text-foreground">{caps.devices}</span> devices and{" "}
-                <span className="font-semibold text-foreground">{caps.sims}</span> SIMs included.
+                Up to <span className="font-semibold text-foreground">{caps.devices ?? "Unlimited"}</span> devices and{" "}
+                <span className="font-semibold text-foreground">{caps.sims ?? "Unlimited"}</span> SIMs included.
               </p>
             </div>
           </div>
@@ -331,12 +319,12 @@ export default function ActivationOnboarding() {
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">Selected</p>
                 <p className={cn("text-sm font-semibold", deviceOver && "text-destructive")}>
-                  {totalDevices} / {caps.devices}
+                  {totalDevices} / {caps.devices ?? "Unlimited"}
                 </p>
               </div>
             </div>
             <Progress
-              value={Math.min(100, (totalDevices / caps.devices) * 100)}
+              value={caps.devices === null ? 0 : Math.min(100, (totalDevices / caps.devices) * 100)}
               className={cn("mt-3 h-1.5", deviceOver && "[&>div]:bg-destructive")}
             />
           </CardHeader>
@@ -344,7 +332,7 @@ export default function ActivationOnboarding() {
             {deviceOver && (
               <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                You're over your plan cap. Reduce by {totalDevices - caps.devices} or upgrade your plan.
+                You're over your plan cap. Reduce by {totalDevices - (caps.devices ?? totalDevices)} or upgrade your plan.
               </div>
             )}
 
@@ -359,7 +347,7 @@ export default function ActivationOnboarding() {
                   className="mt-3 w-full"
                   variant="outline"
                   onClick={() => setDeviceDialogOpen(true)}
-                  disabled={totalDevices >= caps.devices}
+                  disabled={caps.devices !== null && totalDevices >= caps.devices}
                 >
                   <Plus className="mr-1.5 h-3.5 w-3.5" />
                   Add Device
@@ -440,12 +428,12 @@ export default function ActivationOnboarding() {
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">Selected</p>
                 <p className={cn("text-sm font-semibold", simOver && "text-destructive")}>
-                  {totalSims} / {caps.sims}
+                  {totalSims} / {caps.sims ?? "Unlimited"}
                 </p>
               </div>
             </div>
             <Progress
-              value={Math.min(100, (totalSims / caps.sims) * 100)}
+              value={caps.sims === null ? 0 : Math.min(100, (totalSims / caps.sims) * 100)}
               className={cn("mt-3 h-1.5", simOver && "[&>div]:bg-destructive")}
             />
           </CardHeader>
@@ -453,7 +441,7 @@ export default function ActivationOnboarding() {
             {simOver && (
               <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                You're over your plan cap. Reduce by {totalSims - caps.sims} or upgrade your plan.
+                You're over your plan cap. Reduce by {totalSims - (caps.sims ?? totalSims)} or upgrade your plan.
               </div>
             )}
 
@@ -468,7 +456,7 @@ export default function ActivationOnboarding() {
                   className="mt-3 w-full"
                   variant="outline"
                   onClick={() => setSimDialogOpen(true)}
-                  disabled={totalSims >= caps.sims}
+                  disabled={caps.sims !== null && totalSims >= caps.sims}
                 >
                   <Plus className="mr-1.5 h-3.5 w-3.5" />
                   Add SIM
@@ -603,7 +591,7 @@ export default function ActivationOnboarding() {
       <DeviceSetupRequestDialogMinimal
         open={deviceRequestDialogOpen}
         onOpenChange={setDeviceRequestDialogOpen}
-        quotaRemaining={Math.max(0, caps.devices - totalDevices)}
+        quotaRemaining={caps.devices === null ? undefined : Math.max(0, caps.devices - totalDevices)}
         quotaLabel={caps.label}
         onSubmit={async (data) => {
           const res = await createRequest({
@@ -626,7 +614,7 @@ export default function ActivationOnboarding() {
       <SIMRequestFormDialogMinimal
         open={simRequestDialogOpen}
         onOpenChange={setSimRequestDialogOpen}
-        quotaRemaining={Math.max(0, caps.sims - totalSims)}
+        quotaRemaining={caps.sims === null ? undefined : Math.max(0, caps.sims - totalSims)}
         quotaLabel={caps.label}
         onSubmit={async (data) => {
           const res = await submitSimRequest({

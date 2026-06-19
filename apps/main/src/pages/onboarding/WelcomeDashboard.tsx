@@ -12,7 +12,6 @@ import {
   Wrench,
   ClipboardList,
 } from "lucide-react";
-import { useOnboardingStore } from "@/stores/onboardingStore";
 import { OnboardingLayout } from "./OnboardingLayout";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -71,13 +70,11 @@ function getActionsFor(role: string | undefined): QuickAction[] {
 
 export default function WelcomeDashboard() {
   const navigate = useNavigate();
-  const { completeOnboarding } = useOnboardingStore();
   const { user } = useAuthStore();
   const actions = getActionsFor(user?.role);
 
   const goToDashboard = async () => {
     const route = await resolveDashboardRoute(user?.id, user?.role);
-    completeOnboarding();
     navigate(route);
   };
 
@@ -95,7 +92,6 @@ export default function WelcomeDashboard() {
               key={a.id}
               type="button"
               onClick={() => {
-                completeOnboarding();
                 navigate(a.to);
               }}
               className="group flex items-start gap-3 rounded-xl border border-border bg-background/40 p-4 text-left transition-all hover:border-primary/60 hover:bg-accent/30"

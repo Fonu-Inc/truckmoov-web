@@ -661,6 +661,7 @@ import type { ServerResponse } from '../lib/types'
 // ─── Entity types ─────────────────────────────────────────────────────────────
 
 export type SubscriptionPlan = {
+  id: string
   code: string
   tier: 'starter' | 'professional' | 'enterprise'
   name: string
@@ -669,11 +670,28 @@ export type SubscriptionPlan = {
   yearlyMonthlyEquivalentNgn: number | null
   yearlyDiscountPercent: number | null
   maxActiveVehicles: number | null
+  maxUsers: number | null
   customPricing: boolean
   trialDays: number | null
   badge: string | null
   ctaLabel: string
   features: string[]
+}
+
+export type OnboardingExchangeRate = {
+  ngnPerUsd: number
+  source: string
+  fetchedAt: string
+}
+
+export type OnboardingSubscriptionCaps = {
+  planCode: string
+  planName: string | null
+  planTier: string | null
+  maxDevices: number | null
+  maxSims: number | null
+  maxUsers: number | null
+  subscriptionActivatedAt: string | null
 }
 
 export type SystemTenant = {
@@ -971,6 +989,9 @@ export type SystemSimBatchesListResponse = ServerResponse<SystemSimBatchesList>
 export type SystemSimBatchResponse = ServerResponse<SystemSimBatch>
 export type SystemSimBatchesSummaryResponse = ServerResponse<SystemSimBatchesSummary>
 export type SystemSubscriptionPlansResponse = ServerResponse<{ plans: SubscriptionPlan[]; generatedAt: string }>
+export type OnboardingPlansResponse = ServerResponse<{ plans: SubscriptionPlan[] }>
+export type OnboardingExchangeRateResponse = ServerResponse<OnboardingExchangeRate>
+export type OnboardingSubscriptionCapsResponse = ServerResponse<OnboardingSubscriptionCaps>
 export type SystemFeatureFlagsResponse = ServerResponse<SystemFeatureFlagsList>
 export type SystemFeatureFlagResponse = ServerResponse<SystemFeatureFlag>
 export interface AdminInvite {

@@ -12,7 +12,6 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import { FonuCallProvider } from "./contexts/FonuCallContext";
 import { KeyboardShortcutsDialog } from "./components/KeyboardShortcutsDialog";
 import { GlobalSupportChat } from "./components/support/GlobalSupportChat";
-import { OnboardingModalsHost } from "./components/onboarding/OnboardingModalsHost";
 
 // Pages
 import AuthPage from "./pages/AuthPage";
@@ -127,8 +126,7 @@ const App = () => {
                       <Route path="/not-authorized" element={<NotAuthorized />} />
 
                       {/* Onboarding Pages */}
-                      <Route path="/onboarding/welcome" element={<Navigate to="/onboarding/subscription" replace />} />
-                      <Route path="/onboarding/subscription" element={<SubscriptionOnboarding />} />
+                      <Route path="/onboarding" element={<SubscriptionOnboarding />} />
                       <Route path="/onboarding/kyc" element={<KycOnboarding />} />
                       <Route path="/onboarding/activate" element={<ActivationOnboarding />} />
                       <Route path="/onboarding/quick-access" element={<WelcomeDashboard />} />
@@ -215,9 +213,6 @@ const App = () => {
                     </Route>
                   </Routes>
                   <GlobalSupportChat />
-                  <div data-allow-no-subscription data-allow-no-kyc>
-                    <OnboardingModalsHost />
-                  </div>
                 </BrowserRouter>
               </FonuCallProvider>
             </TenantBrandingProvider>

@@ -28,6 +28,9 @@ import type {
   LogoutPayload,
   MeResponse,
   NotificationPreferencesResponse,
+  OnboardingExchangeRateResponse,
+  OnboardingPlansResponse,
+  OnboardingSubscriptionCapsResponse,
   OrganizationSettingsResponse,
   OrganizationUserResponse,
   OrganizationUsersResponse,
@@ -594,6 +597,21 @@ export async function getSystemSubscriptionPlans() {
 
 export async function getSubscriptionPlans() {
   const { data } = await axiosInstance.get<SystemSubscriptionPlansResponse>('/auth/subscription-plans')
+  return data
+}
+
+export async function getOnboardingPlans() {
+  const { data } = await axiosInstance.get<OnboardingPlansResponse>('/auth/onboarding/plans')
+  return data
+}
+
+export async function getOnboardingExchangeRate() {
+  const { data } = await axiosInstance.get<OnboardingExchangeRateResponse>('/auth/onboarding/exchange-rate')
+  return data
+}
+
+export async function getOnboardingSubscriptionCaps() {
+  const { data } = await axiosInstance.get<OnboardingSubscriptionCapsResponse>('/auth/onboarding/subscription/caps')
   return data
 }
 

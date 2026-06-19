@@ -37,7 +37,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   logout: () => {
     useApiAuthStore.getState().logout();
-    void import('./onboardingStore').then((m) => m.useOnboardingStore.getState().reset());
     set({ user: null, isAuthenticated: false, isAuthReady: true });
   },
 }));

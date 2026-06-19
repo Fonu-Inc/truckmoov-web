@@ -31,6 +31,9 @@ import {
   getDispatchPreferences,
   getMe,
   getNotificationPreferences,
+  getOnboardingExchangeRate,
+  getOnboardingPlans,
+  getOnboardingSubscriptionCaps,
   getOrganizationSettings,
   getOrganizationUsers,
   getProfile,
@@ -142,6 +145,8 @@ export type {
   LogoutPayload,
   NotificationPreferences,
   NotificationPreferencesData,
+  OnboardingExchangeRate,
+  OnboardingSubscriptionCaps,
   OrganizationBrandingSettings,
   OrganizationDefaultSettings,
   OrganizationUser,
@@ -267,6 +272,9 @@ export const AUTH_QUERY_KEY = {
   systemRefDataTenantOnboarding: ['systemRefDataTenantOnboarding'],
   systemSubscriptionPlans: ['systemSubscriptionPlans'],
   subscriptionPlans: ['subscriptionPlans'],
+  onboardingPlans: ['onboardingPlans'],
+  onboardingExchangeRate: ['onboardingExchangeRate'],
+  onboardingSubscriptionCaps: ['onboardingSubscriptionCaps'],
 
   systemSupportDashboard: ['systemSupportDashboard'],
   systemSupportTicketSummary: ['systemSupportTicketSummary'],
@@ -914,6 +922,21 @@ export function getSystemSubscriptionPlansQueryOptions() {
 
 export function getSubscriptionPlansQueryOptions() {
   return queryOptions({ queryKey: AUTH_QUERY_KEY.subscriptionPlans, queryFn: getSubscriptionPlans })
+}
+
+export function getOnboardingPlansQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.onboardingPlans, queryFn: getOnboardingPlans })
+}
+
+export function getOnboardingExchangeRateQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.onboardingExchangeRate, queryFn: getOnboardingExchangeRate })
+}
+
+export function getOnboardingSubscriptionCapsQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.onboardingSubscriptionCaps,
+    queryFn: getOnboardingSubscriptionCaps,
+  })
 }
 
 // Support tickets

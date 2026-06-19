@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { useOnboardingStore } from "@/stores/onboardingStore";
 import { OnboardingLayout } from "./OnboardingLayout";
 import { OnboardingKYCStep } from "@/components/onboarding/OnboardingKYCStep";
 
@@ -15,11 +14,9 @@ import { OnboardingKYCStep } from "@/components/onboarding/OnboardingKYCStep";
 export default function KycOnboarding() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const markKycSkipped = useOnboardingStore((s) => s.markKycSkipped);
   const tenantId = user?.tenantId ?? "";
 
   const handleSkip = () => {
-    markKycSkipped();
     toast.info("KYC skipped for now", {
       description:
         "You'll see a reminder on every page until your business is verified.",
