@@ -5,6 +5,8 @@ import type {
   ActivityLogResponse,
   ApproveSIMRequestPayload,
   EnterpriseEnquiryPayload,
+  PaymentIntentPayload,
+  PaymentIntentResponse,
   AuthSystemSettingsResponse,
   AuthTokenResponse,
   ChangeRolePayload,
@@ -614,6 +616,11 @@ export async function getOnboardingExchangeRate() {
 export async function getOnboardingSubscriptionCaps() {
   const { data } = await axiosInstance.get<OnboardingSubscriptionCapsResponse>('/auth/onboarding/subscription/caps')
   return data
+}
+
+export async function createPaymentIntent({ data }: PaymentIntentPayload) {
+  const { data: res } = await axiosInstance.post<PaymentIntentResponse>('/auth/onboarding/payment/intent', data)
+  return res
 }
 
 export async function submitEnterpriseEnquiry({ data }: EnterpriseEnquiryPayload) {

@@ -4,6 +4,7 @@ import {
   getOnboardingExchangeRateQueryOptions,
   getOnboardingPlansQueryOptions,
   getOnboardingSubscriptionCapsQueryOptions,
+  useCreatePaymentIntent,
 } from "@truckmoov/api/auth";
 import {
   AlertCircle,
@@ -16,8 +17,7 @@ import {
   Truck,
   Users,
 } from "lucide-react";
-import { toast } from "sonner";
-
+import { PaymentGatewayDialog } from "@truckmoov/reusables/components/app/PaymentGatewayDialog";
 import { EnterpriseEnquiryDialog } from "@/components/onboarding/EnterpriseEnquiryDialog";
 import { Button } from "@/components/shadcn/button";
 import { Label } from "@/components/shadcn/label";
@@ -41,6 +41,8 @@ export default function SubscriptionOnboarding() {
   const [currencyUsd, setCurrencyUsd] = useState(false);
   const [pickedTier, setPickedTier] = useState<string | null>(null);
   const [enquiryOpen, setEnquiryOpen] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const paymentMutation = useCreatePaymentIntent();
 
   const plans = plansQuery.data?.data.plans ?? [];
   const picked = plans.find((plan) => plan.tier === pickedTier) ?? null;
@@ -65,7 +67,7 @@ export default function SubscriptionOnboarding() {
       setEnquiryOpen(true);
       return;
     }
-    toast.info("Payment coming soon. Paystack integration is pending.");
+    setPaymentOpen(true);
   };
 
   return (
@@ -288,6 +290,19 @@ export default function SubscriptionOnboarding() {
           open={enquiryOpen}
           onOpenChange={setEnquiryOpen}
           planName={picked.name}
+        />
+      )}
+
+      {picked && !picked.customPricing && (
+        <PaymentGatewayDialog
+          open={paymentOpen}
+          onOpenChange={setPaymentOpen}
+          context={{ type: "subscription", planName: picked.name, billingCycle: billing }}
+          onPay={({ gateway, phone }) =>
+            paymentMutation.mutateAsync({
+              data: { planCode: picked.code, billingCycle: billing, gateway, phone },
+            }).then((res) => res.data)
+          }
         />
       )}
     </OnboardingLayout>

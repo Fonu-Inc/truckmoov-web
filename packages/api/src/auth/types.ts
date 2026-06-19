@@ -993,6 +993,22 @@ export type OnboardingPlansResponse = ServerResponse<{ plans: SubscriptionPlan[]
 export type OnboardingExchangeRateResponse = ServerResponse<OnboardingExchangeRate>
 export type OnboardingSubscriptionCapsResponse = ServerResponse<OnboardingSubscriptionCaps>
 
+export type PaymentIntentPayload = {
+  data: {
+    planCode: string
+    billingCycle: 'monthly' | 'yearly'
+    gateway: 'paystack' | 'momo'
+    phone?: string
+  }
+}
+
+export type PaymentIntentData = {
+  authorizationUrl?: string
+  ussdString?: string
+}
+
+export type PaymentIntentResponse = ServerResponse<PaymentIntentData>
+
 export type EnterpriseEnquiryPayload = {
   data: {
     name: string

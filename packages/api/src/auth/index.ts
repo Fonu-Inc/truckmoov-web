@@ -35,6 +35,7 @@ import {
   getOnboardingPlans,
   getOnboardingSubscriptionCaps,
   getOrganizationSettings,
+  createPaymentIntent,
   submitEnterpriseEnquiry,
   getOrganizationUsers,
   getProfile,
@@ -140,6 +141,8 @@ export type {
   CreateTicketMessagePayload,
   DeleteSystemAdminPayload,
   EnterpriseEnquiryPayload,
+  PaymentIntentPayload,
+  PaymentIntentData,
   EscalateTicketPayload,
   ForgotPasswordPayload,
   InviteUserPayload,
@@ -939,6 +942,10 @@ export function getOnboardingSubscriptionCapsQueryOptions() {
     queryKey: AUTH_QUERY_KEY.onboardingSubscriptionCaps,
     queryFn: getOnboardingSubscriptionCaps,
   })
+}
+
+export function useCreatePaymentIntent() {
+  return useMutation({ mutationFn: createPaymentIntent })
 }
 
 export function useSubmitEnterpriseEnquiry() {
