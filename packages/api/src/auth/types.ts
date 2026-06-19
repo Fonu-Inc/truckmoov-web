@@ -1018,6 +1018,44 @@ export type EnterpriseEnquiryPayload = {
     message: string
   }
 }
+
+export type ProvisionDevicesPayload = {
+  data: {
+    manufacturer: string
+    model: string
+    quantity: number
+    useCase?: string
+    requesterNotes?: string
+  }
+}
+
+export type RegisterSimsPayload = {
+  data: {
+    sims: { iccid: string; mobileNumber: string; networkOperator: string }[]
+  }
+}
+
+export type ProvisionSimsPayload = {
+  data: {
+    numberOfSims: number
+    dataLimitGb?: number
+    preferredOperator?: string
+    useCase?: string
+    notes?: string
+    deviceMappingEnabled?: boolean
+  }
+}
+
+export type UpdateOnboardingFeaturesPayload = {
+  data: {
+    liveTracking: boolean
+    geofencing: boolean
+    routeOptimization: boolean
+    messaging: boolean
+    analytics: boolean
+    apiAccess: boolean
+  }
+}
 export type SystemFeatureFlagsResponse = ServerResponse<SystemFeatureFlagsList>
 export type SystemFeatureFlagResponse = ServerResponse<SystemFeatureFlag>
 export interface AdminInvite {

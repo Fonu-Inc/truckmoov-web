@@ -6,6 +6,10 @@ import type {
   ApproveSIMRequestPayload,
   EnterpriseEnquiryPayload,
   PaymentIntentPayload,
+  ProvisionDevicesPayload,
+  RegisterSimsPayload,
+  ProvisionSimsPayload,
+  UpdateOnboardingFeaturesPayload,
   PaymentIntentResponse,
   AuthSystemSettingsResponse,
   AuthTokenResponse,
@@ -626,6 +630,50 @@ export async function createPaymentIntent({ data }: PaymentIntentPayload) {
 export async function submitEnterpriseEnquiry({ data }: EnterpriseEnquiryPayload) {
   const { data: res } = await axiosInstance.post<StandardApiResponse>('/auth/onboarding/enterprise/enquiry', data)
   return res
+}
+
+export async function getOnboardingBusinessInfo() {
+  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/onboarding/business-info')
+  return data
+}
+
+export async function getOnboardingKycDocuments() {
+  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/onboarding/kyc/documents')
+  return data
+}
+
+export async function provisionDevices({ data }: ProvisionDevicesPayload) {
+  const { data: res } = await axiosInstance.post<StandardApiResponse>('/auth/onboarding/devices/provision', data)
+  return res
+}
+
+export async function registerSims({ data }: RegisterSimsPayload) {
+  const { data: res } = await axiosInstance.post<StandardApiResponse>('/auth/onboarding/sims/register', data)
+  return res
+}
+
+export async function importSimsFromCsv(file: File) {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await axiosInstance.post<StandardApiResponse>('/auth/onboarding/sims/import', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data
+}
+
+export async function provisionSims({ data }: ProvisionSimsPayload) {
+  const { data: res } = await axiosInstance.post<StandardApiResponse>('/auth/onboarding/sims/provision', data)
+  return res
+}
+
+export async function updateOnboardingFeatures({ data }: UpdateOnboardingFeaturesPayload) {
+  const { data: res } = await axiosInstance.put<StandardApiResponse>('/auth/onboarding/features', data)
+  return res
+}
+
+export async function completeOnboarding() {
+  const { data } = await axiosInstance.post<StandardApiResponse>('/auth/onboarding/complete')
+  return data
 }
 
 // ─── System admin — support tickets ──────────────────────────────────────────

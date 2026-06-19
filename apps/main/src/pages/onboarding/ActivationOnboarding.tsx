@@ -1,7 +1,15 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { getOnboardingSubscriptionCapsQueryOptions } from "@truckmoov/api/auth";
+import {
+  getOnboardingSubscriptionCapsQueryOptions,
+  useProvisionDevices,
+  useRegisterSims,
+  useImportSimsFromCsv,
+  useProvisionSims,
+  useUpdateOnboardingFeatures,
+  useCompleteOnboarding,
+} from "@truckmoov/api/auth";
 import { toast } from "sonner";
 import {
   Cpu,
@@ -146,8 +154,12 @@ export default function ActivationOnboarding() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const capsQuery = useQuery(getOnboardingSubscriptionCapsQueryOptions());
-  const createRequest = async (...args: any[]) => null;
-  const submitSimRequest = async (...args: any[]) => null;
+  const provisionDevicesMutation = useProvisionDevices();
+  const registerSimsMutation = useRegisterSims();
+  const importSimsFromCsvMutation = useImportSimsFromCsv();
+  const provisionSimsMutation = useProvisionSims();
+  const updateFeaturesMutation = useUpdateOnboardingFeatures();
+  const completeOnboardingMutation = useCompleteOnboarding();
 
   const capsData = capsQuery.data?.data;
   const caps = {
@@ -218,17 +230,24 @@ export default function ActivationOnboarding() {
     toast.success(`Device ${data.imei} added`);
   };
 
-  const handleAddSim = (data: any) => {
+  const handleAddSim = async (data: any) => {
     if (caps.sims !== null && totalSims + 1 > caps.sims) {
       toast.error(`Your ${caps.label} plan allows ${caps.sims} SIMs. Upgrade to add more.`);
       return;
     }
-    setAddedSims((prev) => [
-      ...prev,
-      { iccid: data.iccid, mobileNumber: data.mobileNumber, networkOperator: data.networkOperator },
-    ]);
-    setSimDialogOpen(false);
-    toast.success(`SIM ${data.iccid} added`);
+    try {
+      await registerSimsMutation.mutateAsync({
+        data: { sims: [{ iccid: data.iccid, mobileNumber: data.mobileNumber, networkOperator: data.networkOperator }] },
+      });
+      setAddedSims((prev) => [
+        ...prev,
+        { iccid: data.iccid, mobileNumber: data.mobileNumber, networkOperator: data.networkOperator },
+      ]);
+      setSimDialogOpen(false);
+      toast.success(`SIM ${data.iccid} added`);
+    } catch {
+      toast.error("Failed to register SIM. Please try again.");
+    }
   };
 
   const handleDeviceFiles = async (list: FileList) => {
@@ -255,28 +274,46 @@ export default function ActivationOnboarding() {
       }
       const text = await file.text();
       const counts = parseCsvCount(text);
-      next.push({ name: file.name, size: file.size, ...counts });
+      try {
+        await importSimsFromCsvMutation.mutateAsync(file);
+        next.push({ name: file.name, size: file.size, ...counts });
+      } catch {
+        toast.error(`${file.name}: upload failed. Please try again.`);
+      }
     }
     setSimFiles(next);
-    toast.success("File parsed — review row counts before continuing");
+    if (next.length > simFiles.length) {
+      toast.success("File uploaded — review row counts before continuing");
+    }
   };
 
   const goToQuickAccess = () => {
     navigate("/onboarding/quick-access");
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    try {
+      await completeOnboardingMutation.mutateAsync();
+    } catch {
+      // silently ignore — user is skipping
+    }
     toast.info("Activation skipped — you can configure devices, SIMs and features later from Settings.");
     goToQuickAccess();
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (deviceOver || simOver) {
       toast.error("Reduce your selection to fit within your plan limits before continuing.");
       return;
     }
-    toast.success("System activated — almost there.");
-    goToQuickAccess();
+    try {
+      await updateFeaturesMutation.mutateAsync({ data: features });
+      await completeOnboardingMutation.mutateAsync();
+      toast.success("System activated — almost there.");
+      goToQuickAccess();
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    }
   };
 
   // --- Render --------------------------------------------------------------
@@ -565,10 +602,22 @@ export default function ActivationOnboarding() {
             You can revisit this from Settings → Devices, SIMs and Features at any time.
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={handleSkip}>
+            <Button
+              variant="ghost"
+              onClick={handleSkip}
+              disabled={completeOnboardingMutation.isPending}
+            >
               Skip for now
             </Button>
-            <Button onClick={handleContinue} disabled={deviceOver || simOver}>
+            <Button
+              onClick={handleContinue}
+              disabled={
+                deviceOver ||
+                simOver ||
+                updateFeaturesMutation.isPending ||
+                completeOnboardingMutation.isPending
+              }
+            >
               Continue
             </Button>
           </div>
@@ -594,12 +643,14 @@ export default function ActivationOnboarding() {
         quotaRemaining={caps.devices === null ? undefined : Math.max(0, caps.devices - totalDevices)}
         quotaLabel={caps.label}
         onSubmit={async (data) => {
-          const res = await createRequest({
-            manufacturer: data.manufacturer,
-            model: data.model,
-            quantity: data.quantity,
-            use_case: data.use_case,
-            requester_notes: data.notes,
+          const res = await provisionDevicesMutation.mutateAsync({
+            data: {
+              manufacturer: data.manufacturer,
+              model: data.model,
+              quantity: data.quantity,
+              useCase: data.use_case,
+              requesterNotes: data.notes,
+            },
           });
           if (res) {
             setDeviceRequests((prev) => [
@@ -617,13 +668,15 @@ export default function ActivationOnboarding() {
         quotaRemaining={caps.sims === null ? undefined : Math.max(0, caps.sims - totalSims)}
         quotaLabel={caps.label}
         onSubmit={async (data) => {
-          const res = await submitSimRequest({
-            numberOfSims: data.numberOfSims,
-            dataLimitGb: data.dataLimitGb,
-            preferredOperator: data.carrier,
-            useCase: data.useCase,
-            notes: data.notes,
-            deviceMappingEnabled: false,
+          const res = await provisionSimsMutation.mutateAsync({
+            data: {
+              numberOfSims: data.numberOfSims,
+              dataLimitGb: data.dataLimitGb,
+              preferredOperator: data.carrier,
+              useCase: data.useCase,
+              notes: data.notes,
+              deviceMappingEnabled: false,
+            },
           });
           if (res) {
             setSimRequests((prev) => [

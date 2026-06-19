@@ -31,7 +31,9 @@ import {
   getDispatchPreferences,
   getMe,
   getNotificationPreferences,
+  getOnboardingBusinessInfo,
   getOnboardingExchangeRate,
+  getOnboardingKycDocuments,
   getOnboardingPlans,
   getOnboardingSubscriptionCaps,
   getOrganizationSettings,
@@ -109,6 +111,12 @@ import {
   uploadMedia,
   verifyEmail,
   verifyReset,
+  provisionDevices,
+  registerSims,
+  importSimsFromCsv,
+  provisionSims,
+  updateOnboardingFeatures,
+  completeOnboarding,
 } from './requests'
 import type {
   ActivityLogQuery,
@@ -142,6 +150,10 @@ export type {
   DeleteSystemAdminPayload,
   EnterpriseEnquiryPayload,
   PaymentIntentPayload,
+  ProvisionDevicesPayload,
+  RegisterSimsPayload,
+  ProvisionSimsPayload,
+  UpdateOnboardingFeaturesPayload,
   PaymentIntentData,
   EscalateTicketPayload,
   ForgotPasswordPayload,
@@ -277,6 +289,8 @@ export const AUTH_QUERY_KEY = {
   systemRefDataTenantOnboarding: ['systemRefDataTenantOnboarding'],
   systemSubscriptionPlans: ['systemSubscriptionPlans'],
   subscriptionPlans: ['subscriptionPlans'],
+  onboardingBusinessInfo: ['onboardingBusinessInfo'],
+  onboardingKycDocuments: ['onboardingKycDocuments'],
   onboardingPlans: ['onboardingPlans'],
   onboardingExchangeRate: ['onboardingExchangeRate'],
   onboardingSubscriptionCaps: ['onboardingSubscriptionCaps'],
@@ -944,12 +958,50 @@ export function getOnboardingSubscriptionCapsQueryOptions() {
   })
 }
 
+export function getOnboardingBusinessInfoQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.onboardingBusinessInfo,
+    queryFn: getOnboardingBusinessInfo,
+  })
+}
+
+export function getOnboardingKycDocumentsQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.onboardingKycDocuments,
+    queryFn: getOnboardingKycDocuments,
+  })
+}
+
 export function useCreatePaymentIntent() {
   return useMutation({ mutationFn: createPaymentIntent })
 }
 
 export function useSubmitEnterpriseEnquiry() {
   return useMutation({ mutationFn: submitEnterpriseEnquiry })
+}
+
+export function useProvisionDevices() {
+  return useMutation({ mutationFn: provisionDevices })
+}
+
+export function useRegisterSims() {
+  return useMutation({ mutationFn: registerSims })
+}
+
+export function useImportSimsFromCsv() {
+  return useMutation({ mutationFn: importSimsFromCsv })
+}
+
+export function useProvisionSims() {
+  return useMutation({ mutationFn: provisionSims })
+}
+
+export function useUpdateOnboardingFeatures() {
+  return useMutation({ mutationFn: updateOnboardingFeatures })
+}
+
+export function useCompleteOnboarding() {
+  return useMutation({ mutationFn: completeOnboarding })
 }
 
 // Support tickets

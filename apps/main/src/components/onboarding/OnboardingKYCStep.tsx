@@ -1,4 +1,6 @@
 import { useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getOnboardingBusinessInfoQueryOptions, getOnboardingKycDocumentsQueryOptions } from "@truckmoov/api/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { Badge } from "@/components/shadcn/badge";
@@ -187,6 +189,11 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
   const { user } = useAuthStore();
   const cfg = FLEET_PROVIDER_KYC_CONFIG;
   const requiredDocs = useMemo(() => cfg.documents.filter((d) => d.required), []);
+
+  const { data: businessInfoResponse } = useQuery(getOnboardingBusinessInfoQueryOptions());
+  const { data: kycDocumentsResponse } = useQuery(getOnboardingKycDocumentsQueryOptions());
+  console.log('[KYC] business-info response:', businessInfoResponse);
+  console.log('[KYC] kyc/documents response:', kycDocumentsResponse);
 
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo>(() => {
     const base = emptyBusinessInfo(tenantId);
