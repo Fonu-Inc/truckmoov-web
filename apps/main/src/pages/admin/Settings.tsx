@@ -1,12 +1,24 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+import {
+  getOrganizationUsersQueryOptions,
+  useChangeRole,
+  useDeleteOrganizationUser,
+  useInviteUser,
+  useResendOrgInvite,
+  useUpdateOrganizationUser,
+  useUpdateOrganizationUserStatus,
+  type OrganizationUser,
+} from "@truckmoov/api/auth";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
-import { Switch } from "@/components/shadcn/switch";
+import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { Separator } from "@/components/shadcn/separator";
 import {
@@ -41,7 +53,8 @@ import {
 import { 
   Building2, Bell, Users, Plug, Plus,
   MoreHorizontal, Pencil, Trash2, Mail, Phone, Clock, MapPin,
-  CheckCircle, XCircle, FileCheck, Bot, Wrench, CreditCard, BarChart3, Palette, Receipt, HardDrive
+  CheckCircle, XCircle, FileCheck, Bot, Wrench, CreditCard, BarChart3, Palette, Receipt, HardDrive,
+  UserCheck, UserX
 } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { toast } from "sonner";
@@ -59,6 +72,7 @@ import { RolePermissionsMatrix } from "@/components/settings/RolePermissionsMatr
 import { TableToolbar, type FilterField, type FilterValues } from "@/components/shadcn/table-toolbar";
 import { TenantInvoiceConfigPanel } from "@/components/settings/TenantInvoiceConfigPanel";
 import { OrganizationSettingsForm } from "@/components/settings/OrganizationSettingsForm";
+import { NotificationPreferencesPanel } from "@/components/settings/NotificationPreferencesPanel";
 import { useAuthStore } from "@/stores/authStore";
 import { useActiveOrgStore } from "@/stores/activeOrgStore";
 import type { OrgMembership } from "@/types/orgRoles";
@@ -103,6 +117,23 @@ interface TenantUser {
   role: string;
   status: string;
   lastActive: string;
+  accountStatus: string;
+}
+
+const DISPLAY_ROLE_TO_DB: Record<string, string> = {
+  admin: "tenant_admin",
+  manager: "operations_manager",
+  supervisor: "supervisor",
+  dispatcher: "dispatcher",
+  viewer: "viewer_finance",
+};
+
+function formatLastActive(value?: string) {
+  if (!value) return "Never";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Never"
+    : formatDistanceToNow(date, { addSuffix: true });
 }
 
 export default function Settings() {
@@ -141,20 +172,15 @@ export default function Settings() {
     }
   }, [activeOrgType]); // eslint-disable-line react-hooks/exhaustive-deps
   const [showApiKey, setShowApiKey] = useState(false);
-  const [tenantUsers, setTenantUsers] = useState<TenantUser[]>([]);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
-  
   // Edit user state
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<TenantUser | null>(null);
   const [editName, setEditName] = useState("");
   const [editRole, setEditRole] = useState("");
-  const [isUpdatingUser, setIsUpdatingUser] = useState(false);
   
   // Remove user state
   const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
   const [removingUser, setRemovingUser] = useState<TenantUser | null>(null);
-  const [isRemovingUser, setIsRemovingUser] = useState(false);
 
   // Map database roles to display roles
   const roleDisplayMap: Record<string, string> = {
@@ -167,33 +193,57 @@ export default function Settings() {
     driver: "driver",
   };
 
-  // Fetch tenant users
-  useEffect(() => {
-    setTenantUsers([]);
-    setIsLoadingUsers(false);
-  }, [user?.tenantId]);
-
-  const [notifications, setNotifications] = useState({
-    jobAssignment: true,
-    jobCompletion: true,
-    driverAlerts: true,
-    maintenanceReminders: true,
-    fuelAlerts: false,
-    geofenceAlerts: true,
-    emailDigest: true,
-    smsAlerts: false,
-    pushNotifications: true,
+  const organizationUsersQuery = useQuery({
+    ...getOrganizationUsersQueryOptions(),
+    enabled: activeTab === "users" && activeOrgType !== "OWNER_OPERATOR",
   });
+  const inviteUserMutation = useInviteUser();
+  const updateUserMutation = useUpdateOrganizationUser();
+  const changeRoleMutation = useChangeRole();
+  const deleteUserMutation = useDeleteOrganizationUser();
+  const updateStatusMutation = useUpdateOrganizationUserStatus();
+  const resendInviteMutation = useResendOrgInvite();
 
-  const [isInviting, setIsInviting] = useState(false);
+  const tenantUsers: TenantUser[] = (organizationUsersQuery.data?.data.users ?? []).map(
+    (organizationUser: OrganizationUser) => ({
+      id: organizationUser.userId,
+      name: organizationUser.profile?.fullName || organizationUser.email,
+      email: organizationUser.email,
+      role: roleDisplayMap[organizationUser.role] || organizationUser.role,
+      status:
+        organizationUser.accountStatus === "disabled"
+          ? "disabled"
+          : organizationUser.status,
+      lastActive: formatLastActive(organizationUser.lastActiveAt),
+      accountStatus: organizationUser.accountStatus,
+    }),
+  );
+  const isLoadingUsers = organizationUsersQuery.isLoading;
+  const isInviting = inviteUserMutation.isPending;
+  const isUpdatingUser = updateUserMutation.isPending || changeRoleMutation.isPending;
+  const isRemovingUser = deleteUserMutation.isPending;
 
   const handleInviteUser = async () => {
     if (!inviteEmail) {
       toast.error("Please enter an email address");
       return;
     }
-    toast.info('Coming soon');
-    return;
+    inviteUserMutation.mutate(
+      {
+        data: {
+          email: inviteEmail.trim(),
+          role: INVITE_ROLE_TO_DB[inviteRole] || inviteRole,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Invitation sent");
+          setInviteEmail("");
+          setIsInviteDialogOpen(false);
+        },
+        onError: (error) => toast.error(error.message),
+      },
+    );
   };
 
   const handleToggleIntegration = (integrationId: string) => {
@@ -219,8 +269,32 @@ export default function Settings() {
   // Save user changes
   const handleSaveUser = async () => {
     if (!editingUser) return;
-    toast.info('Coming soon');
-    return;
+    const nextRole = DISPLAY_ROLE_TO_DB[editRole] || editRole;
+    const currentRole = DISPLAY_ROLE_TO_DB[editingUser.role] || editingUser.role;
+
+    try {
+      const updates: Promise<unknown>[] = [];
+      if (editName.trim() !== editingUser.name) {
+        updates.push(
+          updateUserMutation.mutateAsync({
+            id: editingUser.id,
+            data: { fullName: editName.trim() },
+          }),
+        );
+      }
+      if (nextRole !== currentRole) {
+        updates.push(
+          changeRoleMutation.mutateAsync({
+            data: { targetUserId: editingUser.id, newRole: nextRole },
+          }),
+        );
+      }
+      await Promise.all(updates);
+      toast.success(updates.length ? "User updated" : "No changes to save");
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to update user");
+    }
   };
 
   // Open remove confirmation dialog
@@ -232,8 +306,38 @@ export default function Settings() {
   // Remove user
   const handleRemoveUser = async () => {
     if (!removingUser) return;
-    toast.info('Coming soon');
-    return;
+    deleteUserMutation.mutate(
+      { id: removingUser.id },
+      {
+        onSuccess: () => {
+          toast.success("User removed");
+          setIsRemoveDialogOpen(false);
+          setRemovingUser(null);
+        },
+        onError: (error) => toast.error(error.message),
+      },
+    );
+  };
+
+  const handleToggleUserStatus = (tenantUser: TenantUser) => {
+    const accountStatus = tenantUser.accountStatus === "disabled" ? "enabled" : "disabled";
+    updateStatusMutation.mutate(
+      { id: tenantUser.id, data: { accountStatus } },
+      {
+        onSuccess: () => toast.success(`User ${accountStatus}`),
+        onError: (error) => toast.error(error.message),
+      },
+    );
+  };
+
+  const handleResendInvite = (tenantUser: TenantUser) => {
+    resendInviteMutation.mutate(
+      { data: { email: tenantUser.email } },
+      {
+        onSuccess: () => toast.success("Invitation resent"),
+        onError: (error) => toast.error(error.message),
+      },
+    );
   };
 
   const copyApiKey = () => {
@@ -253,6 +357,7 @@ export default function Settings() {
     active: "bg-success/20 text-success border-success/30",
     invited: "bg-warning/20 text-warning border-warning/30",
     suspended: "bg-destructive/20 text-destructive border-destructive/30",
+    disabled: "bg-destructive/20 text-destructive border-destructive/30",
   };
 
   // Team members table toolbar state
@@ -394,67 +499,7 @@ export default function Settings() {
 
         {/* Notifications Tab */}
         <TabsContent value="notifications" className="space-y-6">
-          <Card className="bg-card/50 border-border/50">
-            <CardHeader>
-              <CardTitle>Alert Preferences</CardTitle>
-              <CardDescription>Choose which events trigger notifications</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { key: "jobAssignment", label: "Job Assignments", description: "When new jobs are assigned to drivers" },
-                { key: "jobCompletion", label: "Job Completions", description: "When jobs are marked as completed" },
-                { key: "driverAlerts", label: "Driver Alerts", description: "SOS signals and emergency notifications" },
-                { key: "maintenanceReminders", label: "Maintenance Reminders", description: "Upcoming vehicle maintenance schedules" },
-                { key: "fuelAlerts", label: "Fuel Alerts", description: "Low fuel warnings and refueling events" },
-                { key: "geofenceAlerts", label: "Geofence Alerts", description: "When vehicles enter or exit zones" },
-              ].map((item) => (
-                <div key={item.key} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
-                  <div>
-                    <p className="font-medium">{item.label}</p>
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
-                  </div>
-                  <Switch
-                    checked={notifications[item.key as keyof typeof notifications]}
-                    onCheckedChange={(checked) =>
-                      setNotifications((prev) => ({ ...prev, [item.key]: checked }))
-                    }
-                  />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card/50 border-border/50">
-            <CardHeader>
-              <CardTitle>Delivery Channels</CardTitle>
-              <CardDescription>How you want to receive notifications</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { key: "emailDigest", label: "Email Digest", description: "Daily summary of all activities", icon: Mail },
-                { key: "smsAlerts", label: "SMS Alerts", description: "Critical alerts via SMS", icon: Phone },
-                { key: "pushNotifications", label: "Push Notifications", description: "Real-time browser notifications", icon: Bell },
-              ].map((item) => (
-                <div key={item.key} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-muted">
-                      <item.icon className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{item.label}</p>
-                      <p className="text-sm text-muted-foreground">{item.description}</p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={notifications[item.key as keyof typeof notifications]}
-                    onCheckedChange={(checked) =>
-                      setNotifications((prev) => ({ ...prev, [item.key]: checked }))
-                    }
-                  />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <NotificationPreferencesPanel />
         </TabsContent>
 
         {/* Communication Settings Tab */}
@@ -538,7 +583,7 @@ export default function Settings() {
                     { value: "all", label: "All statuses" },
                     { value: "active", label: "Active" },
                     { value: "invited", label: "Invited" },
-                    { value: "suspended", label: "Suspended" },
+                    { value: "disabled", label: "Disabled" },
                   ]}
                   filterEntity="team members"
                   filterFields={teamFilterFields}
@@ -561,6 +606,19 @@ export default function Settings() {
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                         Loading users...
+                      </TableCell>
+                    </TableRow>
+                  ) : organizationUsersQuery.isError ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8">
+                        <p className="text-destructive">Unable to load team members.</p>
+                        <Button
+                          variant="link"
+                          className="mt-1"
+                          onClick={() => organizationUsersQuery.refetch()}
+                        >
+                          Try again
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ) : filteredTenantUsers.length === 0 ? (
@@ -608,9 +666,25 @@ export default function Settings() {
                               <Pencil className="h-4 w-4 mr-2" />
                               Edit User
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Mail className="h-4 w-4 mr-2" />
-                              Resend Invite
+                            {tenantUser.status === "invited" && (
+                              <DropdownMenuItem
+                                onClick={() => handleResendInvite(tenantUser)}
+                                disabled={resendInviteMutation.isPending}
+                              >
+                                <Mail className="h-4 w-4 mr-2" />
+                                Resend Invite
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              onClick={() => handleToggleUserStatus(tenantUser)}
+                              disabled={updateStatusMutation.isPending}
+                            >
+                              {tenantUser.accountStatus === "disabled" ? (
+                                <UserCheck className="h-4 w-4 mr-2" />
+                              ) : (
+                                <UserX className="h-4 w-4 mr-2" />
+                              )}
+                              {tenantUser.accountStatus === "disabled" ? "Enable User" : "Disable User"}
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="text-destructive"

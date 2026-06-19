@@ -80,8 +80,22 @@ export type UpdateProfilePayload = {
   }
 }
 
+export type NotificationPreferences = {
+  emailAlerts: boolean
+  smsAlerts: boolean
+  pushAlerts: boolean
+  incidentAlerts: boolean
+  jobUpdates: boolean
+  marketingAnnouncements: boolean
+}
+
+export type NotificationPreferencesData = {
+  userId: string
+  notificationPreferences: NotificationPreferences
+}
+
 export type UpdateNotifPrefsPayload = {
-  data: Record<string, unknown>
+  data: Partial<NotificationPreferences>
 }
 
 export type UpdateDispatchPrefsPayload = {
@@ -126,13 +140,18 @@ export type LogoutPayload = {
 
 export type UpdateOrgUserPayload = {
   id: string
-  data: Record<string, unknown>
+  data: {
+    fullName?: string
+    phoneNumber?: string
+    address?: string
+    profilePictureUrl?: string
+  }
 }
 
 export type UpdateUserStatusPayload = {
   id: string
   data: {
-    status: string
+    accountStatus: 'enabled' | 'disabled'
   }
 }
 
@@ -545,6 +564,16 @@ export type OrganizationUser = {
   profile: UserProfile
 }
 
+export type OrganizationUsersData = {
+  tenantId: string
+  users: OrganizationUser[]
+}
+
+export type OrganizationUserMutationData = {
+  message: string
+  user: OrganizationUser
+}
+
 export type SystemDeviceCatalogModel = {
   id: string
   manufacturer: string
@@ -896,8 +925,8 @@ export type RemoveOrganizationUserData = {
 export type AuthTokenResponse = ServerResponse<AuthSession>
 export type MeResponse = ServerResponse<Record<string, unknown>>
 export type ProfileResponse = ServerResponse<Record<string, unknown>>
-export type OrganizationUserResponse = ServerResponse<OrganizationUser>
-export type OrganizationUsersResponse = ServerResponse<OrganizationUser[]>
+export type OrganizationUserResponse = ServerResponse<OrganizationUserMutationData>
+export type OrganizationUsersResponse = ServerResponse<OrganizationUsersData>
 export type RemoveOrganizationUserResponse = ServerResponse<RemoveOrganizationUserData>
 export type OrgSettingsData = {
   tenantId: string
@@ -906,7 +935,7 @@ export type OrgSettingsData = {
 }
 
 export type OrganizationSettingsResponse = ServerResponse<OrgSettingsData>
-export type NotificationPreferencesResponse = ServerResponse<Record<string, unknown>>
+export type NotificationPreferencesResponse = ServerResponse<NotificationPreferencesData>
 export type DispatcherPreferencesResponse = ServerResponse<Record<string, unknown>>
 export type ActivityLogResponse = ServerResponse<ActivityLog[]>
 export type UploadedMediaResponse = ServerResponse<UploadedMedia>

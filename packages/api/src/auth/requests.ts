@@ -251,7 +251,8 @@ export async function updateOrganizationUser({ id, data }: UpdateOrgUserPayload)
 }
 
 export async function deleteOrganizationUser({ id }: { id: string }) {
-  await axiosInstance.delete<StandardApiResponse>(`/auth/organization/users/${id}`)
+  const { data } = await axiosInstance.delete<RemoveOrganizationUserResponse>(`/auth/organization/users/${id}`)
+  return data
 }
 
 export async function updateOrganizationUserStatus({ id, data }: UpdateUserStatusPayload) {
