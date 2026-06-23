@@ -12,6 +12,7 @@ import {
   createSystemAdmin,
   createSystemAdminInvite,
   createTenant,
+  deleteOnboardingKycDocument,
   deleteDeviceCatalogEntry,
   deleteOrganizationUser,
   deleteSystemAdmin,
@@ -35,6 +36,7 @@ import {
   getOnboardingExchangeRate,
   getOnboardingKycDocuments,
   getOnboardingPlans,
+  getOnboardingStatus,
   getOnboardingSubscriptionCaps,
   getOrganizationSettings,
   createPaymentIntent,
@@ -98,6 +100,7 @@ import {
   updateDispatchPreferences,
   updateFeatureFlag,
   updateNotificationPreferences,
+  updateOnboardingBusinessInfo,
   updateOrganizationSettings,
   updateOrganizationUser,
   updateOrganizationUserStatus,
@@ -114,8 +117,16 @@ import {
   provisionDevices,
   registerSims,
   importSimsFromCsv,
+  downloadSimImportTemplate,
+  importSims,
+  downloadSimRequestDeviceMappingTemplate,
+  uploadSimRequestDeviceMapping,
+  createSimRequest,
+  createSim,
+  getSimDataBundles,
   provisionSims,
   updateOnboardingFeatures,
+  uploadOnboardingKycDocument,
   completeOnboarding,
 } from './requests'
 import type {
@@ -131,6 +142,7 @@ import type {
   SystemSimsQuery,
   SystemSupportTicketsQuery,
   SystemTenantsQuery,
+  SimDataBundlesQuery,
 } from './types'
 
 export type {
@@ -153,6 +165,10 @@ export type {
   ProvisionDevicesPayload,
   RegisterSimsPayload,
   ProvisionSimsPayload,
+  CreateSimRequestPayload,
+  CreateSimPayload,
+  DeleteOnboardingKycDocumentPayload,
+  SimDataBundlesQuery,
   UpdateOnboardingFeaturesPayload,
   PaymentIntentData,
   EscalateTicketPayload,
@@ -162,8 +178,14 @@ export type {
   LogoutPayload,
   NotificationPreferences,
   NotificationPreferencesData,
+  OnboardingBusinessInfo,
+  OnboardingKycDocument,
+  OnboardingKycDocumentsData,
   OnboardingExchangeRate,
+  OnboardingStatus,
+  OnboardingStatusValue,
   OnboardingSubscriptionCaps,
+  UploadOnboardingKycDocumentPayload,
   OrganizationBrandingSettings,
   OrganizationDefaultSettings,
   OrganizationUser,
@@ -227,6 +249,7 @@ export type {
   UpdateDispatchPrefsPayload,
   UpdateFeatureFlagPayload,
   UpdateNotifPrefsPayload,
+  UpdateOnboardingBusinessInfoPayload,
   UpdateOrgSettingsPayload,
   UpdateOrgUserPayload,
   UpdateProfilePayload,
@@ -239,6 +262,7 @@ export type {
   ValidateInviteQuery,
   VerifyEmailPayload,
   VerifyResetPayload,
+  VerificationStatus,
 } from './types'
 
 export const AUTH_QUERY_KEY = {
@@ -291,9 +315,11 @@ export const AUTH_QUERY_KEY = {
   subscriptionPlans: ['subscriptionPlans'],
   onboardingBusinessInfo: ['onboardingBusinessInfo'],
   onboardingKycDocuments: ['onboardingKycDocuments'],
+  onboardingStatus: ['onboardingStatus'],
   onboardingPlans: ['onboardingPlans'],
   onboardingExchangeRate: ['onboardingExchangeRate'],
   onboardingSubscriptionCaps: ['onboardingSubscriptionCaps'],
+  simDataBundles: (payload: SimDataBundlesQuery) => ['simDataBundles', payload],
 
   systemSupportDashboard: ['systemSupportDashboard'],
   systemSupportTicketSummary: ['systemSupportTicketSummary'],
@@ -972,6 +998,43 @@ export function getOnboardingKycDocumentsQueryOptions() {
   })
 }
 
+export function getOnboardingStatusQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.onboardingStatus,
+    queryFn: getOnboardingStatus,
+  })
+}
+
+export function useUpdateOnboardingBusinessInfo() {
+  return useMutation({
+    mutationFn: updateOnboardingBusinessInfo,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingBusinessInfo })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingStatus })
+    },
+  })
+}
+
+export function useUploadOnboardingKycDocument() {
+  return useMutation({
+    mutationFn: uploadOnboardingKycDocument,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingKycDocuments })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingStatus })
+    },
+  })
+}
+
+export function useDeleteOnboardingKycDocument() {
+  return useMutation({
+    mutationFn: deleteOnboardingKycDocument,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingKycDocuments })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingStatus })
+    },
+  })
+}
+
 export function useCreatePaymentIntent() {
   return useMutation({ mutationFn: createPaymentIntent })
 }
@@ -990,6 +1053,37 @@ export function useRegisterSims() {
 
 export function useImportSimsFromCsv() {
   return useMutation({ mutationFn: importSimsFromCsv })
+}
+
+export function useDownloadSimImportTemplate() {
+  return useMutation({ mutationFn: downloadSimImportTemplate })
+}
+
+export function useImportSims() {
+  return useMutation({ mutationFn: importSims })
+}
+
+export function useDownloadSimRequestDeviceMappingTemplate() {
+  return useMutation({ mutationFn: downloadSimRequestDeviceMappingTemplate })
+}
+
+export function useUploadSimRequestDeviceMapping() {
+  return useMutation({ mutationFn: uploadSimRequestDeviceMapping })
+}
+
+export function useCreateSimRequest() {
+  return useMutation({ mutationFn: createSimRequest })
+}
+
+export function useCreateSim() {
+  return useMutation({ mutationFn: createSim })
+}
+
+export function getSimDataBundlesQueryOptions(payload: SimDataBundlesQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.simDataBundles(payload),
+    queryFn: () => getSimDataBundles(payload),
+  })
 }
 
 export function useProvisionSims() {

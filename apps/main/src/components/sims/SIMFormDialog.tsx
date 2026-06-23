@@ -25,19 +25,20 @@ const simTypes: { value: "IOT" | "DRIVER" | "HOTSPOT"; label: string }[] = [
   { value: "HOTSPOT", label: "Hotspot / MiFi" },
 ];
 
-type SIMFormData = z.infer<typeof simSchema>;
+export type SIMFormData = z.infer<typeof simSchema>;
 
 interface SIMFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: Partial<SIMCard>) => void;
+  onSubmit: (data: SIMFormData) => void;
   sim?: SIMCard | null;
   title: string;
+  isSubmitting?: boolean;
 }
 
 const operators = ["MTN Nigeria", "Airtel Nigeria", "Glo Nigeria", "9mobile", "Safaricom", "Vodacom"];
 
-export function SIMFormDialog({ open, onOpenChange, onSubmit, sim, title }: SIMFormDialogProps) {
+export function SIMFormDialog({ open, onOpenChange, onSubmit, sim, title, isSubmitting = false }: SIMFormDialogProps) {
   const form = useForm<SIMFormData>({
     resolver: zodResolver(simSchema),
     defaultValues: { iccid: "", imsi: "", mobileNumber: "", networkOperator: "", dataLimit: 5, simType: "IOT", monthlyRentalNgn: 0 },
@@ -95,8 +96,8 @@ export function SIMFormDialog({ open, onOpenChange, onSubmit, sim, title }: SIMF
               <FormItem><FormLabel>Monthly Rental (₦)</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl><FormMessage /></FormItem>
             )} />
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit">{sim ? "Save Changes" : "Register SIM"}</Button>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
+              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Registering..." : sim ? "Save Changes" : "Register SIM"}</Button>
             </div>
           </form>
         </Form>

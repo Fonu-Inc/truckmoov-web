@@ -9,6 +9,10 @@ import type {
   ProvisionDevicesPayload,
   RegisterSimsPayload,
   ProvisionSimsPayload,
+  CreateSimRequestPayload,
+  CreateSimPayload,
+  SimDataBundlesQuery,
+  SimRequestDeviceMappingUploadResponse,
   UpdateOnboardingFeaturesPayload,
   PaymentIntentResponse,
   AuthSystemSettingsResponse,
@@ -35,8 +39,11 @@ import type {
   LogoutPayload,
   MeResponse,
   NotificationPreferencesResponse,
+  OnboardingBusinessInfoResponse,
   OnboardingExchangeRateResponse,
+  OnboardingKycDocumentsResponse,
   OnboardingPlansResponse,
+  OnboardingStatusResponse,
   OnboardingSubscriptionCapsResponse,
   OrganizationSettingsResponse,
   OrganizationUserResponse,
@@ -93,11 +100,13 @@ import type {
   SystemTenantsListResponse,
   SystemTenantsSummaryResponse,
   SystemTenantsQuery,
+  DeleteOnboardingKycDocumentPayload,
   UpdateAdminStatusPayload,
   UpdateDeviceCatalogPayload,
   UpdateDispatchPrefsPayload,
   UpdateFeatureFlagPayload,
   UpdateNotifPrefsPayload,
+  UpdateOnboardingBusinessInfoPayload,
   UpdateOrgSettingsPayload,
   UpdateOrgUserPayload,
   UpdateProfilePayload,
@@ -110,6 +119,7 @@ import type {
   UpdateTicketStatusPayload,
   UpdateUserStatusPayload,
   UploadedMediaResponse,
+  UploadOnboardingKycDocumentPayload,
   ValidateInviteQuery,
   VerifyEmailPayload,
   VerifyResetPayload,
@@ -622,6 +632,11 @@ export async function getOnboardingSubscriptionCaps() {
   return data
 }
 
+export async function getOnboardingStatus() {
+  const { data } = await axiosInstance.get<OnboardingStatusResponse>('/auth/onboarding/status')
+  return data
+}
+
 export async function createPaymentIntent({ data }: PaymentIntentPayload) {
   const { data: res } = await axiosInstance.post<PaymentIntentResponse>('/auth/onboarding/payment/intent', data)
   return res
@@ -633,12 +648,32 @@ export async function submitEnterpriseEnquiry({ data }: EnterpriseEnquiryPayload
 }
 
 export async function getOnboardingBusinessInfo() {
-  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/onboarding/business-info')
+  const { data } = await axiosInstance.get<OnboardingBusinessInfoResponse>('/auth/onboarding/business-info')
+  return data
+}
+
+export async function updateOnboardingBusinessInfo({ data: body }: UpdateOnboardingBusinessInfoPayload) {
+  const { data } = await axiosInstance.put<OnboardingBusinessInfoResponse>('/auth/onboarding/business-info', body)
   return data
 }
 
 export async function getOnboardingKycDocuments() {
-  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/onboarding/kyc/documents')
+  const { data } = await axiosInstance.get<OnboardingKycDocumentsResponse>('/auth/onboarding/kyc/documents')
+  return data
+}
+
+export async function uploadOnboardingKycDocument({ documentType, file }: UploadOnboardingKycDocumentPayload) {
+  const form = new FormData()
+  form.append('document_type', documentType)
+  form.append('file', file)
+  const { data } = await axiosInstance.post<StandardApiResponse>('/auth/onboarding/kyc/documents', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data
+}
+
+export async function deleteOnboardingKycDocument({ id }: DeleteOnboardingKycDocumentPayload) {
+  const { data } = await axiosInstance.delete<StandardApiResponse>(`/auth/onboarding/kyc/documents/${id}`)
   return data
 }
 
@@ -658,6 +693,55 @@ export async function importSimsFromCsv(file: File) {
   const { data } = await axiosInstance.post<StandardApiResponse>('/auth/onboarding/sims/import', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
+  return data
+}
+
+export async function downloadSimImportTemplate() {
+  const { data } = await axiosInstance.get<Blob>('/auth/sims/import/template', {
+    responseType: 'blob',
+  })
+  return data
+}
+
+export async function importSims(file: File) {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await axiosInstance.post<StandardApiResponse>('/auth/sims/import', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data
+}
+
+export async function downloadSimRequestDeviceMappingTemplate() {
+  const { data } = await axiosInstance.get<Blob>('/auth/sims/requests/device-mapping/template', {
+    responseType: 'blob',
+  })
+  return data
+}
+
+export async function uploadSimRequestDeviceMapping(file: File) {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await axiosInstance.post<SimRequestDeviceMappingUploadResponse>(
+    '/auth/sims/requests/device-mapping',
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return data
+}
+
+export async function createSimRequest({ data }: CreateSimRequestPayload) {
+  const { data: response } = await axiosInstance.post<StandardApiResponse>('/auth/sims/requests', data)
+  return response
+}
+
+export async function createSim({ data }: CreateSimPayload) {
+  const { data: response } = await axiosInstance.post<StandardApiResponse>('/auth/sims', data)
+  return response
+}
+
+export async function getSimDataBundles({ params }: SimDataBundlesQuery) {
+  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/sims/data-bundles', { params })
   return data
 }
 

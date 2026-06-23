@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useDownloadSimImportTemplate, useImportSims } from "@truckmoov/api/auth";
 import { SIMCard } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/shadcn/dialog";
 import { Button } from "@/components/shadcn/button";
@@ -12,10 +13,24 @@ interface SIMBulkUploadDialogProps {
   onUpload: (sims: Partial<SIMCard>[]) => void;
 }
 
+type ParsedSIM = Partial<SIMCard> & {
+  isValid: boolean;
+  errors: string[];
+};
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
+    return error.message;
+  }
+  return fallback;
+}
+
 export function SIMBulkUploadDialog({ open, onOpenChange, onUpload }: SIMBulkUploadDialogProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [parsedData, setParsedData] = useState<any[]>([]);
+  const [parsedData, setParsedData] = useState<ParsedSIM[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const downloadTemplateMutation = useDownloadSimImportTemplate();
+  const importSimsMutation = useImportSims();
 
   const parseCSV = (content: string) => {
     const lines = content.split("\n").filter(l => l.trim()).slice(1);
@@ -34,11 +49,38 @@ export function SIMBulkUploadDialog({ open, onOpenChange, onUpload }: SIMBulkUpl
     setParsedData(parseCSV(await f.text()));
   }, []);
 
-  const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); e.dataTransfer.files[0] && handleFile(e.dataTransfer.files[0]); };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile) handleFile(droppedFile);
+  };
 
-  const downloadTemplate = () => {
-    const blob = new Blob([`ICCID,IMSI,Mobile Number,Operator,Data Limit (GB)\n89234500001234567890,234500123456789,+234 901 234 5678,MTN Nigeria,5`], { type: "text/csv" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "sim_import_template.csv"; a.click();
+  const downloadTemplate = async () => {
+    try {
+      const blob = await downloadTemplateMutation.mutateAsync();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "sim_import_template.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to download the SIM import template"));
+    }
+  };
+
+  const importFile = async () => {
+    if (!file || validCount === 0) return;
+
+    try {
+      await importSimsMutation.mutateAsync(file);
+      onUpload(parsedData.filter(r => r.isValid));
+      setFile(null);
+      setParsedData([]);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to import SIM cards"));
+    }
   };
 
   const validCount = parsedData.filter(r => r.isValid).length;
@@ -52,7 +94,7 @@ export function SIMBulkUploadDialog({ open, onOpenChange, onUpload }: SIMBulkUpl
             <>
               <div className="flex items-center justify-between rounded-lg border bg-secondary/30 p-3">
                 <div className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary" /><span className="text-sm font-medium">Download Template</span></div>
-                <Button variant="outline" size="sm" onClick={downloadTemplate}><Download className="mr-2 h-4 w-4" />Download</Button>
+                <Button variant="outline" size="sm" onClick={downloadTemplate} disabled={downloadTemplateMutation.isPending}><Download className="mr-2 h-4 w-4" />{downloadTemplateMutation.isPending ? "Downloading..." : "Download"}</Button>
               </div>
               <div onDragOver={e => { e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={handleDrop}
                 className={cn("relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8", isDragging ? "border-primary bg-primary/5" : "border-border")}>
@@ -73,7 +115,7 @@ export function SIMBulkUploadDialog({ open, onOpenChange, onUpload }: SIMBulkUpl
               </div>
             </>
           )}
-          <div className="flex justify-end gap-3"><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={() => { onUpload(parsedData.filter(r => r.isValid)); setFile(null); setParsedData([]); }} disabled={!file || validCount === 0}>Import {validCount} SIMs</Button></div>
+          <div className="flex justify-end gap-3"><Button variant="outline" onClick={() => onOpenChange(false)} disabled={importSimsMutation.isPending}>Cancel</Button><Button onClick={importFile} disabled={!file || validCount === 0 || importSimsMutation.isPending}>{importSimsMutation.isPending ? "Importing..." : `Import ${validCount} SIMs`}</Button></div>
         </div>
       </DialogContent>
     </Dialog>

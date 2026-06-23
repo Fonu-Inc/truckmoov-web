@@ -694,6 +694,85 @@ export type OnboardingSubscriptionCaps = {
   subscriptionActivatedAt: string | null
 }
 
+export type OnboardingStatusValue = 'pending' | 'in_progress' | 'completed' | 'rejected'
+
+export type OnboardingStatus = {
+  tenantId: string
+  isOnboarded: boolean
+  onboardingStatus: OnboardingStatusValue
+  planCode: string | null
+  subscriptionStatus: string | null
+}
+
+export type VerificationStatus = 'pending' | 'under_review' | 'verified' | 'rejected'
+
+export type OnboardingBusinessInfo = {
+  tenantId: string
+  companyName: string
+  registrationNumber: string | null
+  taxId: string | null
+  businessType: string | null
+  industry: string | null
+  addressLine1: string | null
+  addressLine2: string | null
+  city: string | null
+  state: string | null
+  postalCode: string | null
+  country: string | null
+  phone: string | null
+  email: string | null
+  billingEmail: string | null
+  website: string | null
+  yearEstablished: number | null
+  numberOfEmployees: number | null
+  verificationStatus: VerificationStatus
+  updatedAt: string
+}
+
+export type UpdateOnboardingBusinessInfoPayload = {
+  data: {
+    companyName: string
+    registrationNumber: string | null
+    taxId: string | null
+    businessType: string | null
+    industry: string | null
+    addressLine1: string | null
+    addressLine2: string | null
+    city: string | null
+    state: string | null
+    postalCode: string | null
+    country: string | null
+    phone: string | null
+    email: string | null
+    billingEmail: string | null
+    website: string | null
+    yearEstablished: number | null
+    numberOfEmployees: number | null
+  }
+}
+
+export type OnboardingKycDocument = {
+  id: string
+  documentType: string
+  documentName: string
+  fileSize: number
+  status: VerificationStatus
+  createdAt: string
+}
+
+export type OnboardingKycDocumentsData = {
+  documents: OnboardingKycDocument[]
+}
+
+export type UploadOnboardingKycDocumentPayload = {
+  documentType: string
+  file: File
+}
+
+export type DeleteOnboardingKycDocumentPayload = {
+  id: string
+}
+
 export type SystemTenant = {
   id: string
   name: string
@@ -992,6 +1071,9 @@ export type SystemSubscriptionPlansResponse = ServerResponse<{ plans: Subscripti
 export type OnboardingPlansResponse = ServerResponse<{ plans: SubscriptionPlan[] }>
 export type OnboardingExchangeRateResponse = ServerResponse<OnboardingExchangeRate>
 export type OnboardingSubscriptionCapsResponse = ServerResponse<OnboardingSubscriptionCaps>
+export type OnboardingStatusResponse = ServerResponse<OnboardingStatus>
+export type OnboardingBusinessInfoResponse = ServerResponse<OnboardingBusinessInfo>
+export type OnboardingKycDocumentsResponse = ServerResponse<OnboardingKycDocumentsData>
 
 export type PaymentIntentPayload = {
   data: {
@@ -1045,6 +1127,41 @@ export type ProvisionSimsPayload = {
     deviceMappingEnabled?: boolean
   }
 }
+
+export type CreateSimRequestPayload = {
+  data: {
+    quantity: number
+    carrier: string
+    planType: string
+    dataBundlePlan: string
+    useCase: string
+    notes?: string
+    deviceMappingFileId?: string
+  }
+}
+
+export type CreateSimPayload = {
+  data: {
+    iccid: string
+    imsi: string
+    mobileNumber: string
+    operator: string
+    dataLimitMb: number
+    simType: string
+    monthlyRentalNaira: number
+  }
+}
+
+export type SimDataBundlesQuery = {
+  params: {
+    carrierId: string
+    billingCycle: string
+  }
+}
+
+export type SimRequestDeviceMappingUploadResponse = ServerResponse<{
+  fileId: string
+}>
 
 export type UpdateOnboardingFeaturesPayload = {
   data: {

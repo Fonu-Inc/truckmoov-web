@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
+import { useDownloadSimRequestDeviceMappingTemplate } from "@truckmoov/api/auth";
 import { Button } from "@/components/shadcn/button";
 import {Upload, FileText, AlertCircle, CheckCircle, X, HardDrive, Download} from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,7 @@ export interface DeviceMappingRow {
 }
 
 interface DeviceMappingUploadProps {
-  onDataParsed: (data: DeviceMappingRow[], fileName: string) => void;
+  onDataParsed: (data: DeviceMappingRow[], fileName: string, file: File) => void;
   onClear: () => void;
   parsedData: DeviceMappingRow[];
   fileName: string | null;
@@ -28,6 +29,7 @@ export function DeviceMappingUpload({
   fileName 
 }: DeviceMappingUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const downloadTemplateMutation = useDownloadSimRequestDeviceMappingTemplate();
 
   const validateRow = (row: string[]): DeviceMappingRow => {
     const errors: string[] = [];
@@ -58,7 +60,7 @@ export function DeviceMappingUpload({
     return dataRows.map((line) => validateRow(line.split(",")));
   };
 
-  const handleFile = useCallback(async (selectedFile: File) => {
+  const handleFile = async (selectedFile: File) => {
     if (!selectedFile.name.endsWith(".csv") && !selectedFile.name.endsWith(".xlsx")) {
       toast.error("Please upload a CSV or XLSX file");
       return;
@@ -72,28 +74,31 @@ export function DeviceMappingUpload({
 
     const content = await selectedFile.text();
     const parsed = parseCSV(content);
-    onDataParsed(parsed, selectedFile.name);
-  }, [onDataParsed]);
+    onDataParsed(parsed, selectedFile.name, selectedFile);
+  };
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile) handleFile(droppedFile);
-  }, [handleFile]);
+  };
 
-  const downloadTemplate = () => {
-    const template = `device_name,device_type,imei,vehicle_id,notes
-Tracker Unit 1,GPS Tracker,359779090012345,LAG-123-ABC,Primary vehicle tracker
-OBD Device 2,OBD Diagnostics,359779090012346,,Optional notes here
-Camera Unit 3,Fleet Camera,359779090012347,LAG-456-XYZ,Front-facing camera`;
-    const blob = new Blob([template], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "device_mapping_template.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+  const downloadTemplate = async () => {
+    try {
+      const blob = await downloadTemplateMutation.mutateAsync();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "device_mapping_template.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      const message = error && typeof error === "object" && "message" in error
+        ? String(error.message)
+        : "Unable to download the device mapping template";
+      toast.error(message);
+    }
   };
 
   const validCount = parsedData.filter((r) => r.isValid).length;
@@ -110,7 +115,7 @@ Camera Unit 3,Fleet Camera,359779090012347,LAG-456-XYZ,Front-facing camera`;
               <p className="text-xs text-muted-foreground">{parsedData.length} devices parsed</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon-sm" onClick={onClear}>
+          <Button type="button" variant="ghost" size="icon-sm" onClick={onClear}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -182,9 +187,9 @@ Camera Unit 3,Fleet Camera,359779090012347,LAG-456-XYZ,Front-facing camera`;
             <p className="text-xs text-muted-foreground">CSV with device details</p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={downloadTemplate}>
+        <Button type="button" variant="outline" size="sm" onClick={downloadTemplate} disabled={downloadTemplateMutation.isPending}>
           <Download className="mr-1 h-3 w-3" />
-          Template
+          {downloadTemplateMutation.isPending ? "Downloading..." : "Template"}
         </Button>
       </div>
 

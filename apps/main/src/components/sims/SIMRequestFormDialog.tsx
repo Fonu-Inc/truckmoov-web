@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getSimDataBundlesQueryOptions } from "@truckmoov/api/auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,7 +23,7 @@ type BundleCatalogItem = {
   data_mb: number;
   billing_cycle: string;
   is_active: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 function useBundleCatalog() {
   return { data: [] as BundleCatalogItem[] };
@@ -44,6 +46,7 @@ export interface SIMRequestSubmitData extends SIMRequestFormData {
   dataLimitGb: number;
   deviceMappingData?: DeviceMappingRow[];
   deviceMappingFileName?: string;
+  deviceMappingFile?: File;
 }
 
 interface SIMRequestFormDialogProps {
@@ -68,6 +71,7 @@ export function SIMRequestFormDialog({
 }: SIMRequestFormDialogProps) {
   const [deviceMappingData, setDeviceMappingData] = useState<DeviceMappingRow[]>([]);
   const [deviceMappingFileName, setDeviceMappingFileName] = useState<string | null>(null);
+  const [deviceMappingFile, setDeviceMappingFile] = useState<File | null>(null);
 
   const form = useForm<SIMRequestFormData>({
     resolver: zodResolver(simRequestSchema),
@@ -86,14 +90,25 @@ export function SIMRequestFormDialog({
   const carrier = form.watch("preferredOperator");
   const planCycle = form.watch("planCycle");
 
+  useQuery({
+    ...getSimDataBundlesQueryOptions({
+      params: {
+        carrierId: carrier,
+        billingCycle: planCycle,
+      },
+    }),
+    enabled: open && Boolean(carrier && planCycle),
+  });
+
   const { data: bundleCatalog = [] } = useBundleCatalog();
   const availableBundles = bundleCatalog.filter(
     (b) => b.is_active && b.carrier?.toUpperCase() === carrier?.toUpperCase() && b.billing_cycle === planCycle
   );
 
-  const handleDeviceDataParsed = (data: DeviceMappingRow[], fileName: string) => {
+  const handleDeviceDataParsed = (data: DeviceMappingRow[], fileName: string, file: File) => {
     setDeviceMappingData(data);
     setDeviceMappingFileName(fileName);
+    setDeviceMappingFile(file);
     const validCount = data.filter(r => r.isValid).length;
     if (validCount > 0) {
       form.setValue("numberOfSims", validCount);
@@ -103,6 +118,7 @@ export function SIMRequestFormDialog({
   const handleClearDeviceData = () => {
     setDeviceMappingData([]);
     setDeviceMappingFileName(null);
+    setDeviceMappingFile(null);
   };
 
   const handleSubmit = (data: SIMRequestFormData) => {
@@ -116,6 +132,7 @@ export function SIMRequestFormDialog({
     if (data.deviceMappingEnabled && deviceMappingData.length > 0) {
       finalData.deviceMappingData = deviceMappingData.filter(r => r.isValid);
       finalData.deviceMappingFileName = deviceMappingFileName || undefined;
+      finalData.deviceMappingFile = deviceMappingFile || undefined;
     }
 
     onSubmit(finalData);
@@ -126,6 +143,7 @@ export function SIMRequestFormDialog({
       // Reset state when closing
       setDeviceMappingData([]);
       setDeviceMappingFileName(null);
+      setDeviceMappingFile(null);
       form.reset();
     }
     onOpenChange(isOpen);

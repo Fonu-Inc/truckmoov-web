@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-type SIMCardExtended = any;
 import { useDeviceTelemetry } from "@/hooks/useDeviceTelemetry";
-import { SIMCard } from "@/types";
+import { IoTDevice, SIMCard } from "@/types";
 import {
   Search, SlidersHorizontal as Filter, Upload, Plus, ShieldAlert,
 } from "lucide-react";
@@ -15,6 +14,7 @@ import {
 } from "@/components/shadcn/select";
 import { cn } from "@/lib/utils";
 import { SIMFormDialog } from "@/components/sims/SIMFormDialog";
+import type { SIMFormData } from "@/components/sims/SIMFormDialog";
 import { SIMRequestFormDialog } from "@/components/sims/SIMRequestFormDialog";
 import { SIMDetailsSheet } from "@/components/sims/SIMDetailsSheet";
 import { SIMBulkUploadDialog } from "@/components/sims/SIMBulkUploadDialog";
@@ -26,18 +26,22 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
+import { useCreateSim, useCreateSimRequest, useUploadSimRequestDeviceMapping } from "@truckmoov/api/auth";
+import type { SIMRequestSubmitData } from "@/components/sims/SIMRequestFormDialog";
 
 export default function SIMManagement() {
   const { requireSubscription } = useRequireSubscription();
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const submitRequest = async (..._args: any[]) => {};
-  const isSubmitting = false;
-  const canRequestSIM = false;
+  const createSimRequestMutation = useCreateSimRequest();
+  const createSimMutation = useCreateSim();
+  const uploadDeviceMappingMutation = useUploadSimRequestDeviceMapping();
+  const isSubmitting = createSimRequestMutation.isPending || uploadDeviceMappingMutation.isPending;
+  const canRequestSIM = true;
   const kycStatus = { status: "pending", isLoading: false };
 
   const tenantId = user?.tenantId || "f7f5af88-fd76-4439-aae3-0461be52f63f";
-  const sims: any[] = [];
+  const sims: SIMCard[] = [];
   const loading = false;
   const refetch = async () => {};
   const updateSIMStatus = async (_id: string, _status: string) => {};
@@ -54,7 +58,7 @@ export default function SIMManagement() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
-  const [selectedSIM, setSelectedSIM] = useState<SIMCardExtended | null>(null);
+  const [selectedSIM, setSelectedSIM] = useState<SIMCard | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const kycPending = kycStatus.status === "pending" || kycStatus.status === "under_review";
@@ -83,7 +87,7 @@ export default function SIMManagement() {
   const totalDataUsage = sims.reduce((sum, s) => sum + s.dataUsage, 0);
   const totalDataLimit = sims.reduce((sum, s) => sum + s.dataLimit, 0);
 
-  const getDeviceInfo = (deviceId?: string): any => {
+  const getDeviceInfo = (deviceId?: string): IoTDevice | null => {
     if (!deviceId) return null;
     const device = devices.find((d) => d.id === deviceId);
     if (!device) return null;
@@ -92,7 +96,7 @@ export default function SIMManagement() {
       imei: device.imei,
       manufacturer: device.manufacturer,
       model: device.model || "",
-      status: device.status as any,
+      status: device.status as IoTDevice["status"],
       firmwareVersion: "",
       lastSeen: device.last_seen ? new Date(device.last_seen) : undefined,
       signalStrength: device.signal_strength || undefined,
@@ -125,6 +129,62 @@ export default function SIMManagement() {
       return;
     }
     setIsRequestDialogOpen(true);
+  };
+
+  const submitRequest = async (data: SIMRequestSubmitData) => {
+    try {
+      let deviceMappingFileId: string | undefined;
+
+      if (data.deviceMappingEnabled && data.deviceMappingFile) {
+        const uploadResponse = await uploadDeviceMappingMutation.mutateAsync(data.deviceMappingFile);
+        deviceMappingFileId = uploadResponse.data.fileId;
+      }
+
+      await createSimRequestMutation.mutateAsync({
+        data: {
+          quantity: data.numberOfSims,
+          carrier: data.preferredOperator,
+          planType: data.planCycle,
+          dataBundlePlan: data.bundleCode,
+          useCase: data.useCase,
+          notes: data.notes || undefined,
+          deviceMappingFileId,
+        },
+      });
+      toast.success("SIM request submitted successfully");
+      refetch();
+      return true;
+    } catch (error) {
+      const message = error && typeof error === "object" && "message" in error
+        ? String(error.message)
+        : "Unable to submit the SIM request";
+      toast.error(message);
+      return false;
+    }
+  };
+
+  const registerSim = async (data: SIMFormData) => {
+    try {
+      await createSimMutation.mutateAsync({
+        data: {
+          iccid: data.iccid,
+          imsi: data.imsi,
+          mobileNumber: data.mobileNumber,
+          operator: data.networkOperator,
+          dataLimitMb: data.dataLimit * 1024,
+          simType: data.simType,
+          monthlyRentalNaira: data.monthlyRentalNgn,
+        },
+      });
+      await refetch();
+      toast.success("SIM card registered successfully");
+      setIsAddDialogOpen(false);
+    } catch (error) {
+      const message = error && typeof error === "object" && "message" in error
+        ? String(error.message)
+        : "Unable to register the SIM card";
+      toast.error(message);
+    }
   };
 
   return (
@@ -187,9 +247,10 @@ export default function SIMManagement() {
       <SIMFormDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
-        onSubmit={() => { refetch(); toast.success("SIM card registered successfully"); setIsAddDialogOpen(false); }}
+        onSubmit={registerSim}
         sim={null}
         title="Register New SIM Card"
+        isSubmitting={createSimMutation.isPending}
       />
 
       <SIMFormDialog

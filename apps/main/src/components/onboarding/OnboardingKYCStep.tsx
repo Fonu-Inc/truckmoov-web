@@ -1,6 +1,15 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getOnboardingBusinessInfoQueryOptions, getOnboardingKycDocumentsQueryOptions } from "@truckmoov/api/auth";
+import {
+  getOnboardingBusinessInfoQueryOptions,
+  getOnboardingKycDocumentsQueryOptions,
+  getOnboardingStatusQueryOptions,
+  useDeleteOnboardingKycDocument,
+  useUpdateOnboardingBusinessInfo,
+  useUploadOnboardingKycDocument,
+  type OnboardingBusinessInfo,
+  type OnboardingKycDocument,
+} from "@truckmoov/api/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { Badge } from "@/components/shadcn/badge";
@@ -75,38 +84,6 @@ const FLEET_PROVIDER_KYC_CONFIG: StakeholderKYCConfig = {
   ],
 };
 
-interface BusinessInfo {
-  id?: string;
-  tenant_id: string;
-  company_name: string | null;
-  registration_number: string | null;
-  tax_id: string | null;
-  business_type: string | null;
-  industry: string | null;
-  address_line1: string | null;
-  address_line2: string | null;
-  city: string | null;
-  state: string | null;
-  postal_code: string | null;
-  country: string | null;
-  phone: string | null;
-  email: string | null;
-  billing_email: string | null;
-  website: string | null;
-  year_established: number | null;
-  number_of_employees: string | null;
-  verification_status: string;
-}
-
-interface KYCDocument {
-  id: string;
-  document_type: string;
-  document_name: string;
-  file_size: number;
-  status: string;
-  created_at: string;
-}
-
 const DOCUMENT_TYPES = [
   { value: "certificate_of_incorporation", label: "Certificate of Incorporation", required: true },
   { value: "memorandum_of_association", label: "Memorandum of Association", required: true },
@@ -131,21 +108,21 @@ const BUSINESS_TYPES = [
   "Other",
 ];
 
-const EMPLOYEE_RANGES = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"];
-
 function statusBadge(status: string) {
   switch (status) {
+    case "completed":
     case "verified":
     case "approved":
       return (
         <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-          <CheckCircle2 className="w-3 h-3 mr-1" /> Verified
+          <CheckCircle2 className="w-3 h-3 mr-1" /> {status === "completed" ? "Completed" : "Verified"}
         </Badge>
       );
+    case "in_progress":
     case "under_review":
       return (
         <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
-          <Clock className="w-3 h-3 mr-1" /> Under Review
+          <Clock className="w-3 h-3 mr-1" /> {status === "in_progress" ? "In Progress" : "Under Review"}
         </Badge>
       );
     case "rejected":
@@ -163,89 +140,194 @@ function statusBadge(status: string) {
   }
 }
 
-const emptyBusinessInfo = (tenantId: string): BusinessInfo => ({
-  tenant_id: tenantId,
-  company_name: null,
-  registration_number: null,
-  tax_id: null,
-  business_type: null,
+function formatFileSize(size: number) {
+  if (!Number.isFinite(size) || size <= 0) return "0 KB";
+  const units = ["B", "KB", "MB", "GB"];
+  const unitIndex = Math.min(Math.floor(Math.log(size) / Math.log(1024)), units.length - 1);
+  const value = size / 1024 ** unitIndex;
+  return `${value >= 10 || unitIndex === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[unitIndex]}`;
+}
+
+function formatUploadDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+type EditableBusinessInfo = Omit<OnboardingBusinessInfo, "updatedAt">;
+
+const emptyBusinessInfo = (tenantId: string): EditableBusinessInfo => ({
+  tenantId,
+  companyName: "",
+  registrationNumber: null,
+  taxId: null,
+  businessType: null,
   industry: null,
-  address_line1: null,
-  address_line2: null,
+  addressLine1: null,
+  addressLine2: null,
   city: null,
   state: null,
-  postal_code: null,
+  postalCode: null,
   country: null,
   phone: null,
   email: null,
-  billing_email: null,
+  billingEmail: null,
   website: null,
-  year_established: null,
-  number_of_employees: null,
-  verification_status: "pending",
+  yearEstablished: null,
+  numberOfEmployees: null,
+  verificationStatus: "pending",
 });
 
 export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: string; onContinue?: () => void; onSkip?: () => void }) {
   const { user } = useAuthStore();
   const cfg = FLEET_PROVIDER_KYC_CONFIG;
-  const requiredDocs = useMemo(() => cfg.documents.filter((d) => d.required), []);
+  const requiredDocs = useMemo(() => cfg.documents.filter((d) => d.required), [cfg.documents]);
 
-  const { data: businessInfoResponse } = useQuery(getOnboardingBusinessInfoQueryOptions());
-  const { data: kycDocumentsResponse } = useQuery(getOnboardingKycDocumentsQueryOptions());
-  console.log('[KYC] business-info response:', businessInfoResponse);
-  console.log('[KYC] kyc/documents response:', kycDocumentsResponse);
+  const { data: businessInfoResponse, isLoading: isBusinessInfoLoading } = useQuery(getOnboardingBusinessInfoQueryOptions());
+  const { data: kycDocumentsResponse, isLoading: isDocumentsLoading } = useQuery(getOnboardingKycDocumentsQueryOptions());
+  const { data: onboardingStatusResponse } = useQuery(getOnboardingStatusQueryOptions());
+  const updateBusinessInfoMutation = useUpdateOnboardingBusinessInfo();
+  const uploadDocumentMutation = useUploadOnboardingKycDocument();
+  const deleteDocumentMutation = useDeleteOnboardingKycDocument();
 
-  const [businessInfo, setBusinessInfo] = useState<BusinessInfo>(() => {
+  const [businessInfo, setBusinessInfo] = useState<EditableBusinessInfo>(() => {
     const base = emptyBusinessInfo(tenantId);
     return {
       ...base,
       email: user?.email || null,
-      billing_email: user?.email || null,
-      phone: user?.phone || null,
+      billingEmail: user?.email || null,
     };
   });
-  const [documents] = useState<KYCDocument[]>([]);
   const [selectedDocType, setSelectedDocType] = useState<string>("");
   const [isDropzoneDragging, setIsDropzoneDragging] = useState(false);
-  const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  const updateField = <K extends keyof BusinessInfo>(key: K, value: BusinessInfo[K]) => {
+  const documents = useMemo(
+    () => kycDocumentsResponse?.data.documents ?? [],
+    [kycDocumentsResponse?.data.documents],
+  );
+  const isSavingBusinessInfo = updateBusinessInfoMutation.isPending;
+  const isUploadingDocument = uploadDocumentMutation.isPending;
+  const isDeletingDocument = deleteDocumentMutation.isPending;
+  const isMutatingDocument = isUploadingDocument || isDeletingDocument;
+  const documentTypeLabels = useMemo(
+    () => new Map(cfg.documents.map((doc) => [doc.value, doc.label])),
+    [cfg.documents],
+  );
+  const onboardingStatus = onboardingStatusResponse?.data.onboardingStatus ?? "pending";
+
+  useEffect(() => {
+    const remoteBusinessInfo = businessInfoResponse?.data;
+    if (!remoteBusinessInfo) return;
+
+    setBusinessInfo({
+      tenantId: remoteBusinessInfo.tenantId,
+      companyName: remoteBusinessInfo.companyName ?? "",
+      registrationNumber: remoteBusinessInfo.registrationNumber,
+      taxId: remoteBusinessInfo.taxId,
+      businessType: remoteBusinessInfo.businessType,
+      industry: remoteBusinessInfo.industry,
+      addressLine1: remoteBusinessInfo.addressLine1,
+      addressLine2: remoteBusinessInfo.addressLine2,
+      city: remoteBusinessInfo.city,
+      state: remoteBusinessInfo.state,
+      postalCode: remoteBusinessInfo.postalCode,
+      country: remoteBusinessInfo.country,
+      phone: remoteBusinessInfo.phone,
+      email: remoteBusinessInfo.email || user?.email || null,
+      billingEmail: remoteBusinessInfo.billingEmail || user?.email || null,
+      website: remoteBusinessInfo.website,
+      yearEstablished: remoteBusinessInfo.yearEstablished,
+      numberOfEmployees: remoteBusinessInfo.numberOfEmployees,
+      verificationStatus: remoteBusinessInfo.verificationStatus,
+    });
+  }, [businessInfoResponse?.data, user?.email]);
+
+  const updateField = <K extends keyof EditableBusinessInfo>(key: K, value: EditableBusinessInfo[K]) => {
     setBusinessInfo((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
   const saveBusinessInfo = async () => {
-    toast.info('Coming soon');
-    return;
+    updateBusinessInfoMutation.mutate(
+      {
+        data: {
+          companyName: businessInfo.companyName,
+          registrationNumber: businessInfo.registrationNumber,
+          taxId: businessInfo.taxId,
+          businessType: businessInfo.businessType,
+          industry: businessInfo.industry,
+          addressLine1: businessInfo.addressLine1,
+          addressLine2: businessInfo.addressLine2,
+          city: businessInfo.city,
+          state: businessInfo.state,
+          postalCode: businessInfo.postalCode,
+          country: businessInfo.country,
+          phone: businessInfo.phone,
+          email: businessInfo.email,
+          billingEmail: businessInfo.billingEmail,
+          website: businessInfo.website,
+          yearEstablished: businessInfo.yearEstablished,
+          numberOfEmployees: businessInfo.numberOfEmployees,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Business info saved");
+        },
+        onError: (error) => {
+          toast.error(error.message);
+        },
+      },
+    );
   };
 
-  const uploadFile = async (_docType: string, _file: File) => {
-    toast.info('Coming soon');
-    return;
+  const uploadFile = async (documentType: string, file: File) => {
+    try {
+      await uploadDocumentMutation.mutateAsync({ documentType, file });
+      toast.success("Document uploaded");
+      setSelectedDocType("");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Document upload failed");
+    }
   };
 
-  const removeDocument = async (_doc: KYCDocument) => {
-    toast.info('Coming soon');
-    return;
+  const removeDocument = async (doc: OnboardingKycDocument) => {
+    deleteDocumentMutation.mutate(
+      { id: doc.id },
+      {
+        onSuccess: () => {
+          toast.success("Document removed");
+        },
+        onError: (error) => {
+          toast.error(error.message);
+        },
+      },
+    );
   };
 
   const completion = useMemo(() => {
     if (!businessInfo) return 0;
-    const docPct =
-      (requiredDocs.filter((d) => documents.some((x) => x.document_type === d.value)).length /
-        Math.max(requiredDocs.length, 1)) *
-      50;
-    const fieldKeys: (keyof BusinessInfo)[] = [
-      "company_name",
-      "registration_number",
-      "tax_id",
-      "address_line1",
+    const fieldKeys: (keyof EditableBusinessInfo)[] = [
+      "companyName",
+      "registrationNumber",
+      "taxId",
+      "businessType",
+      "addressLine1",
       "city",
       "state",
       "phone",
       "email",
+      "billingEmail",
     ];
-    const filled = fieldKeys.filter((k) => Boolean(businessInfo[k])).length;
-    return Math.round(docPct + (filled / fieldKeys.length) * 50);
+    const requiredItems = [
+      ...fieldKeys.map((key) => Boolean(businessInfo[key])),
+      ...requiredDocs.map((doc) => documents.some((uploaded) => uploaded.documentType === doc.value)),
+    ];
+    const completedItems = requiredItems.filter(Boolean).length;
+    return Math.round((completedItems / Math.max(requiredItems.length, 1)) * 100);
   }, [businessInfo, documents, requiredDocs]);
 
   return (
@@ -265,7 +347,7 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
                 </CardDescription>
               </div>
             </div>
-            {statusBadge(businessInfo.verification_status)}
+            {statusBadge(onboardingStatus)}
           </div>
         </CardHeader>
         <CardContent>
@@ -300,40 +382,44 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="company_name">{cfg.orgNameLabel}</Label>
+              <Label htmlFor="companyName">{cfg.orgNameLabel}</Label>
               <Input
-                id="company_name"
-                value={businessInfo.company_name ?? ""}
-                onChange={(e) => updateField("company_name", e.target.value)}
+                id="companyName"
+                value={businessInfo.companyName ?? ""}
+                onChange={(e) => updateField("companyName", e.target.value)}
                 placeholder={cfg.orgNamePlaceholder}
+                disabled={isBusinessInfoLoading}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="registration_number">{cfg.registrationLabel}</Label>
+              <Label htmlFor="registrationNumber">{cfg.registrationLabel}</Label>
               <Input
-                id="registration_number"
-                value={businessInfo.registration_number ?? ""}
-                onChange={(e) => updateField("registration_number", e.target.value)}
+                id="registrationNumber"
+                value={businessInfo.registrationNumber ?? ""}
+                onChange={(e) => updateField("registrationNumber", e.target.value || null)}
                 placeholder=""
+                disabled={isBusinessInfoLoading}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tax_id">{cfg.taxIdLabel}</Label>
+              <Label htmlFor="taxId">{cfg.taxIdLabel}</Label>
               <Input
-                id="tax_id"
-                value={businessInfo.tax_id ?? ""}
-                onChange={(e) => updateField("tax_id", e.target.value)}
+                id="taxId"
+                value={businessInfo.taxId ?? ""}
+                onChange={(e) => updateField("taxId", e.target.value || null)}
                 placeholder=""
+                disabled={isBusinessInfoLoading}
               />
             </div>
             {cfg.showBusinessType && (
               <div className="space-y-2">
-                <Label htmlFor="business_type">Business Type *</Label>
+                <Label htmlFor="businessType">Business Type *</Label>
                 <Select
-                  value={businessInfo.business_type ?? ""}
-                  onValueChange={(v) => updateField("business_type", v)}
+                  value={businessInfo.businessType ?? ""}
+                  onValueChange={(v) => updateField("businessType", v)}
+                  disabled={isBusinessInfoLoading}
                 >
-                  <SelectTrigger id="business_type">
+                  <SelectTrigger id="businessType">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -349,40 +435,40 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
               <Input
                 id="industry"
                 value={businessInfo.industry ?? ""}
-                onChange={(e) => updateField("industry", e.target.value)}
+                onChange={(e) => updateField("industry", e.target.value || null)}
                 placeholder=""
+                disabled={isBusinessInfoLoading}
               />
             </div>
             {cfg.showYearEstablished && (
               <div className="space-y-2">
-                <Label htmlFor="year_established">Year Established</Label>
+                <Label htmlFor="yearEstablished">Year Established</Label>
                 <Input
-                  id="year_established"
+                  id="yearEstablished"
                   type="number"
-                  value={businessInfo.year_established ?? ""}
+                  value={businessInfo.yearEstablished ?? ""}
                   onChange={(e) =>
-                    updateField("year_established", e.target.value ? Number(e.target.value) : null)
+                    updateField("yearEstablished", e.target.value ? Number(e.target.value) : null)
                   }
                   placeholder=""
+                  disabled={isBusinessInfoLoading}
                 />
               </div>
             )}
             {cfg.showEmployees && (
               <div className="space-y-2">
-                <Label htmlFor="number_of_employees">{cfg.employeesLabel}</Label>
-                <Select
-                  value={businessInfo.number_of_employees ?? ""}
-                  onValueChange={(v) => updateField("number_of_employees", v)}
-                >
-                  <SelectTrigger id="number_of_employees">
-                    <SelectValue placeholder="Select range" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EMPLOYEE_RANGES.map((r) => (
-                      <SelectItem key={r} value={r}>{r}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="numberOfEmployees">{cfg.employeesLabel}</Label>
+                <Input
+                  id="numberOfEmployees"
+                  type="number"
+                  min={0}
+                  value={businessInfo.numberOfEmployees ?? ""}
+                  onChange={(e) =>
+                    updateField("numberOfEmployees", e.target.value ? Number(e.target.value) : null)
+                  }
+                  placeholder="0"
+                  disabled={isBusinessInfoLoading}
+                />
               </div>
             )}
             {cfg.showWebsite && (
@@ -391,8 +477,9 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
                 <Input
                   id="website"
                   value={businessInfo.website ?? ""}
-                  onChange={(e) => updateField("website", e.target.value)}
+                  onChange={(e) => updateField("website", e.target.value || null)}
                   placeholder="https://company.com"
+                  disabled={isBusinessInfoLoading}
                 />
               </div>
             )}
@@ -418,12 +505,13 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="address_line1">Street Address *</Label>
+              <Label htmlFor="addressLine1">Street Address *</Label>
               <Input
-                id="address_line1"
-                value={businessInfo.address_line1 ?? ""}
-                onChange={(e) => updateField("address_line1", e.target.value)}
+                id="addressLine1"
+                value={businessInfo.addressLine1 ?? ""}
+                onChange={(e) => updateField("addressLine1", e.target.value || null)}
                 placeholder="Street address"
+                disabled={isBusinessInfoLoading}
               />
             </div>
             <div className="space-y-2">
@@ -431,8 +519,9 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
               <Input
                 id="city"
                 value={businessInfo.city ?? ""}
-                onChange={(e) => updateField("city", e.target.value)}
+                onChange={(e) => updateField("city", e.target.value || null)}
                 placeholder="Lagos"
+                disabled={isBusinessInfoLoading}
               />
             </div>
             <div className="space-y-2">
@@ -440,17 +529,19 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
               <Input
                 id="state"
                 value={businessInfo.state ?? ""}
-                onChange={(e) => updateField("state", e.target.value)}
+                onChange={(e) => updateField("state", e.target.value || null)}
                 placeholder="Lagos State"
+                disabled={isBusinessInfoLoading}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="postal_code">Postal Code</Label>
+              <Label htmlFor="postalCode">Postal Code</Label>
               <Input
-                id="postal_code"
-                value={businessInfo.postal_code ?? ""}
-                onChange={(e) => updateField("postal_code", e.target.value)}
+                id="postalCode"
+                value={businessInfo.postalCode ?? ""}
+                onChange={(e) => updateField("postalCode", e.target.value || null)}
                 placeholder="100001"
+                disabled={isBusinessInfoLoading}
               />
             </div>
             <div className="space-y-2">
@@ -458,8 +549,9 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
               <Input
                 id="country"
                 value={businessInfo.country ?? ""}
-                onChange={(e) => updateField("country", e.target.value)}
+                onChange={(e) => updateField("country", e.target.value || null)}
                 placeholder="Nigeria"
+                disabled={isBusinessInfoLoading}
               />
             </div>
           </div>
@@ -484,8 +576,9 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
               <Input
                 id="phone"
                 value={businessInfo.phone ?? ""}
-                onChange={(e) => updateField("phone", e.target.value)}
+                onChange={(e) => updateField("phone", e.target.value || null)}
                 placeholder="+234 800 000 0000"
+                disabled={isBusinessInfoLoading}
               />
             </div>
             <div className="space-y-2">
@@ -496,23 +589,35 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
                 id="email"
                 type="email"
                 value={businessInfo.email ?? ""}
-                onChange={(e) => updateField("email", e.target.value)}
+                onChange={(e) => updateField("email", e.target.value || null)}
                 placeholder="contact@company.com"
+                disabled={isBusinessInfoLoading}
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="billing_email">Billing Email *</Label>
+              <Label htmlFor="billingEmail">Billing Email *</Label>
               <Input
-                id="billing_email"
+                id="billingEmail"
                 type="email"
-                value={businessInfo.billing_email ?? ""}
-                onChange={(e) => updateField("billing_email", e.target.value)}
+                value={businessInfo.billingEmail ?? ""}
+                onChange={(e) => updateField("billingEmail", e.target.value || null)}
                 placeholder="billing@company.com"
+                disabled={isBusinessInfoLoading}
               />
               <p className="text-xs text-muted-foreground">
                 Invoices and payment receipts will be sent here. You can use the same address as your business email.
               </p>
             </div>
+          </div>
+          <div className="mt-6 flex justify-end">
+            <Button
+              type="button"
+              onClick={saveBusinessInfo}
+              disabled={isBusinessInfoLoading}
+              loading={isSavingBusinessInfo}
+            >
+              Save business info
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -534,7 +639,7 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Document Type</Label>
-              <Select value={selectedDocType} onValueChange={setSelectedDocType}>
+              <Select value={selectedDocType} onValueChange={setSelectedDocType} disabled={isMutatingDocument}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select document type" />
                 </SelectTrigger>
@@ -554,7 +659,7 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
                 htmlFor="kyc-dropzone-input"
                 onDragOver={(e) => {
                   e.preventDefault();
-                  if (selectedDocType) setIsDropzoneDragging(true);
+                  if (selectedDocType && !isMutatingDocument) setIsDropzoneDragging(true);
                 }}
                 onDragLeave={() => setIsDropzoneDragging(false)}
                 onDrop={(e) => {
@@ -564,14 +669,17 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
                     toast.error("Please select a document type first");
                     return;
                   }
+                  if (isMutatingDocument) return;
                   const file = e.dataTransfer.files?.[0];
                   if (file) {
-                    void uploadFile(selectedDocType, file).then(() => setSelectedDocType(""));
+                    void uploadFile(selectedDocType, file);
                   }
                 }}
                 className={`flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed p-4 text-center transition-colors h-full ${
                   !selectedDocType
                     ? "border-border bg-muted/20 cursor-not-allowed opacity-60"
+                    : isMutatingDocument
+                    ? "border-border bg-muted/20 cursor-wait opacity-60"
                     : isDropzoneDragging
                     ? "border-primary bg-primary/5 cursor-pointer"
                     : "border-border hover:border-primary/50 hover:bg-muted/40 cursor-pointer"
@@ -582,11 +690,11 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   className="hidden"
-                  disabled={!selectedDocType}
+                  disabled={!selectedDocType || isMutatingDocument}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file && selectedDocType) {
-                      void uploadFile(selectedDocType, file).then(() => setSelectedDocType(""));
+                      void uploadFile(selectedDocType, file);
                     }
                     e.target.value = "";
                   }}
@@ -594,7 +702,7 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
                 <>
                   <UploadCloud className="w-5 h-5 text-primary" />
                   <p className="text-xs font-medium text-foreground">
-                    <span className="text-primary">Click to upload</span> or drag & drop
+                    {isUploadingDocument ? "Uploading..." : <><span className="text-primary">Click to upload</span> or drag & drop</>}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
                     PDF, JPG, PNG, DOC (max 10MB)
@@ -604,11 +712,73 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
             </div>
           </div>
 
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-medium text-foreground">All uploaded documents</p>
+              <Badge variant="outline" className="text-xs">
+                {documents.length} uploaded
+              </Badge>
+            </div>
+            {isDocumentsLoading ? (
+              <div className="rounded-lg border border-border bg-muted/20 p-4 text-sm text-muted-foreground">
+                Loading uploaded documents...
+              </div>
+            ) : documents.length > 0 ? (
+              <div className="space-y-2">
+                {documents.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="rounded-md bg-primary/10 p-2 text-primary">
+                        <FileText className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 space-y-1">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {doc.documentName}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                          <span>{documentTypeLabels.get(doc.documentType) ?? doc.documentType}</span>
+                          <span aria-hidden="true">&bull;</span>
+                          <span>{formatFileSize(doc.fileSize)}</span>
+                          <span aria-hidden="true">&bull;</span>
+                          <span>{formatUploadDate(doc.createdAt)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 sm:justify-end">
+                      {statusBadge(doc.status)}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive shrink-0"
+                        onClick={() => removeDocument(doc)}
+                        disabled={isDeletingDocument}
+                        aria-label={`Remove ${doc.documentName}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 rounded-lg border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground">
+                <FileText className="h-4 w-4 shrink-0" />
+                No documents uploaded yet.
+              </div>
+            )}
+          </div>
+
           <div>
             <p className="text-sm font-medium text-foreground mb-2">Required documents</p>
+            {isDocumentsLoading && (
+              <p className="mb-3 text-xs text-muted-foreground">Loading uploaded documents...</p>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {requiredDocs.map((docType) => {
-                const uploaded = documents.find((d) => d.document_type === docType.value);
+                const uploaded = documents.find((d) => d.documentType === docType.value);
                 return (
                   <div
                     key={docType.value}
@@ -634,7 +804,7 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
                         </p>
                         {uploaded && (
                           <p className="text-xs text-muted-foreground truncate">
-                            {uploaded.document_name}
+                            {uploaded.documentName}
                           </p>
                         )}
                       </div>
@@ -645,6 +815,7 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
                         size="icon"
                         className="text-destructive hover:text-destructive shrink-0"
                         onClick={() => removeDocument(uploaded)}
+                        disabled={isDeletingDocument}
                         aria-label="Remove document"
                       >
                         <Trash2 className="w-4 h-4" />
