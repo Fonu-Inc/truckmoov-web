@@ -759,3 +759,50 @@ export type FleetAnalyticsJobPipelineResponse = ServerResponse<FleetAnalyticsJob
 export type FleetAnalyticsFuelLevelsResponse = ServerResponse<FleetAnalyticsFuelLevel[]>
 export type FleetAnalyticsDriverScoresResponse = ServerResponse<FleetAnalyticsDriverScore[]>
 export type FleetAnalyticsEventsResponse = ServerResponse<FleetAnalyticsEvent[]>
+
+// ─── Compliance ───────────────────────────────────────────────────────────────
+
+export type ComplianceDocument = {
+  id: string
+  tenantId: string
+  vehicleId: string | null
+  documentType: string
+  documentName: string
+  documentNumber?: string
+  issueDate: string | null
+  expiryDate: string | null
+  reminderDays: number
+  fileUrl: string | null
+  fileSize: number | null
+  notes: string | null
+  status: 'valid' | 'expiring' | 'expired'
+  createdAt: string
+  updatedAt: string
+}
+
+export type ComplianceDocumentSummary = {
+  total: number
+  valid: number
+  expiringSoon: number
+  expired: number
+  complianceRatePercent: number
+}
+
+export type ComplianceDocumentsQuery = {
+  params?: { vehicleId?: string; documentType?: string; status?: string; search?: string }
+}
+
+export type CreateComplianceDocumentPayload = {
+  documentName: string
+  documentType: string
+  documentNumber?: string
+  issueDate?: string | null
+  expiryDate?: string | null
+  notes?: string | null
+}
+
+export type UpdateComplianceDocumentPayload = Partial<CreateComplianceDocumentPayload>
+
+export type ComplianceDocumentResponse = ServerResponse<ComplianceDocument>
+export type ComplianceDocumentListResponse = ServerResponse<ComplianceDocument[]>
+export type ComplianceDocumentSummaryResponse = ServerResponse<ComplianceDocumentSummary>

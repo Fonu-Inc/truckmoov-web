@@ -86,6 +86,12 @@ import type {
   VehicleResponse,
   VehicleSummaryResponse,
   VehiclesQuery,
+  ComplianceDocumentsQuery,
+  ComplianceDocumentListResponse,
+  ComplianceDocumentSummaryResponse,
+  ComplianceDocumentResponse,
+  CreateComplianceDocumentPayload,
+  UpdateComplianceDocumentPayload,
 } from './types'
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
@@ -510,6 +516,58 @@ export async function getDocumentDownloadUrl({ id }: { id: string }) {
 export async function getDocumentAccessLog({ id }: { id: string }) {
   const { data } = await axiosInstance.get<AccessLogListResponse>(`/fleet/documents/${id}/access-log`)
   return data
+}
+
+// ─── Compliance ───────────────────────────────────────────────────────────────
+
+export async function getComplianceDocs({ params }: ComplianceDocumentsQuery = {}) {
+  const { data } = await axiosInstance.get<ComplianceDocumentListResponse>('/fleet/compliance/documents', { params })
+  return data
+}
+
+export async function getComplianceSummary() {
+  const { data } = await axiosInstance.get<ComplianceDocumentSummaryResponse>('/fleet/compliance/documents/summary')
+  return data
+}
+
+export async function createComplianceDoc(payload: CreateComplianceDocumentPayload) {
+  const { data } = await axiosInstance.post<ComplianceDocumentResponse>('/fleet/compliance/documents', payload)
+  return data
+}
+
+export async function updateComplianceDoc(id: string, payload: UpdateComplianceDocumentPayload) {
+  const { data } = await axiosInstance.patch<ComplianceDocumentResponse>(`/fleet/compliance/documents/${id}`, payload)
+  return data
+}
+
+export async function deleteComplianceDoc(id: string) {
+  const { data } = await axiosInstance.delete<{ status: boolean; message: string }>(`/fleet/compliance/documents/${id}`)
+  return data
+}
+
+export async function setComplianceDocFileUrl(id: string, fileUrl: string) {
+  const { data } = await axiosInstance.post(`/fleet/compliance/documents/${id}/upload`, { fileUrl })
+  return data
+}
+
+export async function renewComplianceDoc(id: string) {
+  const { data } = await axiosInstance.post(`/fleet/compliance/documents/${id}/renew`)
+  return data
+}
+
+export async function setComplianceDocReminder(id: string, reminderDays: number) {
+  const { data } = await axiosInstance.patch(`/fleet/compliance/documents/${id}/reminder`, { reminderDays })
+  return data
+}
+
+export async function sendComplianceReminders(payload: { email: string; reminderDays: number }) {
+  const { data } = await axiosInstance.post('/fleet/compliance/reminders/send', payload)
+  return data
+}
+
+export async function exportComplianceDocs() {
+  const { data } = await axiosInstance.get('/fleet/compliance/documents/export', { responseType: 'blob' })
+  return data as Blob
 }
 
 // ─── Audit ────────────────────────────────────────────────────────────────────

@@ -77,6 +77,16 @@ import {
   updateVehicle,
   updateVehicleStatus,
   uploadDocument,
+  getComplianceDocs,
+  getComplianceSummary,
+  createComplianceDoc,
+  updateComplianceDoc,
+  deleteComplianceDoc,
+  setComplianceDocFileUrl,
+  renewComplianceDoc,
+  setComplianceDocReminder,
+  sendComplianceReminders,
+  exportComplianceDocs,
 } from './requests'
 
 export type * from './types'
@@ -101,6 +111,7 @@ import type {
   NearestVehiclesQuery,
   ValidateDeviceAssignmentQuery,
   VehiclesQuery,
+  ComplianceDocumentsQuery,
 } from './types'
 
 export const FLEET_QUERY_KEY = {
@@ -144,6 +155,8 @@ export const FLEET_QUERY_KEY = {
     payload,
   ],
   auditLog: (payload?: AuditLogQuery) => ['fleet', 'auditLog', payload],
+  complianceDocs: (params?: ComplianceDocumentsQuery['params']) => ['fleet', 'complianceDocs', params],
+  complianceSummary: ['fleet', 'complianceSummary'],
 } as const
 
 // ─── queryOptions factories ───────────────────────────────────────────────────
@@ -909,6 +922,85 @@ export function useUploadDocument() {
   })
 }
 
+// ─── Compliance hooks ─────────────────────────────────────────────────────────
+
+export function useComplianceDocs(params?: ComplianceDocumentsQuery['params']) {
+  return useQuery({
+    queryKey: FLEET_QUERY_KEY.complianceDocs(params),
+    queryFn: () => getComplianceDocs({ params }),
+  })
+}
+
+export function useComplianceSummary() {
+  return useQuery({
+    queryKey: FLEET_QUERY_KEY.complianceSummary,
+    queryFn: () => getComplianceSummary(),
+  })
+}
+
+export function useCreateComplianceDoc() {
+  return useMutation({
+    mutationFn: createComplianceDoc,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'complianceDocs'] })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.complianceSummary })
+    },
+  })
+}
+
+export function useUpdateComplianceDoc() {
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof updateComplianceDoc>[1] }) =>
+      updateComplianceDoc(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'complianceDocs'] })
+    },
+  })
+}
+
+export function useDeleteComplianceDoc() {
+  return useMutation({
+    mutationFn: deleteComplianceDoc,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'complianceDocs'] })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.complianceSummary })
+    },
+  })
+}
+
+export function useSetComplianceDocFileUrl() {
+  return useMutation({
+    mutationFn: ({ id, fileUrl }: { id: string; fileUrl: string }) => setComplianceDocFileUrl(id, fileUrl),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'complianceDocs'] })
+    },
+  })
+}
+
+export function useRenewComplianceDoc() {
+  return useMutation({
+    mutationFn: renewComplianceDoc,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'complianceDocs'] })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.complianceSummary })
+    },
+  })
+}
+
+export function useSetComplianceDocReminder() {
+  return useMutation({
+    mutationFn: ({ id, reminderDays }: { id: string; reminderDays: number }) =>
+      setComplianceDocReminder(id, reminderDays),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'complianceDocs'] })
+    },
+  })
+}
+
+export function useSendComplianceReminders() {
+  return useMutation({ mutationFn: sendComplianceReminders })
+}
+
 // ─── Re-export plain request functions for imperative use ─────────────────────
 
-export { exportFuelTransactions, exportMaintenanceRecords, exportReport, exportVehicles }
+export { exportFuelTransactions, exportMaintenanceRecords, exportReport, exportVehicles, exportComplianceDocs, getDocumentDownloadUrl, uploadDocument }

@@ -1,5 +1,5 @@
 import {Download,  AlertTriangle, Bell, CalendarIcon, CheckCircle, Clock, Eye, File, FileText, Loader2, Mail, MoreHorizontal, Plus, Search, Shield, SlidersHorizontal, Truck, Upload, X } from 'lucide-react';
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
@@ -34,12 +34,23 @@ import {
   SelectTrigger,
   SelectValue } from "@/components/shadcn/select";
 import { Label } from "@/components/shadcn/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { format, differenceInDays, addDays } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-type ComplianceDocument = any;
-import { useAuthStore } from "@/stores/authStore";
+import {
+  type ComplianceDocument,
+  exportComplianceDocs,
+  getDocumentDownloadUrl,
+  uploadDocument,
+  useComplianceDocs,
+  useComplianceSummary,
+  useCreateComplianceDoc,
+  useDeleteComplianceDoc,
+  useRenewComplianceDoc,
+  useSetComplianceDocFileUrl,
+  useSetComplianceDocReminder,
+  useSendComplianceReminders,
+} from "@truckmoov/api/fleet";
 
 const statusColors: Record<string, string> = {
   valid: "bg-success/20 text-success border-success/30",
@@ -47,20 +58,41 @@ const statusColors: Record<string, string> = {
   expired: "bg-destructive/20 text-destructive border-destructive/30" };
 
 export function ComplianceTab() {
-  const { user } = useAuthStore();
-  const tenantId = user?.tenantId || '';
-
-  const { documents, isLoading, addDocument, updateDocument, deleteDocument, setReminderDays, getStats } = useComplianceDocuments(tenantId);
-  const { sendReminders, isSending } = useFleetReminders(tenantId);
-
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [docTypeFilter, setDocTypeFilter] = useState("all");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  const docsQuery = useComplianceDocs({
+    search: debouncedSearch || undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
+    documentType: docTypeFilter !== "all" ? docTypeFilter : undefined,
+  });
+  const summaryQuery = useComplianceSummary();
+  const documents = docsQuery.data?.data ?? [];
+  const isLoading = docsQuery.isLoading;
+  const isFetching = docsQuery.isFetching;
+  const summary = summaryQuery.data?.data;
+
+  const createMutation = useCreateComplianceDoc();
+  const deleteMutation = useDeleteComplianceDoc();
+  const setFileUrlMutation = useSetComplianceDocFileUrl();
+  const renewMutation = useRenewComplianceDoc();
+  const reminderMutation = useSetComplianceDocReminder();
+  const sendRemindersMutation = useSendComplianceReminders();
+  const isSending = sendRemindersMutation.isPending;
+
   const [issueFrom, setIssueFrom] = useState<Date | undefined>(undefined);
   const [issueTo, setIssueTo] = useState<Date | undefined>(undefined);
   const [expiryFrom, setExpiryFrom] = useState<Date | undefined>(undefined);
   const [expiryTo, setExpiryTo] = useState<Date | undefined>(undefined);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [draftStatus, setDraftStatus] = useState("all");
   const [draftDocTypeEnabled, setDraftDocTypeEnabled] = useState(false);
   const [draftDocType, setDraftDocType] = useState("all");
   const [draftEnableIssue, setDraftEnableIssue] = useState(false);
@@ -94,55 +126,44 @@ export function ComplianceTab() {
   const [isCustomDocType, setIsCustomDocType] = useState(false);
 
   const filteredDocuments = documents.filter((doc) => {
-    const matchesSearch =
-      (doc.vehicle_name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
-      doc.document_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (doc.document_number?.toLowerCase() || "").includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || doc.status === statusFilter;
-    const matchesDocType = docTypeFilter === "all" || doc.document_type === docTypeFilter;
-    const issueDate = doc.issue_date ? new Date(doc.issue_date) : null;
-    const expiryDate = new Date(doc.expiry_date);
+    const issueDate = doc.issueDate ? new Date(doc.issueDate) : null;
+    const expiryDate = doc.expiryDate ? new Date(doc.expiryDate) : null;
     const matchesIssue =
       (!issueFrom || (issueDate && issueDate >= issueFrom)) &&
       (!issueTo || (issueDate && issueDate <= issueTo));
     const matchesExpiry =
-      (!expiryFrom || expiryDate >= expiryFrom) &&
-      (!expiryTo || expiryDate <= expiryTo);
-    return matchesSearch && matchesStatus && matchesDocType && matchesIssue && matchesExpiry;
+      (!expiryFrom || (expiryDate && expiryDate >= expiryFrom)) &&
+      (!expiryTo || (expiryDate && expiryDate <= expiryTo));
+    return matchesIssue && matchesExpiry;
   });
 
-  const stats = getStats();
-
-  const handleExportData = () => {
-    if (filteredDocuments.length === 0) {
-      toast.info("No documents to export");
-      return;
-    }
-    const headers = ["Entity", "Document Type", "Document Number", "Status", "Issue Date", "Expiry Date"];
-    const rows = filteredDocuments.map((d) => [
-      d.vehicle_name || "",
-      d.document_type,
-      d.document_number || "",
-      d.status,
-      d.issue_date ? format(new Date(d.issue_date), "yyyy-MM-dd") : "",
-      format(new Date(d.expiry_date), "yyyy-MM-dd"),
-    ]);
-    const csv = [headers, ...rows]
-      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `compliance-documents-${format(new Date(), "yyyy-MM-dd")}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success("Exported compliance documents");
+  const stats = {
+    total: summary?.total ?? 0,
+    valid: summary?.valid ?? 0,
+    expiring: summary?.expiringSoon ?? 0,
+    expired: summary?.expired ?? 0,
+    complianceRate: summary?.complianceRatePercent ?? 0,
   };
+
+  const handleExportData = async () => {
+    try {
+      const blob = await exportComplianceDocs();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `compliance-documents-${format(new Date(), "yyyy-MM-dd")}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Exported compliance documents");
+    } catch {
+      toast.error("Failed to export documents");
+    }
+  };
+
   const documentTypes = useMemo(
-    () => Array.from(new Set(documents.map((d) => d.document_type))).filter(Boolean),
+    () => Array.from(new Set(documents.map((d) => d.documentType))).filter(Boolean),
     [documents]
   );
 
@@ -162,18 +183,24 @@ export function ComplianceTab() {
 
   const handleSetReminder = (doc: ComplianceDocument) => {
     setSelectedDocument(doc);
-    setReminderDaysValue(doc.reminder_days?.toString() || "30");
+    setReminderDaysValue(doc.reminderDays?.toString() || "30");
     setIsReminderDialogOpen(true);
   };
 
-  const handleDownload = async (doc: ComplianceDocument) => {
-    toast.info('Coming soon');
-    return;
+  const handleDownload = (doc: ComplianceDocument) => {
+    if (doc.fileUrl) {
+      window.open(doc.fileUrl, '_blank');
+    } else {
+      toast.info('No file attached to this document');
+    }
   };
 
-  const uploadFile = async (file: File, docId: string): Promise<string | null> => {
-    toast.info('Coming soon');
-    return null;
+  const uploadFile = async (file: File, complianceDocId: string): Promise<void> => {
+    const fleetDocRes = await uploadDocument(file, {
+      params: { entityType: 'vehicle', entityId: complianceDocId, docType: 'permit' },
+    });
+    const downloadRes = await getDocumentDownloadUrl({ id: fleetDocRes.data.id });
+    await setFileUrlMutation.mutateAsync({ id: complianceDocId, fileUrl: downloadRes.data.url });
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,54 +228,59 @@ export function ComplianceTab() {
   const handleAddDocument = async () => {
     setIsUploading(true);
     try {
-      const doc = await addDocument({
-        vehicle_name: newDocument.entityName,
-        document_type: newDocument.documentType,
-        document_name: `${newDocument.documentType} - ${newDocument.entityName}`,
-        document_number: newDocument.documentNumber,
-        issue_date: newDocument.issueDate ? new Date(newDocument.issueDate).toISOString() : null,
-        expiry_date: new Date(newDocument.expiryDate).toISOString() });
+      const res = await createMutation.mutateAsync({
+        documentName: newDocument.entityName,
+        documentType: newDocument.documentType,
+        documentNumber: newDocument.documentNumber || undefined,
+        issueDate: newDocument.issueDate || null,
+        expiryDate: newDocument.expiryDate || null,
+      });
+      const doc = res.data;
 
       if (selectedFile && doc) {
-        const filePath = await uploadFile(selectedFile, doc.id);
-        if (filePath) {
-          await updateDocument(doc.id, { file_path: filePath });
-        }
+        await uploadFile(selectedFile, doc.id);
       }
 
       setIsAddDialogOpen(false);
-      setNewDocument({
-        entityType: "vehicle",
-        entityName: "",
-        documentType: "",
-        documentNumber: "",
-        issueDate: "",
-        expiryDate: "" });
+      setNewDocument({ entityType: "vehicle", entityName: "", documentType: "", documentNumber: "", issueDate: "", expiryDate: "" });
       setIsCustomDocType(false);
       setSelectedFile(null);
+      toast.success("Document added");
     } catch (err) {
-      console.error('Error adding document:', err);
+      toast.error("Failed to add document");
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleRenewalSubmit = async () => {
-    if (selectedDocument) {
-      toast.info('Coming soon');
-      return;
+    if (!selectedDocument) return;
+    setIsUploading(true);
+    try {
+      if (renewalFile) {
+        await uploadFile(renewalFile, selectedDocument.id);
+      }
+      await renewMutation.mutateAsync(selectedDocument.id);
+      setIsRenewalDialogOpen(false);
+      setRenewalFile(null);
+      setSelectedDocument(null);
+      toast.success("Document renewed");
+    } catch {
+      toast.error("Failed to renew document");
+    } finally {
+      setIsUploading(false);
     }
   };
 
   const handleReminderSubmit = async () => {
-    if (selectedDocument) {
-      try {
-        await setReminderDays(selectedDocument.id, parseInt(reminderDaysValue));
-        setIsReminderDialogOpen(false);
-        setSelectedDocument(null);
-      } catch (err) {
-        // Error handled by hook
-      }
+    if (!selectedDocument) return;
+    try {
+      await reminderMutation.mutateAsync({ id: selectedDocument.id, reminderDays: parseInt(reminderDaysValue) });
+      setIsReminderDialogOpen(false);
+      setSelectedDocument(null);
+      toast.success("Reminder saved");
+    } catch {
+      toast.error("Failed to save reminder");
     }
   };
 
@@ -258,11 +290,12 @@ export function ComplianceTab() {
       return;
     }
     try {
-      await sendReminders('compliance', recipientEmail, [Number(reminderDaysBefore)]);
+      await sendRemindersMutation.mutateAsync({ email: recipientEmail, reminderDays: Number(reminderDaysBefore) });
       setIsSendRemindersDialogOpen(false);
       setRecipientEmail("");
-    } catch (err) {
-      // Error handled by hook
+      toast.success("Reminders queued");
+    } catch {
+      toast.error("Failed to send reminders");
     }
   };
 
@@ -392,31 +425,36 @@ export function ComplianceTab() {
                 className="pl-10 bg-card/50 border-border/50"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[170px] bg-card/50 border-border/50">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="valid">Valid</SelectItem>
-                <SelectItem value="expiring">Expiring</SelectItem>
-                <SelectItem value="expired">Expired</SelectItem>
-              </SelectContent>
-            </Select>
             <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm">
                   <SlidersHorizontal className="h-4 w-4 mr-2" />
                   Filter
-                  {(docTypeFilter !== "all" || issueFrom || issueTo || expiryFrom || expiryTo) && (
+                  {(statusFilter !== "all" || docTypeFilter !== "all" || issueFrom || issueTo || expiryFrom || expiryTo) && (
                     <Badge variant="secondary" className="ml-2 h-5 px-1.5">
-                      {[docTypeFilter !== "all", !!(issueFrom || issueTo), !!(expiryFrom || expiryTo)].filter(Boolean).length}
+                      {[statusFilter !== "all", docTypeFilter !== "all", !!(issueFrom || issueTo), !!(expiryFrom || expiryTo)].filter(Boolean).length}
                     </Badge>
                   )}
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-80 space-y-4 max-h-[70vh] overflow-y-auto">
                 <Label className="text-sm font-semibold">Show Documents</Label>
+
+                {/* Status */}
+                <div className="space-y-2">
+                  <Label className="text-xs">Status</Label>
+                  <Select value={draftStatus} onValueChange={setDraftStatus}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="valid">Valid</SelectItem>
+                      <SelectItem value="expiring">Expiring</SelectItem>
+                      <SelectItem value="expired">Expired</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
                 {/* Document Type */}
                 <div className="space-y-2">
@@ -579,6 +617,7 @@ export function ComplianceTab() {
                   <Button
                     className="flex-1"
                     onClick={() => {
+                      setStatusFilter(draftStatus);
                       setDocTypeFilter(draftDocTypeEnabled && draftDocType ? draftDocType : "all");
                       setIssueFrom(draftEnableIssue ? draftIssueFrom : undefined);
                       setIssueTo(draftEnableIssue ? draftIssueTo : undefined);
@@ -593,11 +632,13 @@ export function ComplianceTab() {
                     variant="outline"
                     className="flex-1"
                     onClick={() => {
+                      setStatusFilter("all");
                       setDocTypeFilter("all");
                       setIssueFrom(undefined);
                       setIssueTo(undefined);
                       setExpiryFrom(undefined);
                       setExpiryTo(undefined);
+                      setDraftStatus("all");
                       setDraftDocTypeEnabled(false);
                       setDraftDocType("all");
                       setDraftEnableIssue(false);
@@ -615,7 +656,12 @@ export function ComplianceTab() {
             </Popover>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative">
+          {isFetching && !isLoading && (
+            <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10 rounded-md">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          )}
           <Table>
             <TableHeader>
               <TableRow className="border-border/50 hover:bg-transparent">
@@ -637,24 +683,24 @@ export function ComplianceTab() {
                 </TableRow>
               ) : (
                 filteredDocuments.map((doc) => {
-                  const daysLeft = getDaysUntilExpiry(doc.expiry_date);
+                  const daysLeft = doc.expiryDate ? getDaysUntilExpiry(doc.expiryDate) : 0;
                   return (
                     <TableRow key={doc.id} className="border-border/50">
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Truck className="h-4 w-4 text-muted-foreground" />
                           <div>
-                            <p className="font-medium">{doc.vehicle_name || 'Unknown'}</p>
+                            <p className="font-medium">{doc.documentName || 'Unknown'}</p>
                             <p className="text-xs text-muted-foreground">Vehicle</p>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{doc.document_type}</TableCell>
-                      <TableCell className="font-mono text-sm">{doc.document_number || '—'}</TableCell>
+                      <TableCell>{doc.documentType}</TableCell>
+                      <TableCell className="font-mono text-sm">{doc.documentNumber || '—'}</TableCell>
                       <TableCell>
                         <Badge className={statusColors[doc.status] || statusColors.valid}>{doc.status}</Badge>
                       </TableCell>
-                      <TableCell>{format(new Date(doc.expiry_date), "MMM dd, yyyy")}</TableCell>
+                      <TableCell>{doc.expiryDate ? format(new Date(doc.expiryDate), "MMM dd, yyyy") : '—'}</TableCell>
                       <TableCell>
                         <span
                           className={cn(
@@ -877,7 +923,7 @@ export function ComplianceTab() {
           <DialogHeader>
             <DialogTitle>Document Details</DialogTitle>
             <DialogDescription>
-              {selectedDocument?.document_type} for {selectedDocument?.vehicle_name}
+              {selectedDocument?.documentType} for {selectedDocument?.documentName}
             </DialogDescription>
           </DialogHeader>
           {selectedDocument && (
@@ -885,17 +931,17 @@ export function ComplianceTab() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground text-xs">Entity Name</Label>
-                  <p className="font-medium">{selectedDocument.vehicle_name}</p>
+                  <p className="font-medium">{selectedDocument.documentName}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground text-xs">Document Type</Label>
-                  <p className="font-medium">{selectedDocument.document_type}</p>
+                  <p className="font-medium">{selectedDocument.documentType}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground text-xs">Document Number</Label>
-                  <p className="font-medium">{selectedDocument.document_number || '—'}</p>
+                  <p className="font-medium">{selectedDocument.documentNumber || '—'}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground text-xs">Status</Label>
@@ -906,17 +952,17 @@ export function ComplianceTab() {
                 <div>
                   <Label className="text-muted-foreground text-xs">Issue Date</Label>
                   <p className="font-medium">
-                    {selectedDocument.issue_date
-                      ? format(new Date(selectedDocument.issue_date), "MMM dd, yyyy")
+                    {selectedDocument.issueDate
+                      ? format(new Date(selectedDocument.issueDate), "MMM dd, yyyy")
                       : '—'}
                   </p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground text-xs">Expiry Date</Label>
-                  <p className="font-medium">{format(new Date(selectedDocument.expiry_date), "MMM dd, yyyy")}</p>
+                  <p className="font-medium">{selectedDocument.expiryDate ? format(new Date(selectedDocument.expiryDate), "MMM dd, yyyy") : '—'}</p>
                 </div>
               </div>
-              {selectedDocument.file_path && (
+              {selectedDocument.fileUrl && (
                 <Button variant="outline" className="w-full" onClick={() => handleDownload(selectedDocument)}>
                   <Download className="h-4 w-4 mr-2" />
                   Download Document
@@ -933,7 +979,7 @@ export function ComplianceTab() {
           <DialogHeader>
             <DialogTitle>Renew Document</DialogTitle>
             <DialogDescription>
-              Upload a renewed {selectedDocument?.document_type}
+              Upload a renewed {selectedDocument?.documentType}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
