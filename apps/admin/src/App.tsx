@@ -1,4 +1,5 @@
-import React, { Component, ReactNode, useEffect } from "react";
+import React, { useEffect } from "react";
+import { ErrorBoundary } from "@truckmoov/reusables/components/ErrorBoundary";
 import { Toaster as Sonner } from "@/components/shadcn/sonner";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@truckmoov/api/lib/query-client";
@@ -27,34 +28,6 @@ import PlatformCommunications from "./pages/platform/PlatformCommunications";
 import PlatformMessagingCenter from "./pages/platform/PlatformMessagingCenter";
 import PlatformSupport from "./pages/platform/PlatformSupport";
 
-class AppErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
-  state = { hasError: false };
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: unknown) {
-    console.error("Admin app route failed", error);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
-          <div className="max-w-md rounded-lg border border-border bg-card p-6 shadow-sm">
-            <h1 className="text-xl font-semibold">Something went wrong</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              The admin route failed to render. Refresh the page or choose another admin section.
-            </p>
-          </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
 
 function AuthGate({ children }: { children: ReactNode }) {
   const location = useLocation();
@@ -96,7 +69,7 @@ const App = () => {
               <FonuCallProvider>
                 <BrowserRouter>
                   <AuthGate>
-                    <AppErrorBoundary>
+                    <ErrorBoundary>
                       <Routes>
                         <Route path="/auth" element={<AuthPage />} />
                         <Route path="/not-authorized" element={<NotAuthorized />} />
@@ -115,7 +88,7 @@ const App = () => {
                         <Route path="/support" element={<PlatformSupport />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
-                    </AppErrorBoundary>
+                    </ErrorBoundary>
                     <AuthenticatedSupportChat />
                   </AuthGate>
                 </BrowserRouter>

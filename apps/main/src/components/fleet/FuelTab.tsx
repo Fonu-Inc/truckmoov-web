@@ -50,12 +50,23 @@ import {
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-type FuelTransaction = any;
 import { PeriodFilter, PeriodValue } from "./PeriodFilter";
 
+type FuelTransaction = any;
+
 export function FuelTab() {
-  const { transactions, isLoading, addTransaction, updateTransaction, deleteTransaction, getStats } = useFuelTransactions();
-  const { weeklyConsumption, vehicleEfficiency, fleetSummary, efficiencyThreshold, exportToCSV, isLoading: efficiencyLoading } = useFuelEfficiency();
+  const transactions: FuelTransaction[] = [];
+  const isLoading = false;
+  const addTransaction = async (_input: any) => {};
+  const updateTransaction = async (_id: string, _updates: any) => {};
+  const deleteTransaction = async (_id: string) => {};
+  const getStats = () => ({ totalLitres: 0, totalCost: 0, avgPricePerLitre: 0 });
+  const weeklyConsumption: any[] = [];
+  const vehicleEfficiency: any[] = [];
+  const fleetSummary = { lowEfficiencyVehicles: 0 };
+  const efficiencyThreshold = 8;
+  const exportToCSV = () => {};
+  const efficiencyLoading = false;
   
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("transactions");

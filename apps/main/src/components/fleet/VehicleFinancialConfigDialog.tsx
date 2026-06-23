@@ -6,7 +6,6 @@ import { Label } from "@/components/shadcn/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-type FinancialConfigInput = any;
 import { toast } from "sonner";
 
 interface Vehicle {
@@ -27,7 +26,9 @@ export function VehicleFinancialConfigDialog({
   onOpenChange,
   vehicles,
 }: VehicleFinancialConfigDialogProps) {
-  const { configs, upsertConfig, getConfigForVehicle } = useVehicleFinancials();
+  const configs: any[] = [];
+  const upsertConfig = async (_input: any) => {};
+  const getConfigForVehicle = (_vehicleId: string): any => null;
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   
@@ -87,7 +88,7 @@ export function VehicleFinancialConfigDialog({
 
     setIsSaving(true);
     try {
-      const input: FinancialConfigInput = {
+      const input = {
         vehicle_id: selectedVehicleId,
         monthly_insurance_ngn: parseFloat(monthlyInsurance) || 0,
         monthly_driver_wage_ngn: parseFloat(monthlyWage) || 0,

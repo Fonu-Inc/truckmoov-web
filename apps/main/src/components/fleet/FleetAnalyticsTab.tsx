@@ -325,10 +325,10 @@ export function FleetAnalyticsTab() {
   const summary = summaryQuery.data?.data;
   const fleetStatus = fleetStatusQuery.data?.data;
   const jobPipeline = jobPipelineQuery.data?.data;
-  const fuelLevels = fuelLevelsQuery.data?.data ?? EMPTY_FUEL_LEVELS;
-  const safetyScores = safetyScoresQuery.data?.data ?? EMPTY_DRIVER_SCORES;
-  const driverScores = driverScoresQuery.data?.data ?? EMPTY_DRIVER_SCORES;
-  const events = eventsQuery.data?.data ?? EMPTY_EVENTS;
+  const fuelLevels = Array.isArray(fuelLevelsQuery.data?.data) ? fuelLevelsQuery.data.data : EMPTY_FUEL_LEVELS;
+  const safetyScores = Array.isArray(safetyScoresQuery.data?.data) ? safetyScoresQuery.data.data : EMPTY_DRIVER_SCORES;
+  const driverScores = Array.isArray(driverScoresQuery.data?.data) ? driverScoresQuery.data.data : EMPTY_DRIVER_SCORES;
+  const events = Array.isArray(eventsQuery.data?.data) ? eventsQuery.data.data : EMPTY_EVENTS;
 
   const connected = queries.every((query) => query.isSuccess && !query.isError);
   const isRefreshing = queries.some((query) => query.isFetching);
