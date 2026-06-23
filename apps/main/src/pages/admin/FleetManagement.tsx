@@ -8,6 +8,7 @@ import {
   Search,
   SlidersHorizontal as Filter,
   Upload,
+  Download,
   MoreHorizontal,
   Edit,
   Trash2,
@@ -30,13 +31,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/shadcn/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { cn } from "@/lib/utils";
 import { VehicleFormDialog } from "@/components/fleet/VehicleFormDialog";
@@ -67,10 +61,12 @@ import {
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
 import { Vehicle } from "@/types";
-import { ExportButton } from "@/components/shadcn/export-button";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
+import { toast } from "sonner";
 import {
+  exportVehicles,
   useVehicles,
+  useVehiclesSummary,
   useCreateVehicle,
   useUpdateVehicle,
   useDeleteVehicle,
@@ -101,7 +97,6 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
     setSearchParams(value === "vehicles" ? {} : { tab: value }, { replace: true });
   };
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterValue, setFilterValue] = useState<VehiclesFilterValue>(() => buildDefaultVehiclesFilterValue());
   const activeFilterCount = countActiveVehicleFilters(filterValue);
@@ -112,15 +107,31 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isGeofenceDialogOpen, setIsGeofenceDialogOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
-  const apiStatus =
-    statusFilter === "active" || statusFilter === "inactive"
-      ? (statusFilter as "active" | "inactive")
-      : undefined;
+  const [yearFrom, yearTo] = filterValue.yearRange;
+  const vehicleQueryParams = {
+    query: searchQuery || undefined,
+    status:
+      filterValue.statusEnabled && filterValue.status !== "all"
+        ? (filterValue.status as "active" | "inactive" | "maintenance" | "decommissioned")
+        : undefined,
+    assigned:
+      filterValue.assignedEnabled && filterValue.assigned !== "all"
+        ? filterValue.assigned === "true"
+        : undefined,
+    type:
+      filterValue.typeEnabled && filterValue.type !== "all"
+        ? (filterValue.type as "truck" | "van" | "trailer")
+        : undefined,
+    yearFrom: filterValue.yearEnabled && yearFrom > 0 ? yearFrom : undefined,
+    yearTo: filterValue.yearEnabled && yearTo > 0 ? yearTo : undefined,
+  };
 
   const { data: vehiclesResp, isLoading } = useVehicles({
-    params: { query: searchQuery || undefined, status: apiStatus },
+    params: vehicleQueryParams,
   });
+  const { data: vehiclesSummaryResp } = useVehiclesSummary();
   const { mutateAsync: createVehicleMutation } = useCreateVehicle();
   const { mutateAsync: updateVehicleMutation } = useUpdateVehicle();
   const { mutateAsync: deleteVehicleMutation } = useDeleteVehicle();
@@ -140,23 +151,11 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
     type: (String(v.type) as Vehicle["type"]) || "truck",
     status: (String(v.status) as Vehicle["status"]) || "active",
     capacity: v.capacity ?? 0,
-    currentDriver: v.assignedDriverId ?? undefined,
+    currentDriver: v.assignedDriverName ?? v.assignedDriverId ?? undefined,
+    fuelLevel: v.fuelLevelPercent ?? undefined,
   }));
 
-  // search + active|inactive status go to the API; maintenance/all status and type/year are client-side
-  const filteredVehicles = vehicles.filter((vehicle) => {
-    const matchesStatus =
-      !apiStatus && (statusFilter === "all" || vehicle.status === statusFilter);
-    const matchesType =
-      !filterValue.typeEnabled ||
-      filterValue.type === "all" ||
-      vehicle.type === filterValue.type;
-    const [yMin, yMax] = filterValue.yearRange;
-    const matchesYear =
-      !filterValue.yearEnabled ||
-      ((yMin <= 0 || vehicle.year >= yMin) && (yMax <= 0 || vehicle.year <= yMax));
-    return (apiStatus ? true : matchesStatus) && matchesType && matchesYear;
-  });
+  const filteredVehicles = vehicles;
 
   const handleAddVehicle = async (newVehicle: Partial<Vehicle>) => {
     await createVehicleMutation({
@@ -217,44 +216,74 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
     setIsBulkUploadOpen(false);
   };
 
-  const statusCounts = {
+  const localStatusCounts = {
     all: vehicles.length,
     active: vehicles.filter((v) => v.status === "active").length,
     inactive: vehicles.filter((v) => v.status === "inactive").length,
     maintenance: vehicles.filter((v) => v.status === "maintenance").length,
+    decommissioned: vehicles.filter((v) => v.status === "decommissioned").length,
+  };
+
+  const statusCounts = {
+    all: vehiclesSummaryResp?.data?.total ?? localStatusCounts.all,
+    active: vehiclesSummaryResp?.data?.active ?? localStatusCounts.active,
+    inactive: vehiclesSummaryResp?.data?.inactive ?? localStatusCounts.inactive,
+    maintenance: vehiclesSummaryResp?.data?.maintenance ?? localStatusCounts.maintenance,
+    decommissioned: vehiclesSummaryResp?.data?.decommissioned ?? localStatusCounts.decommissioned,
+  };
+
+  const handleExportVehicles = async () => {
+    setIsExporting(true);
+    try {
+      const data = await exportVehicles();
+      const blob = data instanceof Blob ? data : new Blob([data], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "vehicles.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Vehicles export downloaded");
+    } catch (error) {
+      toast.error("Vehicle export failed");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
     <DashboardLayout title={title ?? "Fleet Management"} subtitle={subtitle ?? "Manage your vehicles, maintenance, and fuel"}>
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         {!vehiclesOnly && (
-          <div className="flex justify-center">
-          <TabsList className="bg-muted/50 flex-wrap">
-            <TabsTrigger value="vehicles" className="gap-2">
+          <div className="flex w-full justify-center">
+          <TabsList className="h-auto min-h-10 bg-muted/50 flex flex-wrap justify-center gap-1 p-1">
+            <TabsTrigger value="vehicles" className="h-9 shrink-0 gap-2">
               <Truck className="h-4 w-4" />
               Vehicles
             </TabsTrigger>
-            <TabsTrigger value="schedules" className="gap-2">
+            <TabsTrigger value="schedules" className="h-9 shrink-0 gap-2">
               <Wrench className="h-4 w-4" />
               Schedules
             </TabsTrigger>
-            <TabsTrigger value="maintenance" className="gap-2">
+            <TabsTrigger value="maintenance" className="h-9 shrink-0 gap-2">
               <Wrench className="h-4 w-4" />
               Maintenance
             </TabsTrigger>
-            <TabsTrigger value="fuel" className="gap-2">
+            <TabsTrigger value="fuel" className="h-9 shrink-0 gap-2">
               <Fuel className="h-4 w-4" />
               Fuel
             </TabsTrigger>
-            <TabsTrigger value="compliance" className="gap-2">
+            <TabsTrigger value="compliance" className="h-9 shrink-0 gap-2">
               <Shield className="h-4 w-4" />
               Compliance
             </TabsTrigger>
-            <TabsTrigger value="financials" className="gap-2">
+            <TabsTrigger value="financials" className="h-9 shrink-0 gap-2">
               <TrendingUp className="h-4 w-4" />
               Financials
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2">
+            <TabsTrigger value="analytics" className="h-9 shrink-0 gap-2">
               <BarChart3 className="h-4 w-4" />
               Analytics
             </TabsTrigger>
@@ -344,22 +373,16 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
                 </CardTitle>
                 <CardDescription className="mt-1">All vehicles in your fleet — registration, assigned driver, and operational status at a glance.</CardDescription>
               </div>
-              <ExportButton
-                filename="vehicles"
-                rows={filteredVehicles}
-                columns={[
-                  { header: "Make", accessor: "make" },
-                  { header: "Model", accessor: "model" },
-                  { header: "Year", accessor: "year" },
-                  { header: "Registration", accessor: "registrationNumber" },
-                  { header: "VIN", accessor: "vin" },
-                  { header: "Type", accessor: "type" },
-                  { header: "Status", accessor: "status" },
-                  { header: "Driver", accessor: (v: any) => v.driver ?? v.driverName ?? "" },
-                  { header: "Fuel Level (%)", accessor: (v: any) => v.fuelLevel ?? "" },
-                  { header: "Capacity", accessor: (v: any) => v.capacity ?? "" },
-                ]}
-              />
+              <Button
+                variant="outline"
+                size="sm"
+                loading={isExporting}
+                onClick={handleExportVehicles}
+                className="bg-transparent border-input"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export Data
+              </Button>
             </div>
             <div className="flex flex-col gap-3 md:flex-row md:items-center">
               <div className="relative flex-1 min-w-0">
@@ -371,17 +394,6 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
                   className="pl-10 bg-card/50 border-border/50"
                 />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[170px] bg-card/50 border-border/50">
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="maintenance">In Maintenance</SelectItem>
-                </SelectContent>
-              </Select>
               <VehiclesFilterDialog
                 open={isFilterOpen}
                 onOpenChange={setIsFilterOpen}
@@ -451,7 +463,9 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
                       <td className="py-4 pr-6 capitalize">{vehicle.type}</td>
                       <td className="py-4 pr-6">{vehicle.year}</td>
                       <td className="py-4 pr-6">
-                        <span className="text-muted-foreground">Unassigned</span>
+                        <span className={cn(!vehicle.currentDriver && "text-muted-foreground")}>
+                          {vehicle.currentDriver ?? "Unassigned"}
+                        </span>
                       </td>
                       <td className="py-4 pr-6">
                         <span

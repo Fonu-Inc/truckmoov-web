@@ -13,6 +13,7 @@ import {
   deleteFuelTransaction,
   deleteVehicle,
   exportFuelTransactions,
+  exportVehicles,
   exportReport,
   getAlertStats,
   getAlerts,
@@ -39,6 +40,7 @@ import {
   getVehicle,
   getVehicleHealth,
   getVehicles,
+  getVehiclesSummary,
   importDevices,
   importDrivers,
   importVehicles,
@@ -83,6 +85,7 @@ import type {
 
 export const FLEET_QUERY_KEY = {
   vehicles: (payload?: VehiclesQuery) => ['fleet', 'vehicles', payload],
+  vehiclesSummary: ['fleet', 'vehiclesSummary'],
   vehicle: (id: string) => ['fleet', 'vehicle', id],
   vehiclesHealth: ['fleet', 'vehiclesHealth'],
   vehicleHealth: (vehicleId: string) => ['fleet', 'vehicleHealth', vehicleId],
@@ -120,6 +123,13 @@ export function getVehiclesQueryOptions(payload?: VehiclesQuery) {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.vehicles(payload),
     queryFn: () => getVehicles(payload),
+  })
+}
+
+export function getVehiclesSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.vehiclesSummary,
+    queryFn: () => getVehiclesSummary(),
   })
 }
 
@@ -306,6 +316,10 @@ export function useVehicles(payload?: VehiclesQuery) {
   return useQuery(getVehiclesQueryOptions(payload))
 }
 
+export function useVehiclesSummary() {
+  return useQuery(getVehiclesSummaryQueryOptions())
+}
+
 export function useVehicle(id: string) {
   return useQuery(getVehicleQueryOptions(id))
 }
@@ -422,6 +436,7 @@ export function useCreateVehicle() {
     mutationFn: createVehicle,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
     },
   })
 }
@@ -431,6 +446,7 @@ export function useUpdateVehicle() {
     mutationFn: updateVehicle,
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(id) })
     },
   })
@@ -441,6 +457,7 @@ export function useDeleteVehicle() {
     mutationFn: deleteVehicle,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
     },
   })
 }
@@ -450,6 +467,7 @@ export function useImportVehicles() {
     mutationFn: importVehicles,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
     },
   })
 }
@@ -459,6 +477,7 @@ export function useUpdateVehicleStatus() {
     mutationFn: updateVehicleStatus,
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(id) })
     },
   })
@@ -469,6 +488,7 @@ export function useAssignDriverToVehicle() {
     mutationFn: assignDriverToVehicle,
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(id) })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.drivers() })
     },
@@ -480,6 +500,7 @@ export function useUnassignDriverFromVehicle() {
     mutationFn: unassignDriverFromVehicle,
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(id) })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.drivers() })
     },
@@ -550,6 +571,7 @@ export function useAssignDevice() {
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices() })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.device(id) })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
     },
   })
 }
@@ -561,6 +583,7 @@ export function useUnassignDevice() {
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices() })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.device(id) })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
     },
   })
 }
@@ -700,4 +723,4 @@ export function useUploadDocument() {
 
 // ─── Re-export plain request functions for imperative use ─────────────────────
 
-export { exportFuelTransactions, exportReport }
+export { exportFuelTransactions, exportReport, exportVehicles }

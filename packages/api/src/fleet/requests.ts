@@ -66,6 +66,7 @@ import type {
   VehicleDriverAssignmentResponse,
   VehicleListResponse,
   VehicleResponse,
+  VehicleSummaryResponse,
   VehiclesQuery,
 } from './types'
 
@@ -90,6 +91,18 @@ export async function reportLocation({ vehicleId, data }: ReportLocationPayload)
 
 export async function getVehicles(payload?: VehiclesQuery) {
   const { data } = await axiosInstance.get<VehicleListResponse>('/fleet/vehicles', { params: payload?.params })
+  return data
+}
+
+export async function getVehiclesSummary() {
+  const { data } = await axiosInstance.get<VehicleSummaryResponse>('/fleet/vehicles/summary')
+  return data
+}
+
+export async function exportVehicles() {
+  const { data } = await axiosInstance.get('/fleet/vehicles/export', {
+    responseType: 'blob',
+  })
   return data
 }
 

@@ -28,8 +28,11 @@ export type ReportLocationPayload = {
 export type VehiclesQuery = {
   params?: {
     query?: string
-    status?: 'active' | 'inactive'
+    status?: 'active' | 'inactive' | 'maintenance' | 'decommissioned'
     assigned?: boolean
+    type?: 'truck' | 'van' | 'trailer'
+    yearFrom?: number
+    yearTo?: number
   }
 }
 
@@ -326,12 +329,22 @@ export type Vehicle = {
   make: string | null
   model: string
   year: number | null
-  type: Record<string, unknown>
+  type: 'truck' | 'van' | 'trailer' | string
   capacity: number | null
   tenantId: string
-  status: Record<string, unknown>
+  status: 'active' | 'inactive' | 'maintenance' | 'decommissioned' | string
   assignedDriverId: string | null
+  assignedDriverName?: string | null
+  fuelLevelPercent?: number | null
   gpsDevice: VehicleGpsDevice | null
+}
+
+export type VehicleSummary = {
+  total: number
+  active: number
+  inactive: number
+  maintenance: number
+  decommissioned: number
 }
 
 export type DriverContactChannels = {
@@ -525,6 +538,7 @@ import type { ServerResponse } from '../lib/types'
 
 export type VehicleResponse = ServerResponse<Vehicle>
 export type VehicleListResponse = ServerResponse<Vehicle[]>
+export type VehicleSummaryResponse = ServerResponse<VehicleSummary>
 export type FleetDriverResponse = ServerResponse<FleetDriver>
 export type FleetDriverListResponse = ServerResponse<FleetDriver[]>
 export type FleetDeviceResponse = ServerResponse<FleetDevice>

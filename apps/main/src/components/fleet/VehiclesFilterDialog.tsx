@@ -18,6 +18,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export interface VehiclesFilterValue {
+  statusEnabled: boolean;
+  status: string;
+  assignedEnabled: boolean;
+  assigned: string;
   typeEnabled: boolean;
   type: string;
   yearEnabled: boolean;
@@ -35,6 +39,10 @@ interface VehiclesFilterDialogProps {
 
 export function buildDefaultVehiclesFilterValue(): VehiclesFilterValue {
   return {
+    statusEnabled: false,
+    status: "all",
+    assignedEnabled: false,
+    assigned: "all",
     typeEnabled: false,
     type: "all",
     yearEnabled: false,
@@ -44,6 +52,8 @@ export function buildDefaultVehiclesFilterValue(): VehiclesFilterValue {
 
 export function countActiveVehicleFilters(value: VehiclesFilterValue): number {
   let n = 0;
+  if (value.statusEnabled && value.status !== "all") n++;
+  if (value.assignedEnabled && value.assigned !== "all") n++;
   if (value.typeEnabled && value.type !== "all") n++;
   if (value.yearEnabled) n++;
   return n;
@@ -96,6 +106,78 @@ export function VehiclesFilterDialog({
           <h4 className="text-xs font-medium text-foreground px-0.5">
             Only show vehicles by...
           </h4>
+
+          {/* Status */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <Checkbox
+                checked={draft.statusEnabled}
+                onCheckedChange={(c) =>
+                  setDraft((d) => ({ ...d, statusEnabled: !!c }))
+                }
+                className="h-3.5 w-3.5"
+              />
+              <span
+                className={cn(
+                  "text-xs font-medium",
+                  !draft.statusEnabled && "text-muted-foreground",
+                )}
+              >
+                Status
+              </span>
+            </label>
+            <Select
+              value={draft.status}
+              onValueChange={(v) => setDraft((d) => ({ ...d, status: v }))}
+              disabled={!draft.statusEnabled}
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="maintenance">In Maintenance</SelectItem>
+                <SelectItem value="decommissioned">Decommissioned</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Assigned */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <Checkbox
+                checked={draft.assignedEnabled}
+                onCheckedChange={(c) =>
+                  setDraft((d) => ({ ...d, assignedEnabled: !!c }))
+                }
+                className="h-3.5 w-3.5"
+              />
+              <span
+                className={cn(
+                  "text-xs font-medium",
+                  !draft.assignedEnabled && "text-muted-foreground",
+                )}
+              >
+                Driver assignment
+              </span>
+            </label>
+            <Select
+              value={draft.assigned}
+              onValueChange={(v) => setDraft((d) => ({ ...d, assigned: v }))}
+              disabled={!draft.assignedEnabled}
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="Select assignment" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All vehicles</SelectItem>
+                <SelectItem value="true">Assigned</SelectItem>
+                <SelectItem value="false">Unassigned</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Type */}
           <div className="space-y-1.5">
