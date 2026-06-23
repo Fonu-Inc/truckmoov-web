@@ -24,6 +24,15 @@ import type {
   ExportReportPayload,
   FleetAlertListResponse,
   FleetAlertResponse,
+  FleetAnalyticsDriverScoresResponse,
+  FleetAnalyticsDriverScoresQuery,
+  FleetAnalyticsEventsResponse,
+  FleetAnalyticsEventsQuery,
+  FleetAnalyticsFleetStatusResponse,
+  FleetAnalyticsFuelLevelsResponse,
+  FleetAnalyticsJobPipelineResponse,
+  FleetAnalyticsPeriodQuery,
+  FleetAnalyticsSummaryResponse,
   FleetDashboardResponse,
   FleetDeviceListResponse,
   FleetDeviceResponse,
@@ -311,6 +320,48 @@ export async function getReportsDashboard() {
 
 export async function getDeliveryMetrics() {
   const { data } = await axiosInstance.get<DeliveryMetricsResponse>('/fleet/reports/delivery-metrics')
+  return data
+}
+
+export async function getFleetAnalyticsSummary(payload?: FleetAnalyticsPeriodQuery) {
+  const { data } = await axiosInstance.get<FleetAnalyticsSummaryResponse>('/fleet/analytics/summary', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getFleetAnalyticsFleetStatus(payload?: FleetAnalyticsPeriodQuery) {
+  const { data } = await axiosInstance.get<FleetAnalyticsFleetStatusResponse>('/fleet/analytics/fleet-status', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getFleetAnalyticsJobPipeline(payload?: FleetAnalyticsPeriodQuery) {
+  const { data } = await axiosInstance.get<FleetAnalyticsJobPipelineResponse>('/fleet/analytics/job-pipeline', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getFleetAnalyticsFuelLevels(payload?: FleetAnalyticsPeriodQuery) {
+  const { data } = await axiosInstance.get<FleetAnalyticsFuelLevelsResponse>('/fleet/analytics/fuel-levels', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getFleetAnalyticsDriverScores(payload?: FleetAnalyticsDriverScoresQuery) {
+  const { data } = await axiosInstance.get<FleetAnalyticsDriverScoresResponse>('/fleet/analytics/driver-scores', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getFleetAnalyticsEvents(payload?: FleetAnalyticsEventsQuery) {
+  const { data } = await axiosInstance.get<FleetAnalyticsEventsResponse>('/fleet/analytics/events', {
+    params: payload?.params,
+  })
   return data
 }
 

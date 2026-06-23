@@ -28,6 +28,12 @@ import {
   getDocuments,
   getDriver,
   getDrivers,
+  getFleetAnalyticsDriverScores,
+  getFleetAnalyticsEvents,
+  getFleetAnalyticsFleetStatus,
+  getFleetAnalyticsFuelLevels,
+  getFleetAnalyticsJobPipeline,
+  getFleetAnalyticsSummary,
   getFuelEfficiency,
   getFuelMetrics,
   getFuelThresholds,
@@ -74,6 +80,9 @@ import type {
   DispatchSearchQuery,
   DocumentsQuery,
   DriversQuery,
+  FleetAnalyticsDriverScoresQuery,
+  FleetAnalyticsEventsQuery,
+  FleetAnalyticsPeriodQuery,
   FuelMetricsQuery,
   FuelQuery,
   JobsQuery,
@@ -102,6 +111,12 @@ export const FLEET_QUERY_KEY = {
   alerts: (payload?: AlertsQuery) => ['fleet', 'alerts', payload],
   reportsDashboard: ['fleet', 'reportsDashboard'],
   deliveryMetrics: ['fleet', 'deliveryMetrics'],
+  analyticsSummary: (payload?: FleetAnalyticsPeriodQuery) => ['fleet', 'analytics', 'summary', payload],
+  analyticsFleetStatus: (payload?: FleetAnalyticsPeriodQuery) => ['fleet', 'analytics', 'fleetStatus', payload],
+  analyticsJobPipeline: (payload?: FleetAnalyticsPeriodQuery) => ['fleet', 'analytics', 'jobPipeline', payload],
+  analyticsFuelLevels: (payload?: FleetAnalyticsPeriodQuery) => ['fleet', 'analytics', 'fuelLevels', payload],
+  analyticsDriverScores: (payload?: FleetAnalyticsDriverScoresQuery) => ['fleet', 'analytics', 'driverScores', payload],
+  analyticsEvents: (payload?: FleetAnalyticsEventsQuery) => ['fleet', 'analytics', 'events', payload],
   fuelTransactions: (payload?: FuelQuery) => ['fleet', 'fuelTransactions', payload],
   fuelMetrics: (payload?: FuelMetricsQuery) => ['fleet', 'fuelMetrics', payload],
   fuelEfficiency: ['fleet', 'fuelEfficiency'],
@@ -246,6 +261,48 @@ export function getDeliveryMetricsQueryOptions() {
   })
 }
 
+export function getFleetAnalyticsSummaryQueryOptions(payload?: FleetAnalyticsPeriodQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.analyticsSummary(payload),
+    queryFn: () => getFleetAnalyticsSummary(payload),
+  })
+}
+
+export function getFleetAnalyticsFleetStatusQueryOptions(payload?: FleetAnalyticsPeriodQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.analyticsFleetStatus(payload),
+    queryFn: () => getFleetAnalyticsFleetStatus(payload),
+  })
+}
+
+export function getFleetAnalyticsJobPipelineQueryOptions(payload?: FleetAnalyticsPeriodQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.analyticsJobPipeline(payload),
+    queryFn: () => getFleetAnalyticsJobPipeline(payload),
+  })
+}
+
+export function getFleetAnalyticsFuelLevelsQueryOptions(payload?: FleetAnalyticsPeriodQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.analyticsFuelLevels(payload),
+    queryFn: () => getFleetAnalyticsFuelLevels(payload),
+  })
+}
+
+export function getFleetAnalyticsDriverScoresQueryOptions(payload?: FleetAnalyticsDriverScoresQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.analyticsDriverScores(payload),
+    queryFn: () => getFleetAnalyticsDriverScores(payload),
+  })
+}
+
+export function getFleetAnalyticsEventsQueryOptions(payload?: FleetAnalyticsEventsQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.analyticsEvents(payload),
+    queryFn: () => getFleetAnalyticsEvents(payload),
+  })
+}
+
 export function getFuelTransactionsQueryOptions(payload?: FuelQuery) {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.fuelTransactions(payload),
@@ -382,6 +439,30 @@ export function useReportsDashboard() {
 
 export function useDeliveryMetrics() {
   return useQuery(getDeliveryMetricsQueryOptions())
+}
+
+export function useFleetAnalyticsSummary(payload?: FleetAnalyticsPeriodQuery) {
+  return useQuery(getFleetAnalyticsSummaryQueryOptions(payload))
+}
+
+export function useFleetAnalyticsFleetStatus(payload?: FleetAnalyticsPeriodQuery) {
+  return useQuery(getFleetAnalyticsFleetStatusQueryOptions(payload))
+}
+
+export function useFleetAnalyticsJobPipeline(payload?: FleetAnalyticsPeriodQuery) {
+  return useQuery(getFleetAnalyticsJobPipelineQueryOptions(payload))
+}
+
+export function useFleetAnalyticsFuelLevels(payload?: FleetAnalyticsPeriodQuery) {
+  return useQuery(getFleetAnalyticsFuelLevelsQueryOptions(payload))
+}
+
+export function useFleetAnalyticsDriverScores(payload?: FleetAnalyticsDriverScoresQuery) {
+  return useQuery(getFleetAnalyticsDriverScoresQueryOptions(payload))
+}
+
+export function useFleetAnalyticsEvents(payload?: FleetAnalyticsEventsQuery) {
+  return useQuery(getFleetAnalyticsEventsQueryOptions(payload))
 }
 
 export function useFuelTransactions(payload?: FuelQuery) {

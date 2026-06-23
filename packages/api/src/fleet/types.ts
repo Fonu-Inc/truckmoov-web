@@ -311,6 +311,31 @@ export type AuditLogQuery = {
   }
 }
 
+// ─── Analytics ────────────────────────────────────────────────────────────────
+
+export type FleetAnalyticsPeriodDays = 7 | 30 | 60 | 90
+
+export type FleetAnalyticsPeriodQuery = {
+  params?: {
+    period_days?: FleetAnalyticsPeriodDays
+  }
+}
+
+export type FleetAnalyticsDriverScoresQuery = {
+  params?: {
+    period_days?: FleetAnalyticsPeriodDays
+    limit?: number
+  }
+}
+
+export type FleetAnalyticsEventsQuery = {
+  params?: {
+    period_days?: FleetAnalyticsPeriodDays
+    limit?: number
+    severity?: 'low' | 'medium' | 'high' | 'critical'
+  }
+}
+
 // ─── Response entity types ────────────────────────────────────────────────────
 
 export type VehicleGpsDevice = {
@@ -532,6 +557,83 @@ export type DeliveryMetrics = {
   generatedAt: string
 }
 
+export type FleetAnalyticsSummary = {
+  vehicles: {
+    total: number
+    active: number
+    inactive: number
+    maintenance: number
+    decommissioned: number
+  }
+  drivers: {
+    total: number
+    active: number
+    inactive: number
+  }
+  jobs: {
+    total: number
+    completed: number
+    inProgress: number
+    pending: number
+  }
+  safety: {
+    totalEvents: number
+    open: number
+    critical: number
+  }
+  periodDays: number
+}
+
+export type FleetAnalyticsFleetStatus = {
+  total: number
+  byStatus: Record<string, number>
+  breakdown: Array<{
+    id: string
+    plateNumber: string
+    status: string
+    type: string
+    assignedDriverId: string | null
+  }>
+}
+
+export type FleetAnalyticsJobPipeline = {
+  total: number
+  byStatus: {
+    pending: number
+    in_progress: number
+    delivered: number
+    [status: string]: number
+  }
+  periodDays: number
+}
+
+export type FleetAnalyticsFuelLevel = {
+  vehicleId: string
+  plateNumber: string
+  fuelLevelPercent: number | null
+  lastUpdated: string | null
+}
+
+export type FleetAnalyticsDriverScore = {
+  driverId: string
+  driverName: string
+  incidents: number
+  harshBraking: number
+  overspeeding: number
+  safetyScore: number
+}
+
+export type FleetAnalyticsEvent = {
+  id: string
+  type: string
+  severity: string
+  status: string
+  vehicleId: string | null
+  jobId: string | null
+  details: Record<string, unknown>
+  triggeredAt: string
+}
+
 import type { ServerResponse } from '../lib/types'
 
 // ─── Response envelopes ───────────────────────────────────────────────────────
@@ -568,3 +670,9 @@ export type FleetDashboardResponse = ServerResponse<FleetDashboard>
 export type DeliveryMetricsResponse = ServerResponse<DeliveryMetrics>
 export type DispatchSearchResponse = ServerResponse<Record<string, unknown>>
 export type FleetJobStatusResponse = ServerResponse<unknown>
+export type FleetAnalyticsSummaryResponse = ServerResponse<FleetAnalyticsSummary>
+export type FleetAnalyticsFleetStatusResponse = ServerResponse<FleetAnalyticsFleetStatus>
+export type FleetAnalyticsJobPipelineResponse = ServerResponse<FleetAnalyticsJobPipeline>
+export type FleetAnalyticsFuelLevelsResponse = ServerResponse<FleetAnalyticsFuelLevel[]>
+export type FleetAnalyticsDriverScoresResponse = ServerResponse<FleetAnalyticsDriverScore[]>
+export type FleetAnalyticsEventsResponse = ServerResponse<FleetAnalyticsEvent[]>
