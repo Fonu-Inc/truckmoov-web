@@ -43,6 +43,9 @@
       ],
       "@truckmoov/api/auth": [
         "../../packages/api/src/auth/index.ts"
+      ],
+      "@truckmoov/api/fleet": [
+        "../../packages/api/src/fleet/index.ts"
       ]
     },
     "skipLibCheck": true,

@@ -283,6 +283,55 @@ export type SetFuelThresholdPayload = {
   }
 }
 
+// Maintenance
+
+export type MaintenanceRecordStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
+export type MaintenanceRecordDisplayStatus = MaintenanceRecordStatus | 'overdue'
+export type MaintenanceRecordPriority = 'low' | 'medium' | 'high' | 'critical'
+
+export type MaintenanceRecordsQuery = {
+  params?: {
+    vehicleId?: string
+    status?: MaintenanceRecordDisplayStatus
+    priority?: MaintenanceRecordPriority
+    maintenanceType?: string
+    search?: string
+  }
+}
+
+export type CreateMaintenanceRecordPayload = {
+  data: {
+    vehicleId: string
+    maintenanceType: string
+    description?: string | null
+    priority: MaintenanceRecordPriority
+    scheduledDate?: string | null
+    technician?: string | null
+    notes?: string | null
+    cost?: number | null
+    currency?: string
+  }
+}
+
+export type UpdateMaintenanceRecordPayload = {
+  id: string
+  data: Partial<CreateMaintenanceRecordPayload['data']> & {
+    status?: MaintenanceRecordStatus
+    completedDate?: string | null
+  }
+}
+
+export type MaintenanceRecordActionPayload = {
+  id: string
+}
+
+export type SendMaintenanceRemindersPayload = {
+  data: {
+    recipientEmail: string
+    daysBefore: number[]
+  }
+}
+
 // ─── Documents ────────────────────────────────────────────────────────────────
 
 export type UploadDocumentQuery = {
@@ -492,6 +541,33 @@ export type FuelThreshold = {
   minKmPerLiter: number
 }
 
+export type MaintenanceRecord = {
+  id: string
+  tenantId: string
+  vehicleId: string
+  maintenanceType: string
+  description: string | null
+  status: MaintenanceRecordStatus
+  priority: MaintenanceRecordPriority
+  scheduledDate: string | null
+  completedDate: string | null
+  cost: number | null
+  currency: string
+  technician: string | null
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type MaintenanceRecordsSummary = {
+  total: number
+  scheduled: number
+  inProgress: number
+  completed: number
+  overdue: number
+  totalCost: number
+}
+
 export type FleetDocument = {
   id: string
   tenantId: string
@@ -656,6 +732,13 @@ export type FuelConsumptionResponse = ServerResponse<FuelConsumptionBucket[]>
 export type FuelEfficiencyResponse = ServerResponse<VehicleEfficiency[]>
 export type FuelThresholdResponse = ServerResponse<FuelThreshold>
 export type FuelThresholdListResponse = ServerResponse<FuelThreshold[]>
+export type MaintenanceRecordResponse = ServerResponse<MaintenanceRecord>
+export type MaintenanceRecordListResponse = ServerResponse<MaintenanceRecord[]>
+export type MaintenanceRecordsSummaryResponse = ServerResponse<MaintenanceRecordsSummary>
+export type MaintenanceStatusResponse = {
+  status: boolean
+  message: string
+}
 export type FleetDocumentResponse = ServerResponse<FleetDocument>
 export type FleetDocumentListResponse = ServerResponse<FleetDocument[]>
 export type DownloadUrlResponse = ServerResponse<FleetDownloadUrl>

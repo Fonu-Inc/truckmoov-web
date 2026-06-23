@@ -10,6 +10,7 @@ import type {
   BulkDeviceImportResponse,
   BulkDriverImportResponse,
   BulkVehicleImportResponse,
+  CreateMaintenanceRecordPayload,
   CreateDevicePayload,
   CreateDriverPayload,
   CreateVehiclePayload,
@@ -55,12 +56,19 @@ import type {
   ImportVehiclesPayload,
   JobsQuery,
   LegacyGpsDevicesQuery,
+  MaintenanceRecordActionPayload,
+  MaintenanceRecordListResponse,
+  MaintenanceRecordResponse,
+  MaintenanceRecordsQuery,
+  MaintenanceRecordsSummaryResponse,
+  MaintenanceStatusResponse,
   NearestVehicleListResponse,
   NearestVehiclesQuery,
   RecordFuelTransactionPayload,
   RegisterGeofencePayload,
   RegisterGpsDevicePayload,
   ReportLocationPayload,
+  SendMaintenanceRemindersPayload,
   SetFuelThresholdPayload,
   UpdateDeviceLifecyclePayload,
   UpdateDevicePayload,
@@ -68,6 +76,7 @@ import type {
   UpdateDriverPayload,
   UpdateDriverStatusPayload,
   UpdateFuelTransactionPayload,
+  UpdateMaintenanceRecordPayload,
   UpdateVehiclePayload,
   UpdateVehicleStatusPayload,
   UploadDocumentQuery,
@@ -418,6 +427,62 @@ export async function exportFuelTransactions() {
     responseType: 'blob',
   })
   return data
+}
+
+// Maintenance
+
+export async function getMaintenanceRecords(payload?: MaintenanceRecordsQuery) {
+  const { data } = await axiosInstance.get<MaintenanceRecordListResponse>('/fleet/maintenance/records', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getMaintenanceRecordsSummary() {
+  const { data } = await axiosInstance.get<MaintenanceRecordsSummaryResponse>('/fleet/maintenance/records/summary')
+  return data
+}
+
+export async function exportMaintenanceRecords() {
+  const { data } = await axiosInstance.get('/fleet/maintenance/records/export', {
+    responseType: 'blob',
+  })
+  return data
+}
+
+export async function createMaintenanceRecord({ data }: CreateMaintenanceRecordPayload) {
+  const { data: res } = await axiosInstance.post<MaintenanceRecordResponse>('/fleet/maintenance/records', data)
+  return res
+}
+
+export async function getMaintenanceRecord({ id }: MaintenanceRecordActionPayload) {
+  const { data } = await axiosInstance.get<MaintenanceRecordResponse>(`/fleet/maintenance/records/${id}`)
+  return data
+}
+
+export async function updateMaintenanceRecord({ id, data }: UpdateMaintenanceRecordPayload) {
+  const { data: res } = await axiosInstance.patch<MaintenanceRecordResponse>(`/fleet/maintenance/records/${id}`, data)
+  return res
+}
+
+export async function deleteMaintenanceRecord({ id }: MaintenanceRecordActionPayload) {
+  const { data } = await axiosInstance.delete<MaintenanceStatusResponse>(`/fleet/maintenance/records/${id}`)
+  return data
+}
+
+export async function startMaintenanceRecord({ id }: MaintenanceRecordActionPayload) {
+  const { data } = await axiosInstance.post<MaintenanceRecordResponse>(`/fleet/maintenance/records/${id}/start`)
+  return data
+}
+
+export async function completeMaintenanceRecord({ id }: MaintenanceRecordActionPayload) {
+  const { data } = await axiosInstance.post<MaintenanceRecordResponse>(`/fleet/maintenance/records/${id}/complete`)
+  return data
+}
+
+export async function sendMaintenanceReminders({ data }: SendMaintenanceRemindersPayload) {
+  const { data: res } = await axiosInstance.post<MaintenanceStatusResponse>('/fleet/maintenance/reminders/send', data)
+  return res
 }
 
 // ─── Documents ────────────────────────────────────────────────────────────────
