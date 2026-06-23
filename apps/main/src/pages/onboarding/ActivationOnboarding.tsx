@@ -301,13 +301,21 @@ export default function ActivationOnboarding() {
     goToQuickAccess();
   };
 
+  const handleSaveFeatures = async () => {
+    try {
+      await updateFeaturesMutation.mutateAsync({ data: features });
+      toast.success("Features saved.");
+    } catch {
+      toast.error("Failed to save features. Please try again.");
+    }
+  };
+
   const handleContinue = async () => {
     if (deviceOver || simOver) {
       toast.error("Reduce your selection to fit within your plan limits before continuing.");
       return;
     }
     try {
-      await updateFeaturesMutation.mutateAsync({ data: features });
       await completeOnboardingMutation.mutateAsync();
       toast.success("System activated — almost there.");
       goToQuickAccess();
@@ -560,10 +568,22 @@ export default function ActivationOnboarding() {
         {/* ===================== FEATURES ===================== */}
         <Card>
           <CardHeader>
-            <CardTitle>Enable Features</CardTitle>
-            <CardDescription>
-              Available features depend on your subscription plan. Toggle on the ones you want active from day one.
-            </CardDescription>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <CardTitle>Enable Features</CardTitle>
+                <CardDescription>
+                  Available features depend on your subscription plan. Toggle on the ones you want active from day one.
+                </CardDescription>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleSaveFeatures}
+                loading={updateFeaturesMutation.isPending}
+                disabled={completeOnboardingMutation.isPending}
+              >
+                Save Features
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -588,6 +608,7 @@ export default function ActivationOnboarding() {
                     onCheckedChange={(checked) =>
                       setFeatures((prev) => ({ ...prev, [feature.key]: checked }))
                     }
+                    disabled={updateFeaturesMutation.isPending}
                   />
                 </div>
               ))}
