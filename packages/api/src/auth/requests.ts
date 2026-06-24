@@ -11,6 +11,19 @@ import type {
   ProvisionSimsPayload,
   CreateSimRequestPayload,
   CreateSimPayload,
+  SimsQuery,
+  SimsListResponse,
+  SimResponse,
+  GetSimPayload,
+  UpdateSimPayload,
+  DeleteSimPayload,
+  SuspendSimPayload,
+  ReactivateSimPayload,
+  UnassignSimDevicePayload,
+  SimCarriersResponse,
+  SimRequestsListResponse,
+  SimRequestResponse,
+  GetSimRequestPayload,
   DataBundleAllocationsListResponse,
   DataBundleAllocationsQuery,
   DataBundleAnalyticsRangeQuery,
@@ -764,6 +777,68 @@ export async function createSim({ data }: CreateSimPayload) {
 
 export async function getSimDataBundles({ params }: SimDataBundlesQuery) {
   const { data } = await axiosInstance.get<StandardApiResponse>('/auth/sims/data-bundles', { params })
+  return data
+}
+
+// ─── Tenant — SIMs ────────────────────────────────────────────────────────────
+
+export async function getSims(payload?: SimsQuery) {
+  const { data } = await axiosInstance.get<SimsListResponse>('/auth/sims', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getSim({ id }: GetSimPayload) {
+  const { data } = await axiosInstance.get<SimResponse>(`/auth/sims/${id}`)
+  return data
+}
+
+export async function updateSim({ id, data: body }: UpdateSimPayload) {
+  const { data } = await axiosInstance.patch<SimResponse>(`/auth/sims/${id}`, body)
+  return data
+}
+
+export async function deleteSim({ id }: DeleteSimPayload) {
+  const { data } = await axiosInstance.delete<StandardApiResponse>(`/auth/sims/${id}`)
+  return data
+}
+
+export async function suspendSim({ id, data: body }: SuspendSimPayload) {
+  const { data } = await axiosInstance.post<StandardApiResponse>(`/auth/sims/${id}/suspend`, body)
+  return data
+}
+
+export async function reactivateSim({ id }: ReactivateSimPayload) {
+  const { data } = await axiosInstance.post<StandardApiResponse>(`/auth/sims/${id}/reactivate`)
+  return data
+}
+
+export async function unassignSimDevice({ id }: UnassignSimDevicePayload) {
+  const { data } = await axiosInstance.delete<StandardApiResponse>(`/auth/sims/${id}/device`)
+  return data
+}
+
+export async function exportSims(payload?: SimsQuery) {
+  const { data } = await axiosInstance.get<Blob>('/auth/sims/export', {
+    responseType: 'blob',
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getSimCarriers() {
+  const { data } = await axiosInstance.get<SimCarriersResponse>('/auth/sims/carriers')
+  return data
+}
+
+export async function getSimRequests() {
+  const { data } = await axiosInstance.get<SimRequestsListResponse>('/auth/sims/requests')
+  return data
+}
+
+export async function getSimRequest({ id }: GetSimRequestPayload) {
+  const { data } = await axiosInstance.get<SimRequestResponse>(`/auth/sims/requests/${id}`)
   return data
 }
 

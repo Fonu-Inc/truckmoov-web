@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useDeviceTelemetry } from "@/hooks/useDeviceTelemetry";
 import { IoTDevice, SIMCard } from "@/types";
@@ -26,7 +27,19 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
-import { useCreateSim, useCreateSimRequest, useUploadSimRequestDeviceMapping } from "@truckmoov/api/auth";
+import {
+  useCreateSim,
+  useCreateSimRequest,
+  useUploadSimRequestDeviceMapping,
+  useUpdateSim,
+  useDeleteSim,
+  useSuspendSim,
+  useReactivateSim,
+  useUnassignSimDevice,
+  getSimsQueryOptions,
+  getSimCarriersQueryOptions,
+  exportSims,
+} from "@truckmoov/api/auth";
 import type { SIMRequestSubmitData } from "@/components/sims/SIMRequestFormDialog";
 
 export default function SIMManagement() {
@@ -41,18 +54,126 @@ export default function SIMManagement() {
   const kycStatus = { status: "pending", isLoading: false };
 
   const tenantId = user?.tenantId || "f7f5af88-fd76-4439-aae3-0461be52f63f";
-  const sims: SIMCard[] = [];
-  const loading = false;
-  const refetch = async () => {};
-  const updateSIMStatus = async (_id: string, _status: string) => {};
-  const assignSIMToDevice = async (_simId: string, _deviceId: string) => {};
-  const unassignSIM = async (_id: string) => {};
-  const deleteSIM = async (_id: string) => {};
   const { devices } = useDeviceTelemetry(tenantId);
 
+  const PAGE_SIZE = 20;
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [operatorFilters, setOperatorFilters] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+
+  // Debounce search (300ms — matches the wired fleet tabs)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  // Reset to page 1 whenever a filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter, operatorFilters]);
+
+  const simsParams = useMemo(
+    () => ({
+      search: debouncedSearch || undefined,
+      status: statusFilter !== "all" ? statusFilter : undefined,
+      operators: operatorFilters.length ? operatorFilters : undefined,
+      page,
+      limit: PAGE_SIZE,
+    }),
+    [debouncedSearch, statusFilter, operatorFilters, page],
+  );
+
+  const simsQuery = useQuery(getSimsQueryOptions({ params: simsParams }));
+  const carriersQuery = useQuery(getSimCarriersQueryOptions());
+
+  const apiSims = simsQuery.data?.data.items ?? [];
+  const total = simsQuery.data?.data.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const loading = simsQuery.isLoading;
+
+  const sims: SIMCard[] = apiSims.map((s) => ({
+    id: s.id,
+    iccid: s.iccid,
+    imsi: s.imsi,
+    mobileNumber: s.mobileNumber,
+    networkOperator: s.operator,
+    status: s.status as SIMCard["status"],
+    dataUsage: s.dataUsedGb ?? 0,
+    dataLimit: s.dataLimitGb ?? 0,
+    deviceId: s.assignedDevice?.id,
+  }));
+
+  const operators = (carriersQuery.data?.data.carriers ?? []).map((c) => c.displayName);
+
+  const errMsg = (error: unknown, fallback: string) =>
+    error && typeof error === "object" && "message" in error
+      ? String((error as { message: unknown }).message)
+      : fallback;
+
+  const refetch = () => {
+    void simsQuery.refetch();
+  };
+
+  const suspendSimMutation = useSuspendSim();
+  const reactivateSimMutation = useReactivateSim();
+  const deleteSimMutation = useDeleteSim();
+  const unassignSimMutation = useUnassignSimDevice();
+  const updateSimMutation = useUpdateSim();
+
+  const handleSuspend = async (id: string) => {
+    try {
+      await suspendSimMutation.mutateAsync({ id, data: { reason: "Suspended by tenant admin" } });
+      toast.success("SIM suspended");
+    } catch (error) {
+      toast.error(errMsg(error, "Unable to suspend the SIM"));
+    }
+  };
+
+  const handleReactivate = async (id: string) => {
+    try {
+      await reactivateSimMutation.mutateAsync({ id });
+      toast.success("SIM activated");
+    } catch (error) {
+      toast.error(errMsg(error, "Unable to activate the SIM"));
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteSimMutation.mutateAsync({ id });
+      toast.success("SIM deleted");
+    } catch (error) {
+      toast.error(errMsg(error, "Unable to delete the SIM"));
+    }
+  };
+
+  const handleUnassign = async (id: string) => {
+    try {
+      await unassignSimMutation.mutateAsync({ id });
+      toast.success("Device unassigned");
+    } catch (error) {
+      toast.error(errMsg(error, "Unable to unassign the device"));
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const blob = await exportSims({ params: simsParams });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "sim-cards.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error(errMsg(error, "Failed to export SIM cards"));
+    }
+  };
+
+  // ponytail: device assignment has no tenant endpoint yet — no-op until the API ships it.
+  const assignSIMToDevice = async (_simId: string, _deviceId: string) => {};
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -63,44 +184,18 @@ export default function SIMManagement() {
 
   const kycPending = kycStatus.status === "pending" || kycStatus.status === "under_review";
 
-  const filteredSIMs = sims.filter((sim) => {
-    const matchesSearch =
-      sim.iccid.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sim.mobileNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sim.networkOperator.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || sim.status === statusFilter;
-    const matchesOperator = operatorFilters.length === 0 || operatorFilters.includes(sim.networkOperator);
-    return matchesSearch && matchesStatus && matchesOperator;
-  });
-
-  const operators = [...new Set(sims.map((s) => s.networkOperator))];
-
-  const statusCounts = {
-    all: sims.length,
-    registered: sims.filter((s) => s.status === "registered").length,
-    active: sims.filter((s) => s.status === "active").length,
-    assigned: sims.filter((s) => s.status === "assigned").length,
-    suspended: sims.filter((s) => s.status === "suspended").length,
-    deactivated: sims.filter((s) => s.status === "deactivated").length,
-  };
-
-  const totalDataUsage = sims.reduce((sum, s) => sum + s.dataUsage, 0);
-  const totalDataLimit = sims.reduce((sum, s) => sum + s.dataLimit, 0);
-
+  // Device info comes from the SIM list response's inline `assignedDevice`.
   const getDeviceInfo = (deviceId?: string): IoTDevice | null => {
     if (!deviceId) return null;
-    const device = devices.find((d) => d.id === deviceId);
-    if (!device) return null;
+    const ad = apiSims.find((s) => s.assignedDevice?.id === deviceId)?.assignedDevice;
+    if (!ad) return null;
     return {
-      id: device.id,
-      imei: device.imei,
-      manufacturer: device.manufacturer,
-      model: device.model || "",
-      status: device.status as IoTDevice["status"],
+      id: ad.id,
+      imei: ad.imei,
+      manufacturer: ad.name,
+      model: ad.type || "",
+      status: "active",
       firmwareVersion: "",
-      lastSeen: device.last_seen ? new Date(device.last_seen) : undefined,
-      signalStrength: device.signal_strength || undefined,
-      batteryLevel: device.battery_level || undefined,
     };
   };
 
@@ -171,7 +266,7 @@ export default function SIMManagement() {
           imsi: data.imsi,
           mobileNumber: data.mobileNumber,
           operator: data.networkOperator,
-          dataLimitMb: data.dataLimit * 1024,
+          dataLimitGb: data.dataLimit,
           simType: data.simType,
           monthlyRentalNaira: data.monthlyRentalNgn,
         },
@@ -184,6 +279,29 @@ export default function SIMManagement() {
         ? String(error.message)
         : "Unable to register the SIM card";
       toast.error(message);
+    }
+  };
+
+  const editSim = async (data: SIMFormData) => {
+    if (!selectedSIM) return;
+    try {
+      await updateSimMutation.mutateAsync({
+        id: selectedSIM.id,
+        data: {
+          iccid: data.iccid,
+          imsi: data.imsi,
+          mobileNumber: data.mobileNumber,
+          operator: data.networkOperator,
+          dataLimitGb: data.dataLimit, // ponytail: PATCH uses Gb; create sends Mb — see plan flag
+          simType: data.simType,
+          monthlyRentalNaira: data.monthlyRentalNgn,
+        },
+      });
+      toast.success("SIM card updated successfully");
+      setIsEditDialogOpen(false);
+      setSelectedSIM(null);
+    } catch (error) {
+      toast.error(errMsg(error, "Unable to update the SIM card"));
     }
   };
 
@@ -212,7 +330,14 @@ export default function SIMManagement() {
         </div>
 
         <SIMInventoryTable
-          sims={filteredSIMs}
+          sims={sims}
+          total={total}
+          loading={loading}
+          isFetching={simsQuery.isFetching}
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onExport={handleExport}
           getDeviceInfo={getDeviceInfo}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -223,12 +348,12 @@ export default function SIMManagement() {
           operators={operators}
           onViewDetails={(sim) => { setSelectedSIM(sim); setIsDetailsOpen(true); }}
           onEdit={(sim) => { setSelectedSIM(sim); setIsEditDialogOpen(true); }}
-          onActivate={(id) => updateSIMStatus(id, "active")}
-          onSuspend={(id) => updateSIMStatus(id, "suspended")}
-          onResume={(id) => updateSIMStatus(id, "active")}
+          onActivate={handleReactivate}
+          onSuspend={handleSuspend}
+          onResume={handleReactivate}
           onAssign={(sim) => { setSelectedSIM(sim); setIsAssignDialogOpen(true); }}
-          onUnassign={(id) => unassignSIM(id)}
-          onDelete={(id) => deleteSIM(id)}
+          onUnassign={handleUnassign}
+          onDelete={handleDelete}
         />
 
         <SIMRequestsTracker />
@@ -256,9 +381,10 @@ export default function SIMManagement() {
       <SIMFormDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
-        onSubmit={() => { refetch(); toast.success("SIM card updated successfully"); setIsEditDialogOpen(false); setSelectedSIM(null); }}
+        onSubmit={editSim}
         sim={selectedSIM}
         title="Edit SIM Card"
+        isSubmitting={updateSimMutation.isPending}
       />
 
       <SIMDetailsSheet

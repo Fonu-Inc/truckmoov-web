@@ -10,7 +10,6 @@ type SIMCardExtended = {
   deviceId?: string;
   dataUsage: number;
   dataLimit: number;
-  [key: string]: any;
 };
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
@@ -22,7 +21,14 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
-import { ExportButton } from "@/components/shadcn/export-button";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@truckmoov/reusables/components/shadcn/pagination";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +50,8 @@ import {
   Power,
   Search,
   SlidersHorizontal,
+  Download,
+  Loader2,
 } from "lucide-react";
 
 interface DeviceInfo {
@@ -53,6 +61,13 @@ interface DeviceInfo {
 
 interface Props {
   sims: SIMCardExtended[];
+  total: number;
+  loading?: boolean;
+  isFetching?: boolean;
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  onExport: () => void;
   getDeviceInfo: (deviceId?: string) => DeviceInfo | null;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -73,6 +88,13 @@ interface Props {
 
 export function SIMInventoryTable({
   sims,
+  total,
+  loading,
+  isFetching,
+  page,
+  totalPages,
+  onPageChange,
+  onExport,
   getDeviceInfo,
   searchQuery,
   onSearchChange,
@@ -90,6 +112,12 @@ export function SIMInventoryTable({
   onUnassign,
   onDelete,
 }: Props) {
+  // Windowed page numbers (current ±2) — bounded for any page count.
+  const pageNumbers: number[] = [];
+  for (let p = Math.max(1, page - 2); p <= Math.min(totalPages, page + 2); p++) {
+    pageNumbers.push(p);
+  }
+
   return (
     <Card>
       <CardHeader className="space-y-4">
@@ -97,23 +125,14 @@ export function SIMInventoryTable({
           <div>
             <CardTitle className="flex items-center gap-2">
               <Wifi className="h-5 w-5 text-primary" />
-              SIM Cards ({sims.length})
+              SIM Cards ({total})
             </CardTitle>
             <CardDescription className="mt-1">All IoT SIMs in your inventory — track status, carrier, data usage, and assigned device at a glance.</CardDescription>
           </div>
-          <ExportButton
-            filename="sim-cards"
-            rows={sims}
-            columns={[
-              { header: "ICCID", accessor: "iccid" },
-              { header: "Mobile Number", accessor: "mobileNumber" },
-              { header: "Operator", accessor: "networkOperator" },
-              { header: "Status", accessor: "status" },
-              { header: "Device IMEI", accessor: (s: any) => getDeviceInfo(s.deviceId)?.imei ?? "" },
-              { header: "Data Used (GB)", accessor: (s: any) => s.dataUsage },
-              { header: "Data Limit (GB)", accessor: (s: any) => s.dataLimit },
-            ]}
-          />
+          <Button variant="outline" onClick={onExport}>
+            <Download className="mr-2 h-4 w-4" />
+            Export Data
+          </Button>
         </div>
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <div className="relative flex-1 min-w-0">
@@ -180,7 +199,12 @@ export function SIMInventoryTable({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
+          {isFetching && !loading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-background/50">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          )}
           <table className="w-full">
             <thead>
               <tr className="border-b border-border text-left text-sm text-muted-foreground">
@@ -329,7 +353,13 @@ export function SIMInventoryTable({
             </tbody>
           </table>
 
-          {sims.length === 0 && (
+          {loading && sims.length === 0 && (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          )}
+
+          {!loading && sims.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Wifi className="h-12 w-12 mb-4 opacity-30" />
               <p>No SIM cards found</p>
@@ -337,6 +367,54 @@ export function SIMInventoryTable({
             </div>
           )}
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Page {page} of {totalPages} · {total} total
+            </p>
+            <Pagination className="mx-0 w-auto justify-end">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    aria-disabled={page <= 1}
+                    className={cn(page <= 1 && "pointer-events-none opacity-50")}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (page > 1) onPageChange(page - 1);
+                    }}
+                  />
+                </PaginationItem>
+                {pageNumbers.map((p) => (
+                  <PaginationItem key={p}>
+                    <PaginationLink
+                      href="#"
+                      isActive={p === page}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onPageChange(p);
+                      }}
+                    >
+                      {p}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    aria-disabled={page >= totalPages}
+                    className={cn(page >= totalPages && "pointer-events-none opacity-50")}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (page < totalPages) onPageChange(page + 1);
+                    }}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

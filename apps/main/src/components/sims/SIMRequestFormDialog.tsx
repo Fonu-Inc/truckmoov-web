@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getSimDataBundlesQueryOptions } from "@truckmoov/api/auth";
+import { getSimDataBundlesQueryOptions, getSimCarriersQueryOptions } from "@truckmoov/api/auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -14,20 +14,19 @@ import { Switch } from "@/components/shadcn/switch";
 import { Loader2, Wifi, HardDrive } from "lucide-react";
 import { DeviceMappingUpload, DeviceMappingRow } from "./DeviceMappingUpload";
 
-// useBundleCatalog / formatBundleSize removed (hook deleted)
-type BundleCatalogItem = {
+// Tenant data-bundle plan (GET /auth/sims/data-bundles → data.items[])
+type BundleItem = {
   id: string;
   code: string;
   name: string;
   carrier: string;
-  data_mb: number;
-  billing_cycle: string;
-  is_active: boolean;
-  [key: string]: unknown;
+  dataAmountGb: number;
+  validityDays: number;
+  billingCycle: string;
+  price: number;
+  currency: string;
+  active: boolean;
 };
-function useBundleCatalog() {
-  return { data: [] as BundleCatalogItem[] };
-}
 
 const simRequestSchema = z.object({
   numberOfSims: z.coerce.number().min(1, "At least 1 SIM required").max(100, "Maximum 100 SIMs per request"),
@@ -56,14 +55,7 @@ interface SIMRequestFormDialogProps {
   isSubmitting?: boolean;
 }
 
-const operators = [
-  { value: "MTN", label: "MTN" },
-  { value: "AIRTEL", label: "AIRTEL" },
-  { value: "GLO", label: "GLO" },
-  { value: "FONO", label: "FONO" },
-];
-
-export function SIMRequestFormDialog({ 
+export function SIMRequestFormDialog({
   open, 
   onOpenChange, 
   onSubmit, 
@@ -76,10 +68,10 @@ export function SIMRequestFormDialog({
   const form = useForm<SIMRequestFormData>({
     resolver: zodResolver(simRequestSchema),
     defaultValues: { 
-      numberOfSims: 1, 
+      numberOfSims: 1,
       bundleCode: "",
       planCycle: "monthly",
-      preferredOperator: "MTN", 
+      preferredOperator: "",
       useCase: "",
       notes: "",
       deviceMappingEnabled: false,
@@ -87,10 +79,24 @@ export function SIMRequestFormDialog({
   });
 
   const deviceMappingEnabled = form.watch("deviceMappingEnabled");
-  const carrier = form.watch("preferredOperator");
+  const carrier = form.watch("preferredOperator"); // carrier id
   const planCycle = form.watch("planCycle");
 
-  useQuery({
+  const carriersQuery = useQuery({
+    ...getSimCarriersQueryOptions(),
+    enabled: open,
+  });
+  const carriers = carriersQuery.data?.data.carriers ?? [];
+  const firstCarrierId = carriers[0]?.id;
+
+  // Auto-select the first carrier once loaded so the data-bundle query fires eagerly.
+  useEffect(() => {
+    if (open && firstCarrierId && !form.getValues("preferredOperator")) {
+      form.setValue("preferredOperator", firstCarrierId);
+    }
+  }, [open, firstCarrierId, form]);
+
+  const bundlesQuery = useQuery({
     ...getSimDataBundlesQueryOptions({
       params: {
         carrierId: carrier,
@@ -99,11 +105,8 @@ export function SIMRequestFormDialog({
     }),
     enabled: open && Boolean(carrier && planCycle),
   });
-
-  const { data: bundleCatalog = [] } = useBundleCatalog();
-  const availableBundles = bundleCatalog.filter(
-    (b) => b.is_active && b.carrier?.toUpperCase() === carrier?.toUpperCase() && b.billing_cycle === planCycle
-  );
+  const bundlesData = bundlesQuery.data?.data as { items?: BundleItem[] } | undefined;
+  const availableBundles = bundlesData?.items ?? [];
 
   const handleDeviceDataParsed = (data: DeviceMappingRow[], fileName: string, file: File) => {
     setDeviceMappingData(data);
@@ -122,11 +125,13 @@ export function SIMRequestFormDialog({
   };
 
   const handleSubmit = (data: SIMRequestFormData) => {
-    const bundle = availableBundles.find((b) => b.code === data.bundleCode);
-    const dataLimitGb = bundle ? bundle.data_mb / 1024 : 0;
+    // bundleCode holds the bundle id; resolve carrier id → name for the request payload.
+    const bundle = availableBundles.find((b) => b.id === data.bundleCode);
+    const carrierName = carriers.find((c) => c.id === data.preferredOperator)?.name ?? data.preferredOperator;
     const finalData: SIMRequestSubmitData = {
       ...data,
-      dataLimitGb,
+      preferredOperator: carrierName,
+      dataLimitGb: bundle?.dataAmountGb ?? 0,
     };
 
     if (data.deviceMappingEnabled && deviceMappingData.length > 0) {
@@ -194,16 +199,28 @@ export function SIMRequestFormDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Carrier *</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={carriers.length === 0}
+                  >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select carrier" />
+                        <SelectValue
+                          placeholder={
+                            carriersQuery.isLoading
+                              ? "Loading carriers..."
+                              : carriers.length === 0
+                              ? "No carriers available"
+                              : "Select carrier"
+                          }
+                        />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="bg-popover">
-                      {operators.map((op) => (
-                        <SelectItem key={op.value} value={op.value}>
-                          {op.label}
+                      {carriers.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.displayName}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -259,7 +276,7 @@ export function SIMRequestFormDialog({
                     </FormControl>
                     <SelectContent className="bg-popover">
                       {availableBundles.map((b) => (
-                        <SelectItem key={b.id} value={b.code}>
+                        <SelectItem key={b.id} value={b.id}>
                           {b.name}
                         </SelectItem>
                       ))}

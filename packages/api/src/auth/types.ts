@@ -1403,7 +1403,7 @@ export type CreateSimPayload = {
     imsi: string
     mobileNumber: string
     operator: string
-    dataLimitMb: number
+    dataLimitGb: number
     simType: string
     monthlyRentalNaira: number
   }
@@ -1419,6 +1419,124 @@ export type SimDataBundlesQuery = {
 export type SimRequestDeviceMappingUploadResponse = ServerResponse<{
   fileId: string
 }>
+
+// ─── Tenant — SIMs ────────────────────────────────────────────────────────────
+
+export type SimsQuery = {
+  params?: {
+    search?: string
+    status?: string
+    operators?: string[]
+    page?: number
+    limit?: number
+  }
+}
+
+export type SimAssignedDevice = {
+  id: string
+  name: string
+  type: string
+  imei: string
+  vehicleId: string
+}
+
+export type SimItem = {
+  id: string
+  iccid: string
+  imsi: string
+  mobileNumber: string
+  operator: string
+  status: string
+  simType: string
+  dataLimitGb: number | null
+  dataUsedGb: number | null
+  monthlyRentalNaira: number | null
+  assignedDevice: SimAssignedDevice | null
+  notes?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export type SimsList = {
+  items: SimItem[]
+  total: number
+  page: number
+  limit: number
+}
+
+export type SimsListResponse = ServerResponse<SimsList>
+export type SimResponse = ServerResponse<SimItem>
+
+export type GetSimPayload = { id: string }
+export type DeleteSimPayload = { id: string }
+export type ReactivateSimPayload = { id: string }
+export type UnassignSimDevicePayload = { id: string }
+
+export type UpdateSimPayload = {
+  id: string
+  data: {
+    iccid?: string
+    imsi?: string
+    mobileNumber?: string
+    operator?: string
+    dataLimitGb?: number
+    simType?: string
+    monthlyRentalNaira?: number
+    notes?: string
+  }
+}
+
+export type SuspendSimPayload = {
+  id: string
+  data: {
+    reason: string
+  }
+}
+
+export type SimCarrier = {
+  id: string
+  name: string
+  displayName: string
+  active: boolean
+}
+
+export type SimCarriersResponse = ServerResponse<{ carriers: SimCarrier[] }>
+
+export type SimRequestTimelineEntry = {
+  label: string
+  at: string
+  by: string
+}
+
+export type SimRequestDataBundlePlan = {
+  id: string
+  name: string
+  dataLimitGb: number
+}
+
+export type SimRequestItem = {
+  id: string
+  quantity: number
+  organizationName: string
+  requestingEmail: string
+  carrier: string
+  planType: string
+  dataBundlePlan: SimRequestDataBundlePlan
+  useCase: string
+  status: string
+  createdAt: string
+  timeline: SimRequestTimelineEntry[]
+  notes?: string
+}
+
+export type SimRequestsList = {
+  items: SimRequestItem[]
+  total: number
+}
+
+export type SimRequestsListResponse = ServerResponse<SimRequestsList>
+export type SimRequestResponse = ServerResponse<SimRequestItem>
+export type GetSimRequestPayload = { id: string }
 
 export type UpdateOnboardingFeaturesPayload = {
   data: {

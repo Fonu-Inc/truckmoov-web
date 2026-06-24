@@ -128,6 +128,17 @@ import {
   uploadSimRequestDeviceMapping,
   createSimRequest,
   createSim,
+  getSims,
+  getSim,
+  updateSim,
+  deleteSim,
+  suspendSim,
+  reactivateSim,
+  unassignSimDevice,
+  exportSims,
+  getSimCarriers,
+  getSimRequests,
+  getSimRequest,
   getDataBundleAllocations,
   getDataBundleCarrierDistribution,
   getDataBundleSpendBreakdown,
@@ -164,6 +175,14 @@ import type {
   DataBundleRatesQuery,
   DataBundleTransactionsQuery,
   SimDataBundlesQuery,
+  SimsQuery,
+  GetSimPayload,
+  UpdateSimPayload,
+  DeleteSimPayload,
+  SuspendSimPayload,
+  ReactivateSimPayload,
+  UnassignSimDevicePayload,
+  GetSimRequestPayload,
 } from './types'
 
 export type {
@@ -188,6 +207,21 @@ export type {
   ProvisionSimsPayload,
   CreateSimRequestPayload,
   CreateSimPayload,
+  SimsQuery,
+  SimItem,
+  SimAssignedDevice,
+  SimsList,
+  SimsListResponse,
+  SimResponse,
+  UpdateSimPayload,
+  SuspendSimPayload,
+  SimCarrier,
+  SimCarriersResponse,
+  SimRequestItem,
+  SimRequestTimelineEntry,
+  SimRequestDataBundlePlan,
+  SimRequestsList,
+  SimRequestsListResponse,
   DataBundleAllocation,
   DataBundleAllocationsQuery,
   DataBundleAnalyticsRangeQuery,
@@ -361,6 +395,11 @@ export const AUTH_QUERY_KEY = {
   onboardingExchangeRate: ['onboardingExchangeRate'],
   onboardingSubscriptionCaps: ['onboardingSubscriptionCaps'],
   simDataBundles: (payload: SimDataBundlesQuery) => ['simDataBundles', payload],
+  sims: (payload?: SimsQuery) => payload ? ['sims', payload] : ['sims'],
+  sim: (id: string) => ['sim', id],
+  simCarriers: ['simCarriers'],
+  simRequests: ['simRequests'],
+  simRequest: (id: string) => ['simRequest', id],
   dataBundleAllocations: (payload?: DataBundleAllocationsQuery) => ['dataBundleAllocations', payload],
   dataBundleTransactions: (payload?: DataBundleTransactionsQuery) => ['dataBundleTransactions', payload],
   dataBundleSpendTrend: (payload?: DataBundleAnalyticsRangeQuery) => ['dataBundleSpendTrend', payload],
@@ -1113,7 +1152,12 @@ export function useDownloadSimImportTemplate() {
 }
 
 export function useImportSims() {
-  return useMutation({ mutationFn: importSims })
+  return useMutation({
+    mutationFn: importSims,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.sims() })
+    },
+  })
 }
 
 export function useDownloadSimRequestDeviceMappingTemplate() {
@@ -1125,11 +1169,21 @@ export function useUploadSimRequestDeviceMapping() {
 }
 
 export function useCreateSimRequest() {
-  return useMutation({ mutationFn: createSimRequest })
+  return useMutation({
+    mutationFn: createSimRequest,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.simRequests })
+    },
+  })
 }
 
 export function useCreateSim() {
-  return useMutation({ mutationFn: createSim })
+  return useMutation({
+    mutationFn: createSim,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.sims() })
+    },
+  })
 }
 
 export function getSimDataBundlesQueryOptions(payload: SimDataBundlesQuery) {
@@ -1138,6 +1192,85 @@ export function getSimDataBundlesQueryOptions(payload: SimDataBundlesQuery) {
     queryFn: () => getSimDataBundles(payload),
   })
 }
+
+// ─── Tenant — SIMs ────────────────────────────────────────────────────────────
+
+export function getSimsQueryOptions(payload?: SimsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.sims(payload),
+    queryFn: () => getSims(payload),
+  })
+}
+
+export function getSimQueryOptions({ id }: GetSimPayload) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.sim(id),
+    queryFn: () => getSim({ id }),
+  })
+}
+
+export function getSimCarriersQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.simCarriers,
+    queryFn: getSimCarriers,
+  })
+}
+
+export function getSimRequestsQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.simRequests,
+    queryFn: getSimRequests,
+  })
+}
+
+export function getSimRequestQueryOptions({ id }: GetSimRequestPayload) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.simRequest(id),
+    queryFn: () => getSimRequest({ id }),
+  })
+}
+
+function invalidateSims(id?: string) {
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.sims() })
+  if (id) queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.sim(id) })
+}
+
+export function useUpdateSim() {
+  return useMutation({
+    mutationFn: updateSim,
+    onSuccess: (_, { id }) => invalidateSims(id),
+  })
+}
+
+export function useDeleteSim() {
+  return useMutation({
+    mutationFn: deleteSim,
+    onSuccess: () => invalidateSims(),
+  })
+}
+
+export function useSuspendSim() {
+  return useMutation({
+    mutationFn: suspendSim,
+    onSuccess: (_, { id }) => invalidateSims(id),
+  })
+}
+
+export function useReactivateSim() {
+  return useMutation({
+    mutationFn: reactivateSim,
+    onSuccess: (_, { id }) => invalidateSims(id),
+  })
+}
+
+export function useUnassignSimDevice() {
+  return useMutation({
+    mutationFn: unassignSimDevice,
+    onSuccess: (_, { id }) => invalidateSims(id),
+  })
+}
+
+export { exportSims }
 
 export function getDataBundleAllocationsQueryOptions(payload?: DataBundleAllocationsQuery) {
   return queryOptions({
