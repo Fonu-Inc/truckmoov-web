@@ -29,13 +29,45 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, AreaChart, Area,
 } from "recharts";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getDataBundleAllocationsQueryOptions,
+  getDataBundleAutoTopupQueryOptions,
+  getDataBundleCarriersQueryOptions,
+  getDataBundleCarrierDistributionQueryOptions,
+  getDataBundleDashboardSummaryQueryOptions,
+  getDataBundleSpendBreakdownQueryOptions,
+  getDataBundleSpendTrendQueryOptions,
+  getDataBundleSpendingLimitQueryOptions,
+  getDataBundleSubscriptionUsageQueryOptions,
+  getDataBundleRatesQueryOptions,
+  getDataBundleTransactionsQueryOptions,
+  getDataBundleWalletBalanceQueryOptions,
+  useDisableDataBundleAutoTopup,
+  useDisableDataBundleSpendingLimit,
+  useSaveDataBundleAutoTopup,
+  useSaveDataBundleSpendingLimit,
+  useTopUpDataBundleWallet,
+} from "@truckmoov/api/auth";
+import type { DataBundleAllocationsQuery, DataBundleAnalyticsRangeQuery, DataBundleRatesQuery, DataBundleTransactionsQuery } from "@truckmoov/api/auth";
 import { useAuthStore } from "@/stores/authStore";
 import { useCurrency } from "@/contexts/CurrencyContext";
 const formatBundleSize = (mb: number) => mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`;
-const useBundleAllocations = (_tenantId?: string) => ({ data: [] as any[], isLoading: false });
+const formatDataUsedGb = (gb: number) => `${Number(gb || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })} GB`;
 const useBundleCatalog = () => ({ data: [] as any[] });
 const useBundleTopups = (_tenantId?: string) => ({ data: [] as any[] });
 const useBundleTopup = () => ({ mutateAsync: async (..._args: any[]) => {}, isPending: false });
+
+function useDebouncedValue<T>(value: T, delay = 400) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedValue(value), delay);
+    return () => window.clearTimeout(timer);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 const CHART_COLORS = ["hsl(var(--primary))", "hsl(var(--success))", "hsl(var(--warning))", "hsl(var(--destructive))", "hsl(var(--accent))"];
 
@@ -56,6 +88,12 @@ const RANGE_OPTIONS = [
   { value: "30d", label: "Last 30 days", days: 30 },
   { value: "90d", label: "Last 90 days", days: 90 },
 ];
+
+const toAnalyticsRange = (rangeKey: string): DataBundleAnalyticsRangeQuery => ({
+  params: {
+    range: rangeKey === "7d" || rangeKey === "90d" ? rangeKey : "30d",
+  },
+});
 
 /* ── Format a Nigerian mobile number into a human-readable form ── */
 const formatMobile = (raw: string) => {
@@ -127,22 +165,31 @@ export default function DataBundles() {
   const { user } = useAuthStore();
   const { format: fmtCurrency } = useCurrency();
   const tenantId = user?.tenantId;
-  const { data: allocationsLive = [], isLoading } = useBundleAllocations(tenantId);
   const { data: catalogLive = [] } = useBundleCatalog();
-  const { data: topupsLive = [] } = useBundleTopups(tenantId);
+  const dataBundleSummaryQuery = useQuery(getDataBundleDashboardSummaryQueryOptions());
+  const dataBundleSummary = dataBundleSummaryQuery.data?.data;
+  const walletBalanceQuery = useQuery(getDataBundleWalletBalanceQueryOptions());
+  const walletBalance = walletBalanceQuery.data?.data;
+  const spendingLimitQuery = useQuery(getDataBundleSpendingLimitQueryOptions());
+  const spendingLimit = spendingLimitQuery.data?.data;
+  const autoTopupQuery = useQuery(getDataBundleAutoTopupQueryOptions());
+  const autoTopup = autoTopupQuery.data?.data;
+  const carriersQuery = useQuery(getDataBundleCarriersQueryOptions());
 
-  // Fall back to dummy data when nothing live is loaded (demo)
-  const allocations = (allocationsLive.length > 0 ? allocationsLive : DUMMY_ALLOCATIONS) as typeof allocationsLive;
   const catalog = (catalogLive.length > 0 ? catalogLive : DUMMY_CATALOG) as typeof catalogLive;
-  const topups = (topupsLive.length > 0 ? topupsLive : DUMMY_TOPUPS) as typeof topupsLive;
   const topup = useBundleTopup();
+  const walletTopup = useTopUpDataBundleWallet();
+  const saveAutoTopup = useSaveDataBundleAutoTopup();
+  const disableAutoTopup = useDisableDataBundleAutoTopup();
+  const saveSpendingLimit = useSaveDataBundleSpendingLimit();
+  const disableSpendingLimit = useDisableDataBundleSpendingLimit();
 
   const [open, setOpen] = useState(false);
   const [autoOpen, setAutoOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
   const [allocOpen, setAllocOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
-  const [viewAlloc, setViewAlloc] = useState<typeof allocations[number] | null>(null);
+  const [viewAlloc, setViewAlloc] = useState<any | null>(null);
   const [msisdn, setMsisdn] = useState("");
   const [bundleCode, setBundleCode] = useState("");
   const [topupAmount, setTopupAmount] = useState<number | "">("");
@@ -156,13 +203,50 @@ export default function DataBundles() {
   // Filters
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [draftStatusFilter, setDraftStatusFilter] = useState<string>("all");
   const [filterCycles, setFilterCycles] = useState<string[]>([]);
   const [draftCycles, setDraftCycles] = useState<string[]>([]);
+
+  const debouncedAllocationSearch = useDebouncedValue(search.trim());
+  const allocationQueryPayload = useMemo<DataBundleAllocationsQuery>(() => ({
+    params: {
+      search: debouncedAllocationSearch || undefined,
+      status: statusFilter === "all" ? undefined : statusFilter,
+      billingCycles: filterCycles.length > 0 ? filterCycles : undefined,
+      page: 1,
+      limit: 100,
+    },
+  }), [debouncedAllocationSearch, statusFilter, filterCycles]);
+
+  const allocationsQuery = useQuery(getDataBundleAllocationsQueryOptions(allocationQueryPayload));
+  const isLoading = allocationsQuery.isLoading;
+  const allocationsLive = useMemo(() => {
+    return (allocationsQuery.data?.data.items ?? []).map((item) => ({
+      id: item.id,
+      msisdn: item.mobileNumber,
+      bundle_code: item.bundle.code,
+      bundle: item.bundle,
+      data_mb_total: item.dataTotalMb,
+      data_mb_used: item.dataUsedMb,
+      usage_percentage: item.usagePercentage,
+      status: item.status,
+      expires_at: item.expiresAt,
+      created_at: item.activatedAt,
+      days_left: item.daysLeft,
+    }));
+  }, [allocationsQuery.data]);
+
+  const allocations = (allocationsQuery.data ? allocationsLive : DUMMY_ALLOCATIONS) as typeof allocationsLive;
 
   // Analytics range filters
   const [spendRange, setSpendRange] = useState("30d");
   const [channelRange, setChannelRange] = useState("30d");
   const [usageRange, setUsageRange] = useState("30d");
+
+  const spendTrendQuery = useQuery(getDataBundleSpendTrendQueryOptions(toAnalyticsRange(spendRange)));
+  const spendBreakdownQuery = useQuery(getDataBundleSpendBreakdownQueryOptions(toAnalyticsRange(spendRange)));
+  const carrierDistributionQuery = useQuery(getDataBundleCarrierDistributionQueryOptions(toAnalyticsRange(channelRange)));
+  const subscriptionUsageQuery = useQuery(getDataBundleSubscriptionUsageQueryOptions());
 
   // Transaction history filters
   const [txSearch, setTxSearch] = useState("");
@@ -170,13 +254,80 @@ export default function DataBundles() {
   const [txCarriers, setTxCarriers] = useState<string[]>([]);
   const [txDraftCarriers, setTxDraftCarriers] = useState<string[]>([]);
 
+  const debouncedTransactionSearch = useDebouncedValue(txSearch.trim());
+  const transactionQueryPayload = useMemo<DataBundleTransactionsQuery>(() => ({
+    params: {
+      search: debouncedTransactionSearch || undefined,
+      status: txStatus === "all" ? undefined : txStatus,
+      carriers: txCarriers.length > 0 ? txCarriers : undefined,
+      page: 1,
+      limit: 100,
+    },
+  }), [debouncedTransactionSearch, txStatus, txCarriers]);
+
+  const transactionsQuery = useQuery(getDataBundleTransactionsQueryOptions(transactionQueryPayload));
+  const topupsLive = useMemo(() => {
+    return (transactionsQuery.data?.data.items ?? []).map((item) => ({
+      id: item.id,
+      created_at: item.date,
+      msisdn: item.mobileNumber,
+      bundle_code: item.bundle.code,
+      bundle: item.bundle,
+      status: String(item.status).toUpperCase(),
+      amount_ngn: item.amount,
+      payment_reference: item.paymentReference,
+      failure_reason: item.failureReason,
+    }));
+  }, [transactionsQuery.data]);
+  const topups = (transactionsQuery.data ? topupsLive : DUMMY_TOPUPS) as typeof topupsLive;
+
   // Rates filters
   const [ratesSearch, setRatesSearch] = useState("");
   const [ratesCarriers, setRatesCarriers] = useState<string[]>([]);
   const [ratesDraftCarriers, setRatesDraftCarriers] = useState<string[]>([]);
+  const [ratesPlanType, setRatesPlanType] = useState("all");
+  const [ratesDraftPlanType, setRatesDraftPlanType] = useState("all");
+
+  const debouncedRatesSearch = useDebouncedValue(ratesSearch.trim());
+  const ratesQueryPayload = useMemo<DataBundleRatesQuery>(() => ({
+    params: {
+      search: debouncedRatesSearch || undefined,
+      carriers: ratesCarriers.length > 0 ? ratesCarriers : undefined,
+      planType: ratesPlanType === "all" ? undefined : ratesPlanType,
+      page: 1,
+      limit: 100,
+    },
+  }), [debouncedRatesSearch, ratesCarriers, ratesPlanType]);
+
+  const ratesQuery = useQuery(getDataBundleRatesQueryOptions(ratesQueryPayload));
+  const ratesLive = useMemo(() => {
+    return (ratesQuery.data?.data.items ?? []).map((rate) => ({
+      id: rate.id,
+      code: rate.code,
+      name: rate.name,
+      carrier: rate.carrier,
+      data_mb: rate.dataAmountGb * 1024,
+      validity_days: rate.validityDays,
+      price_ngn: rate.price,
+      billing_cycle: rate.billingCycle,
+      is_active: rate.active,
+    }));
+  }, [ratesQuery.data]);
+  const dataBundleCarriers = useMemo(() => {
+    const liveCarriers = carriersQuery.data?.data.carriers ?? [];
+    if (liveCarriers.length > 0) {
+      return liveCarriers.filter((carrier) => carrier.active).map((carrier) => ({
+        value: carrier.name,
+        label: carrier.displayName || carrier.name,
+      }));
+    }
+    return Array.from(new Set(catalog.map((b) => b.carrier))).map((carrier) => ({
+      value: carrier,
+      label: carrier,
+    }));
+  }, [carriersQuery.data, catalog]);
 
   // Auto-topup settings
-  const autoKey = `bundle-autotopup:${tenantId ?? "anon"}`;
   const [auto, setAuto] = useState<AutoTopupSettings>({
     enabled: false,
     triggerBalance: 500,
@@ -184,7 +335,6 @@ export default function DataBundles() {
     momoPhone: "",
   });
   // Spending limit settings
-  const limitKey = `bundle-spendlimit:${tenantId ?? "anon"}`;
   const [limit, setLimit] = useState<SpendingLimitSettings>({
     enabled: false,
     monthlyLimit: 50000,
@@ -193,11 +343,24 @@ export default function DataBundles() {
   });
 
   useEffect(() => {
-    const a = localStorage.getItem(autoKey);
-    if (a) try { setAuto(JSON.parse(a)); } catch { /* noop */ }
-    const l = localStorage.getItem(limitKey);
-    if (l) try { setLimit(JSON.parse(l)); } catch { /* noop */ }
-  }, [autoKey, limitKey]);
+    if (!autoTopup) return;
+    setAuto({
+      enabled: autoTopup.enabled,
+      triggerBalance: autoTopup.thresholdAmount,
+      topupAmount: autoTopup.topUpAmount,
+      momoPhone: autoTopup.mobileNumber,
+    });
+  }, [autoTopup]);
+
+  useEffect(() => {
+    if (!spendingLimit) return;
+    setLimit({
+      enabled: spendingLimit.enabled,
+      monthlyLimit: spendingLimit.monthlyLimit,
+      resetDay: spendingLimit.resetDayOfMonth,
+      alertEmail: spendingLimit.alertEmail,
+    });
+  }, [spendingLimit]);
 
   const expiringSoon = useMemo(
     () => allocations.filter((a) => {
@@ -253,23 +416,25 @@ export default function DataBundles() {
     }, 0);
   }, [allocations, catalog]);
 
-  // Filtered allocations
-  const filtered = useMemo(() => {
-    return allocations.filter((a) => {
-      if (search && !`${a.msisdn} ${a.bundle_code}`.toLowerCase().includes(search.toLowerCase())) return false;
-      if (statusFilter !== "all") {
-        const days = (new Date(a.expires_at).getTime() - Date.now()) / 86400000;
-        if (statusFilter === "active" && (a.status !== "ACTIVE" || days <= 0)) return false;
-        if (statusFilter === "expiring" && !(days > 0 && days <= 7)) return false;
-        if (statusFilter === "expired" && days > 0) return false;
-      }
-      if (filterCycles.length > 0) {
-        const b = catalog.find((c) => c.code === a.bundle_code);
-        if (!b || !filterCycles.includes(b.billing_cycle)) return false;
-      }
-      return true;
-    });
-  }, [allocations, search, statusFilter, filterCycles, catalog]);
+  const statValues = {
+    totalDataUsed: dataBundleSummary ? formatDataUsedGb(dataBundleSummary.totalDataUsedGb) : formatBundleSize(usedDataMb),
+    currentBalance: fmtCurrency(walletBalance?.balance ?? dataBundleSummary?.walletBalance ?? currentBalance),
+    monthlySpend: fmtCurrency(dataBundleSummary?.monthlySpend ?? monthSpend),
+    topUpsThisMonth: dataBundleSummary?.topUpsThisMonth ?? monthTopupCount,
+    activeBundles: dataBundleSummary?.activeAllocations ?? allocations.length,
+  };
+
+  const topupSummaryValues = {
+    totalAmount: dataBundleSummary?.totalAmountToppedUp ?? totalToppedUp,
+    successfulTransactions: dataBundleSummary?.successfulTopUpTransactions ?? successTopups.length,
+  };
+
+  const bundleAlertCounts = {
+    expired: dataBundleSummary?.expiredAllocations ?? expired.length,
+    expiringSoon: dataBundleSummary?.expiringWithinSevenDays ?? expiringSoon.length,
+  };
+
+  const filtered = allocations;
 
   const rangeStart = (rangeKey: string) => {
     const opt = RANGE_OPTIONS.find((r) => r.value === rangeKey) ?? RANGE_OPTIONS[3];
@@ -282,6 +447,12 @@ export default function DataBundles() {
 
   // Analytics: daily spending trend (range-aware)
   const dailySpend = useMemo(() => {
+    if (spendTrendQuery.data) {
+      return spendTrendQuery.data.data.trend.map((point) => ({
+        day: point.date.slice(5),
+        spend: point.amount,
+      }));
+    }
     const opt = RANGE_OPTIONS.find((r) => r.value === spendRange) ?? RANGE_OPTIONS[3];
     const days = opt.days;
     const buckets = new Map<string, number>();
@@ -299,10 +470,16 @@ export default function DataBundles() {
       day: day.slice(5),
       spend,
     }));
-  }, [successTopups, catalog, spendRange]);
+  }, [successTopups, catalog, spendRange, spendTrendQuery.data]);
 
   // Spend breakdown by bundle (range-aware)
   const spendBreakdown = useMemo(() => {
+    if (spendBreakdownQuery.data) {
+      return spendBreakdownQuery.data.data.breakdown.map((item) => ({
+        name: item.bundleName || item.bundleCode,
+        value: item.amount,
+      }));
+    }
     const start = rangeStart(spendRange);
     const map = new Map<string, number>();
     successTopups
@@ -313,10 +490,16 @@ export default function DataBundles() {
         map.set(b.name, (map.get(b.name) ?? 0) + Number(b.price_ngn));
       });
     return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
-  }, [successTopups, catalog, spendRange]);
+  }, [successTopups, catalog, spendRange, spendBreakdownQuery.data]);
 
   // Channel distribution by carrier (range-aware via topups)
   const channelDistribution = useMemo(() => {
+    if (carrierDistributionQuery.data) {
+      return carrierDistributionQuery.data.data.distribution.map((item) => ({
+        name: item.carrierId,
+        value: item.amount,
+      }));
+    }
     const start = rangeStart(channelRange);
     const map = new Map<string, number>();
     successTopups
@@ -327,10 +510,17 @@ export default function DataBundles() {
         map.set(carrier, (map.get(carrier) ?? 0) + 1);
       });
     return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
-  }, [successTopups, catalog, channelRange]);
+  }, [successTopups, catalog, channelRange, carrierDistributionQuery.data]);
 
   // Subscription usage (per bundle) — range-aware via topups counts
   const usageByBundle = useMemo(() => {
+    if (subscriptionUsageQuery.data) {
+      return subscriptionUsageQuery.data.data.usage.map((item) => ({
+        name: item.bundleCode,
+        used: item.usedMb,
+        total: item.totalMb,
+      }));
+    }
     const start = rangeStart(usageRange);
     const map = new Map<string, { name: string; used: number; total: number }>();
     allocations.forEach((a) => {
@@ -350,36 +540,22 @@ export default function DataBundles() {
       });
     }
     return Array.from(map.values()).slice(0, 8);
-  }, [allocations, usageRange]);
+  }, [allocations, usageRange, subscriptionUsageQuery.data]);
 
-  // Filtered transactions
-  const filteredTopups = useMemo(() => {
-    return topups.filter((t: { msisdn: string; bundle_code: string; status: string }) => {
-      if (txSearch && !`${t.msisdn} ${t.bundle_code}`.toLowerCase().includes(txSearch.toLowerCase())) return false;
-      if (txStatus !== "all" && t.status !== txStatus) return false;
-      if (txCarriers.length > 0) {
-        const b = catalog.find((c) => c.code === t.bundle_code);
-        if (!b || !txCarriers.includes(b.carrier)) return false;
-      }
-      return true;
-    });
-  }, [topups, txSearch, txStatus, txCarriers, catalog]);
+  const filteredTopups = topups;
 
-  // Filtered rates
-  const filteredRates = useMemo(() => {
-    return catalog.filter((b) => b.is_active).filter((b) => {
-      if (ratesSearch && !`${b.name} ${b.code} ${b.carrier}`.toLowerCase().includes(ratesSearch.toLowerCase())) return false;
-      if (ratesCarriers.length > 0 && !ratesCarriers.includes(b.carrier)) return false;
-      return true;
-    });
-  }, [catalog, ratesSearch, ratesCarriers]);
-
+  const filteredRates = ratesQuery.data ? ratesLive : catalog.filter((b) => b.is_active);
   const carriers = useMemo(() => Array.from(new Set(catalog.map((b) => b.carrier))), [catalog]);
 
   const handleTopup = async () => {
-    if (!tenantId || !topupAmount || !topupMomo) return;
-    const defaultBundle = catalog.find((b) => b.is_active)?.code ?? "WALLET_TOPUP";
-    await topup.mutateAsync({ tenant_id: tenantId, msisdn: topupMomo, bundle_code: defaultBundle });
+    if (!topupAmount || !topupMomo) return;
+    await walletTopup.mutateAsync({
+      data: {
+        amount: Number(topupAmount),
+        mobileMoneyProvider: "MTN",
+        mobileNumber: topupMomo,
+      },
+    });
     setOpen(false);
     setTopupAmount("");
     setTopupMomo("");
@@ -428,10 +604,13 @@ export default function DataBundles() {
 
   const applyFilter = () => {
     setFilterCycles(draftCycles);
+    setStatusFilter(draftStatusFilter);
   };
   const clearFilter = () => {
     setDraftCycles([]);
     setFilterCycles([]);
+    setDraftStatusFilter("all");
+    setStatusFilter("all");
   };
 
   const applyTxFilter = () => {
@@ -444,10 +623,13 @@ export default function DataBundles() {
 
   const applyRatesFilter = () => {
     setRatesCarriers(ratesDraftCarriers);
+    setRatesPlanType(ratesDraftPlanType);
   };
   const clearRatesFilter = () => {
     setRatesDraftCarriers([]);
     setRatesCarriers([]);
+    setRatesDraftPlanType("all");
+    setRatesPlanType("all");
   };
 
   const downloadCsv = (filename: string, header: string[], rows: (string | number)[][]) => {
@@ -474,12 +656,41 @@ export default function DataBundles() {
     filteredRates.map((b) => [b.name, b.carrier, b.data_mb, b.validity_days, b.billing_cycle, Number(b.price_ngn)])
   );
 
-  const saveAuto = () => {
-    localStorage.setItem(autoKey, JSON.stringify(auto));
+  const saveAuto = async () => {
+    await saveAutoTopup.mutateAsync({
+      data: {
+        thresholdAmount: auto.triggerBalance,
+        topUpAmount: auto.topupAmount,
+        paymentProvider: "MTN",
+        mobileNumber: auto.momoPhone,
+      },
+    });
+    setAuto((current) => ({ ...current, enabled: true }));
     setAutoOpen(false);
   };
-  const saveLimit = () => {
-    localStorage.setItem(limitKey, JSON.stringify(limit));
+
+  const disableAuto = async () => {
+    await disableAutoTopup.mutateAsync();
+    setAuto((current) => ({ ...current, enabled: false }));
+    setAutoOpen(false);
+  };
+
+  const saveLimit = async () => {
+    await saveSpendingLimit.mutateAsync({
+      data: {
+        monthlyLimit: limit.monthlyLimit,
+        resetDayOfMonth: limit.resetDay,
+        alertEmail: limit.alertEmail,
+        notifyAtPercentages: [80, 100],
+      },
+    });
+    setLimit((current) => ({ ...current, enabled: true }));
+    setLimitOpen(false);
+  };
+
+  const disableLimit = async () => {
+    await disableSpendingLimit.mutateAsync();
+    setLimit((current) => ({ ...current, enabled: false }));
     setLimitOpen(false);
   };
 
@@ -563,10 +774,10 @@ export default function DataBundles() {
                   <Button
                     variant="gradient"
                     onClick={handleTopup}
-                    disabled={!topupAmount || !topupMomo || topup.isPending}
+                    disabled={!topupAmount || !topupMomo || walletTopup.isPending}
                   >
                     <CreditCard className="h-4 w-4 mr-2" />
-                    {topup.isPending ? "Processing..." : "Pay with MoMo"}
+                    {walletTopup.isPending ? "Processing..." : "Pay with MoMo"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -582,33 +793,33 @@ export default function DataBundles() {
             </div>
             <div className="min-w-0">
               <p className="text-sm text-muted-foreground">Total Amount Topped Up</p>
-              <p className="text-xl font-bold truncate">{fmtCurrency(totalToppedUp)}</p>
-              <p className="text-xs text-muted-foreground">Across {successTopups.length} successful transactions</p>
+              <p className="text-xl font-bold truncate">{fmtCurrency(topupSummaryValues.totalAmount)}</p>
+              <p className="text-xs text-muted-foreground">Across {topupSummaryValues.successfulTransactions} successful transactions</p>
             </div>
           </CardContent>
         </Card>
 
         {/* KPIs */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-          <StatCard title="Total Data Used" value={formatBundleSize(usedDataMb)} icon={Activity} />
-          <StatCard title="Current Balance" value={fmtCurrency(currentBalance)} icon={Wallet} />
-          <StatCard title="Total Spend This Month" value={fmtCurrency(monthSpend)} icon={TrendingUp} />
-          <StatCard title="Top-ups This Month" value={monthTopupCount} icon={ArrowUpRight} />
-          <StatCard title="Active Bundles" value={allocations.length} icon={Database} />
+          <StatCard title="Total Data Used" value={statValues.totalDataUsed} icon={Activity} />
+          <StatCard title="Current Balance" value={statValues.currentBalance} icon={Wallet} />
+          <StatCard title="Total Spend This Month" value={statValues.monthlySpend} icon={TrendingUp} />
+          <StatCard title="Top-ups This Month" value={statValues.topUpsThisMonth} icon={ArrowUpRight} />
+          <StatCard title="Active Bundles" value={statValues.activeBundles} icon={Database} />
         </div>
 
         {/* Alerts */}
-        {expired.length > 0 && (
+        {bundleAlertCounts.expired > 0 && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>{expired.length} bundle(s) expired</AlertTitle>
+            <AlertTitle>{bundleAlertCounts.expired} bundle(s) expired</AlertTitle>
             <AlertDescription>These SIMs are no longer carrying data. Top up to restore service.</AlertDescription>
           </Alert>
         )}
-        {expiringSoon.length > 0 && (
+        {bundleAlertCounts.expiringSoon > 0 && (
           <Alert>
             <Clock className="h-4 w-4" />
-            <AlertTitle>{expiringSoon.length} bundle(s) expiring within 7 days</AlertTitle>
+            <AlertTitle>{bundleAlertCounts.expiringSoon} bundle(s) expiring within 7 days</AlertTitle>
             <AlertDescription>Renew now or enable auto top-up to avoid interruption.</AlertDescription>
           </Alert>
         )}
@@ -639,15 +850,6 @@ export default function DataBundles() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input className="pl-9" placeholder="Search mobile number or bundle..." value={search} onChange={(e) => setSearch(e.target.value)} />
                   </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All statuses</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="expiring">Expiring soon</SelectItem>
-                      <SelectItem value="expired">Expired</SelectItem>
-                    </SelectContent>
-                  </Select>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline"><SlidersHorizontal className="h-4 w-4 mr-2" /> Filter</Button>
@@ -655,9 +857,21 @@ export default function DataBundles() {
                     <PopoverContent className="w-80 p-3 rounded-xl space-y-3" align="end" sideOffset={8}>
                       <h4 className="text-xs font-medium text-foreground px-0.5">Only show allocations by...</h4>
                       <div className="space-y-1.5">
+                        <p className="text-xs font-medium">Status</p>
+                        <Select value={draftStatusFilter} onValueChange={setDraftStatusFilter}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All statuses</SelectItem>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="expiring">Expiring soon</SelectItem>
+                            <SelectItem value="expired">Expired</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
                         <p className="text-xs font-medium">Billing cycle</p>
                         <div className="space-y-1.5 pl-0.5">
-                          {[{ v: "MONTHLY", l: "Monthly" }, { v: "YEARLY", l: "Yearly" }].map((opt) => (
+                          {[{ v: "monthly", l: "Monthly" }, { v: "yearly", l: "Yearly" }].map((opt) => (
                             <label key={opt.v} className="flex items-center gap-2 cursor-pointer select-none">
                               <Checkbox
                                 checked={draftCycles.includes(opt.v)}
@@ -696,8 +910,9 @@ export default function DataBundles() {
                       <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No bundles match your filters.</TableCell></TableRow>
                     ) : filtered.map((a) => {
                       const pct = a.data_mb_total > 0 ? (a.data_mb_used / a.data_mb_total) * 100 : 0;
-                      const days = Math.ceil((new Date(a.expires_at).getTime() - Date.now()) / 86400000);
-                      const isExpired = days <= 0;
+                      const days = a.days_left ?? Math.ceil((new Date(a.expires_at).getTime() - Date.now()) / 86400000);
+                      const status = String(a.status).toUpperCase();
+                      const isExpired = status === "EXPIRED" || days <= 0;
                       return (
                         <TableRow key={a.id}>
                           <TableCell className="text-sm">{formatMobile(a.msisdn)}</TableCell>
@@ -714,7 +929,7 @@ export default function DataBundles() {
                             {isExpired ? <Badge variant="destructive">Expired</Badge> : <span className="text-sm">{days}d left</span>}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={a.status === "ACTIVE" ? "default" : "secondary"}>{a.status}</Badge>
+                            <Badge variant={status === "ACTIVE" ? "default" : "secondary"}>{status}</Badge>
                           </TableCell>
                           <TableCell className="text-right">
                             <DropdownMenu>
@@ -729,9 +944,9 @@ export default function DataBundles() {
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => {
-                                  const b = catalog.find((c) => c.code === a.bundle_code);
+                                  const b = a.bundle ?? catalog.find((c) => c.code === a.bundle_code);
                                   setAllocCarrier(b?.carrier ?? "");
-                                  setAllocCycle(b?.billing_cycle ?? "");
+                                  setAllocCycle(b?.billingCycle ?? b?.billing_cycle ?? "");
                                   setAllocBundle(a.bundle_code);
                                   setAllocNumbers(formatMobile(a.msisdn));
                                   setAllocOpen(true);
@@ -786,17 +1001,17 @@ export default function DataBundles() {
                       <div className="space-y-1.5">
                         <p className="text-xs font-medium">Carrier</p>
                         <div className="space-y-1.5 pl-0.5">
-                          {carriers.map((c) => (
-                            <label key={c} className="flex items-center gap-2 cursor-pointer select-none">
+                          {dataBundleCarriers.map((carrier) => (
+                            <label key={carrier.value} className="flex items-center gap-2 cursor-pointer select-none">
                               <Checkbox
-                                checked={txDraftCarriers.includes(c)}
-                                onCheckedChange={(chk) => setTxDraftCarriers((prev) => chk ? [...prev, c] : prev.filter((x) => x !== c))}
+                                checked={txDraftCarriers.includes(carrier.value)}
+                                onCheckedChange={(chk) => setTxDraftCarriers((prev) => chk ? [...prev, carrier.value] : prev.filter((x) => x !== carrier.value))}
                                 className="h-3.5 w-3.5"
                               />
-                              <span className="text-xs">{c}</span>
+                              <span className="text-xs">{carrier.label}</span>
                             </label>
                           ))}
-                          {carriers.length === 0 && <p className="text-xs text-muted-foreground">No carriers</p>}
+                          {dataBundleCarriers.length === 0 && <p className="text-xs text-muted-foreground">No carriers</p>}
                         </div>
                       </div>
                       <div className="flex gap-2 pt-2 border-t border-border">
@@ -819,11 +1034,13 @@ export default function DataBundles() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredTopups.length === 0 ? (
+                    {transactionsQuery.isLoading ? (
+                      <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground">Loading...</TableCell></TableRow>
+                    ) : filteredTopups.length === 0 ? (
                       <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground">No transactions match your filters</TableCell></TableRow>
-                    ) : filteredTopups.slice(0, 100).map((t: { id: string; created_at: string; msisdn: string; bundle_code: string; status: string; amount_ngn?: number }) => {
+                    ) : filteredTopups.slice(0, 100).map((t: { id: string; created_at: string; msisdn: string; bundle_code: string; status: string; amount_ngn?: number; bundle?: { carrier?: string } }) => {
                       const b = catalog.find((c) => c.code === t.bundle_code);
-                      const amt = b ? Number(b.price_ngn) : Number(t.amount_ngn ?? 0);
+                      const amt = Number(t.amount_ngn ?? b?.price_ngn ?? 0);
                       return (
                         <TableRow key={t.id}>
                           <TableCell className="text-sm">{new Date(t.created_at).toLocaleString()}</TableCell>
@@ -1006,19 +1223,30 @@ export default function DataBundles() {
                     <PopoverContent className="w-80 p-3 rounded-xl space-y-3" align="end" sideOffset={8}>
                       <h4 className="text-xs font-medium text-foreground px-0.5">Only show rates by...</h4>
                       <div className="space-y-1.5">
+                        <p className="text-xs font-medium">Plan type</p>
+                        <Select value={ratesDraftPlanType} onValueChange={setRatesDraftPlanType}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All plan types</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                            <SelectItem value="yearly">Yearly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
                         <p className="text-xs font-medium">Carrier</p>
                         <div className="space-y-1.5 pl-0.5">
-                          {carriers.map((c) => (
-                            <label key={c} className="flex items-center gap-2 cursor-pointer select-none">
+                          {dataBundleCarriers.map((carrier) => (
+                            <label key={carrier.value} className="flex items-center gap-2 cursor-pointer select-none">
                               <Checkbox
-                                checked={ratesDraftCarriers.includes(c)}
-                                onCheckedChange={(chk) => setRatesDraftCarriers((prev) => chk ? [...prev, c] : prev.filter((x) => x !== c))}
+                                checked={ratesDraftCarriers.includes(carrier.value)}
+                                onCheckedChange={(chk) => setRatesDraftCarriers((prev) => chk ? [...prev, carrier.value] : prev.filter((x) => x !== carrier.value))}
                                 className="h-3.5 w-3.5"
                               />
-                              <span className="text-xs">{c}</span>
+                              <span className="text-xs">{carrier.label}</span>
                             </label>
                           ))}
-                          {carriers.length === 0 && <p className="text-xs text-muted-foreground">No carriers</p>}
+                          {dataBundleCarriers.length === 0 && <p className="text-xs text-muted-foreground">No carriers</p>}
                         </div>
                       </div>
                       <div className="flex gap-2 pt-2 border-t border-border">
@@ -1042,7 +1270,9 @@ export default function DataBundles() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredRates.length === 0 ? (
+                    {ratesQuery.isLoading ? (
+                      <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">Loading...</TableCell></TableRow>
+                    ) : filteredRates.length === 0 ? (
                       <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">No bundles match your filters</TableCell></TableRow>
                     ) : filteredRates.map((b) => (
                       <TableRow key={b.id}>
@@ -1169,10 +1399,11 @@ export default function DataBundles() {
               <DialogDescription>Full details for this bundle allocation.</DialogDescription>
             </DialogHeader>
             {viewAlloc && (() => {
-              const b = catalog.find((c) => c.code === viewAlloc.bundle_code);
+              const b = viewAlloc.bundle ?? catalog.find((c) => c.code === viewAlloc.bundle_code);
               const pct = viewAlloc.data_mb_total > 0 ? (viewAlloc.data_mb_used / viewAlloc.data_mb_total) * 100 : 0;
-              const days = Math.ceil((new Date(viewAlloc.expires_at).getTime() - Date.now()) / 86400000);
-              const isExpired = days <= 0;
+              const days = viewAlloc.days_left ?? Math.ceil((new Date(viewAlloc.expires_at).getTime() - Date.now()) / 86400000);
+              const status = String(viewAlloc.status).toUpperCase();
+              const isExpired = status === "EXPIRED" || days <= 0;
               const remainingMb = Math.max(0, viewAlloc.data_mb_total - viewAlloc.data_mb_used);
               return (
                 <div className="space-y-4 py-2 text-sm">
@@ -1185,7 +1416,7 @@ export default function DataBundles() {
                       <p className="text-xs text-muted-foreground">Status</p>
                       {isExpired
                         ? <Badge variant="destructive">Expired</Badge>
-                        : <Badge variant={viewAlloc.status === "ACTIVE" ? "default" : "secondary"}>{viewAlloc.status}</Badge>}
+                        : <Badge variant={status === "ACTIVE" ? "default" : "secondary"}>{status}</Badge>}
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Bundle</p>
@@ -1197,11 +1428,11 @@ export default function DataBundles() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Plan Type</p>
-                      <p className="font-medium capitalize">{b?.billing_cycle ?? "—"}</p>
+                      <p className="font-medium capitalize">{b?.billingCycle ?? b?.billing_cycle ?? "—"}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Price</p>
-                      <p className="font-medium">{b ? fmtCurrency(Number(b.price_ngn)) : "—"}</p>
+                      <p className="font-medium">{b ? fmtCurrency(Number(b.price ?? b.price_ngn)) : "—"}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Activated</p>
@@ -1234,9 +1465,9 @@ export default function DataBundles() {
                 variant="gradient"
                 onClick={() => {
                   if (!viewAlloc) return;
-                  const b = catalog.find((c) => c.code === viewAlloc.bundle_code);
+                  const b = viewAlloc.bundle ?? catalog.find((c) => c.code === viewAlloc.bundle_code);
                   setAllocCarrier(b?.carrier ?? "");
-                  setAllocCycle(b?.billing_cycle ?? "");
+                  setAllocCycle(b?.billingCycle ?? b?.billing_cycle ?? "");
                   setAllocBundle(viewAlloc.bundle_code);
                   setAllocNumbers(formatMobile(viewAlloc.msisdn));
                   setViewOpen(false);
@@ -1254,7 +1485,7 @@ export default function DataBundles() {
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-primary" /> Enable Auto Top-Up
+                <Zap className="h-5 w-5 text-primary" /> {auto.enabled ? "Auto Top-Up" : "Enable Auto Top-Up"}
               </DialogTitle>
               <DialogDescription>
                 Automatically add funds when your balance drops below a threshold
@@ -1330,12 +1561,22 @@ export default function DataBundles() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setAutoOpen(false)}>Cancel</Button>
+              {auto.enabled && (
+                <Button
+                  variant="outline"
+                  onClick={disableAuto}
+                  disabled={disableAutoTopup.isPending || saveAutoTopup.isPending}
+                >
+                  Disable
+                </Button>
+              )}
               <Button
                 variant="gradient"
-                onClick={() => { setAuto({ ...auto, enabled: true }); saveAuto(); }}
-                disabled={!auto.momoPhone}
+                onClick={saveAuto}
+                disabled={!auto.momoPhone || saveAutoTopup.isPending || disableAutoTopup.isPending}
               >
-                <Zap className="h-4 w-4 mr-2" /> Enable Auto Top-Up
+                <Zap className="h-4 w-4 mr-2" />
+                {saveAutoTopup.isPending ? "Saving..." : auto.enabled ? "Save Auto Top-Up" : "Enable Auto Top-Up"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1346,7 +1587,7 @@ export default function DataBundles() {
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-primary" /> Enable Spending Limit
+                <ShieldCheck className="h-5 w-5 text-primary" /> {limit.enabled ? "Spending Limit" : "Enable Spending Limit"}
               </DialogTitle>
               <DialogDescription>
                 Cap your monthly communication costs and get notified before you hit the limit
@@ -1369,7 +1610,7 @@ export default function DataBundles() {
                   value={limit.monthlyLimit}
                   onChange={(e) => setLimit({ ...limit, monthlyLimit: Number(e.target.value) })}
                 />
-                <p className="text-xs text-muted-foreground">Spent this month: {fmtCurrency(monthSpend)}</p>
+                <p className="text-xs text-muted-foreground">Spent this month: {fmtCurrency(spendingLimit?.spentThisMonth ?? monthSpend)}</p>
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Reset Day of Month</Label>
@@ -1401,12 +1642,22 @@ export default function DataBundles() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setLimitOpen(false)}>Cancel</Button>
+              {limit.enabled && (
+                <Button
+                  variant="outline"
+                  onClick={disableLimit}
+                  disabled={disableSpendingLimit.isPending || saveSpendingLimit.isPending}
+                >
+                  Disable
+                </Button>
+              )}
               <Button
                 variant="gradient"
-                onClick={() => { setLimit({ ...limit, enabled: true }); saveLimit(); }}
-                disabled={!limit.alertEmail}
+                onClick={saveLimit}
+                disabled={!limit.alertEmail || saveSpendingLimit.isPending || disableSpendingLimit.isPending}
               >
-                <ShieldCheck className="h-4 w-4 mr-2" /> Enable Spending Limit
+                <ShieldCheck className="h-4 w-4 mr-2" />
+                {saveSpendingLimit.isPending ? "Saving..." : limit.enabled ? "Save Spending Limit" : "Enable Spending Limit"}
               </Button>
             </DialogFooter>
           </DialogContent>

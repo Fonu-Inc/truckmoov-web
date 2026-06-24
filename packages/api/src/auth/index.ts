@@ -18,6 +18,8 @@ import {
   deleteSystemAdmin,
   deleteSystemAdminInvite,
   deleteTenant,
+  disableDataBundleAutoTopup,
+  disableDataBundleSpendingLimit,
   escalateSupportTicket,
   exportSystemDeviceSetupRequests,
   exportSystemDevicesCatalog,
@@ -96,6 +98,9 @@ import {
   suspendSystemSim,
   systemChangePassword,
   systemLogin,
+  saveDataBundleAutoTopup,
+  saveDataBundleSpendingLimit,
+  topUpDataBundleWallet,
   updateDeviceCatalogEntry,
   updateDispatchPreferences,
   updateFeatureFlag,
@@ -123,6 +128,18 @@ import {
   uploadSimRequestDeviceMapping,
   createSimRequest,
   createSim,
+  getDataBundleAllocations,
+  getDataBundleCarrierDistribution,
+  getDataBundleSpendBreakdown,
+  getDataBundleSpendTrend,
+  getDataBundleSubscriptionUsage,
+  getDataBundleRates,
+  getDataBundleCarriers,
+  getDataBundleAutoTopup,
+  getDataBundleDashboardSummary,
+  getDataBundleSpendingLimit,
+  getDataBundleTransactions,
+  getDataBundleWalletBalance,
   getSimDataBundles,
   provisionSims,
   updateOnboardingFeatures,
@@ -142,6 +159,10 @@ import type {
   SystemSimsQuery,
   SystemSupportTicketsQuery,
   SystemTenantsQuery,
+  DataBundleAnalyticsRangeQuery,
+  DataBundleAllocationsQuery,
+  DataBundleRatesQuery,
+  DataBundleTransactionsQuery,
   SimDataBundlesQuery,
 } from './types'
 
@@ -167,6 +188,26 @@ export type {
   ProvisionSimsPayload,
   CreateSimRequestPayload,
   CreateSimPayload,
+  DataBundleAllocation,
+  DataBundleAllocationsQuery,
+  DataBundleAnalyticsRangeQuery,
+  DataBundleAutoTopup,
+  DataBundleCarrier,
+  DataBundleCarrierDistribution,
+  DataBundleDashboardSummary,
+  DataBundleSpendBreakdown,
+  DataBundleSpendTrend,
+  DataBundleSpendingLimit,
+  DataBundleSubscriptionUsage,
+  DataBundleRate,
+  DataBundleRatesQuery,
+  DataBundleTransaction,
+  DataBundleTransactionsQuery,
+  DataBundleWalletTopup,
+  DataBundleWalletTopupPayload,
+  DataBundleWalletBalance,
+  SaveDataBundleAutoTopupPayload,
+  SaveDataBundleSpendingLimitPayload,
   DeleteOnboardingKycDocumentPayload,
   SimDataBundlesQuery,
   UpdateOnboardingFeaturesPayload,
@@ -320,6 +361,18 @@ export const AUTH_QUERY_KEY = {
   onboardingExchangeRate: ['onboardingExchangeRate'],
   onboardingSubscriptionCaps: ['onboardingSubscriptionCaps'],
   simDataBundles: (payload: SimDataBundlesQuery) => ['simDataBundles', payload],
+  dataBundleAllocations: (payload?: DataBundleAllocationsQuery) => ['dataBundleAllocations', payload],
+  dataBundleTransactions: (payload?: DataBundleTransactionsQuery) => ['dataBundleTransactions', payload],
+  dataBundleSpendTrend: (payload?: DataBundleAnalyticsRangeQuery) => ['dataBundleSpendTrend', payload],
+  dataBundleSpendBreakdown: (payload?: DataBundleAnalyticsRangeQuery) => ['dataBundleSpendBreakdown', payload],
+  dataBundleCarrierDistribution: (payload?: DataBundleAnalyticsRangeQuery) => ['dataBundleCarrierDistribution', payload],
+  dataBundleSubscriptionUsage: ['dataBundleSubscriptionUsage'],
+  dataBundleRates: (payload?: DataBundleRatesQuery) => ['dataBundleRates', payload],
+  dataBundleCarriers: ['dataBundleCarriers'],
+  dataBundleDashboardSummary: ['dataBundleDashboardSummary'],
+  dataBundleWalletBalance: ['dataBundleWalletBalance'],
+  dataBundleSpendingLimit: ['dataBundleSpendingLimit'],
+  dataBundleAutoTopup: ['dataBundleAutoTopup'],
 
   systemSupportDashboard: ['systemSupportDashboard'],
   systemSupportTicketSummary: ['systemSupportTicketSummary'],
@@ -1083,6 +1136,136 @@ export function getSimDataBundlesQueryOptions(payload: SimDataBundlesQuery) {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.simDataBundles(payload),
     queryFn: () => getSimDataBundles(payload),
+  })
+}
+
+export function getDataBundleAllocationsQueryOptions(payload?: DataBundleAllocationsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.dataBundleAllocations(payload),
+    queryFn: () => getDataBundleAllocations(payload),
+  })
+}
+
+export function getDataBundleTransactionsQueryOptions(payload?: DataBundleTransactionsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.dataBundleTransactions(payload),
+    queryFn: () => getDataBundleTransactions(payload),
+  })
+}
+
+export function getDataBundleSpendTrendQueryOptions(payload?: DataBundleAnalyticsRangeQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.dataBundleSpendTrend(payload),
+    queryFn: () => getDataBundleSpendTrend(payload),
+  })
+}
+
+export function getDataBundleSpendBreakdownQueryOptions(payload?: DataBundleAnalyticsRangeQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.dataBundleSpendBreakdown(payload),
+    queryFn: () => getDataBundleSpendBreakdown(payload),
+  })
+}
+
+export function getDataBundleCarrierDistributionQueryOptions(payload?: DataBundleAnalyticsRangeQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.dataBundleCarrierDistribution(payload),
+    queryFn: () => getDataBundleCarrierDistribution(payload),
+  })
+}
+
+export function getDataBundleSubscriptionUsageQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.dataBundleSubscriptionUsage,
+    queryFn: getDataBundleSubscriptionUsage,
+  })
+}
+
+export function getDataBundleRatesQueryOptions(payload?: DataBundleRatesQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.dataBundleRates(payload),
+    queryFn: () => getDataBundleRates(payload),
+  })
+}
+
+export function getDataBundleCarriersQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.dataBundleCarriers,
+    queryFn: getDataBundleCarriers,
+  })
+}
+
+export function getDataBundleDashboardSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.dataBundleDashboardSummary,
+    queryFn: getDataBundleDashboardSummary,
+  })
+}
+
+export function getDataBundleWalletBalanceQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.dataBundleWalletBalance,
+    queryFn: getDataBundleWalletBalance,
+  })
+}
+
+export function getDataBundleSpendingLimitQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.dataBundleSpendingLimit,
+    queryFn: getDataBundleSpendingLimit,
+  })
+}
+
+export function getDataBundleAutoTopupQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.dataBundleAutoTopup,
+    queryFn: getDataBundleAutoTopup,
+  })
+}
+
+export function useTopUpDataBundleWallet() {
+  return useMutation({
+    mutationFn: topUpDataBundleWallet,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.dataBundleWalletBalance })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.dataBundleDashboardSummary })
+    },
+  })
+}
+
+export function useSaveDataBundleAutoTopup() {
+  return useMutation({
+    mutationFn: saveDataBundleAutoTopup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.dataBundleAutoTopup })
+    },
+  })
+}
+
+export function useDisableDataBundleAutoTopup() {
+  return useMutation({
+    mutationFn: disableDataBundleAutoTopup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.dataBundleAutoTopup })
+    },
+  })
+}
+
+export function useSaveDataBundleSpendingLimit() {
+  return useMutation({
+    mutationFn: saveDataBundleSpendingLimit,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.dataBundleSpendingLimit })
+    },
+  })
+}
+
+export function useDisableDataBundleSpendingLimit() {
+  return useMutation({
+    mutationFn: disableDataBundleSpendingLimit,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.dataBundleSpendingLimit })
+    },
   })
 }
 

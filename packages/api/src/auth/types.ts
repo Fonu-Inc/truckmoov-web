@@ -856,6 +856,248 @@ export type SystemSimsSummary = {
   pendingRequests: number
 }
 
+export type DataBundleDashboardSummary = {
+  walletBalance: number
+  currency: string
+  totalAmountToppedUp: number
+  successfulTopUpTransactions: number
+  activeAllocations: number
+  expiredAllocations: number
+  expiringWithinSevenDays: number
+  monthlySpend: number
+  topUpsThisMonth: number
+  totalDataUsedGb: number
+}
+
+export type DataBundleWalletBalance = {
+  balance: number
+  currency: string
+}
+
+export type DataBundleWalletTopupPayload = {
+  data: {
+    amount: number
+    mobileMoneyProvider: string
+    mobileNumber: string
+  }
+}
+
+export type DataBundleWalletTopup = {
+  transactionId: string
+  paymentReference: string
+  amount: number
+  status: string
+  paymentProvider: string
+  mobileNumber: string
+  createdAt: string
+}
+
+export type DataBundleSpendingLimit = {
+  enabled: boolean
+  monthlyLimit: number
+  spentThisMonth: number
+  resetDayOfMonth: number
+  alertEmail: string
+  notifyAtPercentages: number[]
+}
+
+export type SaveDataBundleSpendingLimitPayload = {
+  data: {
+    monthlyLimit: number
+    resetDayOfMonth: number
+    alertEmail: string
+    notifyAtPercentages: number[]
+  }
+}
+
+export type DisableDataBundleSpendingLimit = {
+  message: string
+}
+
+export type DataBundleAutoTopup = {
+  enabled: boolean
+  thresholdAmount: number
+  topUpAmount: number
+  paymentProvider: string
+  mobileNumber: string
+}
+
+export type SaveDataBundleAutoTopupPayload = {
+  data: {
+    thresholdAmount: number
+    topUpAmount: number
+    paymentProvider: string
+    mobileNumber: string
+  }
+}
+
+export type DisableDataBundleAutoTopup = {
+  message: string
+}
+
+export type DataBundleAllocationsQuery = {
+  params?: {
+    search?: string
+    status?: string
+    billingCycles?: string[]
+    page?: number
+    limit?: number
+    format?: 'csv' | 'xlsx'
+  }
+}
+
+export type DataBundleAllocation = {
+  id: string
+  mobileNumber: string
+  bundle: {
+    id: string
+    code: string
+    name: string
+    carrier: string
+    dataAmountGb: number
+    billingCycle: string
+    price: number
+  }
+  dataUsedMb: number
+  dataTotalMb: number
+  dataUsedGb: number
+  dataTotalGb: number
+  dataRemainingMb: number
+  dataRemainingGb: number
+  usagePercentage: number
+  activatedAt: string
+  expiresAt: string
+  daysLeft: number
+  status: string
+}
+
+export type DataBundleAllocationsList = {
+  items: DataBundleAllocation[]
+  total: number
+  page: number
+  limit: number
+}
+
+export type DataBundleTransactionsQuery = {
+  params?: {
+    search?: string
+    status?: string
+    carriers?: string[]
+    startDate?: string
+    endDate?: string
+    page?: number
+    limit?: number
+    format?: 'csv' | 'xlsx'
+  }
+}
+
+export type DataBundleTransaction = {
+  id: string
+  date: string
+  mobileNumber: string
+  bundle: {
+    id: string
+    code: string
+    name: string
+    carrier: string
+  }
+  amount: number
+  status: string
+  paymentReference: string
+  failureReason: string
+}
+
+export type DataBundleTransactionsList = {
+  items: DataBundleTransaction[]
+  total: number
+  page?: number
+  limit?: number
+}
+
+export type DataBundleAnalyticsRangeQuery = {
+  params?: {
+    range?: '7d' | '30d' | '90d' | 'custom'
+    startDate?: string
+    endDate?: string
+  }
+}
+
+export type DataBundleSpendTrend = {
+  trend: {
+    date: string
+    amount: number
+  }[]
+}
+
+export type DataBundleSpendBreakdown = {
+  breakdown: {
+    bundleId: string
+    bundleName: string
+    bundleCode: string
+    amount: number
+    percentage: number
+  }[]
+}
+
+export type DataBundleCarrierDistribution = {
+  distribution: {
+    carrierId: string
+    amount: number
+    percentage: number
+  }[]
+}
+
+export type DataBundleSubscriptionUsage = {
+  usage: {
+    bundleId: string
+    bundleCode: string
+    usedMb: number
+    totalMb: number
+  }[]
+}
+
+export type DataBundleRatesQuery = {
+  params?: {
+    search?: string
+    carriers?: string[]
+    planType?: string
+    page?: number
+    limit?: number
+    format?: 'csv' | 'xlsx'
+  }
+}
+
+export type DataBundleRate = {
+  id: string
+  code: string
+  name: string
+  carrier: string
+  dataAmountGb: number
+  validityDays: number
+  billingCycle: string
+  price: number
+  currency: string
+  active: boolean
+}
+
+export type DataBundleRatesList = {
+  items: DataBundleRate[]
+  total: number
+  page?: number
+  limit?: number
+}
+
+export type DataBundleCarrier = {
+  id: string
+  name: string
+  displayName: string
+  active: boolean
+}
+
+export type DataBundleCarriersList = {
+  carriers: DataBundleCarrier[]
+}
+
 export type SystemSimItem = {
   id: string
   iccid: string
@@ -1062,6 +1304,21 @@ export type SystemDeviceSummaryResponse = ServerResponse<SystemDevicesSummary>
 export type SystemSimsListResponse = ServerResponse<SystemSimsList>
 export type SystemSimResponse = ServerResponse<SystemSimItem>
 export type SystemSimSummaryResponse = ServerResponse<SystemSimsSummary>
+export type DataBundleDashboardSummaryResponse = ServerResponse<DataBundleDashboardSummary>
+export type DataBundleWalletBalanceResponse = ServerResponse<DataBundleWalletBalance>
+export type DataBundleWalletTopupResponse = ServerResponse<DataBundleWalletTopup>
+export type DataBundleSpendingLimitResponse = ServerResponse<DataBundleSpendingLimit>
+export type DisableDataBundleSpendingLimitResponse = ServerResponse<DisableDataBundleSpendingLimit>
+export type DataBundleAutoTopupResponse = ServerResponse<DataBundleAutoTopup>
+export type DisableDataBundleAutoTopupResponse = ServerResponse<DisableDataBundleAutoTopup>
+export type DataBundleAllocationsListResponse = ServerResponse<DataBundleAllocationsList>
+export type DataBundleTransactionsListResponse = ServerResponse<DataBundleTransactionsList>
+export type DataBundleSpendTrendResponse = ServerResponse<DataBundleSpendTrend>
+export type DataBundleSpendBreakdownResponse = ServerResponse<DataBundleSpendBreakdown>
+export type DataBundleCarrierDistributionResponse = ServerResponse<DataBundleCarrierDistribution>
+export type DataBundleSubscriptionUsageResponse = ServerResponse<DataBundleSubscriptionUsage>
+export type DataBundleRatesListResponse = ServerResponse<DataBundleRatesList>
+export type DataBundleCarriersListResponse = ServerResponse<DataBundleCarriersList>
 export type SystemSimRequestsListResponse = ServerResponse<SystemSimRequestsList>
 export type SystemSimRequestsSummaryResponse = ServerResponse<SystemSimRequestsSummary>
 export type SystemSimBatchesListResponse = ServerResponse<SystemSimBatchesList>

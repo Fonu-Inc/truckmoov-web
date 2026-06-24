@@ -11,6 +11,28 @@ import type {
   ProvisionSimsPayload,
   CreateSimRequestPayload,
   CreateSimPayload,
+  DataBundleAllocationsListResponse,
+  DataBundleAllocationsQuery,
+  DataBundleAnalyticsRangeQuery,
+  DataBundleAutoTopupResponse,
+  DataBundleCarriersListResponse,
+  DataBundleCarrierDistributionResponse,
+  DataBundleDashboardSummaryResponse,
+  DataBundleSpendBreakdownResponse,
+  DataBundleSpendTrendResponse,
+  DataBundleSpendingLimitResponse,
+  DataBundleSubscriptionUsageResponse,
+  DataBundleRatesListResponse,
+  DataBundleRatesQuery,
+  DataBundleTransactionsListResponse,
+  DataBundleTransactionsQuery,
+  DataBundleWalletTopupPayload,
+  DataBundleWalletTopupResponse,
+  DataBundleWalletBalanceResponse,
+  DisableDataBundleAutoTopupResponse,
+  DisableDataBundleSpendingLimitResponse,
+  SaveDataBundleAutoTopupPayload,
+  SaveDataBundleSpendingLimitPayload,
   SimDataBundlesQuery,
   SimRequestDeviceMappingUploadResponse,
   UpdateOnboardingFeaturesPayload,
@@ -742,6 +764,103 @@ export async function createSim({ data }: CreateSimPayload) {
 
 export async function getSimDataBundles({ params }: SimDataBundlesQuery) {
   const { data } = await axiosInstance.get<StandardApiResponse>('/auth/sims/data-bundles', { params })
+  return data
+}
+
+export async function getDataBundleDashboardSummary() {
+  const { data } = await axiosInstance.get<DataBundleDashboardSummaryResponse>('/auth/data-bundles/summary')
+  return data
+}
+
+export async function getDataBundleWalletBalance() {
+  const { data } = await axiosInstance.get<DataBundleWalletBalanceResponse>('/auth/data-bundles/wallet/balance')
+  return data
+}
+
+export async function topUpDataBundleWallet({ data: body }: DataBundleWalletTopupPayload) {
+  const { data } = await axiosInstance.post<DataBundleWalletTopupResponse>('/auth/data-bundles/wallet/topup', body)
+  return data
+}
+
+export async function getDataBundleSpendingLimit() {
+  const { data } = await axiosInstance.get<DataBundleSpendingLimitResponse>('/auth/data-bundles/spending-limit')
+  return data
+}
+
+export async function saveDataBundleSpendingLimit({ data: body }: SaveDataBundleSpendingLimitPayload) {
+  const { data } = await axiosInstance.post<DataBundleSpendingLimitResponse>('/auth/data-bundles/spending-limit', body)
+  return data
+}
+
+export async function disableDataBundleSpendingLimit() {
+  const { data } = await axiosInstance.delete<DisableDataBundleSpendingLimitResponse>('/auth/data-bundles/spending-limit')
+  return data
+}
+
+export async function getDataBundleAutoTopup() {
+  const { data } = await axiosInstance.get<DataBundleAutoTopupResponse>('/auth/data-bundles/auto-topup')
+  return data
+}
+
+export async function saveDataBundleAutoTopup({ data: body }: SaveDataBundleAutoTopupPayload) {
+  const { data } = await axiosInstance.post<DataBundleAutoTopupResponse>('/auth/data-bundles/auto-topup', body)
+  return data
+}
+
+export async function disableDataBundleAutoTopup() {
+  const { data } = await axiosInstance.delete<DisableDataBundleAutoTopupResponse>('/auth/data-bundles/auto-topup')
+  return data
+}
+
+export async function getDataBundleAllocations(payload?: DataBundleAllocationsQuery) {
+  const { data } = await axiosInstance.get<DataBundleAllocationsListResponse>('/auth/data-bundles/allocations', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getDataBundleTransactions(payload?: DataBundleTransactionsQuery) {
+  const { data } = await axiosInstance.get<DataBundleTransactionsListResponse>('/auth/data-bundles/transactions', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getDataBundleSpendTrend(payload?: DataBundleAnalyticsRangeQuery) {
+  const { data } = await axiosInstance.get<DataBundleSpendTrendResponse>('/auth/data-bundles/analytics/spend-trend', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getDataBundleSpendBreakdown(payload?: DataBundleAnalyticsRangeQuery) {
+  const { data } = await axiosInstance.get<DataBundleSpendBreakdownResponse>('/auth/data-bundles/analytics/spend-breakdown', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getDataBundleCarrierDistribution(payload?: DataBundleAnalyticsRangeQuery) {
+  const { data } = await axiosInstance.get<DataBundleCarrierDistributionResponse>('/auth/data-bundles/analytics/carrier-distribution', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getDataBundleSubscriptionUsage() {
+  const { data } = await axiosInstance.get<DataBundleSubscriptionUsageResponse>('/auth/data-bundles/analytics/subscription-usage')
+  return data
+}
+
+export async function getDataBundleRates(payload?: DataBundleRatesQuery) {
+  const { data } = await axiosInstance.get<DataBundleRatesListResponse>('/auth/data-bundles/rates', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getDataBundleCarriers() {
+  const { data } = await axiosInstance.get<DataBundleCarriersListResponse>('/auth/data-bundles/carriers')
   return data
 }
 
