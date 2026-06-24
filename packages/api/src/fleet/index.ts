@@ -40,6 +40,7 @@ import {
   getFleetAnalyticsSummary,
   getFuelEfficiency,
   getFuelMetrics,
+  getFuelSummary,
   getFuelThresholds,
   getFuelTransactions,
   getGeofence,
@@ -140,6 +141,7 @@ export const FLEET_QUERY_KEY = {
   analyticsDriverScores: (payload?: FleetAnalyticsDriverScoresQuery) => ['fleet', 'analytics', 'driverScores', payload],
   analyticsEvents: (payload?: FleetAnalyticsEventsQuery) => ['fleet', 'analytics', 'events', payload],
   fuelTransactions: (payload?: FuelQuery) => ['fleet', 'fuelTransactions', payload],
+  fuelSummary: ['fleet', 'fuelSummary'],
   fuelMetrics: (payload?: FuelMetricsQuery) => ['fleet', 'fuelMetrics', payload],
   fuelEfficiency: ['fleet', 'fuelEfficiency'],
   fuelThresholds: ['fleet', 'fuelThresholds'],
@@ -337,6 +339,13 @@ export function getFuelTransactionsQueryOptions(payload?: FuelQuery) {
   })
 }
 
+export function getFuelSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.fuelSummary,
+    queryFn: () => getFuelSummary(),
+  })
+}
+
 export function getFuelMetricsQueryOptions(payload?: FuelMetricsQuery) {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.fuelMetrics(payload),
@@ -516,6 +525,10 @@ export function useFleetAnalyticsEvents(payload?: FleetAnalyticsEventsQuery) {
 
 export function useFuelTransactions(payload?: FuelQuery) {
   return useQuery(getFuelTransactionsQueryOptions(payload))
+}
+
+export function useFuelSummary() {
+  return useQuery(getFuelSummaryQueryOptions())
 }
 
 export function useFuelMetrics(payload?: FuelMetricsQuery) {

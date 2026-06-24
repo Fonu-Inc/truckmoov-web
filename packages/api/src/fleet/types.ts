@@ -541,6 +541,13 @@ export type FuelThreshold = {
   minKmPerLiter: number
 }
 
+export type FuelSummary = {
+  totalLitres: number
+  totalCostNgn: number
+  avgPricePerLitre: number
+  transactionCount: number
+}
+
 export type MaintenanceRecord = {
   id: string
   tenantId: string
@@ -732,6 +739,7 @@ export type FuelConsumptionResponse = ServerResponse<FuelConsumptionBucket[]>
 export type FuelEfficiencyResponse = ServerResponse<VehicleEfficiency[]>
 export type FuelThresholdResponse = ServerResponse<FuelThreshold>
 export type FuelThresholdListResponse = ServerResponse<FuelThreshold[]>
+export type FuelSummaryResponse = ServerResponse<FuelSummary>
 export type MaintenanceRecordResponse = ServerResponse<MaintenanceRecord>
 export type MaintenanceRecordListResponse = ServerResponse<MaintenanceRecord[]>
 export type MaintenanceRecordsSummaryResponse = ServerResponse<MaintenanceRecordsSummary>

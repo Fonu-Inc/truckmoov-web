@@ -48,6 +48,7 @@ import type {
   FuelQuery,
   FuelRecordListResponse,
   FuelRecordResponse,
+  FuelSummaryResponse,
   FuelThresholdListResponse,
   FuelThresholdResponse,
   GpsDeviceListResponse,
@@ -408,6 +409,16 @@ export async function deleteFuelTransaction({ id }: { id: string }) {
   await axiosInstance.delete<FuelRecordResponse>(`/fleet/fuel/${id}`)
 }
 
+export async function getFuelSummary() {
+  const { data } = await axiosInstance.get<FuelSummaryResponse>('/fleet/fuel/summary')
+  return data
+}
+
+export async function exportFuelTransactions() {
+  const { data } = await axiosInstance.get<string>('/fleet/fuel/export')
+  return data
+}
+
 export async function getFuelMetrics(payload?: FuelMetricsQuery) {
   const { data } = await axiosInstance.get<FuelConsumptionResponse>('/fleet/fuel/metrics', { params: payload?.params })
   return data
@@ -426,13 +437,6 @@ export async function getFuelThresholds() {
 export async function setFuelThreshold({ vehicleType, data }: SetFuelThresholdPayload) {
   const { data: res } = await axiosInstance.put<FuelThresholdResponse>(`/fleet/fuel/thresholds/${vehicleType}`, data)
   return res
-}
-
-export async function exportFuelTransactions() {
-  const { data } = await axiosInstance.get('/fleet/fuel/export', {
-    responseType: 'blob',
-  })
-  return data
 }
 
 // Maintenance

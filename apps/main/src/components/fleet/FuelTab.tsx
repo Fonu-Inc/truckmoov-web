@@ -1,5 +1,7 @@
 import {Download,  AlertTriangle, CalendarIcon, DollarSign, Droplets, Edit, Eye, Fuel, Gauge, MoreHorizontal, Plus, Search, SlidersHorizontal, Trash2, TrendingUp, Truck } from 'lucide-react';
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useFuelTransactions, useFuelSummary, useRecordFuelTransaction, useUpdateFuelTransaction, useDeleteFuelTransaction, exportFuelTransactions } from "@truckmoov/api/fleet";
+import type { FuelRecord } from "@truckmoov/api/fleet";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
@@ -52,23 +54,15 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { PeriodFilter, PeriodValue } from "./PeriodFilter";
 
-type FuelTransaction = any;
+type FuelTransaction = FuelRecord;
 
 export function FuelTab() {
-  const transactions: FuelTransaction[] = [];
-  const isLoading = false;
-  const addTransaction = async (_input: any) => {};
-  const updateTransaction = async (_id: string, _updates: any) => {};
-  const deleteTransaction = async (_id: string) => {};
-  const getStats = () => ({ totalLitres: 0, totalCost: 0, avgPricePerLitre: 0 });
   const weeklyConsumption: any[] = [];
   const vehicleEfficiency: any[] = [];
-  const fleetSummary = { lowEfficiencyVehicles: 0 };
   const efficiencyThreshold = 8;
-  const exportToCSV = () => {};
-  const efficiencyLoading = false;
-  
+
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeTab, setActiveTab] = useState("transactions");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -102,6 +96,28 @@ export function FuelTab() {
   const [draftDateFrom, setDraftDateFrom] = useState<Date | undefined>(undefined);
   const [draftDateTo, setDraftDateTo] = useState<Date | undefined>(undefined);
 
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  const queryParams = useMemo(() => ({
+    params: {
+      station: debouncedSearch || undefined,
+      from: dateFrom ? dateFrom.toISOString() : undefined,
+      to: dateTo ? dateTo.toISOString() : undefined,
+    }
+  }), [debouncedSearch, dateFrom, dateTo]);
+
+  const fuelQuery = useFuelTransactions(queryParams);
+  const summaryQuery = useFuelSummary();
+  const transactions = fuelQuery.data?.data ?? [];
+  const isLoading = fuelQuery.isLoading;
+
+  const recordMutation = useRecordFuelTransaction();
+  const updateMutation = useUpdateFuelTransaction();
+  const deleteMutation = useDeleteFuelTransaction();
+
   const [newTransaction, setNewTransaction] = useState({
     vehicleReg: "",
     driverName: "",
@@ -112,59 +128,49 @@ export function FuelTab() {
     station: "" });
 
   const filteredTransactions = transactions.filter((t) => {
-    const q = searchQuery.toLowerCase();
-    const matchesSearch =
-      t.vehicle_name.toLowerCase().includes(q) ||
-      (t.driver_name?.toLowerCase() || "").includes(q) ||
-      (t.station_name?.toLowerCase() || "").includes(q);
-    if (!matchesSearch) return false;
-    if (fuelTypeFilter !== "all" && t.fuel_type !== fuelTypeFilter) return false;
-    const qty = Number(t.quantity_liters) || 0;
+    const qty = t.liters;
     if (qtyMin && qty < Number(qtyMin)) return false;
     if (qtyMax && qty > Number(qtyMax)) return false;
-    const cost = Number(t.cost_ngn) || 0;
+    const cost = t.totalCost;
     if (costMin && cost < Number(costMin)) return false;
     if (costMax && cost > Number(costMax)) return false;
-    if (dateFrom || dateTo) {
-      const txDate = new Date(t.transaction_date);
-      if (dateFrom && txDate < dateFrom) return false;
-      if (dateTo) {
-        const end = new Date(dateTo);
-        end.setHours(23, 59, 59, 999);
-        if (txDate > end) return false;
-      }
-    }
     return true;
   });
 
-  const uniqueVehicleCount = new Set(filteredTransactions.map((t) => t.vehicle_name)).size;
+  const uniqueVehicleCount = new Set(filteredTransactions.map((t) => t.vehicleId)).size;
   const activeFilterCount =
-    (fuelTypeFilter !== "all" ? 1 : 0) +
     (qtyMin || qtyMax ? 1 : 0) +
     (costMin || costMax ? 1 : 0) +
     (dateFrom || dateTo ? 1 : 0);
 
-  const stats = getStats();
-  const lowEfficiencyVehicles = fleetSummary.lowEfficiencyVehicles;
+  const summary = summaryQuery.data?.data;
+  const stats = {
+    totalLitres: summary?.totalLitres ?? 0,
+    totalCost: summary?.totalCostNgn ?? 0,
+    avgPricePerLitre: summary?.avgPricePerLitre ?? 0,
+  };
+  const lowEfficiencyVehicles = 0;
 
   const handleAddTransaction = async () => {
-    const quantity = parseFloat(newTransaction.quantity);
-    const pricePerLitre = parseFloat(newTransaction.pricePerLitre);
-    const totalCost = quantity * pricePerLitre;
-
+    const liters = parseFloat(newTransaction.quantity);
+    const pricePerLiter = parseFloat(newTransaction.pricePerLitre);
     try {
-      await addTransaction({
-        vehicle_id: `v-${Date.now()}`,
-        vehicle_name: newTransaction.vehicleReg,
-        driver_name: newTransaction.driverName || null,
-        fuel_type: newTransaction.fuelType,
-        quantity_liters: quantity,
-        cost_ngn: totalCost,
-        odometer_reading: newTransaction.odometer ? parseInt(newTransaction.odometer) : null,
-        station_name: newTransaction.station || null });
+      await recordMutation.mutateAsync({
+        data: {
+          vehicleId: newTransaction.vehicleReg,
+          driverId: newTransaction.driverName || undefined,
+          liters,
+          pricePerLiter,
+          station: newTransaction.station || undefined,
+          odometer: newTransaction.odometer ? parseInt(newTransaction.odometer) : undefined,
+        },
+      });
+      toast.success("Fuel transaction recorded");
       setIsAddDialogOpen(false);
       resetNewTransaction();
-    } catch (err) {}
+    } catch {
+      toast.error("Failed to record transaction");
+    }
   };
 
   const handleViewTransaction = (transaction: FuelTransaction) => {
@@ -174,48 +180,64 @@ export function FuelTab() {
 
   const handleEditTransaction = (transaction: FuelTransaction) => {
     setSelectedTransaction(transaction);
-    const pricePerLitre = Number(transaction.cost_ngn) / Number(transaction.quantity_liters);
     setNewTransaction({
-      vehicleReg: transaction.vehicle_name,
-      driverName: transaction.driver_name || "",
-      fuelType: transaction.fuel_type as "diesel" | "petrol",
-      quantity: transaction.quantity_liters.toString(),
-      pricePerLitre: pricePerLitre.toFixed(0),
-      odometer: transaction.odometer_reading?.toString() || "",
-      station: transaction.station_name || "" });
+      vehicleReg: transaction.vehicleId,
+      driverName: transaction.driverId || "",
+      fuelType: "diesel",
+      quantity: transaction.liters.toString(),
+      pricePerLitre: transaction.pricePerLiter.toFixed(0),
+      odometer: transaction.odometer?.toString() || "",
+      station: transaction.station || "" });
     setIsEditDialogOpen(true);
   };
 
   const handleUpdateTransaction = async () => {
-    if (selectedTransaction) {
-      const quantity = parseFloat(newTransaction.quantity);
-      const pricePerLitre = parseFloat(newTransaction.pricePerLitre);
-      const totalCost = quantity * pricePerLitre;
-
-      try {
-        await updateTransaction(selectedTransaction.id, {
-          vehicle_name: newTransaction.vehicleReg,
-          driver_name: newTransaction.driverName || null,
-          fuel_type: newTransaction.fuelType,
-          quantity_liters: quantity,
-          cost_ngn: totalCost,
-          odometer_reading: newTransaction.odometer ? parseInt(newTransaction.odometer) : null,
-          station_name: newTransaction.station || null });
-        setIsEditDialogOpen(false);
-        setSelectedTransaction(null);
-        resetNewTransaction();
-      } catch (err) {}
+    if (!selectedTransaction) return;
+    const liters = parseFloat(newTransaction.quantity);
+    const pricePerLiter = parseFloat(newTransaction.pricePerLitre);
+    try {
+      await updateMutation.mutateAsync({
+        id: selectedTransaction.id,
+        data: {
+          vehicleId: newTransaction.vehicleReg,
+          driverId: newTransaction.driverName || undefined,
+          liters,
+          pricePerLiter,
+          station: newTransaction.station || undefined,
+          odometer: newTransaction.odometer ? parseInt(newTransaction.odometer) : undefined,
+        },
+      });
+      toast.success("Transaction updated");
+      setIsEditDialogOpen(false);
+      setSelectedTransaction(null);
+      resetNewTransaction();
+    } catch {
+      toast.error("Failed to update transaction");
     }
   };
 
   const handleDeleteTransaction = async (id: string) => {
     try {
-      await deleteTransaction(id);
-    } catch (err) {}
+      await deleteMutation.mutateAsync({ id });
+      toast.success("Transaction deleted");
+    } catch {
+      toast.error("Failed to delete transaction");
+    }
   };
 
-  const handleExport = () => {
-    exportToCSV();
+  const handleExport = async () => {
+    try {
+      const csv = await exportFuelTransactions();
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "fuel-transactions.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Failed to export data");
+    }
   };
 
   const resetNewTransaction = () => {
@@ -342,7 +364,7 @@ export function FuelTab() {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search by vehicle, driver, station..."
+                    placeholder="Search by station..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10 bg-background/50 border-border/50"
@@ -612,21 +634,21 @@ export function FuelTab() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Truck className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-mono">{transaction.vehicle_name}</span>
+                          <span className="font-mono">{transaction.vehicleId}</span>
                         </div>
                       </TableCell>
-                      <TableCell>{transaction.driver_name || '—'}</TableCell>
+                      <TableCell>{transaction.driverId || '—'}</TableCell>
                       <TableCell className="capitalize">
-                        {transaction.fuel_type}
+                        {transaction.vehicleType ?? '—'}
                       </TableCell>
-                      <TableCell>{Number(transaction.quantity_liters).toFixed(1)}L</TableCell>
+                      <TableCell>{transaction.liters.toFixed(1)}L</TableCell>
                       <TableCell className="font-medium">
-                        ₦{Number(transaction.cost_ngn).toLocaleString()}
+                        ₦{transaction.totalCost.toLocaleString()}
                       </TableCell>
                       <TableCell className="max-w-[150px] truncate">
-                        {transaction.station_name || '—'}
+                        {transaction.station || '—'}
                       </TableCell>
-                      <TableCell>{format(new Date(transaction.transaction_date), "MMM dd, HH:mm")}</TableCell>
+                      <TableCell>{format(new Date(transaction.recordedAt), "MMM dd, HH:mm")}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -900,43 +922,41 @@ export function FuelTab() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-muted-foreground">Vehicle</p>
-                  <p className="font-mono">{selectedTransaction.vehicle_name}</p>
+                  <p className="font-mono">{selectedTransaction.vehicleId}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Driver</p>
-                  <p>{selectedTransaction.driver_name || '—'}</p>
+                  <p>{selectedTransaction.driverId || '—'}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-muted-foreground">Fuel Type</p>
-                  <Badge className={selectedTransaction.fuel_type === "diesel" ? "bg-primary/20 text-primary" : "bg-warning/20 text-warning"}>
-                    {selectedTransaction.fuel_type}
-                  </Badge>
+                  <p className="text-xs text-muted-foreground">Vehicle Type</p>
+                  <Badge>{selectedTransaction.vehicleType ?? '—'}</Badge>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Station</p>
-                  <p>{selectedTransaction.station_name || '—'}</p>
+                  <p>{selectedTransaction.station || '—'}</p>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs text-muted-foreground">Quantity</p>
-                  <p>{Number(selectedTransaction.quantity_liters).toFixed(1)}L</p>
+                  <p>{selectedTransaction.liters.toFixed(1)}L</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Cost</p>
-                  <p>₦{Number(selectedTransaction.cost_ngn).toLocaleString()}</p>
+                  <p>₦{selectedTransaction.totalCost.toLocaleString()}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Date</p>
-                  <p>{format(new Date(selectedTransaction.transaction_date), "MMM dd, yyyy")}</p>
+                  <p>{format(new Date(selectedTransaction.recordedAt), "MMM dd, yyyy")}</p>
                 </div>
               </div>
-              {selectedTransaction.odometer_reading && (
+              {selectedTransaction.odometer && (
                 <div>
                   <p className="text-xs text-muted-foreground">Odometer</p>
-                  <p>{selectedTransaction.odometer_reading.toLocaleString()} km</p>
+                  <p>{selectedTransaction.odometer.toLocaleString()} km</p>
                 </div>
               )}
             </div>
