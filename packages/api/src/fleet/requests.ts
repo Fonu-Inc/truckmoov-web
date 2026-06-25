@@ -34,6 +34,7 @@ import type {
   FleetAnalyticsJobPipelineResponse,
   FleetAnalyticsPeriodQuery,
   FleetAnalyticsSummaryResponse,
+  FleetFinancialSummaryResponse,
   FleetDashboardResponse,
   FleetDeviceListResponse,
   FleetDeviceResponse,
@@ -385,6 +386,11 @@ export async function getFleetAnalyticsEvents(payload?: FleetAnalyticsEventsQuer
   const { data } = await axiosInstance.get<FleetAnalyticsEventsResponse>('/fleet/analytics/events', {
     params: payload?.params,
   })
+  return data
+}
+
+export async function getFleetFinancialSummary() {
+  const { data } = await axiosInstance.get<FleetFinancialSummaryResponse>('/fleet/financials/summary')
   return data
 }
 

@@ -42,6 +42,7 @@ import {
   getFleetAnalyticsFuelLevels,
   getFleetAnalyticsJobPipeline,
   getFleetAnalyticsSummary,
+  getFleetFinancialSummary,
   getFuelEfficiency,
   getFuelMetrics,
   getFuelSummary,
@@ -148,6 +149,7 @@ export const FLEET_QUERY_KEY = {
   analyticsFuelLevels: (payload?: FleetAnalyticsPeriodQuery) => ['fleet', 'analytics', 'fuelLevels', payload],
   analyticsDriverScores: (payload?: FleetAnalyticsDriverScoresQuery) => ['fleet', 'analytics', 'driverScores', payload],
   analyticsEvents: (payload?: FleetAnalyticsEventsQuery) => ['fleet', 'analytics', 'events', payload],
+  financialSummary: ['fleet', 'financials', 'summary'],
   fuelTransactions: (payload?: FuelQuery) => ['fleet', 'fuelTransactions', payload],
   fuelSummary: ['fleet', 'fuelSummary'],
   fuelMetrics: (payload?: FuelMetricsQuery) => ['fleet', 'fuelMetrics', payload],
@@ -341,6 +343,13 @@ export function getFleetAnalyticsEventsQueryOptions(payload?: FleetAnalyticsEven
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.analyticsEvents(payload),
     queryFn: () => getFleetAnalyticsEvents(payload),
+  })
+}
+
+export function getFleetFinancialSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.financialSummary,
+    queryFn: () => getFleetFinancialSummary(),
   })
 }
 
@@ -554,6 +563,10 @@ export function useFleetAnalyticsDriverScores(payload?: FleetAnalyticsDriverScor
 
 export function useFleetAnalyticsEvents(payload?: FleetAnalyticsEventsQuery) {
   return useQuery(getFleetAnalyticsEventsQueryOptions(payload))
+}
+
+export function useFleetFinancialSummary() {
+  return useQuery(getFleetFinancialSummaryQueryOptions())
 }
 
 export function useFuelTransactions(payload?: FuelQuery) {

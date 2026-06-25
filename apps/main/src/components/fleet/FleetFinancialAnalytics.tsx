@@ -19,17 +19,16 @@ import {
   Wrench, 
   Users, 
   Shield,
-  Calculator,
   BarChart3,
   AlertTriangle,
   CheckCircle,
-  RefreshCw,
-  Calendar,
   Search,
   SlidersHorizontal,
   FileText,
+  Truck,
 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useFleetFinancialSummary } from "@truckmoov/api/fleet";
 import { 
   ChartContainer, 
   ChartTooltip, 
@@ -71,6 +70,7 @@ export function FleetFinancialAnalytics() {
   const calculateFleetProfitability = async (_vehicleIds: any[], _start: Date, _end: Date): Promise<any[]> => [];
   const isLoading = false;
   const { format } = useCurrency();
+  const { data: financialSummaryResp } = useFleetFinancialSummary();
   
   const [period, setPeriod] = useState<PeriodValue>("30");
   const [profitabilityPeriod, setProfitabilityPeriod] = useState<PeriodValue>("30");
@@ -170,6 +170,14 @@ export function FleetFinancialAnalytics() {
   const fleetMargin = fleetTotals.totalRevenue > 0 
     ? (fleetTotals.totalProfit / fleetTotals.totalRevenue) * 100 
     : 0;
+  const financialSummary = financialSummaryResp?.data;
+  const summaryStats = {
+    totalRevenue: financialSummary?.totalRevenue ?? fleetTotals.totalRevenue,
+    totalCost: financialSummary?.totalCost ?? fleetTotals.totalCosts,
+    totalProfit: financialSummary?.totalProfit ?? fleetTotals.totalProfit,
+    avgMarginPercent: financialSummary?.avgMarginPercent ?? fleetMargin,
+    vehicleCount: financialSummary?.vehicleCount ?? vehicles.length,
+  };
 
   // Tier distribution for pie chart
   const tierDistribution = profitabilityData.reduce((acc, v) => {
@@ -269,8 +277,8 @@ export function FleetFinancialAnalytics() {
                 <TrendingUp className="h-5 w-5 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-green-600">{format(fleetTotals.totalRevenue)}</p>
-                <p className="text-xs text-muted-foreground">Total Revenue · {fleetTotals.jobsCompleted} jobs</p>
+                <p className="text-2xl font-bold text-green-600">{format(summaryStats.totalRevenue)}</p>
+                <p className="text-xs text-muted-foreground">Total Revenue · {summaryStats.vehicleCount} vehicles</p>
               </div>
             </div>
           </CardContent>
@@ -283,8 +291,8 @@ export function FleetFinancialAnalytics() {
                 <TrendingDown className="h-5 w-5 text-destructive" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-red-600">{format(fleetTotals.totalCosts)}</p>
-                <p className="text-xs text-muted-foreground">Total Costs · {fleetTotals.totalKm.toFixed(0)} km</p>
+                <p className="text-2xl font-bold text-red-600">{format(summaryStats.totalCost)}</p>
+                <p className="text-xs text-muted-foreground">Total Costs · Fleet total</p>
               </div>
             </div>
           </CardContent>
@@ -297,10 +305,10 @@ export function FleetFinancialAnalytics() {
                 <DollarSign className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className={`text-2xl font-bold ${fleetTotals.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {format(fleetTotals.totalProfit)}
+                <p className={`text-2xl font-bold ${summaryStats.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {format(summaryStats.totalProfit)}
                 </p>
-                <p className="text-xs text-muted-foreground">Net Profit · {fleetMargin.toFixed(1)}% margin</p>
+                <p className="text-xs text-muted-foreground">Net Profit · {summaryStats.avgMarginPercent.toFixed(1)}% avg margin</p>
               </div>
             </div>
           </CardContent>
@@ -310,13 +318,13 @@ export function FleetFinancialAnalytics() {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-accent/20">
-                <Calculator className="h-5 w-5 text-accent" />
+                <Truck className="h-5 w-5 text-accent" />
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {fleetTotals.totalKm > 0 ? format(fleetTotals.totalCosts / fleetTotals.totalKm) : '—'}
+                  {summaryStats.vehicleCount}
                 </p>
-                <p className="text-xs text-muted-foreground">Cost per KM · Fleet average</p>
+                <p className="text-xs text-muted-foreground">Vehicles · In summary</p>
               </div>
             </div>
           </CardContent>

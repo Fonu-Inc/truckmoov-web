@@ -782,6 +782,14 @@ export type FleetAnalyticsEvent = {
   triggeredAt: string
 }
 
+export type FleetFinancialSummary = {
+  totalRevenue: number
+  totalCost: number
+  totalProfit: number
+  avgMarginPercent: number
+  vehicleCount: number
+}
+
 import type { ServerResponse } from '../lib/types'
 
 // ─── Response envelopes ───────────────────────────────────────────────────────
@@ -836,6 +844,7 @@ export type FleetAnalyticsJobPipelineResponse = ServerResponse<FleetAnalyticsJob
 export type FleetAnalyticsFuelLevelsResponse = ServerResponse<FleetAnalyticsFuelLevel[]>
 export type FleetAnalyticsDriverScoresResponse = ServerResponse<FleetAnalyticsDriverScore[]>
 export type FleetAnalyticsEventsResponse = ServerResponse<FleetAnalyticsEvent[]>
+export type FleetFinancialSummaryResponse = ServerResponse<FleetFinancialSummary>
 
 // ─── Compliance ───────────────────────────────────────────────────────────────
 
