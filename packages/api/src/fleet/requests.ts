@@ -62,6 +62,12 @@ import type {
   MaintenanceRecordResponse,
   MaintenanceRecordsQuery,
   MaintenanceRecordsSummaryResponse,
+  MaintenanceProfileActionPayload,
+  MaintenanceProfileListResponse,
+  MaintenanceProfileResponse,
+  MaintenanceProfilesQuery,
+  MaintenanceProfilesSummaryResponse,
+  MaintenanceServiceCategoriesResponse,
   MaintenanceStatusResponse,
   NearestVehicleListResponse,
   NearestVehiclesQuery,
@@ -92,6 +98,7 @@ import type {
   ComplianceDocumentSummaryResponse,
   ComplianceDocumentResponse,
   CreateComplianceDocumentPayload,
+  CreateMaintenanceProfilePayload,
   UpdateComplianceDocumentPayload,
 } from './types'
 
@@ -493,6 +500,45 @@ export async function completeMaintenanceRecord({ id }: MaintenanceRecordActionP
 export async function sendMaintenanceReminders({ data }: SendMaintenanceRemindersPayload) {
   const { data: res } = await axiosInstance.post<MaintenanceStatusResponse>('/fleet/maintenance/reminders/send', data)
   return res
+}
+
+export async function getMaintenanceProfiles(payload?: MaintenanceProfilesQuery) {
+  const { data } = await axiosInstance.get<MaintenanceProfileListResponse>('/fleet/maintenance/profiles', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function createMaintenanceProfile({ data }: CreateMaintenanceProfilePayload) {
+  const { data: res } = await axiosInstance.post<MaintenanceProfileResponse>('/fleet/maintenance/profiles', data)
+  return res
+}
+
+export async function deleteMaintenanceProfile({ id }: MaintenanceProfileActionPayload) {
+  const { data } = await axiosInstance.delete<MaintenanceStatusResponse>(`/fleet/maintenance/profiles/${id}`)
+  return data
+}
+
+export async function completeMaintenanceProfile({ id }: MaintenanceProfileActionPayload) {
+  const { data } = await axiosInstance.post<MaintenanceProfileResponse>(`/fleet/maintenance/profiles/${id}/complete`)
+  return data
+}
+
+export async function getMaintenanceProfilesSummary() {
+  const { data } = await axiosInstance.get<MaintenanceProfilesSummaryResponse>('/fleet/maintenance/profiles/summary')
+  return data
+}
+
+export async function getMaintenanceServiceCategories() {
+  const { data } = await axiosInstance.get<MaintenanceServiceCategoriesResponse>('/fleet/maintenance/service-categories')
+  return data
+}
+
+export async function exportMaintenanceProfiles() {
+  const { data } = await axiosInstance.get('/fleet/maintenance/profiles/export', {
+    responseType: 'blob',
+  })
+  return data
 }
 
 // ─── Documents ────────────────────────────────────────────────────────────────

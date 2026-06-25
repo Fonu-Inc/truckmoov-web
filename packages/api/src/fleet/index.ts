@@ -5,7 +5,9 @@ import {
   acknowledgeAlert,
   assignDevice,
   assignDriverToVehicle,
+  completeMaintenanceProfile,
   completeMaintenanceRecord,
+  createMaintenanceProfile,
   createMaintenanceRecord,
   createDevice,
   createDriver,
@@ -13,9 +15,11 @@ import {
   deleteDevice,
   deleteDriver,
   deleteFuelTransaction,
+  deleteMaintenanceProfile,
   deleteMaintenanceRecord,
   deleteVehicle,
   exportFuelTransactions,
+  exportMaintenanceProfiles,
   exportMaintenanceRecords,
   exportVehicles,
   exportReport,
@@ -46,9 +50,12 @@ import {
   getGeofence,
   getJobs,
   getLegacyGpsDevices,
+  getMaintenanceProfiles,
+  getMaintenanceProfilesSummary,
   getMaintenanceRecord,
   getMaintenanceRecords,
   getMaintenanceRecordsSummary,
+  getMaintenanceServiceCategories,
   getNearestVehicles,
   getReportsDashboard,
   getVehicle,
@@ -108,6 +115,7 @@ import type {
   FuelQuery,
   JobsQuery,
   LegacyGpsDevicesQuery,
+  MaintenanceProfilesQuery,
   MaintenanceRecordsQuery,
   NearestVehiclesQuery,
   ValidateDeviceAssignmentQuery,
@@ -145,6 +153,10 @@ export const FLEET_QUERY_KEY = {
   fuelMetrics: (payload?: FuelMetricsQuery) => ['fleet', 'fuelMetrics', payload],
   fuelEfficiency: ['fleet', 'fuelEfficiency'],
   fuelThresholds: ['fleet', 'fuelThresholds'],
+  maintenanceProfiles: (payload?: MaintenanceProfilesQuery) => ['fleet', 'maintenanceProfiles', payload],
+  maintenanceProfile: (id: string) => ['fleet', 'maintenanceProfile', id],
+  maintenanceProfilesSummary: ['fleet', 'maintenanceProfilesSummary'],
+  maintenanceServiceCategories: ['fleet', 'maintenanceServiceCategories'],
   maintenanceRecords: (payload?: MaintenanceRecordsQuery) => ['fleet', 'maintenanceRecords', payload],
   maintenanceRecord: (id: string) => ['fleet', 'maintenanceRecord', id],
   maintenanceRecordsSummary: ['fleet', 'maintenanceRecordsSummary'],
@@ -374,6 +386,27 @@ export function getMaintenanceRecordsQueryOptions(payload?: MaintenanceRecordsQu
   })
 }
 
+export function getMaintenanceProfilesQueryOptions(payload?: MaintenanceProfilesQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.maintenanceProfiles(payload),
+    queryFn: () => getMaintenanceProfiles(payload),
+  })
+}
+
+export function getMaintenanceProfilesSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.maintenanceProfilesSummary,
+    queryFn: () => getMaintenanceProfilesSummary(),
+  })
+}
+
+export function getMaintenanceServiceCategoriesQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.maintenanceServiceCategories,
+    queryFn: () => getMaintenanceServiceCategories(),
+  })
+}
+
 export function getMaintenanceRecordsSummaryQueryOptions() {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.maintenanceRecordsSummary,
@@ -545,6 +578,18 @@ export function useFuelThresholds() {
 
 export function useMaintenanceRecords(payload?: MaintenanceRecordsQuery) {
   return useQuery(getMaintenanceRecordsQueryOptions(payload))
+}
+
+export function useMaintenanceProfiles(payload?: MaintenanceProfilesQuery) {
+  return useQuery(getMaintenanceProfilesQueryOptions(payload))
+}
+
+export function useMaintenanceProfilesSummary() {
+  return useQuery(getMaintenanceProfilesSummaryQueryOptions())
+}
+
+export function useMaintenanceServiceCategories() {
+  return useQuery(getMaintenanceServiceCategoriesQueryOptions())
 }
 
 export function useMaintenanceRecordsSummary() {
@@ -867,6 +912,41 @@ function invalidateMaintenanceRecords(id?: string) {
   }
 }
 
+function invalidateMaintenanceProfiles(id?: string) {
+  queryClient.invalidateQueries({ queryKey: ['fleet', 'maintenanceProfiles'] })
+  queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.maintenanceProfilesSummary })
+  if (id) {
+    queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.maintenanceProfile(id) })
+  }
+}
+
+export function useCreateMaintenanceProfile() {
+  return useMutation({
+    mutationFn: createMaintenanceProfile,
+    onSuccess: () => {
+      invalidateMaintenanceProfiles()
+    },
+  })
+}
+
+export function useDeleteMaintenanceProfile() {
+  return useMutation({
+    mutationFn: deleteMaintenanceProfile,
+    onSuccess: (_, { id }) => {
+      invalidateMaintenanceProfiles(id)
+    },
+  })
+}
+
+export function useCompleteMaintenanceProfile() {
+  return useMutation({
+    mutationFn: completeMaintenanceProfile,
+    onSuccess: (_, { id }) => {
+      invalidateMaintenanceProfiles(id)
+    },
+  })
+}
+
 export function useCreateMaintenanceRecord() {
   return useMutation({
     mutationFn: createMaintenanceRecord,
@@ -1016,4 +1096,13 @@ export function useSendComplianceReminders() {
 
 // ─── Re-export plain request functions for imperative use ─────────────────────
 
-export { exportFuelTransactions, exportMaintenanceRecords, exportReport, exportVehicles, exportComplianceDocs, getDocumentDownloadUrl, uploadDocument }
+export {
+  exportComplianceDocs,
+  exportFuelTransactions,
+  exportMaintenanceProfiles,
+  exportMaintenanceRecords,
+  exportReport,
+  exportVehicles,
+  getDocumentDownloadUrl,
+  uploadDocument,
+}

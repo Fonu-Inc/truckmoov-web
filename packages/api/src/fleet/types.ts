@@ -332,6 +332,42 @@ export type SendMaintenanceRemindersPayload = {
   }
 }
 
+export type MaintenanceProfileLifecycleStatus = 'overdue' | 'due' | 'upcoming' | 'completed'
+export type MaintenanceProfileIntervalType = 'date' | 'mileage' | 'both' | 'months'
+export type MaintenanceProfileMileageSource = 'telemetry' | 'manual' | string
+
+export type MaintenanceProfilesQuery = {
+  params?: {
+    vehicleId?: string
+    lifecycleStatus?: MaintenanceProfileLifecycleStatus
+    nextDueDateFrom?: string
+    nextDueDateTo?: string
+    search?: string
+  }
+}
+
+export type CreateMaintenanceProfilePayload = {
+  data: {
+    vehicleId: string
+    serviceType: string
+    serviceLabel?: string | null
+    intervalType: MaintenanceProfileIntervalType
+    intervalDays?: number | null
+    intervalMonths?: number | null
+    intervalKm?: number | null
+    lastServiceDate?: string | null
+    lastServiceMileage?: number | null
+    currentMileage?: number | null
+    mileageSource?: MaintenanceProfileMileageSource
+    nextDueDate?: string | null
+    nextDueMileage?: number | null
+  }
+}
+
+export type MaintenanceProfileActionPayload = {
+  id: string
+}
+
 // ─── Documents ────────────────────────────────────────────────────────────────
 
 export type UploadDocumentQuery = {
@@ -575,6 +611,35 @@ export type MaintenanceRecordsSummary = {
   totalCost: number
 }
 
+export type MaintenanceProfile = {
+  id: string
+  tenantId: string
+  vehicleId: string
+  serviceType: string
+  serviceLabel: string | null
+  intervalType: MaintenanceProfileIntervalType
+  intervalDays: number | null
+  intervalMonths: number | null
+  intervalKm: number | null
+  lastServiceDate: string | null
+  lastServiceMileage: number | null
+  currentMileage: number | null
+  mileageSource: MaintenanceProfileMileageSource
+  nextDueDate: string | null
+  nextDueMileage: number | null
+  createdAt: string
+  updatedAt: string
+  lifecycleStatus: MaintenanceProfileLifecycleStatus
+}
+
+export type MaintenanceProfilesSummary = {
+  total: number
+  overdue: number
+  due: number
+  upcoming: number
+  completed: number
+}
+
 export type FleetDocument = {
   id: string
   tenantId: string
@@ -743,6 +808,10 @@ export type FuelSummaryResponse = ServerResponse<FuelSummary>
 export type MaintenanceRecordResponse = ServerResponse<MaintenanceRecord>
 export type MaintenanceRecordListResponse = ServerResponse<MaintenanceRecord[]>
 export type MaintenanceRecordsSummaryResponse = ServerResponse<MaintenanceRecordsSummary>
+export type MaintenanceProfileResponse = ServerResponse<MaintenanceProfile>
+export type MaintenanceProfileListResponse = ServerResponse<MaintenanceProfile[]>
+export type MaintenanceProfilesSummaryResponse = ServerResponse<MaintenanceProfilesSummary>
+export type MaintenanceServiceCategoriesResponse = ServerResponse<string[]>
 export type MaintenanceStatusResponse = {
   status: boolean
   message: string

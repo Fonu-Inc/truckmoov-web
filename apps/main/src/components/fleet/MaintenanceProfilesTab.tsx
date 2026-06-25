@@ -1,29 +1,5 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Badge } from "@/components/shadcn/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/shadcn/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/shadcn/select";
-import { Label } from "@/components/shadcn/label";
-import { Checkbox } from "@/components/shadcn/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import { Calendar as CalendarPicker } from "@/components/shadcn/calendar";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { format, differenceInDays, addDays, addMonths } from "date-fns";
 import {
   Wrench,
   Plus,
@@ -33,210 +9,207 @@ import {
   Clock,
   Calendar,
   Truck,
-  Gauge,
   Archive,
   SlidersHorizontal,
+  Download,
 } from "lucide-react";
-import { ExportButton } from "@/components/shadcn/export-button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/shadcn/popover";
-import { format, differenceInDays, addDays, addMonths } from "date-fns";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-type MaintenanceProfile = any;
-type MaintenanceIntervalType = "date" | "mileage" | "both" | "months";
-const SERVICE_TYPES: { value: string; label: string }[] = [];
 
-const statusColors: Record<string, string> = {
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import { Calendar as CalendarPicker } from "@/components/shadcn/calendar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
+import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import { cn } from "@/lib/utils";
+import {
+  exportMaintenanceProfiles,
+  useCompleteMaintenanceProfile,
+  useCreateMaintenanceProfile,
+  useDeleteMaintenanceProfile,
+  useMaintenanceProfiles,
+  useMaintenanceProfilesSummary,
+  useMaintenanceServiceCategories,
+  useVehicles,
+  type MaintenanceProfile,
+  type MaintenanceProfileLifecycleStatus,
+  type MaintenanceProfilesQuery,
+  type MaintenanceProfileIntervalType,
+} from "@truckmoov/api/fleet";
+
+type NewProfileState = {
+  vehicleId: string;
+  serviceType: string;
+  customLabel: string;
+  intervalType: MaintenanceProfileIntervalType;
+  timeUnit: "days" | "months";
+  intervalDays: string;
+  intervalMonths: string;
+  intervalKm: string;
+  lastServiceDate: string;
+  lastServiceMileage: string;
+};
+
+const statusColors: Record<MaintenanceProfileLifecycleStatus, string> = {
   upcoming: "bg-primary/20 text-primary border-primary/30",
   due: "bg-warning/20 text-warning border-warning/30",
   overdue: "bg-destructive/20 text-destructive border-destructive/30",
   completed: "bg-success/20 text-success border-success/30",
 };
 
-const statusIcons: Record<string, React.ReactNode> = {
+const statusIcons: Record<MaintenanceProfileLifecycleStatus, ReactNode> = {
   upcoming: <Calendar className="h-4 w-4" />,
   due: <Clock className="h-4 w-4" />,
   overdue: <AlertTriangle className="h-4 w-4" />,
   completed: <CheckCircle className="h-4 w-4" />,
 };
 
-export function MaintenanceProfilesTab() {
-  const profiles: MaintenanceProfile[] = [];
-  const groupedProfiles: any = {};
-  const stats = { overdue: 0, due: 0, upcoming: 0, total: 0 };
-  const isLoading = false;
-  const addProfile = async (..._args: any[]) => {};
-  const completeService = async (..._args: any[]) => {};
-  const archiveProfile = async (..._args: any[]) => {};
-  const fetchProfiles = async () => {};
-  const vehicles: any[] = [];
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  // Applied filters (drive results)
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [customCategoryQuery, setCustomCategoryQuery] = useState("");
-  const [dueDateFrom, setDueDateFrom] = useState<Date | undefined>(undefined);
-  const [dueDateTo, setDueDateTo] = useState<Date | undefined>(undefined);
-  const [mileageMin, setMileageMin] = useState("");
-  const [mileageMax, setMileageMax] = useState("");
-  const [intervalMin, setIntervalMin] = useState("");
-  const [intervalMax, setIntervalMax] = useState("");
-  // Draft filters (popover inputs)
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [draftCategory, setDraftCategory] = useState<string>("all");
-  const [draftCustomQuery, setDraftCustomQuery] = useState("");
-  const [draftDueFrom, setDraftDueFrom] = useState<Date | undefined>(undefined);
-  const [draftDueTo, setDraftDueTo] = useState<Date | undefined>(undefined);
-  const [draftMileageMin, setDraftMileageMin] = useState("");
-  const [draftMileageMax, setDraftMileageMax] = useState("");
-  const [draftIntervalMin, setDraftIntervalMin] = useState("");
-  const [draftIntervalMax, setDraftIntervalMax] = useState("");
-  // Per-filter enable toggles
-  const [draftEnableCategory, setDraftEnableCategory] = useState(false);
-  const [draftEnableDueDate, setDraftEnableDueDate] = useState(false);
-  const [draftEnableMileage, setDraftEnableMileage] = useState(false);
-  const [draftEnableInterval, setDraftEnableInterval] = useState(false);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
-  const [selectedProfile, setSelectedProfile] = useState<MaintenanceProfile | null>(null);
-  const [completionData, setCompletionData] = useState({
-    mileage: "",
-    cost: "",
-    notes: "",
-  });
-  const [newProfile, setNewProfile] = useState({
+function buildDefaultProfile(): NewProfileState {
+  return {
     vehicleId: "",
     serviceType: "",
     customLabel: "",
-    intervalType: "date" as MaintenanceIntervalType,
-    timeUnit: "days" as "days" | "months",
+    intervalType: "date",
+    timeUnit: "days",
     intervalDays: "",
     intervalMonths: "",
     intervalKm: "",
     lastServiceDate: "",
     lastServiceMileage: "",
-  });
+  };
+}
 
-  const matchesAdvancedFilters = (profile: MaintenanceProfile) => {
-    // Category filter
-    if (categoryFilter !== "all") {
-      if (categoryFilter === "custom") {
-        const isCustomService = !SERVICE_TYPES.some(
-          (t) => t.value !== "custom" && t.value === profile.service_type
-        );
-        if (!isCustomService) return false;
-        if (customCategoryQuery) {
-          const haystack = `${profile.service_label ?? ""} ${profile.service_type}`.toLowerCase();
-          if (!haystack.includes(customCategoryQuery.toLowerCase())) return false;
-        }
-      } else if (profile.service_type !== categoryFilter) {
-        return false;
-      }
-    }
-    // Next due date range
-    if (dueDateFrom || dueDateTo) {
-      if (!profile.next_due_date) return false;
-      const due = new Date(profile.next_due_date);
-      if (dueDateFrom && due < dueDateFrom) return false;
-      if (dueDateTo && due > dueDateTo) return false;
-    }
-    // Next due mileage range
-    const minM = mileageMin ? parseInt(mileageMin) : null;
-    const maxM = mileageMax ? parseInt(mileageMax) : null;
-    if (minM !== null || maxM !== null) {
-      const m = profile.next_due_mileage;
-      if (m == null) return false;
-      if (minM !== null && m < minM) return false;
-      if (maxM !== null && m > maxM) return false;
-    }
-    // Interval range (days OR km, whichever applies)
-    const minI = intervalMin ? parseInt(intervalMin) : null;
-    const maxI = intervalMax ? parseInt(intervalMax) : null;
-    if (minI !== null || maxI !== null) {
-      const interval =
-        profile.interval_days ??
-        (profile.interval_months ? profile.interval_months * 30 : null) ??
-        profile.interval_km ??
-        null;
-      if (interval == null) return false;
-      if (minI !== null && interval < minI) return false;
-      if (maxI !== null && interval > maxI) return false;
-    }
-    return true;
+function downloadBlob(data: unknown, filename: string) {
+  const blob = data instanceof Blob ? data : new Blob([data as BlobPart], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function formatServiceLabel(value: string) {
+  return value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+export function MaintenanceProfilesTab() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dueDateFrom, setDueDateFrom] = useState<Date | undefined>(undefined);
+  const [dueDateTo, setDueDateTo] = useState<Date | undefined>(undefined);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftDueFrom, setDraftDueFrom] = useState<Date | undefined>(undefined);
+  const [draftDueTo, setDraftDueTo] = useState<Date | undefined>(undefined);
+  const [draftEnableDueDate, setDraftEnableDueDate] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<MaintenanceProfile | null>(null);
+  const [newProfile, setNewProfile] = useState<NewProfileState>(() => buildDefaultProfile());
+  const [isExporting, setIsExporting] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
+  const profileQueryParams = useMemo<MaintenanceProfilesQuery>(
+    () => ({
+      params: {
+        search: debouncedSearch || undefined,
+        lifecycleStatus:
+          statusFilter !== "all" ? (statusFilter as MaintenanceProfileLifecycleStatus) : undefined,
+        nextDueDateFrom: dueDateFrom ? format(dueDateFrom, "yyyy-MM-dd") : undefined,
+        nextDueDateTo: dueDateTo ? format(dueDateTo, "yyyy-MM-dd") : undefined,
+      },
+    }),
+    [debouncedSearch, dueDateFrom, dueDateTo, statusFilter],
+  );
+
+  const profilesQuery = useMaintenanceProfiles(profileQueryParams);
+  const summaryQuery = useMaintenanceProfilesSummary();
+  const vehiclesQuery = useVehicles();
+  const categoriesQuery = useMaintenanceServiceCategories();
+  const createProfileMutation = useCreateMaintenanceProfile();
+  const completeProfileMutation = useCompleteMaintenanceProfile();
+  const deleteProfileMutation = useDeleteMaintenanceProfile();
+
+  const profiles = useMemo(() => profilesQuery.data?.data ?? [], [profilesQuery.data?.data]);
+  const vehicles = useMemo(() => vehiclesQuery.data?.data ?? [], [vehiclesQuery.data?.data]);
+  const serviceCategories = useMemo(() => categoriesQuery.data?.data ?? [], [categoriesQuery.data?.data]);
+  const stats = summaryQuery.data?.data ?? {
+    overdue: 0,
+    due: 0,
+    upcoming: 0,
+    completed: 0,
+    total: 0,
   };
 
-  const filteredProfiles = profiles.filter((profile) => {
-    const matchesSearch =
-      profile.vehicle_registration?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      profile.service_type.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || profile.lifecycle_status === statusFilter;
-    return matchesSearch && matchesStatus && matchesAdvancedFilters(profile);
-  });
+  const vehicleLabelById = useMemo(() => {
+    return new Map(
+      vehicles.map((vehicle) => [
+        vehicle.id,
+        vehicle.registrationNumber ||
+          vehicle.plateNumber ||
+          `${vehicle.make ?? ""} ${vehicle.model ?? ""}`.trim() ||
+          vehicle.id,
+      ]),
+    );
+  }, [vehicles]);
+
+  const getVehicleLabel = (vehicleId: string) => vehicleLabelById.get(vehicleId) ?? vehicleId;
 
   const resetFilters = () => {
-    setCategoryFilter("all");
-    setCustomCategoryQuery("");
     setDueDateFrom(undefined);
     setDueDateTo(undefined);
-    setMileageMin("");
-    setMileageMax("");
-    setIntervalMin("");
-    setIntervalMax("");
-    setDraftCategory("all");
-    setDraftCustomQuery("");
     setDraftDueFrom(undefined);
     setDraftDueTo(undefined);
-    setDraftMileageMin("");
-    setDraftMileageMax("");
-    setDraftIntervalMin("");
-    setDraftIntervalMax("");
-    setDraftEnableCategory(false);
     setDraftEnableDueDate(false);
-    setDraftEnableMileage(false);
-    setDraftEnableInterval(false);
+    setFilterOpen(false);
   };
 
   const applyDraftFilters = () => {
-    setCategoryFilter(draftEnableCategory ? draftCategory : "all");
-    setCustomCategoryQuery(draftEnableCategory ? draftCustomQuery : "");
     setDueDateFrom(draftEnableDueDate ? draftDueFrom : undefined);
     setDueDateTo(draftEnableDueDate ? draftDueTo : undefined);
-    setMileageMin(draftEnableMileage ? draftMileageMin : "");
-    setMileageMax(draftEnableMileage ? draftMileageMax : "");
-    setIntervalMin(draftEnableInterval ? draftIntervalMin : "");
-    setIntervalMax(draftEnableInterval ? draftIntervalMax : "");
     setFilterOpen(false);
   };
 
   const handleFilterOpenChange = (open: boolean) => {
     if (open) {
-      // Sync draft from applied
-      setDraftCategory(categoryFilter);
-      setDraftCustomQuery(customCategoryQuery);
       setDraftDueFrom(dueDateFrom);
       setDraftDueTo(dueDateTo);
-      setDraftMileageMin(mileageMin);
-      setDraftMileageMax(mileageMax);
-      setDraftIntervalMin(intervalMin);
-      setDraftIntervalMax(intervalMax);
-      setDraftEnableCategory(categoryFilter !== "all");
       setDraftEnableDueDate(Boolean(dueDateFrom || dueDateTo));
-      setDraftEnableMileage(Boolean(mileageMin || mileageMax));
-      setDraftEnableInterval(Boolean(intervalMin || intervalMax));
     }
     setFilterOpen(open);
   };
 
-  const activeFilterCount =
-    (categoryFilter !== "all" ? 1 : 0) +
-    (dueDateFrom || dueDateTo ? 1 : 0) +
-    (mileageMin || mileageMax ? 1 : 0) +
-    (intervalMin || intervalMax ? 1 : 0);
+  const activeFilterCount = dueDateFrom || dueDateTo ? 1 : 0;
+
+  const resetNewProfile = () => {
+    setNewProfile(buildDefaultProfile());
+  };
 
   const handleAddProfile = async () => {
     if (!newProfile.vehicleId || !newProfile.serviceType) {
@@ -244,42 +217,52 @@ export function MaintenanceProfilesTab() {
       return;
     }
 
-    // Calculate next due date
-    let nextDueDate: string | undefined;
-    if (newProfile.intervalType !== 'mileage') {
+    if (newProfile.serviceType === "custom" && !newProfile.customLabel.trim()) {
+      toast.error("Please enter a custom service category");
+      return;
+    }
+
+    let nextDueDate: string | null = null;
+    if (newProfile.intervalType !== "mileage") {
       const baseDate = newProfile.lastServiceDate ? new Date(newProfile.lastServiceDate) : new Date();
       if (newProfile.intervalDays) {
-        nextDueDate = addDays(baseDate, parseInt(newProfile.intervalDays)).toISOString();
+        nextDueDate = addDays(baseDate, Number(newProfile.intervalDays)).toISOString();
       } else if (newProfile.intervalMonths) {
-        nextDueDate = addMonths(baseDate, parseInt(newProfile.intervalMonths)).toISOString();
+        nextDueDate = addMonths(baseDate, Number(newProfile.intervalMonths)).toISOString();
       }
     }
 
-    // Calculate next due mileage
-    let nextDueMileage: number | undefined;
-    if (newProfile.intervalType !== 'date' && newProfile.intervalKm) {
-      const baseMileage = newProfile.lastServiceMileage ? parseInt(newProfile.lastServiceMileage) : 0;
-      nextDueMileage = baseMileage + parseInt(newProfile.intervalKm);
+    let nextDueMileage: number | null = null;
+    if (newProfile.intervalType !== "date" && newProfile.intervalKm) {
+      const baseMileage = newProfile.lastServiceMileage ? Number(newProfile.lastServiceMileage) : 0;
+      nextDueMileage = baseMileage + Number(newProfile.intervalKm);
     }
 
+    const serviceType =
+      newProfile.serviceType === "custom" ? newProfile.customLabel.trim() : newProfile.serviceType;
+
     try {
-      await addProfile({
-        vehicle_id: newProfile.vehicleId,
-        service_type: newProfile.serviceType === 'custom' ? newProfile.customLabel : newProfile.serviceType,
-        service_label: newProfile.customLabel || null,
-        interval_type: newProfile.intervalType,
-        interval_days: newProfile.intervalDays ? parseInt(newProfile.intervalDays) : null,
-        interval_months: newProfile.intervalMonths ? parseInt(newProfile.intervalMonths) : null,
-        interval_km: newProfile.intervalKm ? parseInt(newProfile.intervalKm) : null,
-        last_service_date: newProfile.lastServiceDate || null,
-        last_service_mileage: newProfile.lastServiceMileage ? parseInt(newProfile.lastServiceMileage) : null,
-        next_due_date: nextDueDate,
-        next_due_mileage: nextDueMileage,
+      await createProfileMutation.mutateAsync({
+        data: {
+          vehicleId: newProfile.vehicleId,
+          serviceType,
+          serviceLabel: newProfile.serviceType === "custom" ? newProfile.customLabel.trim() : serviceType,
+          intervalType: newProfile.intervalType,
+          intervalDays: newProfile.intervalDays ? Number(newProfile.intervalDays) : null,
+          intervalMonths: newProfile.intervalMonths ? Number(newProfile.intervalMonths) : null,
+          intervalKm: newProfile.intervalKm ? Number(newProfile.intervalKm) : null,
+          lastServiceDate: newProfile.lastServiceDate || null,
+          lastServiceMileage: newProfile.lastServiceMileage ? Number(newProfile.lastServiceMileage) : null,
+          mileageSource: "manual",
+          nextDueDate,
+          nextDueMileage,
+        },
       });
+      toast.success("Maintenance profile created");
       setIsAddDialogOpen(false);
       resetNewProfile();
-    } catch (err) {
-      // Error handled by hook
+    } catch (error) {
+      toast.error(error.message || "Failed to create maintenance profile");
     }
   };
 
@@ -287,54 +270,50 @@ export function MaintenanceProfilesTab() {
     if (!selectedProfile) return;
 
     try {
-      await completeService(
-        selectedProfile.id,
-        completionData.mileage ? parseInt(completionData.mileage) : undefined,
-        completionData.cost ? parseFloat(completionData.cost) : undefined,
-        completionData.notes || undefined
-      );
+      await completeProfileMutation.mutateAsync({ id: selectedProfile.id });
+      toast.success("Maintenance profile completed");
       setIsCompleteDialogOpen(false);
       setSelectedProfile(null);
-      setCompletionData({ mileage: "", cost: "", notes: "" });
-    } catch (err) {
-      // Error handled by hook
+    } catch (error) {
+      toast.error(error.message || "Failed to complete maintenance profile");
     }
   };
 
   const handleArchive = async (profile: MaintenanceProfile) => {
     try {
-      await archiveProfile(profile.id);
-    } catch (err) {
-      // Error handled by hook
+      await deleteProfileMutation.mutateAsync({ id: profile.id });
+      toast.success("Maintenance profile deleted");
+    } catch (error) {
+      toast.error(error.message || "Failed to delete maintenance profile");
     }
   };
 
-  const resetNewProfile = () => {
-    setNewProfile({
-      vehicleId: "",
-      serviceType: "",
-      customLabel: "",
-      intervalType: "date",
-      timeUnit: "days",
-      intervalDays: "",
-      intervalMonths: "",
-      intervalKm: "",
-      lastServiceDate: "",
-      lastServiceMileage: "",
-    });
+  const handleExportProfiles = async () => {
+    setIsExporting(true);
+    try {
+      const data = await exportMaintenanceProfiles();
+      downloadBlob(data, "maintenance_profiles.csv");
+      toast.success("Maintenance profiles export downloaded");
+    } catch (error) {
+      toast.error(error.message || "Maintenance profiles export failed");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const getDaysUntilDue = (profile: MaintenanceProfile): number | null => {
-    if (!profile.next_due_date) return null;
-    return differenceInDays(new Date(profile.next_due_date), new Date());
+    if (!profile.nextDueDate) return null;
+    return differenceInDays(new Date(profile.nextDueDate), new Date());
   };
 
   const getKmUntilDue = (profile: MaintenanceProfile): number | null => {
-    if (!profile.next_due_mileage || !profile.current_mileage) return null;
-    return profile.next_due_mileage - profile.current_mileage;
+    if (!profile.nextDueMileage || !profile.currentMileage) return null;
+    return profile.nextDueMileage - profile.currentMileage;
   };
 
-  if (isLoading) {
+  const isInitialLoading = profilesQuery.isPending;
+
+  if (isInitialLoading) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -351,95 +330,8 @@ export function MaintenanceProfilesTab() {
     );
   }
 
-  // Demo fallback profiles for empty state
-  const demoProfiles: MaintenanceProfile[] = [
-    {
-      id: "demo-1",
-      vehicle_id: "demo-v1",
-      vehicle_registration: "LAG-201-AB",
-      service_type: "oil_change",
-      service_label: "Engine Oil Change",
-      interval_type: "mileage",
-      interval_days: null,
-      interval_months: null,
-      interval_km: 10000,
-      last_service_date: new Date(Date.now() - 60 * 86400000).toISOString(),
-      last_service_mileage: 45000,
-      next_due_date: new Date(Date.now() - 5 * 86400000).toISOString(),
-      next_due_mileage: 55000,
-      current_mileage: 56200,
-      mileage_source: "telemetry",
-      lifecycle_status: "overdue",
-    } as any,
-    {
-      id: "demo-2",
-      vehicle_id: "demo-v2",
-      vehicle_registration: "LAG-318-CD",
-      service_type: "brake_inspection",
-      service_label: "Brake Inspection",
-      interval_type: "date",
-      interval_days: 90,
-      interval_months: null,
-      interval_km: null,
-      last_service_date: new Date(Date.now() - 85 * 86400000).toISOString(),
-      last_service_mileage: 32000,
-      next_due_date: new Date(Date.now() + 5 * 86400000).toISOString(),
-      next_due_mileage: null,
-      current_mileage: 38500,
-      mileage_source: "manual",
-      lifecycle_status: "due",
-    } as any,
-    {
-      id: "demo-3",
-      vehicle_id: "demo-v3",
-      vehicle_registration: "LAG-422-EF",
-      service_type: "tire_rotation",
-      service_label: "Tire Rotation",
-      interval_type: "mileage",
-      interval_days: null,
-      interval_months: null,
-      interval_km: 8000,
-      last_service_date: new Date(Date.now() - 30 * 86400000).toISOString(),
-      last_service_mileage: 60000,
-      next_due_date: new Date(Date.now() + 45 * 86400000).toISOString(),
-      next_due_mileage: 68000,
-      current_mileage: 62100,
-      mileage_source: "telemetry",
-      lifecycle_status: "upcoming",
-    } as any,
-    {
-      id: "demo-4",
-      vehicle_id: "demo-v4",
-      vehicle_registration: "LAG-507-GH",
-      service_type: "filter_replacement",
-      service_label: "Air Filter Replacement",
-      interval_type: "months",
-      interval_days: null,
-      interval_months: 6,
-      interval_km: null,
-      last_service_date: new Date(Date.now() - 30 * 86400000).toISOString(),
-      last_service_mileage: 21000,
-      next_due_date: new Date(Date.now() + 150 * 86400000).toISOString(),
-      next_due_mileage: null,
-      current_mileage: 23400,
-      mileage_source: "manual",
-      lifecycle_status: "upcoming",
-    } as any,
-  ];
-
-  const displayProfiles = filteredProfiles.length === 0 && profiles.length === 0
-    ? demoProfiles.filter((p) => statusFilter === "all" || p.lifecycle_status === statusFilter)
-        .filter((p) =>
-          !searchQuery ||
-          p.vehicle_registration?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.service_type.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-        .filter((p) => matchesAdvancedFilters(p as MaintenanceProfile))
-    : filteredProfiles;
-
   return (
     <div className="space-y-6">
-      {/* Header: Add button aligned top-right, above KPIs */}
       <div className="flex items-center justify-end">
         <Button onClick={() => setIsAddDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -447,7 +339,6 @@ export function MaintenanceProfilesTab() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className={cn("bg-card/50 border-border/50", stats.overdue > 0 && "border-destructive/50")}>
           <CardContent className="p-4">
@@ -503,30 +394,28 @@ export function MaintenanceProfilesTab() {
         </Card>
       </div>
 
-      {/* Maintenance Profiles: header + table in one container */}
       <Card className="bg-card/50 border-border/50">
         <CardHeader className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Wrench className="h-5 w-5 text-primary" />
-                Maintenance Profiles ({displayProfiles.length})
+                Maintenance Profiles ({profiles.length})
               </CardTitle>
-              <CardDescription className="mt-1">Per-vehicle maintenance schedules — service intervals, next-due dates, and SLA targets.</CardDescription>
+              <CardDescription className="mt-1">
+                Per-vehicle maintenance schedules, service intervals, next-due dates, and SLA targets.
+              </CardDescription>
             </div>
-            <ExportButton
-              filename="maintenance_profiles"
-              rows={displayProfiles}
-              columns={[
-                { header: "Vehicle", accessor: (p: MaintenanceProfile) => p.vehicle_registration ?? "" },
-                { header: "Service Category", accessor: (p: MaintenanceProfile) => p.service_label || p.service_type },
-                { header: "Status", accessor: "lifecycle_status" },
-                { header: "Next Due Date", accessor: (p: MaintenanceProfile) => p.next_due_date ? format(new Date(p.next_due_date), "yyyy-MM-dd") : "" },
-                { header: "Next Due Mileage (km)", accessor: (p: MaintenanceProfile) => p.next_due_mileage ?? "" },
-                { header: "Current Mileage (km)", accessor: (p: MaintenanceProfile) => p.current_mileage ?? "" },
-                { header: "Interval Type", accessor: "interval_type" },
-              ]}
-            />
+            <Button
+              variant="outline"
+              size="sm"
+              loading={isExporting}
+              onClick={handleExportProfiles}
+              className="bg-transparent border-input"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Data
+            </Button>
           </div>
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <div className="relative flex-1 min-w-0">
@@ -562,51 +451,21 @@ export function MaintenanceProfilesTab() {
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-80 space-y-4 max-h-[70vh] overflow-y-auto">
+              <PopoverContent align="end" className="w-80 space-y-4">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold">Show Maintenance Profiles</Label>
                 </div>
 
-                {/* Service Category */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="flt-cat"
-                      checked={draftEnableCategory}
-                      onCheckedChange={(c) => setDraftEnableCategory(c === true)}
-                    />
-                    <Label htmlFor="flt-cat" className="text-xs cursor-pointer">Service Category</Label>
-                  </div>
-                  <Select value={draftCategory} onValueChange={setDraftCategory} disabled={!draftEnableCategory}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="All categories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      {SERVICE_TYPES.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {draftEnableCategory && draftCategory === "custom" && (
-                    <Input
-                      placeholder="Search custom label..."
-                      value={draftCustomQuery}
-                      onChange={(e) => setDraftCustomQuery(e.target.value)}
-                      className="h-9"
-                    />
-                  )}
-                </div>
-
-                {/* Next Due Date */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="flt-due"
                       checked={draftEnableDueDate}
-                      onCheckedChange={(c) => setDraftEnableDueDate(c === true)}
+                      onCheckedChange={(checked) => setDraftEnableDueDate(checked === true)}
                     />
-                    <Label htmlFor="flt-due" className="text-xs cursor-pointer">Next Due Date</Label>
+                    <Label htmlFor="flt-due" className="text-xs cursor-pointer">
+                      Next Due Date
+                    </Label>
                   </div>
                   <div className={cn("grid grid-cols-2 gap-2", !draftEnableDueDate && "opacity-50 pointer-events-none")}>
                     <Popover>
@@ -614,10 +473,7 @@ export function MaintenanceProfilesTab() {
                         <Button
                           variant="outline"
                           disabled={!draftEnableDueDate}
-                          className={cn(
-                            "h-9 justify-start text-left font-normal text-xs",
-                            !draftDueFrom && "text-muted-foreground"
-                          )}
+                          className={cn("h-9 justify-start text-left font-normal text-xs", !draftDueFrom && "text-muted-foreground")}
                         >
                           <Calendar className="h-3 w-3 mr-1" />
                           {draftDueFrom ? format(draftDueFrom, "MMM d, yyyy") : "From"}
@@ -629,7 +485,7 @@ export function MaintenanceProfilesTab() {
                           selected={draftDueFrom}
                           onSelect={setDraftDueFrom}
                           initialFocus
-                          className={cn("p-3 pointer-events-auto")}
+                          className="p-3 pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>
@@ -638,10 +494,7 @@ export function MaintenanceProfilesTab() {
                         <Button
                           variant="outline"
                           disabled={!draftEnableDueDate}
-                          className={cn(
-                            "h-9 justify-start text-left font-normal text-xs",
-                            !draftDueTo && "text-muted-foreground"
-                          )}
+                          className={cn("h-9 justify-start text-left font-normal text-xs", !draftDueTo && "text-muted-foreground")}
                         >
                           <Calendar className="h-3 w-3 mr-1" />
                           {draftDueTo ? format(draftDueTo, "MMM d, yyyy") : "To"}
@@ -653,74 +506,13 @@ export function MaintenanceProfilesTab() {
                           selected={draftDueTo}
                           onSelect={setDraftDueTo}
                           initialFocus
-                          className={cn("p-3 pointer-events-auto")}
+                          className="p-3 pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>
                   </div>
                 </div>
 
-                {/* Next Due Mileage */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="flt-mileage"
-                      checked={draftEnableMileage}
-                      onCheckedChange={(c) => setDraftEnableMileage(c === true)}
-                    />
-                    <Label htmlFor="flt-mileage" className="text-xs cursor-pointer">Next Due Mileage (km)</Label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input
-                      type="number"
-                      placeholder="Min"
-                      value={draftMileageMin}
-                      onChange={(e) => setDraftMileageMin(e.target.value)}
-                      disabled={!draftEnableMileage}
-                      className="h-9"
-                    />
-                    <Input
-                      type="number"
-                      placeholder="Max"
-                      value={draftMileageMax}
-                      onChange={(e) => setDraftMileageMax(e.target.value)}
-                      disabled={!draftEnableMileage}
-                      className="h-9"
-                    />
-                  </div>
-                </div>
-
-                {/* Interval */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="flt-interval"
-                      checked={draftEnableInterval}
-                      onCheckedChange={(c) => setDraftEnableInterval(c === true)}
-                    />
-                    <Label htmlFor="flt-interval" className="text-xs cursor-pointer">Interval (days / km)</Label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input
-                      type="number"
-                      placeholder="From"
-                      value={draftIntervalMin}
-                      onChange={(e) => setDraftIntervalMin(e.target.value)}
-                      disabled={!draftEnableInterval}
-                      className="h-9"
-                    />
-                    <Input
-                      type="number"
-                      placeholder="To"
-                      value={draftIntervalMax}
-                      onChange={(e) => setDraftIntervalMax(e.target.value)}
-                      disabled={!draftEnableInterval}
-                      className="h-9"
-                    />
-                  </div>
-                </div>
-
-                {/* Primary actions */}
                 <div className="flex items-center gap-2 pt-2 border-t border-border">
                   <Button className="flex-1" onClick={applyDraftFilters}>
                     Apply
@@ -734,7 +526,18 @@ export function MaintenanceProfilesTab() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {displayProfiles.length === 0 ? (
+          {profilesQuery.isError ? (
+            <div className="p-12 text-center">
+              <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+              <h3 className="font-semibold mb-2">Unable to load maintenance profiles</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {profilesQuery.error?.message || "Try refreshing the page."}
+              </p>
+              <Button variant="outline" onClick={() => profilesQuery.refetch()}>
+                Retry
+              </Button>
+            </div>
+          ) : profiles.length === 0 ? (
             <div className="p-12 text-center">
               <Wrench className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="font-semibold mb-2">No Maintenance Profiles</h3>
@@ -762,46 +565,48 @@ export function MaintenanceProfilesTab() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {displayProfiles.map((profile) => {
+                  {profiles.map((profile) => {
                     const daysUntil = getDaysUntilDue(profile);
                     const kmUntil = getKmUntilDue(profile);
                     const intervalLabel =
-                      profile.interval_type === "mileage"
-                        ? `${profile.interval_km?.toLocaleString() ?? "-"} km`
-                        : profile.interval_months
-                        ? `${profile.interval_months} months`
-                        : profile.interval_days
-                        ? `${profile.interval_days} days`
-                        : profile.interval_km
-                        ? `${profile.interval_km.toLocaleString()} km`
-                        : "—";
+                      profile.intervalType === "mileage"
+                        ? `${profile.intervalKm?.toLocaleString() ?? "-"} km`
+                        : profile.intervalMonths
+                          ? `${profile.intervalMonths} months`
+                          : profile.intervalDays
+                            ? `${profile.intervalDays} days`
+                            : profile.intervalKm
+                              ? `${profile.intervalKm.toLocaleString()} km`
+                              : "-";
 
                     return (
                       <tr key={profile.id} className="group transition-colors hover:bg-secondary/30">
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-2">
                             <Truck className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{profile.vehicle_registration || "—"}</span>
+                            <span className="font-medium">{getVehicleLabel(profile.vehicleId)}</span>
                           </div>
                         </td>
                         <td className="px-4 py-4 capitalize">
-                          {profile.service_label || profile.service_type.replace(/_/g, " ")}
+                          {profile.serviceLabel || formatServiceLabel(profile.serviceType)}
                         </td>
                         <td className="px-4 py-4">
-                          <Badge className={statusColors[profile.lifecycle_status]}>
-                            {statusIcons[profile.lifecycle_status]}
-                            <span className="ml-1 capitalize">{profile.lifecycle_status}</span>
+                          <Badge className={statusColors[profile.lifecycleStatus]}>
+                            {statusIcons[profile.lifecycleStatus]}
+                            <span className="ml-1 capitalize">{profile.lifecycleStatus}</span>
                           </Badge>
                         </td>
                         <td className="px-4 py-4">
-                          {profile.next_due_date ? (
+                          {profile.nextDueDate ? (
                             <div>
-                              <p className={cn(
-                                "font-medium",
-                                daysUntil !== null && daysUntil < 0 && "text-destructive",
-                                daysUntil !== null && daysUntil >= 0 && daysUntil <= 7 && "text-warning"
-                              )}>
-                                {format(new Date(profile.next_due_date), "MMM dd, yyyy")}
+                              <p
+                                className={cn(
+                                  "font-medium",
+                                  daysUntil !== null && daysUntil < 0 && "text-destructive",
+                                  daysUntil !== null && daysUntil >= 0 && daysUntil <= 7 && "text-warning",
+                                )}
+                              >
+                                {format(new Date(profile.nextDueDate), "MMM dd, yyyy")}
                               </p>
                               {daysUntil !== null && (
                                 <p className="text-[10px] text-muted-foreground">
@@ -810,17 +615,14 @@ export function MaintenanceProfilesTab() {
                               )}
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">—</span>
+                            <span className="text-muted-foreground">-</span>
                           )}
                         </td>
                         <td className="px-4 py-4">
-                          {profile.next_due_mileage ? (
+                          {profile.nextDueMileage ? (
                             <div>
-                              <p className={cn(
-                                "font-medium",
-                                kmUntil !== null && kmUntil < 0 && "text-destructive"
-                              )}>
-                                {profile.next_due_mileage.toLocaleString()} km
+                              <p className={cn("font-medium", kmUntil !== null && kmUntil < 0 && "text-destructive")}>
+                                {profile.nextDueMileage.toLocaleString()} km
                               </p>
                               {kmUntil !== null && (
                                 <p className="text-[10px] text-muted-foreground">
@@ -829,27 +631,28 @@ export function MaintenanceProfilesTab() {
                               )}
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">—</span>
+                            <span className="text-muted-foreground">-</span>
                           )}
                         </td>
                         <td className="px-4 py-4 font-mono text-xs">
-                          {profile.current_mileage ? (
+                          {profile.currentMileage ? (
                             <div className="flex items-center gap-1">
-                              {profile.current_mileage.toLocaleString()} km
+                              {profile.currentMileage.toLocaleString()} km
                               <Badge variant="outline" className="text-[10px] px-1">
-                                {profile.mileage_source === "telemetry" ? "GPS" : "Manual"}
+                                {profile.mileageSource === "telemetry" ? "GPS" : "Manual"}
                               </Badge>
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">—</span>
+                            <span className="text-muted-foreground">-</span>
                           )}
                         </td>
                         <td className="px-4 py-4 capitalize">{intervalLabel}</td>
                         <td className="px-4 py-4">
                           <div className="flex justify-end gap-2">
-                            {profile.lifecycle_status !== "upcoming" && (
+                            {profile.lifecycleStatus !== "upcoming" && profile.lifecycleStatus !== "completed" && (
                               <Button
                                 size="sm"
+                                loading={completeProfileMutation.isPending && selectedProfile?.id === profile.id}
                                 onClick={() => {
                                   setSelectedProfile(profile);
                                   setIsCompleteDialogOpen(true);
@@ -862,6 +665,7 @@ export function MaintenanceProfilesTab() {
                             <Button
                               variant="outline"
                               size="sm"
+                              loading={deleteProfileMutation.isPending}
                               onClick={() => handleArchive(profile)}
                             >
                               <Archive className="h-4 w-4" />
@@ -878,17 +682,13 @@ export function MaintenanceProfilesTab() {
         </CardContent>
       </Card>
 
-      {/* Add Profile Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="bg-card border-border max-w-lg">
           <DialogHeader>
             <DialogTitle>Add Maintenance Profile</DialogTitle>
-            <DialogDescription>
-              Create a recurring maintenance schedule for a vehicle.
-            </DialogDescription>
+            <DialogDescription>Create a recurring maintenance schedule for a vehicle.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {/* Vehicle Selection */}
             <div className="space-y-2">
               <Label>Vehicle *</Label>
               <Select
@@ -896,19 +696,18 @@ export function MaintenanceProfilesTab() {
                 onValueChange={(value) => setNewProfile({ ...newProfile, vehicleId: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select vehicle" />
+                  <SelectValue placeholder={vehiclesQuery.isPending ? "Loading vehicles..." : "Select vehicle"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {vehicles.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.registrationNumber} - {v.make} {v.model}
+                  {vehicles.map((vehicle) => (
+                    <SelectItem key={vehicle.id} value={vehicle.id}>
+                      {getVehicleLabel(vehicle.id)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Service Category */}
             <div className="space-y-2">
               <Label>Service Category *</Label>
               <Select
@@ -916,17 +715,20 @@ export function MaintenanceProfilesTab() {
                 onValueChange={(value) => setNewProfile({ ...newProfile, serviceType: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select service category" />
+                  <SelectValue placeholder={categoriesQuery.isPending ? "Loading categories..." : "Select service category"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {SERVICE_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  {serviceCategories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {formatServiceLabel(category)}
+                    </SelectItem>
                   ))}
+                  <SelectItem value="custom">Custom</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {newProfile.serviceType === 'custom' && (
+            {newProfile.serviceType === "custom" && (
               <div className="space-y-2">
                 <Label>Custom Category</Label>
                 <Input
@@ -937,12 +739,13 @@ export function MaintenanceProfilesTab() {
               </div>
             )}
 
-            {/* Interval Type */}
             <div className="space-y-2">
               <Label>Schedule Based On *</Label>
               <Select
                 value={newProfile.intervalType}
-                onValueChange={(value) => setNewProfile({ ...newProfile, intervalType: value as MaintenanceIntervalType })}
+                onValueChange={(value) =>
+                  setNewProfile({ ...newProfile, intervalType: value as MaintenanceProfileIntervalType })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -955,18 +758,17 @@ export function MaintenanceProfilesTab() {
               </Select>
             </div>
 
-            {/* Interval Values - Time-based with radio choice */}
-            {newProfile.intervalType !== 'mileage' && (
+            {newProfile.intervalType !== "mileage" && (
               <div className="space-y-3 rounded-lg border border-border/50 p-3">
                 <Label className="text-xs text-muted-foreground">Choose time unit</Label>
                 <RadioGroup
                   value={newProfile.timeUnit}
-                  onValueChange={(v) =>
+                  onValueChange={(value) =>
                     setNewProfile({
                       ...newProfile,
-                      timeUnit: v as "days" | "months",
-                      intervalDays: v === "days" ? newProfile.intervalDays : "",
-                      intervalMonths: v === "months" ? newProfile.intervalMonths : "",
+                      timeUnit: value as "days" | "months",
+                      intervalDays: value === "days" ? newProfile.intervalDays : "",
+                      intervalMonths: value === "months" ? newProfile.intervalMonths : "",
                     })
                   }
                   className="grid grid-cols-2 gap-4"
@@ -974,7 +776,9 @@ export function MaintenanceProfilesTab() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <RadioGroupItem value="days" id="unit-days" />
-                      <Label htmlFor="unit-days" className="cursor-pointer">By Day</Label>
+                      <Label htmlFor="unit-days" className="cursor-pointer">
+                        By Day
+                      </Label>
                     </div>
                     <Input
                       type="number"
@@ -987,7 +791,9 @@ export function MaintenanceProfilesTab() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <RadioGroupItem value="months" id="unit-months" />
-                      <Label htmlFor="unit-months" className="cursor-pointer">By Month</Label>
+                      <Label htmlFor="unit-months" className="cursor-pointer">
+                        By Month
+                      </Label>
                     </div>
                     <Input
                       type="number"
@@ -1001,7 +807,7 @@ export function MaintenanceProfilesTab() {
               </div>
             )}
 
-            {newProfile.intervalType !== 'date' && (
+            {newProfile.intervalType !== "date" && (
               <div className="space-y-2">
                 <Label>Interval (Kilometers)</Label>
                 <Input
@@ -1013,7 +819,6 @@ export function MaintenanceProfilesTab() {
               </div>
             )}
 
-            {/* Last Service */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Last Service Date</Label>
@@ -1035,58 +840,37 @@ export function MaintenanceProfilesTab() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddProfile}>Create Profile</Button>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddProfile} loading={createProfileMutation.isPending}>
+              Create Profile
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Complete Service Dialog */}
       <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
         <DialogContent className="bg-card border-border max-w-md">
           <DialogHeader>
             <DialogTitle>Complete Maintenance</DialogTitle>
-            <DialogDescription>
-              Mark this maintenance as completed and schedule the next service.
-            </DialogDescription>
+            <DialogDescription>Mark this maintenance profile as completed.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="p-3 rounded-lg bg-muted/50">
-              <p className="font-medium">{selectedProfile?.vehicle_registration}</p>
+              <p className="font-medium">{selectedProfile ? getVehicleLabel(selectedProfile.vehicleId) : ""}</p>
               <p className="text-sm text-muted-foreground capitalize">
-                {selectedProfile?.service_label || selectedProfile?.service_type.replace('_', ' ')}
+                {selectedProfile
+                  ? selectedProfile.serviceLabel || formatServiceLabel(selectedProfile.serviceType)
+                  : ""}
               </p>
-            </div>
-            <div className="space-y-2">
-              <Label>Current Odometer (km)</Label>
-              <Input
-                type="number"
-                placeholder="e.g., 48500"
-                value={completionData.mileage}
-                onChange={(e) => setCompletionData({ ...completionData, mileage: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Service Cost (₦)</Label>
-              <Input
-                type="number"
-                placeholder="e.g., 25000"
-                value={completionData.cost}
-                onChange={(e) => setCompletionData({ ...completionData, cost: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Input
-                placeholder="Any notes about the service..."
-                value={completionData.notes}
-                onChange={(e) => setCompletionData({ ...completionData, notes: e.target.value })}
-              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCompleteDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleComplete}>
+            <Button variant="outline" onClick={() => setIsCompleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleComplete} loading={completeProfileMutation.isPending}>
               <CheckCircle className="h-4 w-4 mr-2" />
               Mark Complete
             </Button>
