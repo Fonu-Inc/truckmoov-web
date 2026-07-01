@@ -276,6 +276,13 @@ export type FuelMetricsQuery = {
   }
 }
 
+export type FuelBudgetVsActualQuery = {
+  params?: {
+    from?: string
+    to?: string
+  }
+}
+
 export type SetFuelThresholdPayload = {
   vehicleType: string
   data: {
@@ -584,6 +591,23 @@ export type FuelSummary = {
   transactionCount: number
 }
 
+export type FuelBudgetVsActualItem = {
+  vehicleId: string
+  periodType: string
+  budgetedNgn: number
+  actualNgn: number
+  variance: number
+  utilizationPct: number
+}
+
+export type FuelBudgetVsActual = {
+  windowStart: string
+  windowEnd: string
+  windowDays: number
+  vehicles: FuelBudgetVsActualItem[]
+  fleet: FuelBudgetVsActualItem
+}
+
 export type MaintenanceRecord = {
   id: string
   tenantId: string
@@ -813,6 +837,7 @@ export type FuelEfficiencyResponse = ServerResponse<VehicleEfficiency[]>
 export type FuelThresholdResponse = ServerResponse<FuelThreshold>
 export type FuelThresholdListResponse = ServerResponse<FuelThreshold[]>
 export type FuelSummaryResponse = ServerResponse<FuelSummary>
+export type FuelBudgetVsActualResponse = ServerResponse<FuelBudgetVsActual>
 export type MaintenanceRecordResponse = ServerResponse<MaintenanceRecord>
 export type MaintenanceRecordListResponse = ServerResponse<MaintenanceRecord[]>
 export type MaintenanceRecordsSummaryResponse = ServerResponse<MaintenanceRecordsSummary>

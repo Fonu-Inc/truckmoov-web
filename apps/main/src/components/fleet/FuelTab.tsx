@@ -1,6 +1,6 @@
 import {Download,  AlertTriangle, CalendarIcon, DollarSign, Droplets, Edit, Eye, Fuel, Gauge, MoreHorizontal, Plus, Search, SlidersHorizontal, Trash2, TrendingUp, Truck } from 'lucide-react';
 import { useState, useEffect, useMemo } from "react";
-import { useFuelTransactions, useFuelSummary, useRecordFuelTransaction, useUpdateFuelTransaction, useDeleteFuelTransaction, exportFuelTransactions } from "@truckmoov/api/fleet";
+import { useFuelTransactions, useFuelSummary, useFuelBudgetVsActual, useDeliveryMetrics, useRecordFuelTransaction, useUpdateFuelTransaction, useDeleteFuelTransaction, exportFuelTransactions } from "@truckmoov/api/fleet";
 import type { FuelRecord } from "@truckmoov/api/fleet";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -56,8 +56,44 @@ import { PeriodFilter, PeriodValue } from "./PeriodFilter";
 
 type FuelTransaction = FuelRecord;
 
+type BudgetChartPoint = {
+  label: string;
+  budgetedNgn: number;
+  actualNgn: number;
+};
+
+type DeliveryMetricChartPoint = {
+  label: string;
+  jobs: number;
+};
+
+function toDateParam(date: Date) {
+  return format(date, "yyyy-MM-dd");
+}
+
+function getPeriodRange(period: PeriodValue) {
+  const today = new Date();
+  const end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const start = new Date(end);
+
+  if (period === "1") {
+    start.setDate(end.getDate() - 1);
+    end.setDate(end.getDate() - 1);
+  } else if (period !== "0") {
+    start.setDate(end.getDate() - Number(period) + 1);
+  }
+
+  return {
+    from: toDateParam(start),
+    to: toDateParam(end),
+  };
+}
+
+function formatNgn(value: number) {
+  return `NGN ${value.toLocaleString()}`;
+}
+
 export function FuelTab() {
-  const weeklyConsumption: any[] = [];
   const vehicleEfficiency: any[] = [];
   const efficiencyThreshold = 8;
 
@@ -70,7 +106,6 @@ export function FuelTab() {
   const [selectedTransaction, setSelectedTransaction] = useState<FuelTransaction | null>(null);
 
   // Per-chart period filters
-  const [weeklyPeriod, setWeeklyPeriod] = useState<PeriodValue>("7");
   const [efficiencyPeriod, setEfficiencyPeriod] = useState<PeriodValue>("7");
   const [budgetPeriod, setBudgetPeriod] = useState<PeriodValue>("7");
 
@@ -111,6 +146,9 @@ export function FuelTab() {
 
   const fuelQuery = useFuelTransactions(queryParams);
   const summaryQuery = useFuelSummary();
+  const deliveryMetricsQuery = useDeliveryMetrics();
+  const budgetRange = useMemo(() => getPeriodRange(budgetPeriod), [budgetPeriod]);
+  const budgetVsActualQuery = useFuelBudgetVsActual({ params: budgetRange });
   const transactions = fuelQuery.data?.data ?? [];
   const isLoading = fuelQuery.isLoading;
 
@@ -144,6 +182,38 @@ export function FuelTab() {
     (dateFrom || dateTo ? 1 : 0);
 
   const summary = summaryQuery.data?.data;
+  const deliveryMetrics = deliveryMetricsQuery.data?.data;
+  const deliveryChartData = useMemo<DeliveryMetricChartPoint[]>(() => {
+    if (!deliveryMetrics) return [];
+
+    return [
+      { label: "Delivered", jobs: deliveryMetrics.delivered },
+      { label: "Cancelled", jobs: deliveryMetrics.cancelled },
+      { label: "In Progress", jobs: deliveryMetrics.inProgress },
+    ];
+  }, [deliveryMetrics]);
+  const budgetVsActual = budgetVsActualQuery.data?.data;
+  const budgetChartData = useMemo<BudgetChartPoint[]>(() => {
+    const vehicles = budgetVsActual?.vehicles ?? [];
+
+    if (vehicles.length > 0) {
+      return vehicles.map((vehicle) => ({
+        label: vehicle.vehicleId,
+        budgetedNgn: vehicle.budgetedNgn,
+        actualNgn: vehicle.actualNgn,
+      }));
+    }
+
+    if (budgetVsActual?.fleet) {
+      return [{
+        label: "Fleet",
+        budgetedNgn: budgetVsActual.fleet.budgetedNgn,
+        actualNgn: budgetVsActual.fleet.actualNgn,
+      }];
+    }
+
+    return [];
+  }, [budgetVsActual]);
   const stats = {
     totalLitres: summary?.totalLitres ?? 0,
     totalCost: summary?.totalCostNgn ?? 0,
@@ -688,38 +758,63 @@ export function FuelTab() {
           <Card className="bg-card/50 border-border/50">
             <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
               <div>
-                <CardTitle className="text-base">Weekly Consumption</CardTitle>
-                <CardDescription>Diesel vs Petrol usage by day</CardDescription>
+                <CardTitle className="text-base">Delivery Metrics</CardTitle>
+                <CardDescription>Job outcomes and fleet utilization</CardDescription>
               </div>
-              <PeriodFilter value={weeklyPeriod} onChange={setWeeklyPeriod} variant="short" className="w-[150px]" />
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={weeklyConsumption}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px" }}
-                  />
-                  <Legend />
-                  <Bar
-                    dataKey="diesel"
-                    name="Diesel (L)"
-                    fill="hsl(var(--primary))"
-                    radius={[4, 4, 0, 0]}
-                  />
-                  <Bar
-                    dataKey="petrol"
-                    name="Petrol (L)"
-                    fill="hsl(var(--warning))"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              {deliveryMetricsQuery.isLoading ? (
+                <Skeleton className="h-[300px] w-full" />
+              ) : deliveryChartData.length === 0 ? (
+                <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
+                  No delivery metrics available.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                    <div>
+                      <p className="text-2xl font-bold">{deliveryMetrics?.totalJobs.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">Total Jobs</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{deliveryMetrics?.deliverySuccessRate.toFixed(1)}%</p>
+                      <p className="text-xs text-muted-foreground">Success Rate</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{deliveryMetrics?.vehicleUtilizationRate.toFixed(1)}%</p>
+                      <p className="text-xs text-muted-foreground">Utilization</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">
+                        {deliveryMetrics?.averageCycleTimeMs
+                          ? `${(deliveryMetrics.averageCycleTimeMs / 3600000).toFixed(1)}h`
+                          : "N/A"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Avg Cycle</p>
+                    </div>
+                  </div>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart data={deliveryChartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px" }}
+                      />
+                      <Legend />
+                      <Bar
+                        dataKey="jobs"
+                        name="Jobs"
+                        fill="hsl(var(--primary))"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -780,46 +875,55 @@ export function FuelTab() {
               <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
                 <div>
                   <CardTitle className="text-base">Budget vs Actual</CardTitle>
-                  <CardDescription>Daily fuel spend compared to budget</CardDescription>
+                  <CardDescription>Fuel spend compared to budget</CardDescription>
                 </div>
                 <PeriodFilter value={budgetPeriod} onChange={setBudgetPeriod} variant="short" className="w-[150px]" />
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={weeklyConsumption}>
-                    <defs>
-                      <linearGradient id="fuelGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px" }}
-                    />
-                    <Legend />
-                    <Area
-                      type="monotone"
-                      dataKey="diesel"
-                      name="Actual (L)"
-                      stroke="hsl(var(--primary))"
-                      fill="url(#fuelGradient)"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="budget"
-                      name="Budget (L)"
-                      stroke="hsl(var(--warning))"
-                      fill="none"
-                      strokeDasharray="5 5"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                {budgetVsActualQuery.isLoading ? (
+                  <Skeleton className="h-[300px] w-full" />
+                ) : budgetChartData.length === 0 ? (
+                  <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
+                    No budget data available for this period.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <AreaChart data={budgetChartData}>
+                      <defs>
+                        <linearGradient id="fuelBudgetActualGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(value) => `${Number(value) / 1000}K`} />
+                      <Tooltip
+                        formatter={(value) => formatNgn(Number(value))}
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px" }}
+                      />
+                      <Legend />
+                      <Area
+                        type="monotone"
+                        dataKey="actualNgn"
+                        name="Actual (NGN)"
+                        stroke="hsl(var(--primary))"
+                        fill="url(#fuelBudgetActualGradient)"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="budgetedNgn"
+                        name="Budget (NGN)"
+                        stroke="hsl(var(--warning))"
+                        fill="none"
+                        strokeDasharray="5 5"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
           </div>

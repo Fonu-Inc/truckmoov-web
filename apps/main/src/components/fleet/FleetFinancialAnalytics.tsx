@@ -170,15 +170,6 @@ export function FleetFinancialAnalytics() {
   const fleetMargin = fleetTotals.totalRevenue > 0 
     ? (fleetTotals.totalProfit / fleetTotals.totalRevenue) * 100 
     : 0;
-  const financialSummary = financialSummaryResp?.data;
-  const summaryStats = {
-    totalRevenue: financialSummary?.totalRevenue ?? fleetTotals.totalRevenue,
-    totalCost: financialSummary?.totalCost ?? fleetTotals.totalCosts,
-    totalProfit: financialSummary?.totalProfit ?? fleetTotals.totalProfit,
-    avgMarginPercent: financialSummary?.avgMarginPercent ?? fleetMargin,
-    vehicleCount: financialSummary?.vehicleCount ?? vehicles.length,
-  };
-
   // Tier distribution for pie chart
   const tierDistribution = profitabilityData.reduce((acc, v) => {
     const tier = v.profitability?.tier || 'marginal';
@@ -239,6 +230,37 @@ export function FleetFinancialAnalytics() {
     "demo-7": "ABJ-660-NP", "demo-8": "PHC-771-QR",
   };
   const displayData: any[] = profitabilityData.length > 0 ? profitabilityData : DEMO_PL;
+  const displayTotals = displayData.reduce((acc, v) => ({
+    totalRevenue: acc.totalRevenue + (v.revenue?.total || 0),
+    totalCosts: acc.totalCosts + (v.costs?.total || 0),
+    totalProfit: acc.totalProfit + (v.profitability?.net_profit || 0),
+  }), { totalRevenue: 0, totalCosts: 0, totalProfit: 0 });
+  const displayMargin = displayTotals.totalRevenue > 0
+    ? (displayTotals.totalProfit / displayTotals.totalRevenue) * 100
+    : 0;
+  const financialSummary = financialSummaryResp?.data;
+  const hasFinancialSummaryValues = Boolean(
+    financialSummary &&
+    (
+      financialSummary.totalRevenue !== 0 ||
+      financialSummary.totalCost !== 0 ||
+      financialSummary.totalProfit !== 0 ||
+      financialSummary.avgMarginPercent !== 0
+    )
+  );
+  const summaryStats = hasFinancialSummaryValues ? {
+    totalRevenue: financialSummary!.totalRevenue,
+    totalCost: financialSummary!.totalCost,
+    totalProfit: financialSummary!.totalProfit,
+    avgMarginPercent: financialSummary!.avgMarginPercent,
+    vehicleCount: financialSummary!.vehicleCount,
+  } : {
+    totalRevenue: displayTotals.totalRevenue || fleetTotals.totalRevenue,
+    totalCost: displayTotals.totalCosts || fleetTotals.totalCosts,
+    totalProfit: displayTotals.totalProfit || fleetTotals.totalProfit,
+    avgMarginPercent: displayMargin || fleetMargin,
+    vehicleCount: financialSummary?.vehicleCount ?? displayData.length,
+  };
 
   // Identify underperforming vehicles
   const underperformingVehicles = displayData

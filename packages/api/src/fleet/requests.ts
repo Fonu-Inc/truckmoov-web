@@ -43,6 +43,8 @@ import type {
   FleetDriverListResponse,
   FleetDriverResponse,
   FleetJobListResponse,
+  FuelBudgetVsActualQuery,
+  FuelBudgetVsActualResponse,
   FuelConsumptionResponse,
   FuelEfficiencyResponse,
   FuelMetricsQuery,
@@ -434,6 +436,13 @@ export async function exportFuelTransactions() {
 
 export async function getFuelMetrics(payload?: FuelMetricsQuery) {
   const { data } = await axiosInstance.get<FuelConsumptionResponse>('/fleet/fuel/metrics', { params: payload?.params })
+  return data
+}
+
+export async function getFuelBudgetVsActual(payload?: FuelBudgetVsActualQuery) {
+  const { data } = await axiosInstance.get<FuelBudgetVsActualResponse>('/fleet/fuel/budget-vs-actual', {
+    params: payload?.params,
+  })
   return data
 }
 

@@ -43,6 +43,7 @@ import {
   getFleetAnalyticsJobPipeline,
   getFleetAnalyticsSummary,
   getFleetFinancialSummary,
+  getFuelBudgetVsActual,
   getFuelEfficiency,
   getFuelMetrics,
   getFuelSummary,
@@ -112,6 +113,7 @@ import type {
   FleetAnalyticsDriverScoresQuery,
   FleetAnalyticsEventsQuery,
   FleetAnalyticsPeriodQuery,
+  FuelBudgetVsActualQuery,
   FuelMetricsQuery,
   FuelQuery,
   JobsQuery,
@@ -153,6 +155,7 @@ export const FLEET_QUERY_KEY = {
   fuelTransactions: (payload?: FuelQuery) => ['fleet', 'fuelTransactions', payload],
   fuelSummary: ['fleet', 'fuelSummary'],
   fuelMetrics: (payload?: FuelMetricsQuery) => ['fleet', 'fuelMetrics', payload],
+  fuelBudgetVsActual: (payload?: FuelBudgetVsActualQuery) => ['fleet', 'fuelBudgetVsActual', payload],
   fuelEfficiency: ['fleet', 'fuelEfficiency'],
   fuelThresholds: ['fleet', 'fuelThresholds'],
   maintenanceProfiles: (payload?: MaintenanceProfilesQuery) => ['fleet', 'maintenanceProfiles', payload],
@@ -374,6 +377,13 @@ export function getFuelMetricsQueryOptions(payload?: FuelMetricsQuery) {
   })
 }
 
+export function getFuelBudgetVsActualQueryOptions(payload?: FuelBudgetVsActualQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.fuelBudgetVsActual(payload),
+    queryFn: () => getFuelBudgetVsActual(payload),
+  })
+}
+
 export function getFuelEfficiencyQueryOptions() {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.fuelEfficiency,
@@ -579,6 +589,10 @@ export function useFuelSummary() {
 
 export function useFuelMetrics(payload?: FuelMetricsQuery) {
   return useQuery(getFuelMetricsQueryOptions(payload))
+}
+
+export function useFuelBudgetVsActual(payload?: FuelBudgetVsActualQuery) {
+  return useQuery(getFuelBudgetVsActualQueryOptions(payload))
 }
 
 export function useFuelEfficiency() {
@@ -883,6 +897,7 @@ export function useRecordFuelTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelTransactions() })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelMetrics() })
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelBudgetVsActual'] })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelEfficiency })
     },
   })
@@ -894,6 +909,7 @@ export function useUpdateFuelTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelTransactions() })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelMetrics() })
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelBudgetVsActual'] })
     },
   })
 }
@@ -904,6 +920,7 @@ export function useDeleteFuelTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelTransactions() })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelMetrics() })
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelBudgetVsActual'] })
     },
   })
 }
