@@ -34,7 +34,13 @@ import type {
   FleetAnalyticsJobPipelineResponse,
   FleetAnalyticsPeriodQuery,
   FleetAnalyticsSummaryResponse,
+  FleetFinancialConfigActionPayload,
+  FleetFinancialConfigResponse,
+  FleetFinancialStatementExportQuery,
+  FleetFinancialSummaryQuery,
   FleetFinancialSummaryResponse,
+  FleetProfitabilityPayload,
+  FleetProfitabilityResponse,
   FleetDashboardResponse,
   FleetDeviceListResponse,
   FleetDeviceResponse,
@@ -85,6 +91,7 @@ import type {
   UpdateDriverContactChannelsPayload,
   UpdateDriverPayload,
   UpdateDriverStatusPayload,
+  UpdateFleetFinancialConfigPayload,
   UpdateFuelTransactionPayload,
   UpdateMaintenanceRecordPayload,
   UpdateVehiclePayload,
@@ -391,8 +398,48 @@ export async function getFleetAnalyticsEvents(payload?: FleetAnalyticsEventsQuer
   return data
 }
 
-export async function getFleetFinancialSummary() {
-  const { data } = await axiosInstance.get<FleetFinancialSummaryResponse>('/fleet/financials/summary')
+export async function getFleetFinancialSummary(payload?: FleetFinancialSummaryQuery) {
+  const { data } = await axiosInstance.get<FleetFinancialSummaryResponse>('/fleet/financials/summary', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function computeFleetProfitability({ data: body }: FleetProfitabilityPayload) {
+  const { data } = await axiosInstance.post<FleetProfitabilityResponse>('/fleet/financials/profitability', body)
+  return data
+}
+
+export async function exportFleetFinancialStatement(payload: FleetFinancialStatementExportQuery) {
+  const response = await axiosInstance.get<Blob>('/fleet/financials/statement/export', {
+    params: payload.params,
+    responseType: 'blob',
+  })
+  return {
+    blob: response.data,
+    contentType: response.headers['content-type'] as string | undefined,
+    contentDisposition: response.headers['content-disposition'] as string | undefined,
+  }
+}
+
+export async function exportFleetCostBreakdown() {
+  const response = await axiosInstance.get<Blob>('/fleet/financials/cost-breakdown/export', {
+    responseType: 'blob',
+  })
+  return {
+    blob: response.data,
+    contentType: response.headers['content-type'] as string | undefined,
+    contentDisposition: response.headers['content-disposition'] as string | undefined,
+  }
+}
+
+export async function getFleetFinancialConfig({ vehicleId }: FleetFinancialConfigActionPayload) {
+  const { data } = await axiosInstance.get<FleetFinancialConfigResponse>(`/fleet/financials/configs/${vehicleId}`)
+  return data
+}
+
+export async function updateFleetFinancialConfig({ vehicleId, data: body }: UpdateFleetFinancialConfigPayload) {
+  const { data } = await axiosInstance.put<FleetFinancialConfigResponse>(`/fleet/financials/configs/${vehicleId}`, body)
   return data
 }
 

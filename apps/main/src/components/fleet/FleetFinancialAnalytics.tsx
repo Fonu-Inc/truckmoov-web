@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { Button } from "@/components/shadcn/button";
@@ -26,9 +26,15 @@ import {
   SlidersHorizontal,
   FileText,
   Truck,
+  Download,
 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useFleetFinancialSummary } from "@truckmoov/api/fleet";
+import {
+  exportFleetCostBreakdown,
+  useFleetFinancialSummary,
+  useFleetProfitability,
+  type FleetProfitabilityVehicle,
+} from "@truckmoov/api/fleet";
 import { 
   ChartContainer, 
   ChartTooltip, 
@@ -64,11 +70,105 @@ const TIER_LABELS = {
   "loss-making": "Loss-Making",
 };
 
+type ProfitabilityAnalysisRow = {
+  vehicle_id: string;
+  plateNumber?: string;
+  name?: string;
+  make?: string | null;
+  model?: string | null;
+  period_start: string;
+  period_end: string;
+  revenue: {
+    total: number;
+    jobs_completed: number;
+    total_km: number;
+  };
+  costs: {
+    fuel: number;
+    maintenance: number;
+    wages: number;
+    insurance: number;
+    depreciation: number;
+    other?: number;
+    fixed?: number;
+    total: number;
+  };
+  profitability: {
+    net_profit: number;
+    margin_percent: number;
+    score: number;
+    tier: string;
+  };
+};
+
+type VehicleLookup = {
+  id: string;
+  registrationNumber?: string;
+  make?: string;
+  model?: string;
+};
+
+function periodToMonths(period: PeriodValue) {
+  const days = Number(period);
+  if (days >= 365) return 12;
+  if (days >= 180) return 6;
+  if (days >= 90) return 3;
+  return 1;
+}
+
+function optionalNumber(value: string) {
+  return value === "" ? undefined : Number(value);
+}
+
+function getFilenameFromDisposition(disposition: string | undefined, fallback: string) {
+  const match = disposition?.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
+  return match?.[1] ? decodeURIComponent(match[1].replace(/"/g, "")) : fallback;
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function normalizeProfitabilityRow(row: FleetProfitabilityVehicle): ProfitabilityAnalysisRow {
+  return {
+    vehicle_id: row.vehicleId,
+    plateNumber: row.plateNumber,
+    name: row.name,
+    make: row.make,
+    model: row.model,
+    period_start: "",
+    period_end: "",
+    revenue: {
+      total: row.revenue ?? 0,
+      jobs_completed: row.jobCount ?? 0,
+      total_km: row.kmDriven ?? 0,
+    },
+    costs: {
+      fuel: row.fuelCost ?? row.costBreakdown?.fuel ?? 0,
+      maintenance: row.maintenanceCost ?? row.costBreakdown?.maintenance ?? 0,
+      wages: row.costBreakdown?.wages ?? 0,
+      insurance: row.costBreakdown?.insurance ?? 0,
+      depreciation: row.costBreakdown?.depreciation ?? 0,
+      other: row.costBreakdown?.other ?? 0,
+      fixed: row.fixedCosts ?? 0,
+      total: row.totalCost ?? 0,
+    },
+    profitability: {
+      net_profit: row.profit ?? 0,
+      margin_percent: row.marginPercent ?? 0,
+      score: row.score ?? 0,
+      tier: row.tier ?? "marginal",
+    },
+  };
+}
+
 export function FleetFinancialAnalytics() {
-  const vehicles: any[] = [];
-  const configs: any[] = [];
-  const calculateFleetProfitability = async (_vehicleIds: any[], _start: Date, _end: Date): Promise<any[]> => [];
-  const isLoading = false;
+  const vehicles: VehicleLookup[] = [];
   const { format } = useCurrency();
   const { data: financialSummaryResp } = useFleetFinancialSummary();
   
@@ -76,11 +176,22 @@ export function FleetFinancialAnalytics() {
   const [profitabilityPeriod, setProfitabilityPeriod] = useState<PeriodValue>("30");
   const [costBreakdownPeriod, setCostBreakdownPeriod] = useState<PeriodValue>("30");
   const [underperformingPeriod, setUnderperformingPeriod] = useState<PeriodValue>("30");
-  const [profitabilityData, setProfitabilityData] = useState<any[]>([]);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
-  const [isCalculating, setIsCalculating] = useState(false);
+  const profitabilityPayload = useMemo(() => ({
+    data: {
+      periodMonths: periodToMonths(profitabilityPeriod),
+    },
+  }), [profitabilityPeriod]);
+  const {
+    data: profitabilityResp,
+    isFetching: isProfitabilityFetching,
+  } = useFleetProfitability(profitabilityPayload);
+  const profitabilityData = useMemo(
+    () => (profitabilityResp?.data ?? []).map(normalizeProfitabilityRow),
+    [profitabilityResp?.data],
+  );
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [statementBuilderOpen, setStatementBuilderOpen] = useState(false);
+  const [isExportingCostBreakdown, setIsExportingCostBreakdown] = useState(false);
 
   // Vehicle P&L filters
   const [vehicleSearch, setVehicleSearch] = useState("");
@@ -110,6 +221,59 @@ export function FleetFinancialAnalytics() {
   const [scoreMax, setScoreMax] = useState("");
   const [draftScoreMin, setDraftScoreMin] = useState("");
   const [draftScoreMax, setDraftScoreMax] = useState("");
+  const vehicleProfitabilityPayload = useMemo(() => ({
+    data: {
+      periodMonths: periodToMonths(profitabilityPeriod),
+      search: vehicleSearch.trim() || undefined,
+      status: vehicleStatusFilter === "all" ? undefined : vehicleStatusFilter,
+      marginFrom: marginFilterEnabled ? optionalNumber(marginMin) : undefined,
+      marginTo: marginFilterEnabled ? optionalNumber(marginMax) : undefined,
+      revenueFrom: revenueFilterEnabled ? optionalNumber(revenueMin) : undefined,
+      revenueTo: revenueFilterEnabled ? optionalNumber(revenueMax) : undefined,
+      netProfitFrom: profitFilterEnabled ? optionalNumber(profitMin) : undefined,
+      netProfitTo: profitFilterEnabled ? optionalNumber(profitMax) : undefined,
+      scoreFrom: scoreFilterEnabled ? optionalNumber(scoreMin) : undefined,
+      scoreTo: scoreFilterEnabled ? optionalNumber(scoreMax) : undefined,
+    },
+  }), [
+    profitabilityPeriod,
+    vehicleSearch,
+    vehicleStatusFilter,
+    marginFilterEnabled,
+    marginMin,
+    marginMax,
+    revenueFilterEnabled,
+    revenueMin,
+    revenueMax,
+    profitFilterEnabled,
+    profitMin,
+    profitMax,
+    scoreFilterEnabled,
+    scoreMin,
+    scoreMax,
+  ]);
+  const {
+    data: vehicleProfitabilityResp,
+    isFetching: isVehicleProfitabilityFetching,
+  } = useFleetProfitability(vehicleProfitabilityPayload);
+  const vehicleProfitabilityData = useMemo(
+    () => (vehicleProfitabilityResp?.data ?? []).map(normalizeProfitabilityRow),
+    [vehicleProfitabilityResp?.data],
+  );
+  const underperformingPayload = useMemo(() => ({
+    data: {
+      periodMonths: periodToMonths(underperformingPeriod),
+    },
+  }), [underperformingPeriod]);
+  const {
+    data: underperformingResp,
+    isFetching: isUnderperformingFetching,
+  } = useFleetProfitability(underperformingPayload);
+  const underperformingData = useMemo(
+    () => (underperformingResp?.data ?? []).map(normalizeProfitabilityRow),
+    [underperformingResp?.data],
+  );
+  const isCalculating = isProfitabilityFetching || isVehicleProfitabilityFetching || isUnderperformingFetching;
 
   // Detailed Cost Analysis filters
   const [costSearch, setCostSearch] = useState("");
@@ -139,24 +303,6 @@ export function FleetFinancialAnalytics() {
   const [draftCostMaintEnabled, setDraftCostMaintEnabled] = useState(false);
   const [draftCostMaintMin, setDraftCostMaintMin] = useState("");
   const [draftCostMaintMax, setDraftCostMaintMax] = useState("");
-
-  const loadProfitability = async () => {
-    if (vehicles.length === 0) return;
-    
-    setIsCalculating(true);
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - parseInt(period));
-    
-    const vehicleIds = vehicles.map(v => v.id);
-    const results = await calculateFleetProfitability(vehicleIds, startDate, endDate);
-    setProfitabilityData(results);
-    setIsCalculating(false);
-  };
-
-  useEffect(() => {
-    loadProfitability();
-  }, [vehicles, period]);
 
   // Calculate fleet totals
   const fleetTotals = profitabilityData.reduce((acc, v) => ({
@@ -214,7 +360,7 @@ export function FleetFinancialAnalytics() {
   };
 
   // ── Dummy P&L rows (used when no real config has been computed) ──
-  const DEMO_PL: any[] = [
+  const DEMO_PL: ProfitabilityAnalysisRow[] = [
     { vehicle_id: "demo-1", period_start: "", period_end: "", revenue: { total: 4_850_000, jobs_completed: 38, total_km: 9_420 }, costs: { fuel: 1_180_000, maintenance: 320_000, wages: 980_000, insurance: 120_000, depreciation: 240_000, total: 2_840_000 }, profitability: { net_profit: 2_010_000, margin_percent: 41.4, score: 92, tier: "excellent" } },
     { vehicle_id: "demo-2", period_start: "", period_end: "", revenue: { total: 3_620_000, jobs_completed: 29, total_km: 7_810 }, costs: { fuel: 940_000, maintenance: 410_000, wages: 880_000, insurance: 120_000, depreciation: 240_000, total: 2_590_000 }, profitability: { net_profit: 1_030_000, margin_percent: 28.5, score: 78, tier: "good" } },
     { vehicle_id: "demo-3", period_start: "", period_end: "", revenue: { total: 2_980_000, jobs_completed: 24, total_km: 6_540 }, costs: { fuel: 880_000, maintenance: 360_000, wages: 820_000, insurance: 120_000, depreciation: 240_000, total: 2_420_000 }, profitability: { net_profit: 560_000, margin_percent: 18.8, score: 71, tier: "good" } },
@@ -229,7 +375,8 @@ export function FleetFinancialAnalytics() {
     "demo-4": "LAG-303-GH", "demo-5": "PHC-441-JK", "demo-6": "LAG-552-LM",
     "demo-7": "ABJ-660-NP", "demo-8": "PHC-771-QR",
   };
-  const displayData: any[] = profitabilityData.length > 0 ? profitabilityData : DEMO_PL;
+  const displayData: ProfitabilityAnalysisRow[] = profitabilityData.length > 0 ? profitabilityData : DEMO_PL;
+  const vehicleTableData: ProfitabilityAnalysisRow[] = vehicleProfitabilityResp ? vehicleProfitabilityData : displayData;
   const displayTotals = displayData.reduce((acc, v) => ({
     totalRevenue: acc.totalRevenue + (v.revenue?.total || 0),
     totalCosts: acc.totalCosts + (v.costs?.total || 0),
@@ -239,6 +386,15 @@ export function FleetFinancialAnalytics() {
     ? (displayTotals.totalProfit / displayTotals.totalRevenue) * 100
     : 0;
   const financialSummary = financialSummaryResp?.data;
+  const profitabilityVehicleNames = useMemo(
+    () => Object.fromEntries(
+      [...profitabilityData, ...vehicleProfitabilityData, ...underperformingData].map((item) => [
+        item.vehicle_id,
+        item.name || item.plateNumber,
+      ]),
+    ),
+    [profitabilityData, vehicleProfitabilityData, underperformingData],
+  );
   const hasFinancialSummaryValues = Boolean(
     financialSummary &&
     (
@@ -263,12 +419,14 @@ export function FleetFinancialAnalytics() {
   };
 
   // Identify underperforming vehicles
-  const underperformingVehicles = displayData
+  const underperformingSource = underperformingResp ? underperformingData : displayData;
+  const underperformingVehicles = underperformingSource
     .filter(v => v.profitability?.tier === 'loss-making' || v.profitability?.tier === 'marginal')
     .sort((a, b) => (a.profitability?.net_profit || 0) - (b.profitability?.net_profit || 0));
 
   const getVehicleName = (vehicleId: string) => {
     if (DEMO_NAMES[vehicleId]) return DEMO_NAMES[vehicleId];
+    if (profitabilityVehicleNames[vehicleId]) return profitabilityVehicleNames[vehicleId];
     const vehicle = vehicles.find(v => v.id === vehicleId);
     return vehicle?.registrationNumber || vehicleId.slice(0, 8);
   };
@@ -285,6 +443,17 @@ export function FleetFinancialAnalytics() {
         {TIER_LABELS[tier as keyof typeof TIER_LABELS] || tier}
       </Badge>
     );
+  };
+
+  const handleExportCostBreakdown = async () => {
+    setIsExportingCostBreakdown(true);
+    try {
+      const result = await exportFleetCostBreakdown();
+      const filename = getFilenameFromDisposition(result.contentDisposition, "vehicle-cost-analysis.csv");
+      downloadBlob(new Blob([result.blob], { type: result.contentType || "text/csv" }), filename);
+    } finally {
+      setIsExportingCostBreakdown(false);
+    }
   };
 
   return (
@@ -480,32 +649,7 @@ export function FleetFinancialAnalytics() {
                   <CardDescription>Individual vehicle financial performance</CardDescription>
                 </div>
                 <ExportButton
-                  rows={displayData.filter((item) => {
-                    const name = getVehicleName(item.vehicle_id).toLowerCase();
-                    if (vehicleSearch && !name.includes(vehicleSearch.toLowerCase())) return false;
-                    if (vehicleStatusFilter !== "all" && (item.profitability?.tier || 'marginal') !== vehicleStatusFilter) return false;
-                    if (marginFilterEnabled) {
-                      const m = item.profitability?.margin_percent ?? 0;
-                      if (marginMin && m < Number(marginMin)) return false;
-                      if (marginMax && m > Number(marginMax)) return false;
-                    }
-                    if (revenueFilterEnabled) {
-                      const r = item.revenue?.total ?? 0;
-                      if (revenueMin && r < Number(revenueMin)) return false;
-                      if (revenueMax && r > Number(revenueMax)) return false;
-                    }
-                    if (profitFilterEnabled) {
-                      const p = item.profitability?.net_profit ?? 0;
-                      if (profitMin && p < Number(profitMin)) return false;
-                      if (profitMax && p > Number(profitMax)) return false;
-                    }
-                    if (scoreFilterEnabled) {
-                      const s = item.profitability?.score ?? 0;
-                      if (scoreMin && s < Number(scoreMin)) return false;
-                      if (scoreMax && s > Number(scoreMax)) return false;
-                    }
-                    return true;
-                  })}
+                  rows={vehicleTableData}
                   columns={[
                     { header: "Vehicle", accessor: (r) => getVehicleName(r.vehicle_id) },
                     { header: "Revenue", accessor: (r) => r.revenue?.total ?? 0 },
@@ -669,34 +813,7 @@ export function FleetFinancialAnalytics() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {displayData
-                    .filter((item) => {
-                      const name = getVehicleName(item.vehicle_id).toLowerCase();
-                      if (vehicleSearch && !name.includes(vehicleSearch.toLowerCase())) return false;
-                      if (vehicleStatusFilter !== "all" && (item.profitability?.tier || 'marginal') !== vehicleStatusFilter) return false;
-                      if (marginFilterEnabled) {
-                        const m = item.profitability?.margin_percent ?? 0;
-                        if (marginMin && m < Number(marginMin)) return false;
-                        if (marginMax && m > Number(marginMax)) return false;
-                      }
-                      if (revenueFilterEnabled) {
-                        const r = item.revenue?.total ?? 0;
-                        if (revenueMin && r < Number(revenueMin)) return false;
-                        if (revenueMax && r > Number(revenueMax)) return false;
-                      }
-                      if (profitFilterEnabled) {
-                        const p = item.profitability?.net_profit ?? 0;
-                        if (profitMin && p < Number(profitMin)) return false;
-                        if (profitMax && p > Number(profitMax)) return false;
-                      }
-                      if (scoreFilterEnabled) {
-                        const s = item.profitability?.score ?? 0;
-                        if (scoreMin && s < Number(scoreMin)) return false;
-                        if (scoreMax && s > Number(scoreMax)) return false;
-                      }
-                      return true;
-                    })
-                    .map((item) => (
+                  {vehicleTableData.map((item) => (
                     <TableRow key={item.vehicle_id}>
                       <TableCell className="font-medium">
                         {getVehicleName(item.vehicle_id)}
@@ -727,10 +844,10 @@ export function FleetFinancialAnalytics() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {displayData.length === 0 && (
+                  {vehicleTableData.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        {isCalculating ? 'Calculating profitability...' : 'No data available. Configure vehicle costs to see analysis.'}
+                        {isVehicleProfitabilityFetching ? 'Calculating profitability...' : 'No matching vehicle profit and loss data.'}
                       </TableCell>
                     </TableRow>
                   )}
@@ -748,43 +865,10 @@ export function FleetFinancialAnalytics() {
                   <CardTitle>Detailed Cost Analysis</CardTitle>
                   <CardDescription>Per-vehicle cost breakdown</CardDescription>
                 </div>
-                <ExportButton
-                  rows={displayData.filter((item) => {
-                    const name = getVehicleName(item.vehicle_id).toLowerCase();
-                    if (costSearch && !name.includes(costSearch.toLowerCase())) return false;
-                    if (costTotalEnabled) {
-                      const t = item.costs?.total ?? 0;
-                      if (costTotalMin && t < Number(costTotalMin)) return false;
-                      if (costTotalMax && t > Number(costTotalMax)) return false;
-                    }
-                    if (costFuelEnabled) {
-                      const f = item.costs?.fuel ?? 0;
-                      if (costFuelMin && f < Number(costFuelMin)) return false;
-                      if (costFuelMax && f > Number(costFuelMax)) return false;
-                    }
-                    if (costWagesEnabled) {
-                      const m = item.costs?.wages ?? 0;
-                      if (costWagesMin && m < Number(costWagesMin)) return false;
-                      if (costWagesMax && m > Number(costWagesMax)) return false;
-                    }
-                    if (costMaintEnabled) {
-                      const mn = item.costs?.maintenance ?? 0;
-                      if (costMaintMin && mn < Number(costMaintMin)) return false;
-                      if (costMaintMax && mn > Number(costMaintMax)) return false;
-                    }
-                    return true;
-                  })}
-                  columns={[
-                    { header: "Vehicle", accessor: (r) => getVehicleName(r.vehicle_id) },
-                    { header: "Fuel", accessor: (r) => r.costs?.fuel ?? 0 },
-                    { header: "Maintenance", accessor: (r) => r.costs?.maintenance ?? 0 },
-                    { header: "Wages", accessor: (r) => r.costs?.wages ?? 0 },
-                    { header: "Insurance", accessor: (r) => r.costs?.insurance ?? 0 },
-                    { header: "Depreciation", accessor: (r) => r.costs?.depreciation ?? 0 },
-                    { header: "Total", accessor: (r) => r.costs?.total ?? 0 },
-                  ]}
-                  filename="vehicle-cost-analysis"
-                />
+                <Button variant="outline" onClick={handleExportCostBreakdown} disabled={isExportingCostBreakdown}>
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExportingCostBreakdown ? "Exporting..." : "Export Data"}
+                </Button>
               </div>
               <div className="flex flex-col gap-3 md:flex-row md:items-center">
                 <div className="relative flex-1">
@@ -973,14 +1057,19 @@ export function FleetFinancialAnalytics() {
               ) : (
                 <div className="space-y-4">
                   {underperformingVehicles.map((item) => {
-                    const vehicle = vehicles.find(v => v.id === item.vehicle_id);
+                    const vehicleName = getVehicleName(item.vehicle_id);
+                    const vehicleDescription = [item.make, item.model].filter(Boolean).join(" ");
+                    const vehicle = {
+                      make: vehicleDescription,
+                      model: "",
+                    };
                     return (
                       <Card key={item.vehicle_id} className="border-amber-200 dark:border-amber-800">
                         <CardContent className="pt-4">
                           <div className="flex items-start justify-between">
                             <div>
                               <h4 className="font-semibold flex items-center gap-2">
-                                {vehicle?.registrationNumber || 'Unknown Vehicle'}
+                                {vehicleName}
                                 {getTierBadge(item.profitability?.tier || 'marginal')}
                               </h4>
                               <p className="text-sm text-muted-foreground">
@@ -1038,6 +1127,7 @@ export function FleetFinancialAnalytics() {
         data={profitabilityData}
         vehicleNameLookup={getVehicleName}
         defaultPeriodLabel={`Last ${profitabilityPeriod} days`}
+        periodMonths={periodToMonths(profitabilityPeriod)}
       />
     </div>
   );

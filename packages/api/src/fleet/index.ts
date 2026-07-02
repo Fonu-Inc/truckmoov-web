@@ -5,6 +5,7 @@ import {
   acknowledgeAlert,
   assignDevice,
   assignDriverToVehicle,
+  computeFleetProfitability,
   completeMaintenanceProfile,
   completeMaintenanceRecord,
   createMaintenanceProfile,
@@ -18,6 +19,8 @@ import {
   deleteMaintenanceProfile,
   deleteMaintenanceRecord,
   deleteVehicle,
+  exportFleetCostBreakdown,
+  exportFleetFinancialStatement,
   exportFuelTransactions,
   exportMaintenanceProfiles,
   exportMaintenanceRecords,
@@ -42,6 +45,7 @@ import {
   getFleetAnalyticsFuelLevels,
   getFleetAnalyticsJobPipeline,
   getFleetAnalyticsSummary,
+  getFleetFinancialConfig,
   getFleetFinancialSummary,
   getFuelBudgetVsActual,
   getFuelEfficiency,
@@ -82,6 +86,7 @@ import {
   updateDriver,
   updateDriverContactChannels,
   updateDriverStatus,
+  updateFleetFinancialConfig,
   updateFuelTransaction,
   updateMaintenanceRecord,
   updateVehicle,
@@ -113,6 +118,9 @@ import type {
   FleetAnalyticsDriverScoresQuery,
   FleetAnalyticsEventsQuery,
   FleetAnalyticsPeriodQuery,
+  FleetFinancialConfigActionPayload,
+  FleetFinancialSummaryQuery,
+  FleetProfitabilityPayload,
   FuelBudgetVsActualQuery,
   FuelMetricsQuery,
   FuelQuery,
@@ -151,7 +159,9 @@ export const FLEET_QUERY_KEY = {
   analyticsFuelLevels: (payload?: FleetAnalyticsPeriodQuery) => ['fleet', 'analytics', 'fuelLevels', payload],
   analyticsDriverScores: (payload?: FleetAnalyticsDriverScoresQuery) => ['fleet', 'analytics', 'driverScores', payload],
   analyticsEvents: (payload?: FleetAnalyticsEventsQuery) => ['fleet', 'analytics', 'events', payload],
-  financialSummary: ['fleet', 'financials', 'summary'],
+  financialSummary: (payload?: FleetFinancialSummaryQuery) => ['fleet', 'financials', 'summary', payload],
+  financialConfig: (vehicleId: string) => ['fleet', 'financials', 'config', vehicleId],
+  profitability: (payload: FleetProfitabilityPayload) => ['fleet', 'financials', 'profitability', payload],
   fuelTransactions: (payload?: FuelQuery) => ['fleet', 'fuelTransactions', payload],
   fuelSummary: ['fleet', 'fuelSummary'],
   fuelMetrics: (payload?: FuelMetricsQuery) => ['fleet', 'fuelMetrics', payload],
@@ -349,10 +359,25 @@ export function getFleetAnalyticsEventsQueryOptions(payload?: FleetAnalyticsEven
   })
 }
 
-export function getFleetFinancialSummaryQueryOptions() {
+export function getFleetFinancialSummaryQueryOptions(payload?: FleetFinancialSummaryQuery) {
   return queryOptions({
-    queryKey: FLEET_QUERY_KEY.financialSummary,
-    queryFn: () => getFleetFinancialSummary(),
+    queryKey: FLEET_QUERY_KEY.financialSummary(payload),
+    queryFn: () => getFleetFinancialSummary(payload),
+  })
+}
+
+export function getFleetFinancialConfigQueryOptions(payload: FleetFinancialConfigActionPayload) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.financialConfig(payload.vehicleId),
+    queryFn: () => getFleetFinancialConfig(payload),
+    enabled: Boolean(payload.vehicleId),
+  })
+}
+
+export function getFleetProfitabilityQueryOptions(payload: FleetProfitabilityPayload) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.profitability(payload),
+    queryFn: () => computeFleetProfitability(payload),
   })
 }
 
@@ -575,8 +600,16 @@ export function useFleetAnalyticsEvents(payload?: FleetAnalyticsEventsQuery) {
   return useQuery(getFleetAnalyticsEventsQueryOptions(payload))
 }
 
-export function useFleetFinancialSummary() {
-  return useQuery(getFleetFinancialSummaryQueryOptions())
+export function useFleetFinancialSummary(payload?: FleetFinancialSummaryQuery) {
+  return useQuery(getFleetFinancialSummaryQueryOptions(payload))
+}
+
+export function useFleetFinancialConfig(payload: FleetFinancialConfigActionPayload) {
+  return useQuery(getFleetFinancialConfigQueryOptions(payload))
+}
+
+export function useFleetProfitability(payload: FleetProfitabilityPayload) {
+  return useQuery(getFleetProfitabilityQueryOptions(payload))
 }
 
 export function useFuelTransactions(payload?: FuelQuery) {
@@ -934,6 +967,16 @@ export function useSetFuelThreshold() {
   })
 }
 
+export function useUpdateFleetFinancialConfig() {
+  return useMutation({
+    mutationFn: updateFleetFinancialConfig,
+    onSuccess: (_, { vehicleId }) => {
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.financialConfig(vehicleId) })
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'financials'] })
+    },
+  })
+}
+
 function invalidateMaintenanceRecords(id?: string) {
   queryClient.invalidateQueries({ queryKey: ['fleet', 'maintenanceRecords'] })
   queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.maintenanceRecordsSummary })
@@ -1127,6 +1170,8 @@ export function useSendComplianceReminders() {
 // ─── Re-export plain request functions for imperative use ─────────────────────
 
 export {
+  exportFleetCostBreakdown,
+  exportFleetFinancialStatement,
   exportComplianceDocs,
   exportFuelTransactions,
   exportMaintenanceProfiles,

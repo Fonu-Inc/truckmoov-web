@@ -7,9 +7,32 @@ import { Textarea } from "@/components/shadcn/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Switch } from "@/components/shadcn/switch";
 import { Separator } from "@/components/shadcn/separator";
-import {FileText, Eye, Download} from "lucide-react";
-type VehicleProfitability = any;
-import { exportVehiclePLToPDF, exportVehiclePLToExcel, exportVehiclePLToCSV, type StatementOptions } from "@/lib/vehiclePLExport";
+import { FileText, Eye, Download } from "lucide-react";
+import { exportFleetFinancialStatement, type FleetFinancialStatementExportFormat } from "@truckmoov/api/fleet";
+import type { StatementOptions } from "@/lib/vehiclePLExport";
+
+type VehicleProfitability = {
+  vehicle_id: string;
+  revenue?: {
+    total?: number;
+    jobs_completed?: number;
+    total_km?: number;
+  };
+  costs?: {
+    total?: number;
+    fuel?: number;
+    maintenance?: number;
+    wages?: number;
+    insurance?: number;
+    depreciation?: number;
+  };
+  profitability?: {
+    net_profit?: number;
+    margin_percent?: number;
+    score?: number;
+    tier?: string;
+  };
+};
 
 interface Props {
   open: boolean;
@@ -17,9 +40,24 @@ interface Props {
   data: VehicleProfitability[];
   vehicleNameLookup: (id: string) => string;
   defaultPeriodLabel: string;
+  periodMonths: number;
 }
 
-export function VehiclePLStatementBuilder({ open, onOpenChange, data, vehicleNameLookup, defaultPeriodLabel }: Props) {
+function getFilenameFromDisposition(disposition: string | undefined, fallback: string) {
+  const match = disposition?.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
+  return match?.[1] ? decodeURIComponent(match[1].replace(/"/g, "")) : fallback;
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+export function VehiclePLStatementBuilder({ open, onOpenChange, data, vehicleNameLookup, defaultPeriodLabel, periodMonths }: Props) {
   const [title, setTitle] = useState("Vehicle Profit & Loss Statement");
   const [companyName, setCompanyName] = useState("");
   const [periodLabel, setPeriodLabel] = useState(defaultPeriodLabel);
@@ -29,6 +67,7 @@ export function VehiclePLStatementBuilder({ open, onOpenChange, data, vehicleNam
   const [includeSummary, setIncludeSummary] = useState(true);
   const [includePerVehicle, setIncludePerVehicle] = useState(true);
   const [accent, setAccent] = useState<"blue" | "green" | "amber" | "slate">("blue");
+  const [downloadingFormat, setDownloadingFormat] = useState<FleetFinancialStatementExportFormat | null>(null);
 
   const buildOptions = (): StatementOptions => ({
     title,
@@ -62,6 +101,33 @@ export function VehiclePLStatementBuilder({ open, onOpenChange, data, vehicleNam
         km: d.revenue?.total_km || 0 })) };
     sessionStorage.setItem("vpl_statement_preview", JSON.stringify(payload));
     window.open("/admin/fleet/pl-statement", "_blank");
+  };
+
+  const exportStatement = async (format: FleetFinancialStatementExportFormat) => {
+    setDownloadingFormat(format);
+    try {
+      const result = await exportFleetFinancialStatement({
+        params: {
+          periodMonths,
+          format,
+          title,
+          companyName: companyName || undefined,
+          period: periodLabel || undefined,
+          preparedBy: preparedBy || undefined,
+          notes: notes || undefined,
+          accentColor: accent,
+          includeCoverPage: includeCover,
+          includeFleetSummary: includeSummary,
+          includePerVehicleBreakdown: includePerVehicle,
+        },
+      });
+      const extension = format === "xlsx" ? "xlsx" : format;
+      const fallback = `${title.replace(/\s+/g, "_")}_${Date.now()}.${extension}`;
+      const filename = getFilenameFromDisposition(result.contentDisposition, fallback);
+      downloadBlob(new Blob([result.blob], { type: result.contentType }), filename);
+    } finally {
+      setDownloadingFormat(null);
+    }
   };
 
   return (
@@ -136,14 +202,14 @@ export function VehiclePLStatementBuilder({ open, onOpenChange, data, vehicleNam
           <Button variant="outline" onClick={openPreview}>
             <Eye className="h-4 w-4 mr-2" /> Preview
           </Button>
-          <Button variant="outline" onClick={() => exportVehiclePLToCSV(data, vehicleNameLookup, buildOptions())}>
-            <Download className="h-4 w-4 mr-2" /> CSV
+          <Button variant="outline" onClick={() => exportStatement("csv")} disabled={downloadingFormat !== null}>
+            <Download className="h-4 w-4 mr-2" /> {downloadingFormat === "csv" ? "CSV..." : "CSV"}
           </Button>
-          <Button variant="outline" onClick={() => exportVehiclePLToExcel(data, vehicleNameLookup, buildOptions())}>
-            <Download className="h-4 w-4 mr-2" /> Excel
+          <Button variant="outline" onClick={() => exportStatement("xlsx")} disabled={downloadingFormat !== null}>
+            <Download className="h-4 w-4 mr-2" /> {downloadingFormat === "xlsx" ? "Excel..." : "Excel"}
           </Button>
-          <Button onClick={() => exportVehiclePLToPDF(data, vehicleNameLookup, buildOptions())}>
-            <Download className="h-4 w-4 mr-2" /> Download PDF
+          <Button onClick={() => exportStatement("pdf")} disabled={downloadingFormat !== null}>
+            <Download className="h-4 w-4 mr-2" /> {downloadingFormat === "pdf" ? "Downloading..." : "Download PDF"}
           </Button>
         </DialogFooter>
       </DialogContent>

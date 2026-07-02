@@ -430,6 +430,63 @@ export type FleetAnalyticsEventsQuery = {
   }
 }
 
+export type FleetProfitabilityPayload = {
+  data: {
+    periodMonths: number
+    search?: string
+    status?: FleetProfitabilityTier
+    marginFrom?: number
+    marginTo?: number
+    revenueFrom?: number
+    revenueTo?: number
+    netProfitFrom?: number
+    netProfitTo?: number
+    scoreFrom?: number
+    scoreTo?: number
+  }
+}
+
+export type FleetFinancialSummaryQuery = {
+  params?: {
+    from?: string
+    to?: string
+  }
+}
+
+export type FleetFinancialStatementExportFormat = 'pdf' | 'csv' | 'xlsx'
+
+export type FleetFinancialStatementExportQuery = {
+  params: {
+    periodMonths: number
+    format: FleetFinancialStatementExportFormat
+    title?: string
+    companyName?: string
+    period?: string
+    preparedBy?: string
+    notes?: string
+    accentColor?: string
+    includeCoverPage?: boolean
+    includeFleetSummary?: boolean
+    includePerVehicleBreakdown?: boolean
+  }
+}
+
+export type FleetFinancialConfigActionPayload = {
+  vehicleId: string
+}
+
+export type UpdateFleetFinancialConfigPayload = {
+  vehicleId: string
+  data: {
+    fuelEstimateNgnPerMonth?: number
+    maintenanceEstimateNgnPerMonth?: number
+    monthlyWagesNgn?: number
+    monthlyInsuranceNgn?: number
+    monthlyDepreciationNgn?: number
+    monthlyOtherNgn?: number
+  }
+}
+
 // ─── Response entity types ────────────────────────────────────────────────────
 
 export type VehicleGpsDevice = {
@@ -818,7 +875,60 @@ export type FleetFinancialSummary = {
   totalCost: number
   totalProfit: number
   avgMarginPercent: number
+  avgScore?: number
   vehicleCount: number
+  costBreakdown?: {
+    fuel: number
+    maintenance: number
+    wages: number
+    insurance: number
+    depreciation: number
+    other?: number
+  }
+}
+
+export type FleetProfitabilityTier = 'excellent' | 'good' | 'marginal' | 'loss-making' | string
+
+export type FleetProfitabilityVehicle = {
+  vehicleId: string
+  plateNumber: string
+  name?: string
+  make?: string | null
+  model?: string | null
+  kmDriven?: number
+  revenue: number
+  fuelCost: number
+  maintenanceCost: number
+  fixedCosts: number
+  totalCost: number
+  profit: number
+  marginPercent: number
+  tier: FleetProfitabilityTier
+  score: number
+  costBreakdown: {
+    fuel?: number
+    maintenance?: number
+    wages?: number
+    insurance?: number
+    depreciation?: number
+    other?: number
+    [key: string]: number | undefined
+  }
+  jobCount: number
+}
+
+export type FleetFinancialConfig = {
+  id: string
+  tenantId: string
+  vehicleId: string
+  fuelEstimateNgnPerMonth?: number
+  maintenanceEstimateNgnPerMonth?: number
+  monthlyWagesNgn: number
+  monthlyInsuranceNgn: number
+  monthlyDepreciationNgn: number
+  monthlyOtherNgn: number
+  createdAt: string
+  updatedAt: string
 }
 
 import type { ServerResponse } from '../lib/types'
@@ -877,6 +987,8 @@ export type FleetAnalyticsFuelLevelsResponse = ServerResponse<FleetAnalyticsFuel
 export type FleetAnalyticsDriverScoresResponse = ServerResponse<FleetAnalyticsDriverScore[]>
 export type FleetAnalyticsEventsResponse = ServerResponse<FleetAnalyticsEvent[]>
 export type FleetFinancialSummaryResponse = ServerResponse<FleetFinancialSummary>
+export type FleetProfitabilityResponse = ServerResponse<FleetProfitabilityVehicle[]>
+export type FleetFinancialConfigResponse = ServerResponse<FleetFinancialConfig>
 
 // ─── Compliance ───────────────────────────────────────────────────────────────
 
