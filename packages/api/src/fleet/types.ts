@@ -272,7 +272,9 @@ export type UpdateFuelTransactionPayload = {
 
 export type FuelMetricsQuery = {
   params?: {
-    period?: 'weekly' | 'monthly'
+    period?: 'daily' | 'weekly' | 'monthly'
+    from?: string
+    to?: string
   }
 }
 
@@ -570,6 +572,11 @@ export type FuelConsumptionBucket = {
   liters: number
   totalCost: number
   records: number
+  byFuelType?: Record<string, {
+    liters: number
+    totalCost: number
+    records: number
+  }>
 }
 
 export type VehicleEfficiency = {
