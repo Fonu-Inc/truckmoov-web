@@ -272,9 +272,7 @@ export type UpdateFuelTransactionPayload = {
 
 export type FuelMetricsQuery = {
   params?: {
-    period?: 'daily' | 'weekly' | 'monthly'
-    from?: string
-    to?: string
+    period?: 'weekly' | 'monthly'
   }
 }
 

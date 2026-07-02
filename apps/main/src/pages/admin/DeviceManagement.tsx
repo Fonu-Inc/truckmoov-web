@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import type { DeviceWithTelemetry } from "@/hooks/useDeviceTelemetry";
 import {
@@ -87,6 +87,7 @@ export default function DeviceManagement() {
   const uploadFile = async (_file: File, _requestId: string, _type: "device_photo" | "receipt") => null;
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [manufacturerFilters, setManufacturerFilters] = useState<string[]>([]);
   const [lastSeenFilters, setLastSeenFilters] = useState<string[]>([]);
@@ -98,6 +99,11 @@ export default function DeviceManagement() {
   const [selectedDevice, setSelectedDevice] = useState<DeviceWithTelemetry | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
   const apiStatus = statusFilter !== "all" && statusFilter !== "assignable"
     ? statusFilter as FleetDevice["status"]
     : undefined;
@@ -105,7 +111,7 @@ export default function DeviceManagement() {
   const apiManufacturer = manufacturerFilters.length === 1 ? manufacturerFilters[0] : undefined;
   const { data: devicesResponse, isLoading: loading, error: devicesError } = useDevices({
     params: {
-      query: searchQuery.trim() || undefined,
+      query: debouncedSearch.trim() || undefined,
       status: apiStatus,
       lifecycleStatus,
       manufacturer: apiManufacturer,

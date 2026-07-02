@@ -1,7 +1,7 @@
 import {Download,  AlertTriangle, CalendarIcon, DollarSign, Droplets, Edit, Eye, Fuel, Gauge, MoreHorizontal, Plus, Search, SlidersHorizontal, Trash2, Truck } from 'lucide-react';
 import { useState, useEffect, useMemo } from "react";
 import { useFuelTransactions, useFuelSummary, useFuelBudgetVsActual, useFuelMetrics, useFuelEfficiency, useRecordFuelTransaction, useUpdateFuelTransaction, useDeleteFuelTransaction, exportFuelTransactions } from "@truckmoov/api/fleet";
-import type { FuelRecord, VehicleEfficiency } from "@truckmoov/api/fleet";
+import type { FuelConsumptionBucket, FuelRecord, VehicleEfficiency } from "@truckmoov/api/fleet";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
@@ -60,6 +60,9 @@ type BudgetChartPoint = {
   label: string;
   budgetedNgn: number;
   actualNgn: number;
+  variance: number;
+  utilizationPct: number;
+  periodType: string;
 };
 
 type FuelConsumptionChartPoint = {
@@ -67,6 +70,29 @@ type FuelConsumptionChartPoint = {
   diesel: number;
   petrol: number;
 };
+
+type FuelMetricsPeriod = "weekly" | "monthly";
+
+const FUEL_METRIC_PERIOD_LABEL: Record<FuelMetricsPeriod, string> = {
+  weekly: "Weekly",
+  monthly: "Monthly",
+};
+
+function getFuelTypeLiters(bucket: FuelConsumptionBucket, fuelType: "diesel" | "petrol") {
+  const byFuelType = bucket.byFuelType ?? {};
+  const fuelTypeMetrics =
+    byFuelType[fuelType] ??
+    byFuelType[fuelType.toUpperCase()] ??
+    byFuelType[fuelType.charAt(0).toUpperCase() + fuelType.slice(1)];
+
+  return fuelTypeMetrics?.liters ?? 0;
+}
+
+function getEfficiencyProgressValue(vehicle: VehicleEfficiency) {
+  if (vehicle.kmPerLiter === null) return 0;
+  const target = vehicle.threshold && vehicle.threshold > 0 ? vehicle.threshold * 2 : 15;
+  return Math.min((vehicle.kmPerLiter / target) * 100, 100);
+}
 
 function toDateParam(date: Date) {
   return format(date, "yyyy-MM-dd");
@@ -94,6 +120,11 @@ function formatNgn(value: number) {
   return `NGN ${value.toLocaleString()}`;
 }
 
+function formatBudgetWindow(start?: string, end?: string) {
+  if (!start || !end) return "Selected period";
+  return `${format(new Date(start), "MMM d, yyyy")} - ${format(new Date(end), "MMM d, yyyy")}`;
+}
+
 export function FuelTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -104,7 +135,7 @@ export function FuelTab() {
   const [selectedTransaction, setSelectedTransaction] = useState<FuelTransaction | null>(null);
 
   // Per-chart period filters
-  const [metricsPeriod, setMetricsPeriod] = useState<PeriodValue>("7");
+  const [metricsPeriod, setMetricsPeriod] = useState<FuelMetricsPeriod>("weekly");
   const [budgetPeriod, setBudgetPeriod] = useState<PeriodValue>("7");
 
   // Filter state
@@ -145,11 +176,9 @@ export function FuelTab() {
   const fuelQuery = useFuelTransactions(queryParams);
   const summaryQuery = useFuelSummary();
   const efficiencyQuery = useFuelEfficiency();
-  const metricsRange = useMemo(() => getPeriodRange(metricsPeriod), [metricsPeriod]);
   const fuelMetricsQuery = useFuelMetrics({
     params: {
-      period: "daily",
-      ...metricsRange,
+      period: metricsPeriod,
     },
   });
   const budgetRange = useMemo(() => getPeriodRange(budgetPeriod), [budgetPeriod]);
@@ -190,8 +219,8 @@ export function FuelTab() {
   const fuelConsumptionChartData = useMemo<FuelConsumptionChartPoint[]>(() => {
     return (fuelMetricsQuery.data?.data ?? []).map((bucket) => ({
       label: bucket.label,
-      diesel: bucket.byFuelType?.diesel?.liters ?? 0,
-      petrol: bucket.byFuelType?.petrol?.liters ?? 0,
+      diesel: getFuelTypeLiters(bucket, "diesel"),
+      petrol: getFuelTypeLiters(bucket, "petrol"),
     }));
   }, [fuelMetricsQuery.data]);
   const budgetVsActual = budgetVsActualQuery.data?.data;
@@ -203,6 +232,9 @@ export function FuelTab() {
         label: vehicle.vehicleId,
         budgetedNgn: vehicle.budgetedNgn,
         actualNgn: vehicle.actualNgn,
+        variance: vehicle.variance,
+        utilizationPct: vehicle.utilizationPct,
+        periodType: vehicle.periodType,
       }));
     }
 
@@ -211,11 +243,16 @@ export function FuelTab() {
         label: "Fleet",
         budgetedNgn: budgetVsActual.fleet.budgetedNgn,
         actualNgn: budgetVsActual.fleet.actualNgn,
+        variance: budgetVsActual.fleet.variance,
+        utilizationPct: budgetVsActual.fleet.utilizationPct,
+        periodType: budgetVsActual.fleet.periodType,
       }];
     }
 
     return [];
   }, [budgetVsActual]);
+  const budgetWindowLabel = formatBudgetWindow(budgetVsActual?.windowStart, budgetVsActual?.windowEnd);
+  const fleetBudget = budgetVsActual?.fleet;
   const stats = {
     totalLitres: summary?.totalLitres ?? 0,
     totalCost: summary?.totalCostNgn ?? 0,
@@ -223,13 +260,17 @@ export function FuelTab() {
   };
   const vehicleEfficiency = efficiencyQuery.data?.data ?? [];
   const lowEfficiencyVehicles = vehicleEfficiency.filter((vehicle) => vehicle.belowThreshold).length;
-  const efficiencyThreshold = vehicleEfficiency.find((vehicle) => vehicle.threshold !== null)?.threshold ?? 8;
-  const transactionCountByVehicle = useMemo(() => {
-    return transactions.reduce<Record<string, number>>((acc, transaction) => {
-      acc[transaction.vehicleId] = (acc[transaction.vehicleId] ?? 0) + 1;
-      return acc;
-    }, {});
-  }, [transactions]);
+  const efficiencyThresholds = [...new Set(
+    vehicleEfficiency
+      .map((vehicle) => vehicle.threshold)
+      .filter((threshold): threshold is number => threshold !== null)
+  )];
+  const efficiencyThresholdLabel =
+    efficiencyThresholds.length === 0
+      ? "not set"
+      : efficiencyThresholds.length === 1
+        ? `${efficiencyThresholds[0]} km/L`
+        : "configured per vehicle";
 
   const handleAddTransaction = async () => {
     const liters = parseFloat(newTransaction.quantity);
@@ -768,10 +809,18 @@ export function FuelTab() {
           <Card className="bg-card/50 border-border/50">
             <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
               <div>
-                <CardTitle className="text-base">Weekly Consumption</CardTitle>
-                <CardDescription>Diesel vs Petrol usage by day</CardDescription>
+                <CardTitle className="text-base">{FUEL_METRIC_PERIOD_LABEL[metricsPeriod]} Consumption</CardTitle>
+                <CardDescription>Diesel vs Petrol usage by {metricsPeriod === "weekly" ? "week" : "month"}</CardDescription>
               </div>
-              <PeriodFilter value={metricsPeriod} onChange={setMetricsPeriod} variant="short" className="w-[150px]" />
+              <Select value={metricsPeriod} onValueChange={(value) => setMetricsPeriod(value as FuelMetricsPeriod)}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
             </CardHeader>
             <CardContent>
               {fuelMetricsQuery.isLoading ? (
@@ -826,7 +875,7 @@ export function FuelTab() {
               <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
                 <div>
                   <CardTitle className="text-base">Vehicle Fuel Efficiency</CardTitle>
-                  <CardDescription>Kilometers per litre by vehicle (threshold: {efficiencyThreshold} km/L)</CardDescription>
+                  <CardDescription>Kilometers per litre by vehicle (threshold: {efficiencyThresholdLabel})</CardDescription>
                 </div>
               </CardHeader>
               <CardContent>
@@ -855,14 +904,11 @@ export function FuelTab() {
                         <div className="flex-1">
                           {vehicle.kmPerLiter !== null ? (
                             <Progress
-                              value={Math.min((vehicle.kmPerLiter / 15) * 100, 100)}
+                              value={getEfficiencyProgressValue(vehicle)}
                               className={cn(
                                 "h-3",
                                 vehicle.belowThreshold && "[&>div]:bg-destructive",
-                                !vehicle.belowThreshold &&
-                                  vehicle.kmPerLiter < 9 &&
-                                  "[&>div]:bg-warning",
-                                vehicle.kmPerLiter >= 9 && "[&>div]:bg-success"
+                                !vehicle.belowThreshold && "[&>div]:bg-success"
                               )}
                             />
                           ) : (
@@ -875,7 +921,7 @@ export function FuelTab() {
                           </span>
                         </div>
                         <div className="w-20 text-right text-sm text-muted-foreground">
-                          {(transactionCountByVehicle[vehicle.vehicleId] ?? 0).toLocaleString()} txn
+                          {vehicle.threshold !== null ? `${vehicle.threshold} target` : "No target"}
                         </div>
                       </div>
                     ))
@@ -888,7 +934,7 @@ export function FuelTab() {
               <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
                 <div>
                   <CardTitle className="text-base">Budget vs Actual</CardTitle>
-                  <CardDescription>Daily fuel spend compared to budget</CardDescription>
+                  <CardDescription>{budgetWindowLabel}</CardDescription>
                 </div>
                 <PeriodFilter value={budgetPeriod} onChange={setBudgetPeriod} variant="short" className="w-[150px]" />
               </CardHeader>
@@ -907,39 +953,64 @@ export function FuelTab() {
                     No budget data available for this period.
                   </div>
                 ) : (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={budgetChartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(value) => `${Number(value) / 1000}K`} />
-                      <Tooltip
-                        formatter={(value) => formatNgn(Number(value))}
-                        contentStyle={{
-                          backgroundColor: "hsl(var(--card))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px" }}
-                      />
-                      <Legend />
-                      <Line
-                        type="monotone"
-                        dataKey="actualNgn"
-                        name="Actual (NGN)"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth={2}
-                        dot={{ r: 3 }}
-                        activeDot={{ r: 5 }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="budgetedNgn"
-                        name="Budget (NGN)"
-                        stroke="hsl(var(--warning))"
-                        strokeWidth={2}
-                        strokeDasharray="5 5"
-                        dot={{ r: 3 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  <div className="space-y-4">
+                    {fleetBudget && (
+                      <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Fleet budget</p>
+                          <p className="font-semibold">{formatNgn(fleetBudget.budgetedNgn)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Actual spend</p>
+                          <p className="font-semibold">{formatNgn(fleetBudget.actualNgn)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Variance</p>
+                          <p className={cn("font-semibold", fleetBudget.variance > 0 ? "text-destructive" : "text-success")}>
+                            {formatNgn(fleetBudget.variance)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Utilization</p>
+                          <p className="font-semibold">{fleetBudget.utilizationPct.toFixed(1)}%</p>
+                        </div>
+                      </div>
+                    )}
+                    <ResponsiveContainer width="100%" height={260}>
+                      <LineChart data={budgetChartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(value) => `${Number(value) / 1000}K`} />
+                        <Tooltip
+                          formatter={(value) => formatNgn(Number(value))}
+                          labelFormatter={(label) => `Vehicle: ${label}`}
+                          contentStyle={{
+                            backgroundColor: "hsl(var(--card))",
+                            border: "1px solid hsl(var(--border))",
+                            borderRadius: "8px" }}
+                        />
+                        <Legend />
+                        <Line
+                          type="monotone"
+                          dataKey="actualNgn"
+                          name="Actual (NGN)"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={2}
+                          dot={{ r: 3 }}
+                          activeDot={{ r: 5 }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="budgetedNgn"
+                          name="Budget (NGN)"
+                          stroke="hsl(var(--warning))"
+                          strokeWidth={2}
+                          strokeDasharray="5 5"
+                          dot={{ r: 3 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
                 )}
               </CardContent>
             </Card>

@@ -928,8 +928,9 @@ export function useRecordFuelTransaction() {
   return useMutation({
     mutationFn: recordFuelTransaction,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelTransactions() })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelMetrics() })
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelTransactions'] })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelSummary })
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelMetrics'] })
       queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelBudgetVsActual'] })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelEfficiency })
     },
@@ -940,9 +941,11 @@ export function useUpdateFuelTransaction() {
   return useMutation({
     mutationFn: updateFuelTransaction,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelTransactions() })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelMetrics() })
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelTransactions'] })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelSummary })
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelMetrics'] })
       queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelBudgetVsActual'] })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelEfficiency })
     },
   })
 }
@@ -951,9 +954,11 @@ export function useDeleteFuelTransaction() {
   return useMutation({
     mutationFn: deleteFuelTransaction,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelTransactions() })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelMetrics() })
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelTransactions'] })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelSummary })
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelMetrics'] })
       queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelBudgetVsActual'] })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelEfficiency })
     },
   })
 }
