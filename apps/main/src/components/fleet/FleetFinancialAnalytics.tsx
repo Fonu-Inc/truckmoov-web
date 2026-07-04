@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { Button } from "@/components/shadcn/button";
@@ -50,20 +50,23 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend
 } from "recharts";
 import { VehicleFinancialConfigDialog } from "./VehicleFinancialConfigDialog";
 import { VehiclePLStatementBuilder } from "./VehiclePLStatementBuilder";
 import { PeriodFilter, PeriodValue } from "./PeriodFilter";
 
-const TIER_COLORS = {
+type ProfitabilityTierKey = "excellent" | "good" | "marginal" | "loss-making";
+
+const ORDERED_PROFITABILITY_TIERS: ProfitabilityTierKey[] = ["excellent", "good", "marginal", "loss-making"];
+
+const TIER_COLORS: Record<ProfitabilityTierKey, string> = {
   excellent: "#22c55e",
   good: "#3b82f6",
   marginal: "#f59e0b",
   "loss-making": "#ef4444",
 };
 
-const TIER_LABELS = {
+const TIER_LABELS: Record<ProfitabilityTierKey, string> = {
   excellent: "Excellent",
   good: "Good",
   marginal: "Marginal",
@@ -116,8 +119,37 @@ function periodToMonths(period: PeriodValue) {
   return 1;
 }
 
+function normalizeTier(tier: string | undefined): ProfitabilityTierKey {
+  const normalized = tier?.toLowerCase().trim();
+  if (normalized === "excellent" || normalized === "good" || normalized === "marginal" || normalized === "loss-making") {
+    return normalized;
+  }
+  return "marginal";
+}
+
+function formatPeriodLabel(period: PeriodValue) {
+  if (period === "0") return "Today";
+  if (period === "1") return "Yesterday";
+  if (period === "180") return "Last 6 months";
+  if (period === "365") return "Last year";
+  return `Last ${period} days`;
+}
+
 function optionalNumber(value: string) {
-  return value === "" ? undefined : Number(value);
+  if (value === "") return undefined;
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : undefined;
+}
+
+function useDebouncedValue<T>(value: T, delay = 350) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedValue(value), delay);
+    return () => window.clearTimeout(timer);
+  }, [value, delay]);
+
+  return debouncedValue;
 }
 
 function getFilenameFromDisposition(disposition: string | undefined, fallback: string) {
@@ -189,6 +221,19 @@ export function FleetFinancialAnalytics() {
     () => (profitabilityResp?.data ?? []).map(normalizeProfitabilityRow),
     [profitabilityResp?.data],
   );
+  const costBreakdownPayload = useMemo(() => ({
+    data: {
+      periodMonths: periodToMonths(costBreakdownPeriod),
+    },
+  }), [costBreakdownPeriod]);
+  const {
+    data: costBreakdownResp,
+    isFetching: isCostBreakdownFetching,
+  } = useFleetProfitability(costBreakdownPayload);
+  const costBreakdownData = useMemo(
+    () => (costBreakdownResp?.data ?? []).map(normalizeProfitabilityRow),
+    [costBreakdownResp?.data],
+  );
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [statementBuilderOpen, setStatementBuilderOpen] = useState(false);
   const [isExportingCostBreakdown, setIsExportingCostBreakdown] = useState(false);
@@ -221,24 +266,9 @@ export function FleetFinancialAnalytics() {
   const [scoreMax, setScoreMax] = useState("");
   const [draftScoreMin, setDraftScoreMin] = useState("");
   const [draftScoreMax, setDraftScoreMax] = useState("");
-  const vehicleProfitabilityPayload = useMemo(() => ({
-    data: {
-      periodMonths: periodToMonths(profitabilityPeriod),
-      search: vehicleSearch.trim() || undefined,
-      status: vehicleStatusFilter === "all" ? undefined : vehicleStatusFilter,
-      marginFrom: marginFilterEnabled ? optionalNumber(marginMin) : undefined,
-      marginTo: marginFilterEnabled ? optionalNumber(marginMax) : undefined,
-      revenueFrom: revenueFilterEnabled ? optionalNumber(revenueMin) : undefined,
-      revenueTo: revenueFilterEnabled ? optionalNumber(revenueMax) : undefined,
-      netProfitFrom: profitFilterEnabled ? optionalNumber(profitMin) : undefined,
-      netProfitTo: profitFilterEnabled ? optionalNumber(profitMax) : undefined,
-      scoreFrom: scoreFilterEnabled ? optionalNumber(scoreMin) : undefined,
-      scoreTo: scoreFilterEnabled ? optionalNumber(scoreMax) : undefined,
-    },
-  }), [
-    profitabilityPeriod,
-    vehicleSearch,
-    vehicleStatusFilter,
+  const debouncedVehicleSearch = useDebouncedValue(vehicleSearch.trim());
+  const debouncedVehicleFilters = useDebouncedValue({
+    status: vehicleStatusFilter,
     marginFilterEnabled,
     marginMin,
     marginMax,
@@ -251,6 +281,25 @@ export function FleetFinancialAnalytics() {
     scoreFilterEnabled,
     scoreMin,
     scoreMax,
+  });
+  const vehicleProfitabilityPayload = useMemo(() => ({
+    data: {
+      periodMonths: periodToMonths(profitabilityPeriod),
+      search: debouncedVehicleSearch || undefined,
+      status: debouncedVehicleFilters.status === "all" ? undefined : debouncedVehicleFilters.status,
+      marginFrom: debouncedVehicleFilters.marginFilterEnabled ? optionalNumber(debouncedVehicleFilters.marginMin) : undefined,
+      marginTo: debouncedVehicleFilters.marginFilterEnabled ? optionalNumber(debouncedVehicleFilters.marginMax) : undefined,
+      revenueFrom: debouncedVehicleFilters.revenueFilterEnabled ? optionalNumber(debouncedVehicleFilters.revenueMin) : undefined,
+      revenueTo: debouncedVehicleFilters.revenueFilterEnabled ? optionalNumber(debouncedVehicleFilters.revenueMax) : undefined,
+      netProfitFrom: debouncedVehicleFilters.profitFilterEnabled ? optionalNumber(debouncedVehicleFilters.profitMin) : undefined,
+      netProfitTo: debouncedVehicleFilters.profitFilterEnabled ? optionalNumber(debouncedVehicleFilters.profitMax) : undefined,
+      scoreFrom: debouncedVehicleFilters.scoreFilterEnabled ? optionalNumber(debouncedVehicleFilters.scoreMin) : undefined,
+      scoreTo: debouncedVehicleFilters.scoreFilterEnabled ? optionalNumber(debouncedVehicleFilters.scoreMax) : undefined,
+    },
+  }), [
+    profitabilityPeriod,
+    debouncedVehicleSearch,
+    debouncedVehicleFilters,
   ]);
   const {
     data: vehicleProfitabilityResp,
@@ -273,7 +322,7 @@ export function FleetFinancialAnalytics() {
     () => (underperformingResp?.data ?? []).map(normalizeProfitabilityRow),
     [underperformingResp?.data],
   );
-  const isCalculating = isProfitabilityFetching || isVehicleProfitabilityFetching || isUnderperformingFetching;
+  const isCalculating = isProfitabilityFetching || isVehicleProfitabilityFetching || isCostBreakdownFetching || isUnderperformingFetching;
 
   // Detailed Cost Analysis filters
   const [costSearch, setCostSearch] = useState("");
@@ -316,23 +365,32 @@ export function FleetFinancialAnalytics() {
   const fleetMargin = fleetTotals.totalRevenue > 0 
     ? (fleetTotals.totalProfit / fleetTotals.totalRevenue) * 100 
     : 0;
-  // Tier distribution for pie chart
   const tierDistribution = profitabilityData.reduce((acc, v) => {
-    const tier = v.profitability?.tier || 'marginal';
+    const tier = normalizeTier(v.profitability?.tier);
     acc[tier] = (acc[tier] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>);
+  }, {} as Record<ProfitabilityTierKey, number>);
 
-  const pieData = Object.entries(tierDistribution).map(([tier, count]) => ({
-    name: TIER_LABELS[tier as keyof typeof TIER_LABELS],
-    value: count,
-    fill: TIER_COLORS[tier as keyof typeof TIER_COLORS],
+  const profitabilityDistributionData = ORDERED_PROFITABILITY_TIERS.map((tier) => ({
+    tier,
+    name: TIER_LABELS[tier],
+    label: `${TIER_LABELS[tier]}: ${tierDistribution[tier] ?? 0}`,
+    value: tierDistribution[tier] ?? 0,
+    fill: TIER_COLORS[tier],
+  })).filter((entry) => entry.value > 0);
+
+  const profitabilityDistributionTotal = profitabilityDistributionData.reduce((total, item) => total + item.value, 0);
+  const hasProfitabilityDistribution = profitabilityDistributionTotal > 0;
+
+  const profitabilityDistributionLegend = ORDERED_PROFITABILITY_TIERS.map((tier) => ({
+    tier,
+    name: TIER_LABELS[tier],
+    value: tierDistribution[tier] ?? 0,
+    fill: TIER_COLORS[tier],
   }));
 
-  const pieDataChart = pieData;
-
   // Cost breakdown for bar chart
-  const costBreakdown = profitabilityData.reduce((acc, v) => {
+  const costBreakdown = costBreakdownData.reduce((acc, v) => {
     acc.fuel += v.costs?.fuel || 0;
     acc.maintenance += v.costs?.maintenance || 0;
     acc.wages += v.costs?.wages || 0;
@@ -349,7 +407,8 @@ export function FleetFinancialAnalytics() {
     { name: "Depreciation", value: costBreakdown.depreciation, fill: "#64748b" },
   ];
 
-  const costChartDataDemo = costChartData.filter(c => c.value > 0);
+  const costChartDataVisible = costChartData.filter((item) => item.value > 0);
+  const hasCostBreakdownData = costChartDataVisible.length > 0;
 
   const chartConfig = {
     fuel: { label: "Fuel", color: "#f59e0b" },
@@ -376,7 +435,7 @@ export function FleetFinancialAnalytics() {
     "demo-7": "ABJ-660-NP", "demo-8": "PHC-771-QR",
   };
   const displayData: ProfitabilityAnalysisRow[] = profitabilityData.length > 0 ? profitabilityData : DEMO_PL;
-  const vehicleTableData: ProfitabilityAnalysisRow[] = vehicleProfitabilityResp ? vehicleProfitabilityData : displayData;
+  const vehicleTableData: ProfitabilityAnalysisRow[] = vehicleProfitabilityData;
   const displayTotals = displayData.reduce((acc, v) => ({
     totalRevenue: acc.totalRevenue + (v.revenue?.total || 0),
     totalCosts: acc.totalCosts + (v.costs?.total || 0),
@@ -440,7 +499,7 @@ export function FleetFinancialAnalytics() {
     };
     return (
       <Badge className={colors[tier] || colors.marginal}>
-        {TIER_LABELS[tier as keyof typeof TIER_LABELS] || tier}
+        {TIER_LABELS[normalizeTier(tier)] || tier}
       </Badge>
     );
   };
@@ -537,32 +596,59 @@ export function FleetFinancialAnalytics() {
               <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
                 <div>
                   <CardTitle className="text-lg">Profitability Distribution</CardTitle>
-                  <CardDescription>Vehicle count by profitability tier</CardDescription>
+                  <CardDescription>
+                    Vehicle count by profitability tier · {formatPeriodLabel(profitabilityPeriod)}
+                  </CardDescription>
                 </div>
                 <PeriodFilter value={profitabilityPeriod} onChange={setProfitabilityPeriod} variant="short" className="w-[150px]" />
               </CardHeader>
               <CardContent>
-                <ChartContainer config={chartConfig} className="h-[250px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={pieDataChart}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                        label={({ name, value }) => `${name}: ${value}`}
-                      >
-                        {pieDataChart.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Pie>
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
+                {isProfitabilityFetching ? (
+                  <div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
+                    Calculating profitability distribution...
+                  </div>
+                ) : hasProfitabilityDistribution ? (
+                  <div className="space-y-3">
+                    <ChartContainer config={chartConfig} className="h-[250px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={profitabilityDistributionData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={86}
+                            paddingAngle={4}
+                            dataKey="value"
+                            nameKey="name"
+                            label={({ payload }) => payload.label}
+                          >
+                            {profitabilityDistributionData.map((entry) => (
+                              <Cell key={entry.tier} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                    <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
+                      {profitabilityDistributionLegend.map((entry) => (
+                        <div key={entry.tier} className="flex items-center gap-2">
+                          <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: entry.fill }} />
+                          <span>{entry.name}</span>
+                          <span className="text-muted-foreground">{entry.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex h-[250px] flex-col items-center justify-center text-center">
+                    <BarChart3 className="mb-3 h-10 w-10 text-muted-foreground/40" />
+                    <p className="text-sm font-medium">No profitability data</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      No vehicles were returned for {formatPeriodLabel(profitabilityPeriod).toLowerCase()}.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -571,25 +657,41 @@ export function FleetFinancialAnalytics() {
               <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
                 <div>
                   <CardTitle className="text-lg">Cost Breakdown</CardTitle>
-                  <CardDescription>Total costs by category</CardDescription>
+                  <CardDescription>
+                    Total costs by category · {formatPeriodLabel(costBreakdownPeriod)}
+                  </CardDescription>
                 </div>
                 <PeriodFilter value={costBreakdownPeriod} onChange={setCostBreakdownPeriod} variant="short" className="w-[150px]" />
               </CardHeader>
               <CardContent>
-                <ChartContainer config={chartConfig} className="h-[250px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={costChartDataDemo} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" tickFormatter={(v) => `₦${(v / 1000).toFixed(0)}k`} />
-                      <YAxis type="category" dataKey="name" width={80} />
-                      <ChartTooltip 
-                        content={<ChartTooltipContent />}
-                        formatter={(value) => format(Number(value))}
-                      />
-                      <Bar dataKey="value" radius={4} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
+                {isCostBreakdownFetching ? (
+                  <div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
+                    Calculating cost breakdown...
+                  </div>
+                ) : hasCostBreakdownData ? (
+                  <ChartContainer config={chartConfig} className="h-[250px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={costChartDataVisible} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" tickFormatter={(v) => `₦${(v / 1000).toFixed(0)}k`} />
+                        <YAxis type="category" dataKey="name" width={80} />
+                        <ChartTooltip 
+                          content={<ChartTooltipContent />}
+                          formatter={(value) => format(Number(value))}
+                        />
+                        <Bar dataKey="value" radius={4} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                ) : (
+                  <div className="flex h-[250px] flex-col items-center justify-center text-center">
+                    <BarChart3 className="mb-3 h-10 w-10 text-muted-foreground/40" />
+                    <p className="text-sm font-medium">No cost data</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      No vehicle costs were returned for {formatPeriodLabel(costBreakdownPeriod).toLowerCase()}.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
