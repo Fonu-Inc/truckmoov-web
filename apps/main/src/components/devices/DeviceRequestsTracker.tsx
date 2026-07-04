@@ -1,6 +1,14 @@
 import { useState } from "react";
+import type React from "react";
+import {
+  getDeviceSetupRequestQueryOptions,
+  useDeviceSetupRequests,
+  type DeviceSetupRequest,
+} from "@truckmoov/api/fleet";
+import { queryClient } from "@truckmoov/api/lib/query-client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   FileText,
@@ -11,20 +19,29 @@ import {
   ChevronUp,
   Cpu,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
-type DeviceSetupRequestStatus = "pending_review" | "assigned" | "in_progress" | "awaiting_heartbeat" | "active" | "rejected" | "cancelled";
-import { useAuthStore } from "@/stores/authStore";
 
-const statusConfig: Record<DeviceSetupRequestStatus, { label: string; color: string; icon: React.ReactNode }> = {
+type DeviceSetupRequestStatus =
+  | "pending_review"
+  | "assigned"
+  | "in_progress"
+  | "provisioned"
+  | "active"
+  | "rejected"
+  | "cancelled"
+  | string;
+
+const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   pending_review: {
     label: "Pending Review",
     color: "bg-warning/10 text-warning border-warning/30",
     icon: <Clock className="h-3 w-3" />,
   },
   assigned: {
-    label: "In Progress",
+    label: "Assigned",
     color: "bg-primary/10 text-primary border-primary/30",
     icon: <Loader2 className="h-3 w-3" />,
   },
@@ -33,10 +50,10 @@ const statusConfig: Record<DeviceSetupRequestStatus, { label: string; color: str
     color: "bg-primary/10 text-primary border-primary/30",
     icon: <Loader2 className="h-3 w-3" />,
   },
-  awaiting_heartbeat: {
-    label: "In Progress",
-    color: "bg-primary/10 text-primary border-primary/30",
-    icon: <Loader2 className="h-3 w-3" />,
+  provisioned: {
+    label: "Provisioned",
+    color: "bg-success/10 text-success border-success/30",
+    icon: <CheckCircle className="h-3 w-3" />,
   },
   active: {
     label: "Completed",
@@ -55,58 +72,54 @@ const statusConfig: Record<DeviceSetupRequestStatus, { label: string; color: str
   },
 };
 
-const hoursAgoIso = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
+function getStatusInfo(status: DeviceSetupRequestStatus) {
+  return statusConfig[status] ?? {
+    label: status.replace(/_/g, " "),
+    color: "bg-muted text-muted-foreground border-border",
+    icon: <Clock className="h-3 w-3" />,
+  };
+}
 
-const DEMO_DEVICE_REQUESTS = [
-  {
-    id: "demo-devreq-1",
-    manufacturer: "Teltonika",
-    model: "FMB920",
-    tracker_type: "OBD",
-    needs_sim: true,
-    sim_carrier: "MTN",
-    sim_plan_cycle: "monthly",
-    sim_bundle_label: "MTN IoT 2GB Monthly",
-    installation_state: "Lagos",
-    installation_city: "Ikeja",
-    preferred_date: null,
-    preferred_time: null,
-    requester_notes: "Vehicle tracking for fleet expansion",
-    status: "active" as const,
-    rejection_reason: null,
-    assigned_at: hoursAgoIso(40),
-    assigned_to_name: "Platform Admin",
-    created_at: hoursAgoIso(72),
-    updated_at: hoursAgoIso(20),
-  },
-  {
-    id: "demo-devreq-2",
-    manufacturer: "Queclink",
-    model: "GV310LAU",
-    tracker_type: "Hardwired",
-    needs_sim: false,
-    installation_state: "Lagos",
-    installation_city: "Lekki",
-    preferred_date: null,
-    preferred_time: null,
-    requester_notes: "Cold-chain refrigerated truck",
-    status: "pending_review" as const,
-    rejection_reason: null,
-    assigned_at: null,
-    assigned_to_name: null,
-    created_at: hoursAgoIso(6),
-    updated_at: hoursAgoIso(6),
-  },
-];
+function formatDate(value?: string | null) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return format(date, "MMM d, yyyy h:mm a");
+}
+
+function formatRelativeDate(value?: string | null) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return formatDistanceToNow(date, { addSuffix: true });
+}
 
 export function DeviceRequestsTracker() {
-  const liveRequests: any[] = [];
-  const loading = false;
-  const { user } = useAuthStore();
-  const requests = liveRequests.length > 0 ? liveRequests : (DEMO_DEVICE_REQUESTS as any);
+  const { data, isLoading, isError, error, refetch, isFetching } = useDeviceSetupRequests();
+  const requests = data?.data ?? [];
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [detailById, setDetailById] = useState<Record<string, DeviceSetupRequest>>({});
+  const [loadingDetailId, setLoadingDetailId] = useState<string | null>(null);
 
-  if (loading) {
+  const toggleRequest = async (request: DeviceSetupRequest) => {
+    if (expandedId === request.id) {
+      setExpandedId(null);
+      return;
+    }
+
+    setExpandedId(request.id);
+    if (detailById[request.id]) return;
+
+    try {
+      setLoadingDetailId(request.id);
+      const detail = await queryClient.fetchQuery(getDeviceSetupRequestQueryOptions(request.id));
+      setDetailById((current) => ({ ...current, [request.id]: detail.data }));
+    } finally {
+      setLoadingDetailId(null);
+    }
+  };
+
+  if (isLoading) {
     return (
       <Card>
         <CardHeader>
@@ -127,15 +140,31 @@ export function DeviceRequestsTracker() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-primary" />
-          My Device Requests
-        </CardTitle>
-        <CardDescription>Track the status of every device setup request you've submitted, from review through provisioning and assignment.</CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            My Device Requests
+          </CardTitle>
+          <CardDescription className="mt-1">Track the status of every device setup request you've submitted, from review through provisioning and assignment.</CardDescription>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+          <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} />
+          Refresh
+        </Button>
       </CardHeader>
       <CardContent>
-        {requests.length === 0 ? (
+        {isError ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+            <Cpu className="h-12 w-12 text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground">
+              {error?.message || "Unable to load device setup requests"}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Retry
+            </Button>
+          </div>
+        ) : requests.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Cpu className="h-12 w-12 text-muted-foreground/30 mb-3" />
             <p className="text-muted-foreground">No device requests yet</p>
@@ -146,39 +175,39 @@ export function DeviceRequestsTracker() {
         ) : (
           <div className="space-y-3">
             {requests.map((request) => {
-              const statusInfo = statusConfig[request.status] || statusConfig.pending_review;
+              const detail = detailById[request.id] ?? request;
+              const statusInfo = getStatusInfo(detail.status);
               const isExpanded = expandedId === request.id;
+              const isLoadingDetail = loadingDetailId === request.id;
+              const location = [detail.city, detail.state].filter(Boolean).join(", ");
 
               return (
-                <div
-                  key={request.id}
-                  className="rounded-lg border border-border bg-card overflow-hidden"
-                >
+                <div key={request.id} className="overflow-hidden rounded-lg border border-border bg-card">
                   <button
-                    onClick={() => setExpandedId(isExpanded ? null : request.id)}
-                    className="w-full flex items-center justify-between p-3 hover:bg-secondary/30 transition-colors"
+                    onClick={() => void toggleRequest(request)}
+                    className="flex w-full items-center justify-between p-3 transition-colors hover:bg-secondary/30"
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
                         <Cpu className="h-4 w-4 text-primary" />
                       </div>
                       <div className="text-left">
-                        <p className="font-medium text-sm">
+                        <p className="text-sm font-medium">
                           {request.manufacturer}
                           {request.model ? ` ${request.model}` : ""}
-                          {request.tracker_type ? ` · ${request.tracker_type}` : ""}
+                          {request.trackerType ? ` · ${request.trackerType}` : ""}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
-                        </p>
+                        <p className="text-xs text-muted-foreground">{formatRelativeDate(request.createdAt)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={cn("text-xs", statusInfo.color)}>
+                      <Badge variant="outline" className={cn("text-xs capitalize", statusInfo.color)}>
                         {statusInfo.icon}
                         <span className="ml-1">{statusInfo.label}</span>
                       </Badge>
-                      {isExpanded ? (
+                      {isLoadingDetail ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      ) : isExpanded ? (
                         <ChevronUp className="h-4 w-4 text-muted-foreground" />
                       ) : (
                         <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -187,121 +216,95 @@ export function DeviceRequestsTracker() {
                   </button>
 
                   {isExpanded && (
-                    <div className="border-t border-border bg-secondary/10 p-3 space-y-3">
-                      <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="space-y-3 border-t border-border bg-secondary/10 p-3">
+                      <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-3">
                         <div>
                           <p className="text-xs text-muted-foreground">Organisation Name</p>
-                          <p className="font-medium">{user?.name || "—"}</p>
+                          <p className="font-medium">{detail.organisationName || "—"}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Requesting Email</p>
-                          <p className="font-medium break-all">{user?.email || "—"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Manufacturer</p>
-                          <p className="font-medium">{request.manufacturer}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Model</p>
-                          <p className="font-medium">{request.model || "—"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Tracker Type</p>
-                          <p className="font-medium">{request.tracker_type}</p>
+                          <p className="break-all font-medium">{detail.requestingEmail || "—"}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Quantity</p>
-                          <p className="font-medium">1</p>
+                          <p className="font-medium">{detail.quantity || 0}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Manufacturer</p>
+                          <p className="font-medium">{detail.manufacturer || "—"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Model</p>
+                          <p className="font-medium">{detail.model || "—"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Tracker Type</p>
+                          <p className="font-medium">{detail.trackerType || "—"}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">SIM Required</p>
-                          <p className="font-medium">{request.needs_sim ? "Yes" : "No"}</p>
+                          <p className="font-medium">{detail.simRequired ? "Yes" : "No"}</p>
                         </div>
-                        {request.needs_sim && (
+                        {detail.simRequired && (
                           <>
                             <div>
-                              <p className="text-xs text-muted-foreground">SIM Carrier</p>
-                              <p className="font-medium uppercase">{(request as any).sim_carrier || "—"}</p>
+                              <p className="text-xs text-muted-foreground">Carrier</p>
+                              <p className="font-medium">{detail.carrierId || "—"}</p>
                             </div>
                             <div>
                               <p className="text-xs text-muted-foreground">Plan Type</p>
-                              <p className="font-medium capitalize">{(request as any).sim_plan_cycle || "—"}</p>
+                              <p className="font-medium">{detail.planType || "—"}</p>
                             </div>
                             <div>
-                              <p className="text-xs text-muted-foreground">Data Bundle Plan</p>
-                              <p className="font-medium">{(request as any).sim_bundle_label || "—"}</p>
+                              <p className="text-xs text-muted-foreground">Bundle</p>
+                              <p className="font-medium">{detail.bundleId || "—"}</p>
                             </div>
                           </>
                         )}
                         <div>
+                          <p className="text-xs text-muted-foreground">Vehicle</p>
+                          <p className="font-medium">{detail.vehicleId || "—"}</p>
+                        </div>
+                        <div>
                           <p className="text-xs text-muted-foreground">Installation Location</p>
-                          <p className="font-medium">
-                            {[request.installation_city, request.installation_state]
-                              .filter(Boolean)
-                              .join(", ") || "—"}
-                          </p>
+                          <p className="font-medium">{location || "—"}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Preferred Date</p>
-                          <p className="font-medium">{request.preferred_date || "—"}</p>
+                          <p className="font-medium">{detail.preferredDate || "—"}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Preferred Time</p>
-                          <p className="font-medium">{request.preferred_time || "—"}</p>
+                          <p className="font-medium">{detail.preferredTime || "—"}</p>
                         </div>
                       </div>
 
-                      {request.requester_notes && (
+                      {(detail.useCase || detail.notes) && (
                         <div>
-                          <p className="text-xs text-muted-foreground mb-1">Use Case / Notes</p>
-                          <p className="text-sm bg-secondary/50 rounded p-2">{request.requester_notes}</p>
-                        </div>
-                      )}
-
-                      {request.status === "rejected" && request.rejection_reason && (
-                        <div className="rounded-md bg-destructive/10 border border-destructive/30 p-2">
-                          <p className="text-xs font-medium text-destructive">Rejection Reason</p>
-                          <p className="text-sm mt-1">{request.rejection_reason}</p>
+                          <p className="mb-1 text-xs text-muted-foreground">Use Case / Notes</p>
+                          <p className="rounded bg-secondary/50 p-2 text-sm whitespace-pre-wrap">
+                            {[detail.useCase, detail.notes].filter(Boolean).join("\n\n")}
+                          </p>
                         </div>
                       )}
 
                       <div className="border-t border-border pt-3">
-                        <p className="text-xs text-muted-foreground mb-2">Timeline</p>
+                        <p className="mb-2 text-xs text-muted-foreground">Timeline</p>
                         <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-xs">
-                            <div className="h-2 w-2 rounded-full bg-primary" />
-                            <span className="text-muted-foreground">Submitted</span>
-                            <span className="ml-auto">
-                              {format(new Date(request.created_at), "MMM d, yyyy h:mm a")}
-                            </span>
-                          </div>
-                          {request.assigned_at && (
-                            <div className="flex items-center gap-2 text-xs">
+                          {(detail.timeline?.length ? detail.timeline : [{ status: "submitted", at: detail.createdAt, note: "Submitted" }]).map((item, index) => (
+                            <div key={`${item.status}-${item.at}-${index}`} className="flex items-center gap-2 text-xs">
                               <div className="h-2 w-2 rounded-full bg-primary" />
-                              <span className="text-muted-foreground">
-                                Assigned{request.assigned_to_name && ` to ${request.assigned_to_name}`}
-                              </span>
-                              <span className="ml-auto">
-                                {format(new Date(request.assigned_at), "MMM d, yyyy h:mm a")}
-                              </span>
+                              <span className="text-muted-foreground capitalize">{item.status.replace(/_/g, " ")}</span>
+                              {item.note && <span className="truncate">{item.note}</span>}
+                              <span className="ml-auto">{formatDate(item.at)}</span>
                             </div>
-                          )}
-                          {request.updated_at && request.updated_at !== request.created_at && (
+                          ))}
+                          {detail.updatedAt && detail.updatedAt !== detail.createdAt && (
                             <div className="flex items-center gap-2 text-xs">
-                              <div
-                                className={cn(
-                                  "h-2 w-2 rounded-full",
-                                  request.status === "rejected"
-                                    ? "bg-destructive"
-                                    : request.status === "active"
-                                    ? "bg-success"
-                                    : "bg-muted-foreground"
-                                )}
-                              />
+                              <div className="h-2 w-2 rounded-full bg-muted-foreground" />
                               <span className="text-muted-foreground">Last update</span>
-                              <span className="ml-auto">
-                                {format(new Date(request.updated_at), "MMM d, yyyy h:mm a")}
-                              </span>
+                              <span className="ml-auto">{formatDate(detail.updatedAt)}</span>
                             </div>
                           )}
                         </div>

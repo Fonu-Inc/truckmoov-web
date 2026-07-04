@@ -113,6 +113,7 @@ export function DeviceFormDialog({
   }, [device, form, open]);
 
   const manufacturerValue = form.watch("manufacturer");
+  const isEditing = Boolean(device);
 
   const handleSubmit = (data: DeviceFormData) => {
     const resolvedManufacturer =
@@ -158,7 +159,13 @@ export function DeviceFormDialog({
                 <FormItem>
                   <FormLabel>IMEI Number</FormLabel>
                   <FormControl>
-                    <Input placeholder="359779090012345" maxLength={15} {...field} />
+                    <Input
+                      placeholder="359779090012345"
+                      maxLength={15}
+                      readOnly={isEditing}
+                      className={isEditing ? "cursor-not-allowed opacity-70" : undefined}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

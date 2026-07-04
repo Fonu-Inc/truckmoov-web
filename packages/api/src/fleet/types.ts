@@ -121,6 +121,35 @@ export type UpdateDevicePayload = {
   data: Record<string, unknown>
 }
 
+export type CreateDeviceSetupRequestPayload = {
+  data: {
+    manufacturer: string
+    model?: string
+    trackerType: string
+    quantity: number
+    simRequired: boolean
+    carrierId?: string
+    planType?: string
+    bundleId?: string
+    vehicleId?: string
+    state?: string
+    city?: string
+    preferredDate?: string
+    preferredTime?: string
+    useCase: string
+    notes?: string
+    organisationName?: string
+    requestingEmail?: string
+  }
+}
+
+export type UpdateDeviceFirmwarePayload = {
+  id: string
+  data: {
+    firmwareVersion: string
+  }
+}
+
 export type ImportDevicesPayload = {
   data: {
     items: Record<string, unknown>[]
@@ -145,6 +174,13 @@ export type ValidateDeviceAssignmentQuery = {
   id: string
   params: {
     vehicleId: string
+  }
+}
+
+export type DeviceSetupRequestsQuery = {
+  params?: {
+    query?: string
+    status?: 'pending_review' | 'in_progress' | 'provisioned' | 'assigned' | 'cancelled' | string
   }
 }
 
@@ -765,6 +801,39 @@ export type DeviceAssignmentValidation = {
   reason: string | null
 }
 
+export type DeviceSetupRequestTimelineItem = {
+  status: string
+  at: string
+  note: string | null
+}
+
+export type DeviceSetupRequest = {
+  id: string
+  tenantId: string
+  requestedByUserId: string
+  organisationName: string
+  requestingEmail: string
+  manufacturer: string
+  model: string
+  trackerType: string
+  quantity: number
+  simRequired: boolean
+  carrierId: string | null
+  planType: string | null
+  bundleId: string | null
+  vehicleId: string | null
+  state: string | null
+  city: string | null
+  preferredDate: string | null
+  preferredTime: string | null
+  useCase: string | null
+  notes: string | null
+  status: string
+  timeline: DeviceSetupRequestTimelineItem[]
+  createdAt: string
+  updatedAt: string
+}
+
 export type BulkImportResult<T> = {
   created: number
   updated: number
@@ -971,6 +1040,8 @@ export type AccessLogListResponse = ServerResponse<Record<string, unknown>[]>
 export type NearestVehicleListResponse = ServerResponse<NearestVehicle[]>
 export type VehicleDriverAssignmentResponse = ServerResponse<VehicleDriverAssignment>
 export type DeviceAssignmentValidationResponse = ServerResponse<DeviceAssignmentValidation>
+export type DeviceSetupRequestResponse = ServerResponse<DeviceSetupRequest>
+export type DeviceSetupRequestListResponse = ServerResponse<DeviceSetupRequest[]>
 export type BulkVehicleImportResponse = ServerResponse<BulkImportResult<Vehicle>>
 export type BulkDriverImportResponse = ServerResponse<BulkImportResult<FleetDriver>>
 export type BulkDeviceImportResponse = ServerResponse<BulkImportResult<FleetDevice>>

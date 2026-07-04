@@ -15,6 +15,7 @@ interface DeviceBulkUploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpload: (devices: Partial<IoTDevice>[]) => void;
+  onDownloadTemplate?: () => Promise<Blob>;
 }
 
 interface ParsedRow {
@@ -52,10 +53,11 @@ function parseCSV(content: string): ParsedRow[] {
     .map((line) => validateRow(line.split(",")));
 }
 
-export function DeviceBulkUploadDialog({ open, onOpenChange, onUpload }: DeviceBulkUploadDialogProps) {
+export function DeviceBulkUploadDialog({ open, onOpenChange, onUpload, onDownloadTemplate }: DeviceBulkUploadDialogProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedRow[]>([]);
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
 
   const handleFile = useCallback(async (selectedFile: File) => {
     if (!selectedFile.name.endsWith(".csv")) {
@@ -88,17 +90,23 @@ export function DeviceBulkUploadDialog({ open, onOpenChange, onUpload }: DeviceB
     setParsedData([]);
   };
 
-  const downloadTemplate = () => {
-    const template = `IMEI,Manufacturer,Model,Firmware Version
-359779090012345,Teltonika,FMC130,3.28.07
-359779090012346,Queclink,GV500,1.12.0`;
-    const blob = new Blob([template], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "device_import_template.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+  const downloadTemplate = async () => {
+    try {
+      setDownloadingTemplate(true);
+      const blob = onDownloadTemplate
+        ? await onDownloadTemplate()
+        : new Blob(["IMEI,Manufacturer,Model,Firmware Version\n"], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "device_import_template.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to download device import template");
+    } finally {
+      setDownloadingTemplate(false);
+    }
   };
 
   const validCount = parsedData.filter((r) => r.isValid).length;
@@ -123,9 +131,9 @@ export function DeviceBulkUploadDialog({ open, onOpenChange, onUpload }: DeviceB
                     <p className="text-xs text-muted-foreground">CSV format with required columns</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={downloadTemplate}>
+                <Button variant="outline" size="sm" onClick={downloadTemplate} disabled={downloadingTemplate}>
                   <Download className="mr-2 h-4 w-4" />
-                  Download
+                  {downloadingTemplate ? "Downloading..." : "Download"}
                 </Button>
               </div>
 

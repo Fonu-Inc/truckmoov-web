@@ -12,10 +12,14 @@ import type {
   BulkVehicleImportResponse,
   CreateMaintenanceRecordPayload,
   CreateDevicePayload,
+  CreateDeviceSetupRequestPayload,
   CreateDriverPayload,
   CreateVehiclePayload,
   DeliveryMetricsResponse,
   DeviceAssignmentValidationResponse,
+  DeviceSetupRequestListResponse,
+  DeviceSetupRequestResponse,
+  DeviceSetupRequestsQuery,
   DevicesQuery,
   DispatchSearchQuery,
   DispatchSearchResponse,
@@ -87,6 +91,7 @@ import type {
   SendMaintenanceRemindersPayload,
   SetFuelThresholdPayload,
   UpdateDeviceLifecyclePayload,
+  UpdateDeviceFirmwarePayload,
   UpdateDevicePayload,
   UpdateDriverContactChannelsPayload,
   UpdateDriverPayload,
@@ -217,6 +222,20 @@ export async function getDevices(payload?: DevicesQuery) {
   return data
 }
 
+export async function exportDevices() {
+  const { data } = await axiosInstance.get('/fleet/devices/export', {
+    responseType: 'blob',
+  })
+  return data as Blob
+}
+
+export async function downloadDeviceImportTemplate() {
+  const { data } = await axiosInstance.get('/fleet/devices/import-template', {
+    responseType: 'blob',
+  })
+  return data as Blob
+}
+
 export async function createDevice({ data }: CreateDevicePayload) {
   const { data: res } = await axiosInstance.post<FleetDeviceResponse>('/fleet/devices', data)
   return res
@@ -229,6 +248,11 @@ export async function getDevice({ id }: { id: string }) {
 
 export async function updateDevice({ id, data }: UpdateDevicePayload) {
   const { data: res } = await axiosInstance.patch<FleetDeviceResponse>(`/fleet/devices/${id}`, data)
+  return res
+}
+
+export async function updateDeviceFirmware({ id, data }: UpdateDeviceFirmwarePayload) {
+  const { data: res } = await axiosInstance.patch<FleetDeviceResponse>(`/fleet/devices/${id}/firmware`, data)
   return res
 }
 
@@ -261,6 +285,23 @@ export async function unassignDevice({ id }: { id: string }) {
 }
 
 // ─── Legacy GPS ───────────────────────────────────────────────────────────────
+
+export async function getDeviceSetupRequests(payload?: DeviceSetupRequestsQuery) {
+  const { data } = await axiosInstance.get<DeviceSetupRequestListResponse>('/fleet/device-setup-requests', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function createDeviceSetupRequest({ data: body }: CreateDeviceSetupRequestPayload) {
+  const { data } = await axiosInstance.post<DeviceSetupRequestResponse>('/fleet/device-setup-requests', body)
+  return data
+}
+
+export async function getDeviceSetupRequest({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<DeviceSetupRequestResponse>(`/fleet/device-setup-requests/${id}`)
+  return data
+}
 
 export async function getLegacyGpsDevices(payload?: LegacyGpsDevicesQuery) {
   const { data } = await axiosInstance.get<GpsDeviceListResponse>('/fleet/gps-devices', { params: payload?.params })

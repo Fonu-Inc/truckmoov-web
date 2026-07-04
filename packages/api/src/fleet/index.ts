@@ -11,6 +11,7 @@ import {
   createMaintenanceProfile,
   createMaintenanceRecord,
   createDevice,
+  createDeviceSetupRequest,
   createDriver,
   createVehicle,
   deleteDevice,
@@ -19,6 +20,8 @@ import {
   deleteMaintenanceProfile,
   deleteMaintenanceRecord,
   deleteVehicle,
+  downloadDeviceImportTemplate,
+  exportDevices,
   exportFleetCostBreakdown,
   exportFleetFinancialStatement,
   exportFuelTransactions,
@@ -32,6 +35,8 @@ import {
   getAuditLog,
   getDeliveryMetrics,
   getDevice,
+  getDeviceSetupRequest,
+  getDeviceSetupRequests,
   getDevices,
   getDispatchSearch,
   getDocumentAccessLog,
@@ -82,6 +87,7 @@ import {
   unassignDevice,
   unassignDriverFromVehicle,
   updateDevice,
+  updateDeviceFirmware,
   updateDeviceLifecycle,
   updateDriver,
   updateDriverContactChannels,
@@ -111,6 +117,7 @@ export type * from './types'
 import type {
   AlertsQuery,
   AuditLogQuery,
+  DeviceSetupRequestsQuery,
   DevicesQuery,
   DispatchSearchQuery,
   DocumentsQuery,
@@ -144,6 +151,8 @@ export const FLEET_QUERY_KEY = {
   geofence: (vehicleId: string) => ['fleet', 'geofence', vehicleId],
   devices: (payload?: DevicesQuery) => ['fleet', 'devices', payload],
   device: (id: string) => ['fleet', 'device', id],
+  deviceSetupRequests: (payload?: DeviceSetupRequestsQuery) => ['fleet', 'deviceSetupRequests', payload],
+  deviceSetupRequest: (id: string) => ['fleet', 'deviceSetupRequest', id],
   legacyGpsDevices: (payload?: LegacyGpsDevicesQuery) => ['fleet', 'legacyGpsDevices', payload],
   drivers: (payload?: DriversQuery) => ['fleet', 'drivers', payload],
   driver: (id: string) => ['fleet', 'driver', id],
@@ -250,6 +259,21 @@ export function getDeviceQueryOptions(id: string) {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.device(id),
     queryFn: () => getDevice({ id }),
+    enabled: Boolean(id),
+  })
+}
+
+export function getDeviceSetupRequestsQueryOptions(payload?: DeviceSetupRequestsQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.deviceSetupRequests(payload),
+    queryFn: () => getDeviceSetupRequests(payload),
+  })
+}
+
+export function getDeviceSetupRequestQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.deviceSetupRequest(id),
+    queryFn: () => getDeviceSetupRequest({ id }),
     enabled: Boolean(id),
   })
 }
@@ -540,6 +564,23 @@ export function useDevice(id: string) {
   return useQuery(getDeviceQueryOptions(id))
 }
 
+export function useDeviceSetupRequests(payload?: DeviceSetupRequestsQuery) {
+  return useQuery(getDeviceSetupRequestsQueryOptions(payload))
+}
+
+export function useDeviceSetupRequest(id: string) {
+  return useQuery(getDeviceSetupRequestQueryOptions(id))
+}
+
+export function useCreateDeviceSetupRequest() {
+  return useMutation({
+    mutationFn: createDeviceSetupRequest,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'deviceSetupRequests'] })
+    },
+  })
+}
+
 export function useLegacyGpsDevices(payload?: LegacyGpsDevicesQuery) {
   return useQuery(getLegacyGpsDevicesQueryOptions(payload))
 }
@@ -767,12 +808,16 @@ export function useUnassignDriverFromVehicle() {
   })
 }
 
+function invalidateDevices() {
+  queryClient.invalidateQueries({ queryKey: ['fleet', 'devices'] })
+}
+
 export function useRegisterGpsDevice() {
   return useMutation({
     mutationFn: registerGpsDevice,
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(id) })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices() })
+      invalidateDevices()
     },
   })
 }
@@ -781,7 +826,7 @@ export function useCreateDevice() {
   return useMutation({
     mutationFn: createDevice,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices() })
+      invalidateDevices()
     },
   })
 }
@@ -790,7 +835,17 @@ export function useUpdateDevice() {
   return useMutation({
     mutationFn: updateDevice,
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices() })
+      invalidateDevices()
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.device(id) })
+    },
+  })
+}
+
+export function useUpdateDeviceFirmware() {
+  return useMutation({
+    mutationFn: updateDeviceFirmware,
+    onSuccess: (_, { id }) => {
+      invalidateDevices()
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.device(id) })
     },
   })
@@ -800,7 +855,7 @@ export function useDeleteDevice() {
   return useMutation({
     mutationFn: deleteDevice,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices() })
+      invalidateDevices()
     },
   })
 }
@@ -809,7 +864,7 @@ export function useImportDevices() {
   return useMutation({
     mutationFn: importDevices,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices() })
+      invalidateDevices()
     },
   })
 }
@@ -818,7 +873,7 @@ export function useUpdateDeviceLifecycle() {
   return useMutation({
     mutationFn: updateDeviceLifecycle,
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices() })
+      invalidateDevices()
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.device(id) })
     },
   })
@@ -828,7 +883,7 @@ export function useAssignDevice() {
   return useMutation({
     mutationFn: assignDevice,
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices() })
+      invalidateDevices()
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.device(id) })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
@@ -840,7 +895,7 @@ export function useUnassignDevice() {
   return useMutation({
     mutationFn: unassignDevice,
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.devices() })
+      invalidateDevices()
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.device(id) })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
@@ -1175,9 +1230,11 @@ export function useSendComplianceReminders() {
 // ─── Re-export plain request functions for imperative use ─────────────────────
 
 export {
+  downloadDeviceImportTemplate,
   exportFleetCostBreakdown,
   exportFleetFinancialStatement,
   exportComplianceDocs,
+  exportDevices,
   exportFuelTransactions,
   exportMaintenanceProfiles,
   exportMaintenanceRecords,

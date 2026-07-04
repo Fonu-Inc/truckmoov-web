@@ -2,15 +2,20 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import type { DeviceWithTelemetry } from "@/hooks/useDeviceTelemetry";
 import {
+  downloadDeviceImportTemplate,
   useAssignDevice,
+  useCreateDeviceSetupRequest,
   useCreateDevice,
   useDeleteDevice,
   useDevice,
   useDevices,
   useImportDevices,
   useUpdateDevice,
+  useUpdateDeviceFirmware,
   useUpdateDeviceLifecycle,
+  useUnassignDevice,
   useVehicles,
+  exportDevices,
   getValidateDeviceAssignmentQueryOptions,
   type FleetDevice,
 } from "@truckmoov/api/fleet";
@@ -25,6 +30,8 @@ import {
   Trash2,
   Eye,
   Link,
+  Unlink,
+  Download,
   RefreshCw,
   Signal,
   Loader2,
@@ -35,10 +42,17 @@ import { Badge } from "@/components/shadcn/badge";
 import { Label } from "@/components/shadcn/label";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
-import { ExportButton } from "@/components/shadcn/export-button";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,9 +95,8 @@ const KNOWN_DEVICE_MANUFACTURERS = [
 
 export default function DeviceManagement() {
   const { requireSubscription } = useRequireSubscription();
-  const { canView, canManage, canEdit, canDelete, role } = useDevicePermissions();
+  const { canView, canManage, role } = useDevicePermissions();
 
-  const createRequest = async (_data: unknown) => null;
   const uploadFile = async (_file: File, _requestId: string, _type: "device_photo" | "receipt") => null;
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -98,6 +111,9 @@ export default function DeviceManagement() {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<DeviceWithTelemetry | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [firmwareDevice, setFirmwareDevice] = useState<DeviceWithTelemetry | null>(null);
+  const [firmwareVersion, setFirmwareVersion] = useState("");
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(searchQuery), 300);
@@ -121,11 +137,14 @@ export default function DeviceManagement() {
   const { data: availableVehiclesResponse } = useVehicles({ params: { assigned: false } });
   const { data: deviceResponse } = useDevice(selectedDevice?.id ?? "");
   const createDevice = useCreateDevice();
+  const createDeviceSetupRequest = useCreateDeviceSetupRequest();
   const updateDevice = useUpdateDevice();
   const deleteDevice = useDeleteDevice();
   const importDevices = useImportDevices();
   const updateLifecycle = useUpdateDeviceLifecycle();
+  const updateFirmware = useUpdateDeviceFirmware();
   const assignDevice = useAssignDevice();
+  const unassignDevice = useUnassignDevice();
 
   const devices = useMemo<DeviceWithTelemetry[]>(() => (devicesResponse?.data ?? []).map((device) => ({
     id: device.id,
@@ -233,7 +252,6 @@ export default function DeviceManagement() {
     if (!selectedDevice) return;
     try {
       await updateDevice.mutateAsync({ id: selectedDevice.id, data: {
-        imei: updatedDevice.imei,
         manufacturer: updatedDevice.manufacturer,
         model: updatedDevice.model,
         firmwareVersion: updatedDevice.firmwareVersion || undefined,
@@ -278,6 +296,47 @@ export default function DeviceManagement() {
     }
   };
 
+  const handleUnassignDevice = async (device: DeviceWithTelemetry) => {
+    if (!device.vehicle_id) {
+      toast.info("Device is not assigned to a vehicle");
+      return;
+    }
+
+    try {
+      await unassignDevice.mutateAsync({ id: device.id });
+      toast.success("Device unassigned from vehicle");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to unassign device");
+    }
+  };
+
+  const openFirmwareDialog = (device: DeviceWithTelemetry) => {
+    setFirmwareDevice(device);
+    setFirmwareVersion(device.firmware_version || "");
+  };
+
+  const handleUpdateFirmware = async () => {
+    if (!firmwareDevice) return;
+
+    const nextVersion = firmwareVersion.trim();
+    if (!nextVersion) {
+      toast.error("Firmware version is required");
+      return;
+    }
+
+    try {
+      await updateFirmware.mutateAsync({
+        id: firmwareDevice.id,
+        data: { firmwareVersion: nextVersion },
+      });
+      toast.success("Firmware updated");
+      setFirmwareDevice(null);
+      setFirmwareVersion("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update firmware");
+    }
+  };
+
   const handleBulkUpload = async (newDevices: Partial<IoTDevice>[]) => {
     try {
       const result = await importDevices.mutateAsync({ data: { items: newDevices.map((device) => ({
@@ -290,6 +349,51 @@ export default function DeviceManagement() {
       setIsBulkUploadOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to import devices");
+    }
+  };
+
+  const handleCreateDeviceSetupRequest = async (data: {
+    manufacturer: string;
+    model?: string;
+    trackerType: string;
+    quantity: number;
+    simRequired: boolean;
+    carrierId?: string;
+    planType?: string;
+    bundleId?: string;
+    vehicleId?: string;
+    state?: string;
+    city?: string;
+    preferredDate?: string;
+    preferredTime?: string;
+    useCase: string;
+    notes?: string;
+  }) => {
+    try {
+      const result = await createDeviceSetupRequest.mutateAsync({ data });
+      toast.success("Device setup request submitted");
+      return result;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to submit device setup request");
+      return null;
+    }
+  };
+
+  const handleExportDevices = async () => {
+    try {
+      setIsExporting(true);
+      const blob = await exportDevices();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `devices-${new Date().toISOString().split("T")[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("Devices export downloaded");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to export devices");
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -310,22 +414,20 @@ export default function DeviceManagement() {
     <DashboardLayout title="IoT Device Management" subtitle="Provision and manage GPS tracking devices">
       <div className="space-y-6">
         {/* Top-right actions */}
-        {canManage && (
-          <div className="flex items-center justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsBulkUploadOpen(true)}>
-              <Upload className="mr-2 h-4 w-4" />
-              Bulk Import
-            </Button>
-            <Button variant="outline" onClick={requireSubscription(() => setIsRequestDialogOpen(true))}>
-              <Cpu className="mr-2 h-4 w-4" />
-              Request Device
-            </Button>
-            <Button onClick={requireSubscription(() => setIsAddDialogOpen(true))}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Device
-            </Button>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button variant="outline" onClick={() => setIsBulkUploadOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Bulk Import
+          </Button>
+          <Button variant="outline" onClick={requireSubscription(() => setIsRequestDialogOpen(true))}>
+            <Cpu className="mr-2 h-4 w-4" />
+            Request Device
+          </Button>
+          <Button onClick={requireSubscription(() => setIsAddDialogOpen(true))}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Device
+          </Button>
+        </div>
 
         {/* Device List */}
         <Card>
@@ -338,19 +440,14 @@ export default function DeviceManagement() {
                 </CardTitle>
                 <CardDescription className="mt-1">All trackers in your fleet — monitor lifecycle status, signal health, and last-seen timestamps.</CardDescription>
               </div>
-              <ExportButton
-                filename="devices"
-                rows={filteredDevices}
-                columns={[
-                  { header: "IMEI", accessor: "imei" },
-                  { header: "Manufacturer", accessor: "manufacturer" },
-                  { header: "Model", accessor: (d: DeviceWithTelemetry) => d.model ?? "" },
-                  { header: "Status", accessor: (d: DeviceWithTelemetry) => d.lifecycle_status ?? d.status },
-                  { header: "Vehicle", accessor: (d: DeviceWithTelemetry) => getVehicleInfo(d.vehicle_id)?.registrationNumber ?? "" },
-                  { header: "Signal (%)", accessor: (d: DeviceWithTelemetry) => d.signal_strength ?? "" },
-                  { header: "Last Seen", accessor: (d: DeviceWithTelemetry) => d.last_seen ?? "" },
-                ]}
-              />
+              <Button variant="outline" size="sm" onClick={handleExportDevices} disabled={isExporting}>
+                {isExporting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                {isExporting ? "Exporting..." : "Export Data"}
+              </Button>
             </div>
             <div className="flex flex-col gap-3 md:flex-row md:items-center">
               <div className="relative flex-1 min-w-0">
@@ -568,51 +665,50 @@ export default function DeviceManagement() {
                                   <Eye className="mr-2 h-4 w-4" />
                                   View Details
                                 </DropdownMenuItem>
-                                {canEdit && (
+                                <DropdownMenuItem onClick={() => {
+                                  setSelectedDevice(device);
+                                  setIsEditDialogOpen(true);
+                                }}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                {device.vehicle_id ? (
+                                  <DropdownMenuItem onClick={() => handleUnassignDevice(device)}>
+                                    <Unlink className="mr-2 h-4 w-4" />
+                                    Unassign Vehicle
+                                  </DropdownMenuItem>
+                                ) : (
                                   <DropdownMenuItem onClick={() => {
                                     setSelectedDevice(device);
-                                    setIsEditDialogOpen(true);
+                                    setIsAssignDialogOpen(true);
                                   }}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Edit
+                                    <Link className="mr-2 h-4 w-4" />
+                                    Assign to Vehicle
                                   </DropdownMenuItem>
                                 )}
-                                {canManage && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    {(device.lifecycle_status === "registered" || device.status === "registered") && (
-                                      <DropdownMenuItem onClick={() => handleMarkConfigured(device.id)}>
-                                        <Settings className="mr-2 h-4 w-4" />
-                                        Mark as Configured
-                                      </DropdownMenuItem>
-                                    )}
-                                    {!device.vehicle_id && (
-                                      <DropdownMenuItem onClick={() => {
-                                        setSelectedDevice(device);
-                                        setIsAssignDialogOpen(true);
-                                      }}>
-                                        <Link className="mr-2 h-4 w-4" />
-                                        Assign to Vehicle
-                                      </DropdownMenuItem>
-                                    )}
-                                    <DropdownMenuItem>
-                                      <RefreshCw className="mr-2 h-4 w-4" />
-                                      Update Firmware
-                                    </DropdownMenuItem>
-                                  </>
+                                {(device.lifecycle_status === "registered" || device.status === "registered") && (
+                                  <DropdownMenuItem onClick={() => handleMarkConfigured(device.id)}>
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    Mark as Configured
+                                  </DropdownMenuItem>
                                 )}
-                                {canDelete && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      className="text-destructive focus:text-destructive"
-                                      onClick={() => handleDeleteDevice(device.id)}
-                                    >
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Delete Device
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
+                                <DropdownMenuItem onClick={() => openFirmwareDialog(device)}>
+                                  <RefreshCw className="mr-2 h-4 w-4" />
+                                  Update Firmware
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => {
+                                    if (window.confirm("Delete this device?")) {
+                                      void handleDeleteDevice(device.id);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete Device
+                                </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </td>
@@ -640,14 +736,15 @@ export default function DeviceManagement() {
       <DeviceSetupRequestDialog
         open={isRequestDialogOpen}
         onOpenChange={setIsRequestDialogOpen}
-        onSubmit={async (data) => {
-          const res = await createRequest(data);
-          if (res) {
-            setIsRequestDialogOpen(false);
-          }
-          return res;
-        }}
+        onSubmit={handleCreateDeviceSetupRequest}
         onUploadFile={uploadFile}
+        manufacturers={manufacturers}
+        vehicles={vehicles.map((vehicle) => ({
+          id: vehicle.id,
+          registrationNumber: vehicle.registrationNumber,
+          make: vehicle.make,
+          model: vehicle.model,
+        }))}
       />
 
       <DeviceFormDialog
@@ -658,10 +755,63 @@ export default function DeviceManagement() {
         device={selectedDevice ? convertToIoTDevice(selectedDevice) : undefined}
       />
 
+      <Dialog
+        open={!!firmwareDevice}
+        onOpenChange={(open) => {
+          if (!open) {
+            setFirmwareDevice(null);
+            setFirmwareVersion("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Update Firmware</DialogTitle>
+            <DialogDescription>
+              Set the firmware version for {firmwareDevice?.manufacturer} {firmwareDevice?.model}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="firmware-version">Firmware Version</Label>
+            <Input
+              id="firmware-version"
+              value={firmwareVersion}
+              onChange={(event) => setFirmwareVersion(event.target.value)}
+              placeholder="e.g. 3.28.07"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setFirmwareDevice(null);
+                setFirmwareVersion("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleUpdateFirmware}
+              disabled={updateFirmware.isPending}
+            >
+              {updateFirmware.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-2 h-4 w-4" />
+              )}
+              Update Firmware
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <DeviceBulkUploadDialog
         open={isBulkUploadOpen}
         onOpenChange={setIsBulkUploadOpen}
         onUpload={handleBulkUpload}
+        onDownloadTemplate={downloadDeviceImportTemplate}
       />
 
       <AssignDeviceDialogWithLifecycle
