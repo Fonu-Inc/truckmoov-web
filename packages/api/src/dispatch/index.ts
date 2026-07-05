@@ -10,12 +10,15 @@ import {
   confirmDriverStatusRequest,
   createDriverStatusRequest,
   createJob,
+  deleteJob,
   getJob,
   getJobTimeline,
   getJobs,
+  getJobsSummary,
   legacyUpdateJobStatus,
   optimizeRoute,
   sendWhatsappInstruction,
+  updateJobDetails,
   updateJobScheduling,
   updateJobStatus,
 } from './requests'
@@ -27,7 +30,9 @@ import type { JobsQuery } from './types'
 // ─── Query keys ───────────────────────────────────────────────────────────────
 
 export const DISPATCH_QUERY_KEY = {
+  jobsRoot: ['dispatch', 'jobs'],
   jobs: (payload?: JobsQuery) => ['dispatch', 'jobs', payload],
+  jobsSummary: ['dispatch', 'jobs', 'summary'],
   job: (jobId: string) => ['dispatch', 'job', jobId],
   jobTimeline: (jobId: string) => ['dispatch', 'jobTimeline', jobId],
 } as const
@@ -41,10 +46,18 @@ export function getJobsQueryOptions(payload?: JobsQuery) {
   })
 }
 
+export function getJobsSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: DISPATCH_QUERY_KEY.jobsSummary,
+    queryFn: getJobsSummary,
+  })
+}
+
 export function getJobQueryOptions(jobId: string) {
   return queryOptions({
     queryKey: DISPATCH_QUERY_KEY.job(jobId),
     queryFn: () => getJob({ jobId }),
+    enabled: Boolean(jobId),
   })
 }
 
@@ -52,6 +65,7 @@ export function getJobTimelineQueryOptions(jobId: string) {
   return queryOptions({
     queryKey: DISPATCH_QUERY_KEY.jobTimeline(jobId),
     queryFn: () => getJobTimeline({ jobId }),
+    enabled: Boolean(jobId),
   })
 }
 
@@ -59,6 +73,10 @@ export function getJobTimelineQueryOptions(jobId: string) {
 
 export function useJobs(payload?: JobsQuery) {
   return useQuery(getJobsQueryOptions(payload))
+}
+
+export function useJobsSummary() {
+  return useQuery(getJobsSummaryQueryOptions())
 }
 
 export function useJob(jobId: string) {
@@ -75,7 +93,31 @@ export function useCreateJob() {
   return useMutation({
     mutationFn: createJob,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs() })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsRoot })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsSummary })
+    },
+  })
+}
+
+export function useUpdateJobDetails() {
+  return useMutation({
+    mutationFn: updateJobDetails,
+    onSuccess: (_, { jobId }) => {
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(jobId) })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsRoot })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsSummary })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(jobId) })
+    },
+  })
+}
+
+export function useDeleteJob() {
+  return useMutation({
+    mutationFn: deleteJob,
+    onSuccess: (_, { jobId }) => {
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(jobId) })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsRoot })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsSummary })
     },
   })
 }
@@ -85,7 +127,8 @@ export function useAcknowledgeJob() {
     mutationFn: acknowledgeJob,
     onSuccess: (_, { jobId }) => {
       queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(jobId) })
-      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs() })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsRoot })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsSummary })
     },
   })
 }
@@ -95,7 +138,8 @@ export function useAssignJob() {
     mutationFn: assignJob,
     onSuccess: (_, { jobId }) => {
       queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(jobId) })
-      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs() })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsRoot })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsSummary })
     },
   })
 }
@@ -105,7 +149,8 @@ export function useCancelJob() {
     mutationFn: cancelJob,
     onSuccess: (_, { jobId }) => {
       queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(jobId) })
-      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs() })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsRoot })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsSummary })
     },
   })
 }
@@ -115,7 +160,8 @@ export function useUpdateJobStatus() {
     mutationFn: updateJobStatus,
     onSuccess: (_, { jobId }) => {
       queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(jobId) })
-      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs() })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsRoot })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsSummary })
       queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobTimeline(jobId) })
     },
   })
@@ -126,7 +172,8 @@ export function useUpdateJobScheduling() {
     mutationFn: updateJobScheduling,
     onSuccess: (_, { jobId }) => {
       queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.job(jobId) })
-      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs() })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsRoot })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsSummary })
     },
   })
 }
@@ -179,7 +226,8 @@ export function useLegacyUpdateJobStatus() {
   return useMutation({
     mutationFn: legacyUpdateJobStatus,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobs() })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsRoot })
+      queryClient.invalidateQueries({ queryKey: DISPATCH_QUERY_KEY.jobsSummary })
     },
   })
 }

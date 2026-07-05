@@ -11,26 +11,64 @@ export type JobsQuery = {
 
 // ─── Jobs — create ────────────────────────────────────────────────────────────
 
+export type CreateJobStopPayload = {
+  address: string
+  contact_name?: string
+  contact_phone?: string
+  latitude?: number
+  longitude?: number
+  notes?: string
+}
+
 export type CreateJobPayload = {
   data: {
-    vehicleId: string
-    pickupLocation: string
-    deliveryLocation: string
+    pickup?: CreateJobStopPayload
+    dropoff?: CreateJobStopPayload
+    stops?: CreateJobStopPayload[]
+    amount_ngn?: number
+    cargo_description?: string
+    cargo_type?: string
+    load_weight_kg?: number
+    priority?: 'low' | 'medium' | 'normal' | 'high' | 'urgent'
+    deadline?: string
+    reference?: string
+    vehicleId?: string
+    pickupLocation?: string
+    deliveryLocation?: string
     driverId?: string
     driverPhone?: string
     amount?: number
     cargoDescription?: string
     cargoType?: string
     cargoWeight?: number
-    deadline?: string
-    priority?: 'low' | 'normal' | 'high' | 'urgent'
     notes?: string
     load_volume_m3?: number
-    load_weight_kg?: number
     required_vehicle_type?: string
-    reference?: string
     estimated_service_minutes?: number
   }
+}
+
+export type UpdateJobDetailsPayload = {
+  jobId: string
+  data: {
+    pickup: CreateJobStopPayload
+    dropoff: CreateJobStopPayload
+    stops?: CreateJobStopPayload[]
+    cargo_type?: string
+    cargo_description?: string
+    amount_ngn?: number
+    deadline?: string
+    load_weight_kg?: number
+    load_volume_m3?: number
+    priority?: 'low' | 'medium' | 'normal' | 'high' | 'urgent'
+    required_vehicle_type?: string
+    estimated_service_minutes?: number
+    reference?: string
+  }
+}
+
+export type DeleteJobPayload = {
+  jobId: string
 }
 
 // ─── Jobs — mutations ─────────────────────────────────────────────────────────
@@ -213,6 +251,7 @@ export type DispatchJob = {
   assigned_vehicle_id?: string
   pickup?: DispatchStop
   dropoff?: DispatchStop
+  stops?: DispatchStop[]
   cargo_description?: string
   cargo_type?: string
   load_volume_m3?: number
@@ -229,6 +268,12 @@ export type DispatchJob = {
   created_at?: string
   updated_at?: string
   acknowledged_at?: string
+}
+
+export type DispatchJobSummary = {
+  total?: number
+  by_status?: Record<string, number>
+  total_value_ngn?: number
 }
 
 export type RouteManeuver = {
@@ -301,5 +346,6 @@ import type { ServerResponse } from '../lib/types'
 
 export type DispatchJobResponse = ServerResponse<DispatchJob>
 export type DispatchJobListResponse = ServerResponse<DispatchJob[]>
+export type DispatchJobSummaryResponse = ServerResponse<DispatchJobSummary>
 export type DispatchJobTimelineResponse = ServerResponse<{ job_id: string; timeline: DispatchJobTimelineEntry[] }>
 export type DriverStatusRequestActionResponse = ServerResponse<{ job: DispatchJob; request: DispatchDriverStatusRequest }>

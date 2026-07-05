@@ -217,6 +217,7 @@ export function getVehicleQueryOptions(id: string) {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.vehicle(id),
     queryFn: () => getVehicle({ id }),
+    enabled: Boolean(id),
   })
 }
 

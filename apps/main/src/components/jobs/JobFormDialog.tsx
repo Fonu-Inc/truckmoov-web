@@ -71,11 +71,23 @@ const jobSchema = z.object({
 
 type JobFormData = z.infer<typeof jobSchema>;
 
+export type JobFormSubmitData = JobFormData & {
+  stops: Array<{
+    address: string;
+    latitude: number;
+    longitude: number;
+    contact_name?: string;
+    contact_phone?: string;
+    notes?: string;
+  }>;
+};
+
 interface JobFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   job?: Job | null;
-  onSubmit: (data: JobFormData) => void;
+  onSubmit: (data: JobFormSubmitData) => void;
+  isSubmitting?: boolean;
 }
 
 interface IntermediateStop {
@@ -100,6 +112,7 @@ export function JobFormDialog({
   onOpenChange,
   job,
   onSubmit,
+  isSubmitting = false,
 }: JobFormDialogProps) {
   const isEditing = !!job;
   const [step, setStep] = useState(1);
@@ -136,6 +149,13 @@ export function JobFormDialog({
     setStep(1);
     setStops([]);
     if (job) {
+      const jobStops = ((job as any).stops ?? []) as Array<{
+        address?: string;
+        latitude?: number;
+        longitude?: number;
+        lat?: number;
+        lng?: number;
+      }>;
       form.reset({
         reference: job.reference,
         pickupAddress: job.pickup.address,
@@ -151,6 +171,14 @@ export function JobFormDialog({
         deadline: format(new Date(job.deadline), "yyyy-MM-dd'T'HH:mm"),
         priority: "medium",
       });
+      setStops(
+        jobStops.map((stop) => ({
+          id: crypto.randomUUID(),
+          address: stop.address ?? "",
+          lat: stop.latitude ?? stop.lat ?? 0,
+          lng: stop.longitude ?? stop.lng ?? 0,
+        })),
+      );
     } else {
       form.reset({
         reference: generateReference(),
@@ -265,8 +293,16 @@ export function JobFormDialog({
   const handleBack = () => setStep((s) => Math.max(1, s - 1));
 
   const handleFinalSubmit = (data: JobFormData) => {
-    onSubmit(data);
-    onOpenChange(false);
+    onSubmit({
+      ...data,
+      stops: stops
+        .filter((stop) => stop.address.trim())
+        .map((stop) => ({
+          address: stop.address,
+          latitude: stop.lat,
+          longitude: stop.lng,
+        })),
+    });
   };
 
   const addStop = () => {
@@ -961,7 +997,7 @@ export function JobFormDialog({
                     </Button>
                   )}
                   {step === 3 && (
-                    <Button type="submit" variant="gradient">
+                    <Button type="submit" variant="gradient" loading={isSubmitting}>
                       <Check className="h-4 w-4 mr-1" />
                       {isEditing ? "Update Job" : "Create Job"}
                     </Button>

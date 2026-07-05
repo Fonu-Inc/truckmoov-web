@@ -43,11 +43,16 @@ interface JobCardProps {
 }
 
 const statusColors: Record<string, string> = {
+  pending: "bg-muted text-muted-foreground border-muted",
   created: "bg-muted text-muted-foreground border-muted",
   assigned: "bg-primary/20 text-primary border-primary/30",
   accepted: "bg-success/20 text-success border-success/30",
   in_progress: "bg-warning/20 text-warning border-warning/30",
+  "en-route": "bg-warning/20 text-warning border-warning/30",
+  arrived: "bg-warning/20 text-warning border-warning/30",
+  loaded: "bg-warning/20 text-warning border-warning/30",
   completed: "bg-success/20 text-success border-success/30",
+  delivered: "bg-success/20 text-success border-success/30",
   cancelled: "bg-destructive/20 text-destructive border-destructive/30",
 };
 
@@ -73,8 +78,22 @@ function WhatsAppIcon({ className }: { className?: string }) {
 
 export function JobCard({ job, onView, onEdit, onDelete, onMatch, onComplete, dispatcherMode = false, recommendedBy, assignedByRole, recommendOnly = false }: JobCardProps) {
   const { format: formatCurrency } = useCurrency();
-  const driver = job.driverId ? mockDrivers.find(d => d.id === job.driverId) : null;
-  const vehicle = job.vehicleId ? mockVehicles.find(v => v.id === job.vehicleId) : null;
+  const driverPhone = (job as any).driverPhone as string | undefined;
+  const driver = job.driverId
+    ? mockDrivers.find(d => d.id === job.driverId) ?? {
+        id: job.driverId,
+        name: job.driverId,
+        phone: driverPhone ?? "",
+      }
+    : null;
+  const vehicle = job.vehicleId
+    ? mockVehicles.find(v => v.id === job.vehicleId) ?? {
+        id: job.vehicleId,
+        registrationNumber: job.vehicleId,
+        make: "",
+        model: "",
+      }
+    : null;
   // In dispatcher mode, a driver attached to a not-yet-assigned job is a recommendation,
   // not an assignment — only the dispatcher can assign.
   const isRecommendation = !!driver && (dispatcherMode ? job.status === "created" : job.status === "created");
@@ -136,7 +155,7 @@ export function JobCard({ job, onView, onEdit, onDelete, onMatch, onComplete, di
         {/* Status */}
         <div className="mb-3">
           <FieldLabel icon={Activity}>Status</FieldLabel>
-          <Badge className={statusColors[job.status]}>
+          <Badge className={statusColors[job.status] ?? "bg-muted text-muted-foreground border-muted"}>
             {job.status === "created" ? "pending" : job.status.replace("_", " ")}
           </Badge>
         </div>

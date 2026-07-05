@@ -11,14 +11,17 @@ import type {
   CreateJobPayload,
   DispatchJobListResponse,
   DispatchJobResponse,
+  DispatchJobSummaryResponse,
   DispatchJobTimelineResponse,
   DriverStatusRequestActionResponse,
   EventPublishedResponse,
   JobsQuery,
+  DeleteJobPayload,
   LegacyStatusPayload,
   OptimizeRoutePayload,
   RoutePlan,
   SendWhatsappInstructionPayload,
+  UpdateJobDetailsPayload,
   UpdateJobSchedulingPayload,
   UpdateJobStatusPayload,
 } from './types'
@@ -27,6 +30,11 @@ import type {
 
 export async function getJobs(payload?: JobsQuery) {
   const { data } = await axiosInstance.get<DispatchJobListResponse>('/dispatch/jobs', { params: payload?.params })
+  return data
+}
+
+export async function getJobsSummary() {
+  const { data } = await axiosInstance.get<DispatchJobSummaryResponse>('/dispatch/jobs/summary')
   return data
 }
 
@@ -45,6 +53,16 @@ export async function getJobTimeline({ jobId }: { jobId: string }) {
 export async function createJob({ data }: CreateJobPayload) {
   const { data: res } = await axiosInstance.post<DispatchJobResponse>('/dispatch/jobs', data)
   return res
+}
+
+export async function updateJobDetails({ jobId, data }: UpdateJobDetailsPayload) {
+  const { data: res } = await axiosInstance.patch<DispatchJobResponse>(`/dispatch/jobs/${jobId}`, data)
+  return res
+}
+
+export async function deleteJob({ jobId }: DeleteJobPayload) {
+  const { data } = await axiosInstance.delete<DispatchJobResponse>(`/dispatch/jobs/${jobId}`)
+  return data
 }
 
 export async function acknowledgeJob({ jobId, data }: AcknowledgeJobPayload) {
