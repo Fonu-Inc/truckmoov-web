@@ -14,13 +14,34 @@ import {
   Cpu,
   Truck,
   Wifi,
+  WifiOff,
   Signal,
   Battery,
   Settings,
   RefreshCw,
+  Activity,
+  Clock,
+  Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
+import {
+  useDeviceOverview,
+  useDeviceConnectivity,
+  useDeviceTelemetry,
+  useDeviceFirmware,
+} from "@truckmoov/api/tracking";
+import type { DeviceHealth } from "@truckmoov/api/tracking";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 import { DeviceHealthStatus } from "./DeviceHealthBadge";
 
 interface ExtendedDevice extends IoTDevice {
@@ -42,6 +63,20 @@ interface DeviceDetailsSheetProps {
   sim?: SIMCard | null;
 }
 
+const healthTone: Record<DeviceHealth, string> = {
+  online: "text-success",
+  degraded: "text-warning",
+  offline: "text-destructive",
+};
+
+function formatSeconds(seconds: number | null | undefined) {
+  if (seconds == null) return "—";
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  const mins = Math.floor(seconds / 60);
+  const rem = Math.round(seconds % 60);
+  return rem ? `${mins}m ${rem}s` : `${mins}m`;
+}
+
 export function DeviceDetailsSheet({
   open,
   onOpenChange,
@@ -49,7 +84,33 @@ export function DeviceDetailsSheet({
   vehicle,
   sim,
 }: DeviceDetailsSheetProps) {
+  const deviceId = device?.id ?? "";
+  const overviewQuery = useDeviceOverview(deviceId);
+  const connectivityQuery = useDeviceConnectivity(deviceId);
+  const telemetryQuery = useDeviceTelemetry(deviceId);
+  const firmwareQuery = useDeviceFirmware(deviceId);
+
   if (!device) return null;
+
+  const overview = overviewQuery.data?.data;
+  const connectivity = connectivityQuery.data?.data;
+  const telemetry = telemetryQuery.data?.data;
+  const firmware = firmwareQuery.data?.data;
+
+  // Overview values prefer the live endpoint, fall back to the prop while loading.
+  const status = overview?.status ?? device.status;
+  const lastSeen = overview?.last_seen ?? device.last_seen ?? (device.lastSeen?.toISOString() ?? null);
+  const signalStrength = overview?.signal_strength ?? device.signalStrength;
+  const batteryLevel = overview?.battery_level ?? device.batteryLevel;
+
+  const chartData = (telemetry?.history ?? [])
+    .slice()
+    .sort((a, b) => new Date(a.observed_at).getTime() - new Date(b.observed_at).getTime())
+    .map((p) => ({
+      time: format(new Date(p.observed_at), "HH:mm"),
+      signal: p.signal_strength,
+      battery: p.battery_level,
+    }));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -58,13 +119,13 @@ export function DeviceDetailsSheet({
           <DialogTitle className="flex items-center gap-3">
             <div className={cn(
               "flex h-12 w-12 items-center justify-center rounded-xl",
-              device.status === "active" || device.status === "assigned"
+              status === "active" || status === "assigned"
                 ? "bg-success/10"
                 : "bg-secondary"
             )}>
               <Cpu className={cn(
                 "h-6 w-6",
-                device.status === "active" || device.status === "assigned"
+                status === "active" || status === "assigned"
                   ? "text-success"
                   : "text-muted-foreground"
               )} />
@@ -88,8 +149,8 @@ export function DeviceDetailsSheet({
               <TabsTrigger value="firmware">Firmware</TabsTrigger>
             </TabsList>
 
+            {/* ─── Overview ─────────────────────────────────────────────── */}
             <TabsContent value="overview" className="mt-4 space-y-4">
-              {/* Status Card */}
               <Card>
                 <CardContent className="p-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -97,31 +158,30 @@ export function DeviceDetailsSheet({
                       <p className="text-sm text-muted-foreground">Status</p>
                       <Badge className={cn(
                         "mt-1",
-                        device.status === "active" && "bg-success hover:bg-success",
-                        device.status === "assigned" && "bg-primary hover:bg-primary",
-                        device.status === "faulty" && "bg-destructive hover:bg-destructive"
+                        status === "active" && "bg-success hover:bg-success",
+                        status === "assigned" && "bg-primary hover:bg-primary",
+                        status === "faulty" && "bg-destructive hover:bg-destructive"
                       )}>
-                        {device.status}
+                        {status}
                       </Badge>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Last Seen</p>
                       <p className="text-sm font-medium mt-1">
-                        {device.lastSeen ? formatDistanceToNow(device.lastSeen, { addSuffix: true }) : "Never"}
+                        {lastSeen ? formatDistanceToNow(new Date(lastSeen), { addSuffix: true }) : "Never"}
                       </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Signal & Battery */}
-              {(device.signalStrength !== undefined || device.batteryLevel !== undefined) && (
+              {(signalStrength != null || batteryLevel != null) && (
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium">Device Health</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {device.signalStrength !== undefined && (
+                    {signalStrength != null && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2">
@@ -130,16 +190,16 @@ export function DeviceDetailsSheet({
                           </div>
                           <span className={cn(
                             "font-medium",
-                            device.signalStrength > 70 ? "text-success" :
-                            device.signalStrength > 40 ? "text-warning" : "text-destructive"
+                            signalStrength > 70 ? "text-success" :
+                            signalStrength > 40 ? "text-warning" : "text-destructive"
                           )}>
-                            {device.signalStrength}%
+                            {signalStrength}%
                           </span>
                         </div>
-                        <Progress value={device.signalStrength} className="h-2" />
+                        <Progress value={signalStrength} className="h-2" />
                       </div>
                     )}
-                    {device.batteryLevel !== undefined && (
+                    {batteryLevel != null && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2">
@@ -148,20 +208,19 @@ export function DeviceDetailsSheet({
                           </div>
                           <span className={cn(
                             "font-medium",
-                            device.batteryLevel > 50 ? "text-success" :
-                            device.batteryLevel > 20 ? "text-warning" : "text-destructive"
+                            batteryLevel > 50 ? "text-success" :
+                            batteryLevel > 20 ? "text-warning" : "text-destructive"
                           )}>
-                            {device.batteryLevel}%
+                            {batteryLevel}%
                           </span>
                         </div>
-                        <Progress value={device.batteryLevel} className="h-2" />
+                        <Progress value={batteryLevel} className="h-2" />
                       </div>
                     )}
                   </CardContent>
                 </Card>
               )}
 
-              {/* Assigned Vehicle */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -188,7 +247,6 @@ export function DeviceDetailsSheet({
                 </CardContent>
               </Card>
 
-              {/* Assigned SIM */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -219,18 +277,148 @@ export function DeviceDetailsSheet({
               </Card>
             </TabsContent>
 
+            {/* ─── Connectivity ─────────────────────────────────────────── */}
             <TabsContent value="connectivity" className="mt-4">
-              <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">
-                Connectivity health and heartbeat configuration are not provided by the device endpoint.
-              </CardContent></Card>
+              {connectivityQuery.isLoading ? (
+                <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">Loading connectivity…</CardContent></Card>
+              ) : !connectivity ? (
+                <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">No connectivity data available.</CardContent></Card>
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-primary" />
+                      Connectivity &amp; Telemetry
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div>
+                      <p className="text-sm font-medium mb-2">Connection Status</p>
+                      <Badge variant="outline" className={cn("gap-1.5 capitalize", healthTone[connectivity.health])}>
+                        {connectivity.health === "online" ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
+                        {connectivity.health}
+                      </Badge>
+                      {connectivity.health === "offline" && (
+                        <p className="mt-3 text-sm text-muted-foreground">
+                          No telemetry received beyond offline threshold. Check device connectivity.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                      <div>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5" /> Last Telemetry
+                        </p>
+                        <p className="text-sm font-medium mt-1">
+                          {connectivity.last_contact
+                            ? formatDistanceToNow(new Date(connectivity.last_contact), { addSuffix: true })
+                            : "Never"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Activity className="h-3.5 w-3.5" /> Last Health Check
+                        </p>
+                        <p className="text-sm font-medium mt-1">
+                          {device.last_health_check_at
+                            ? formatDistanceToNow(new Date(device.last_health_check_at), { addSuffix: true })
+                            : "Pending"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-4">
+                      <p className="text-xs text-muted-foreground mb-3">Heartbeat Configuration</p>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="rounded-lg bg-secondary/50 p-3 text-center">
+                          <p className="text-xs text-muted-foreground">Expected</p>
+                          <p className="text-sm font-semibold mt-1">{formatSeconds(connectivity.reporting_interval_seconds)}</p>
+                        </div>
+                        <div className="rounded-lg bg-warning/10 p-3 text-center">
+                          <p className="text-xs text-warning">Online ≤</p>
+                          {/* ponytail: online threshold not in API, derived as 3× reporting interval; use a real field if the backend adds one */}
+                          <p className="text-sm font-semibold mt-1 text-warning">{formatSeconds(connectivity.reporting_interval_seconds * 3)}</p>
+                        </div>
+                        <div className="rounded-lg bg-destructive/10 p-3 text-center">
+                          <p className="text-xs text-destructive">Offline &gt;</p>
+                          <p className="text-sm font-semibold mt-1 text-destructive">{formatSeconds(connectivity.status_timeout_seconds)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
+            {/* ─── Telemetry ────────────────────────────────────────────── */}
             <TabsContent value="telemetry" className="mt-4 space-y-4">
-              <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">
-                Telemetry history and transmission metrics are not provided by the device endpoint.
-              </CardContent></Card>
+              {telemetryQuery.isLoading ? (
+                <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">Loading telemetry…</CardContent></Card>
+              ) : !telemetry ? (
+                <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">No telemetry data available.</CardContent></Card>
+              ) : (
+                <>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <Activity className="h-4 w-4 text-primary" />
+                        Signal &amp; Battery (24h)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {chartData.length === 0 ? (
+                        <p className="py-8 text-center text-sm text-muted-foreground">No telemetry history in the last 24h.</p>
+                      ) : (
+                        <ResponsiveContainer width="100%" height={240}>
+                          <LineChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                            <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                            <Tooltip
+                              contentStyle={{
+                                background: "hsl(var(--card))",
+                                border: "1px solid hsl(var(--border))",
+                                borderRadius: 8,
+                                fontSize: 12,
+                              }}
+                            />
+                            <Legend />
+                            <Line type="monotone" dataKey="signal" name="Signal" stroke="hsl(var(--warning))" strokeWidth={2} dot={false} connectNulls />
+                            <Line type="monotone" dataKey="battery" name="Battery" stroke="hsl(var(--success))" strokeWidth={2} dot={false} connectNulls />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <Database className="h-4 w-4 text-primary" />
+                        Data Transmission
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Today's Records</span>
+                        <span className="font-medium">{telemetry.aggregates_24h.sample_count.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Avg. Interval</span>
+                        <span className="font-medium">{formatSeconds(telemetry.aggregates_24h.avg_interval_seconds)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Data Quality</span>
+                        <span className="font-medium text-success">{telemetry.aggregates_24h.data_quality_pct}%</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
             </TabsContent>
 
+            {/* ─── Firmware ─────────────────────────────────────────────── */}
             <TabsContent value="firmware" className="mt-4 space-y-4">
               <Card>
                 <CardHeader>
@@ -242,8 +430,14 @@ export function DeviceDetailsSheet({
                 <CardContent className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Firmware Version</span>
-                    <span className="font-mono">{device.firmwareVersion}</span>
+                    <span className="font-mono">{firmware?.current_version ?? device.firmwareVersion}</span>
                   </div>
+                  {firmware && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Reporting Interval</span>
+                      <span className="font-medium">{formatSeconds(firmware.reporting_interval_seconds)}</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -255,7 +449,32 @@ export function DeviceDetailsSheet({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground">Firmware history is not provided by the device endpoint.</p>
+                  {firmwareQuery.isLoading ? (
+                    <p className="text-sm text-muted-foreground">Loading firmware history…</p>
+                  ) : !firmware?.history?.length ? (
+                    <p className="text-sm text-muted-foreground">No firmware history available.</p>
+                  ) : (
+                    firmware.history.map((entry) => {
+                      const isCurrent = entry.version === firmware.current_version;
+                      return (
+                        <div
+                          key={`${entry.version}-${entry.first_seen}`}
+                          className={cn(
+                            "flex items-center justify-between rounded-lg border p-3",
+                            isCurrent && "border-primary/50 bg-primary/5"
+                          )}
+                        >
+                          <div>
+                            <p className="text-sm font-mono">{entry.version}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(entry.first_seen), "MMMM do, yyyy")}
+                            </p>
+                          </div>
+                          {isCurrent && <Badge className="bg-primary hover:bg-primary">Current</Badge>}
+                        </div>
+                      );
+                    })
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

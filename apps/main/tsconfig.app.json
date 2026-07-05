@@ -49,6 +49,9 @@
       ],
       "@truckmoov/api/dispatch": [
         "../../packages/api/src/dispatch/index.ts"
+      ],
+      "@truckmoov/api/tracking": [
+        "../../packages/api/src/tracking/index.ts"
       ]
     },
     "skipLibCheck": true,
