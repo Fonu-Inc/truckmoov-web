@@ -193,12 +193,12 @@ export function JobCard({ job, onView, onEdit, onDelete, onMatch, onComplete, di
         </div>
 
         {/* Assigned / Recommended Driver section */}
-        <div className="pt-3 border-t border-border/50 space-y-2 text-primary-foreground bg-white">
+        <div className="pt-3 border-t border-border/50 space-y-2">
           <FieldLabel icon={User}>
             {isRecommendation ? "Recommended Driver" : "Assigned Driver For Job"}
           </FieldLabel>
           {driver && (
-            <div className="rounded-lg border border-border/60 bg-background/40 p-3">
+            <div className="rounded-lg border border-border/60 bg-muted/30 p-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-[10px] font-medium text-primary-foreground shrink-0">
@@ -263,7 +263,7 @@ export function JobCard({ job, onView, onEdit, onDelete, onMatch, onComplete, di
 
           {/* Assign / Recommend Driver CTA — visible until a driver is *assigned* (not just recommended) */}
           {(!driver || isRecommendation) && (
-            <Button variant="ghost" size="sm" className="w-full h-8 text-xs text-primary-foreground shadow-sm hover:shadow-mtn rounded-md bg-transparent hover:bg-transparent border" onClick={onMatch}>
+            <Button variant="ghost" size="sm" className="w-full h-8 text-xs text-foreground shadow-sm hover:shadow-mtn rounded-md bg-transparent hover:bg-muted/40 border border-border/60" onClick={onMatch}>
               <Sparkles className="h-3 w-3 mr-1" />
               {recommendOnly ? "Recommend Driver" : "Assign Driver"}
             </Button>
