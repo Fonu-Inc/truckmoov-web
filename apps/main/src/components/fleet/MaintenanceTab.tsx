@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format, differenceInDays, isValid } from "date-fns";
 import {
   AlertTriangle,
@@ -9,6 +9,7 @@ import {
   Download,
   Edit,
   Eye,
+  Loader2,
   Mail,
   MoreHorizontal,
   Play,
@@ -25,6 +26,15 @@ import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/shadcn/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -60,11 +70,13 @@ import {
 } from "@/components/shadcn/table";
 import { Textarea } from "@/components/shadcn/textarea";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { cn } from "@/lib/utils";
 import {
   exportMaintenanceRecords,
   useCompleteMaintenanceRecord,
   useCreateMaintenanceRecord,
   useDeleteMaintenanceRecord,
+  useDrivers,
   useMaintenanceRecords,
   useMaintenanceRecordsSummary,
   useSendMaintenanceReminders,
@@ -167,6 +179,7 @@ function downloadBlob(data: unknown, filename: string) {
 
 export function MaintenanceTab() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -187,27 +200,34 @@ export function MaintenanceTab() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSendRemindersDialogOpen, setIsSendRemindersDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<MaintenanceRecordWithDisplay | null>(null);
+  const [recordPendingDelete, setRecordPendingDelete] = useState<MaintenanceRecordWithDisplay | null>(null);
   const [recipientEmail, setRecipientEmail] = useState("");
   const [reminderDaysBefore, setReminderDaysBefore] = useState("30");
   const [isExporting, setIsExporting] = useState(false);
   const [newRecord, setNewRecord] = useState<MaintenanceFormState>(() => buildDefaultRecord());
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
   const recordsQueryParams = useMemo(
     () => ({
       params: {
-        search: searchQuery || undefined,
+        search: debouncedSearch || undefined,
         status: statusFilter !== "all" ? (statusFilter as MaintenanceRecordDisplayStatus) : undefined,
         priority: priorityFilter !== "all" ? (priorityFilter as MaintenanceRecordPriority) : undefined,
         maintenanceType: typeFilter !== "all" ? typeFilter : undefined,
       },
     }),
-    [priorityFilter, searchQuery, statusFilter, typeFilter],
+    [debouncedSearch, priorityFilter, statusFilter, typeFilter],
   );
 
   const recordsQuery = useMaintenanceRecords(recordsQueryParams);
   const summaryQuery = useMaintenanceRecordsSummary();
   const vehiclesQuery = useVehicles();
+  const driversQuery = useDrivers();
   const createRecordMutation = useCreateMaintenanceRecord();
   const updateRecordMutation = useUpdateMaintenanceRecord();
   const deleteRecordMutation = useDeleteMaintenanceRecord();
@@ -216,17 +236,51 @@ export function MaintenanceTab() {
   const sendRemindersMutation = useSendMaintenanceReminders();
 
   const vehicles = useMemo(() => vehiclesQuery.data?.data ?? [], [vehiclesQuery.data?.data]);
+  const drivers = useMemo(() => driversQuery.data?.data ?? [], [driversQuery.data?.data]);
+
+  const getDriverName = useCallback((driver: (typeof drivers)[number]) => {
+    return driver.name || `${driver.firstName ?? ""} ${driver.lastName ?? ""}`.trim() || driver.id;
+  }, []);
+
+  const getVehicleOptionValue = useCallback((vehicle: (typeof vehicles)[number]) => {
+    return vehicle.registrationNumber || vehicle.plateNumber || vehicle.id;
+  }, []);
 
   const getVehicleLabel = useCallback(
-    (vehicleId: string) => {
-      const vehicle = vehicles.find((item) => item.id === vehicleId);
-      if (!vehicle) return vehicleId;
+    (vehicleReference: string) => {
+      const vehicle = vehicles.find(
+        (item) =>
+          item.id === vehicleReference ||
+          item.registrationNumber === vehicleReference ||
+          item.plateNumber === vehicleReference,
+      );
+      if (!vehicle) return vehicleReference;
       return vehicle.registrationNumber || vehicle.plateNumber || `${vehicle.make ?? ""} ${vehicle.model}`.trim() || vehicle.id;
     },
     [vehicles],
   );
 
-  const selectedVehicleExists = Boolean(newRecord.vehicleId && vehicles.some((vehicle) => vehicle.id === newRecord.vehicleId));
+  const getVehicleRegistrationForRecord = useCallback(
+    (vehicleReference: string) => {
+      const vehicle = vehicles.find(
+        (item) =>
+          item.id === vehicleReference ||
+          item.registrationNumber === vehicleReference ||
+          item.plateNumber === vehicleReference,
+      );
+      return vehicle ? getVehicleOptionValue(vehicle) : vehicleReference;
+    },
+    [getVehicleOptionValue, vehicles],
+  );
+
+  const selectedVehicleExists = Boolean(
+    newRecord.vehicleId &&
+      vehicles.some((vehicle) => getVehicleOptionValue(vehicle) === newRecord.vehicleId),
+  );
+  const selectedDriverExists = Boolean(
+    newRecord.technician &&
+      drivers.some((driver) => getDriverName(driver) === newRecord.technician),
+  );
   const records = useMemo(() => recordsQuery.data?.data ?? [], [recordsQuery.data?.data]);
 
   const getRecordStatus = useCallback((record: MaintenanceRecord): MaintenanceRecordDisplayStatus => {
@@ -347,7 +401,7 @@ export function MaintenanceTab() {
   const handleEditRecord = (record: MaintenanceRecordWithDisplay) => {
     setSelectedRecord(record);
     setNewRecord({
-      vehicleId: record.vehicleId,
+      vehicleId: getVehicleRegistrationForRecord(record.vehicleId),
       type: normalizeMaintenanceType(record.maintenanceType),
       category: record.description || "",
       notes: record.notes || "",
@@ -379,6 +433,7 @@ export function MaintenanceTab() {
     try {
       await deleteRecordMutation.mutateAsync({ id });
       toast.success("Maintenance record deleted");
+      setRecordPendingDelete(null);
     } catch (error) {
       toast.error(error.message || "Failed to delete maintenance");
     }
@@ -433,10 +488,26 @@ export function MaintenanceTab() {
         <SelectItem value={newRecord.vehicleId}>{newRecord.vehicleId}</SelectItem>
       ) : null}
       {vehicles.map((vehicle) => (
-        <SelectItem key={vehicle.id} value={vehicle.id}>
+        <SelectItem key={vehicle.id} value={getVehicleOptionValue(vehicle)}>
           {getVehicleLabel(vehicle.id)}
         </SelectItem>
       ))}
+    </>
+  );
+
+  const driverSelectItems = (
+    <>
+      {!selectedDriverExists && newRecord.technician ? (
+        <SelectItem value={newRecord.technician}>{newRecord.technician}</SelectItem>
+      ) : null}
+      {drivers.map((driver) => {
+        const driverName = getDriverName(driver);
+        return (
+          <SelectItem key={driver.id} value={driverName}>
+            {driverName}
+          </SelectItem>
+        );
+      })}
     </>
   );
 
@@ -569,8 +640,11 @@ export function MaintenanceTab() {
                 placeholder="Search by vehicle, category..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-card/50 border-border/50"
+                className="pl-10 pr-10 bg-card/50 border-border/50"
               />
+              {recordsQuery.isFetching && !recordsQuery.isPending && (
+                <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+              )}
             </div>
             <Popover
               open={filterOpen}
@@ -825,7 +899,7 @@ export function MaintenanceTab() {
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleDeleteRecord(record.id)}
+                            onClick={() => setRecordPendingDelete(record)}
                             className="text-destructive focus:text-destructive"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
@@ -932,12 +1006,16 @@ export function MaintenanceTab() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Technician</Label>
-              <Input
-                placeholder="Assigned technician"
+              <Label>Driver</Label>
+              <Select
                 value={newRecord.technician}
-                onChange={(event) => setNewRecord({ ...newRecord, technician: event.target.value })}
-              />
+                onValueChange={(value) => setNewRecord({ ...newRecord, technician: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={driversQuery.isPending ? "Loading drivers..." : "Select driver"} />
+                </SelectTrigger>
+                <SelectContent>{driverSelectItems}</SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>
@@ -964,66 +1042,94 @@ export function MaintenanceTab() {
       </Dialog>
 
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Maintenance Details</DialogTitle>
+        <DialogContent className="bg-card border-border max-w-xl p-7">
+          <DialogHeader className="space-y-0">
+            <DialogTitle className="text-xl">Maintenance Details</DialogTitle>
           </DialogHeader>
           {selectedRecord && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">Vehicle</p>
-                  <p className="font-mono">{getVehicleLabel(selectedRecord.vehicleId)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Status</p>
-                  <Badge className={statusColors[selectedRecord.displayStatus]}>
-                    {selectedRecord.displayStatus.replace("_", " ")}
-                  </Badge>
-                </div>
+            <div className="grid grid-cols-1 gap-x-12 gap-y-6 pt-2 sm:grid-cols-2">
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Vehicle</p>
+                <p className="text-base font-semibold leading-tight">{getVehicleLabel(selectedRecord.vehicleId)}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">Type</p>
-                  <p>{toTitleCase(selectedRecord.maintenanceType)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Priority</p>
-                  <Badge className={priorityColors[selectedRecord.priority]}>{selectedRecord.priority}</Badge>
-                </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Status</p>
+                <Badge className={cn("capitalize", statusColors[selectedRecord.displayStatus] || statusColors.scheduled)}>
+                  {selectedRecord.displayStatus.replace("_", " ")}
+                </Badge>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">Scheduled</p>
-                  <p>{formatRecordDate(selectedRecord.scheduledDate)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Cost</p>
-                  <p>{formatCurrency(selectedRecord.cost, selectedRecord.currency)}</p>
-                </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Type</p>
+                <p className="text-base font-semibold leading-tight capitalize">{selectedRecord.maintenanceType}</p>
               </div>
-              {selectedRecord.description && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Service Category</p>
-                  <p>{selectedRecord.description}</p>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Priority</p>
+                <Badge className={cn("capitalize", priorityColors[selectedRecord.priority] || priorityColors.medium)}>
+                  {selectedRecord.priority}
+                </Badge>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Scheduled</p>
+                <p className="text-base font-semibold leading-tight">{formatRecordDate(selectedRecord.scheduledDate)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Cost</p>
+                <p className="text-base font-semibold leading-tight">
+                  {formatCurrency(selectedRecord.cost, selectedRecord.currency)}
+                </p>
+              </div>
+              {selectedRecord.technician ? (
+                <div className="space-y-1 sm:col-span-2">
+                  <p className="text-sm text-muted-foreground">Driver</p>
+                  <p className="text-base font-semibold leading-tight">{selectedRecord.technician}</p>
                 </div>
-              )}
-              {selectedRecord.technician && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Technician</p>
-                  <p>{selectedRecord.technician}</p>
+              ) : null}
+              {selectedRecord.notes || selectedRecord.description ? (
+                <div className="space-y-1 sm:col-span-2">
+                  <p className="text-sm text-muted-foreground">Notes</p>
+                  <p className="text-base font-semibold leading-tight">
+                    {selectedRecord.notes || selectedRecord.description}
+                  </p>
                 </div>
-              )}
-              {selectedRecord.notes && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Notes</p>
-                  <p className="text-sm">{selectedRecord.notes}</p>
-                </div>
-              )}
+              ) : null}
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!recordPendingDelete}
+        onOpenChange={(open) => {
+          if (!open && !deleteRecordMutation.isPending) {
+            setRecordPendingDelete(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete maintenance record?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently remove the maintenance record.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteRecordMutation.isPending}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              loading={deleteRecordMutation.isPending}
+              disabled={deleteRecordMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (recordPendingDelete) {
+                  void handleDeleteRecord(recordPendingDelete.id);
+                }
+              }}
+            >
+              Delete
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="bg-card border-border max-w-lg">
@@ -1114,11 +1220,16 @@ export function MaintenanceTab() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Technician</Label>
-              <Input
+              <Label>Driver</Label>
+              <Select
                 value={newRecord.technician}
-                onChange={(event) => setNewRecord({ ...newRecord, technician: event.target.value })}
-              />
+                onValueChange={(value) => setNewRecord({ ...newRecord, technician: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={driversQuery.isPending ? "Loading drivers..." : "Select driver"} />
+                </SelectTrigger>
+                <SelectContent>{driverSelectItems}</SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>

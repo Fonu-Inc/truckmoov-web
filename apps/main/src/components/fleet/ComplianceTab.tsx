@@ -1,4 +1,4 @@
-import {Download,  AlertTriangle, Bell, CalendarIcon, CheckCircle, Clock, Eye, File, FileText, Loader2, Mail, MoreHorizontal, Plus, Search, Shield, SlidersHorizontal, Truck, Upload, X } from 'lucide-react';
+import {Download,  AlertTriangle, Bell, CalendarIcon, CheckCircle, Clock, Eye, File, FileText, Loader2, Mail, MoreHorizontal, Plus, Search, Shield, SlidersHorizontal, Trash2, Truck, Upload, X } from 'lucide-react';
 import { useState, useRef, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -8,6 +8,15 @@ import { Skeleton } from "@/components/shadcn/skeleton";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { Calendar } from "@/components/shadcn/calendar";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/shadcn/alert-dialog";
 import {
   Table,
   TableBody,
@@ -37,18 +46,16 @@ import { Label } from "@/components/shadcn/label";
 import { format, differenceInDays } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { uploadMedia } from "@truckmoov/api/auth";
 import {
   type ComplianceDocument,
   exportComplianceDocs,
-  getDocumentDownloadUrl,
-  uploadDocument,
   useComplianceDocs,
   useComplianceSummary,
   useCreateComplianceDoc,
   useDeleteComplianceDoc,
   useRenewComplianceDoc,
   useSetComplianceDocFileUrl,
-  useSetComplianceDocReminder,
   useSendComplianceReminders,
 } from "@truckmoov/api/fleet";
 
@@ -57,6 +64,11 @@ const statusColors: Record<string, string> = {
   expiring: "bg-warning/20 text-warning border-warning/30",
   expired: "bg-destructive/20 text-destructive border-destructive/30" };
 
+type UploadedDocumentMetadata = {
+  fileUrl: string;
+  fileSize: number;
+};
+
 export function ComplianceTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -64,7 +76,7 @@ export function ComplianceTab() {
   const [docTypeFilter, setDocTypeFilter] = useState("all");
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    const t = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
     return () => clearTimeout(t);
   }, [searchQuery]);
 
@@ -75,7 +87,7 @@ export function ComplianceTab() {
   });
   const summaryQuery = useComplianceSummary();
   const documents = docsQuery.data?.data ?? [];
-  const isLoading = docsQuery.isLoading;
+  const isLoading = docsQuery.isLoading && !docsQuery.data;
   const isFetching = docsQuery.isFetching;
   const summary = summaryQuery.data?.data;
 
@@ -83,7 +95,6 @@ export function ComplianceTab() {
   const deleteMutation = useDeleteComplianceDoc();
   const setFileUrlMutation = useSetComplianceDocFileUrl();
   const renewMutation = useRenewComplianceDoc();
-  const reminderMutation = useSetComplianceDocReminder();
   const sendRemindersMutation = useSendComplianceReminders();
   const isSending = sendRemindersMutation.isPending;
 
@@ -107,6 +118,7 @@ export function ComplianceTab() {
   const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
   const [isSendRemindersDialogOpen, setIsSendRemindersDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<ComplianceDocument | null>(null);
+  const [documentPendingDelete, setDocumentPendingDelete] = useState<ComplianceDocument | null>(null);
   const [reminderDaysValue, setReminderDaysValue] = useState("30");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [reminderDaysBefore, setReminderDaysBefore] = useState("30");
@@ -120,7 +132,6 @@ export function ComplianceTab() {
     entityType: "vehicle" as "vehicle" | "driver",
     entityName: "",
     documentType: "",
-    documentNumber: "",
     issueDate: "",
     expiryDate: "" });
   const [isCustomDocType, setIsCustomDocType] = useState(false);
@@ -195,12 +206,14 @@ export function ComplianceTab() {
     }
   };
 
-  const uploadFile = async (file: File, complianceDocId: string): Promise<void> => {
-    const fleetDocRes = await uploadDocument(file, {
-      params: { entityType: 'vehicle', entityId: complianceDocId, docType: 'permit' },
-    });
-    const downloadRes = await getDocumentDownloadUrl({ id: fleetDocRes.data.id });
-    await setFileUrlMutation.mutateAsync({ id: complianceDocId, fileUrl: downloadRes.data.url });
+  const uploadComplianceFile = async (file: File): Promise<UploadedDocumentMetadata> => {
+    const mediaRes = await uploadMedia(file);
+    const uploadedMedia = mediaRes.data;
+
+    return {
+      fileUrl: uploadedMedia.url,
+      fileSize: uploadedMedia.size ?? file.size,
+    };
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -226,23 +239,25 @@ export function ComplianceTab() {
   };
 
   const handleAddDocument = async () => {
+    if (!selectedFile) {
+      toast.error("Upload a document before adding it");
+      return;
+    }
+
     setIsUploading(true);
     try {
-      const res = await createMutation.mutateAsync({
+      const uploadedFile = await uploadComplianceFile(selectedFile);
+      await createMutation.mutateAsync({
         documentName: newDocument.entityName,
         documentType: newDocument.documentType,
-        documentNumber: newDocument.documentNumber || undefined,
         issueDate: newDocument.issueDate || null,
         expiryDate: newDocument.expiryDate || null,
+        fileUrl: uploadedFile.fileUrl,
+        fileSize: uploadedFile.fileSize,
       });
-      const doc = res.data;
-
-      if (selectedFile && doc) {
-        await uploadFile(selectedFile, doc.id);
-      }
 
       setIsAddDialogOpen(false);
-      setNewDocument({ entityType: "vehicle", entityName: "", documentType: "", documentNumber: "", issueDate: "", expiryDate: "" });
+      setNewDocument({ entityType: "vehicle", entityName: "", documentType: "", issueDate: "", expiryDate: "" });
       setIsCustomDocType(false);
       setSelectedFile(null);
       toast.success("Document added");
@@ -255,11 +270,19 @@ export function ComplianceTab() {
 
   const handleRenewalSubmit = async () => {
     if (!selectedDocument) return;
+    if (!renewalFile) {
+      toast.error("Upload the renewed document before renewing");
+      return;
+    }
+
     setIsUploading(true);
     try {
-      if (renewalFile) {
-        await uploadFile(renewalFile, selectedDocument.id);
-      }
+      const uploadedFile = await uploadComplianceFile(renewalFile);
+      await setFileUrlMutation.mutateAsync({
+        id: selectedDocument.id,
+        fileUrl: uploadedFile.fileUrl,
+        fileSize: uploadedFile.fileSize,
+      });
       await renewMutation.mutateAsync(selectedDocument.id);
       setIsRenewalDialogOpen(false);
       setRenewalFile(null);
@@ -274,13 +297,34 @@ export function ComplianceTab() {
 
   const handleReminderSubmit = async () => {
     if (!selectedDocument) return;
+    if (!recipientEmail) {
+      toast.error("Please enter a recipient email");
+      return;
+    }
+
     try {
-      await reminderMutation.mutateAsync({ id: selectedDocument.id, reminderDays: parseInt(reminderDaysValue) });
+      await sendRemindersMutation.mutateAsync({
+        email: recipientEmail,
+        reminderDays: Number(reminderDaysValue),
+      });
       setIsReminderDialogOpen(false);
       setSelectedDocument(null);
-      toast.success("Reminder saved");
+      setRecipientEmail("");
+      toast.success("Reminders queued");
     } catch {
-      toast.error("Failed to save reminder");
+      toast.error("Failed to send reminder");
+    }
+  };
+
+  const handleDeleteDocument = async () => {
+    if (!documentPendingDelete) return;
+
+    try {
+      await deleteMutation.mutateAsync(documentPendingDelete.id);
+      setDocumentPendingDelete(null);
+      toast.success("Document deleted");
+    } catch {
+      toast.error("Failed to delete document");
     }
   };
 
@@ -422,8 +466,11 @@ export function ComplianceTab() {
                 placeholder="Search by entity, document type, number..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-card/50 border-border/50"
+                className="pl-10 pr-10 bg-card/50 border-border/50"
               />
+              {isFetching && !isLoading && (
+                <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+              )}
             </div>
             <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <PopoverTrigger asChild>
@@ -667,7 +714,6 @@ export function ComplianceTab() {
               <TableRow className="border-border/50 hover:bg-transparent">
                 <TableHead>Entity</TableHead>
                 <TableHead>Document Type</TableHead>
-                <TableHead>Document Number</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Expiry Date</TableHead>
                 <TableHead>Days Left</TableHead>
@@ -677,7 +723,7 @@ export function ComplianceTab() {
             <TableBody>
               {filteredDocuments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No documents found. Add your first compliance document.
                   </TableCell>
                 </TableRow>
@@ -696,7 +742,6 @@ export function ComplianceTab() {
                         </div>
                       </TableCell>
                       <TableCell>{doc.documentType}</TableCell>
-                      <TableCell className="font-mono text-sm">{doc.documentNumber || '—'}</TableCell>
                       <TableCell>
                         <Badge className={statusColors[doc.status] || statusColors.valid}>{doc.status}</Badge>
                       </TableCell>
@@ -737,9 +782,12 @@ export function ComplianceTab() {
                               <Bell className="h-4 w-4 mr-2" />
                               Set Reminder
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDownload(doc)}>
-                              <Download className="h-4 w-4 mr-2" />
-                              Download
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => setDocumentPendingDelete(doc)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -752,6 +800,36 @@ export function ComplianceTab() {
           </Table>
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={!!documentPendingDelete}
+        onOpenChange={(open) => {
+          if (!open && !deleteMutation.isPending) {
+            setDocumentPendingDelete(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete compliance document?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the compliance document.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              loading={deleteMutation.isPending}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => void handleDeleteDocument()}
+            >
+              Delete
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Add Document Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -823,14 +901,6 @@ export function ComplianceTab() {
                 );
               })()}
             </div>
-            <div className="space-y-2">
-              <Label>Document Number</Label>
-              <Input
-                placeholder="Enter document number"
-                value={newDocument.documentNumber}
-                onChange={(e) => setNewDocument({ ...newDocument, documentNumber: e.target.value })}
-              />
-            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Issue Date</Label>
@@ -850,7 +920,7 @@ export function ComplianceTab() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Upload Document (Optional)</Label>
+              <Label>Upload Document</Label>
               <input
                 type="file"
                 ref={fileInputRef}
@@ -902,7 +972,7 @@ export function ComplianceTab() {
             <Button
               variant="gradient"
               onClick={handleAddDocument}
-              disabled={!newDocument.entityName || !newDocument.documentType || !newDocument.expiryDate || isUploading}
+              disabled={!newDocument.entityName || !newDocument.documentType || !newDocument.expiryDate || !selectedFile || isUploading}
             >
               {isUploading ? (
                 <>
@@ -938,13 +1008,9 @@ export function ComplianceTab() {
                   <p className="font-medium">{selectedDocument.documentType}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground text-xs">Document Number</Label>
-                  <p className="font-medium">{selectedDocument.documentNumber || '—'}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs">Status</Label>
+              <div>
+                <Label className="text-muted-foreground text-xs">Status</Label>
+                <div className="mt-1">
                   <Badge className={statusColors[selectedDocument.status]}>{selectedDocument.status}</Badge>
                 </div>
               </div>
@@ -1030,7 +1096,7 @@ export function ComplianceTab() {
             }}>
               Cancel
             </Button>
-            <Button variant="gradient" onClick={handleRenewalSubmit} disabled={isUploading}>
+            <Button variant="gradient" onClick={handleRenewalSubmit} disabled={isUploading || !renewalFile}>
               {isUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1080,10 +1146,19 @@ export function ComplianceTab() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsReminderDialogOpen(false)}>
+            <Button
+              variant="outline"
+              disabled={sendRemindersMutation.isPending}
+              onClick={() => setIsReminderDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button variant="gradient" onClick={handleReminderSubmit}>
+            <Button
+              variant="gradient"
+              loading={sendRemindersMutation.isPending}
+              disabled={sendRemindersMutation.isPending || !recipientEmail}
+              onClick={handleReminderSubmit}
+            >
               Save Reminder
             </Button>
           </DialogFooter>

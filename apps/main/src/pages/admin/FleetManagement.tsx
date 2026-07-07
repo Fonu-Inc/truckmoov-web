@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-type VehicleData = any;
 import {
   Truck,
   Plus,
@@ -52,7 +51,6 @@ import {
 import { Badge } from "@/components/shadcn/badge";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -65,18 +63,37 @@ import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 import { toast } from "sonner";
 import {
   exportVehicles,
+  useVehicle,
   useVehicles,
   useVehiclesSummary,
   useCreateVehicle,
   useUpdateVehicle,
   useDeleteVehicle,
   useImportVehicles,
+  type Vehicle as FleetApiVehicle,
 } from "@truckmoov/api/fleet";
 
 interface FleetManagementProps {
   vehiclesOnly?: boolean;
   title?: string;
   subtitle?: string;
+}
+
+function mapApiVehicleToVehicle(vehicle: FleetApiVehicle): Vehicle {
+  return {
+    id: vehicle.id,
+    plateNumber: vehicle.plateNumber,
+    vin: vehicle.vin ?? "",
+    registrationNumber: vehicle.registrationNumber,
+    make: vehicle.make ?? "",
+    model: vehicle.model,
+    year: vehicle.year ?? new Date().getFullYear(),
+    type: (String(vehicle.type) as Vehicle["type"]) || "truck",
+    status: (String(vehicle.status) as Vehicle["status"]) || "active",
+    capacity: vehicle.capacity ?? 0,
+    currentDriver: vehicle.assignedDriverName ?? vehicle.assignedDriverId ?? undefined,
+    fuelLevel: vehicle.fuelLevelPercent ?? undefined,
+  };
 }
 
 export default function FleetManagement({ vehiclesOnly = false, title, subtitle }: FleetManagementProps = {}) {
@@ -97,21 +114,27 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
     setSearchParams(value === "vehicles" ? {} : { tab: value }, { replace: true });
   };
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterValue, setFilterValue] = useState<VehiclesFilterValue>(() => buildDefaultVehiclesFilterValue());
   const activeFilterCount = countActiveVehicleFilters(filterValue);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState<VehicleData | null>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<FleetApiVehicle | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isGeofenceDialogOpen, setIsGeofenceDialogOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
   const [yearFrom, yearTo] = filterValue.yearRange;
   const vehicleQueryParams = {
-    query: searchQuery || undefined,
+    query: debouncedSearch || undefined,
     status:
       filterValue.statusEnabled && filterValue.status !== "all"
         ? (filterValue.status as "active" | "inactive" | "maintenance" | "decommissioned")
@@ -132,88 +155,115 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
     params: vehicleQueryParams,
   });
   const { data: vehiclesSummaryResp } = useVehiclesSummary();
-  const { mutateAsync: createVehicleMutation } = useCreateVehicle();
-  const { mutateAsync: updateVehicleMutation } = useUpdateVehicle();
-  const { mutateAsync: deleteVehicleMutation } = useDeleteVehicle();
-  const { mutateAsync: importVehiclesMutation } = useImportVehicles();
+  const selectedVehicleDetailsQuery = useVehicle(isDetailsOpen ? selectedVehicle?.id ?? "" : "");
+  const createVehicleMutation = useCreateVehicle();
+  const updateVehicleMutation = useUpdateVehicle();
+  const deleteVehicleMutation = useDeleteVehicle();
+  const importVehiclesMutation = useImportVehicles();
 
   const dbVehicles = vehiclesResp?.data ?? [];
 
   // Convert API vehicles to the local Vehicle shape used by child components
-  const vehicles: Vehicle[] = dbVehicles.map((v) => ({
-    id: v.id,
-    plateNumber: v.plateNumber,
-    vin: v.vin ?? "",
-    registrationNumber: v.registrationNumber,
-    make: v.make ?? "",
-    model: v.model,
-    year: v.year ?? new Date().getFullYear(),
-    type: (String(v.type) as Vehicle["type"]) || "truck",
-    status: (String(v.status) as Vehicle["status"]) || "active",
-    capacity: v.capacity ?? 0,
-    currentDriver: v.assignedDriverName ?? v.assignedDriverId ?? undefined,
-    fuelLevel: v.fuelLevelPercent ?? undefined,
-  }));
+  const vehicles: Vehicle[] = dbVehicles.map(mapApiVehicleToVehicle);
+  const selectedVehicleDetails = selectedVehicleDetailsQuery.data?.data ?? selectedVehicle;
+  const selectedVehicleFormValue = useMemo<Vehicle | null>(() => {
+    if (!selectedVehicle) return null;
+
+    return {
+      id: selectedVehicle.id,
+      plateNumber: selectedVehicle.plateNumber ?? "",
+      vin: selectedVehicle.vin ?? "",
+      registrationNumber: selectedVehicle.registrationNumber,
+      make: selectedVehicle.make ?? "",
+      model: selectedVehicle.model,
+      year: selectedVehicle.year ?? new Date().getFullYear(),
+      type: (String(selectedVehicle.type) as Vehicle["type"]) || "truck",
+      status: (String(selectedVehicle.status) as Vehicle["status"]) || "active",
+      capacity: selectedVehicle.capacity || 0,
+      currentDriver: selectedVehicle.assignedDriverName ?? selectedVehicle.assignedDriverId ?? undefined,
+    };
+  }, [selectedVehicle]);
 
   const filteredVehicles = vehicles;
 
   const handleAddVehicle = async (newVehicle: Partial<Vehicle>) => {
-    await createVehicleMutation({
-      data: {
-        plateNumber: newVehicle.plateNumber!,
-        registrationNumber: newVehicle.registrationNumber!,
-        vin: newVehicle.vin!,
-        make: newVehicle.make!,
-        model: newVehicle.model!,
-        year: newVehicle.year!,
-        type: newVehicle.type!,
-        capacity: newVehicle.capacity,
-        status: "active",
-      },
-    });
-    setIsAddDialogOpen(false);
+    try {
+      await createVehicleMutation.mutateAsync({
+        data: {
+          plateNumber: newVehicle.plateNumber!,
+          registrationNumber: newVehicle.registrationNumber!,
+          vin: newVehicle.vin!,
+          make: newVehicle.make!,
+          model: newVehicle.model!,
+          year: newVehicle.year!,
+          type: newVehicle.type!,
+          capacity: newVehicle.capacity,
+          status: "active",
+        },
+      });
+      toast.success("Vehicle added");
+      setIsAddDialogOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to add vehicle");
+    }
   };
 
   const handleEditVehicle = async (updatedVehicle: Partial<Vehicle>) => {
     if (!selectedVehicle) return;
-    await updateVehicleMutation({
-      id: selectedVehicle.id,
-      data: {
-        plateNumber: updatedVehicle.plateNumber,
-        registrationNumber: updatedVehicle.registrationNumber,
-        vin: updatedVehicle.vin,
-        make: updatedVehicle.make,
-        model: updatedVehicle.model,
-        year: updatedVehicle.year,
-        type: updatedVehicle.type,
-        capacity: updatedVehicle.capacity,
-      },
-    });
-    setIsEditDialogOpen(false);
-    setSelectedVehicle(null);
+    try {
+      await updateVehicleMutation.mutateAsync({
+        id: selectedVehicle.id,
+        data: {
+          plateNumber: updatedVehicle.plateNumber,
+          registrationNumber: updatedVehicle.registrationNumber,
+          vin: updatedVehicle.vin,
+          make: updatedVehicle.make,
+          model: updatedVehicle.model,
+          year: updatedVehicle.year,
+          type: updatedVehicle.type,
+          capacity: updatedVehicle.capacity,
+        },
+      });
+      toast.success("Vehicle updated");
+      setIsEditDialogOpen(false);
+      setSelectedVehicle(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update vehicle");
+    }
   };
 
   const handleDeleteVehicle = async (vehicleId: string) => {
-    await deleteVehicleMutation({ id: vehicleId });
+    try {
+      await deleteVehicleMutation.mutateAsync({ id: vehicleId });
+      toast.success("Vehicle deleted");
+      setDeleteConfirmId(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete vehicle");
+    }
   };
 
   const handleBulkUpload = async (newVehicles: Partial<Vehicle>[]) => {
-    await importVehiclesMutation({
-      data: {
-        items: newVehicles.map((v) => ({
-          plateNumber: v.plateNumber ?? v.registrationNumber ?? "",
-          registrationNumber: v.registrationNumber ?? "",
-          vin: v.vin ?? "",
-          make: v.make ?? "",
-          model: v.model ?? "",
-          year: v.year ?? new Date().getFullYear(),
-          type: v.type ?? "truck",
-          capacity: v.capacity,
-          status: "active",
-        })),
-      },
-    });
-    setIsBulkUploadOpen(false);
+    try {
+      await importVehiclesMutation.mutateAsync({
+        data: {
+          items: newVehicles.map((v) => ({
+            plateNumber: v.plateNumber ?? v.registrationNumber ?? "",
+            registrationNumber: v.registrationNumber ?? "",
+            vin: v.vin ?? "",
+            make: v.make ?? "",
+            model: v.model ?? "",
+            year: v.year ?? new Date().getFullYear(),
+            type: v.type ?? "truck",
+            capacity: v.capacity,
+            status: "active",
+          })),
+        },
+      });
+      toast.success("Vehicles imported");
+      setIsBulkUploadOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Vehicle import failed");
+    }
   };
 
   const localStatusCounts = {
@@ -521,12 +571,15 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
                                   model: vehicle.model,
                                   year: vehicle.year,
                                   type: vehicle.type,
-                                  status: vehicle.status as VehicleData["status"],
+                                  status: vehicle.status,
                                   capacity: vehicle.capacity ?? 0,
-                                  currentDriverId: vehicle.currentDriver ?? null,
-                                  deviceId: vehicle.deviceId ?? null,
-                                  fuelLevel: vehicle.fuelLevel ?? null,
-                                } as VehicleData);
+                                  assignedDriverId: vehicle.currentDriver ?? null,
+                                  assignedDriverName: vehicle.currentDriver ?? null,
+                                  fuelLevelPercent: vehicle.fuelLevel ?? null,
+                                  gpsDevice: null,
+                                  tenantId: "",
+                                  plateNumber: vehicle.plateNumber ?? vehicle.registrationNumber,
+                                } as FleetApiVehicle);
                                 setIsDetailsOpen(true);
                               }}
                             >
@@ -544,12 +597,15 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
                                   model: vehicle.model,
                                   year: vehicle.year,
                                   type: vehicle.type,
-                                  status: vehicle.status as VehicleData["status"],
+                                  status: vehicle.status,
                                   capacity: vehicle.capacity ?? 0,
-                                  currentDriverId: vehicle.currentDriver ?? null,
-                                  deviceId: vehicle.deviceId ?? null,
-                                  fuelLevel: vehicle.fuelLevel ?? null,
-                                } as VehicleData);
+                                  assignedDriverId: vehicle.currentDriver ?? null,
+                                  assignedDriverName: vehicle.currentDriver ?? null,
+                                  fuelLevelPercent: vehicle.fuelLevel ?? null,
+                                  gpsDevice: null,
+                                  tenantId: "",
+                                  plateNumber: vehicle.plateNumber ?? vehicle.registrationNumber,
+                                } as FleetApiVehicle);
                                 setIsEditDialogOpen(true);
                               }}
                             >
@@ -618,45 +674,23 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
         onOpenChange={setIsAddDialogOpen}
         onSubmit={handleAddVehicle}
         title="Add New Vehicle"
+        isSubmitting={createVehicleMutation.isPending}
       />
 
       <VehicleFormDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         onSubmit={handleEditVehicle}
-        vehicle={selectedVehicle ? {
-          id: selectedVehicle.id,
-          plateNumber: selectedVehicle.plateNumber ?? "",
-          vin: selectedVehicle.vin ?? "",
-          registrationNumber: selectedVehicle.registrationNumber,
-          make: selectedVehicle.make ?? "",
-          model: selectedVehicle.model,
-          year: selectedVehicle.year ?? new Date().getFullYear(),
-          type: (String(selectedVehicle.type) as Vehicle["type"]) || "truck",
-          status: (String(selectedVehicle.status) as Vehicle["status"]) || "active",
-          capacity: selectedVehicle.capacity || 0,
-          currentDriver: selectedVehicle.assignedDriverId ?? selectedVehicle.currentDriverId ?? undefined,
-        } : null}
+        vehicle={selectedVehicleFormValue}
         title="Edit Vehicle"
+        isSubmitting={updateVehicleMutation.isPending}
       />
 
       <VehicleDetailsSheet
         open={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}
-        vehicle={selectedVehicle ? {
-          id: selectedVehicle.id,
-          vin: selectedVehicle.vin,
-          registrationNumber: selectedVehicle.registrationNumber,
-          make: selectedVehicle.make,
-          model: selectedVehicle.model,
-          year: selectedVehicle.year,
-          type: selectedVehicle.type as Vehicle["type"],
-          status: selectedVehicle.status,
-          capacity: selectedVehicle.capacity || 0,
-          currentDriver: selectedVehicle.currentDriverId || undefined,
-          fuelLevel: selectedVehicle.fuelLevel || undefined,
-        } : null}
-        driverName={null}
+        vehicle={selectedVehicleDetails ? mapApiVehicleToVehicle(selectedVehicleDetails) : null}
+        driverName={selectedVehicleDetails?.assignedDriverName ?? null}
       />
 
       <BulkUploadDialog
@@ -679,18 +713,20 @@ export default function FleetManagement({ vehiclesOnly = false, title, subtitle 
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogCancel disabled={deleteVehicleMutation.isPending}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              loading={deleteVehicleMutation.isPending}
+              disabled={deleteVehicleMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={async () => {
                 if (deleteConfirmId) {
                   await handleDeleteVehicle(deleteConfirmId);
-                  setDeleteConfirmId(null);
                 }
               }}
             >
               Delete
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

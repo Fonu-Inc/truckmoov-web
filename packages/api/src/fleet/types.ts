@@ -1092,11 +1092,15 @@ export type ComplianceDocumentsQuery = {
 }
 
 export type CreateComplianceDocumentPayload = {
+  vehicleId?: string | null
   documentName: string
   documentType: string
   documentNumber?: string
   issueDate?: string | null
   expiryDate?: string | null
+  reminderDays?: number
+  fileUrl?: string | null
+  fileSize?: number | null
   notes?: string | null
 }
 

@@ -12,6 +12,7 @@ import {
   Archive,
   SlidersHorizontal,
   Download,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -424,8 +425,11 @@ export function MaintenanceProfilesTab() {
                 placeholder="Search by vehicle, service category..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-card/50 border-border/50"
+                className="pl-10 pr-10 bg-card/50 border-border/50"
               />
+              {profilesQuery.isFetching && !profilesQuery.isPending && (
+                <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+              )}
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-[170px] bg-card/50 border-border/50">

@@ -1,4 +1,4 @@
-import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
 import { queryClient } from '../lib/query-client'
 import {
@@ -142,6 +142,7 @@ import type {
 } from './types'
 
 export const FLEET_QUERY_KEY = {
+  vehiclesRoot: ['fleet', 'vehicles'],
   vehicles: (payload?: VehiclesQuery) => ['fleet', 'vehicles', payload],
   vehiclesSummary: ['fleet', 'vehiclesSummary'],
   vehicle: (id: string) => ['fleet', 'vehicle', id],
@@ -196,6 +197,13 @@ export const FLEET_QUERY_KEY = {
   complianceDocs: (params?: ComplianceDocumentsQuery['params']) => ['fleet', 'complianceDocs', params],
   complianceSummary: ['fleet', 'complianceSummary'],
 } as const
+
+function invalidateVehicles() {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesRoot }),
+    queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary }),
+  ])
+}
 
 // ─── queryOptions factories ───────────────────────────────────────────────────
 
@@ -410,6 +418,7 @@ export function getFuelTransactionsQueryOptions(payload?: FuelQuery) {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.fuelTransactions(payload),
     queryFn: () => getFuelTransactions(payload),
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -452,6 +461,7 @@ export function getMaintenanceRecordsQueryOptions(payload?: MaintenanceRecordsQu
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.maintenanceRecords(payload),
     queryFn: () => getMaintenanceRecords(payload),
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -459,6 +469,7 @@ export function getMaintenanceProfilesQueryOptions(payload?: MaintenanceProfiles
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.maintenanceProfiles(payload),
     queryFn: () => getMaintenanceProfiles(payload),
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -737,8 +748,7 @@ export function useCreateVehicle() {
   return useMutation({
     mutationFn: createVehicle,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
+      return invalidateVehicles()
     },
   })
 }
@@ -747,9 +757,10 @@ export function useUpdateVehicle() {
   return useMutation({
     mutationFn: updateVehicle,
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(id) })
+      return Promise.all([
+        invalidateVehicles(),
+        queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(id) }),
+      ])
     },
   })
 }
@@ -758,8 +769,7 @@ export function useDeleteVehicle() {
   return useMutation({
     mutationFn: deleteVehicle,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
+      return invalidateVehicles()
     },
   })
 }
@@ -768,8 +778,7 @@ export function useImportVehicles() {
   return useMutation({
     mutationFn: importVehicles,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
+      return invalidateVehicles()
     },
   })
 }
@@ -778,9 +787,10 @@ export function useUpdateVehicleStatus() {
   return useMutation({
     mutationFn: updateVehicleStatus,
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(id) })
+      return Promise.all([
+        invalidateVehicles(),
+        queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(id) }),
+      ])
     },
   })
 }
@@ -789,8 +799,7 @@ export function useAssignDriverToVehicle() {
   return useMutation({
     mutationFn: assignDriverToVehicle,
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
+      invalidateVehicles()
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(id) })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.drivers() })
     },
@@ -801,8 +810,7 @@ export function useUnassignDriverFromVehicle() {
   return useMutation({
     mutationFn: unassignDriverFromVehicle,
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
+      invalidateVehicles()
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicle(id) })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.drivers() })
     },
@@ -886,8 +894,7 @@ export function useAssignDevice() {
     onSuccess: (_, { id }) => {
       invalidateDevices()
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.device(id) })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
+      invalidateVehicles()
     },
   })
 }
@@ -898,8 +905,7 @@ export function useUnassignDevice() {
     onSuccess: (_, { id }) => {
       invalidateDevices()
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.device(id) })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehicles() })
-      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.vehiclesSummary })
+      invalidateVehicles()
     },
   })
 }
@@ -1155,6 +1161,7 @@ export function useComplianceDocs(params?: ComplianceDocumentsQuery['params']) {
   return useQuery({
     queryKey: FLEET_QUERY_KEY.complianceDocs(params),
     queryFn: () => getComplianceDocs({ params }),
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -1197,7 +1204,8 @@ export function useDeleteComplianceDoc() {
 
 export function useSetComplianceDocFileUrl() {
   return useMutation({
-    mutationFn: ({ id, fileUrl }: { id: string; fileUrl: string }) => setComplianceDocFileUrl(id, fileUrl),
+    mutationFn: ({ id, fileUrl, fileSize }: { id: string; fileUrl: string; fileSize?: number | null }) =>
+      setComplianceDocFileUrl(id, { fileUrl, fileSize }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fleet', 'complianceDocs'] })
     },

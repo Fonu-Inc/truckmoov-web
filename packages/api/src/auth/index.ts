@@ -493,6 +493,8 @@ export function useUploadMedia() {
   return useMutation({ mutationFn: uploadMedia })
 }
 
+export { uploadMedia }
+
 // Profile and preferences
 
 export function getMeQueryOptions() {

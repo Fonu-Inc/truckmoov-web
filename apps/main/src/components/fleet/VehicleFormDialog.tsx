@@ -47,6 +47,7 @@ interface VehicleFormDialogProps {
   onSubmit: (data: Partial<Vehicle>) => void;
   vehicle?: Vehicle | null;
   title: string;
+  isSubmitting?: boolean;
 }
 
 export function VehicleFormDialog({
@@ -55,6 +56,7 @@ export function VehicleFormDialog({
   onSubmit,
   vehicle,
   title,
+  isSubmitting = false,
 }: VehicleFormDialogProps) {
   const form = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema),
@@ -240,10 +242,10 @@ export function VehicleFormDialog({
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button type="submit" loading={isSubmitting}>
                 {vehicle ? "Save Changes" : "Add Vehicle"}
               </Button>
             </div>

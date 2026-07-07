@@ -698,8 +698,8 @@ export async function deleteComplianceDoc(id: string) {
   return data
 }
 
-export async function setComplianceDocFileUrl(id: string, fileUrl: string) {
-  const { data } = await axiosInstance.post(`/fleet/compliance/documents/${id}/upload`, { fileUrl })
+export async function setComplianceDocFileUrl(id: string, payload: { fileUrl: string; fileSize?: number | null }) {
+  const { data } = await axiosInstance.post(`/fleet/compliance/documents/${id}/upload`, payload)
   return data
 }
 

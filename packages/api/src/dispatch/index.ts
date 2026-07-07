@@ -1,4 +1,4 @@
-import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
 import { queryClient } from '../lib/query-client'
 import {
@@ -43,6 +43,7 @@ export function getJobsQueryOptions(payload?: JobsQuery) {
   return queryOptions({
     queryKey: DISPATCH_QUERY_KEY.jobs(payload),
     queryFn: () => getJobs(payload),
+    placeholderData: keepPreviousData,
   })
 }
 

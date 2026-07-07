@@ -596,6 +596,9 @@ export type SystemDeviceCatalogList = {
 export type UploadedMedia = {
   url: string
   key?: string
+  filename?: string
+  contentType?: string
+  size?: number
 }
 
 export type AuthSystemSettings = {

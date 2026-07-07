@@ -1,7 +1,7 @@
-import {Download,  AlertTriangle, CalendarIcon, DollarSign, Droplets, Edit, Eye, Fuel, Gauge, MoreHorizontal, Plus, Search, SlidersHorizontal, Trash2, Truck } from 'lucide-react';
+import {Download,  AlertTriangle, CalendarIcon, DollarSign, Droplets, Edit, Eye, Fuel, Gauge, Loader2, MoreHorizontal, Plus, Search, SlidersHorizontal, Trash2, Truck } from 'lucide-react';
 import { useState, useEffect, useMemo } from "react";
-import { useFuelTransactions, useFuelSummary, useFuelBudgetVsActual, useFuelMetrics, useFuelEfficiency, useRecordFuelTransaction, useUpdateFuelTransaction, useDeleteFuelTransaction, exportFuelTransactions } from "@truckmoov/api/fleet";
-import type { FuelConsumptionBucket, FuelRecord, VehicleEfficiency } from "@truckmoov/api/fleet";
+import { useFuelTransactions, useFuelSummary, useFuelBudgetVsActual, useFuelMetrics, useFuelEfficiency, useRecordFuelTransaction, useUpdateFuelTransaction, useDeleteFuelTransaction, exportFuelTransactions, useVehicles, useDrivers } from "@truckmoov/api/fleet";
+import type { FleetDriver, FuelConsumptionBucket, FuelRecord, Vehicle, VehicleEfficiency } from "@truckmoov/api/fleet";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
@@ -15,6 +15,15 @@ import {
   TableHead,
   TableHeader,
   TableRow } from "@/components/shadcn/table";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/shadcn/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -125,6 +134,20 @@ function formatBudgetWindow(start?: string, end?: string) {
   return `${format(new Date(start), "MMM d, yyyy")} - ${format(new Date(end), "MMM d, yyyy")}`;
 }
 
+function getVehicleRegistration(vehicle: Vehicle) {
+  return vehicle.registrationNumber || vehicle.plateNumber || "";
+}
+
+function getVehicleOptionLabel(vehicle: Vehicle) {
+  const registration = getVehicleRegistration(vehicle);
+  const descriptor = [vehicle.make, vehicle.model].filter(Boolean).join(" ");
+  return descriptor ? `${registration} - ${descriptor}` : registration;
+}
+
+function getDriverDisplayName(driver: FleetDriver) {
+  return driver.name || [driver.firstName, driver.lastName].filter(Boolean).join(" ").trim();
+}
+
 export function FuelTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -133,6 +156,7 @@ export function FuelTab() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<FuelTransaction | null>(null);
+  const [transactionPendingDelete, setTransactionPendingDelete] = useState<FuelTransaction | null>(null);
 
   // Per-chart period filters
   const [metricsPeriod, setMetricsPeriod] = useState<FuelMetricsPeriod>("weekly");
@@ -176,6 +200,8 @@ export function FuelTab() {
   const fuelQuery = useFuelTransactions(queryParams);
   const summaryQuery = useFuelSummary();
   const efficiencyQuery = useFuelEfficiency();
+  const vehiclesQuery = useVehicles();
+  const driversQuery = useDrivers();
   const fuelMetricsQuery = useFuelMetrics({
     params: {
       period: metricsPeriod,
@@ -184,7 +210,27 @@ export function FuelTab() {
   const budgetRange = useMemo(() => getPeriodRange(budgetPeriod), [budgetPeriod]);
   const budgetVsActualQuery = useFuelBudgetVsActual({ params: budgetRange });
   const transactions = fuelQuery.data?.data ?? [];
-  const isLoading = fuelQuery.isLoading;
+  const isLoading = fuelQuery.isLoading && !fuelQuery.data;
+  const vehicleOptions = useMemo(() => {
+    const seen = new Set<string>();
+
+    return (vehiclesQuery.data?.data ?? []).flatMap((vehicle) => {
+      const value = getVehicleRegistration(vehicle);
+      if (!value || seen.has(value)) return [];
+      seen.add(value);
+      return [{ value, label: getVehicleOptionLabel(vehicle) }];
+    });
+  }, [vehiclesQuery.data]);
+  const driverOptions = useMemo(() => {
+    const seen = new Set<string>();
+
+    return (driversQuery.data?.data ?? []).flatMap((driver) => {
+      const value = getDriverDisplayName(driver);
+      if (!value || seen.has(value)) return [];
+      seen.add(value);
+      return [{ value, label: value }];
+    });
+  }, [driversQuery.data]);
 
   const recordMutation = useRecordFuelTransaction();
   const updateMutation = useUpdateFuelTransaction();
@@ -341,6 +387,7 @@ export function FuelTab() {
     try {
       await deleteMutation.mutateAsync({ id });
       toast.success("Transaction deleted");
+      setTransactionPendingDelete(null);
     } catch {
       toast.error("Failed to delete transaction");
     }
@@ -488,8 +535,11 @@ export function FuelTab() {
                     placeholder="Search by station..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 bg-background/50 border-border/50"
+                    className="pl-10 pr-10 bg-background/50 border-border/50"
                   />
+                  {fuelQuery.isFetching && !isLoading && (
+                    <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                  )}
                 </div>
                 <Popover
                   open={filterOpen}
@@ -787,7 +837,7 @@ export function FuelTab() {
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => handleDeleteTransaction(transaction.id)}
+                              onClick={() => setTransactionPendingDelete(transaction)}
                               className="text-destructive focus:text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
@@ -1018,6 +1068,40 @@ export function FuelTab() {
         </TabsContent>
       </Tabs>
 
+      <AlertDialog
+        open={!!transactionPendingDelete}
+        onOpenChange={(open) => {
+          if (!open && !deleteMutation.isPending) {
+            setTransactionPendingDelete(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete fuel transaction?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently remove the fuel transaction record.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              loading={deleteMutation.isPending}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (transactionPendingDelete) {
+                  void handleDeleteTransaction(transactionPendingDelete.id);
+                }
+              }}
+            >
+              Delete
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Add Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="bg-card border-border max-w-lg">
@@ -1029,19 +1113,47 @@ export function FuelTab() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Vehicle Registration</Label>
-                <Input
-                  placeholder="e.g. LAG-234-XY"
+                <Select
                   value={newTransaction.vehicleReg}
-                  onChange={(e) => setNewTransaction({ ...newTransaction, vehicleReg: e.target.value })}
-                />
+                  onValueChange={(value) => setNewTransaction({ ...newTransaction, vehicleReg: value })}
+                  disabled={vehiclesQuery.isLoading || vehicleOptions.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={vehiclesQuery.isLoading ? "Loading vehicles..." : "Select vehicle"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vehicleOptions.map((vehicle) => (
+                      <SelectItem key={vehicle.value} value={vehicle.value}>
+                        {vehicle.label}
+                      </SelectItem>
+                    ))}
+                    {newTransaction.vehicleReg && !vehicleOptions.some((vehicle) => vehicle.value === newTransaction.vehicleReg) && (
+                      <SelectItem value={newTransaction.vehicleReg}>{newTransaction.vehicleReg}</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Driver Name</Label>
-                <Input
-                  placeholder="Driver name"
+                <Select
                   value={newTransaction.driverName}
-                  onChange={(e) => setNewTransaction({ ...newTransaction, driverName: e.target.value })}
-                />
+                  onValueChange={(value) => setNewTransaction({ ...newTransaction, driverName: value })}
+                  disabled={driversQuery.isLoading || driverOptions.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={driversQuery.isLoading ? "Loading drivers..." : "Select driver"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {driverOptions.map((driver) => (
+                      <SelectItem key={driver.value} value={driver.value}>
+                        {driver.label}
+                      </SelectItem>
+                    ))}
+                    {newTransaction.driverName && !driverOptions.some((driver) => driver.value === newTransaction.driverName) && (
+                      <SelectItem value={newTransaction.driverName}>{newTransaction.driverName}</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -1096,8 +1208,8 @@ export function FuelTab() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddTransaction} disabled={!newTransaction.vehicleReg || !newTransaction.quantity || !newTransaction.pricePerLitre}>
-              Record
+            <Button onClick={handleAddTransaction} disabled={recordMutation.isPending || !newTransaction.vehicleReg || !newTransaction.quantity || !newTransaction.pricePerLitre}>
+              {recordMutation.isPending ? "Recording..." : "Record"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1166,17 +1278,47 @@ export function FuelTab() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Vehicle Registration</Label>
-                <Input
+                <Select
                   value={newTransaction.vehicleReg}
-                  onChange={(e) => setNewTransaction({ ...newTransaction, vehicleReg: e.target.value })}
-                />
+                  onValueChange={(value) => setNewTransaction({ ...newTransaction, vehicleReg: value })}
+                  disabled={vehiclesQuery.isLoading || vehicleOptions.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={vehiclesQuery.isLoading ? "Loading vehicles..." : "Select vehicle"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vehicleOptions.map((vehicle) => (
+                      <SelectItem key={vehicle.value} value={vehicle.value}>
+                        {vehicle.label}
+                      </SelectItem>
+                    ))}
+                    {newTransaction.vehicleReg && !vehicleOptions.some((vehicle) => vehicle.value === newTransaction.vehicleReg) && (
+                      <SelectItem value={newTransaction.vehicleReg}>{newTransaction.vehicleReg}</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Driver Name</Label>
-                <Input
+                <Select
                   value={newTransaction.driverName}
-                  onChange={(e) => setNewTransaction({ ...newTransaction, driverName: e.target.value })}
-                />
+                  onValueChange={(value) => setNewTransaction({ ...newTransaction, driverName: value })}
+                  disabled={driversQuery.isLoading || driverOptions.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={driversQuery.isLoading ? "Loading drivers..." : "Select driver"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {driverOptions.map((driver) => (
+                      <SelectItem key={driver.value} value={driver.value}>
+                        {driver.label}
+                      </SelectItem>
+                    ))}
+                    {newTransaction.driverName && !driverOptions.some((driver) => driver.value === newTransaction.driverName) && (
+                      <SelectItem value={newTransaction.driverName}>{newTransaction.driverName}</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -1227,7 +1369,9 @@ export function FuelTab() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleUpdateTransaction}>Save Changes</Button>
+            <Button onClick={handleUpdateTransaction} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
