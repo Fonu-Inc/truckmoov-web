@@ -341,6 +341,7 @@ export type RecordFuelTransactionPayload = {
     vehicleId: string
     driverId?: string
     vehicleType?: string
+    fuelType: 'diesel' | 'petrol'
     liters: number
     pricePerLiter: number
     station?: string
@@ -404,8 +405,10 @@ export type CreateMaintenanceRecordPayload = {
     vehicleId: string
     maintenanceType: string
     description?: string | null
+    status?: MaintenanceRecordStatus
     priority: MaintenanceRecordPriority
     scheduledDate?: string | null
+    completedDate?: string | null
     technician?: string | null
     notes?: string | null
     cost?: number | null
@@ -416,8 +419,6 @@ export type CreateMaintenanceRecordPayload = {
 export type UpdateMaintenanceRecordPayload = {
   id: string
   data: Partial<CreateMaintenanceRecordPayload['data']> & {
-    status?: MaintenanceRecordStatus
-    completedDate?: string | null
   }
 }
 
@@ -705,6 +706,7 @@ export type FuelRecord = {
   vehicleId: string
   driverId: string | null
   vehicleType: string | null
+  fuelType: 'diesel' | 'petrol' | string
   liters: number
   pricePerLiter: number
   totalCost: number
@@ -713,6 +715,9 @@ export type FuelRecord = {
   recordedAt: string
   recordedBy: string
   deletedAt: string | null
+  vehiclePlateNumber: string | null
+  driverName: string | null
+  auditTrail: Array<{ at: string; by: string; action: string }>
 }
 
 export type FuelConsumptionBucket = {

@@ -191,11 +191,10 @@ export function FuelTab() {
 
   const queryParams = useMemo(() => ({
     params: {
-      station: debouncedSearch || undefined,
       from: dateFrom ? dateFrom.toISOString() : undefined,
       to: dateTo ? dateTo.toISOString() : undefined,
     }
-  }), [debouncedSearch, dateFrom, dateTo]);
+  }), [dateFrom, dateTo]);
 
   const fuelQuery = useFuelTransactions(queryParams);
   const summaryQuery = useFuelSummary();
@@ -215,20 +214,20 @@ export function FuelTab() {
     const seen = new Set<string>();
 
     return (vehiclesQuery.data?.data ?? []).flatMap((vehicle) => {
-      const value = getVehicleRegistration(vehicle);
+      const value = vehicle.id;
       if (!value || seen.has(value)) return [];
       seen.add(value);
-      return [{ value, label: getVehicleOptionLabel(vehicle) }];
+      return [{ value, label: getVehicleOptionLabel(vehicle), type: vehicle.type }];
     });
   }, [vehiclesQuery.data]);
   const driverOptions = useMemo(() => {
     const seen = new Set<string>();
 
     return (driversQuery.data?.data ?? []).flatMap((driver) => {
-      const value = getDriverDisplayName(driver);
+      const value = driver.id;
       if (!value || seen.has(value)) return [];
       seen.add(value);
-      return [{ value, label: value }];
+      return [{ value, label: getDriverDisplayName(driver) }];
     });
   }, [driversQuery.data]);
 
@@ -246,6 +245,10 @@ export function FuelTab() {
     station: "" });
 
   const filteredTransactions = transactions.filter((t) => {
+    const query = debouncedSearch.trim().toLocaleLowerCase();
+    if (query && ![t.vehiclePlateNumber, t.vehicleId, t.driverName, t.driverId, t.station]
+      .some((value) => value?.toLocaleLowerCase().includes(query))) return false;
+    if (fuelTypeFilter !== "all" && t.fuelType.toLocaleLowerCase() !== fuelTypeFilter) return false;
     const qty = t.liters;
     if (qtyMin && qty < Number(qtyMin)) return false;
     if (qtyMax && qty > Number(qtyMax)) return false;
@@ -321,11 +324,20 @@ export function FuelTab() {
   const handleAddTransaction = async () => {
     const liters = parseFloat(newTransaction.quantity);
     const pricePerLiter = parseFloat(newTransaction.pricePerLitre);
+    const selectedVehicle = vehicleOptions.find((vehicle) => vehicle.value === newTransaction.vehicleReg);
+
+    if (!Number.isFinite(liters) || liters <= 0 || !Number.isFinite(pricePerLiter) || pricePerLiter <= 0) {
+      toast.error("Enter a valid quantity and price per litre");
+      return;
+    }
+
     try {
       await recordMutation.mutateAsync({
         data: {
           vehicleId: newTransaction.vehicleReg,
           driverId: newTransaction.driverName || undefined,
+          vehicleType: selectedVehicle?.type,
+          fuelType: newTransaction.fuelType,
           liters,
           pricePerLiter,
           station: newTransaction.station || undefined,
@@ -350,7 +362,7 @@ export function FuelTab() {
     setNewTransaction({
       vehicleReg: transaction.vehicleId,
       driverName: transaction.driverId || "",
-      fuelType: "diesel",
+      fuelType: transaction.fuelType.toLocaleLowerCase() === "petrol" ? "petrol" : "diesel",
       quantity: transaction.liters.toString(),
       pricePerLitre: transaction.pricePerLiter.toFixed(0),
       odometer: transaction.odometer?.toString() || "",
@@ -532,7 +544,7 @@ export function FuelTab() {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search by station..."
+                    placeholder="Search by vehicle, driver, station..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10 pr-10 bg-background/50 border-border/50"
@@ -805,12 +817,12 @@ export function FuelTab() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Truck className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-mono">{transaction.vehicleId}</span>
+                          <span className="font-mono">{transaction.vehiclePlateNumber || transaction.vehicleId}</span>
                         </div>
                       </TableCell>
-                      <TableCell>{transaction.driverId || '—'}</TableCell>
+                      <TableCell>{transaction.driverName || transaction.driverId || '—'}</TableCell>
                       <TableCell className="capitalize">
-                        {transaction.vehicleType ?? '—'}
+                        {transaction.fuelType || '—'}
                       </TableCell>
                       <TableCell>{transaction.liters.toFixed(1)}L</TableCell>
                       <TableCell className="font-medium">

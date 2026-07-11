@@ -76,7 +76,6 @@ import {
   useCompleteMaintenanceRecord,
   useCreateMaintenanceRecord,
   useDeleteMaintenanceRecord,
-  useDrivers,
   useMaintenanceRecords,
   useMaintenanceRecordsSummary,
   useSendMaintenanceReminders,
@@ -227,7 +226,6 @@ export function MaintenanceTab() {
   const recordsQuery = useMaintenanceRecords(recordsQueryParams);
   const summaryQuery = useMaintenanceRecordsSummary();
   const vehiclesQuery = useVehicles();
-  const driversQuery = useDrivers();
   const createRecordMutation = useCreateMaintenanceRecord();
   const updateRecordMutation = useUpdateMaintenanceRecord();
   const deleteRecordMutation = useDeleteMaintenanceRecord();
@@ -236,14 +234,8 @@ export function MaintenanceTab() {
   const sendRemindersMutation = useSendMaintenanceReminders();
 
   const vehicles = useMemo(() => vehiclesQuery.data?.data ?? [], [vehiclesQuery.data?.data]);
-  const drivers = useMemo(() => driversQuery.data?.data ?? [], [driversQuery.data?.data]);
-
-  const getDriverName = useCallback((driver: (typeof drivers)[number]) => {
-    return driver.name || `${driver.firstName ?? ""} ${driver.lastName ?? ""}`.trim() || driver.id;
-  }, []);
-
   const getVehicleOptionValue = useCallback((vehicle: (typeof vehicles)[number]) => {
-    return vehicle.registrationNumber || vehicle.plateNumber || vehicle.id;
+    return vehicle.id;
   }, []);
 
   const getVehicleLabel = useCallback(
@@ -276,10 +268,6 @@ export function MaintenanceTab() {
   const selectedVehicleExists = Boolean(
     newRecord.vehicleId &&
       vehicles.some((vehicle) => getVehicleOptionValue(vehicle) === newRecord.vehicleId),
-  );
-  const selectedDriverExists = Boolean(
-    newRecord.technician &&
-      drivers.some((driver) => getDriverName(driver) === newRecord.technician),
   );
   const records = useMemo(() => recordsQuery.data?.data ?? [], [recordsQuery.data?.data]);
 
@@ -367,8 +355,12 @@ export function MaintenanceTab() {
     vehicleId: newRecord.vehicleId,
     maintenanceType: newRecord.type,
     description: newRecord.category || null,
+    status: "scheduled" as const,
     priority: newRecord.priority,
     scheduledDate: newRecord.scheduledDate || null,
+    completedDate: null,
+    cost: null,
+    currency: "NGN",
     technician: newRecord.technician || null,
     notes: newRecord.notes || null,
   });
@@ -492,22 +484,6 @@ export function MaintenanceTab() {
           {getVehicleLabel(vehicle.id)}
         </SelectItem>
       ))}
-    </>
-  );
-
-  const driverSelectItems = (
-    <>
-      {!selectedDriverExists && newRecord.technician ? (
-        <SelectItem value={newRecord.technician}>{newRecord.technician}</SelectItem>
-      ) : null}
-      {drivers.map((driver) => {
-        const driverName = getDriverName(driver);
-        return (
-          <SelectItem key={driver.id} value={driverName}>
-            {driverName}
-          </SelectItem>
-        );
-      })}
     </>
   );
 
@@ -1006,16 +982,12 @@ export function MaintenanceTab() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Driver</Label>
-              <Select
+              <Label>Technician</Label>
+              <Input
                 value={newRecord.technician}
-                onValueChange={(value) => setNewRecord({ ...newRecord, technician: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={driversQuery.isPending ? "Loading drivers..." : "Select driver"} />
-                </SelectTrigger>
-                <SelectContent>{driverSelectItems}</SelectContent>
-              </Select>
+                onChange={(event) => setNewRecord({ ...newRecord, technician: event.target.value })}
+                placeholder="Enter technician's name"
+              />
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>
@@ -1080,7 +1052,7 @@ export function MaintenanceTab() {
               </div>
               {selectedRecord.technician ? (
                 <div className="space-y-1 sm:col-span-2">
-                  <p className="text-sm text-muted-foreground">Driver</p>
+                  <p className="text-sm text-muted-foreground">Technician</p>
                   <p className="text-base font-semibold leading-tight">{selectedRecord.technician}</p>
                 </div>
               ) : null}
@@ -1220,16 +1192,12 @@ export function MaintenanceTab() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Driver</Label>
-              <Select
+              <Label>Technician</Label>
+              <Input
                 value={newRecord.technician}
-                onValueChange={(value) => setNewRecord({ ...newRecord, technician: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={driversQuery.isPending ? "Loading drivers..." : "Select driver"} />
-                </SelectTrigger>
-                <SelectContent>{driverSelectItems}</SelectContent>
-              </Select>
+                onChange={(event) => setNewRecord({ ...newRecord, technician: event.target.value })}
+                placeholder="Enter technician's name"
+              />
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>

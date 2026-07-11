@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/shadcn/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { Progress } from "@/components/shadcn/progress";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { StatCard } from "@/components/dashboard/StatCard";
 import {
   Plus, AlertTriangle, Wifi, Clock, Search, SlidersHorizontal, Download,
@@ -54,7 +55,6 @@ import { useAuthStore } from "@/stores/authStore";
 import { useCurrency } from "@/contexts/CurrencyContext";
 const formatBundleSize = (mb: number) => mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`;
 const formatDataUsedGb = (gb: number) => `${Number(gb || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })} GB`;
-const useBundleCatalog = () => ({ data: [] as any[] });
 const useBundleTopups = (_tenantId?: string) => ({ data: [] as any[] });
 const useBundleTopup = () => ({ mutateAsync: async (..._args: any[]) => {}, isPending: false });
 
@@ -105,55 +105,6 @@ const formatMobile = (raw: string) => {
   return `${local.slice(0, 4)} ${local.slice(4, 7)} ${local.slice(7)}`;
 };
 
-/* ── Dummy data (used when no live data is available, for demo) ── */
-const DUMMY_CATALOG = [
-  { id: "d1", code: "MTN_1GB_M", name: "MTN 1GB Monthly", carrier: "MTN", data_mb: 1024, validity_days: 30, price_ngn: 1500, billing_cycle: "monthly" as const, is_active: true },
-  { id: "d2", code: "MTN_5GB_M", name: "MTN 5GB Monthly", carrier: "MTN", data_mb: 5120, validity_days: 30, price_ngn: 5500, billing_cycle: "monthly" as const, is_active: true },
-  { id: "d3", code: "MTN_10GB_M", name: "MTN 10GB Monthly", carrier: "MTN", data_mb: 10240, validity_days: 30, price_ngn: 9500, billing_cycle: "monthly" as const, is_active: true },
-  { id: "d4", code: "MTN_25GB_M", name: "MTN 25GB Monthly", carrier: "MTN", data_mb: 25600, validity_days: 30, price_ngn: 18000, billing_cycle: "monthly" as const, is_active: true },
-  { id: "d5", code: "MTN_60GB_Y", name: "MTN 60GB Yearly", carrier: "MTN", data_mb: 61440, validity_days: 365, price_ngn: 75000, billing_cycle: "yearly" as const, is_active: true },
-  { id: "d6", code: "AIRTEL_3GB_M", name: "Airtel 3GB Monthly", carrier: "Airtel", data_mb: 3072, validity_days: 30, price_ngn: 3500, billing_cycle: "monthly" as const, is_active: true },
-  { id: "d7", code: "GLO_2GB_M", name: "Glo 2GB Monthly", carrier: "Glo", data_mb: 2048, validity_days: 30, price_ngn: 2200, billing_cycle: "monthly" as const, is_active: true },
-  { id: "d8", code: "FONU_2GB_M", name: "Fonu 2GB Monthly", carrier: "Fonu", data_mb: 2048, validity_days: 30, price_ngn: 2000, billing_cycle: "monthly" as const, is_active: true },
-  { id: "d9", code: "FONU_10GB_M", name: "Fonu 10GB Monthly", carrier: "Fonu", data_mb: 10240, validity_days: 30, price_ngn: 9000, billing_cycle: "monthly" as const, is_active: true },
-  { id: "d10", code: "FONU_50GB_Y", name: "Fonu 50GB Yearly", carrier: "Fonu", data_mb: 51200, validity_days: 365, price_ngn: 65000, billing_cycle: "yearly" as const, is_active: true },
-];
-
-const DUMMY_ALLOCATIONS = Array.from({ length: 14 }, (_, i) => {
-  const carriers = ["234803", "234806", "234810", "234813", "234817"];
-  const bundles = DUMMY_CATALOG;
-  const b = bundles[i % bundles.length];
-  const used = Math.floor(b.data_mb * (0.1 + Math.random() * 0.85));
-  const dayOffset = -2 + (i % 12);
-  return {
-    id: `alloc-${i}`,
-    tenant_id: "demo",
-    msisdn: `+${carriers[i % carriers.length]}${String(1000000 + i * 7311).slice(0, 7)}`,
-    bundle_code: b.code,
-    data_mb_total: b.data_mb,
-    data_mb_used: used,
-    status: dayOffset <= 0 ? "EXPIRED" : "ACTIVE",
-    expires_at: new Date(Date.now() + dayOffset * 86400000).toISOString(),
-    expiry_alert_7d_sent_at: null,
-    expiry_alert_1d_sent_at: null,
-    created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
-  };
-});
-
-const DUMMY_TOPUPS = Array.from({ length: 40 }, (_, i) => {
-  const b = DUMMY_CATALOG[i % DUMMY_CATALOG.length];
-  const statuses = ["SUCCESS", "SUCCESS", "SUCCESS", "SUCCESS", "PENDING", "FAILED"];
-  const daysBack = Math.floor(Math.random() * 89);
-  return {
-    id: `tx-${i}`,
-    created_at: new Date(Date.now() - daysBack * 86400000 - Math.random() * 86400000).toISOString(),
-    msisdn: `+234803${String(1000000 + i * 4231).slice(0, 7)}`,
-    bundle_code: b.code,
-    status: statuses[i % statuses.length],
-    amount_ngn: b.price_ngn,
-  };
-});
-
 interface SpendingLimitSettings {
   enabled: boolean;
   monthlyLimit: number; // NGN
@@ -165,7 +116,18 @@ export default function DataBundles() {
   const { user } = useAuthStore();
   const { format: fmtCurrency } = useCurrency();
   const tenantId = user?.tenantId;
-  const { data: catalogLive = [] } = useBundleCatalog();
+  const catalogQuery = useQuery(getDataBundleRatesQueryOptions({ params: { page: 1, limit: 100 } }));
+  const catalog = useMemo(() => (catalogQuery.data?.data.items ?? []).map((rate) => ({
+    id: rate.id,
+    code: rate.code,
+    name: rate.name,
+    carrier: rate.carrier,
+    data_mb: rate.dataAmountGb * 1024,
+    validity_days: rate.validityDays,
+    price_ngn: rate.price,
+    billing_cycle: rate.billingCycle,
+    is_active: rate.active,
+  })), [catalogQuery.data]);
   const dataBundleSummaryQuery = useQuery(getDataBundleDashboardSummaryQueryOptions());
   const dataBundleSummary = dataBundleSummaryQuery.data?.data;
   const walletBalanceQuery = useQuery(getDataBundleWalletBalanceQueryOptions());
@@ -176,7 +138,6 @@ export default function DataBundles() {
   const autoTopup = autoTopupQuery.data?.data;
   const carriersQuery = useQuery(getDataBundleCarriersQueryOptions());
 
-  const catalog = (catalogLive.length > 0 ? catalogLive : DUMMY_CATALOG) as typeof catalogLive;
   const topup = useBundleTopup();
   const walletTopup = useTopUpDataBundleWallet();
   const saveAutoTopup = useSaveDataBundleAutoTopup();
@@ -236,7 +197,7 @@ export default function DataBundles() {
     }));
   }, [allocationsQuery.data]);
 
-  const allocations = (allocationsQuery.data ? allocationsLive : DUMMY_ALLOCATIONS) as typeof allocationsLive;
+  const allocations = allocationsLive;
 
   // Analytics range filters
   const [spendRange, setSpendRange] = useState("30d");
@@ -279,7 +240,7 @@ export default function DataBundles() {
       failure_reason: item.failureReason,
     }));
   }, [transactionsQuery.data]);
-  const topups = (transactionsQuery.data ? topupsLive : DUMMY_TOPUPS) as typeof topupsLive;
+  const topups = topupsLive;
 
   // Rates filters
   const [ratesSearch, setRatesSearch] = useState("");
@@ -693,6 +654,38 @@ export default function DataBundles() {
     setLimit((current) => ({ ...current, enabled: false }));
     setLimitOpen(false);
   };
+
+  const isPageLoading =
+    dataBundleSummaryQuery.isLoading ||
+    walletBalanceQuery.isLoading ||
+    allocationsQuery.isLoading ||
+    transactionsQuery.isLoading ||
+    catalogQuery.isLoading;
+
+  if (isPageLoading) {
+    return (
+      <DashboardLayout title="Data Bundles">
+        <div className="space-y-6" aria-busy="true" aria-label="Loading data bundles">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-96 max-w-full" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-40" />
+            <Skeleton className="h-10 w-36" />
+            <Skeleton className="h-10 w-40" />
+          </div>
+          <Skeleton className="h-32 w-full" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {Array.from({ length: 5 }, (_, index) => (
+              <Skeleton key={index} className="h-48 w-full" />
+            ))}
+          </div>
+          <Skeleton className="h-80 w-full" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout title="Data Bundles">
