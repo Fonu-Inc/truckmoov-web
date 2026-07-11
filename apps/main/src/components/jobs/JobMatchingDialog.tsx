@@ -26,14 +26,23 @@ import {
 } from "@/components/shadcn/select";
 import { Job, Vehicle, Driver } from "@/types";
 import { mockVehicles, mockDrivers } from "@/data/mockData";
-type MatchResult = any;
+import { useDrivers, useVehicles } from "@truckmoov/api/fleet";
+type MatchResult = {
+  vehicle: Vehicle;
+  driver: Driver;
+  matchScore: number;
+  confidence: number;
+  estimatedTime: string;
+  distance: number;
+  reasons: string[];
+};
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useDriverIVR } from "@/hooks/useDriverIVR";
 import { useJobMatching } from "@/hooks/useJobMatching";
 import { 
   Truck, User, MapPin, Star, Clock, CheckCircle, 
   Sparkles, Route, MessageSquare, Phone, PhoneCall, Brain, 
-  AlertCircle, ShieldCheck, Lock, ListChecks, Eye, Zap, Info
+  AlertCircle, ShieldCheck, Lock, ListChecks, Eye, Zap, Info, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,7 +50,7 @@ interface JobMatchingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   job: Job | null;
-  onAssign: (vehicleId: string, driverId: string) => void;
+  onAssign: (vehicleId: string, driverId: string, driverPhone?: string) => void | Promise<void>;
   onRecommend?: (vehicleId: string, driverId: string) => void;
   /** When true, the dialog only allows recommending a driver (no live dispatch).
    *  Used by Enterprise admins — only Fleet Providers and Dispatchers can assign. */
@@ -56,6 +65,9 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
   const [mode, setMode] = useState<"ai" | "manual">("ai");
   const [manualVehicleId, setManualVehicleId] = useState<string>("");
   const [manualDriverId, setManualDriverId] = useState<string>("");
+  const [isManualAssigning, setIsManualAssigning] = useState(false);
+  const vehiclesQuery = useVehicles();
+  const driversQuery = useDrivers();
   
   const { notifyNewJob, notifyUrgent, isLoading: isIVRLoading } = useDriverIVR();
   const { format: formatCurrency } = useCurrency();
@@ -94,9 +106,11 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
 
   const isManualMode = mode === "manual";
 
-  // Available vehicles and drivers for manual selection
-  const availableVehicles = mockVehicles.filter(v => v.status === 'active');
-  const availableDrivers = mockDrivers.filter(d => d.status === 'available' || d.status === 'active');
+  // Manual dispatch must use the tenant's current fleet roster from the API.
+  const availableVehicles = vehiclesQuery.data?.data ?? [];
+  const availableDrivers = driversQuery.data?.data ?? [];
+  const selectedManualVehicle = availableVehicles.find(v => v.id === manualVehicleId);
+  const selectedManualDriver = availableDrivers.find(d => d.id === manualDriverId);
 
   useEffect(() => {
     if (open && job) {
@@ -190,41 +204,21 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
     }
   };
 
-  // Manual assignment (only in LIVE mode)
-  const handleManualAssign = (method: 'whatsapp' | 'ivr' | 'urgent') => {
-    if (isSimulationMode) {
-      toast.error('Simulation mode', {
-        description: 'Cannot execute assignments in simulation mode.',
-      });
-      return;
-    }
-
+  const handleManualAssign = async () => {
     if (!manualVehicleId || !manualDriverId) {
       toast.error('Please select both a vehicle and driver');
       return;
     }
+    if (!selectedManualVehicle || !selectedManualDriver) return;
 
-    const vehicle = availableVehicles.find(v => v.id === manualVehicleId);
-    const driver = availableDrivers.find(d => d.id === manualDriverId);
-
-    if (!vehicle || !driver) return;
-
-    const manualMatch: MatchResult = {
-      vehicle,
-      driver,
-      matchScore: 100,
-      confidence: 1,
-      estimatedTime: 'Manual assignment',
-      distance: 0,
-      reasons: ['Manually selected by dispatcher'],
-    };
-
-    if (method === 'whatsapp') {
-      handleAssignViaWhatsApp(manualMatch);
-    } else if (method === 'ivr') {
-      handleAssignViaIVR(manualMatch, false);
-    } else {
-      handleAssignViaIVR(manualMatch, true);
+    setIsManualAssigning(true);
+    try {
+      await onAssign(manualVehicleId, manualDriverId, selectedManualDriver.phone);
+      onOpenChange(false);
+    } catch {
+      // The page-level mutation handler displays the API error and keeps the modal open.
+    } finally {
+      setIsManualAssigning(false);
     }
   };
 
@@ -376,17 +370,18 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
                       <Truck className="h-4 w-4" />
                       Select Vehicle
                     </Label>
-                    <Select value={manualVehicleId} onValueChange={setManualVehicleId}>
-                      <SelectTrigger>
+                    <Select value={manualVehicleId} onValueChange={setManualVehicleId} disabled={vehiclesQuery.isLoading || vehiclesQuery.isError}>
+                      <SelectTrigger aria-label="Select vehicle">
                         <SelectValue placeholder="Choose a vehicle..." />
                       </SelectTrigger>
                       <SelectContent>
                         {availableVehicles.map((v) => (
                           <SelectItem key={v.id} value={v.id}>
                             <div className="flex items-center gap-2">
-                              <span className="font-medium">{v.registrationNumber}</span>
+                              <span className="font-medium">{v.registrationNumber || v.plateNumber}</span>
                               <span className="text-muted-foreground">
-                                - {v.make} {v.model} ({v.capacity}t)
+                                - {[v.make, v.model].filter(Boolean).join(" ") || v.type}
+                                {v.capacity != null ? ` (${v.capacity}t)` : ""}
                               </span>
                             </div>
                           </SelectItem>
@@ -400,8 +395,8 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
                       <User className="h-4 w-4" />
                       Select Driver
                     </Label>
-                    <Select value={manualDriverId} onValueChange={setManualDriverId}>
-                      <SelectTrigger>
+                    <Select value={manualDriverId} onValueChange={setManualDriverId} disabled={driversQuery.isLoading || driversQuery.isError}>
+                      <SelectTrigger aria-label="Select driver">
                         <SelectValue placeholder="Choose a driver..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -409,13 +404,7 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
                           <SelectItem key={d.id} value={d.id}>
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{d.name}</span>
-                              <div className="flex items-center gap-1 text-muted-foreground">
-                                <Star className="h-3 w-3 text-warning fill-current" />
-                                <span>{d.rating.toFixed(1)}</span>
-                              </div>
-                              <Badge variant="outline" className="text-xs capitalize">
-                                {d.status}
-                              </Badge>
+                              <span className="text-muted-foreground">{d.phone}</span>
                             </div>
                           </SelectItem>
                         ))}
@@ -424,11 +413,25 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
                   </div>
                 </div>
 
+                {(vehiclesQuery.isLoading || driversQuery.isLoading) && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading vehicles and drivers...
+                  </div>
+                )}
+
+                {(vehiclesQuery.isError || driversQuery.isError) && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>Unable to load the vehicle and driver roster. Please try again.</AlertDescription>
+                  </Alert>
+                )}
+
                 {manualVehicleId && manualDriverId && (
                   <Alert className="bg-muted/30">
                     <CheckCircle className="h-4 w-4 text-success" />
                     <AlertDescription>
-                      Ready to dispatch: {availableVehicles.find(v => v.id === manualVehicleId)?.registrationNumber} with {availableDrivers.find(d => d.id === manualDriverId)?.name}
+                      Ready to dispatch: {selectedManualVehicle?.registrationNumber || selectedManualVehicle?.plateNumber} with {selectedManualDriver?.name}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -585,47 +588,15 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
 
           {/* Action Buttons */}
           <div className="flex flex-col gap-3 pt-4">
-            {/* Manual mode action buttons - ONLY in LIVE mode */}
-            {isManualMode && manualVehicleId && manualDriverId && isLiveMode && !recommendOnly && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <Button 
-                  variant="gradient" 
-                  onClick={() => handleManualAssign('whatsapp')}
-                  disabled={isSendingWhatsApp || isSendingIVR}
-                  className="flex-1"
+            {isManualMode && !recommendOnly && (
+              <div className="flex justify-end">
+                <Button
+                  variant="gradient"
+                  onClick={handleManualAssign}
+                  disabled={!manualVehicleId || !manualDriverId || isManualAssigning || vehiclesQuery.isLoading || driversQuery.isLoading}
                 >
-                  {isSendingWhatsApp ? <>Sending...</> : (
-                    <>
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      WhatsApp
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  variant="secondary" 
-                  onClick={() => handleManualAssign('ivr')}
-                  disabled={isSendingWhatsApp || isSendingIVR || isIVRLoading}
-                  className="flex-1"
-                >
-                  {isSendingIVR ? <>Calling...</> : (
-                    <>
-                      <Phone className="h-4 w-4 mr-2" />
-                      IVR Call
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  variant="destructive" 
-                  onClick={() => handleManualAssign('urgent')}
-                  disabled={isSendingWhatsApp || isSendingIVR || isIVRLoading}
-                  className="flex-1"
-                >
-                  {isSendingIVR ? <>Calling...</> : (
-                    <>
-                      <PhoneCall className="h-4 w-4 mr-2" />
-                      Urgent Call
-                    </>
-                  )}
+                  {isManualAssigning ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                  {isManualAssigning ? "Assigning..." : "Assign Driver"}
                 </Button>
               </div>
             )}
@@ -694,7 +665,7 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
                 : selectedMatch?.driver.name;
               const canRecommend = !!recommendVehicleId && !!recommendDriverId;
 
-              if (isSimulationMode || recommendOnly) {
+              if ((!isManualMode && isSimulationMode) || recommendOnly) {
                 const verb = recommendOnly ? "Recommend" : "Assign";
                 return (
                   <div className="flex justify-end">

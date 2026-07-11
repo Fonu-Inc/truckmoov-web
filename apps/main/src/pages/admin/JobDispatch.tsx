@@ -336,14 +336,14 @@ export default function JobDispatch() {
     });
   };
 
-  const handleAssign = async (vehicleId: string, driverId: string) => {
+  const handleAssign = async (vehicleId: string, driverId: string, driverPhone?: string) => {
     if (!selectedJob) return;
-    assignJobMutation.mutate({
+    await assignJobMutation.mutateAsync({
       jobId: selectedJob.id,
       data: {
         driver_id: driverId,
         vehicle_id: vehicleId,
-        driver_phone: selectedJob.driverPhone,
+        driver_phone: driverPhone,
       },
     }, {
       onSuccess: () => {
