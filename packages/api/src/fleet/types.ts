@@ -121,6 +121,63 @@ export type UpdateDevicePayload = {
   data: Record<string, unknown>
 }
 
+export type GeofenceShape = 'CIRCLE' | 'POLYGON'
+
+export type GeofenceSchedule = {
+  enabled: boolean
+  timezone: string
+  days: string[]
+  startTime: string
+  endTime: string
+}
+
+export type GeofencePayload = {
+  name: string
+  description: string
+  zoneType: string
+  shape: GeofenceShape
+  center: { latitude: number; longitude: number }
+  coordinates: number[][]
+  radiusMeters: number
+  category: string
+  entryAlertsEnabled: boolean
+  exitAlertsEnabled: boolean
+  dwellAlertsEnabled: boolean
+  dwellMinutes: number
+  speedLimit: { enabled: boolean; limitKph: number }
+  schedule: GeofenceSchedule
+  assignedVehicleIds: string[]
+}
+
+export type Geofence = {
+  id: string
+  tenantId: string
+  name: string
+  description: string
+  zoneType: string
+  shape: GeofenceShape
+  center: { latitude: number; longitude: number }
+  coordinates: number[][]
+  radiusMeters: number
+  status: 'ACTIVE' | 'ARCHIVED' | string
+  category: string
+  alerts: {
+    entry: boolean
+    exit: boolean
+    dwell: boolean
+    dwellMinutes: number
+    speedLimit: { enabled: boolean; limitKph: number }
+  }
+  schedule: GeofenceSchedule
+  assignedVehicleIds: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type GeofencesQuery = { params?: { status?: 'ACTIVE' | 'ARCHIVED' } }
+export type CreateGeofencePayload = { data: GeofencePayload }
+export type UpdateGeofencePayload = { id: string; data: GeofencePayload }
+
 export type CreateDeviceSetupRequestPayload = {
   data: {
     manufacturer: string
@@ -1004,6 +1061,8 @@ import type { ServerResponse } from '../lib/types'
 
 export type VehicleResponse = ServerResponse<Vehicle>
 export type VehicleListResponse = ServerResponse<Vehicle[]>
+export type GeofenceResponse = ServerResponse<Geofence>
+export type GeofenceListResponse = ServerResponse<Geofence[]>
 export type VehicleSummaryResponse = ServerResponse<VehicleSummary>
 export type FleetDriverResponse = ServerResponse<FleetDriver>
 export type FleetDriverListResponse = ServerResponse<FleetDriver[]>

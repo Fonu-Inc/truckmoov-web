@@ -29,6 +29,16 @@ import { Input } from "@/components/shadcn/input";
 import { Card, CardContent } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/shadcn/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -176,6 +186,7 @@ export default function JobDispatch() {
   const [isMatchingOpen, setIsMatchingOpen] = useState(false);
   const [isCompletionOpen, setIsCompletionOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobData | null>(null);
+  const [jobPendingDelete, setJobPendingDelete] = useState<JobData | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterValue, setFilterValue] = useState<JobsFilterValue>(() =>
@@ -254,10 +265,10 @@ export default function JobDispatch() {
           longitude: data.deliveryLng,
         },
         stops: data.stops,
-        cargo_type: data.cargoType,
-        cargo_description: data.cargoDescription,
-        load_weight_kg: data.cargoWeight * 1000,
-        amount_ngn: data.amount,
+        cargoType: data.cargoType,
+        cargoDescription: data.cargoDescription,
+        cargoWeight: data.cargoWeight,
+        amount: data.amount,
         deadline: new Date(data.deadline).toISOString(),
         priority: data.priority,
       },
@@ -277,8 +288,6 @@ export default function JobDispatch() {
       toast.info("Job details are still loading. Try again in a moment.");
       return;
     }
-    const baseJob = selectedJobDetails ?? selectedJob;
-
     updateJobDetailsMutation.mutate({
       jobId: selectedJob.id,
       data: {
@@ -294,15 +303,12 @@ export default function JobDispatch() {
           longitude: data.deliveryLng,
         },
         stops: data.stops,
-        cargo_type: data.cargoType,
-        cargo_description: data.cargoDescription,
-        amount_ngn: data.amount,
+        cargoType: data.cargoType,
+        cargoDescription: data.cargoDescription,
+        cargoWeight: data.cargoWeight,
+        amount: data.amount,
         deadline: new Date(data.deadline).toISOString(),
-        load_weight_kg: data.cargoWeight * 1000,
-        load_volume_m3: baseJob.loadVolumeM3 ?? 0,
-        priority: "normal",
-        required_vehicle_type: baseJob.requiredVehicleType,
-        estimated_service_minutes: baseJob.estimatedServiceMinutes,
+        priority: data.priority,
       },
     }, {
       onSuccess: () => {
@@ -313,17 +319,18 @@ export default function JobDispatch() {
     });
   };
 
-  const handleDeleteJob = async (job: JobData) => {
-    if (!window.confirm(`Delete job ${job.reference}? This permanently removes the record.`)) return;
+  const handleDeleteJob = () => {
+    if (!jobPendingDelete) return;
 
-    deleteJobMutation.mutate({ jobId: job.id }, {
+    deleteJobMutation.mutate({ jobId: jobPendingDelete.id }, {
       onSuccess: () => {
         toast.success("Job deleted");
-        if (selectedJob?.id === job.id) {
+        if (selectedJob?.id === jobPendingDelete.id) {
           setSelectedJob(null);
           setIsDetailsOpen(false);
           setIsFormOpen(false);
         }
+        setJobPendingDelete(null);
       },
       onError: (error) => toast.error(error.message),
     });
@@ -553,7 +560,7 @@ export default function JobDispatch() {
                   job={legacyJob}
                   onView={() => openDetails(job)}
                   onEdit={() => openEdit(job)}
-                  onDelete={() => handleDeleteJob(job)}
+                  onDelete={() => setJobPendingDelete(job)}
                   onMatch={() => openMatching(job)}
                   onComplete={() => openCompletion(job)}
                   dispatcherMode
@@ -607,6 +614,42 @@ export default function JobDispatch() {
         onComplete={handleCompleteJob}
         isSubmitting={isCompleting}
       />
+
+      <AlertDialog
+        open={Boolean(jobPendingDelete)}
+        onOpenChange={(open) => {
+          if (!open && !deleteJobMutation.isPending) setJobPendingDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this job?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete job {jobPendingDelete?.reference}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteJobMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteJobMutation.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                handleDeleteJob();
+              }}
+            >
+              {deleteJobMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Job"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }

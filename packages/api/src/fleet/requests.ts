@@ -15,6 +15,7 @@ import type {
   CreateDeviceSetupRequestPayload,
   CreateDriverPayload,
   CreateVehiclePayload,
+  CreateGeofencePayload,
   DeliveryMetricsResponse,
   DeviceAssignmentValidationResponse,
   DeviceSetupRequestListResponse,
@@ -53,6 +54,9 @@ import type {
   FleetDriverListResponse,
   FleetDriverResponse,
   FleetJobListResponse,
+  GeofenceListResponse,
+  GeofenceResponse,
+  GeofencesQuery,
   FuelBudgetVsActualQuery,
   FuelBudgetVsActualResponse,
   FuelConsumptionResponse,
@@ -101,6 +105,7 @@ import type {
   UpdateMaintenanceRecordPayload,
   UpdateVehiclePayload,
   UpdateVehicleStatusPayload,
+  UpdateGeofencePayload,
   UploadDocumentQuery,
   ValidateDeviceAssignmentQuery,
   VehicleDriverAssignmentResponse,
@@ -219,6 +224,31 @@ export async function getNearestVehicles({ params }: NearestVehiclesQuery) {
 
 export async function getDevices(payload?: DevicesQuery) {
   const { data } = await axiosInstance.get<FleetDeviceListResponse>('/fleet/devices', { params: payload?.params })
+  return data
+}
+
+export async function getGeofences(payload?: GeofencesQuery) {
+  const { data } = await axiosInstance.get<GeofenceListResponse>('/fleet/geofences', { params: payload?.params })
+  return data
+}
+
+export async function getGeofenceZone({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<GeofenceResponse>(`/fleet/geofences/${id}`)
+  return data
+}
+
+export async function createGeofence({ data: body }: CreateGeofencePayload) {
+  const { data } = await axiosInstance.post<GeofenceResponse>('/fleet/geofences', body)
+  return data
+}
+
+export async function updateGeofence({ id, data: body }: UpdateGeofencePayload) {
+  const { data } = await axiosInstance.patch<GeofenceResponse>(`/fleet/geofences/${id}`, body)
+  return data
+}
+
+export async function archiveGeofence({ id }: { id: string }) {
+  const { data } = await axiosInstance.delete(`/fleet/geofences/${id}`)
   return data
 }
 

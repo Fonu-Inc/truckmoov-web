@@ -83,7 +83,8 @@ export function JobDetailsSheet({ open, onOpenChange, job }: JobDetailsSheetProp
   const jobQuery = useJob(open && job?.id ? job.id : "");
   const timelineQuery = useJobTimeline(open && job?.id ? job.id : "");
   const apiJob = jobQuery.data?.data;
-  const vehicleQuery = useVehicle(open && apiJob?.assigned_vehicle_id ? apiJob.assigned_vehicle_id : "");
+  const assignedVehicleId = apiJob?.assigned_vehicle_id || job?.vehicleId || "";
+  const vehicleQuery = useVehicle(open ? assignedVehicleId : "");
   const vehicle = vehicleQuery.data?.data;
 
   if (!job) return null;
@@ -98,8 +99,17 @@ export function JobDetailsSheet({ open, onOpenChange, job }: JobDetailsSheetProp
   const cargoDescription = apiJob?.cargo_description || job.cargo.description;
   const deadline = apiJob?.deadline || job.deadline;
   const driverId = apiJob?.assigned_driver_id || job.driverId;
-  const driverPhone = apiJob?.assigned_driver_phone || (job as any).driverPhone;
-  const uiStage = toUiStage(status, apiJob?.acknowledged_at || (job as any).acknowledgedAt);
+  const driverName = apiJob?.assigned_driver_name || job.driverName;
+  const driverPhone = apiJob?.assigned_driver_phone || job.driverPhone;
+  const driverDisplayName = driverName || driverId || "Assigned driver";
+  const driverInitials = driverDisplayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+  const uiStage = toUiStage(status, apiJob?.acknowledged_at);
   const currentStepIndex = Math.max(0, statusSteps.findIndex((step) => step.key === uiStage));
   const progressPercent = ((currentStepIndex + 1) / statusSteps.length) * 100;
   const timeline = timelineQuery.data?.data?.timeline ?? apiJob?.timeline ?? [];
@@ -204,15 +214,15 @@ export function JobDetailsSheet({ open, onOpenChange, job }: JobDetailsSheetProp
 
           <div className="pt-3 border-t border-border/50">
             <FieldLabel icon={User}>Assigned Driver For Job</FieldLabel>
-            {driverId || driverPhone ? (
+            {driverId || driverName || driverPhone ? (
               <div className="rounded-lg border border-border/60 bg-background/40 p-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xs font-medium text-primary-foreground shrink-0">
-                      {(driverId || "DR").slice(0, 2).toUpperCase()}
+                      {driverInitials || "DR"}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{driverId || "Assigned driver"}</p>
+                      <p className="text-sm font-medium truncate">{driverDisplayName}</p>
                       <p className="text-xs text-muted-foreground truncate">{driverPhone || "Phone unavailable"}</p>
                     </div>
                   </div>
@@ -234,23 +244,36 @@ export function JobDetailsSheet({ open, onOpenChange, job }: JobDetailsSheetProp
             )}
           </div>
 
-          {(apiJob?.assigned_vehicle_id || job.vehicleId) && (
+          {assignedVehicleId && (
             <div className="pt-3 border-t border-border/50">
               <FieldLabel icon={Truck}>Assigned Vehicle</FieldLabel>
               <div className="grid grid-cols-2 gap-4 pl-4">
                 <div>
                   <p className="text-[10px] uppercase text-muted-foreground">Registration</p>
-                  <p className="text-sm font-medium">
-                    {vehicle?.registrationNumber || vehicle?.plateNumber || apiJob?.assigned_vehicle_id || job.vehicleId}
-                  </p>
+                  {vehicleQuery.isLoading ? (
+                    <Skeleton className="mt-1 h-5 w-32" />
+                  ) : (
+                    <p className="text-sm font-medium">
+                      {vehicle?.registrationNumber || vehicle?.plateNumber || "Unavailable"}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <p className="text-[10px] uppercase text-muted-foreground">Make &amp; Model</p>
-                  <p className="text-sm font-medium">
-                    {vehicle ? `${vehicle.make || ""} ${vehicle.model || ""}`.trim() || "Unavailable" : "Loading..."}
-                  </p>
+                  {vehicleQuery.isLoading ? (
+                    <Skeleton className="mt-1 h-5 w-40" />
+                  ) : (
+                    <p className="text-sm font-medium">
+                      {vehicle ? `${vehicle.make || ""} ${vehicle.model || ""}`.trim() || "Unavailable" : "Unavailable"}
+                    </p>
+                  )}
                 </div>
               </div>
+              {vehicleQuery.isError && (
+                <p className="mt-2 pl-4 text-xs text-destructive">
+                  Vehicle details could not be loaded.
+                </p>
+              )}
             </div>
           )}
 

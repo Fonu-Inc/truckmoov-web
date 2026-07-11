@@ -14,6 +14,7 @@ import {
   createDeviceSetupRequest,
   createDriver,
   createVehicle,
+  createGeofence,
   deleteDevice,
   deleteDriver,
   deleteFuelTransaction,
@@ -59,6 +60,8 @@ import {
   getFuelThresholds,
   getFuelTransactions,
   getGeofence,
+  getGeofences,
+  getGeofenceZone,
   getJobs,
   getLegacyGpsDevices,
   getMaintenanceProfiles,
@@ -97,6 +100,8 @@ import {
   updateMaintenanceRecord,
   updateVehicle,
   updateVehicleStatus,
+  updateGeofence,
+  archiveGeofence,
   uploadDocument,
   getComplianceDocs,
   getComplianceSummary,
@@ -139,6 +144,7 @@ import type {
   ValidateDeviceAssignmentQuery,
   VehiclesQuery,
   ComplianceDocumentsQuery,
+  GeofencesQuery,
 } from './types'
 
 export const FLEET_QUERY_KEY = {
@@ -150,6 +156,8 @@ export const FLEET_QUERY_KEY = {
   vehicleHealth: (vehicleId: string) => ['fleet', 'vehicleHealth', vehicleId],
   nearestVehicles: (payload: NearestVehiclesQuery) => ['fleet', 'nearestVehicles', payload],
   geofence: (vehicleId: string) => ['fleet', 'geofence', vehicleId],
+  geofences: (payload?: GeofencesQuery) => ['fleet', 'geofences', payload],
+  geofenceZone: (id: string) => ['fleet', 'geofences', id],
   devices: (payload?: DevicesQuery) => ['fleet', 'devices', payload],
   device: (id: string) => ['fleet', 'device', id],
   deviceSetupRequests: (payload?: DeviceSetupRequestsQuery) => ['fleet', 'deviceSetupRequests', payload],
@@ -268,6 +276,21 @@ export function getDeviceQueryOptions(id: string) {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.device(id),
     queryFn: () => getDevice({ id }),
+    enabled: Boolean(id),
+  })
+}
+
+export function getGeofencesQueryOptions(payload?: GeofencesQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.geofences(payload),
+    queryFn: () => getGeofences(payload),
+  })
+}
+
+export function getGeofenceZoneQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.geofenceZone(id),
+    queryFn: () => getGeofenceZone({ id }),
     enabled: Boolean(id),
   })
 }
@@ -576,6 +599,14 @@ export function useDevice(id: string) {
   return useQuery(getDeviceQueryOptions(id))
 }
 
+export function useGeofences(payload?: GeofencesQuery) {
+  return useQuery(getGeofencesQueryOptions(payload))
+}
+
+export function useGeofenceZone(id: string) {
+  return useQuery(getGeofenceZoneQueryOptions(id))
+}
+
 export function useDeviceSetupRequests(payload?: DeviceSetupRequestsQuery) {
   return useQuery(getDeviceSetupRequestsQueryOptions(payload))
 }
@@ -750,6 +781,27 @@ export function useCreateVehicle() {
     onSuccess: () => {
       return invalidateVehicles()
     },
+  })
+}
+
+export function useCreateGeofence() {
+  return useMutation({
+    mutationFn: createGeofence,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fleet', 'geofences'] }),
+  })
+}
+
+export function useUpdateGeofence() {
+  return useMutation({
+    mutationFn: updateGeofence,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fleet', 'geofences'] }),
+  })
+}
+
+export function useArchiveGeofence() {
+  return useMutation({
+    mutationFn: archiveGeofence,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fleet', 'geofences'] }),
   })
 }
 

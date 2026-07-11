@@ -50,21 +50,7 @@ export type CreateJobPayload = {
 
 export type UpdateJobDetailsPayload = {
   jobId: string
-  data: {
-    pickup: CreateJobStopPayload
-    dropoff: CreateJobStopPayload
-    stops?: CreateJobStopPayload[]
-    cargo_type?: string
-    cargo_description?: string
-    amount_ngn?: number
-    deadline?: string
-    load_weight_kg?: number
-    load_volume_m3?: number
-    priority?: 'low' | 'medium' | 'normal' | 'high' | 'urgent'
-    required_vehicle_type?: string
-    estimated_service_minutes?: number
-    reference?: string
-  }
+  data: CreateJobPayload['data']
 }
 
 export type DeleteJobPayload = {

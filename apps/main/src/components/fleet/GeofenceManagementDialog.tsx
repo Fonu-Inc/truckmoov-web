@@ -1,4 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import {
+  useArchiveGeofence,
+  useCreateGeofence,
+  useGeofences,
+  useUpdateGeofence,
+  useVehicles,
+  type Geofence,
+  type GeofencePayload,
+} from "@truckmoov/api/fleet";
 import {
   Dialog,
   DialogContent,
@@ -83,6 +92,7 @@ const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 interface EditFormState {
   id?: string;
   name: string;
+  description: string;
   category: string;
   geofence_type: 'CIRCLE' | 'POLYGON';
   center: [number, number];
@@ -100,8 +110,24 @@ interface EditFormState {
   assignedVehicleIds: string[];
 }
 
+type GeofenceView = Geofence & {
+  color: string;
+  geofence_type: Geofence["shape"];
+  radius_meters: number;
+  alert_on_entry: boolean;
+  alert_on_exit: boolean;
+  alert_on_dwell: boolean;
+  dwell_threshold_minutes: number;
+  speed_limit_kmh: number | null;
+  schedule_enabled: boolean;
+  schedule_days: string[];
+  schedule_start_time: string;
+  schedule_end_time: string;
+};
+
 const defaultEditForm: EditFormState = {
   name: "",
+  description: "",
   category: "custom",
   geofence_type: "CIRCLE",
   center: [6.5244, 3.3792], // Lagos default
@@ -120,18 +146,32 @@ const defaultEditForm: EditFormState = {
 };
 
 export function GeofenceManagementDialog({ open, onOpenChange, preselectedVehicleId }: GeofenceManagementDialogProps) {
-  const geofences: any[] = [];
-  const isLoading = false;
-  const createGeofence = { mutateAsync: async (..._args: any[]) => ({ id: "" }), isPending: false };
-  const updateGeofence = { mutateAsync: async (..._args: any[]) => {}, isPending: false };
-  const archiveGeofence = { mutateAsync: async (..._args: any[]) => {} };
-  const deleteGeofence = { mutateAsync: async (..._args: any[]) => {} };
-  const assignVehicles = { mutateAsync: async (..._args: any[]) => {}, isPending: false };
+  const { data: geofenceResponse, isLoading } = useGeofences({ params: { status: "ACTIVE" } });
+  const { data: vehicleResponse, isLoading: vehiclesLoading } = useVehicles();
+  const createGeofence = useCreateGeofence();
+  const updateGeofence = useUpdateGeofence();
+  const archiveGeofence = useArchiveGeofence();
   const canManageGeofences = true;
   const canAssignGeofences = true;
-  const vehicles: any[] = [];
+  const vehicles = vehicleResponse?.data ?? [];
 
-  const [selectedZone, setSelectedZone] = useState<any | null>(null);
+  const geofences = useMemo(() => (geofenceResponse?.data ?? []).map((zone) => ({
+    ...zone,
+    color: zoneTypeColors[zone.category] ?? zoneTypeColors.custom,
+    geofence_type: zone.shape,
+    radius_meters: zone.radiusMeters,
+    alert_on_entry: zone.alerts.entry,
+    alert_on_exit: zone.alerts.exit,
+    alert_on_dwell: zone.alerts.dwell,
+    dwell_threshold_minutes: zone.alerts.dwellMinutes,
+    speed_limit_kmh: zone.alerts.speedLimit.enabled ? zone.alerts.speedLimit.limitKph : null,
+    schedule_enabled: zone.schedule.enabled,
+    schedule_days: zone.schedule.days,
+    schedule_start_time: zone.schedule.startTime,
+    schedule_end_time: zone.schedule.endTime,
+  })), [geofenceResponse]);
+
+  const [selectedZone, setSelectedZone] = useState<GeofenceView | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -158,19 +198,14 @@ export function GeofenceManagementDialog({ open, onOpenChange, preselectedVehicl
     setIsEditing(true);
   };
 
-  const handleEditZone = (zone: any) => {
-    // Convert from DB format to edit form
-    const geometry = zone.geometry as { type: string; coordinates: number[] };
-    const center: [number, number] = zone.geofence_type === 'CIRCLE' 
-      ? [geometry.coordinates[1], geometry.coordinates[0]] // GeoJSON is [lng, lat]
-      : [6.5244, 3.3792]; // Default for polygon
-
+  const handleEditZone = (zone: GeofenceView) => {
     setEditForm({
       id: zone.id,
       name: zone.name,
+      description: zone.description ?? "",
       category: zone.category,
       geofence_type: zone.geofence_type,
-      center,
+      center: [zone.center.latitude, zone.center.longitude],
       radius_meters: zone.radius_meters || 500,
       color: zone.color,
       alert_on_entry: zone.alert_on_entry,
@@ -195,46 +230,40 @@ export function GeofenceManagementDialog({ open, onOpenChange, preselectedVehicl
       return;
     }
 
-    // Build geometry in GeoJSON format
-    const geometry = editForm.geofence_type === 'CIRCLE'
-      ? { type: 'Point', coordinates: [editForm.center[1], editForm.center[0]] } // [lng, lat]
-      : { type: 'Polygon', coordinates: [] }; // Polygon editing not yet supported
-
-    const input: any = {
+    const input: GeofencePayload = {
       name: editForm.name,
+      description: editForm.description,
+      zoneType: editForm.category,
       category: editForm.category,
-      geofence_type: editForm.geofence_type,
-      geometry,
-      radius_meters: editForm.geofence_type === 'CIRCLE' ? editForm.radius_meters : null,
-      color: editForm.color,
-      alert_on_entry: editForm.alert_on_entry,
-      alert_on_exit: editForm.alert_on_exit,
-      alert_on_dwell: editForm.alert_on_dwell,
-      dwell_threshold_minutes: editForm.dwell_threshold_minutes,
-      speed_limit_kmh: editForm.speed_limit_kmh,
-      schedule_enabled: editForm.schedule_enabled,
-      schedule_days: editForm.schedule_days,
-      schedule_start_time: editForm.schedule_start_time,
-      schedule_end_time: editForm.schedule_end_time,
+      shape: editForm.geofence_type,
+      center: { latitude: editForm.center[0], longitude: editForm.center[1] },
+      coordinates: editForm.geofence_type === "POLYGON" ? [] : [[editForm.center[1], editForm.center[0]]],
+      radiusMeters: editForm.geofence_type === "CIRCLE" ? editForm.radius_meters : 0,
+      entryAlertsEnabled: editForm.alert_on_entry,
+      exitAlertsEnabled: editForm.alert_on_exit,
+      dwellAlertsEnabled: editForm.alert_on_dwell,
+      dwellMinutes: editForm.alert_on_dwell ? editForm.dwell_threshold_minutes : 0,
+      speedLimit: {
+        enabled: editForm.speed_limit_kmh !== null,
+        limitKph: editForm.speed_limit_kmh ?? 0,
+      },
+      schedule: {
+        enabled: editForm.schedule_enabled,
+        timezone: "Africa/Lagos",
+        days: editForm.schedule_days,
+        startTime: editForm.schedule_start_time,
+        endTime: editForm.schedule_end_time,
+      },
+      assignedVehicleIds: editForm.assignedVehicleIds,
     };
 
     try {
       if (isCreating) {
-        const result = await createGeofence.mutateAsync(input);
-        // Assign vehicles after creation
-        if (editForm.assignedVehicleIds.length > 0) {
-          await assignVehicles.mutateAsync({
-            geofenceId: result.id,
-            vehicleIds: editForm.assignedVehicleIds,
-          });
-        }
+        await createGeofence.mutateAsync({ data: input });
+        toast.success("Geofence created");
       } else if (editForm.id) {
-        await updateGeofence.mutateAsync({ id: editForm.id, ...input });
-        // Update vehicle assignments
-        await assignVehicles.mutateAsync({
-          geofenceId: editForm.id,
-          vehicleIds: editForm.assignedVehicleIds,
-        });
+        await updateGeofence.mutateAsync({ id: editForm.id, data: input });
+        toast.success("Geofence updated");
       }
 
       setIsEditing(false);
@@ -242,15 +271,18 @@ export function GeofenceManagementDialog({ open, onOpenChange, preselectedVehicl
       setSelectedZone(null);
       setEditForm(defaultEditForm);
     } catch (error) {
-      // Error already handled by mutation
+      toast.error(error instanceof Error ? error.message : "Unable to save geofence");
     }
   };
 
   const handleArchiveZone = async (zoneId: string) => {
-    await archiveGeofence.mutateAsync(zoneId);
-    setDeleteConfirmId(null);
-    if (selectedZone?.id === zoneId) {
-      setSelectedZone(null);
+    try {
+      await archiveGeofence.mutateAsync({ id: zoneId });
+      toast.success("Geofence archived");
+      setDeleteConfirmId(null);
+      if (selectedZone?.id === zoneId) setSelectedZone(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to archive geofence");
     }
   };
 
@@ -281,7 +313,7 @@ export function GeofenceManagementDialog({ open, onOpenChange, preselectedVehicl
     updateEditForm({ assignedVehicleIds: newVehicles });
   };
 
-  const isSaving = createGeofence.isPending || updateGeofence.isPending || assignVehicles.isPending;
+  const isSaving = createGeofence.isPending || updateGeofence.isPending;
 
   return (
     <>
@@ -813,7 +845,12 @@ export function GeofenceManagementDialog({ open, onOpenChange, preselectedVehicl
                                   </div>
                                 </div>
                               ))}
-                              {(!vehicles || vehicles.length === 0) && (
+                              {vehiclesLoading && (
+                                <div className="flex justify-center py-4">
+                                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                </div>
+                              )}
+                              {!vehiclesLoading && vehicles.length === 0 && (
                                 <div className="text-center py-4 text-muted-foreground">
                                   <p className="text-sm">No vehicles available</p>
                                 </div>
