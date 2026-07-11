@@ -647,7 +647,7 @@ export function FleetMap({
   }, [harshEvents]);
 
   return (
-    <div className="relative w-full h-full rounded-lg overflow-hidden border border-border">
+    <div className="relative isolate z-0 w-full h-full rounded-lg overflow-hidden border border-border">
       <div ref={mapContainerRef} className="w-full h-full" />
 
       {/* Map Legend */}

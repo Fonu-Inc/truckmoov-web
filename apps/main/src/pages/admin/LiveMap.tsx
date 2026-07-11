@@ -17,14 +17,17 @@ import {
 import { toast } from "sonner";
 import { DriverCommunicationActions } from "@/components/communications/DriverCommunicationActions";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { useAuthStore } from "@/stores/authStore";
+import { useVehicles } from "@truckmoov/api/fleet";
 
 export default function LiveMap() {
-  const vehicles: any[] = [];
-  const vehiclesLoading = false;
-  const refetchVehicles = async (...args: any[]) => {};
+  const {
+    data: vehiclesResponse,
+    isLoading: vehiclesLoading,
+    isError: vehiclesError,
+    refetch: refetchVehicles,
+  } = useVehicles();
+  const vehicles = vehiclesResponse?.data ?? [];
   const alerts: any[] = [];
-  const { user } = useAuthStore();
 
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
   const [showGeofences, setShowGeofences] = useState(true);
@@ -32,21 +35,21 @@ export default function LiveMap() {
   const [showAlerts, setShowAlerts] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [geofenceDialogOpen, setGeofenceDialogOpen] = useState(false);
+  const openGeofenceManagement = () => setGeofenceDialogOpen(true);
 
   // Map real vehicles with driver info for the map component
   const realVehiclesWithDrivers = vehicles.map(v => {
-    const driver: null = null;
     const modelParts = [v.make, v.model, v.year ? `(${v.year})` : null].filter(Boolean).join(" ");
     return {
       id: v.registrationNumber || v.id,
       vehicleId: v.id,
       model: modelParts || "—",
-      driver: driver?.name || "Unassigned",
-      driverId: driver?.id || "",
-      phone: driver?.phone || "",
+      driver: v.assignedDriverName || "Unassigned",
+      driverId: v.assignedDriverId || "",
+      phone: "",
       status: v.status === "active" ? "moving" : v.status === "maintenance" ? "stopped" : "idle",
       speed: 0,
-      fuel: v.fuelLevel || 0,
+      fuel: v.fuelLevelPercent ?? 0,
       destination: "—",
     };
   });
@@ -100,6 +103,24 @@ export default function LiveMap() {
     );
   }
 
+  if (vehiclesError) {
+    return (
+      <DashboardLayout title="Live Fleet Map" subtitle="Real-time vehicle tracking and monitoring">
+        <div className="flex h-64 flex-col items-center justify-center gap-3 text-center">
+          <AlertTriangle className="h-8 w-8 text-destructive" />
+          <div>
+            <p className="font-semibold">Unable to load vehicles</p>
+            <p className="text-sm text-muted-foreground">The fleet service could not be reached.</p>
+          </div>
+          <Button variant="outline" onClick={() => refetchVehicles()}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Try again
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   if (vehicles.length === 0) {
     return (
       <DashboardLayout title="Live Fleet Map" subtitle="Real-time vehicle tracking and monitoring">
@@ -116,25 +137,25 @@ export default function LiveMap() {
 
   return (
     <DashboardLayout title="Live Fleet Map" subtitle="Real-time vehicle tracking and monitoring" fullWidth>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 h-[calc(100vh-4rem)] p-4 overflow-hidden">
+      <div className="grid min-w-0 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 h-[calc(100vh-4rem)] p-4 overflow-hidden">
         {/* Sidebar — only this scrolls */}
-        <div className="lg:col-span-1 space-y-4 flex flex-col h-full overflow-y-auto pr-1">
+        <div className="min-w-0 lg:col-span-1 space-y-4 flex flex-col h-full overflow-x-hidden overflow-y-auto pr-1">
           {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-2">
-            <Card className="border-success/30 bg-success/5">
-              <CardContent className="p-3 text-center">
+          <div className="grid min-w-0 grid-cols-3 gap-2">
+            <Card className="min-w-0 border-success/30 bg-success/5">
+              <CardContent className="px-1 py-3 text-center sm:px-2">
                 <p className="text-2xl font-bold text-success">{movingCount}</p>
                 <p className="text-xs text-muted-foreground">Active</p>
               </CardContent>
             </Card>
-            <Card className="border-warning/30 bg-warning/5">
-              <CardContent className="p-3 text-center">
+            <Card className="min-w-0 border-warning/30 bg-warning/5">
+              <CardContent className="px-1 py-3 text-center sm:px-2">
                 <p className="text-2xl font-bold text-warning">{idleCount}</p>
                 <p className="text-xs text-muted-foreground">Idle</p>
               </CardContent>
             </Card>
-            <Card className="border-destructive/30 bg-destructive/5">
-              <CardContent className="p-3 text-center">
+            <Card className="min-w-0 border-destructive/30 bg-destructive/5">
+              <CardContent className="px-1 py-3 text-center sm:px-2">
                 <p className="text-2xl font-bold text-destructive">{stoppedCount}</p>
                 <p className="text-xs text-muted-foreground">Stopped</p>
               </CardContent>
@@ -142,7 +163,7 @@ export default function LiveMap() {
           </div>
 
           {/* Map Controls */}
-          <Card className="border-border/50">
+          <Card className="min-w-0 overflow-hidden border-border/50">
             <CardHeader className="p-3 pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Filter className="h-4 w-4" />
@@ -160,7 +181,9 @@ export default function LiveMap() {
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6"
-                    onClick={() => setGeofenceDialogOpen(true)}
+                    onClick={openGeofenceManagement}
+                    aria-label="Manage geofences"
+                    title="Manage geofences"
                   >
                     <Settings2 className="h-3.5 w-3.5" />
                   </Button>
@@ -185,7 +208,7 @@ export default function LiveMap() {
           </Card>
 
           {/* Vehicle List */}
-          <Card className="border-border/50 flex flex-col">
+          <Card className="min-w-0 overflow-hidden border-border/50 flex flex-col">
             <CardHeader className="p-3 pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -204,19 +227,19 @@ export default function LiveMap() {
               </div>
             </CardHeader>
             <CardContent className="p-2 pt-0">
-              <div className="space-y-1.5 pr-1">
+              <div className="min-w-0 space-y-1.5 pr-1">
                   {filteredVehicles.map((vehicle) => (
                     <div
                       key={vehicle.vehicleId}
-                      className={`p-2.5 rounded-lg cursor-pointer transition-all ${
+                      className={`min-w-0 overflow-hidden p-2.5 rounded-lg cursor-pointer transition-all ${
                         selectedVehicle === vehicle.id
                           ? "bg-primary/10 border border-primary/30"
                           : "bg-muted/30 hover:bg-muted/50 border border-transparent"
                       }`}
                       onClick={() => setSelectedVehicle(vehicle.id)}
                     >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
+                      <div className="flex min-w-0 items-start justify-between gap-2 mb-1.5">
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
                           <div className={`h-2 w-2 rounded-full ${
                             vehicle.status === "moving" ? "bg-success" :
                             vehicle.status === "idle" ? "bg-warning" : "bg-destructive"
@@ -228,7 +251,7 @@ export default function LiveMap() {
                         </div>
                         <Badge
                           variant="outline"
-                          className={`text-[10px] capitalize ${
+                          className={`shrink-0 text-[10px] capitalize ${
                             vehicle.status === "moving" ? "border-success/50 text-success" :
                             vehicle.status === "idle" ? "border-warning/50 text-warning" :
                             "border-destructive/50 text-destructive"
@@ -237,8 +260,8 @@ export default function LiveMap() {
                           {vehicle.status}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mb-1.5">{vehicle.driver}</p>
-                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                      <p className="truncate text-xs text-muted-foreground mb-1.5">{vehicle.driver}</p>
+                      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Navigation className="h-3 w-3" />
                           {vehicle.speed} km/h
@@ -267,7 +290,7 @@ export default function LiveMap() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="w-full text-xs gap-1.5"
+                            className="h-auto min-h-9 w-full gap-1.5 whitespace-normal px-2 text-xs leading-tight"
                             onClick={(e) => {
                               e.stopPropagation();
                               const pos = mapVehicles.find(mv => mv.id === vehicle.id)?.position;
@@ -278,14 +301,14 @@ export default function LiveMap() {
                               );
                             }}
                           >
-                            <ExternalLink className="h-3.5 w-3.5" />
+                            <ExternalLink className="h-3.5 w-3.5 shrink-0" />
                             Navigate to Vehicle
                           </Button>
                           {/* US-E03-006 — Share Vehicle Location via WhatsApp */}
                           <Button
                             variant="outline"
                             size="sm"
-                            className="w-full text-xs gap-1.5"
+                            className="h-auto min-h-9 w-full gap-1.5 whitespace-normal px-2 text-xs leading-tight"
                             onClick={(e) => {
                               e.stopPropagation();
                               const trackingId = `trk_${vehicle.id.toLowerCase().replace(/-/g, "")}_${Date.now().toString(36)}`;
@@ -298,7 +321,7 @@ export default function LiveMap() {
                               toast.success("Tracking link copied & WhatsApp opened (valid 24h)");
                             }}
                           >
-                            <MessageSquare className="h-3.5 w-3.5" />
+                            <MessageSquare className="h-3.5 w-3.5 shrink-0" />
                             Share location via WhatsApp
                           </Button>
                         </div>
@@ -311,7 +334,7 @@ export default function LiveMap() {
           </Card>
 
           {/* Recent Alerts */}
-          <Card className="border-border/50">
+          <Card className="min-w-0 overflow-hidden border-border/50">
             <CardHeader className="p-3 pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-warning" />
@@ -347,7 +370,7 @@ export default function LiveMap() {
         </div>
 
         {/* Map — fills its column, no scroll */}
-        <div className="md:col-span-1 lg:col-span-3 relative min-h-[400px] h-full">
+        <div className="relative isolate z-0 min-w-0 min-h-[400px] h-full md:col-span-1 lg:col-span-3">
           <Card className="h-full border-border/50">
             <CardContent className="p-0 h-full">
               <FleetMap
@@ -378,7 +401,7 @@ export default function LiveMap() {
               variant="secondary"
               size="sm"
               className="shadow-lg"
-              onClick={() => setGeofenceDialogOpen(true)}
+              onClick={openGeofenceManagement}
             >
               <MapIcon className="h-4 w-4 mr-2" />
               Manage Geofences
