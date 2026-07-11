@@ -114,6 +114,7 @@ export default function DeviceManagement() {
   const [isExporting, setIsExporting] = useState(false);
   const [firmwareDevice, setFirmwareDevice] = useState<DeviceWithTelemetry | null>(null);
   const [firmwareVersion, setFirmwareVersion] = useState("");
+  const [devicePendingDeletion, setDevicePendingDeletion] = useState<DeviceWithTelemetry | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(searchQuery), 300);
@@ -267,6 +268,7 @@ export default function DeviceManagement() {
     try {
       await deleteDevice.mutateAsync({ id: deviceId });
       toast.success("Device deleted");
+      setDevicePendingDeletion(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete device");
     }
@@ -700,11 +702,7 @@ export default function DeviceManagement() {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   className="text-destructive focus:text-destructive"
-                                  onClick={() => {
-                                    if (window.confirm("Delete this device?")) {
-                                      void handleDeleteDevice(device.id);
-                                    }
-                                  }}
+                                  onClick={() => setDevicePendingDeletion(device)}
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
                                   Delete Device
@@ -731,6 +729,7 @@ export default function DeviceManagement() {
         onOpenChange={setIsAddDialogOpen}
         onSubmit={handleAddDevice}
         title="Register New Device"
+        isSubmitting={createDevice.isPending}
       />
 
       <DeviceSetupRequestDialog
@@ -753,7 +752,50 @@ export default function DeviceManagement() {
         onSubmit={handleEditDevice}
         title="Edit Device"
         device={selectedDevice ? convertToIoTDevice(selectedDevice) : undefined}
+        isSubmitting={updateDevice.isPending}
       />
+
+      <Dialog
+        open={!!devicePendingDeletion}
+        onOpenChange={(open) => {
+          if (!open && !deleteDevice.isPending) {
+            setDevicePendingDeletion(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Delete Device</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {devicePendingDeletion?.manufacturer} {devicePendingDeletion?.model}
+              {devicePendingDeletion?.imei ? ` (${devicePendingDeletion.imei})` : ""}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDevicePendingDeletion(null)}
+              disabled={deleteDevice.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                if (devicePendingDeletion) {
+                  void handleDeleteDevice(devicePendingDeletion.id);
+                }
+              }}
+              disabled={deleteDevice.isPending}
+            >
+              {deleteDevice.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete Device
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={!!firmwareDevice}

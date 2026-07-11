@@ -67,6 +67,7 @@ type JobData = {
   deadline: string;
   createdAt: string;
   driverId?: string;
+  driverName?: string;
   driverPhone?: string;
   vehicleId?: string;
   assignedByRole?: string;
@@ -140,6 +141,7 @@ function mapDispatchJob(job: DispatchJob): JobData {
     deadline: job.deadline || job.time_window?.dropoff_end || job.updated_at || new Date().toISOString(),
     createdAt: job.created_at || new Date().toISOString(),
     driverId: job.assigned_driver_id || undefined,
+    driverName: job.assigned_driver_name || undefined,
     driverPhone: job.assigned_driver_phone || undefined,
     vehicleId: job.assigned_vehicle_id || undefined,
     assignedByRole: job.assigned_driver_id ? "Dispatch" : undefined,
@@ -387,6 +389,7 @@ export default function JobDispatch() {
     deadline: job.deadline ? new Date(job.deadline) : new Date(),
     createdAt: new Date(job.createdAt),
     driverId: job.driverId,
+    driverName: job.driverName,
     driverPhone: job.driverPhone,
     vehicleId: job.vehicleId,
     stops: job.stops,

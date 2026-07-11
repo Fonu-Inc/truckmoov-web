@@ -247,6 +247,7 @@ export type DispatchJob = {
   reference?: string
   amount_ngn?: number
   assigned_driver_id?: string
+  assigned_driver_name?: string
   assigned_driver_phone?: string
   assigned_vehicle_id?: string
   pickup?: DispatchStop

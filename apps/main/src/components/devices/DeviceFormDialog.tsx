@@ -19,6 +19,7 @@ import {
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
 import { Button } from "@/components/shadcn/button";
+import { Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -41,6 +42,7 @@ const deviceSchema = z
     manufacturer: z.string().min(1, "Manufacturer is required").max(50),
     customManufacturer: z.string().max(50).optional(),
     model: z.string().min(1, "Model is required").max(50),
+    firmwareVersion: z.string().max(50).optional(),
   })
   .refine(
     (data) =>
@@ -60,6 +62,7 @@ interface DeviceFormDialogProps {
   onSubmit: (data: Partial<IoTDevice>) => void;
   device?: IoTDevice | null;
   title: string;
+  isSubmitting?: boolean;
 }
 
 const manufacturers = [
@@ -79,6 +82,7 @@ export function DeviceFormDialog({
   onSubmit,
   device,
   title,
+  isSubmitting = false,
 }: DeviceFormDialogProps) {
   const form = useForm<DeviceFormData>({
     resolver: zodResolver(deviceSchema),
@@ -88,6 +92,7 @@ export function DeviceFormDialog({
       manufacturer: "",
       customManufacturer: "",
       model: "",
+      firmwareVersion: "",
     },
   });
 
@@ -100,6 +105,7 @@ export function DeviceFormDialog({
         manufacturer: isKnown ? device.manufacturer : CUSTOM_VALUE,
         customManufacturer: isKnown ? "" : device.manufacturer,
         model: device.model,
+        firmwareVersion: device.firmwareVersion || "",
       });
     } else {
       form.reset({
@@ -108,6 +114,7 @@ export function DeviceFormDialog({
         manufacturer: "",
         customManufacturer: "",
         model: "",
+        firmwareVersion: "",
       });
     }
   }, [device, form, open]);
@@ -120,14 +127,25 @@ export function DeviceFormDialog({
       data.manufacturer === CUSTOM_VALUE
         ? (data.customManufacturer ?? "").trim()
         : data.manufacturer;
-    onSubmit({
+    const payload: Partial<IoTDevice> = {
       ...data,
       manufacturer: resolvedManufacturer,
-    });
+    };
+
+    if (!isEditing) {
+      payload.firmwareVersion = data.firmwareVersion?.trim() || undefined;
+    }
+
+    onSubmit(payload);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!isSubmitting) onOpenChange(nextOpen);
+      }}
+    >
       <DialogContent className="sm:max-w-[450px]">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -145,7 +163,12 @@ export function DeviceFormDialog({
                 <FormItem>
                   <FormLabel>Device Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Truck 12 — Tracker" maxLength={60} {...field} />
+                    <Input
+                      placeholder="e.g. Truck 12 — Tracker"
+                      maxLength={60}
+                      disabled={isSubmitting}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -163,6 +186,7 @@ export function DeviceFormDialog({
                       placeholder="359779090012345"
                       maxLength={15}
                       readOnly={isEditing}
+                      disabled={isSubmitting}
                       className={isEditing ? "cursor-not-allowed opacity-70" : undefined}
                       {...field}
                     />
@@ -178,7 +202,7 @@ export function DeviceFormDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Manufacturer</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select manufacturer" />
@@ -204,7 +228,12 @@ export function DeviceFormDialog({
                   <FormItem>
                     <FormLabel>Custom Manufacturer</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter manufacturer name" maxLength={50} {...field} />
+                      <Input
+                        placeholder="Enter manufacturer name"
+                        maxLength={50}
+                        disabled={isSubmitting}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -219,19 +248,48 @@ export function DeviceFormDialog({
                 <FormItem>
                   <FormLabel>Model</FormLabel>
                   <FormControl>
-                    <Input placeholder="FMC130" {...field} />
+                    <Input placeholder="FMC130" disabled={isSubmitting} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            {!isEditing && (
+              <FormField
+                control={form.control}
+                name="firmwareVersion"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Firmware Version</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g. 3.28.07"
+                        maxLength={50}
+                        disabled={isSubmitting}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
-              <Button type="submit">
-                {device ? "Save Changes" : "Register Device"}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting
+                  ? device ? "Saving..." : "Registering..."
+                  : device ? "Save Changes" : "Register Device"}
               </Button>
             </div>
           </form>

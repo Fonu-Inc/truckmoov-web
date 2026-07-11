@@ -67,6 +67,7 @@ const healthTone: Record<DeviceHealth, string> = {
   online: "text-success",
   degraded: "text-warning",
   offline: "text-destructive",
+  unknown: "text-muted-foreground",
 };
 
 function formatSeconds(seconds: number | null | undefined) {
@@ -92,16 +93,20 @@ export function DeviceDetailsSheet({
 
   if (!device) return null;
 
-  const overview = overviewQuery.data?.data;
-  const connectivity = connectivityQuery.data?.data;
-  const telemetry = telemetryQuery.data?.data;
-  const firmware = firmwareQuery.data?.data;
+  const overview = overviewQuery.data;
+  const connectivity = connectivityQuery.data;
+  const telemetry = telemetryQuery.data;
+  const firmware = firmwareQuery.data;
 
   // Overview values prefer the live endpoint, fall back to the prop while loading.
-  const status = overview?.status ?? device.status;
-  const lastSeen = overview?.last_seen ?? device.last_seen ?? (device.lastSeen?.toISOString() ?? null);
-  const signalStrength = overview?.signal_strength ?? device.signalStrength;
-  const batteryLevel = overview?.battery_level ?? device.batteryLevel;
+  const status = overview?.health ?? device.status;
+  const lastSeen = device.last_seen ?? (device.lastSeen?.toISOString() ?? null);
+  const signalStrength = device.signalStrength;
+  const batteryLevel = device.batteryLevel;
+  const averageIntervalSeconds = telemetry?.aggregates_24h.sample_count && telemetry.aggregates_24h.sample_count > 1
+    ? (new Date(telemetry.aggregates_24h.window_end).getTime() - new Date(telemetry.aggregates_24h.window_start).getTime())
+      / 1000 / (telemetry.aggregates_24h.sample_count - 1)
+    : null;
 
   const chartData = (telemetry?.history ?? [])
     .slice()
@@ -114,7 +119,7 @@ export function DeviceDetailsSheet({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className={cn(
@@ -311,8 +316,8 @@ export function DeviceDetailsSheet({
                           <Clock className="h-3.5 w-3.5" /> Last Telemetry
                         </p>
                         <p className="text-sm font-medium mt-1">
-                          {connectivity.last_contact
-                            ? formatDistanceToNow(new Date(connectivity.last_contact), { addSuffix: true })
+                          {lastSeen
+                            ? formatDistanceToNow(new Date(lastSeen), { addSuffix: true })
                             : "Never"}
                         </p>
                       </div>
@@ -321,8 +326,8 @@ export function DeviceDetailsSheet({
                           <Activity className="h-3.5 w-3.5" /> Last Health Check
                         </p>
                         <p className="text-sm font-medium mt-1">
-                          {device.last_health_check_at
-                            ? formatDistanceToNow(new Date(device.last_health_check_at), { addSuffix: true })
+                          {connectivity.last_health_check?.at
+                            ? `${formatDistanceToNow(new Date(connectivity.last_health_check.at), { addSuffix: true })} (${connectivity.last_health_check.result})`
                             : "Pending"}
                         </p>
                       </div>
@@ -333,16 +338,16 @@ export function DeviceDetailsSheet({
                       <div className="grid grid-cols-3 gap-3">
                         <div className="rounded-lg bg-secondary/50 p-3 text-center">
                           <p className="text-xs text-muted-foreground">Expected</p>
-                          <p className="text-sm font-semibold mt-1">{formatSeconds(connectivity.reporting_interval_seconds)}</p>
+                          <p className="text-sm font-semibold mt-1">{formatSeconds(connectivity.status_timeout_seconds)}</p>
                         </div>
                         <div className="rounded-lg bg-warning/10 p-3 text-center">
                           <p className="text-xs text-warning">Online ≤</p>
                           {/* ponytail: online threshold not in API, derived as 3× reporting interval; use a real field if the backend adds one */}
-                          <p className="text-sm font-semibold mt-1 text-warning">{formatSeconds(connectivity.reporting_interval_seconds * 3)}</p>
+                          <p className="text-sm font-semibold mt-1 text-warning">{formatSeconds(connectivity.heartbeat.online_threshold_seconds)}</p>
                         </div>
                         <div className="rounded-lg bg-destructive/10 p-3 text-center">
                           <p className="text-xs text-destructive">Offline &gt;</p>
-                          <p className="text-sm font-semibold mt-1 text-destructive">{formatSeconds(connectivity.status_timeout_seconds)}</p>
+                          <p className="text-sm font-semibold mt-1 text-destructive">{formatSeconds(connectivity.heartbeat.offline_threshold_seconds)}</p>
                         </div>
                       </div>
                     </div>
@@ -406,7 +411,7 @@ export function DeviceDetailsSheet({
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Avg. Interval</span>
-                        <span className="font-medium">{formatSeconds(telemetry.aggregates_24h.avg_interval_seconds)}</span>
+                        <span className="font-medium">{formatSeconds(averageIntervalSeconds)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Data Quality</span>
@@ -430,12 +435,12 @@ export function DeviceDetailsSheet({
                 <CardContent className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Firmware Version</span>
-                    <span className="font-mono">{firmware?.current_version ?? device.firmwareVersion}</span>
+                    <span className="font-mono">{device.firmwareVersion || "Unknown"}</span>
                   </div>
-                  {firmware && (
+                  {connectivity && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Reporting Interval</span>
-                      <span className="font-medium">{formatSeconds(firmware.reporting_interval_seconds)}</span>
+                      <span className="text-muted-foreground">Status Timeout</span>
+                      <span className="font-medium">{formatSeconds(connectivity.status_timeout_seconds)}</span>
                     </div>
                   )}
                 </CardContent>
@@ -455,10 +460,11 @@ export function DeviceDetailsSheet({
                     <p className="text-sm text-muted-foreground">No firmware history available.</p>
                   ) : (
                     firmware.history.map((entry) => {
-                      const isCurrent = entry.version === firmware.current_version;
+                      const isCurrent = entry.is_current || entry.version === device.firmwareVersion;
+                      const seenAt = entry.installed_at || entry.first_seen || entry.last_seen;
                       return (
                         <div
-                          key={`${entry.version}-${entry.first_seen}`}
+                          key={`${entry.version}-${seenAt ?? "unknown"}`}
                           className={cn(
                             "flex items-center justify-between rounded-lg border p-3",
                             isCurrent && "border-primary/50 bg-primary/5"
@@ -466,9 +472,11 @@ export function DeviceDetailsSheet({
                         >
                           <div>
                             <p className="text-sm font-mono">{entry.version}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(entry.first_seen), "MMMM do, yyyy")}
-                            </p>
+                            {seenAt && (
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(seenAt), "MMMM do, yyyy")}
+                              </p>
+                            )}
                           </div>
                           {isCurrent && <Badge className="bg-primary hover:bg-primary">Current</Badge>}
                         </div>

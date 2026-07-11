@@ -1,38 +1,32 @@
-import type { ServerResponse } from '../lib/types'
-
 // ─── Device overview ──────────────────────────────────────────────────────────
 
-export type DeviceHealth = 'online' | 'degraded' | 'offline'
+export type DeviceHealth = 'online' | 'degraded' | 'offline' | 'unknown'
 
 export type DeviceOverview = {
   device_id: string
-  imei: string
   health: DeviceHealth
-  status: string
-  last_seen: string | null
-  signal_strength: number | null
-  battery_level: number | null
-  firmware_version: string | null
-  vehicle_id: string | null
-  latitude: number | null
-  longitude: number | null
 }
 
-export type DeviceOverviewResponse = ServerResponse<DeviceOverview>
+export type DeviceOverviewResponse = DeviceOverview
 
 // ─── Device connectivity ──────────────────────────────────────────────────────
 
 export type DeviceConnectivity = {
   device_id: string
   health: DeviceHealth
-  last_contact: string | null
-  reporting_interval_seconds: number
   sample_count_24h: number
-  seconds_since_contact: number
   status_timeout_seconds: number
+  heartbeat: {
+    online_threshold_seconds: number
+    offline_threshold_seconds: number
+  }
+  last_health_check: {
+    at: string
+    result: DeviceHealth
+  } | null
 }
 
-export type DeviceConnectivityResponse = ServerResponse<DeviceConnectivity>
+export type DeviceConnectivityResponse = DeviceConnectivity
 
 // ─── Device telemetry ─────────────────────────────────────────────────────────
 
@@ -57,7 +51,6 @@ export type TelemetryPoint = {
 }
 
 export type TelemetryAggregates24h = {
-  avg_interval_seconds: number
   data_quality_pct: number
   sample_count: number
   window_start: string
@@ -67,28 +60,27 @@ export type TelemetryAggregates24h = {
 export type DeviceTelemetry = {
   device_id: string
   aggregates_24h: TelemetryAggregates24h
-  latest: TelemetryPoint | null
   history: TelemetryPoint[]
 }
 
-export type DeviceTelemetryResponse = ServerResponse<DeviceTelemetry>
+export type DeviceTelemetryResponse = DeviceTelemetry
 
 // ─── Device firmware ──────────────────────────────────────────────────────────
 
 export type FirmwareHistoryEntry = {
   version: string
-  first_seen: string
-  last_seen: string
+  first_seen?: string
+  last_seen?: string
+  installed_at?: string
+  is_current?: boolean
 }
 
 export type DeviceFirmware = {
   device_id: string
-  current_version: string
-  reporting_interval_seconds: number
   history: FirmwareHistoryEntry[]
 }
 
-export type DeviceFirmwareResponse = ServerResponse<DeviceFirmware>
+export type DeviceFirmwareResponse = DeviceFirmware
 
 // ─── Query payloads ───────────────────────────────────────────────────────────
 

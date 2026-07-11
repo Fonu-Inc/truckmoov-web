@@ -169,6 +169,8 @@ export interface Job {
     description: string;
   };
   driverId?: string;
+  driverName?: string;
+  driverPhone?: string;
   vehicleId?: string;
   amount: number;
   deadline: Date;

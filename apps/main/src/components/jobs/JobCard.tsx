@@ -78,12 +78,16 @@ function WhatsAppIcon({ className }: { className?: string }) {
 
 export function JobCard({ job, onView, onEdit, onDelete, onMatch, onComplete, dispatcherMode = false, recommendedBy, assignedByRole, recommendOnly = false }: JobCardProps) {
   const { format: formatCurrency } = useCurrency();
-  const driverPhone = (job as any).driverPhone as string | undefined;
+  const driverPhone = job.driverPhone;
+  const matchedDriver = job.driverId
+    ? mockDrivers.find(d => d.id === job.driverId)
+    : undefined;
   const driver = job.driverId
-    ? mockDrivers.find(d => d.id === job.driverId) ?? {
+    ? {
+        ...matchedDriver,
         id: job.driverId,
-        name: job.driverId,
-        phone: driverPhone ?? "",
+        name: job.driverName || matchedDriver?.name || job.driverId,
+        phone: driverPhone || matchedDriver?.phone || "",
       }
     : null;
   const vehicle = job.vehicleId
