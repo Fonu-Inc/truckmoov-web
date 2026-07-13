@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { LatLngTuple } from "leaflet";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -29,11 +30,14 @@ import {
 } from "@/components/shadcn/select";
 import { Badge } from "@/components/shadcn/badge";
 import { Separator } from "@/components/shadcn/separator";
-import { LocationPicker, LocationValue } from "@/components/maps/LocationPicker";
-import { RoutePreviewMap, RoutePoint } from "@/components/maps/RoutePreviewMap";
-import { RouteOptimizationDialog } from "@/components/jobs/RouteOptimizationDialog";
-import { useRouteOptimization } from "@/hooks/useRouteOptimization";
-type Waypoint = any;
+import {
+  GeneralMap,
+  type GeneralMapMarker,
+} from "@/components/maps/GeneralMap";
+import {
+  MapLocationInput,
+  type MapLocation,
+} from "@/components/maps/MapLocationInput";
 import { Job } from "@/types";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -48,7 +52,6 @@ import {
   Calendar,
   DollarSign,
   Lock,
-  Sparkles,
   Plus,
   X,
 } from "lucide-react";
@@ -97,6 +100,13 @@ interface IntermediateStop {
   lng: number;
 }
 
+interface JobRoutePoint {
+  lat: number;
+  lng: number;
+  label: string;
+  type: "pickup" | "stop" | "delivery";
+}
+
 const STEPS = [
   { id: 1, label: "Locations", icon: MapPin, description: "Pickup & delivery" },
   { id: 2, label: "Details", icon: ClipboardList, description: "Cargo & pricing" },
@@ -117,12 +127,6 @@ export function JobFormDialog({
   const isEditing = !!job;
   const [step, setStep] = useState(1);
   const [stops, setStops] = useState<IntermediateStop[]>([]);
-  const [optimizerOpen, setOptimizerOpen] = useState(false);
-  const [previewWaypoints, setPreviewWaypoints] = useState<Waypoint[] | null>(null);
-  const [savings, setSavings] = useState<{ km: number; pct: string } | null>(null);
-  const [appliedSavings, setAppliedSavings] = useState<{ km: number; pct: string } | null>(null);
-  const { optimizeRoute, isOptimizing } = useRouteOptimization();
-  const justAppliedRef = useRef(false);
 
   const form = useForm<JobFormData>({
     resolver: zodResolver(jobSchema),
@@ -149,13 +153,16 @@ export function JobFormDialog({
     setStep(1);
     setStops([]);
     if (job) {
-      const jobStops = ((job as any).stops ?? []) as Array<{
-        address?: string;
-        latitude?: number;
-        longitude?: number;
-        lat?: number;
-        lng?: number;
-      }>;
+      const jobStops =
+        (job as Job & {
+          stops?: Array<{
+            address?: string;
+            latitude?: number;
+            longitude?: number;
+            lat?: number;
+            lng?: number;
+          }>;
+        }).stops ?? [];
       form.reset({
         reference: job.reference,
         pickupAddress: job.pickup.address,
@@ -200,28 +207,25 @@ export function JobFormDialog({
 
   const values = form.watch();
 
-  const pickupValue: LocationValue = {
-    address: values.pickupAddress || "",
-    lat: values.pickupLat || 0,
-    lng: values.pickupLng || 0,
-  };
-  const deliveryValue: LocationValue = {
-    address: values.deliveryAddress || "",
-    lat: values.deliveryLat || 0,
-    lng: values.deliveryLng || 0,
-  };
+  const pickupValue = useMemo<MapLocation>(
+    () => ({
+      address: values.pickupAddress || "",
+      lat: values.pickupLat || 0,
+      lng: values.pickupLng || 0,
+    }),
+    [values.pickupAddress, values.pickupLat, values.pickupLng]
+  );
+  const deliveryValue = useMemo<MapLocation>(
+    () => ({
+      address: values.deliveryAddress || "",
+      lat: values.deliveryLat || 0,
+      lng: values.deliveryLng || 0,
+    }),
+    [values.deliveryAddress, values.deliveryLat, values.deliveryLng]
+  );
 
-  const routePoints: RoutePoint[] = useMemo(() => {
-    // If a preview optimization is active, use it
-    if (previewWaypoints && previewWaypoints.length > 0) {
-      return previewWaypoints.map((w) => ({
-        lat: w.lat,
-        lng: w.lng,
-        label: w.address,
-        type: w.type,
-      }));
-    }
-    const arr: RoutePoint[] = [];
+  const routePoints: JobRoutePoint[] = useMemo(() => {
+    const arr: JobRoutePoint[] = [];
     if (pickupValue.lat && pickupValue.lng) {
       arr.push({
         lat: pickupValue.lat,
@@ -244,26 +248,27 @@ export function JobFormDialog({
       });
     }
     return arr;
-  }, [pickupValue, deliveryValue, stops, previewWaypoints]);
+  }, [pickupValue, deliveryValue, stops]);
 
-  // Discard any preview AND any applied optimization indicator when the underlying inputs change
-  useEffect(() => {
-    setPreviewWaypoints(null);
-    setSavings(null);
-    if (justAppliedRef.current) {
-      // Skip clearing the "applied" indicator on the change caused by Apply itself
-      justAppliedRef.current = false;
-      return;
-    }
-    setAppliedSavings(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    pickupValue.lat,
-    pickupValue.lng,
-    deliveryValue.lat,
-    deliveryValue.lng,
-    stops.length,
-  ]);
+  const mapMarkers = useMemo<GeneralMapMarker[]>(
+    () =>
+      routePoints.map((point) => ({
+        position: [point.lat, point.lng] as LatLngTuple,
+        label: point.label,
+        color:
+          point.type === "pickup"
+            ? "#22c55e"
+            : point.type === "delivery"
+              ? "#ef4444"
+              : "#f59e0b",
+      })),
+    [routePoints]
+  );
+
+  const mapWaypoints = useMemo<LatLngTuple[]>(
+    () => routePoints.map((point) => [point.lat, point.lng]),
+    [routePoints]
+  );
 
   const handleNext = async () => {
     if (step === 1) {
@@ -316,7 +321,7 @@ export function JobFormDialog({
     setStops((prev) => prev.filter((s) => s.id !== id));
   };
 
-  const updateStop = (id: string, value: LocationValue) => {
+  const updateStop = (id: string, value: MapLocation) => {
     setStops((prev) =>
       prev.map((s) =>
         s.id === id
@@ -325,75 +330,6 @@ export function JobFormDialog({
       )
     );
   };
-
-  // Build waypoints for the optimizer (existing dialog)
-  const optimizerWaypoints: Waypoint[] = useMemo(() => {
-    const wps: Waypoint[] = [];
-    if (pickupValue.lat && pickupValue.lng) {
-      wps.push({
-        id: "pickup",
-        type: "pickup",
-        address: pickupValue.address || "Pickup",
-        lat: pickupValue.lat,
-        lng: pickupValue.lng,
-        jobReference: values.reference,
-        duration: 15,
-      });
-    }
-    stops.forEach((s, i) => {
-      if (s.lat && s.lng) {
-        wps.push({
-          id: s.id,
-          type: "stop",
-          address: s.address || `Stop ${i + 1}`,
-          lat: s.lat,
-          lng: s.lng,
-          duration: 10,
-        });
-      }
-    });
-    if (deliveryValue.lat && deliveryValue.lng) {
-      wps.push({
-        id: "delivery",
-        type: "delivery",
-        address: deliveryValue.address || "Delivery",
-        lat: deliveryValue.lat,
-        lng: deliveryValue.lng,
-        jobReference: values.reference,
-        duration: 20,
-      });
-    }
-    return wps;
-  }, [pickupValue, deliveryValue, stops, values.reference]);
-
-  const handleOptimized = (wps: Waypoint[]) => {
-    // Apply ordering back to form: first pickup, last delivery, middle = stops
-    const pickup = wps.find((w) => w.id === "pickup");
-    const delivery = wps.find((w) => w.id === "delivery");
-    const middle = wps.filter((w) => w.id !== "pickup" && w.id !== "delivery");
-
-    if (pickup) {
-      form.setValue("pickupAddress", pickup.address);
-      form.setValue("pickupLat", pickup.lat);
-      form.setValue("pickupLng", pickup.lng);
-    }
-    if (delivery) {
-      form.setValue("deliveryAddress", delivery.address);
-      form.setValue("deliveryLat", delivery.lat);
-      form.setValue("deliveryLng", delivery.lng);
-    }
-    setStops(
-      middle.map((m) => ({
-        id: m.id,
-        address: m.address,
-        lat: m.lat,
-        lng: m.lng,
-      }))
-    );
-  };
-
-  const canOptimize =
-    pickupValue.lat > 0 && deliveryValue.lat > 0;
 
   return (
     <>
@@ -488,13 +424,12 @@ export function JobFormDialog({
 
                   {/* Pickup + Delivery side-by-side on md+ */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <LocationPicker
+                    <MapLocationInput
                       label="Pickup address"
                       placeholder="e.g. Apapa Port, Lagos"
                       pinColor="#22c55e"
                       value={pickupValue}
-                      showMap={false}
-                      onChange={(v) => {
+                      onLocationSelect={(v) => {
                         form.setValue("pickupAddress", v.address, {
                           shouldValidate: true,
                         });
@@ -506,13 +441,12 @@ export function JobFormDialog({
                         });
                       }}
                     />
-                    <LocationPicker
+                    <MapLocationInput
                       label="Delivery address"
                       placeholder="e.g. Wuse Zone 5, Abuja"
                       pinColor="#ef4444"
                       value={deliveryValue}
-                      showMap={false}
-                      onChange={(v) => {
+                      onLocationSelect={(v) => {
                         form.setValue("deliveryAddress", v.address, {
                           shouldValidate: true,
                         });
@@ -535,7 +469,7 @@ export function JobFormDialog({
                       {stops.map((s, idx) => (
                         <div key={s.id} className="flex items-end gap-2">
                           <div className="flex-1">
-                            <LocationPicker
+                            <MapLocationInput
                               label={`Stop ${idx + 1}`}
                               placeholder="e.g. Fuel station, Lokoja"
                               pinColor="#f59e0b"
@@ -544,8 +478,7 @@ export function JobFormDialog({
                                 lat: s.lat,
                                 lng: s.lng,
                               }}
-                              showMap={false}
-                              onChange={(v) => updateStop(s.id, v)}
+                              onLocationSelect={(v) => updateStop(s.id, v)}
                             />
                           </div>
                           <Button
@@ -573,7 +506,7 @@ export function JobFormDialog({
                     Add intermediate stop
                   </Button>
 
-                  {/* Progressive route map with overlay optimize controls */}
+                  {/* Progressive route map */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium flex items-center gap-2">
@@ -581,128 +514,43 @@ export function JobFormDialog({
                         {routePoints.length === 0
                           ? "Map preview"
                           : routePoints.length === 1
-                            ? "Pickup pin — drag to fine-tune"
-                            : previewWaypoints
-                              ? "Proposed optimized route"
-                              : appliedSavings
-                                ? "Optimized route applied"
-                                : "Route preview"}
+                            ? "Pickup location"
+                            : "Route preview"}
                       </p>
-                      <div className="flex items-center gap-1.5">
-                        {appliedSavings && !previewWaypoints && (
-                          <Badge className="text-xs bg-destructive/15 text-destructive border-destructive/30 hover:bg-destructive/15">
-                            <Sparkles className="h-3 w-3 mr-1" />
-                            Optimized · {appliedSavings.km.toFixed(1)} km saved
-                          </Badge>
-                        )}
-                        {routePoints.length >= 2 && (
-                          <Badge variant="outline" className="text-xs">
-                            {routePoints.length} stops
-                          </Badge>
-                        )}
-                      </div>
+                      {routePoints.length >= 2 && (
+                        <Badge variant="outline" className="text-xs">
+                          {routePoints.length} points
+                        </Badge>
+                      )}
                     </div>
 
-                    {routePoints.length === 0 ? (
-                      <div className="h-[240px] w-full rounded-md border border-dashed border-border bg-muted/30 flex flex-col items-center justify-center text-center px-6">
-                        <MapPin className="h-6 w-6 text-muted-foreground mb-2" />
-                        <p className="text-sm font-medium text-foreground">
-                          Map is idle
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Enter a pickup address above — the first pin will drop here.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        <RoutePreviewMap
-                          points={routePoints}
-                          heightClassName="h-[280px]"
-                          showRoute={routePoints.length >= 2}
-                          isOptimized={!!appliedSavings && !previewWaypoints}
-                        />
-
-                        {/* Overlay controls — only when we have a routable trip */}
-                        {canOptimize && (
-                          <div className="absolute top-2 right-2 z-[400] flex flex-col items-end gap-2">
-                            {!previewWaypoints ? (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                disabled={isOptimizing}
-                                onClick={async () => {
-                                  const result = await optimizeRoute(optimizerWaypoints);
-                                  if (result) {
-                                    setPreviewWaypoints(result.optimized_waypoints);
-                                    setSavings({
-                                      km: result.analysis.actual_savings_km,
-                                      pct: result.analysis.actual_savings_percentage,
-                                    });
-                                  }
-                                }}
-                                className="shadow-md"
-                              >
-                                <Sparkles className="h-4 w-4 mr-1.5 text-primary" />
-                                {isOptimizing
-                                  ? "Optimizing…"
-                                  : appliedSavings
-                                    ? "Re-optimize"
-                                    : "Optimize Route"}
-                              </Button>
-                            ) : (
-                              <div className="flex flex-col items-end gap-1.5 bg-card/95 backdrop-blur border border-border rounded-md p-2 shadow-md">
-                                {savings && (
-                                  <p className="text-[11px] text-muted-foreground px-1">
-                                    Saves <span className="font-medium text-foreground">{savings.km.toFixed(1)} km</span>{" "}
-                                    ({savings.pct}%)
-                                  </p>
-                                )}
-                                <div className="flex items-center gap-1.5">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => {
-                                      setPreviewWaypoints(null);
-                                      setSavings(null);
-                                    }}
-                                  >
-                                    Discard
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="gradient"
-                                    onClick={() => {
-                                      // Mark as applied BEFORE the writes that will trigger the input-change effect
-                                      justAppliedRef.current = true;
-                                      handleOptimized(previewWaypoints);
-                                      setAppliedSavings(savings);
-                                      setPreviewWaypoints(null);
-                                      setSavings(null);
-                                    }}
-                                  >
-                                    <Check className="h-4 w-4 mr-1" />
-                                    Apply Optimization
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    <div className="relative h-[280px] overflow-hidden rounded-md border border-border">
+                      <GeneralMap
+                        className="h-full w-full"
+                        center={mapWaypoints[0]}
+                        zoom={12}
+                        markers={mapMarkers}
+                        fitMarkers
+                        routeWaypoints={
+                          mapWaypoints.length >= 2 ? mapWaypoints : undefined
+                        }
+                        routeColor="#facc15"
+                      />
+                      {routePoints.length === 0 && (
+                        <div className="pointer-events-none absolute bottom-3 left-1/2 z-[500] -translate-x-1/2 rounded-full bg-card/90 px-3 py-1.5 text-xs text-muted-foreground shadow-md backdrop-blur">
+                          Centered on your current location
+                        </div>
+                      )}
+                    </div>
 
                     {routePoints.length === 1 && (
                       <p className="text-xs text-muted-foreground">
                         Add a delivery address to generate the optimized route.
                       </p>
                     )}
-                    {routePoints.length >= 2 && !previewWaypoints && (
+                    {routePoints.length >= 2 && (
                       <p className="text-xs text-muted-foreground">
-                        Tip: drag the marker on each picker (or click the map) to
-                        fine-tune the exact location.
+                        Use Optimize route on the map to compare available routes.
                       </p>
                     )}
                   </div>
@@ -890,10 +738,18 @@ export function JobFormDialog({
                         {routePoints.length} stops
                       </Badge>
                     </div>
-                    <RoutePreviewMap
-                      points={routePoints}
-                      heightClassName="h-[220px]"
-                    />
+                    <div className="h-[220px] overflow-hidden rounded-md border border-border">
+                      <GeneralMap
+                        className="h-full w-full"
+                        center={mapWaypoints[0]}
+                        zoom={11}
+                        markers={mapMarkers}
+                        fitMarkers
+                        routeCoordinates={mapWaypoints}
+                        routeColor="#facc15"
+                        showRouteOptimizer={false}
+                      />
+                    </div>
                     <div className="space-y-2 text-sm">
                       <div className="flex items-start gap-2">
                         <span className="h-2 w-2 rounded-full bg-success mt-1.5" />
@@ -1009,13 +865,6 @@ export function JobFormDialog({
         </DialogContent>
       </Dialog>
 
-      {/* Route optimizer (existing dialog) */}
-      <RouteOptimizationDialog
-        open={optimizerOpen}
-        onOpenChange={setOptimizerOpen}
-        initialWaypoints={optimizerWaypoints}
-        onOptimize={handleOptimized}
-      />
     </>
   );
 }
