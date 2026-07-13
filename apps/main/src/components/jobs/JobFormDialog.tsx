@@ -31,9 +31,9 @@ import {
 import { Badge } from "@/components/shadcn/badge";
 import { Separator } from "@/components/shadcn/separator";
 import {
-  GeneralMap,
-  type GeneralMapMarker,
-} from "@/components/maps/GeneralMap";
+  RoutePreviewMap,
+  type RoutePreviewMapMarker,
+} from "@/components/maps/RoutePreviewMap";
 import {
   MapLocationInput,
   type MapLocation,
@@ -250,7 +250,7 @@ export function JobFormDialog({
     return arr;
   }, [pickupValue, deliveryValue, stops]);
 
-  const mapMarkers = useMemo<GeneralMapMarker[]>(
+  const mapMarkers = useMemo<RoutePreviewMapMarker[]>(
     () =>
       routePoints.map((point) => ({
         position: [point.lat, point.lng] as LatLngTuple,
@@ -525,7 +525,7 @@ export function JobFormDialog({
                     </div>
 
                     <div className="relative h-[280px] overflow-hidden rounded-md border border-border">
-                      <GeneralMap
+                      <RoutePreviewMap
                         className="h-full w-full"
                         center={mapWaypoints[0]}
                         zoom={12}
@@ -739,7 +739,7 @@ export function JobFormDialog({
                       </Badge>
                     </div>
                     <div className="h-[220px] overflow-hidden rounded-md border border-border">
-                      <GeneralMap
+                      <RoutePreviewMap
                         className="h-full w-full"
                         center={mapWaypoints[0]}
                         zoom={11}
