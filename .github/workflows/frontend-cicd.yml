@@ -102,6 +102,14 @@ jobs:
           echo "SSH_HOST=$SSH_HOST" >> $GITHUB_ENV
           ssh-keyscan -t ed25519 -p "$PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
+      - name: Write .env to shared
+        env:
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          ENV_B64: ${{ secrets.MAIN_ENV }}
+        run: |
+          printf '%s' "$ENV_B64" | ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" \
+            "$SSH_USER@$SSH_HOST" "write-env $APP_NAME"
+
       - name: Deploy via wrapper
         env:
           SSH_USER: ${{ secrets.DEV_SSH_USER }}
