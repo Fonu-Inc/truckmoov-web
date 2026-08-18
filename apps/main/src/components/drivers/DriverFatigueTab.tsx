@@ -1,3 +1,4 @@
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
 import { Button } from '@/components/shadcn/button';
@@ -18,7 +19,6 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
-import { format } from 'date-fns';
 
 type FatigueAlert = {
   id: string;
@@ -120,7 +120,7 @@ function AlertCard({ alert, expanded, onToggle }: {
                 </span>
               </CardDescription>
               <p className="text-xs text-muted-foreground mt-1">
-                {format(new Date(alert.created_at), 'PPpp')}
+                {formatWithPattern(alert.created_at, 'PPpp')}
               </p>
             </div>
           </div>

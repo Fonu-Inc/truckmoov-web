@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime, formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
 import { Button } from '@/components/shadcn/button';
@@ -17,7 +18,6 @@ import {
   AlertTriangle
 } from 'lucide-react';
 type InvoiceSync = any;
-import { format } from 'date-fns';
 
 export function AccountingIntegrationPanel() {
   const integration: any = null;
@@ -92,12 +92,12 @@ export function AccountingIntegrationPanel() {
                   </div>
                   {integration.connected_at && (
                     <p className="text-xs text-muted-foreground">
-                      Connected {format(new Date(integration.connected_at), 'MMM d, yyyy')}
+                      Connected {formatDate(integration.connected_at)}
                     </p>
                   )}
                   {integration.last_sync_at && (
                     <p className="text-xs text-muted-foreground">
-                      Last sync: {format(new Date(integration.last_sync_at), 'MMM d, yyyy HH:mm')}
+                      Last sync: {formatDateTime(integration.last_sync_at)}
                     </p>
                   )}
                 </div>
@@ -184,7 +184,7 @@ export function AccountingIntegrationPanel() {
                       </div>
                       {sync.synced_at && (
                         <span className="text-xs text-muted-foreground">
-                          {format(new Date(sync.synced_at), 'MMM d, HH:mm')}
+                          {formatDayMonthTime(sync.synced_at)}
                         </span>
                       )}
                     </div>

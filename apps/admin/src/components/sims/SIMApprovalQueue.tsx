@@ -1,3 +1,4 @@
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import { useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -101,16 +102,6 @@ const formatDataLimit = (valueMb: number) => {
     return `${Number.isInteger(gb) ? gb : gb.toFixed(1)} GB`;
   }
   return `${valueMb} MB`;
-};
-
-const formatDate = (value: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return emptyValue;
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
 };
 
 const titleCase = (value: string | null | undefined) =>
@@ -384,7 +375,7 @@ export function SIMApprovalQueue() {
                         </span>
                       </TableCell>
                       <TableCell className="px-6">{getStatusBadge(request.status)}</TableCell>
-                      <TableCell className="px-6 text-muted-foreground">{formatDate(request.createdAt)}</TableCell>
+                      <TableCell className="px-6 text-muted-foreground">{formatDate(request.createdAt, emptyValue)}</TableCell>
                       <TableCell className="px-6">
                         <div className="flex items-center justify-end gap-2">
                           {isPendingRequest(request) ? (

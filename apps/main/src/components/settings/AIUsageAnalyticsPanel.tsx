@@ -1,3 +1,4 @@
+import { formatDayMonth, formatDayMonthTime, formatWithPattern, subDays, toDate, toDateParam } from "@truckmoov/app-core/utils/time-utils";
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
@@ -16,7 +17,6 @@ import {
 } from "recharts";
 import { Activity, Brain, Zap, Clock, TrendingUp, AlertTriangle } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
-import { format, parseISO, subDays } from "date-fns";
 import { TimeRangeSelect, type TimeRange } from "@/components/charts/TimeRangeSelect";
 import { TableToolbar, type FilterField, type FilterValues } from "@/components/shadcn/table-toolbar";
 import { ExportButton } from "@/components/shadcn/export-button";
@@ -59,13 +59,13 @@ function buildDemoDaily(days: number) {
   const data: { date: string; label: string; requests: number; tokens: number }[] = [];
   for (let i = days - 1; i >= 0; i--) {
     const date = subDays(new Date(), i);
-    const dayKey = format(date, "yyyy-MM-dd");
+    const dayKey = toDateParam(date);
     const weekday = date.getDay();
     const weekendFactor = weekday === 0 || weekday === 6 ? 0.55 : 1;
     const noise = 0.7 + seededRandom(i + 13) * 0.7;
     const requests = Math.round(28 * weekendFactor * noise);
     const tokens = Math.round(requests * (700 + seededRandom(i + 41) * 600));
-    data.push({ date: dayKey, label: format(date, "MMM d"), requests, tokens });
+    data.push({ date: dayKey, label: formatDayMonth(date), requests, tokens });
   }
   return data;
 }
@@ -104,11 +104,11 @@ export function AIUsageAnalyticsPanel() {
 
     const map = new Map<string, { date: string; requests: number; tokens: number }>();
     for (let i = days - 1; i >= 0; i--) {
-      const date = format(subDays(new Date(), i), "yyyy-MM-dd");
+      const date = toDateParam(subDays(new Date(), i));
       map.set(date, { date, requests: 0, tokens: 0 });
     }
     logs.forEach((log) => {
-      const date = format(parseISO(log.created_at), "yyyy-MM-dd");
+      const date = toDateParam(log.created_at);
       const entry = map.get(date);
       if (entry) {
         entry.requests += 1;
@@ -117,7 +117,7 @@ export function AIUsageAnalyticsPanel() {
     });
     return Array.from(map.values()).map((d) => ({
       ...d,
-      label: format(parseISO(d.date), "MMM d"),
+      label: formatDayMonth(d.date),
     }));
   }, [logs, hasReal, dailyRange]);
 
@@ -129,7 +129,7 @@ export function AIUsageAnalyticsPanel() {
     const cutoff = subDays(new Date(), days);
     const map = new Map<string, { name: string; requests: number; tokens: number }>();
     logs
-      .filter((l) => parseISO(l.created_at) >= cutoff)
+      .filter((l) => toDate(l.created_at) >= cutoff)
       .forEach((log) => {
         const key = log.request_type || "other";
         const entry = map.get(key) || {
@@ -524,7 +524,7 @@ function RecentFailuresTable({
             rows={filtered}
             filename="ai_recent_failures"
             columns={[
-              { header: "Time", accessor: (r) => format(parseISO(r.created_at), "yyyy-MM-dd HH:mm") },
+              { header: "Time", accessor: (r) => formatWithPattern(r.created_at, "yyyy-MM-dd HH:mm") },
               { header: "Feature", accessor: (r) => REQUEST_TYPE_LABELS[r.request_type] || r.request_type },
               { header: "Provider", accessor: "provider" },
               { header: "Error", accessor: (r) => r.error_message || "Unknown error" },
@@ -562,7 +562,7 @@ function RecentFailuresTable({
               filtered.map((log) => (
                 <TableRow key={log.id}>
                   <TableCell className="text-sm">
-                    {format(parseISO(log.created_at), "MMM d, HH:mm")}
+                    {formatDayMonthTime(log.created_at)}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">

@@ -1,3 +1,4 @@
+import { formatDate, formatDayMonth } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
@@ -21,7 +22,6 @@ import {
   Clock,
 } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
 
 export function OrgUpgradeQueue() {
   const [reviewingId, setReviewingId] = useState<string | null>(null);
@@ -106,7 +106,7 @@ export function OrgUpgradeQueue() {
                       <p className="font-medium text-sm truncate">{req.orgName}</p>
                       <p className="text-xs text-muted-foreground">
                         {req.current_vehicle_count} vehicles • Requested{" "}
-                        {format(new Date(req.created_at), "MMM d, yyyy")}
+                        {formatDate(req.created_at)}
                       </p>
                       {req.reason && (
                         <p className="text-xs text-muted-foreground mt-1 italic truncate">
@@ -155,7 +155,7 @@ export function OrgUpgradeQueue() {
                   <div className="flex items-center gap-2 shrink-0">
                     {getStatusBadge(req.status)}
                     <span className="text-xs text-muted-foreground">
-                      {format(new Date(req.reviewed_at || req.created_at), "MMM d")}
+                      {formatDayMonth(req.reviewed_at || req.created_at)}
                     </span>
                   </div>
                 </div>

@@ -1,3 +1,4 @@
+import { formatDayMonthTime, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { TenantData } from "@/hooks/useTenants";
 import {
   Dialog as Sheet,
@@ -47,7 +48,6 @@ import {
   Copy,
   RefreshCw
 } from "lucide-react";
-import { format } from "date-fns";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -335,7 +335,7 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
           </SheetTitle>
           <SheetDescription className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            Member since {format(new Date(tenant.createdAt), "MMMM yyyy")}
+            Member since {formatWithPattern(tenant.createdAt, "MMMM yyyy")}
           </SheetDescription>
         </SheetHeader>
 
@@ -897,7 +897,7 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                                 : `${trialStatus.days_remaining ?? 0} day${(trialStatus.days_remaining ?? 0) === 1 ? "" : "s"} remaining`}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              Ends {trialStatus.trial_ends_at ? format(new Date(trialStatus.trial_ends_at), "PPP") : "—"}
+                              Ends {trialStatus.trial_ends_at ? formatWithPattern(trialStatus.trial_ends_at, "PPP") : "—"}
                               {(trialStatus as any).trial_extended_count > 0
                                 ? ` · Extended ${(trialStatus as any).trial_extended_count}×`
                                 : ""}
@@ -969,7 +969,7 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                   const periodStart = sub?.current_period_start ? new Date(sub.current_period_start) : null;
                   const periodEnd = sub?.current_period_end ? new Date(sub.current_period_end) : null;
                   const renewalLabel = periodEnd
-                    ? `${format(periodEnd, "PPP")}${sub?.auto_renew === false ? " (auto-renew off)" : ""}`
+                    ? `${formatWithPattern(periodEnd, "PPP")}${sub?.auto_renew === false ? " (auto-renew off)" : ""}`
                     : "—";
                   const paymentStatus = (() => {
                     const s = lastPayment?.status?.toLowerCase();
@@ -1050,7 +1050,7 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Period Start</p>
-                            <p className="font-medium">{periodStart ? format(periodStart, "PPP") : "—"}</p>
+                            <p className="font-medium">{periodStart ? formatWithPattern(periodStart, "PPP") : "—"}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Renewal Date</p>
@@ -1085,7 +1085,7 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                               <div>
                                 <p className="text-xs text-muted-foreground">Last Payment Date</p>
                                 <p className="font-medium">
-                                  {format(new Date(lastPayment.created_at), "PPP")}
+                                  {formatWithPattern(lastPayment.created_at, "PPP")}
                                 </p>
                               </div>
                             </>
@@ -1193,7 +1193,7 @@ export function TenantDetailsSheet({ tenant, open, onOpenChange }: TenantDetails
                                 </div>
                               </div>
                               <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                {format(new Date(log.created_at), "MMM d, HH:mm")}
+                                {formatDayMonthTime(log.created_at)}
                               </span>
                             </div>
                           </Card>

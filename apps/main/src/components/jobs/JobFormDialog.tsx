@@ -1,3 +1,4 @@
+import { formatWithPattern, toDateTimeInputValue } from "@truckmoov/app-core/utils/time-utils";
 import { useEffect, useMemo, useState } from "react";
 import type { LatLngTuple } from "leaflet";
 import { useForm } from "react-hook-form";
@@ -39,7 +40,6 @@ import {
   type MapLocation,
 } from "@/components/maps/MapLocationInput";
 import { Job } from "@/types";
-import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -175,7 +175,7 @@ export function JobFormDialog({
         cargoWeight: job.cargo.weight,
         cargoDescription: job.cargo.description,
         amount: job.amount,
-        deadline: format(new Date(job.deadline), "yyyy-MM-dd'T'HH:mm"),
+        deadline: toDateTimeInputValue(job.deadline),
         priority: "medium",
       });
       setStops(
@@ -808,7 +808,7 @@ export function JobFormDialog({
                       label="Deadline"
                       value={
                         values.deadline
-                          ? format(new Date(values.deadline), "PPp")
+                          ? formatWithPattern(values.deadline, "PPp")
                           : "—"
                       }
                     />

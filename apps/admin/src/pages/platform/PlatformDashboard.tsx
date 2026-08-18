@@ -1,3 +1,4 @@
+import { formatCompactRelative } from "@truckmoov/app-core/utils/time-utils";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import {
@@ -129,33 +130,6 @@ function formatDataUsage(valueMb?: number) {
   }
 
   return `${valueMb.toLocaleString()} MB`;
-}
-
-function formatActivityTime(value: string) {
-  const timestamp = new Date(value).getTime();
-
-  if (Number.isNaN(timestamp)) {
-    return value;
-  }
-
-  const diffSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
-
-  if (diffSeconds < 60) {
-    return "just now";
-  }
-
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  if (diffMinutes < 60) {
-    return `${diffMinutes} min ago`;
-  }
-
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) {
-    return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
-  }
-
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
 }
 
 function formatStatusLabel(value?: string) {
@@ -469,7 +443,7 @@ export default function PlatformDashboard() {
                         </div>
                       </div>
                       <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {formatActivityTime(activity.occurredAt)}
+                        {formatCompactRelative(activity.occurredAt)}
                       </span>
                     </div>
                   ))}

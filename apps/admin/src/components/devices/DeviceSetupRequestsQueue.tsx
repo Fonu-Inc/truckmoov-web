@@ -13,7 +13,7 @@ import type {
   SystemDeviceSetupRequestsQuery,
   SystemDeviceSetupStatus,
 } from "@truckmoov/api/auth";
-import { format } from "date-fns";
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -211,12 +211,6 @@ function extractRequests(response: unknown): DeviceSetupRow[] {
     .map(normalizeRequest)
     .filter((request) => request.id);
 }
-
-const formatDate = (value: string | undefined, pattern: string) => {
-  if (!value) return "-";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "-" : format(date, pattern);
-};
 
 const formatStatusLabel = (status: string) =>
   status
@@ -600,10 +594,10 @@ export function DeviceSetupRequestsQueue() {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm text-muted-foreground">
-                            <p>{formatDate(request.createdAt, "dd MMM yyyy")}</p>
+                            <p>{formatWithPattern(request.createdAt, "dd MMM yyyy")}</p>
                             <div className="mt-1 flex items-center gap-1 text-xs">
                               <Calendar className="h-3.5 w-3.5" />
-                              {formatDate(request.updatedAt, "dd MMM")}
+                              {formatWithPattern(request.updatedAt, "dd MMM")}
                             </div>
                           </div>
                         </TableCell>
@@ -678,7 +672,7 @@ export function DeviceSetupRequestsQueue() {
               </div>
               <DetailItem
                 label="Preferred Date"
-                value={formatDate(detailRequest.preferredInstallDate ?? detailRequest.updatedAt, "dd MMMM yyyy")}
+                value={formatWithPattern(detailRequest.preferredInstallDate ?? detailRequest.updatedAt, "dd MMMM yyyy")}
               />
               {detailRequest.needsSim && <Badge variant="secondary">SIM Requested</Badge>}
               <DetailItem label="Notes" value={detailRequest.notes || "No notes provided."} />

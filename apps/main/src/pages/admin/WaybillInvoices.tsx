@@ -1,3 +1,4 @@
+import { formatWithPattern, toDateParam } from "@truckmoov/app-core/utils/time-utils";
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SendInvoiceEmailDialog } from '@/components/invoices/SendInvoiceEmailDialog';
@@ -57,7 +58,6 @@ import {
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/shadcn/alert-dialog';
-import { format } from 'date-fns';
 import { ExportButton } from '@/components/shadcn/export-button';
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
@@ -410,7 +410,7 @@ export default function WaybillInvoices() {
                       { header: 'Vehicle', accessor: (w) => w.vehicle_number || '' },
                       { header: 'Customer', accessor: (w) => w.customer_name || '' },
                       { header: 'Price', accessor: (w) => w.calculated_price_ngn ?? '' },
-                      { header: 'Date', accessor: (w) => format(new Date(w.created_at), 'yyyy-MM-dd') },
+                      { header: 'Date', accessor: (w) => toDateParam(w.created_at) },
                     ]}
                   />
                 </div>
@@ -541,7 +541,7 @@ export default function WaybillInvoices() {
                           <TableCell>{wb.customer_name || '—'}</TableCell>
                           <TableCell>{wb.calculated_price_ngn ? formatAmount(wb.calculated_price_ngn) : '—'}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {format(new Date(wb.created_at), 'dd MMM yyyy')}
+                            {formatWithPattern(wb.created_at, 'dd MMM yyyy')}
                           </TableCell>
                           <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                             <div className="flex gap-1 justify-end items-center">
@@ -725,7 +725,7 @@ export default function WaybillInvoices() {
                           <TableCell>{inv.vehicle_number || '—'}</TableCell>
                           <TableCell className="text-right font-medium">{formatAmount(inv.total_ngn)}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {inv.due_date ? format(new Date(inv.due_date), 'dd MMM yyyy') : '—'}
+                            {inv.due_date ? formatWithPattern(inv.due_date, 'dd MMM yyyy') : '—'}
                           </TableCell>
                           <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                             <div className="flex gap-1 justify-end items-center">
@@ -1639,8 +1639,8 @@ function PricingRulesPanel({ rules, onAdd, onUpdate, onDelete, formatAmount, sho
                     {rule.price_per_unit_ngn ? `${formatAmount(rule.price_per_unit_ngn)}/${rule.unit_type || 'unit'}` : '—'}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {rule.effective_from ? format(new Date(rule.effective_from), 'dd MMM yy') : '—'}
-                    {rule.effective_to ? ` → ${format(new Date(rule.effective_to), 'dd MMM yy')}` : ''}
+                    {rule.effective_from ? formatWithPattern(rule.effective_from, 'dd MMM yy') : '—'}
+                    {rule.effective_to ? ` → ${formatWithPattern(rule.effective_to, 'dd MMM yy')}` : ''}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={rule.is_active ? 'bg-success/10 text-success border-success/20' : 'bg-muted text-muted-foreground'}>

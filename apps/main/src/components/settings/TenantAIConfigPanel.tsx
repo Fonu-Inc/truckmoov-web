@@ -1,3 +1,4 @@
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import {
   Bot,
@@ -30,7 +31,6 @@ import { Separator } from "@/components/shadcn/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { Checkbox } from "@/components/shadcn/checkbox";
-import { format } from "date-fns";
 import { useAIConfigPermissions } from "@/hooks/useAIConfigPermissions";
 
 interface TenantAIConfigPanelProps {
@@ -253,7 +253,7 @@ export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
               <Label>Test Connection</Label>
               {config?.last_connection_test_at && (
                 <p className="text-xs text-muted-foreground">
-                  Last tested: {format(new Date(config.last_connection_test_at), "PPp")}
+                  Last tested: {formatWithPattern(config.last_connection_test_at, "PPp")}
                   {config.last_connection_test_success ? (
                     <Check className="inline ml-1 h-3 w-3 text-green-500" />
                   ) : (

@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { Bell, Check, CheckCheck, Trash2, X } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
 import { Badge } from "@/components/shadcn/badge";
@@ -8,7 +9,6 @@ import {
   PopoverTrigger,
 } from "@/components/shadcn/popover";
 import { PlatformNotification } from "@/hooks/useRealtimeNotifications";
-import { formatDistanceToNow } from "date-fns";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 
 interface NotificationCenterProps {
@@ -127,7 +127,7 @@ export function NotificationCenter({
                           {notification.severity}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(notification.timestamp, { addSuffix: true })}
+                          {formatRelative(notification.timestamp)}
                         </span>
                       </div>
                     </div>

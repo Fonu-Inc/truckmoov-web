@@ -1,3 +1,4 @@
+import { formatDateTime, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,6 @@ import {
   ShieldQuestion,
   User,
 } from "lucide-react";
-import { format } from "date-fns";
 import { ProvisioningChecklistView } from "@/components/provisioning/ProvisioningChecklistView";
 
 import type { ProvisioningStep } from "@/lib/provisioningEngineSim";
@@ -162,7 +162,7 @@ export function DeviceRequestDetailsDialog({
           </DialogTitle>
           <DialogDescription>
             Request #{request.id.slice(0, 8)} • Submitted{" "}
-            {format(new Date(request.created_at), "MMM d, yyyy 'at' HH:mm")}
+            {formatWithPattern(request.created_at, "MMM d, yyyy 'at' HH:mm")}
           </DialogDescription>
         </DialogHeader>
 
@@ -235,7 +235,7 @@ export function DeviceRequestDetailsDialog({
                 <Calendar className="h-3 w-3" /> Date Submitted
               </p>
               <p className="font-medium">
-                {format(new Date(request.created_at), "MMM d, yyyy HH:mm")}
+                {formatDateTime(request.created_at)}
               </p>
             </div>
           </div>

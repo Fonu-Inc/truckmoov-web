@@ -1,3 +1,4 @@
+import { formatTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { FleetMap, type FleetMapVehicle } from "@/components/fleet/FleetMap";
@@ -89,7 +90,7 @@ export default function LiveMap() {
     id: a.id,
     type: a.type,
     message: a.message,
-    time: new Date(a.createdAt).toLocaleTimeString(),
+    time: formatTime(a.createdAt),
     severity: a.severity === "high" ? "error" : a.severity === "medium" ? "warning" : "info",
   }));
 

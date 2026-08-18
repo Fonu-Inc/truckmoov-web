@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import type { DeviceWithTelemetry } from "@/hooks/useDeviceTelemetry";
@@ -75,7 +76,6 @@ import { DeviceDetailsSheet } from "@/components/devices/DeviceDetailsSheet";
 import { DeviceBulkUploadDialog } from "@/components/devices/DeviceBulkUploadDialog";
 import { AssignDeviceDialogWithLifecycle } from "@/components/devices/AssignDeviceDialogWithLifecycle";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
 import { useDevicePermissions } from "@/hooks/useDevicePermissions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import { IoTDevice } from "@/types";
@@ -649,7 +649,7 @@ export default function DeviceManagement() {
                           </td>
                           <td className="py-4 text-sm text-muted-foreground">
                             {device.last_seen
-                              ? formatDistanceToNow(new Date(device.last_seen), { addSuffix: true })
+                              ? formatRelative(device.last_seen)
                               : "Never"}
                           </td>
                           <td className="py-4 text-right">

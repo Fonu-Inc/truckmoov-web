@@ -1,3 +1,4 @@
+import { daysBetween, formatWithPattern, startOfDay, subDays } from "@truckmoov/app-core/utils/time-utils";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { EmptyState } from "@/components/dashboard/EmptyState";
@@ -32,7 +33,6 @@ import {
 } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { useMemo } from "react";
-import { format, subDays, startOfDay, isWithinInterval } from "date-fns";
 import { Badge } from "@/components/shadcn/badge";
 
 export default function TenantAdminDashboard() {
@@ -89,7 +89,7 @@ export default function TenantAdminDashboard() {
     const days = Array.from({ length: 7 }, (_, i) => {
       const date = subDays(today, 6 - i);
       return {
-        day: format(date, "EEE"),
+        day: formatWithPattern(date, "EEE"),
         date,
         trips: 0,
         completed: 0,
@@ -97,13 +97,8 @@ export default function TenantAdminDashboard() {
     });
 
     jobs.forEach((job) => {
-      const jobDate = startOfDay(new Date(job.createdAt));
-      const dayIndex = days.findIndex((d) =>
-        isWithinInterval(jobDate, {
-          start: startOfDay(d.date),
-          end: new Date(startOfDay(d.date).getTime() + 24 * 60 * 60 * 1000 - 1),
-        })
-      );
+      const jobDate = startOfDay(job.createdAt);
+      const dayIndex = days.findIndex((d) => daysBetween(d.date, jobDate) === 0);
       if (dayIndex !== -1) {
         days[dayIndex].trips += 1;
         if (job.status === "completed") {
@@ -395,7 +390,7 @@ export default function TenantAdminDashboard() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{alert.message}</p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(alert.createdAt), "MMM d, h:mm a")}
+                          {formatWithPattern(alert.createdAt, "MMM d, h:mm a")}
                         </p>
                       </div>
                       <Button

@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useEffect, useState, useMemo, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -6,7 +7,6 @@ import { Button } from "@/components/shadcn/button";
 import { Card, CardContent } from "@/components/shadcn/card";
 import { Truck, AlertTriangle, Navigation, Clock, Fuel, Phone, Wifi, WifiOff } from "lucide-react";
 import { useRealtimeTracking, RealtimeVehicleLocation } from "@/hooks/useRealtimeTracking";
-import { formatDistanceToNow } from "date-fns";
 
 // Fix for default marker icons when using Leaflet directly
 // (We rely on custom divIcons below, but keep this to avoid missing image warnings.)
@@ -327,7 +327,7 @@ export function FleetMap({
           speed: Math.round(realtimeLocation.speed),
           fuel: realtimeLocation.fuelLevel || vehicle.fuel,
           status: isMoving ? "moving" : realtimeLocation.speed > 0 ? "idle" : "stopped",
-          lastUpdate: formatDistanceToNow(realtimeLocation.timestamp, { addSuffix: true }),
+          lastUpdate: formatRelative(realtimeLocation.timestamp),
           batteryVoltage: realtimeLocation.batteryVoltage ?? vehicle.batteryVoltage,
           networkStatus: (isMoving || realtimeLocation.speed > 0) ? "online" as const : vehicle.networkStatus,
         };
@@ -720,7 +720,7 @@ export function FleetMap({
         )}
         {lastUpdate && (
           <span className="text-xs text-muted-foreground ml-1">
-            {formatDistanceToNow(lastUpdate, { addSuffix: true })}
+            {formatRelative(lastUpdate)}
           </span>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useCallback, useMemo } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
@@ -44,7 +45,6 @@ import {
   Link,
   AlertCircle,
 } from "lucide-react";
-import { format } from "date-fns";
 import { toast } from "sonner";
 import { DeviceLinkingResolver } from "./DeviceLinkingResolver";
 
@@ -497,7 +497,7 @@ export function ActivationBatchesPanel() {
                     </TableCell>
                     <TableCell>{getStatusBadge(batch.status)}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {format(new Date(batch.created_at), 'MMM d, HH:mm')}
+                      {formatDayMonthTime(batch.created_at)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -749,18 +749,18 @@ export function ActivationBatchesPanel() {
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Created</p>
-                  <p>{format(new Date(selectedBatch.created_at), 'MMM d, HH:mm')}</p>
+                  <p>{formatDayMonthTime(selectedBatch.created_at)}</p>
                 </div>
                 {selectedBatch.started_at && (
                   <div>
                     <p className="text-muted-foreground">Started</p>
-                    <p>{format(new Date(selectedBatch.started_at), 'MMM d, HH:mm')}</p>
+                    <p>{formatDayMonthTime(selectedBatch.started_at)}</p>
                   </div>
                 )}
                 {selectedBatch.completed_at && (
                   <div>
                     <p className="text-muted-foreground">Completed</p>
-                    <p>{format(new Date(selectedBatch.completed_at), 'MMM d, HH:mm')}</p>
+                    <p>{formatDayMonthTime(selectedBatch.completed_at)}</p>
                   </div>
                 )}
               </div>

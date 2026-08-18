@@ -1,3 +1,4 @@
+import { formatRelative, minutesBetween, secondsBetween } from "@truckmoov/app-core/utils/time-utils";
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card';
 import { Badge } from '@/components/shadcn/badge';
@@ -12,7 +13,6 @@ import {
   WifiOff,
   TrendingDown
 } from 'lucide-react';
-import { formatDistanceToNow, differenceInSeconds, differenceInMinutes } from 'date-fns';
 
 interface DeviceConnectivityPanelProps {
   healthStatus: DeviceHealthStatus | null;
@@ -40,12 +40,12 @@ export function DeviceConnectivityPanel({
   
   // Calculate time since last seen
   const secondsSinceLastSeen = lastSeen 
-    ? differenceInSeconds(now, new Date(lastSeen))
+    ? secondsBetween(lastSeen, now)
     : null;
   
   // Calculate offline duration if applicable
   const offlineDurationMinutes = lastStatusChangeAt && status === 'offline'
-    ? differenceInMinutes(now, new Date(lastStatusChangeAt))
+    ? minutesBetween(lastStatusChangeAt, now)
     : null;
 
   // Determine if device is in pre-verification state
@@ -120,7 +120,7 @@ export function DeviceConnectivityPanel({
             </div>
             <p className="font-mono text-sm">
               {lastSeen 
-                ? formatDistanceToNow(new Date(lastSeen), { addSuffix: true })
+                ? formatRelative(lastSeen)
                 : 'Never received'
               }
             </p>
@@ -134,7 +134,7 @@ export function DeviceConnectivityPanel({
             </div>
             <p className="font-mono text-sm">
               {lastHealthCheckAt 
-                ? formatDistanceToNow(new Date(lastHealthCheckAt), { addSuffix: true })
+                ? formatRelative(lastHealthCheckAt)
                 : 'Pending'
               }
             </p>
@@ -173,7 +173,7 @@ export function DeviceConnectivityPanel({
                 <p className="text-xs text-muted-foreground">
                   Offline for {offlineDurationMinutes} minute{offlineDurationMinutes !== 1 ? 's' : ''}. 
                   Last status change: {lastStatusChangeAt 
-                    ? formatDistanceToNow(new Date(lastStatusChangeAt), { addSuffix: true })
+                    ? formatRelative(lastStatusChangeAt)
                     : 'Unknown'
                   }
                 </p>

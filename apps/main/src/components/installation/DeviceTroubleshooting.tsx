@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
 import { Button } from '@/components/shadcn/button';
@@ -19,7 +20,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/shadcn/alert';
 type ConfigQueueDevice = any;
 import { DeviceLifecycleBadge } from '@/components/devices/DeviceLifecycleBadge';
 type DeviceLifecycleStatus = string;
-import { formatDistanceToNow } from 'date-fns';
 import {
   Wrench,
   AlertTriangle,
@@ -178,7 +178,7 @@ export function DeviceTroubleshooting({
                     <p className="text-sm text-muted-foreground">Last Seen</p>
                     <p className="text-sm">
                       {selectedDevice.last_seen 
-                        ? formatDistanceToNow(new Date(selectedDevice.last_seen), { addSuffix: true })
+                        ? formatRelative(selectedDevice.last_seen)
                         : 'Never'
                       }
                     </p>
@@ -187,7 +187,7 @@ export function DeviceTroubleshooting({
                     <p className="text-sm text-muted-foreground">Configured</p>
                     <p className="text-sm">
                       {(selectedDevice as any).configured_at 
-                        ? formatDistanceToNow(new Date((selectedDevice as any).configured_at), { addSuffix: true })
+                        ? formatRelative((selectedDevice as any).configured_at)
                         : 'Not yet'
                       }
                     </p>

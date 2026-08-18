@@ -1,5 +1,5 @@
+import { formatDateTime, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { CheckCircle2, Loader2, Circle, Settings } from "lucide-react";
-import { format } from "date-fns";
 import {
   DEVICE_PROVISIONING_STEPS,
   SIM_PROVISIONING_STEPS,
@@ -78,7 +78,7 @@ export function ProvisioningChecklistView({
               </p>
               {step.completed_at && (
                 <p className="text-xs text-muted-foreground">
-                  {format(new Date(step.completed_at), "MMM d, HH:mm:ss")}
+                  {formatWithPattern(step.completed_at, "MMM d, HH:mm:ss")}
                 </p>
               )}
             </div>
@@ -89,10 +89,10 @@ export function ProvisioningChecklistView({
       {(startedAt || completedAt) && (
         <div className="text-xs text-muted-foreground pt-2 border-t border-border space-y-0.5">
           {startedAt && (
-            <p>Started: {format(new Date(startedAt), "MMM d, yyyy HH:mm")}</p>
+            <p>Started: {formatDateTime(startedAt)}</p>
           )}
           {completedAt && (
-            <p>Completed: {format(new Date(completedAt), "MMM d, yyyy HH:mm")}</p>
+            <p>Completed: {formatDateTime(completedAt)}</p>
           )}
         </div>
       )}

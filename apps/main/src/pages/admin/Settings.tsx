@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { formatDistanceToNow } from "date-fns";
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   getOrganizationUsersQueryOptions,
   useChangeRole,
@@ -139,14 +139,6 @@ interface TenantUser {
   accountStatus: string;
 }
 
-function formatLastActive(value?: string) {
-  if (!value) return "Never";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "Never"
-    : formatDistanceToNow(date, { addSuffix: true });
-}
-
 export default function Settings() {
   const { user } = useAuthStore();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -227,7 +219,7 @@ export default function Settings() {
         organizationUser.accountStatus === "disabled"
           ? "disabled"
           : organizationUser.status,
-      lastActive: formatLastActive(organizationUser.lastActiveAt),
+      lastActive: formatRelative(organizationUser.lastActiveAt, "Never"),
       accountStatus: organizationUser.accountStatus,
     }),
   );

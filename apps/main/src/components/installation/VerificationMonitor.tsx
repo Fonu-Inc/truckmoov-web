@@ -24,7 +24,7 @@ import {
   PopoverTrigger } from '@/components/shadcn/popover';
 type ConfigQueueDevice = any;
 import { Skeleton } from '@/components/shadcn/skeleton';
-import { formatDistanceToNow } from 'date-fns';
+import { formatRelative } from '@truckmoov/app-core/utils/time-utils';
 import {Radio, AlertTriangle, Check, Clock, Search, SlidersHorizontal as Filter, Hourglass, ShieldCheck, Download} from 'lucide-react';
 
 interface VerificationMonitorProps {
@@ -96,11 +96,6 @@ export function VerificationMonitor({
 
     return matchesSearch && matchesStatus && matchesDevice && matchesLastSeen(device) && matchesTimeSinceConfigured(device);
   });
-
-  const getTimeSinceConfigured = (device: ConfigQueueDevice) => {
-    if (!(device as any).configured_at) return 'Unknown';
-    return formatDistanceToNow(new Date((device as any).configured_at), { addSuffix: true });
-  };
 
   const exportData = () => {
     const headers = ['IMEI', 'Manufacturer', 'Model', 'Status', 'Configured At', 'Last Seen', 'Error'];
@@ -395,13 +390,10 @@ export function VerificationMonitor({
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {getTimeSinceConfigured(device)}
+                        {formatRelative((device as any).configured_at, 'Unknown')}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {device.last_seen
-                          ? formatDistanceToNow(new Date(device.last_seen), { addSuffix: true })
-                          : 'Never'
-                        }
+                        {formatRelative(device.last_seen, 'Never')}
                       </TableCell>
                       <TableCell>
                         {(device as any).verification_error_code ? (

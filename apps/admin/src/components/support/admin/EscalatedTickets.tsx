@@ -1,8 +1,8 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useMemo, useState } from "react";
 import type { ElementType } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getSystemEscalatedSupportTicketsQueryOptions } from "@truckmoov/api/auth";
-import { formatDistanceToNow } from "date-fns";
 import { ArrowUpRight, Building2, Loader2, Wifi, Wrench } from "lucide-react";
 
 import { Badge } from "@/components/shadcn/badge";
@@ -283,7 +283,7 @@ export function EscalatedTickets() {
                       </Badge>
                       <span className="text-[11px] text-muted-foreground">
                         {ticket.escalatedAt
-                          ? formatDistanceToNow(new Date(ticket.escalatedAt), { addSuffix: true })
+                          ? formatRelative(ticket.escalatedAt)
                           : "-"}
                       </span>
                     </div>

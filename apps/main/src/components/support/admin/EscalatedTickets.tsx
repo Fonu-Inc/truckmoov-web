@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
@@ -12,7 +13,6 @@ import {
   Wifi,
   Wrench
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 
 const escalationConfig: Record<EscalationType, { label: string; icon: React.ElementType; color: string }> = {
   fleetpro_internal: { label: "FleetPro Internal", icon: Building2, color: "text-primary" },
@@ -259,7 +259,7 @@ export function EscalatedTickets() {
                       <Badge variant="destructive" className="text-[10px]">Escalated</Badge>
                       <span className="text-[11px] text-muted-foreground">
                         {ticket.escalatedAt
-                          ? formatDistanceToNow(new Date(ticket.escalatedAt), { addSuffix: true })
+                          ? formatRelative(ticket.escalatedAt)
                           : "—"}
                       </span>
                     </div>

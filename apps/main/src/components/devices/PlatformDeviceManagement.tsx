@@ -1,3 +1,5 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
+import { formatCompactRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -55,7 +57,6 @@ import { Skeleton } from "@/components/shadcn/skeleton";
 import { Progress } from "@/components/shadcn/progress";
 import { DeviceWithTelemetry, DriverBehaviorEvent } from "@/hooks/useDeviceTelemetry";
 import { DeviceLifecycleBadge } from "./DeviceLifecycleBadge";
-import { formatDistanceToNow } from "date-fns";
 
 type DeviceLifecycleStatus = string;
 import {
@@ -218,19 +219,6 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
     if (strength >= 70) return <Signal className="h-4 w-4 text-success" />;
     if (strength >= 30) return <SignalLow className="h-4 w-4 text-warning" />;
     return <SignalZero className="h-4 w-4 text-destructive" />;
-  };
-
-  const formatLastSeen = (lastSeen: string | null) => {
-    if (!lastSeen) return "Never";
-    const date = new Date(lastSeen);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins} min ago`;
-    if (diffMins < 1440) return `${Math.floor(diffMins / 60)} hours ago`;
-    return `${Math.floor(diffMins / 1440)} days ago`;
   };
 
   const handleViewDetails = (device: DeviceWithTelemetry) => {
@@ -459,7 +447,7 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {formatLastSeen(device.last_seen)}
+                        {formatCompactRelative(device.last_seen, "Never")}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>
@@ -588,7 +576,7 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                     <div>
                       <p className="text-sm text-muted-foreground">Last Seen</p>
                       <p className="text-sm font-medium mt-1">
-                        {selectedDevice.last_seen ? formatDistanceToNow(new Date(selectedDevice.last_seen), { addSuffix: true }) : "Never"}
+                        {selectedDevice.last_seen ? formatRelative(selectedDevice.last_seen) : "Never"}
                       </p>
                     </div>
                     <div>
@@ -807,7 +795,7 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock className="h-4 w-4" />
-                    Last telemetry received {selectedDevice.last_seen ? formatDistanceToNow(new Date(selectedDevice.last_seen), { addSuffix: true }) : "never"}
+                    Last telemetry received {selectedDevice.last_seen ? formatRelative(selectedDevice.last_seen) : "never"}
                   </div>
                 </CardContent>
               </Card>

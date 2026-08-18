@@ -1,3 +1,4 @@
+import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
@@ -6,7 +7,6 @@ import { Button } from '@/components/shadcn/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shadcn/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/shadcn/table';
 import { Phone, PhoneCall, PhoneOff, PhoneMissed, Check, X, Clock, RefreshCw, TrendingUp, Users, Activity } from 'lucide-react';
-import { format } from 'date-fns';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface IVRCall {
@@ -301,7 +301,7 @@ export default function DriverIVRDashboard() {
                       {call.call_duration_seconds ? `${call.call_duration_seconds}s` : '-'}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(call.created_at), 'MMM d, HH:mm')}
+                      {formatDayMonthTime(call.created_at)}
                     </TableCell>
                   </TableRow>
                 ))}

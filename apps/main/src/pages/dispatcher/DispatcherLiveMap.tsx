@@ -1,3 +1,4 @@
+import { formatTime } from "@truckmoov/app-core/utils/time-utils";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -522,7 +523,7 @@ export default function DispatcherLiveMap() {
                 {autoRefresh ? "LIVE" : "PAUSED"}
               </span>
               <span className="text-[10px] text-muted-foreground">
-                · {lastRefresh.toLocaleTimeString()}
+                · {formatTime(lastRefresh)}
               </span>
             </div>
 

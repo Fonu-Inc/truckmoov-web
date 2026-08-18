@@ -88,7 +88,7 @@ import { toast } from "sonner";
 import { PostpaidBillingTab } from "@/components/platform/PostpaidBillingTab";
 import { downloadReceiptPDF } from "@/lib/receiptPdf";
 import { formatCurrency, type Currency, CURRENCIES, DEFAULT_CURRENCY, convertCurrency } from "@/lib/currency";
-import { formatDateOnlyInTimezone, type Timezone, TIMEZONES, DEFAULT_TIMEZONE, getTimezoneLabel } from "@/lib/timezone";
+import { formatDateOnlyInTimezone, type Timezone, TIMEZONES, DEFAULT_TIMEZONE, getTimezoneLabel } from "@truckmoov/app-core/utils/time-utils";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { usePreferences } from "@/contexts/PreferencesContext";
 

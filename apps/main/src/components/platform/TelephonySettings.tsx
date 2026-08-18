@@ -1,3 +1,4 @@
+import { formatClockDuration, formatTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -191,12 +192,6 @@ export function TelephonySettings() {
     }, 1000);
   };
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-NG", {
       style: "currency",
@@ -293,7 +288,7 @@ export function TelephonySettings() {
                   {getStatusBadge(connectionStatus.api)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Last checked: {connectionStatus.lastCheck.toLocaleTimeString()}
+                  Last checked: {formatTime(connectionStatus.lastCheck)}
                 </p>
               </CardContent>
             </Card>
@@ -449,7 +444,7 @@ export function TelephonySettings() {
                   <div className="flex items-center gap-3">
                     {call.duration !== undefined && (
                       <div className="text-right">
-                        <p className="font-mono text-sm font-medium">{formatDuration(call.duration)}</p>
+                        <p className="font-mono text-sm font-medium">{formatClockDuration(call.duration)}</p>
                         <p className="text-xs text-muted-foreground">Duration</p>
                       </div>
                     )}

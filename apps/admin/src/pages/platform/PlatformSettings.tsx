@@ -76,7 +76,7 @@ import { toast } from "sonner";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { usePreferences } from "@/contexts/PreferencesContext";
 import { CURRENCIES, type Currency } from "@/lib/currency";
-import { TIMEZONES, type Timezone } from "@/lib/timezone";
+import { TIMEZONES, type Timezone } from "@truckmoov/app-core/utils/time-utils";
 import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 
 const DATE_RANGE_OPTIONS: Record<ChartDateRange, string> = {

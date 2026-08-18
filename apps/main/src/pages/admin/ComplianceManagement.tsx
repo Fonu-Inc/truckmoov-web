@@ -34,7 +34,7 @@ import {
 import { Label } from "@/components/shadcn/label";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {Download, Shield, FileText, AlertTriangle, CheckCircle, Clock, Calendar, Truck, User, Upload, Search, MoreHorizontal, Eye, Bell, Plus, Mail, Loader2, File, X} from "lucide-react";
-import { format, differenceInDays, addDays } from "date-fns";
+import { addDays, daysUntil, formatDate } from "@truckmoov/app-core/utils/time-utils";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
@@ -96,10 +96,6 @@ export default function ComplianceManagement() {
   });
 
   const stats = getStats();
-
-  const getDaysUntilExpiry = (date: string) => {
-    return differenceInDays(new Date(date), new Date());
-  };
 
   const handleViewDocument = (doc: ComplianceDocument) => {
     setSelectedDocument(doc);
@@ -194,7 +190,7 @@ export default function ComplianceManagement() {
         }
 
         await updateDocument(selectedDocument.id, {
-          expiry_date: addDays(new Date(), 365).toISOString(),
+          expiry_date: addDays(new Date(), 365)!.toISOString(),
           issue_date: new Date().toISOString(),
           file_path: filePath });
         
@@ -350,7 +346,7 @@ export default function ComplianceManagement() {
                   </TableRow>
                 ) : (
                   filteredDocuments.map((doc) => {
-                    const daysLeft = getDaysUntilExpiry(doc.expiry_date);
+                    const daysLeft = daysUntil(doc.expiry_date);
                     return (
                       <TableRow key={doc.id} className="border-border/50">
                         <TableCell>
@@ -367,7 +363,7 @@ export default function ComplianceManagement() {
                         <TableCell>
                           <Badge className={statusColors[doc.status] || statusColors.valid}>{doc.status}</Badge>
                         </TableCell>
-                        <TableCell>{format(new Date(doc.expiry_date), "MMM dd, yyyy")}</TableCell>
+                        <TableCell>{formatDate(doc.expiry_date)}</TableCell>
                         <TableCell>
                           <span
                             className={cn(
@@ -590,13 +586,13 @@ export default function ComplianceManagement() {
                   <Label className="text-muted-foreground text-xs">Issue Date</Label>
                   <p className="font-medium">
                     {selectedDocument.issue_date 
-                      ? format(new Date(selectedDocument.issue_date), "MMM dd, yyyy")
+                      ? formatDate(selectedDocument.issue_date)
                       : '—'}
                   </p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground text-xs">Expiry Date</Label>
-                  <p className="font-medium">{format(new Date(selectedDocument.expiry_date), "MMM dd, yyyy")}</p>
+                  <p className="font-medium">{formatDate(selectedDocument.expiry_date)}</p>
                 </div>
               </div>
               <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
@@ -732,11 +728,11 @@ export default function ComplianceManagement() {
             {selectedDocument && (
               <div className="bg-muted/50 rounded-lg p-3">
                 <p className="text-sm text-muted-foreground">
-                  Current expiry: <span className="font-medium text-foreground">{format(new Date(selectedDocument.expiry_date), "MMM dd, yyyy")}</span>
+                  Current expiry: <span className="font-medium text-foreground">{formatDate(selectedDocument.expiry_date)}</span>
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Reminder date: <span className="font-medium text-foreground">
-                    {format(addDays(new Date(selectedDocument.expiry_date), -parseInt(reminderDaysValue)), "MMM dd, yyyy")}
+                    {formatDate(addDays(selectedDocument.expiry_date, -parseInt(reminderDaysValue)))}
                   </span>
                 </p>
               </div>

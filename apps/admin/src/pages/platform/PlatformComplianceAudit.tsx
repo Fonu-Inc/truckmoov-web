@@ -1,3 +1,4 @@
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useMemo, useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
@@ -19,7 +20,6 @@ import { SlidersHorizontal, ShieldCheck, Search, Lock } from 'lucide-react';
 import { ExportButton } from '@/components/shadcn/export-button';
 type AuditFilters = { startDate?: string; endDate?: string; tenantId?: string; actor?: string; actionType?: string; resourceType?: string };
 import { useTenants } from '@/hooks/useTenants';
-import { format } from 'date-fns';
 
 export default function PlatformComplianceAudit() {
   const [search, setSearch] = useState('');
@@ -162,7 +162,7 @@ export default function PlatformComplianceAudit() {
   };
 
   const exportColumns = [
-    { header: 'Timestamp', accessor: (r: any) => format(new Date(r.timestamp), 'yyyy-MM-dd HH:mm:ss') },
+    { header: 'Timestamp', accessor: (r: any) => formatWithPattern(r.timestamp, 'yyyy-MM-dd HH:mm:ss') },
     { header: 'Source', accessor: 'source' as const },
     { header: 'Actor ID', accessor: (r: any) => r.actor_id || '' },
     { header: 'Actor Name', accessor: (r: any) => r.actor_name || '' },
@@ -379,7 +379,7 @@ export default function PlatformComplianceAudit() {
                     entries.map((e) => (
                       <TableRow key={`${e.source}-${e.id}`}>
                         <TableCell className="font-mono text-xs whitespace-nowrap">
-                          {format(new Date(e.timestamp), 'yyyy-MM-dd HH:mm:ss')}
+                          {formatWithPattern(e.timestamp, 'yyyy-MM-dd HH:mm:ss')}
                         </TableCell>
                         <TableCell>
                           <div className="text-sm font-medium">{e.actor_name || 'System'}</div>

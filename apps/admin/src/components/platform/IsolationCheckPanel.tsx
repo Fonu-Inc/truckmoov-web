@@ -20,7 +20,7 @@ import {
   TableRow } from "@/components/shadcn/table";
 import {ShieldCheck, ShieldAlert, ShieldX, Play, Loader2, CheckCircle2, XCircle, FileText, History, ArrowRight, Download} from "lucide-react";
 import { toast } from "sonner";
-import { formatDateInTimezone } from "@/lib/timezone";
+import { formatDateInTimezone } from "@truckmoov/app-core/utils/time-utils";
 import { usePreferences } from "@/contexts/PreferencesContext";
 
 interface Tenant {

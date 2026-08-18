@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useDeviceTelemetry, DeviceWithTelemetry } from "@/hooks/useDeviceTelemetry";
@@ -56,7 +57,6 @@ import { DeviceBulkUploadDialog } from "@/components/devices/DeviceBulkUploadDia
 import { AssignDeviceDialogWithLifecycle } from "@/components/devices/AssignDeviceDialogWithLifecycle";
 import { DeviceLifecycleBadge } from "@/components/devices/DeviceLifecycleBadge";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
 import { useDevicePermissions } from "@/hooks/useDevicePermissions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import { Skeleton } from "@/components/shadcn/skeleton";
@@ -464,7 +464,7 @@ export default function DispatcherDevices() {
                           </td>
                           <td className="py-4 text-sm text-muted-foreground">
                             {device.last_seen 
-                              ? formatDistanceToNow(new Date(device.last_seen), { addSuffix: true }) 
+                              ? formatRelative(device.last_seen) 
                               : "Never"}
                           </td>
                           <td className="py-4 text-right">

@@ -1,3 +1,4 @@
+import { formatDayMonth, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -37,7 +38,6 @@ import {
   AlertCircle } from "lucide-react";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { toast } from "sonner";
-import { format } from "date-fns";
 
 interface Email {
   id: string;
@@ -421,7 +421,7 @@ export function EmailInbox() {
                           {email.folder === "sent" ? email.to[0].name : email.from.name}
                         </p>
                         <span className="text-xs text-muted-foreground flex-shrink-0">
-                          {format(email.date, "MMM d")}
+                          {formatDayMonth(email.date)}
                         </span>
                       </div>
                       <p className={`text-sm truncate ${!email.isRead ? "font-medium" : "text-muted-foreground"}`}>
@@ -544,7 +544,7 @@ export function EmailInbox() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">
-                    {format(selectedEmail.date, "MMM d, yyyy 'at' h:mm a")}
+                    {formatWithPattern(selectedEmail.date, "MMM d, yyyy 'at' h:mm a")}
                   </p>
                 </div>
               </div>

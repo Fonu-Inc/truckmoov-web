@@ -1,3 +1,5 @@
+import { formatDateTime, formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
+import { formatClockDuration } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -35,7 +37,6 @@ import {
   DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
 import {Phone, PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneMissed, Mic, MicOff, Volume2, Play, Pause, Settings, Plus, Pencil, Trash2, MoreHorizontal, Globe, Clock, User, CheckCircle, XCircle, AlertCircle, Headphones, MessageSquare, Loader2, Delete, UserPlus, Search, Filter, Download} from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 
 type Language = "en" | "ha" | "yo" | "ig" | "pcm";
@@ -215,13 +216,6 @@ const statusIcons: Record<string, React.ReactNode> = {
   missed: <PhoneMissed className="h-4 w-4" />,
   failed: <XCircle className="h-4 w-4" />,
   ongoing: <PhoneCall className="h-4 w-4 animate-pulse" /> };
-
-const formatDuration = (seconds: number): string => {
-  if (seconds === 0) return "-";
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-};
 
 export function VoiceIVRManager() {
   const [prompts, setPrompts] = useState<IVRPrompt[]>(DEFAULT_PROMPTS);
@@ -418,7 +412,7 @@ export function VoiceIVRManager() {
                 <Clock className="h-5 w-5 text-warning" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{formatDuration(avgDuration)}</p>
+                <p className="text-2xl font-bold">{avgDuration ? formatClockDuration(avgDuration) : "-"}</p>
                 <p className="text-xs text-muted-foreground">Avg Duration</p>
               </div>
             </div>
@@ -482,7 +476,7 @@ export function VoiceIVRManager() {
                   </div>
                   <div className="text-center">
                     <p className="text-4xl font-mono font-semibold tabular-nums">
-                      {formatDuration(activeCall.duration || 1)}
+                      {formatClockDuration(activeCall.duration || 1)}
                     </p>
                     <p className="text-xs text-muted-foreground uppercase tracking-wide mt-1">
                       Duration
@@ -645,9 +639,9 @@ export function VoiceIVRManager() {
                             </span>
                           </Badge>
                         </TableCell>
-                        <TableCell>{formatDuration(call.duration)}</TableCell>
+                        <TableCell>{call.duration ? formatClockDuration(call.duration) : "-"}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {format(call.timestamp, "MMM dd, HH:mm")}
+                          {formatDayMonthTime(call.timestamp)}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
                           {call.notes || "-"}
@@ -1127,11 +1121,11 @@ export function VoiceIVRManager() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Duration</p>
-                  <p className="font-mono">{formatDuration(selectedCall.duration)}</p>
+                  <p className="font-mono">{selectedCall.duration ? formatClockDuration(selectedCall.duration) : "-"}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Time</p>
-                  <p>{format(selectedCall.timestamp, "MMM dd, yyyy HH:mm")}</p>
+                  <p>{formatDateTime(selectedCall.timestamp)}</p>
                 </div>
               </div>
 

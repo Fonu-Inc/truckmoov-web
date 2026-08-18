@@ -1,3 +1,4 @@
+import { formatRelative, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getSimRequestsQueryOptions } from "@truckmoov/api/auth";
@@ -15,7 +16,6 @@ import {
   Wifi,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, formatDistanceToNow } from "date-fns";
 
 interface SIMRequestsTrackerProps {
   // Reserved for future use; section is read-only and has no actions.
@@ -121,7 +121,7 @@ export function SIMRequestsTracker(_props: SIMRequestsTrackerProps) {
                           {request.quantity} SIM{request.quantity > 1 ? "s" : ""} Request
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
+                          {formatRelative(request.createdAt)}
                         </p>
                       </div>
                     </div>
@@ -196,7 +196,7 @@ export function SIMRequestsTracker(_props: SIMRequestsTrackerProps) {
                                   {entry.by && ` by ${entry.by}`}
                                 </span>
                                 <span className="ml-auto">
-                                  {format(new Date(entry.at), "MMM d, yyyy h:mm a")}
+                                  {formatWithPattern(entry.at, "MMM d, yyyy h:mm a")}
                                 </span>
                               </div>
                             ))}

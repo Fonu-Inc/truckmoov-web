@@ -1,3 +1,4 @@
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Vehicle } from "@/types";
 import {
@@ -27,7 +28,6 @@ import {
   Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 import { GeofenceManagementDialog } from "./GeofenceManagementDialog";
 
 interface VehicleDetailsSheetProps {
@@ -232,7 +232,7 @@ export function VehicleDetailsSheet({
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Last Update</span>
-                      <span>{format(vehicle.location.lastUpdate, "PPp")}</span>
+                      <span>{formatWithPattern(vehicle.location.lastUpdate, "PPp")}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -320,7 +320,7 @@ export function VehicleDetailsSheet({
                       <div className="mt-2 space-y-1 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {format(record.date, "PPP")}
+                          {formatWithPattern(record.date, "PPP")}
                         </div>
                         {record.mileage && (
                           <div>Mileage: {record.mileage.toLocaleString()} km</div>
@@ -358,7 +358,7 @@ export function VehicleDetailsSheet({
                             {trip.from} → {trip.to}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {format(trip.date, "PPP")}
+                            {formatWithPattern(trip.date, "PPP")}
                           </p>
                         </div>
                         <Badge variant="secondary">{trip.status}</Badge>

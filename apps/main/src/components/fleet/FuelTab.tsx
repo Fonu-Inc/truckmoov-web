@@ -58,7 +58,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend } from "recharts";
-import { format } from "date-fns";
+import { formatDate, formatDayMonth, formatDayMonthTime, toDateParam } from "@truckmoov/app-core/utils/time-utils";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { PeriodFilter, PeriodValue } from "./PeriodFilter";
@@ -103,10 +103,6 @@ function getEfficiencyProgressValue(vehicle: VehicleEfficiency) {
   return Math.min((vehicle.kmPerLiter / target) * 100, 100);
 }
 
-function toDateParam(date: Date) {
-  return format(date, "yyyy-MM-dd");
-}
-
 function getPeriodRange(period: PeriodValue) {
   const today = new Date();
   const end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -131,7 +127,7 @@ function formatNgn(value: number) {
 
 function formatBudgetWindow(start?: string, end?: string) {
   if (!start || !end) return "Selected period";
-  return `${format(new Date(start), "MMM d, yyyy")} - ${format(new Date(end), "MMM d, yyyy")}`;
+  return `${formatDate(start)} - ${formatDate(end)}`;
 }
 
 function getVehicleRegistration(vehicle: Vehicle) {
@@ -701,7 +697,7 @@ export function FuelTab() {
                               )}
                             >
                               <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                              {draftDateFrom ? format(draftDateFrom, "MMM d") : "From"}
+                              {draftDateFrom ? formatDayMonth(draftDateFrom) : "From"}
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="start">
@@ -727,7 +723,7 @@ export function FuelTab() {
                               )}
                             >
                               <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                              {draftDateTo ? format(draftDateTo, "MMM d") : "To"}
+                              {draftDateTo ? formatDayMonth(draftDateTo) : "To"}
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="start">
@@ -831,7 +827,7 @@ export function FuelTab() {
                       <TableCell className="max-w-[150px] truncate">
                         {transaction.station || '—'}
                       </TableCell>
-                      <TableCell>{format(new Date(transaction.recordedAt), "MMM dd, HH:mm")}</TableCell>
+                      <TableCell>{formatDayMonthTime(transaction.recordedAt)}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -1266,7 +1262,7 @@ export function FuelTab() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Date</p>
-                  <p>{format(new Date(selectedTransaction.recordedAt), "MMM dd, yyyy")}</p>
+                  <p>{formatDate(selectedTransaction.recordedAt)}</p>
                 </div>
               </div>
               {selectedTransaction.odometer && (

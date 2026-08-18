@@ -1,3 +1,4 @@
+import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
 import { Button } from '@/components/shadcn/button';
@@ -19,7 +20,6 @@ import {
   Settings2, Database, Layers, CalendarClock, AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 type ERPProvider = string;
 type ERPAuthMethod = string;
 type ERPSyncScope = string;
@@ -200,7 +200,7 @@ export function ERPWMSIntegrationPanel({ tenantId }: Props) {
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {provider?.name}{conn.company_name ? ` · ${conn.company_name}` : ''}
-                          {conn.last_sync_at && ` · Last sync: ${format(new Date(conn.last_sync_at), 'MMM d, HH:mm')}`}
+                          {conn.last_sync_at && ` · Last sync: ${formatDayMonthTime(conn.last_sync_at)}`}
                         </p>
                       </div>
                     </div>
@@ -327,7 +327,7 @@ export function ERPWMSIntegrationPanel({ tenantId }: Props) {
                           </div>
                           {log.completed_at && (
                             <span className="text-xs text-muted-foreground">
-                              {format(new Date(log.completed_at), 'MMM d, HH:mm')}
+                              {formatDayMonthTime(log.completed_at)}
                             </span>
                           )}
                         </div>
@@ -353,7 +353,7 @@ export function ERPWMSIntegrationPanel({ tenantId }: Props) {
                             <p className="font-medium text-sm">{SCOPE_LABELS[scope].label}</p>
                             {schedule?.last_run_at && (
                               <p className="text-xs text-muted-foreground">
-                                Last: {format(new Date(schedule.last_run_at), 'MMM d, HH:mm')}
+                                Last: {formatDayMonthTime(schedule.last_run_at)}
                               </p>
                             )}
                           </div>

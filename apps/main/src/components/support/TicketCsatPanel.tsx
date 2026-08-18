@@ -1,3 +1,4 @@
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Star } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
@@ -5,7 +6,6 @@ import { Textarea } from "@/components/shadcn/textarea";
 import { Label } from "@/components/shadcn/label";
 import { Switch } from "@/components/shadcn/switch";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 
 interface Props {
   ticketId: string;
@@ -35,7 +35,7 @@ export function TicketCsatPanel({ ticketId, ticketStatus }: Props) {
             Your feedback
           </Label>
           <span className="text-[11px] text-muted-foreground">
-            {format(new Date(csat.created_at), "PPp")}
+            {formatWithPattern(csat.created_at, "PPp")}
           </span>
         </div>
         <div className="flex items-center gap-1">

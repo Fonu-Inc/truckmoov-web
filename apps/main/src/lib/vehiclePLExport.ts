@@ -1,3 +1,4 @@
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -91,7 +92,7 @@ export function exportVehiclePLToPDF(
     }
     doc.setFontSize(12);
     doc.text(`Reporting Period: ${opts.periodLabel}`, 40, 160);
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 40, 180);
+    doc.text(`Generated: ${formatDate(new Date())}`, 40, 180);
 
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(11);
@@ -188,7 +189,7 @@ export function exportVehiclePLToExcel(
     [opts.title],
     [opts.companyName],
     [`Period: ${opts.periodLabel}`],
-    [`Generated: ${new Date().toLocaleDateString()}`],
+    [`Generated: ${formatDate(new Date())}`],
     [],
     ["Metric", "Value"],
     ["Total Revenue", t.revenue],

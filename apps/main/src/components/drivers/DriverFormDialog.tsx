@@ -1,3 +1,4 @@
+import { toDateParam } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,7 +9,6 @@ import { Input } from "@/components/shadcn/input";
 import { Button } from "@/components/shadcn/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { Driver } from "@/types";
-import { format } from "date-fns";
 
 const driverSchema = z.object({
   firstName: z.string().min(2, "First name required").max(50),
@@ -59,7 +59,7 @@ export function DriverFormDialog({ open, onOpenChange, driver, onSubmit }: Drive
         phone: driver.phone,
         email: driver.email || "",
         licenseNumber: driver.licenseNumber,
-        licenseExpiry: format(new Date(driver.licenseExpiry), "yyyy-MM-dd"),
+        licenseExpiry: toDateParam(driver.licenseExpiry),
         status: driver.status,
         communicationPreference: driver.communicationPreference,
       });

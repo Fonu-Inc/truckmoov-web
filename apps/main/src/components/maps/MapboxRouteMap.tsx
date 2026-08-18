@@ -1,3 +1,4 @@
+import { formatHumanDuration } from "@truckmoov/app-core/utils/time-utils";
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -59,19 +60,6 @@ function formatDistance(meters: number): string {
     return `${Math.round(meters)} m`;
   }
   return `${(meters / 1000).toFixed(1)} km`;
-}
-
-function formatDuration(seconds: number): string {
-  if (seconds < 60) {
-    return `${Math.round(seconds)} sec`;
-  }
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) {
-    return `${minutes} min`;
-  }
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours}h ${mins}m`;
 }
 
 export function MapboxRouteMap({
@@ -296,7 +284,7 @@ export function MapboxRouteMap({
             </Badge>
             <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm px-3 py-1.5">
               <Clock className="h-4 w-4 mr-2 text-primary" />
-              {formatDuration(routeData.route.duration)}
+              {formatHumanDuration(routeData.route.duration)}
             </Badge>
           </div>
         )}
@@ -355,7 +343,7 @@ export function MapboxRouteMap({
                         <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                           <span>{formatDistance(direction.distance)}</span>
                           <span>•</span>
-                          <span>{formatDuration(direction.duration)}</span>
+                          <span>{formatHumanDuration(direction.duration)}</span>
                         </div>
                       </div>
                     </div>

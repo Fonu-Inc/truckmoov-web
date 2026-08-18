@@ -1,8 +1,8 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import React from 'react';
 import { Badge } from '@/components/shadcn/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/shadcn/tooltip';
 import { Circle, AlertCircle, WifiOff } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 
 export type DeviceHealthStatus = 'online' | 'degraded' | 'offline';
 
@@ -57,7 +57,7 @@ export function DeviceHealthBadge({
   const textSize = size === 'sm' ? 'text-xs' : size === 'lg' ? 'text-sm' : 'text-xs';
 
   const lastSeenText = lastSeen 
-    ? formatDistanceToNow(new Date(lastSeen), { addSuffix: true })
+    ? formatRelative(lastSeen)
     : 'Never';
 
   return (

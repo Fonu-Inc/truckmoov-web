@@ -1,3 +1,4 @@
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -1429,12 +1430,12 @@ export default function DataBundles() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Activated</p>
-                      <p className="font-medium">{new Date(viewAlloc.created_at).toLocaleDateString()}</p>
+                      <p className="font-medium">{formatDate(viewAlloc.created_at)}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Expires</p>
                       <p className="font-medium">
-                        {new Date(viewAlloc.expires_at).toLocaleDateString()}
+                        {formatDate(viewAlloc.expires_at)}
                         {!isExpired && <span className="text-xs text-muted-foreground ml-1">({days}d left)</span>}
                       </p>
                     </div>

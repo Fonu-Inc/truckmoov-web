@@ -1,3 +1,4 @@
+import { formatDateTime, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 
 import {
   Dialog,
@@ -53,7 +54,6 @@ import { DeviceMappingPreview } from "./DeviceMappingPreview";
 
 import { ProvisioningChecklistView } from "@/components/provisioning/ProvisioningChecklistView";
 import type { ProvisioningStep } from "@/lib/provisioningEngineSim";
-import { format } from "date-fns";
 
 interface SIMRequestDetailsDialogProps {
   open: boolean;
@@ -149,7 +149,7 @@ export function SIMRequestDetailsDialog({
           </DialogTitle>
           <DialogDescription>
             Request #{request.id.slice(0, 8)} • Submitted{" "}
-            {format(new Date(request.created_at), "MMM d, yyyy 'at' HH:mm")}
+            {formatWithPattern(request.created_at, "MMM d, yyyy 'at' HH:mm")}
           </DialogDescription>
         </DialogHeader>
 
@@ -244,7 +244,7 @@ export function SIMRequestDetailsDialog({
                 Date Requested
               </p>
               <p className="font-medium">
-                {format(new Date(request.created_at), "MMM d, yyyy HH:mm")}
+                {formatDateTime(request.created_at)}
               </p>
             </div>
           </div>

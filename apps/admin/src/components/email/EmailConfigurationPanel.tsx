@@ -1,3 +1,4 @@
+import { formatTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -258,7 +259,7 @@ export function EmailConfigurationPanel() {
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {account.lastSync
-                          ? `Last synced ${account.lastSync.toLocaleTimeString()}`
+                          ? `Last synced ${formatTime(account.lastSync)}`
                           : "Never synced"}
                       </p>
                     </div>

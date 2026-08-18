@@ -1,3 +1,4 @@
+import { formatClockDuration } from "@truckmoov/app-core/utils/time-utils";
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
 import { Button } from "@/components/shadcn/button";
@@ -22,12 +23,6 @@ interface CallInteractionModalProps {
   /** Optional: enable record button. If omitted, button is hidden. */
   onToggleRecord?: (recording: boolean) => Promise<void> | void;
   recordingEnabled?: boolean;
-}
-
-function formatDuration(seconds: number) {
-  const m = Math.floor(seconds / 60).toString().padStart(2, "0");
-  const s = (seconds % 60).toString().padStart(2, "0");
-  return `${m}:${s}`;
 }
 
 export function CallInteractionModal({
@@ -150,7 +145,7 @@ export function CallInteractionModal({
                   On Call
                 </Badge>
                 <Badge variant="outline" className="font-mono">
-                  {formatDuration(durationSeconds)}
+                  {formatClockDuration(durationSeconds)}
                 </Badge>
               </>
             )}

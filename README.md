@@ -17,6 +17,7 @@ packages/
 
 docs/
   design.md            App design system, layout, navigation, and page patterns.
+  time-utils.md        The single place all date/time handling lives.
   commit-messages.md   How to write and make a commit in this repo.
   api.md               API package conventions and service patterns.
 ```
@@ -38,6 +39,7 @@ The workspace is declared in `pnpm-workspace.yaml` with `apps/*` and `packages/*
 ## Documentation
 
 - [docs/design.md](docs/design.md) documents the design tokens and theme, the dashboard layout shell, role-based navigation, and the standard page/table patterns. Read it first for any UI work.
+- [docs/time-utils.md](docs/time-utils.md) documents `packages/app-core/src/utils/time-utils.ts`, the only place date, time and duration handling belongs. Read it before writing any date logic.
 - [docs/api.md](docs/api.md) documents the API package structure, import paths, service file conventions, React Query patterns, and how to add a new API service.
 - [docs/git-workflow.md](docs/git-workflow.md) documents the Husky pre-commit hook and conventional commit message format.
 - [docs/commit-messages.md](docs/commit-messages.md) documents how to write and make a commit here — scopes, body structure, and the deploy consequences of a push.

@@ -1,3 +1,4 @@
+import { formatDate, formatTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
@@ -297,8 +298,8 @@ export default function TenantWallet() {
 
     const headers = ['Date', 'Time', 'Type', 'Channel', 'Quantity', 'Rate (₦)', 'Amount (₦)', 'Balance After (₦)', 'Description'];
     const rows = transactions.map(tx => [
-      new Date(tx.created_at).toLocaleDateString(),
-      new Date(tx.created_at).toLocaleTimeString(),
+      formatDate(tx.created_at),
+      formatTime(tx.created_at),
       tx.transaction_type,
       tx.communication_type || '',
       tx.quantity || '',
@@ -798,9 +799,9 @@ export default function TenantWallet() {
                     return filtered.slice(0, 50).map((tx) => (
                       <TableRow key={tx.id}>
                         <TableCell className="text-sm">
-                          <div>{new Date(tx.created_at).toLocaleDateString()}</div>
+                          <div>{formatDate(tx.created_at)}</div>
                           <div className="text-xs text-muted-foreground">
-                            {new Date(tx.created_at).toLocaleTimeString()}
+                            {formatTime(tx.created_at)}
                           </div>
                         </TableCell>
                         <TableCell>

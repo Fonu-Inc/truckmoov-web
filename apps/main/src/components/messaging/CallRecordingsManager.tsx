@@ -1,3 +1,5 @@
+import { formatDateTime, formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
+import { formatClockDuration } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -18,7 +20,6 @@ import {
   TableRow } from "@/components/shadcn/table";
 import {Mic, Play, Pause, FileText, Loader2, Star, ThumbsUp, ThumbsDown, Minus, Clock, AlertTriangle, Download} from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import { useAuthStore } from "@/stores/authStore";
 import { TableToolbar, type FilterValues } from "@/components/shadcn/table-toolbar";
 
@@ -52,12 +53,6 @@ const LANGUAGES: { code: Language; name: string }[] = [
   { code: "ig", name: "Igbo" },
   { code: "pcm", name: "Nigerian Pidgin" },
 ];
-
-const formatDuration = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-};
 
 const sentimentIcons = {
   positive: <ThumbsUp className="h-4 w-4 text-success" />,
@@ -300,10 +295,10 @@ export function CallRecordingsManager() {
                   <TableCell>
                     <div className="flex items-center gap-1 text-sm">
                       <Clock className="h-3 w-3 text-muted-foreground" />
-                      {format(recording.timestamp, "MMM dd, HH:mm")}
+                      {formatDayMonthTime(recording.timestamp)}
                     </div>
                   </TableCell>
-                  <TableCell>{formatDuration(recording.duration)}</TableCell>
+                  <TableCell>{formatClockDuration(recording.duration)}</TableCell>
                   <TableCell>
                     {recording.transcription ? (
                       <div className="flex items-center gap-1">
@@ -395,7 +390,7 @@ export function CallRecordingsManager() {
             <DialogDescription>
               {selectedRecording && (
                 <span>
-                  {selectedRecording.driverName} - {format(selectedRecording.timestamp, "MMM dd, yyyy HH:mm")}
+                  {selectedRecording.driverName} - {formatDateTime(selectedRecording.timestamp)}
                 </span>
               )}
             </DialogDescription>
@@ -430,7 +425,7 @@ export function CallRecordingsManager() {
                 </Card>
                 <Card>
                   <CardContent className="p-4 text-center">
-                    <p className="text-2xl font-bold">{formatDuration(selectedRecording.duration)}</p>
+                    <p className="text-2xl font-bold">{formatClockDuration(selectedRecording.duration)}</p>
                     <p className="text-xs text-muted-foreground">Duration</p>
                   </CardContent>
                 </Card>

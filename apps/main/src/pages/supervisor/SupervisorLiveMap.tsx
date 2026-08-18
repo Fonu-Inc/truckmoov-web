@@ -1,3 +1,4 @@
+import { formatTime } from "@truckmoov/app-core/utils/time-utils";
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -371,7 +372,7 @@ export default function SupervisorLiveMap() {
                       {(event.geofence as any)?.name || 'Unknown zone'}
                     </span>
                     <span className="text-muted-foreground flex-shrink-0">
-                      {new Date(event.occurred_at).toLocaleTimeString()}
+                      {formatTime(event.occurred_at)}
                     </span>
                   </div>
                 ))}
@@ -497,7 +498,7 @@ export default function SupervisorLiveMap() {
                     >
                       <p className="font-medium line-clamp-1">{alert.message}</p>
                       <p className="text-muted-foreground mt-0.5">
-                        {new Date(alert.createdAt).toLocaleTimeString()}
+                        {formatTime(alert.createdAt)}
                       </p>
                     </div>
                   ))}
@@ -668,7 +669,7 @@ export default function SupervisorLiveMap() {
                             </div>
                             <div className="flex items-center gap-2">
                               <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span>{new Date(v.lastPing).toLocaleTimeString()}</span>
+                              <span>{formatTime(v.lastPing)}</span>
                             </div>
                             <div className="col-span-2 flex items-start gap-2">
                               <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />

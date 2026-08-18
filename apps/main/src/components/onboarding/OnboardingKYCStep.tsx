@@ -1,3 +1,4 @@
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -146,16 +147,6 @@ function formatFileSize(size: number) {
   const unitIndex = Math.min(Math.floor(Math.log(size) / Math.log(1024)), units.length - 1);
   const value = size / 1024 ** unitIndex;
   return `${value >= 10 || unitIndex === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[unitIndex]}`;
-}
-
-function formatUploadDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 type EditableBusinessInfo = Omit<OnboardingBusinessInfo, "updatedAt">;
@@ -743,7 +734,7 @@ export function OnboardingKYCStep({ tenantId, onContinue, onSkip }: { tenantId: 
                           <span aria-hidden="true">&bull;</span>
                           <span>{formatFileSize(doc.fileSize)}</span>
                           <span aria-hidden="true">&bull;</span>
-                          <span>{formatUploadDate(doc.createdAt)}</span>
+                          <span>{formatDate(doc.createdAt)}</span>
                         </div>
                       </div>
                     </div>

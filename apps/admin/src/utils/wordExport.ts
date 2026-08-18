@@ -1,3 +1,4 @@
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
   Document,
   Packer,
@@ -156,7 +157,7 @@ export async function generateWordDocument(
     new Paragraph({
       children: [
         new TextRun({
-          text: `Date: ${new Date().toLocaleDateString()}`,
+          text: `Date: ${formatDate(new Date())}`,
           size: 20,
           color: COLORS.muted,
           font: "DM Sans",

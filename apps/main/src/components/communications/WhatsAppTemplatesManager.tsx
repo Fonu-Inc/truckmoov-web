@@ -1,3 +1,4 @@
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -257,7 +258,7 @@ export function WhatsAppTemplatesManager({ tenantId }: WhatsAppTemplatesManagerP
                 { header: "Category", accessor: (t) => t.category || "" },
                 { header: "Language", accessor: (t) => t.language },
                 { header: "Status", accessor: (t) => t.status },
-                { header: "Updated", accessor: (t) => new Date(t.updated_at).toLocaleDateString() },
+                { header: "Updated", accessor: (t) => formatDate(t.updated_at) },
               ]}
             />
           </div>
@@ -403,7 +404,7 @@ export function WhatsAppTemplatesManager({ tenantId }: WhatsAppTemplatesManagerP
                   <TableCell>{getStatusBadge(template.status)}</TableCell>
                   <TableCell>
                     <span className="text-sm text-muted-foreground">
-                      {new Date(template.updated_at).toLocaleDateString()}
+                      {formatDate(template.updated_at)}
                     </span>
                   </TableCell>
                   <TableCell>

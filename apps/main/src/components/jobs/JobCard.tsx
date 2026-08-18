@@ -1,3 +1,4 @@
+import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import { Card, CardContent } from "@/components/shadcn/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/shadcn/tooltip";
 import { Badge } from "@/components/shadcn/badge";
@@ -11,7 +12,6 @@ import {
 } from "@/components/shadcn/dropdown-menu";
 import { Job } from "@/types";
 import { mockDrivers, mockVehicles } from "@/data/mockData";
-import { format } from "date-fns";
 import {
   MapPin, Package, MoreHorizontal, Eye, Pencil,
   Trash2, Truck,
@@ -192,7 +192,7 @@ export function JobCard({ job, onView, onEdit, onDelete, onMatch, onComplete, di
           </div>
           <div>
             <FieldLabel icon={Calendar}>Deadline</FieldLabel>
-            <p className="text-sm">{format(new Date(job.deadline), "MMM dd, HH:mm")}</p>
+            <p className="text-sm">{formatDayMonthTime(job.deadline)}</p>
           </div>
         </div>
 

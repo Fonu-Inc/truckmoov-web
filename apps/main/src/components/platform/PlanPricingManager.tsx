@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
 import { Button } from '@/components/shadcn/button';
@@ -6,7 +7,6 @@ import { Label } from '@/components/shadcn/label';
 import { Badge } from '@/components/shadcn/badge';
 import { Separator } from '@/components/shadcn/separator';
 import { DollarSign, RefreshCw, Save, TrendingUp } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 
 interface DraftRow {
   id: string;
@@ -114,7 +114,7 @@ export function PlanPricingManager() {
             </Button>
             {updatedAt && (
               <span className="text-xs text-muted-foreground">
-                Last updated {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}
+                Last updated {formatRelative(updatedAt)}
               </span>
             )}
           </div>

@@ -1,3 +1,4 @@
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -343,7 +344,7 @@ export function WhatsAppAssistPanel() {
                   <TableCell>
                     {defaultAccount?.connected_at ? (
                       <span className="text-sm">
-                        {new Date(defaultAccount.connected_at).toLocaleDateString()}
+                        {formatDate(defaultAccount.connected_at)}
                       </span>
                     ) : (
                       <span className="text-muted-foreground text-sm">—</span>

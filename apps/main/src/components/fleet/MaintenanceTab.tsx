@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { format, differenceInDays, isValid } from "date-fns";
+import { daysUntil, formatDate, toDateParam } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle,
   Calendar,
@@ -143,22 +143,6 @@ function normalizeMaintenanceType(value: string | null | undefined): Maintenance
     : "preventive";
 }
 
-function toDate(value: string | null | undefined) {
-  if (!value) return null;
-  const date = new Date(value);
-  return isValid(date) ? date : null;
-}
-
-function formatRecordDate(value: string | null | undefined, pattern = "MMM dd, yyyy") {
-  const date = toDate(value);
-  return date ? format(date, pattern) : "Not scheduled";
-}
-
-function toInputDate(value: string | null | undefined) {
-  const date = toDate(value);
-  return date ? format(date, "yyyy-MM-dd") : "";
-}
-
 function formatCurrency(cost: number | null, currency: string | null | undefined) {
   if (cost === null || cost === undefined) return "-";
   return `${currency || "NGN"} ${Number(cost).toLocaleString()}`;
@@ -276,8 +260,8 @@ export function MaintenanceTab() {
       return record.status;
     }
 
-    const scheduledDate = toDate(record.scheduledDate);
-    if (scheduledDate && differenceInDays(scheduledDate, new Date()) < 0) {
+    const daysLeft = daysUntil(record.scheduledDate);
+    if (daysLeft !== null && daysLeft < 0) {
       return "overdue";
     }
 
@@ -397,7 +381,7 @@ export function MaintenanceTab() {
       type: normalizeMaintenanceType(record.maintenanceType),
       category: record.description || "",
       notes: record.notes || "",
-      scheduledDate: toInputDate(record.scheduledDate),
+      scheduledDate: toDateParam(record.scheduledDate),
       priority: record.priority || "medium",
       technician: record.technician || "",
     });
@@ -837,10 +821,10 @@ export function MaintenanceTab() {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        {formatRecordDate(record.scheduledDate)}
+                        {formatDate(record.scheduledDate, "Not scheduled")}
                         {record.displayStatus === "overdue" && record.scheduledDate ? (
                           <p className="text-xs text-destructive">
-                            {Math.abs(differenceInDays(new Date(record.scheduledDate), new Date()))} days overdue
+                            {Math.abs(daysUntil(record.scheduledDate) ?? 0)} days overdue
                           </p>
                         ) : null}
                       </div>
@@ -1042,7 +1026,7 @@ export function MaintenanceTab() {
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Scheduled</p>
-                <p className="text-base font-semibold leading-tight">{formatRecordDate(selectedRecord.scheduledDate)}</p>
+                <p className="text-base font-semibold leading-tight">{formatDate(selectedRecord.scheduledDate, "Not scheduled")}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Cost</p>

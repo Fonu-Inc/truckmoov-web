@@ -1,3 +1,4 @@
+import { formatDateTime, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
 import { Button } from '@/components/shadcn/button';
@@ -11,7 +12,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ScrollArea } from '@/components/shadcn/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
 import { Webhook, Plus, Copy, RefreshCw, Trash2, Check, X, Clock, AlertTriangle, ExternalLink, Eye } from 'lucide-react';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 const WEBHOOK_EVENT_TYPES: { value: string; label: string; category: string }[] = [];
@@ -300,7 +300,7 @@ export function WebhookManagementPanel() {
                   </div>
 
                   <div className="text-xs text-muted-foreground">
-                    Created: {format(new Date(subscription.created_at), 'MMM d, yyyy HH:mm')}
+                    Created: {formatDateTime(subscription.created_at)}
                   </div>
                 </CardContent>
               </Card>
@@ -351,7 +351,7 @@ export function WebhookManagementPanel() {
                       {log.duration_ms && (
                         <span>{log.duration_ms}ms</span>
                       )}
-                      <span>{format(new Date(log.created_at), 'MMM d HH:mm:ss')}</span>
+                      <span>{formatWithPattern(log.created_at, 'MMM d HH:mm:ss')}</span>
                     </div>
                   </div>
                   {log.error_message && (

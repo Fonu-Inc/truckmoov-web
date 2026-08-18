@@ -1,3 +1,4 @@
+import { formatClockDuration } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -211,12 +212,6 @@ Reply *HELP* for available commands.`,
     toast.success("Call ended");
   };
 
-  const formatCallDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
-
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="mx-auto max-w-5xl">
@@ -413,7 +408,7 @@ Reply *HELP* for available commands.`,
                       </div>
                       <p className="font-semibold text-lg mb-1">Connected to Dispatch</p>
                       <p className="text-2xl font-mono text-primary mb-4">
-                        {formatCallDuration(callDuration)}
+                        {formatClockDuration(callDuration)}
                       </p>
                       <div className="flex justify-center gap-4">
                         <Button variant="outline" size="icon" className="rounded-full h-12 w-12">

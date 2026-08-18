@@ -1,3 +1,4 @@
+import { formatDateTime, formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -23,7 +24,6 @@ import {
   Fuel,
   TrendingDown,
 } from "lucide-react";
-import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 type FuelAnomaly = any;
 type FuelAnomalyType = string;
@@ -175,7 +175,7 @@ export function FuelAnomaliesPanel() {
                       {anomaly.severity}
                     </Badge>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {format(new Date(anomaly.detected_at), "MMM dd, HH:mm")}
+                      {formatDayMonthTime(anomaly.detected_at)}
                     </p>
                     {anomaly.confidence_score && (
                       <p className="text-xs text-muted-foreground">
@@ -226,7 +226,7 @@ export function FuelAnomaliesPanel() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Detected</span>
                   <span className="font-medium">
-                    {format(new Date(selectedAnomaly.detected_at), "MMM dd, yyyy HH:mm")}
+                    {formatDateTime(selectedAnomaly.detected_at)}
                   </span>
                 </div>
                 {selectedAnomaly.location_lat && selectedAnomaly.location_lng && (

@@ -1,9 +1,9 @@
+import { daysBetween } from "@truckmoov/app-core/utils/time-utils";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/authStore";
 import { Sparkles, Clock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
 import { Link } from "react-router-dom";
-import { differenceInDays } from "date-fns";
 
 /**
  * US-E01-008 — Trial banner shown to tenants in trial status.
@@ -26,7 +26,7 @@ export function TrialBanner() {
   // Default 30-day trial period from creation
   const TRIAL_LENGTH_DAYS = 30;
   const created = tenant.created_at ? new Date(tenant.created_at) : new Date();
-  const elapsed = differenceInDays(new Date(), created);
+  const elapsed = daysBetween(created, new Date());
   const daysRemaining = Math.max(0, TRIAL_LENGTH_DAYS - elapsed);
 
   const tone =

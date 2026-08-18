@@ -1,3 +1,4 @@
+import { formatTime } from "@truckmoov/app-core/utils/time-utils";
 import React, { useEffect, useState, useRef } from 'react';
 import L from 'leaflet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card';
@@ -103,7 +104,7 @@ const getPopupContent = (device: DeviceWithTelemetry) => {
         ${device.battery_level !== undefined ? `<div>🔋 ${device.battery_level}%</div>` : ''}
         ${device.signal_strength !== undefined ? `<div>📶 ${device.signal_strength}%</div>` : ''}
       </div>
-      ${device.last_seen ? `<div style="font-size: 11px; color: #999; margin-top: 8px;">Last seen: ${new Date(device.last_seen).toLocaleTimeString()}</div>` : ''}
+      ${device.last_seen ? `<div style="font-size: 11px; color: #999; margin-top: 8px;">Last seen: ${formatTime(device.last_seen)}</div>` : ''}
     </div>
   `;
 };

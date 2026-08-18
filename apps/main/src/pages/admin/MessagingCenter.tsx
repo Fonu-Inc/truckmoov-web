@@ -1,3 +1,4 @@
+import { formatDate, formatDayMonthTime, formatWithPattern, toDateParam } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -45,7 +46,6 @@ import { EmailInbox } from "@/components/email/EmailInbox";
 import { EmailProviderSettings } from "@/components/email/EmailProviderSettings";
 import { IVRDashboardTab } from "@/components/communications/IVRDashboardTab";
 import { WhatsAppBusinessSetup } from "@/components/communications/WhatsAppBusinessSetup";
-import { format } from "date-fns";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -145,7 +145,7 @@ export default function MessagingCenter() {
     const matchesChannel =
       campaignChannelFilter === "all" || c.channels.includes(campaignChannelFilter);
     const matchesDate = !campaignDate ||
-      format(c.createdAt, "yyyy-MM-dd") === format(campaignDate, "yyyy-MM-dd");
+      toDateParam(c.createdAt) === toDateParam(campaignDate);
     let matchesRange = true;
     if (campaignDateRange !== "all") {
       const days = parseInt(campaignDateRange);
@@ -259,7 +259,7 @@ export default function MessagingCenter() {
                       { header: 'Sent', accessor: (c) => c.sent },
                       { header: 'Delivered', accessor: (c) => c.delivered },
                       { header: 'Read', accessor: (c) => c.read },
-                      { header: 'Date', accessor: (c) => format(c.createdAt, 'yyyy-MM-dd') },
+                      { header: 'Date', accessor: (c) => toDateParam(c.createdAt) },
                     ]}
                   />
                 </div>
@@ -371,7 +371,7 @@ export default function MessagingCenter() {
                             <PopoverTrigger asChild>
                               <Button variant="outline" className="w-full justify-start font-normal h-9" disabled={false}>
                                 <CalendarIcon className="h-4 w-4 mr-2" />
-                                {campaignDate ? format(campaignDate, "PP") : "DD/MM/YYYY"}
+                                {campaignDate ? formatWithPattern(campaignDate, "PP") : "DD/MM/YYYY"}
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
@@ -459,10 +459,10 @@ export default function MessagingCenter() {
                           {campaign.scheduledFor ? (
                             <div className="flex items-center gap-1 text-warning">
                               <Clock className="h-3 w-3" />
-                              {format(campaign.scheduledFor, "MMM dd, HH:mm")}
+                              {formatDayMonthTime(campaign.scheduledFor)}
                             </div>
                           ) : (
-                            format(campaign.createdAt, "MMM dd, yyyy")
+                            formatDate(campaign.createdAt)
                           )}
                         </div>
                       </TableCell>

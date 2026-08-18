@@ -1,3 +1,4 @@
+import { formatTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ConversationInbox } from "@/components/communications/ConversationInbox";
@@ -99,7 +100,7 @@ export default function SupervisorMessages() {
                               {msg.direction === 'outbound' ? 'Sent to' : 'Received from'} {msg.driver_name || 'Driver'}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {new Date(msg.created_at).toLocaleTimeString()}
+                              {formatTime(msg.created_at)}
                             </p>
                           </div>
                         </div>

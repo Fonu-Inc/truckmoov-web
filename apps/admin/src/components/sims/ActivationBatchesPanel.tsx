@@ -1,3 +1,4 @@
+import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
@@ -62,19 +63,6 @@ const titleCase = (value: string) =>
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
-
-const formatDate = (value: string | null) => {
-  if (!value) return emptyValue;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return emptyValue;
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
-};
 
 const formatDataLimit = (valueGb: number) => {
   if (!Number.isFinite(valueGb) || valueGb <= 0) return emptyValue;
@@ -387,7 +375,7 @@ export function ActivationBatchesPanel() {
                         </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(batch.status)}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{formatDate(batch.createdAt)}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{formatDayMonthTime(batch.createdAt, emptyValue)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           {canRetryBatch(batch.status) && (
@@ -484,15 +472,15 @@ export function ActivationBatchesPanel() {
               <div className="grid gap-4 text-sm sm:grid-cols-3">
                 <div>
                   <p className="text-muted-foreground">Created</p>
-                  <p className="font-medium">{formatDate(selectedBatch.createdAt)}</p>
+                  <p className="font-medium">{formatDayMonthTime(selectedBatch.createdAt, emptyValue)}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Started</p>
-                  <p className="font-medium">{formatDate(selectedBatch.startedAt)}</p>
+                  <p className="font-medium">{formatDayMonthTime(selectedBatch.startedAt, emptyValue)}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Completed</p>
-                  <p className="font-medium">{formatDate(selectedBatch.completedAt)}</p>
+                  <p className="font-medium">{formatDayMonthTime(selectedBatch.completedAt, emptyValue)}</p>
                 </div>
               </div>
             </div>

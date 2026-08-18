@@ -1,7 +1,7 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { cn } from "@/lib/utils";
 import { Vehicle } from "@/types";
 import { Truck, Navigation, Gauge, Fuel, Clock } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 
 interface VehicleMarkerProps {
   vehicle: Vehicle;
@@ -113,7 +113,7 @@ export function VehicleInfoCard({ vehicle, driverName, className }: VehicleInfoC
             <div className="flex items-center gap-2 text-muted-foreground">
               <Clock className="h-4 w-4" />
               <span>
-                {formatDistanceToNow(vehicle.location.lastUpdate, { addSuffix: true })}
+                {formatRelative(vehicle.location.lastUpdate)}
               </span>
             </div>
           </>

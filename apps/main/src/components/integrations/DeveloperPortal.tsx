@@ -1,3 +1,4 @@
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
@@ -9,7 +10,6 @@ import { ApiKeyManagement } from './ApiKeyManagement';
 import { WebhookManagementPanel } from './WebhookManagementPanel';
 import { ApiUsageAnalytics } from './ApiUsageAnalytics';
 import { ApiDocumentation } from './ApiDocumentation';
-import { format } from 'date-fns';
 
 export function DeveloperPortal() {
   const apiKeys: any[] = [];
@@ -136,7 +136,7 @@ export function DeveloperPortal() {
                             <Badge variant="outline" className="text-xs">{log.action}</Badge>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            {log.resource_type} • {format(new Date(log.created_at), 'MMM d, yyyy HH:mm:ss')}
+                            {log.resource_type} • {formatWithPattern(log.created_at, 'MMM d, yyyy HH:mm:ss')}
                           </p>
                         </div>
                       </div>

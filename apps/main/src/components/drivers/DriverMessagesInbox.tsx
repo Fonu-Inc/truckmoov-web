@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -18,7 +19,6 @@ import {
   ArrowDownLeft,
   RefreshCw,
 } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
 type DriverMessage = any;
 type DriverCallLog = any;
 import { cn } from "@/lib/utils";
@@ -244,7 +244,7 @@ function MessageItem({ message }: { message: DriverMessage }) {
         <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Clock className="h-3 w-3" />
-            {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+            {formatRelative(message.created_at)}
           </span>
           {message.sender_name && (
             <span>by {message.sender_name}</span>
@@ -298,7 +298,7 @@ function CallItem({ call }: { call: DriverCallLog }) {
         <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Clock className="h-3 w-3" />
-            {formatDistanceToNow(new Date(call.started_at), { addSuffix: true })}
+            {formatRelative(call.started_at)}
           </span>
           {call.caller_name && (
             <span>by {call.caller_name}</span>

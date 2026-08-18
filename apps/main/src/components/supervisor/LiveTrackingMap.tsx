@@ -1,3 +1,4 @@
+import { formatTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Truck, Navigation, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
@@ -119,7 +120,7 @@ export function LiveTrackingMap({
           </CardTitle>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">
-              Updated: {lastUpdate.toLocaleTimeString()}
+              Updated: {formatTime(lastUpdate)}
             </span>
             <Button
               variant="outline"

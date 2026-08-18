@@ -1,3 +1,4 @@
+import { formatDayMonthTime, formatWithPattern, startOfDay, subDays, toDateParam } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
 import { Badge } from '@/components/shadcn/badge';
@@ -6,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/shadcn/table';
 import { TableToolbar, FilterValues } from '@/components/shadcn/table-toolbar';
 import {Phone, PhoneCall, PhoneOff, PhoneMissed, Check, X, Clock, TrendingUp, CalendarDays, Download} from 'lucide-react';
-import { format, subDays, startOfDay } from 'date-fns';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface IVRCall {
@@ -171,7 +171,7 @@ export function IVRDashboardTab() {
         c.call_status,
         c.driver_response ?? '',
         c.call_duration_seconds ?? '',
-        format(new Date(c.created_at), 'yyyy-MM-dd HH:mm'),
+        formatWithPattern(c.created_at, 'yyyy-MM-dd HH:mm'),
       ]),
     ];
     const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -179,7 +179,7 @@ export function IVRDashboardTab() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ivr-calls-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.download = `ivr-calls-${toDateParam(new Date())}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -379,7 +379,7 @@ export function IVRDashboardTab() {
                   <TableCell>{getResponseBadge(call.driver_response)}</TableCell>
                   <TableCell>{call.call_duration_seconds ? `${call.call_duration_seconds}s` : '-'}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {format(new Date(call.created_at), 'MMM d, HH:mm')}
+                    {formatDayMonthTime(call.created_at)}
                   </TableCell>
                 </TableRow>
               ))}

@@ -1,3 +1,4 @@
+import { formatDate, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
 import { Button } from '@/components/shadcn/button';
@@ -11,7 +12,6 @@ import { Separator } from '@/components/shadcn/separator';
 import { toast } from 'sonner';
 import {Building2, FileText, Upload, CheckCircle2, Clock, XCircle, AlertCircle, Trash2, Eye, Shield, FileCheck, Loader2, UploadCloud, Download} from 'lucide-react';
 import { useMemo } from 'react';
-import { format } from 'date-fns';
 import { TableToolbar } from '@/components/shadcn/table-toolbar';
 import { ExportButton } from '@/components/shadcn/export-button';
 
@@ -653,7 +653,7 @@ export function TenantKYCVerification({ tenantId, readOnly = false }: { tenantId
                       { header: 'Type', accessor: (d) => DOCUMENT_TYPES.find(t => t.value === d.document_type)?.label || d.document_type },
                       { header: 'Status', accessor: 'status' },
                       { header: 'File Size (KB)', accessor: (d) => Math.round(d.file_size / 1024) },
-                      { header: 'Uploaded', accessor: (d) => format(new Date(d.created_at), 'yyyy-MM-dd HH:mm') },
+                      { header: 'Uploaded', accessor: (d) => formatWithPattern(d.created_at, 'yyyy-MM-dd HH:mm') },
                       { header: 'Rejection Reason', accessor: (d) => d.rejection_reason ?? '' },
                     ]}
                   />
@@ -697,7 +697,7 @@ export function TenantKYCVerification({ tenantId, readOnly = false }: { tenantId
                           <p className="text-sm text-muted-foreground">
                             {DOCUMENT_TYPES.find(t => t.value === doc.document_type)?.label || doc.document_type}
                             {' • '}{(doc.file_size / 1024).toFixed(0)} KB
-                            {' • '}{format(new Date(doc.created_at), 'MMM d, yyyy')}
+                            {' • '}{formatDate(doc.created_at)}
                           </p>
                         </div>
                       </div>

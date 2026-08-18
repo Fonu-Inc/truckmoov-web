@@ -1,3 +1,4 @@
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
 import { Badge } from '@/components/shadcn/badge';
 import { Button } from '@/components/shadcn/button';
@@ -14,7 +15,6 @@ import {
   MapPin,
   Plus,
 } from 'lucide-react';
-import { format } from 'date-fns';
 
 interface DeviceSetupRequestTrackerProps {
   requests: any[];
@@ -173,7 +173,7 @@ export function DeviceSetupRequestTracker({
                         {req.status === 'active' ? 'Active' : req.status === 'rejected' ? 'Rejected' : 'Cancelled'}
                       </Badge>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {format(new Date(req.updated_at), 'dd MMM yyyy')}
+                        {formatWithPattern(req.updated_at, 'dd MMM yyyy')}
                       </p>
                     </div>
                   </div>

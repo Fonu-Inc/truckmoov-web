@@ -1,3 +1,4 @@
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -360,7 +361,7 @@ function ConnectedState({
           </div>
           <p className="text-xs text-muted-foreground">
             Connected on {defaultAccount.connected_at 
-              ? new Date(defaultAccount.connected_at).toLocaleDateString() 
+              ? formatDate(defaultAccount.connected_at) 
               : 'N/A'}
             {' via '}
             {defaultAccount.connection_method === 'EMBEDDED_SIGNUP' ? 'Embedded Signup' : 'Admin Setup'}

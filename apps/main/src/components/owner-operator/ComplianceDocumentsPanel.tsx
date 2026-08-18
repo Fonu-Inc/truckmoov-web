@@ -1,3 +1,4 @@
+import { daysBetween, formatDate, isBefore } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
@@ -20,7 +21,7 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { format as dateFormat, differenceInDays, isBefore, addDays } from "date-fns";
+
 
 const DOCUMENT_TYPES = [
   { value: "drivers_license", label: "Driver's License" },
@@ -142,7 +143,7 @@ export function ComplianceDocumentsPanel({ orgId, tenantId, vehicleIds }: Compli
 
   const getStatusBadge = (doc: { expiry_date: string; verification_status?: string }) => {
     const expiry = new Date(doc.expiry_date);
-    const daysLeft = differenceInDays(expiry, now);
+    const daysLeft = daysBetween(now, expiry);
     const verStatus = (doc as any).verification_status || "pending";
 
     if (isBefore(expiry, now)) {
@@ -295,7 +296,7 @@ export function ComplianceDocumentsPanel({ orgId, tenantId, vehicleIds }: Compli
                     <p className="text-xs text-muted-foreground">
                       {getDocTypeLabel(doc.document_type)}
                       {doc.document_number && ` · ${doc.document_number}`}
-                      {doc.expiry_date && ` · Expires ${dateFormat(new Date(doc.expiry_date), "MMM d, yyyy")}`}
+                      {doc.expiry_date && ` · Expires ${formatDate(doc.expiry_date)}`}
                     </p>
                   </div>
                   {getStatusBadge(doc)}

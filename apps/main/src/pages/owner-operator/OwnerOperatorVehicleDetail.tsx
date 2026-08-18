@@ -1,3 +1,4 @@
+import { addDays, daysBetween, formatWithPattern, isBefore } from "@truckmoov/app-core/utils/time-utils";
 import { useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card';
@@ -25,7 +26,6 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { format, differenceInDays, isBefore, addDays } from 'date-fns';
 import { VehicleLiveMap } from '@/components/owner-operator/VehicleLiveMap';
 
 export default function OwnerOperatorVehicleDetail() {
@@ -260,7 +260,7 @@ export default function OwnerOperatorVehicleDetail() {
                         <div>
                           <p className="text-xs text-muted-foreground">Last Update</p>
                           <p className="font-medium text-xs">
-                            {format(new Date(latestTelemetry.timestamp), 'dd MMM, HH:mm')}
+                            {formatWithPattern(latestTelemetry.timestamp, 'dd MMM, HH:mm')}
                           </p>
                         </div>
                       </div>
@@ -293,7 +293,7 @@ export default function OwnerOperatorVehicleDetail() {
             speed={latestTelemetry.speed}
             heading={latestTelemetry.heading}
             registrationNumber={vehicle.registration_number || 'Vehicle'}
-            lastUpdate={format(new Date(latestTelemetry.timestamp), 'dd MMM, HH:mm')}
+            lastUpdate={formatWithPattern(latestTelemetry.timestamp, 'dd MMM, HH:mm')}
           />
         )}
 
@@ -319,7 +319,7 @@ export default function OwnerOperatorVehicleDetail() {
                 {complianceDocs.map(doc => {
                   const expiry = new Date(doc.expiry_date);
                   const isExpired = isBefore(expiry, now);
-                  const daysLeft = differenceInDays(expiry, now);
+                  const daysLeft = daysBetween(now, expiry);
                   const isExpiringSoon = daysLeft <= 30 && daysLeft >= 0;
 
                   return (
@@ -335,7 +335,7 @@ export default function OwnerOperatorVehicleDetail() {
                         {isExpired ? (
                           <Badge variant="destructive" className="gap-1">
                             <FileWarning className="h-3 w-3" />
-                            Expired {format(expiry, 'dd MMM')}
+                            Expired {formatWithPattern(expiry, 'dd MMM')}
                           </Badge>
                         ) : isExpiringSoon ? (
                           <Badge variant="outline" className="border-warning text-warning gap-1">
@@ -345,7 +345,7 @@ export default function OwnerOperatorVehicleDetail() {
                         ) : (
                           <Badge variant="outline" className="gap-1">
                             <Calendar className="h-3 w-3" />
-                            {format(expiry, 'dd MMM yyyy')}
+                            {formatWithPattern(expiry, 'dd MMM yyyy')}
                           </Badge>
                         )}
                       </div>
@@ -392,7 +392,7 @@ export default function OwnerOperatorVehicleDetail() {
                     </div>
                     <div className="text-right shrink-0 ml-3">
                       <p className="font-medium text-sm">{formatCurrency(job.revenue_ngn || job.amount_ngn || 0)}</p>
-                      <p className="text-xs text-muted-foreground">{format(new Date(job.created_at), 'dd MMM')}</p>
+                      <p className="text-xs text-muted-foreground">{formatWithPattern(job.created_at, 'dd MMM')}</p>
                     </div>
                   </div>
                 ))}

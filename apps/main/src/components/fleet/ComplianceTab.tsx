@@ -43,7 +43,7 @@ import {
   SelectTrigger,
   SelectValue } from "@/components/shadcn/select";
 import { Label } from "@/components/shadcn/label";
-import { format, differenceInDays } from "date-fns";
+import { daysUntil, formatDate, formatDayMonth, toDateParam } from "@truckmoov/app-core/utils/time-utils";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { uploadMedia } from "@truckmoov/api/auth";
@@ -162,7 +162,7 @@ export function ComplianceTab() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `compliance-documents-${format(new Date(), "yyyy-MM-dd")}.csv`;
+      a.download = `compliance-documents-${toDateParam(new Date())}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -177,10 +177,6 @@ export function ComplianceTab() {
     () => Array.from(new Set(documents.map((d) => d.documentType))).filter(Boolean),
     [documents]
   );
-
-  const getDaysUntilExpiry = (date: string) => {
-    return differenceInDays(new Date(date), new Date());
-  };
 
   const handleViewDocument = (doc: ComplianceDocument) => {
     setSelectedDocument(doc);
@@ -553,7 +549,7 @@ export function ComplianceTab() {
                           )}
                         >
                           <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                          {draftIssueFrom ? format(draftIssueFrom, "MMM d") : "From"}
+                          {draftIssueFrom ? formatDayMonth(draftIssueFrom) : "From"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -579,7 +575,7 @@ export function ComplianceTab() {
                           )}
                         >
                           <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                          {draftIssueTo ? format(draftIssueTo, "MMM d") : "To"}
+                          {draftIssueTo ? formatDayMonth(draftIssueTo) : "To"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -618,7 +614,7 @@ export function ComplianceTab() {
                           )}
                         >
                           <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                          {draftExpiryFrom ? format(draftExpiryFrom, "MMM d") : "From"}
+                          {draftExpiryFrom ? formatDayMonth(draftExpiryFrom) : "From"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -644,7 +640,7 @@ export function ComplianceTab() {
                           )}
                         >
                           <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                          {draftExpiryTo ? format(draftExpiryTo, "MMM d") : "To"}
+                          {draftExpiryTo ? formatDayMonth(draftExpiryTo) : "To"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -729,7 +725,7 @@ export function ComplianceTab() {
                 </TableRow>
               ) : (
                 filteredDocuments.map((doc) => {
-                  const daysLeft = doc.expiryDate ? getDaysUntilExpiry(doc.expiryDate) : 0;
+                  const daysLeft = doc.expiryDate ? daysUntil(doc.expiryDate) : 0;
                   return (
                     <TableRow key={doc.id} className="border-border/50">
                       <TableCell>
@@ -745,7 +741,7 @@ export function ComplianceTab() {
                       <TableCell>
                         <Badge className={statusColors[doc.status] || statusColors.valid}>{doc.status}</Badge>
                       </TableCell>
-                      <TableCell>{doc.expiryDate ? format(new Date(doc.expiryDate), "MMM dd, yyyy") : '—'}</TableCell>
+                      <TableCell>{doc.expiryDate ? formatDate(doc.expiryDate) : '—'}</TableCell>
                       <TableCell>
                         <span
                           className={cn(
@@ -1019,13 +1015,13 @@ export function ComplianceTab() {
                   <Label className="text-muted-foreground text-xs">Issue Date</Label>
                   <p className="font-medium">
                     {selectedDocument.issueDate
-                      ? format(new Date(selectedDocument.issueDate), "MMM dd, yyyy")
+                      ? formatDate(selectedDocument.issueDate)
                       : '—'}
                   </p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground text-xs">Expiry Date</Label>
-                  <p className="font-medium">{selectedDocument.expiryDate ? format(new Date(selectedDocument.expiryDate), "MMM dd, yyyy") : '—'}</p>
+                  <p className="font-medium">{selectedDocument.expiryDate ? formatDate(selectedDocument.expiryDate) : '—'}</p>
                 </div>
               </div>
               {selectedDocument.fileUrl && (

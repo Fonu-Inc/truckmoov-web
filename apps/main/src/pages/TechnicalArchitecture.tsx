@@ -1,3 +1,4 @@
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { MermaidDiagram } from "@/components/diagrams/MermaidDiagram";
@@ -107,7 +108,7 @@ export default function TechnicalArchitecture() {
               </div>
               <div className="text-center p-3 bg-muted/50 rounded-lg">
                 <p className="text-xs text-muted-foreground">Last Updated</p>
-                <p className="font-semibold">{new Date().toLocaleDateString()}</p>
+                <p className="font-semibold">{formatDate(new Date())}</p>
               </div>
             </div>
           </CardContent>

@@ -1,3 +1,4 @@
+import { formatDayMonthTime, formatRelativeStrict, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useMemo, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
@@ -50,7 +51,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
-import { format, formatDistanceToNowStrict } from "date-fns";
 
 type RequestStatus =
   | "pending"
@@ -288,7 +288,7 @@ export default function PlatformCommunications() {
                           <TableCell className="text-sm">
                             <div className="flex items-center gap-1 text-muted-foreground">
                               <Calendar className="h-3 w-3" />
-                              {format(new Date(r.submittedAt), "MMM d, HH:mm")}
+                              {formatDayMonthTime(r.submittedAt)}
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
@@ -332,7 +332,7 @@ export default function PlatformCommunications() {
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {p.state === "cooldown" && p.cooldownUntil
-                            ? `Available in ${formatDistanceToNowStrict(new Date(p.cooldownUntil))}`
+                            ? `Available in ${formatRelativeStrict(p.cooldownUntil)}`
                             : p.state === "in_use"
                               ? "Assigned to a tenant WABA"
                               : "Ready to allocate"}
@@ -382,7 +382,7 @@ export default function PlatformCommunications() {
                         </TableCell>
                         <TableCell className="text-xs">
                           {r.verifiedAt
-                            ? format(new Date(r.verifiedAt), "MMM d, HH:mm")
+                            ? formatDayMonthTime(r.verifiedAt)
                             : "—"}
                         </TableCell>
                         <TableCell className="text-xs">{r.actor ?? "—"}</TableCell>
@@ -570,7 +570,7 @@ function ProvisionDialog({
           <SummaryRow label="Tenant email" value={request.contactEmail} />
           <SummaryRow
             label="Submitted"
-            value={format(new Date(request.submittedAt), "MMM d, HH:mm")}
+            value={formatDayMonthTime(request.submittedAt)}
           />
           <div className="col-span-2">
             <div className="text-muted-foreground">Description</div>
@@ -670,7 +670,7 @@ function ProvisionDialog({
           <AuditLine label="WABA ID" value={wabaId} />
           <AuditLine
             label="Meta verified at"
-            value={step === "active" ? format(new Date(), "PPpp") : "pending"}
+            value={step === "active" ? formatWithPattern(new Date(), "PPpp") : "pending"}
           />
           <AuditLine label="Actor" value="platform@truckmoov.com" />
         </div>

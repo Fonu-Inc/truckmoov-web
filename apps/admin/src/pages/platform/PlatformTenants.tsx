@@ -1,3 +1,4 @@
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
@@ -661,7 +662,7 @@ export default function PlatformTenants() {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {tenant.lastActiveAt
-                            ? new Date(tenant.lastActiveAt).toLocaleDateString()
+                            ? formatDate(tenant.lastActiveAt)
                             : "Never"}
                         </TableCell>
                         <TableCell>

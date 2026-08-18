@@ -1,3 +1,4 @@
+import { formatDate, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
 import { Button } from '@/components/shadcn/button';
@@ -33,7 +34,6 @@ import {
   MailX,
   MailCheck
 } from 'lucide-react';
-import { format } from 'date-fns';
 
 interface NotificationLog {
   id: string;
@@ -327,9 +327,9 @@ export function KYCNotificationHistory() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <p>{format(new Date(log.sent_at), 'MMM d, yyyy')}</p>
+                          <p>{formatDate(log.sent_at)}</p>
                           <p className="text-muted-foreground text-xs">
-                            {format(new Date(log.sent_at), 'h:mm a')}
+                            {formatWithPattern(log.sent_at, 'h:mm a')}
                           </p>
                         </div>
                       </TableCell>

@@ -1,3 +1,4 @@
+import { formatClockDuration } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/shadcn/button";
 import { Slider } from "@/components/shadcn/slider";
@@ -120,12 +121,6 @@ export function CallRecordingPlayer({ recordingUrl, duration, className }: CallR
     document.body.removeChild(link);
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   if (error) {
     return (
       <div className={cn("flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm", className)}>
@@ -164,8 +159,8 @@ export function CallRecordingPlayer({ recordingUrl, duration, className }: CallR
           disabled={isLoading}
         />
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{formatTime(currentTime)}</span>
-          <span>{formatTime(audioDuration)}</span>
+          <span>{formatClockDuration(currentTime)}</span>
+          <span>{formatClockDuration(audioDuration)}</span>
         </div>
       </div>
 

@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
 import { Button } from '@/components/shadcn/button';
@@ -34,7 +35,6 @@ type ConfigQueueDevice = any;
 type DeviceCatalogEntry = any;
 type DeviceLifecycleStatus = string;
 import { Skeleton } from '@/components/shadcn/skeleton';
-import { formatDistanceToNow } from 'date-fns';
 import {Search, MoreHorizontal, Settings, CheckCircle2, Radio, ArrowRight, AlertTriangle, SlidersHorizontal as Filter, Cpu, Download} from 'lucide-react';
 
 interface ConfigQueueProps {
@@ -356,7 +356,7 @@ export function ConfigQueue({
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {device.last_seen 
-                            ? formatDistanceToNow(new Date(device.last_seen), { addSuffix: true })
+                            ? formatRelative(device.last_seen)
                             : 'Never'
                           }
                         </TableCell>

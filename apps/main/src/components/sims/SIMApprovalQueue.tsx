@@ -1,3 +1,4 @@
+import { formatDate, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useMemo } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
@@ -27,7 +28,6 @@ import {
   PlatformFilterPopover,
   type FilterDraft,
 } from "@/components/shadcn/platform-filter-popover";
-import { format } from "date-fns";
 import { toast } from "sonner";
 import { SIMRequestDetailsDialog } from "./SIMRequestDetailsDialog";
 import { KYCRequestDialog } from "./KYCRequestDialog";
@@ -187,7 +187,7 @@ export function SIMApprovalQueue() {
                 { header: 'Use Case', accessor: (r) => r.use_case || '' },
                 { header: 'Priority', accessor: (r) => r.priority || '' },
                 { header: 'Status', accessor: (r) => r.status },
-                { header: 'Requested', accessor: (r) => format(new Date(r.created_at), 'yyyy-MM-dd HH:mm') },
+                { header: 'Requested', accessor: (r) => formatWithPattern(r.created_at, 'yyyy-MM-dd HH:mm') },
               ]}
             />
           </div>
@@ -329,7 +329,7 @@ export function SIMApprovalQueue() {
                         <TableCell className="px-6"><KYCBadge status={tenantKYCCache[request.tenant_id]?.status ?? null} /></TableCell>
                         <TableCell className="px-6"><RequestStatusBadge status={request.status} /></TableCell>
                         <TableCell className="px-6 text-sm text-muted-foreground whitespace-nowrap">
-                          {format(new Date(request.created_at), "MMM d, yyyy")}
+                          {formatDate(request.created_at)}
                         </TableCell>
                         <TableCell className="px-6 text-right">
                           <DropdownMenu>

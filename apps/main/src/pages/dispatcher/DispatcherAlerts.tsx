@@ -1,3 +1,4 @@
+import { formatTime } from "@truckmoov/app-core/utils/time-utils";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -139,7 +140,7 @@ export default function DispatcherAlerts() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Last Update</p>
-                  <p className="text-lg font-bold">{new Date().toLocaleTimeString()}</p>
+                  <p className="text-lg font-bold">{formatTime(new Date())}</p>
                 </div>
                 <Button variant="ghost" size="icon" onClick={refetch}>
                   <RefreshCw className="h-5 w-5" />

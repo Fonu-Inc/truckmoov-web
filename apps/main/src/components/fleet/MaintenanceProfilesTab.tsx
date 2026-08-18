@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { format, differenceInDays, addDays, addMonths } from "date-fns";
+import { addDays, addMonths, daysUntil, formatDate, toDateParam } from "@truckmoov/app-core/utils/time-utils";
 import {
   Wrench,
   Plus,
@@ -142,8 +142,8 @@ export function MaintenanceProfilesTab() {
         search: debouncedSearch || undefined,
         lifecycleStatus:
           statusFilter !== "all" ? (statusFilter as MaintenanceProfileLifecycleStatus) : undefined,
-        nextDueDateFrom: dueDateFrom ? format(dueDateFrom, "yyyy-MM-dd") : undefined,
-        nextDueDateTo: dueDateTo ? format(dueDateTo, "yyyy-MM-dd") : undefined,
+        nextDueDateFrom: dueDateFrom ? toDateParam(dueDateFrom) : undefined,
+        nextDueDateTo: dueDateTo ? toDateParam(dueDateTo) : undefined,
       },
     }),
     [debouncedSearch, dueDateFrom, dueDateTo, statusFilter],
@@ -227,9 +227,9 @@ export function MaintenanceProfilesTab() {
     if (newProfile.intervalType !== "mileage") {
       const baseDate = newProfile.lastServiceDate ? new Date(newProfile.lastServiceDate) : new Date();
       if (newProfile.intervalDays) {
-        nextDueDate = addDays(baseDate, Number(newProfile.intervalDays)).toISOString();
+        nextDueDate = addDays(baseDate, Number(newProfile.intervalDays))!.toISOString();
       } else if (newProfile.intervalMonths) {
-        nextDueDate = addMonths(baseDate, Number(newProfile.intervalMonths)).toISOString();
+        nextDueDate = addMonths(baseDate, Number(newProfile.intervalMonths))!.toISOString();
       }
     }
 
@@ -300,11 +300,6 @@ export function MaintenanceProfilesTab() {
     } finally {
       setIsExporting(false);
     }
-  };
-
-  const getDaysUntilDue = (profile: MaintenanceProfile): number | null => {
-    if (!profile.nextDueDate) return null;
-    return differenceInDays(new Date(profile.nextDueDate), new Date());
   };
 
   const getKmUntilDue = (profile: MaintenanceProfile): number | null => {
@@ -480,7 +475,7 @@ export function MaintenanceProfilesTab() {
                           className={cn("h-9 justify-start text-left font-normal text-xs", !draftDueFrom && "text-muted-foreground")}
                         >
                           <Calendar className="h-3 w-3 mr-1" />
-                          {draftDueFrom ? format(draftDueFrom, "MMM d, yyyy") : "From"}
+                          {draftDueFrom ? formatDate(draftDueFrom) : "From"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -501,7 +496,7 @@ export function MaintenanceProfilesTab() {
                           className={cn("h-9 justify-start text-left font-normal text-xs", !draftDueTo && "text-muted-foreground")}
                         >
                           <Calendar className="h-3 w-3 mr-1" />
-                          {draftDueTo ? format(draftDueTo, "MMM d, yyyy") : "To"}
+                          {draftDueTo ? formatDate(draftDueTo) : "To"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -570,7 +565,7 @@ export function MaintenanceProfilesTab() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {profiles.map((profile) => {
-                    const daysUntil = getDaysUntilDue(profile);
+                    const daysUntilDue = daysUntil(profile.nextDueDate);
                     const kmUntil = getKmUntilDue(profile);
                     const intervalLabel =
                       profile.intervalType === "mileage"
@@ -606,15 +601,15 @@ export function MaintenanceProfilesTab() {
                               <p
                                 className={cn(
                                   "font-medium",
-                                  daysUntil !== null && daysUntil < 0 && "text-destructive",
-                                  daysUntil !== null && daysUntil >= 0 && daysUntil <= 7 && "text-warning",
+                                  daysUntilDue !== null && daysUntilDue < 0 && "text-destructive",
+                                  daysUntilDue !== null && daysUntilDue >= 0 && daysUntilDue <= 7 && "text-warning",
                                 )}
                               >
-                                {format(new Date(profile.nextDueDate), "MMM dd, yyyy")}
+                                {formatDate(profile.nextDueDate)}
                               </p>
-                              {daysUntil !== null && (
+                              {daysUntilDue !== null && (
                                 <p className="text-[10px] text-muted-foreground">
-                                  {daysUntil < 0 ? `${Math.abs(daysUntil)}d overdue` : `${daysUntil}d left`}
+                                  {daysUntilDue < 0 ? `${Math.abs(daysUntilDue)}d overdue` : `${daysUntilDue}d left`}
                                 </p>
                               )}
                             </div>

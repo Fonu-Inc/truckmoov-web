@@ -62,7 +62,7 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar } from "recharts";
-import { formatDateInTimezone, type Timezone, TIMEZONES, DEFAULT_TIMEZONE } from "@/lib/timezone";
+import { formatDateInTimezone, type Timezone, TIMEZONES, DEFAULT_TIMEZONE } from "@truckmoov/app-core/utils/time-utils";
 import { usePreferences } from "@/contexts/PreferencesContext";
 type BlockedIP = {
   id: string;

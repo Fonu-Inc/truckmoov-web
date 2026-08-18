@@ -1,4 +1,4 @@
-import { addDays, format, subDays } from "date-fns";
+import { addDays, formatDayMonth, subDays } from "@truckmoov/app-core/utils/time-utils";
 import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 
 const RANGE_DAYS: Record<ChartDateRange, number> = {
@@ -38,7 +38,7 @@ export function getDummyEarningsTrend(range: ChartDateRange) {
   return Array.from({ length: days }, (_, i) => {
     const d = addDays(start, i);
     return {
-      label: format(d, days > 30 ? "MMM d" : "MMM d"),
+      label: formatDayMonth(d),
       earnings: Math.round(40000 + rand() * 180000),
       trips: Math.max(1, Math.round(rand() * 6)),
     };

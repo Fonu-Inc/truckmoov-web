@@ -1,3 +1,4 @@
+import { formatDateTime, formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
@@ -45,7 +46,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend } from "recharts";
-import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 type FuelTransaction = any;
@@ -351,7 +351,7 @@ export default function FuelManagement() {
                         <TableCell className="max-w-[150px] truncate">
                           {transaction.station_name || '—'}
                         </TableCell>
-                        <TableCell>{format(new Date(transaction.transaction_date), "MMM dd, HH:mm")}</TableCell>
+                        <TableCell>{formatDayMonthTime(transaction.transaction_date)}</TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -680,7 +680,7 @@ export default function FuelManagement() {
                 </div>
                 <div>
                   <Label className="text-muted-foreground text-xs">Date & Time</Label>
-                  <p className="font-medium">{format(new Date(selectedTransaction.transaction_date), "MMM dd, yyyy HH:mm")}</p>
+                  <p className="font-medium">{formatDateTime(selectedTransaction.transaction_date)}</p>
                 </div>
               </div>
               <div>

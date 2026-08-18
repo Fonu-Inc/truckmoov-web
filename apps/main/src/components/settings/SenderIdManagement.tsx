@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -5,7 +6,6 @@ import { Badge } from "@/components/shadcn/badge";
 import { Plus, MessageSquare, Phone, Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 type SenderIdStatus = string;
 import { SenderIdRequestDialog } from "./SenderIdRequestDialog";
-import { formatDistanceToNow } from "date-fns";
 
 const statusConfig: Record<SenderIdStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
   pending: { label: "Pending Review", variant: "secondary", icon: <Clock className="h-3 w-3" /> },
@@ -93,7 +93,7 @@ export function SenderIdManagement() {
                       <p className="text-xs text-muted-foreground capitalize">
                         {item.sender_type === 'both' ? 'SMS & Voice' : item.sender_type}
                         {' • '}
-                        Requested {formatDistanceToNow(new Date(item.requested_at), { addSuffix: true })}
+                        Requested {formatRelative(item.requested_at)}
                       </p>
                     </div>
                   </div>

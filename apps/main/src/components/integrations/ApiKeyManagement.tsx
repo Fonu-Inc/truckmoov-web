@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
 import { Button } from '@/components/shadcn/button';
@@ -10,7 +11,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ScrollArea } from '@/components/shadcn/scroll-area';
 import { Separator } from '@/components/shadcn/separator';
 import { Key, Plus, Copy, Eye, EyeOff, Trash2, Clock, Check, AlertTriangle } from 'lucide-react';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 const API_SCOPES: { value: string; label: string; description: string }[] = [];
@@ -248,14 +248,14 @@ export function ApiKeyManagement() {
                       ))}
                     </div>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
-                      <span>Created: {format(new Date(key.created_at), 'MMM d, yyyy')}</span>
+                      <span>Created: {formatDate(key.created_at)}</span>
                       {key.last_used_at && (
-                        <span>Last used: {format(new Date(key.last_used_at), 'MMM d, yyyy HH:mm')}</span>
+                        <span>Last used: {formatDateTime(key.last_used_at)}</span>
                       )}
                       {key.expires_at && (
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          Expires: {format(new Date(key.expires_at), 'MMM d, yyyy')}
+                          Expires: {formatDate(key.expires_at)}
                         </span>
                       )}
                     </div>
@@ -307,7 +307,7 @@ export function ApiKeyManagement() {
                     <Badge variant="outline" className="text-destructive">Revoked</Badge>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {format(new Date(key.created_at), 'MMM d, yyyy')}
+                    {formatDate(key.created_at)}
                   </span>
                 </div>
               ))}

@@ -1,3 +1,4 @@
+import { formatRelative, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
@@ -35,7 +36,6 @@ import {
   X,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
-import { format, formatDistanceToNow } from "date-fns";
 type DriverMessage = any;
 type DriverCallLog = any;
 import { useAuthStore } from "@/stores/authStore";
@@ -397,7 +397,7 @@ export default function DispatcherInbox() {
                           </p>
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {formatDistanceToNow(new Date(conv.lastActivity), { addSuffix: true })}
+                          {formatRelative(conv.lastActivity)}
                         </p>
                       </div>
                     </button>
@@ -807,7 +807,7 @@ function CommunicationBubble({ item }: { item: CommunicationItem }) {
             <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                {format(new Date(item.timestamp), "MMM d, h:mm a")}
+                {formatWithPattern(item.timestamp, "MMM d, h:mm a")}
               </span>
               {item.duration != null && item.duration > 0 && (
                 <span className="font-medium">
@@ -893,7 +893,7 @@ function CommunicationBubble({ item }: { item: CommunicationItem }) {
           isOutbound ? "text-white/70" : "text-muted-foreground"
         )}
       >
-        <span>{format(new Date(item.timestamp), "h:mm a")}</span>
+        <span>{formatWithPattern(item.timestamp, "h:mm a")}</span>
         {isOutbound && (
           <TooltipWrapper content={item.status || "pending"}>{statusIcon}</TooltipWrapper>
         )}

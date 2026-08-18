@@ -1,3 +1,4 @@
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -42,7 +43,6 @@ import { Users, Plus, Mail, Shield, Trash2, Clock, CheckCircle, XCircle, Search,
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
-import { format } from "date-fns";
 
 interface PlatformUser {
   id: string;
@@ -316,7 +316,7 @@ export function PlatformTeamManagement() {
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-muted-foreground">
-                        {format(new Date(platformUser.createdAt), "MMM dd, yyyy")}
+                        {formatDate(platformUser.createdAt)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -371,7 +371,7 @@ export function PlatformTeamManagement() {
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-muted-foreground">
-                        {format(new Date(invitation.expiresAt), "MMM dd, yyyy")}
+                        {formatDate(invitation.expiresAt)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">

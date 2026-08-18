@@ -1,3 +1,4 @@
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import { useMemo, useState } from "react";
 import {
   Card,
@@ -62,7 +63,6 @@ import { Checkbox } from "@/components/shadcn/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { Calendar as CalendarPicker } from "@/components/shadcn/calendar";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 import { toast } from "sonner";
 import { downloadReceiptPDF } from "@/lib/receiptPdf";
 import { formatCurrency } from "@/lib/currency";
@@ -606,7 +606,7 @@ export function SubscriptionInvoicesPanel() {
                             )}
                           >
                             <Calendar className="mr-1 h-3.5 w-3.5" />
-                            {draft.dateFrom ? format(draft.dateFrom, "MMM d, yyyy") : "From"}
+                            {draft.dateFrom ? formatDate(draft.dateFrom) : "From"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -630,7 +630,7 @@ export function SubscriptionInvoicesPanel() {
                             )}
                           >
                             <Calendar className="mr-1 h-3.5 w-3.5" />
-                            {draft.dateTo ? format(draft.dateTo, "MMM d, yyyy") : "To"}
+                            {draft.dateTo ? formatDate(draft.dateTo) : "To"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">

@@ -1,3 +1,4 @@
+import { formatRelative, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import type React from "react";
 import {
@@ -22,7 +23,6 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, formatDistanceToNow } from "date-fns";
 
 type DeviceSetupRequestStatus =
   | "pending_review"
@@ -78,20 +78,6 @@ function getStatusInfo(status: DeviceSetupRequestStatus) {
     color: "bg-muted text-muted-foreground border-border",
     icon: <Clock className="h-3 w-3" />,
   };
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return format(date, "MMM d, yyyy h:mm a");
-}
-
-function formatRelativeDate(value?: string | null) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return formatDistanceToNow(date, { addSuffix: true });
 }
 
 export function DeviceRequestsTracker() {
@@ -197,7 +183,7 @@ export function DeviceRequestsTracker() {
                           {request.model ? ` ${request.model}` : ""}
                           {request.trackerType ? ` · ${request.trackerType}` : ""}
                         </p>
-                        <p className="text-xs text-muted-foreground">{formatRelativeDate(request.createdAt)}</p>
+                        <p className="text-xs text-muted-foreground">{formatRelative(request.createdAt)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -297,14 +283,14 @@ export function DeviceRequestsTracker() {
                               <div className="h-2 w-2 rounded-full bg-primary" />
                               <span className="text-muted-foreground capitalize">{item.status.replace(/_/g, " ")}</span>
                               {item.note && <span className="truncate">{item.note}</span>}
-                              <span className="ml-auto">{formatDate(item.at)}</span>
+                              <span className="ml-auto">{formatWithPattern(item.at, "MMM d, yyyy h:mm a")}</span>
                             </div>
                           ))}
                           {detail.updatedAt && detail.updatedAt !== detail.createdAt && (
                             <div className="flex items-center gap-2 text-xs">
                               <div className="h-2 w-2 rounded-full bg-muted-foreground" />
                               <span className="text-muted-foreground">Last update</span>
-                              <span className="ml-auto">{formatDate(detail.updatedAt)}</span>
+                              <span className="ml-auto">{formatWithPattern(detail.updatedAt, "MMM d, yyyy h:mm a")}</span>
                             </div>
                           )}
                         </div>

@@ -1,3 +1,4 @@
+import { formatRelative, formatTime, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { IoTDevice, Vehicle, SIMCard } from "@/types";
 import {
   Dialog,
@@ -24,7 +25,6 @@ import {
   Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow, format } from "date-fns";
 import {
   useDeviceOverview,
   useDeviceConnectivity,
@@ -112,7 +112,7 @@ export function DeviceDetailsSheet({
     .slice()
     .sort((a, b) => new Date(a.observed_at).getTime() - new Date(b.observed_at).getTime())
     .map((p) => ({
-      time: format(new Date(p.observed_at), "HH:mm"),
+      time: formatTime(p.observed_at),
       signal: p.signal_strength,
       battery: p.battery_level,
     }));
@@ -173,7 +173,7 @@ export function DeviceDetailsSheet({
                     <div>
                       <p className="text-sm text-muted-foreground">Last Seen</p>
                       <p className="text-sm font-medium mt-1">
-                        {lastSeen ? formatDistanceToNow(new Date(lastSeen), { addSuffix: true }) : "Never"}
+                        {lastSeen ? formatRelative(lastSeen) : "Never"}
                       </p>
                     </div>
                   </div>
@@ -317,7 +317,7 @@ export function DeviceDetailsSheet({
                         </p>
                         <p className="text-sm font-medium mt-1">
                           {lastSeen
-                            ? formatDistanceToNow(new Date(lastSeen), { addSuffix: true })
+                            ? formatRelative(lastSeen)
                             : "Never"}
                         </p>
                       </div>
@@ -327,7 +327,7 @@ export function DeviceDetailsSheet({
                         </p>
                         <p className="text-sm font-medium mt-1">
                           {connectivity.last_health_check?.at
-                            ? `${formatDistanceToNow(new Date(connectivity.last_health_check.at), { addSuffix: true })} (${connectivity.last_health_check.result})`
+                            ? `${formatRelative(connectivity.last_health_check.at)} (${connectivity.last_health_check.result})`
                             : "Pending"}
                         </p>
                       </div>
@@ -474,7 +474,7 @@ export function DeviceDetailsSheet({
                             <p className="text-sm font-mono">{entry.version}</p>
                             {seenAt && (
                               <p className="text-xs text-muted-foreground">
-                                {format(new Date(seenAt), "MMMM do, yyyy")}
+                                {formatWithPattern(seenAt, "MMMM do, yyyy")}
                               </p>
                             )}
                           </div>

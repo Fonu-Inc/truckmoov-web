@@ -1,3 +1,4 @@
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -154,7 +155,7 @@ export function CommunicationPricing() {
 
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Last updated</span>
-                  <span>{new Date(rate.updated_at).toLocaleDateString()}</span>
+                  <span>{formatDate(rate.updated_at)}</span>
                 </div>
 
                 {editedRates[rate.id] !== rate.rate_ngn && (

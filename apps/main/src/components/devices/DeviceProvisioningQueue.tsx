@@ -1,3 +1,4 @@
+import { formatDate, formatRelative, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useMemo, useState } from "react";
 import { startDeviceProvisioningSimulation } from "@/lib/provisioningEngineSim";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
@@ -55,7 +56,6 @@ import {
   PlatformFilterPopover,
   type FilterDraft,
 } from "@/components/shadcn/platform-filter-popover";
-import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import { DeviceRequestDetailsDialog } from "./DeviceRequestDetailsDialog";
@@ -252,7 +252,7 @@ export function DeviceProvisioningQueue() {
                 { header: "KYC Status", accessor: (r) => kycCache[r.tenant_id]?.status || "not_submitted" },
                 { header: "Priority", accessor: (r) => r.priority || "normal" },
                 { header: "Status", accessor: (r) => r.status },
-                { header: "Requested", accessor: (r) => format(new Date(r.created_at), "yyyy-MM-dd HH:mm") },
+                { header: "Requested", accessor: (r) => formatWithPattern(r.created_at, "yyyy-MM-dd HH:mm") },
               ]}
             />
           </div>
@@ -376,8 +376,8 @@ export function DeviceProvisioningQueue() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                          <div>{format(new Date(r.created_at), "MMM d, yyyy")}</div>
-                          <div className="text-xs opacity-70">{formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}</div>
+                          <div>{formatDate(r.created_at)}</div>
+                          <div className="text-xs opacity-70">{formatRelative(r.created_at)}</div>
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>

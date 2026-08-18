@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -43,7 +44,6 @@ type TenantSenderId = {
   admin_notes?: string | null;
   rejection_reason?: string | null;
 };
-import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
 const statusConfig: Record<SenderIdStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
@@ -210,7 +210,7 @@ export function SenderIdApprovalQueue() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {formatDistanceToNow(new Date(request.requested_at), { addSuffix: true })}
+                        {formatRelative(request.requested_at)}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>

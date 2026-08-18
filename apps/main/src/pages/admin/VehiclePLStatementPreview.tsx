@@ -1,3 +1,4 @@
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/shadcn/button";
 import { Printer } from "lucide-react";
@@ -121,7 +122,7 @@ export default function VehiclePLStatementPreview() {
             {options.companyName && <p className="text-xl opacity-90">{options.companyName}</p>}
             <div className="mt-8 text-sm opacity-90 space-y-1">
               <p>Reporting Period: {options.periodLabel}</p>
-              <p>Generated: {new Date().toLocaleDateString()}</p>
+              <p>Generated: {formatDate(new Date())}</p>
               {options.preparedBy && <p>Prepared by: {options.preparedBy}</p>}
             </div>
           </div>

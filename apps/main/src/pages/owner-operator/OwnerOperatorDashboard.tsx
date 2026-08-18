@@ -1,3 +1,4 @@
+import { addDays, daysBetween, formatDayMonth, formatWithPattern, isBefore } from "@truckmoov/app-core/utils/time-utils";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
@@ -28,7 +29,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { format as dateFormat, differenceInDays, isAfter, isBefore, addDays } from "date-fns";
+
 import { UpgradeRequestDialog } from "@/components/owner-operator/UpgradeRequestDialog";
 import { ComplianceDocumentsPanel } from "@/components/owner-operator/ComplianceDocumentsPanel";
 import { DeviceSetupRequestTracker } from "@/components/devices/DeviceSetupRequestTracker";
@@ -222,12 +223,12 @@ export default function OwnerOperatorDashboard() {
                   </div>
                   <Badge variant="destructive">
                     <FileWarning className="mr-1 h-3 w-3" />
-                    Expired {dateFormat(new Date(doc.expiry_date), "MMM d")}
+                    Expired {formatDayMonth(doc.expiry_date)}
                   </Badge>
                 </div>
               ))}
               {soonDocs.map(doc => {
-                const daysLeft = differenceInDays(new Date(doc.expiry_date), now);
+                const daysLeft = daysBetween(now, new Date(doc.expiry_date));
                 return (
                   <div key={doc.id} className="flex items-center justify-between rounded-lg border border-warning/20 bg-warning/5 p-3">
                     <div className="space-y-0.5 min-w-0 flex-1">
@@ -302,7 +303,7 @@ export default function OwnerOperatorDashboard() {
                 {activeJob.deadline && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Deadline</span>
-                    <span>{dateFormat(new Date(activeJob.deadline), "MMM d, h:mm a")}</span>
+                    <span>{formatWithPattern(activeJob.deadline, "MMM d, h:mm a")}</span>
                   </div>
                 )}
               </div>
@@ -456,7 +457,7 @@ export default function OwnerOperatorDashboard() {
                     </div>
                     <div className="text-right shrink-0 ml-4">
                       <p className="font-medium text-sm">{formatCurrency(job.amount_ngn || 0)}</p>
-                      <p className="text-xs text-muted-foreground">{dateFormat(new Date(job.created_at), "MMM d")}</p>
+                      <p className="text-xs text-muted-foreground">{formatDayMonth(job.created_at)}</p>
                     </div>
                   </div>
                 ))}

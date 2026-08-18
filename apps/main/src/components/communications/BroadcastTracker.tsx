@@ -1,3 +1,4 @@
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 
 import { mockDrivers } from "@/data/mockData";
@@ -35,7 +36,6 @@ import {
   Eye,
   ArrowLeft,
 } from "lucide-react";
-import { format } from "date-fns";
 
 const statusConfig: Record<string, { icon: React.ElementType; color: string; label: string }> = {
   pending: { icon: Clock, color: "text-muted-foreground", label: "Pending" },
@@ -108,7 +108,7 @@ export function BroadcastTracker() {
             <div className="flex-1">
               <CardTitle className="text-lg">Broadcast Details</CardTitle>
               <p className="text-sm text-muted-foreground">
-                {format(new Date(selectedBroadcast.created_at), "PPp")}
+                {formatWithPattern(selectedBroadcast.created_at, "PPp")}
               </p>
             </div>
             <Badge variant="secondary">{selectedBroadcast.channel.toUpperCase()}</Badge>
@@ -297,7 +297,7 @@ export function BroadcastTracker() {
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">{broadcast.channel.toUpperCase()}</Badge>
                         <span className="text-xs text-muted-foreground">
-                          {format(new Date(broadcast.created_at), "PPp")}
+                          {formatWithPattern(broadcast.created_at, "PPp")}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">

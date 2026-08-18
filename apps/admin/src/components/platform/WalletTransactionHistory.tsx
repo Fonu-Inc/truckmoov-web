@@ -1,3 +1,4 @@
+import { formatDate, formatTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -205,9 +206,9 @@ export function WalletTransactionHistory() {
                 filteredTransactions.map((tx) => (
                   <TableRow key={tx.id}>
                     <TableCell className="text-sm">
-                      <div>{new Date(tx.created_at).toLocaleDateString()}</div>
+                      <div>{formatDate(tx.created_at)}</div>
                       <div className="text-xs text-muted-foreground">
-                        {new Date(tx.created_at).toLocaleTimeString()}
+                        {formatTime(tx.created_at)}
                       </div>
                     </TableCell>
                     <TableCell className="font-medium">{tx.tenant_id}</TableCell>

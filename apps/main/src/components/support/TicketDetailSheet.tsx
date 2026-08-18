@@ -1,3 +1,4 @@
+import { formatRelative, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,6 @@ import { Separator } from "@/components/shadcn/separator";
 type SupportTicket = any;
 type TicketStatus = any;
 type TicketPriority = any;
-import { formatDistanceToNow, format } from "date-fns";
 import {
   ArrowUpRight,
   FileText,
@@ -149,9 +149,9 @@ export function TicketDetailSheet({ ticket, onClose }: TicketDetailSheetProps) {
             <div className="space-y-1 col-span-2">
               <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Created</Label>
               <p className="text-sm">
-                {format(new Date(ticket.createdAt), "PPp")}{" "}
+                {formatWithPattern(ticket.createdAt, "PPp")}{" "}
                 <span className="text-muted-foreground">
-                  ({formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true })})
+                  ({formatRelative(ticket.createdAt)})
                 </span>
               </p>
             </div>
@@ -265,7 +265,7 @@ export function TicketDetailSheet({ ticket, onClose }: TicketDetailSheetProps) {
               )}
               {ticket.escalatedAt && (
                 <p className="text-xs text-muted-foreground">
-                  Escalated {formatDistanceToNow(new Date(ticket.escalatedAt), { addSuffix: true })}
+                  Escalated {formatRelative(ticket.escalatedAt)}
                 </p>
               )}
             </div>

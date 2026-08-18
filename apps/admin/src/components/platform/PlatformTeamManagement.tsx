@@ -1,3 +1,4 @@
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
@@ -85,7 +86,6 @@ import { Users, Plus, Mail, Shield, Clock, Search, SlidersHorizontal, MoreHorizo
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
-import { format } from "date-fns";
 
 const inviteSchema = z.object({
   email: z.string().trim().email("Enter a valid email address."),
@@ -476,7 +476,7 @@ export function PlatformTeamManagement() {
                       <TableCell>
                         <span className="text-sm text-muted-foreground">
                           {invite.expiresAt
-                            ? format(new Date(invite.expiresAt), "MMM dd, yyyy")
+                            ? formatDate(invite.expiresAt)
                             : "—"}
                         </span>
                       </TableCell>

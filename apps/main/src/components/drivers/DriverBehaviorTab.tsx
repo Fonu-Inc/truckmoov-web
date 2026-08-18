@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
@@ -8,7 +9,6 @@ type DriverScore = any;
 type DriverBehaviorEvent = any;
 type GeofenceAlert = any;
 import { mockDrivers } from "@/data/mockData";
-import { formatDistanceToNow } from "date-fns";
 import {
   Activity, AlertTriangle, TrendingUp, TrendingDown, Minus,
   Gauge, Car, RotateCcw, Zap, MapPin, Shield, Bell, RefreshCw,
@@ -154,7 +154,7 @@ function EventItem({ event }: { event: DriverBehaviorEvent }) {
           </Badge>
         </div>
         <span className="text-xs text-muted-foreground">
-          {formatDistanceToNow(event.createdAt, { addSuffix: true })}
+          {formatRelative(event.createdAt)}
         </span>
       </div>
       {event.speed && (
@@ -186,7 +186,7 @@ function GeofenceAlertItem({ alert }: { alert: GeofenceAlert }) {
             {alert.alertType.toUpperCase()}
           </Badge>
           <p className="text-xs text-muted-foreground mt-1">
-            {formatDistanceToNow(alert.triggeredAt, { addSuffix: true })}
+            {formatRelative(alert.triggeredAt)}
           </p>
         </div>
       </div>

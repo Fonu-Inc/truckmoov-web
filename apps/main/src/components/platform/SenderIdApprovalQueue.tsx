@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -29,7 +30,6 @@ import {
   Clock, Loader2, Phone, RefreshCw, Trash2, FileText } from "lucide-react";
 type TenantSenderId = any;
 type SenderIdStatus = string;
-import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
 const statusConfig: Record<SenderIdStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
@@ -195,7 +195,7 @@ export function SenderIdApprovalQueue() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {formatDistanceToNow(new Date(request.requested_at), { addSuffix: true })}
+                        {formatRelative(request.requested_at)}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>

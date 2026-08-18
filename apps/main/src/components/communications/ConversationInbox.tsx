@@ -1,3 +1,4 @@
+import { formatDistance, formatTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect, useRef } from "react";
 import { WhatsAppIcon, SMSIcon, VoiceCallIcon } from "./ChannelIcons";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
@@ -25,7 +26,6 @@ import {
   PhoneCall,
   Video,
 } from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
 type DriverMessage = any;
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -283,7 +283,7 @@ export function ConversationInbox() {
                       <div className="flex items-center justify-between mb-0.5">
                         <p className="font-medium text-sm truncate">{conv.driverName}</p>
                         <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(conv.lastMessageTime, { addSuffix: false })}
+                          {formatDistance(conv.lastMessageTime)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -443,7 +443,7 @@ export function ConversationInbox() {
                         <p className="text-sm">{msg.content}</p>
                         <div className={cn("flex items-center justify-end gap-1 mt-1", metaClass)}>
                           <span className="text-[10px]">
-                            {format(new Date(msg.created_at), "HH:mm")}
+                            {formatTime(msg.created_at)}
                           </span>
                           <Badge
                             variant="outline"

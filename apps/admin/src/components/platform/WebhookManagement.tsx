@@ -1,3 +1,4 @@
+import { formatDayMonthTime, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -63,7 +64,6 @@ import {
   Play,
 } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 
@@ -632,7 +632,7 @@ export function WebhookManagement() {
                           {webhook.lastTriggered && (
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              Last triggered: {format(webhook.lastTriggered, "MMM d, HH:mm")}
+                              Last triggered: {formatDayMonthTime(webhook.lastTriggered)}
                             </span>
                           )}
                           <span>Success rate: {webhook.successRate}%</span>
@@ -753,7 +753,7 @@ export function WebhookManagement() {
                     { header: "Status Code", accessor: (l) => l.statusCode ?? "" },
                     { header: "Duration (ms)", accessor: (l) => l.duration ?? "" },
                     { header: "Attempts", accessor: (l) => l.attempts },
-                    { header: "Timestamp", accessor: (l) => format(l.timestamp, "yyyy-MM-dd HH:mm:ss") },
+                    { header: "Timestamp", accessor: (l) => formatWithPattern(l.timestamp, "yyyy-MM-dd HH:mm:ss") },
                   ]}
                 />
               </div>
@@ -857,7 +857,7 @@ export function WebhookManagement() {
                       </TableCell>
                       <TableCell>{log.duration ? `${log.duration}ms` : "-"}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {format(log.timestamp, "MMM d, HH:mm:ss")}
+                        {formatWithPattern(log.timestamp, "MMM d, HH:mm:ss")}
                       </TableCell>
                       <TableCell>
                         <Button
@@ -947,7 +947,7 @@ export function WebhookManagement() {
               <div className="flex items-center gap-4">
                 {getLogStatusBadge(selectedLog.status)}
                 <span className="text-sm text-muted-foreground">
-                  {format(selectedLog.timestamp, "PPpp")}
+                  {formatWithPattern(selectedLog.timestamp, "PPpp")}
                 </span>
                 {selectedLog.duration && (
                   <span className="text-sm text-muted-foreground">

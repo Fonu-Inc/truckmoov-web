@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
@@ -36,7 +37,6 @@ import {
   Webhook,
   XCircle,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import { ExportButton } from "@/components/shadcn/export-button";
 
@@ -283,7 +283,7 @@ export function IntegrationsGovernance() {
                           <TableCell>
                             {tenant.last_request_at ? (
                               <span className="text-muted-foreground text-sm">
-                                {formatDistanceToNow(new Date(tenant.last_request_at), { addSuffix: true })}
+                                {formatRelative(tenant.last_request_at)}
                               </span>
                             ) : (
                               "-"
@@ -515,7 +515,7 @@ export function IntegrationsGovernance() {
                             <TableCell>
                               {tenant.last_activity ? (
                                 <span className="text-muted-foreground text-sm">
-                                  {formatDistanceToNow(new Date(tenant.last_activity), { addSuffix: true })}
+                                  {formatRelative(tenant.last_activity)}
                                 </span>
                               ) : (
                                 <span className="text-muted-foreground text-sm">Never</span>
@@ -632,7 +632,7 @@ export function IntegrationsGovernance() {
                       filteredAuditLogs.map((log: any) => (
                         <TableRow key={log.id}>
                           <TableCell className="text-muted-foreground text-sm">
-                            {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                            {formatRelative(log.created_at)}
                           </TableCell>
                           <TableCell className="font-medium">{log.tenant_name}</TableCell>
                           <TableCell>

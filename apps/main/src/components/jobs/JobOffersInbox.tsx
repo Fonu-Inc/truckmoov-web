@@ -1,3 +1,4 @@
+import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -28,7 +29,6 @@ import {
   CalendarClock,
   Wallet,
 } from "lucide-react";
-import { format as dateFormat } from "date-fns";
 import { toast } from "sonner";
 import { DUMMY_JOB_OFFERS } from "@/lib/ownerOperatorDummyData";
 
@@ -187,7 +187,7 @@ export function JobOffersInbox() {
                 <CalendarClock className="h-3 w-3" /> Deadline
               </div>
               <p className="font-medium truncate mt-0.5">
-                {job?.deadline ? dateFormat(new Date(job.deadline), "MMM d, HH:mm") : "—"}
+                {job?.deadline ? formatDayMonthTime(job.deadline) : "—"}
               </p>
             </div>
           </div>
@@ -195,7 +195,7 @@ export function JobOffersInbox() {
           {/* Expires */}
           {offer.expires_at && showActions && (
             <p className="text-[10px] text-muted-foreground">
-              Offer expires {dateFormat(new Date(offer.expires_at), "MMM d, HH:mm")}
+              Offer expires {formatDayMonthTime(offer.expires_at)}
             </p>
           )}
 

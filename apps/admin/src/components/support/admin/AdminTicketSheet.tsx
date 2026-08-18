@@ -1,3 +1,4 @@
+import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -7,7 +8,6 @@ import {
   useEscalateSupportTicket,
   useUpdateSupportTicketStatus,
 } from "@truckmoov/api/auth";
-import { format } from "date-fns";
 import { ArrowUpRight, FileText, ImageIcon, Loader2, Lock, Paperclip, Send } from "lucide-react";
 import { toast } from "sonner";
 
@@ -117,7 +117,7 @@ const initials = (name: string) =>
 
 const formatCreatedAt = (date: string) => {
   const parsed = new Date(date);
-  return Number.isNaN(parsed.getTime()) ? date : format(parsed, "PPP, p");
+  return Number.isNaN(parsed.getTime()) ? date : formatWithPattern(parsed, "PPP, p");
 };
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>

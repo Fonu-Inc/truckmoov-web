@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card';
 import { Badge } from '@/components/shadcn/badge';
@@ -12,7 +13,6 @@ import {
 } from '@/components/shadcn/select';
 import { Search, Filter, Signal, Battery, Gauge, MapPin } from 'lucide-react';
 import { DeviceWithTelemetry } from '@/hooks/useDeviceTelemetry';
-import { formatDistanceToNow } from 'date-fns';
 import { DeviceHealthBadge, DeviceHealthStatus } from './DeviceHealthBadge';
 
 interface DeviceListProps {
@@ -188,7 +188,7 @@ export function DeviceList({
 
                   {device.last_seen && (
                     <div className="text-xs text-muted-foreground mt-2">
-                      {formatDistanceToNow(new Date(device.last_seen), { addSuffix: true })}
+                      {formatRelative(device.last_seen)}
                     </div>
                   )}
                 </div>

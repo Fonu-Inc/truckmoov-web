@@ -1,7 +1,7 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { cn } from "@/lib/utils";
 import { Alert as AlertType } from "@/types";
 import { AlertTriangle, MapPin, Gauge, Wrench, Fuel, AlertCircle, Bell } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/shadcn/button";
 
 interface AlertItemProps {
@@ -53,7 +53,7 @@ export function AlertItem({ alert, onAcknowledge }: AlertItemProps) {
           <div className="space-y-1">
             <p className="text-sm font-medium leading-tight">{alert.message}</p>
             <p className="text-xs text-muted-foreground">
-              {formatDistanceToNow(alert.timestamp, { addSuffix: true })}
+              {formatRelative(alert.timestamp)}
             </p>
           </div>
         </div>

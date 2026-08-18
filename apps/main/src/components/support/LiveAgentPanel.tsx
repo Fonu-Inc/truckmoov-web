@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useEffect, useRef, useState } from "react";
 import { Headphones, Loader2, Send, X, UserRound } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
@@ -5,7 +6,6 @@ import { Input } from "@/components/shadcn/input";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { useLiveAgentSession } from "@/hooks/useLiveAgentSession";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
 
 /**
  * Compact live-agent chat panel for the support chat widget.
@@ -45,10 +45,10 @@ export function LiveAgentPanel({ onLeave }: { onLeave?: () => void }) {
             </p>
             <p className="text-[10px] text-muted-foreground truncate">
               {isQueued && (
-                <>Waiting in queue · started {formatDistanceToNow(new Date(session.queued_at), { addSuffix: true })}</>
+                <>Waiting in queue · started {formatRelative(session.queued_at)}</>
               )}
               {isActive && session.started_at && (
-                <>Connected · {formatDistanceToNow(new Date(session.started_at), { addSuffix: true })}</>
+                <>Connected · {formatRelative(session.started_at)}</>
               )}
               {ended && <>Session ended</>}
             </p>

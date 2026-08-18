@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { format, subDays, subMonths, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { endOfMonth, formatMonthYear, getDateRange, isWithinRange, startOfMonth, subMonths, toDateParam } from "@truckmoov/app-core/utils/time-utils";
 
 // ─── Inline chart period filter ─────────────────────────────────────────────
 type ChartPeriod = "today" | "yesterday" | "7d" | "10d" | "30d";
@@ -60,30 +60,9 @@ function exportToCSV(filename: string, headers: string[], rows: (string | number
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `${filename}_${format(new Date(), "yyyy-MM-dd")}.csv`;
+  link.download = `${filename}_${toDateParam(new Date())}.csv`;
   link.click();
   URL.revokeObjectURL(url);
-}
-
-// ─── Date Range Helper ──────────────────────────────────────────────────────
-function getDateRange(range: string): { start: Date; end: Date; label: string } {
-  const now = new Date();
-  switch (range) {
-    case "this_month":
-      return { start: startOfMonth(now), end: now, label: "This Month" };
-    case "last_month": {
-      const lastMonth = subMonths(now, 1);
-      return { start: startOfMonth(lastMonth), end: endOfMonth(lastMonth), label: "Last Month" };
-    }
-    case "3_months":
-      return { start: subMonths(now, 3), end: now, label: "Last 3 Months" };
-    case "6_months":
-      return { start: subMonths(now, 6), end: now, label: "Last 6 Months" };
-    case "1_year":
-      return { start: subMonths(now, 12), end: now, label: "Last 12 Months" };
-    default:
-      return { start: subDays(now, 30), end: now, label: "Last 30 Days" };
-  }
 }
 
 // ─── P&L Report Tab ─────────────────────────────────────────────────────────
@@ -94,7 +73,7 @@ function ProfitLossReport({ jobs, vehicles, dateRange, formatCurrency }: {
 
   const filteredJobs = jobs.filter(j => {
     const d = new Date(j.createdAt);
-    return isWithinInterval(d, { start, end });
+    return isWithinRange(d, start, end);
   });
 
   const completedJobs = filteredJobs.filter(j => j.status === "completed");
@@ -113,12 +92,12 @@ function ProfitLossReport({ jobs, vehicles, dateRange, formatCurrency }: {
     const monthEnd = endOfMonth(monthDate);
     const monthJobs = completedJobs.filter(j => {
       const d = new Date(j.createdAt);
-      return isWithinInterval(d, { start: monthStart, end: monthEnd });
+      return isWithinRange(d, monthStart, monthEnd);
     });
     const rev = monthJobs.reduce((s, j) => s + (j.revenueNgn || j.amountNgn || 0), 0);
     const cost = monthJobs.length * 15000 + monthJobs.reduce((s, j) => s + (j.fuelCostNgn || 0), 0);
     return {
-      month: format(monthDate, "MMM yyyy"),
+      month: formatMonthYear(monthDate),
       revenue: rev,
       costs: cost,
       profit: rev - cost };
@@ -130,7 +109,7 @@ function ProfitLossReport({ jobs, vehicles, dateRange, formatCurrency }: {
     const monthDate = subMonths(new Date(), 5 - i);
     const base = 850_000 + Math.round(Math.sin(i * 0.9) * 180_000) + i * 35_000;
     const cost = Math.round(base * (0.55 + Math.cos(i * 1.1) * 0.07));
-    return { month: format(monthDate, "MMM yyyy"), revenue: base, costs: cost, profit: base - cost };
+    return { month: formatMonthYear(monthDate), revenue: base, costs: cost, profit: base - cost };
   });
   const displayMonthlyData = hasRealMonthly ? monthlyData : demoMonthlyData;
 

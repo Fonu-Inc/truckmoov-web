@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card';
 import { Badge } from '@/components/shadcn/badge';
@@ -16,7 +17,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { DeviceWithTelemetry, DriverBehaviorEvent } from '@/hooks/useDeviceTelemetry';
-import { formatDistanceToNow } from 'date-fns';
 import { DeviceHealthBadge } from './DeviceHealthBadge';
 
 interface DeviceTelemetryPanelProps {
@@ -91,7 +91,7 @@ export function DeviceTelemetryPanel({ device, recentEvents }: DeviceTelemetryPa
           {device.last_seen && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
-              Last seen {formatDistanceToNow(new Date(device.last_seen), { addSuffix: true })}
+              Last seen {formatRelative(device.last_seen)}
             </div>
           )}
         </CardContent>
@@ -232,7 +232,7 @@ export function DeviceTelemetryPanel({ device, recentEvents }: DeviceTelemetryPa
                       </div>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
+                      {formatRelative(event.created_at)}
                     </span>
                   </div>
                 ))}

@@ -1,3 +1,4 @@
+import { formatDayMonth, toDate } from "@truckmoov/app-core/utils/time-utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
 import { Badge } from '@/components/shadcn/badge';
 import { Button } from '@/components/shadcn/button';
@@ -6,7 +7,6 @@ import { TimeRangeSelect, sliceByRange, type TimeRange } from '@/components/char
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
 import { Activity, TrendingUp, TrendingDown, Clock, AlertTriangle, RefreshCw, Zap, CheckCircle } from 'lucide-react';
 import { useState } from 'react';
-import { format, parseISO } from 'date-fns';
 
 export function ApiUsageAnalytics() {
   const [daysRange, setDaysRange] = useState(30);
@@ -22,7 +22,7 @@ export function ApiUsageAnalytics() {
   const refreshAnalytics = async () => {};
 
   const chartData = dailyUsage.map(d => ({
-    date: format(parseISO(d.date), 'MMM d'),
+    date: formatDayMonth(d.date),
     requests: d.requests,
     errors: d.errorCount,
     latency: d.avgLatencyMs,

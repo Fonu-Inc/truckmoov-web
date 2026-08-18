@@ -1,3 +1,4 @@
+import { formatDayMonthTime, formatTime } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
@@ -47,7 +48,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import { useFonuCall } from "@/contexts/FonuCallContext";
 
 const statusColors: Record<string, string> = {
@@ -367,7 +367,7 @@ export default function SupervisorDrivers() {
                                   </p>
                                 )}
                                 <p className="text-xs text-muted-foreground mt-0.5">
-                                  {format(new Date(msg.created_at), 'MMM d, HH:mm')}
+                                  {formatDayMonthTime(msg.created_at)}
                                 </p>
                               </div>
                             </div>
@@ -377,7 +377,7 @@ export default function SupervisorDrivers() {
                                 <span className="text-xs text-warning flex items-center gap-1">
                                   <RotateCcw className="h-3 w-3" />
                                   {retryInfo.lastRetry
-                                    ? `Last retry: ${format(retryInfo.lastRetry, 'HH:mm')}`
+                                    ? `Last retry: ${formatTime(retryInfo.lastRetry)}`
                                     : 'Waiting for retry...'
                                   }
                                 </span>
@@ -469,7 +469,7 @@ export default function SupervisorDrivers() {
                                 <span className="capitalize">{call.status.replace('_', ' ')}</span>
                               </div>
                               <p className="text-xs text-muted-foreground mt-0.5">
-                                {format(new Date(call.started_at), 'MMM d, HH:mm')}
+                                {formatDayMonthTime(call.started_at)}
                               </p>
                             </div>
                           </div>

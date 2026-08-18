@@ -1,3 +1,4 @@
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
@@ -52,7 +53,6 @@ import { useMQTTSimulator, SimulatedDevice, MessageLog, GeofenceAlert } from '@/
 import { SimulatorGeofenceMap } from '@/components/devices/SimulatorGeofenceMap';
 import { SimulatorDeviceMap } from '@/components/devices/SimulatorDeviceMap';
 import { ExportButton } from '@/components/shadcn/export-button';
-import { formatDistanceToNow } from 'date-fns';
 
 function DeviceStatusBadge({ status }: { status: SimulatedDevice['status'] }) {
   const variants: Record<SimulatedDevice['status'], { color: string; icon: React.ReactNode }> = {
@@ -138,7 +138,7 @@ function GeofenceAlertItem({ alert }: { alert: GeofenceAlert }) {
           </div>
         </div>
         <span className="text-xs text-muted-foreground whitespace-nowrap">
-          {formatDistanceToNow(alert.timestamp, { addSuffix: true })}
+          {formatRelative(alert.timestamp)}
         </span>
       </div>
       <div className="mt-2 text-xs font-mono text-muted-foreground">
@@ -647,7 +647,7 @@ export default function DeviceSimulator() {
                             <span className="text-muted-foreground">{log.topic}</span>
                           </div>
                           <span className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(log.timestamp, { addSuffix: true })}
+                            {formatRelative(log.timestamp)}
                           </span>
                         </div>
                         <pre className="text-xs overflow-x-auto whitespace-pre-wrap">

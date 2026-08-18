@@ -1,3 +1,4 @@
+import { formatDayMonth } from "@truckmoov/app-core/utils/time-utils";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
@@ -14,7 +15,6 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useMemo } from "react";
-import { format as dateFormat } from "date-fns";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 /**
@@ -185,7 +185,7 @@ export default function EnterpriseLogisticsDashboard() {
                         </div>
                         <div className="text-right shrink-0 ml-4">
                           <p className="font-medium text-sm">{formatCurrency(job.amount_ngn || 0)}</p>
-                          <p className="text-xs text-muted-foreground">{dateFormat(new Date(job.created_at), "MMM d")}</p>
+                          <p className="text-xs text-muted-foreground">{formatDayMonth(job.created_at)}</p>
                         </div>
                       </div>
                     ))}

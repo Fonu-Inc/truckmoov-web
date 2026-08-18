@@ -1,3 +1,4 @@
+import { formatWithPattern, toDateParam } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
 import { Badge } from '@/components/shadcn/badge';
@@ -51,7 +52,6 @@ import {
   Eye,
   ShieldAlert,
 } from 'lucide-react';
-import { format } from 'date-fns';
 
 interface DeviceSetupRequestsQueueProps {
   requests: any[];
@@ -198,8 +198,8 @@ export function DeviceSetupRequestsQueue({
               { header: 'State', accessor: (r) => r.installation_state || '' },
               { header: 'Status', accessor: (r) => STATUS_CONFIG[r.status]?.label || r.status },
               { header: 'Needs SIM', accessor: (r) => (r.needs_sim ? 'Yes' : 'No') },
-              { header: 'Created', accessor: (r) => format(new Date(r.created_at), 'yyyy-MM-dd') },
-              { header: 'Preferred Date', accessor: (r) => (r.preferred_date ? format(new Date(r.preferred_date), 'yyyy-MM-dd') : '') },
+              { header: 'Created', accessor: (r) => toDateParam(r.created_at) },
+              { header: 'Preferred Date', accessor: (r) => (r.preferred_date ? toDateParam(r.preferred_date) : '') },
             ]}
           />
         </CardHeader>
@@ -273,7 +273,7 @@ export function DeviceSetupRequestsQueue({
                           className={cn("justify-start font-normal", !draftDateFrom && "text-muted-foreground")}
                         >
                           <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                          {draftDateFrom ? format(draftDateFrom, 'dd MMM yy') : 'From'}
+                          {draftDateFrom ? formatWithPattern(draftDateFrom, 'dd MMM yy') : 'From'}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -289,7 +289,7 @@ export function DeviceSetupRequestsQueue({
                           className={cn("justify-start font-normal", !draftDateTo && "text-muted-foreground")}
                         >
                           <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                          {draftDateTo ? format(draftDateTo, 'dd MMM yy') : 'To'}
+                          {draftDateTo ? formatWithPattern(draftDateTo, 'dd MMM yy') : 'To'}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -422,11 +422,11 @@ export function DeviceSetupRequestsQueue({
                           </TableCell>
                           <TableCell>
                             <div className="text-xs text-muted-foreground">
-                              {format(new Date(req.created_at), 'dd MMM yyyy')}
+                              {formatWithPattern(req.created_at, 'dd MMM yyyy')}
                               {req.preferred_date && (
                                 <div className="flex items-center gap-1 mt-1">
                                   <Calendar className="h-3 w-3" />
-                                  {format(new Date(req.preferred_date), 'dd MMM')}
+                                  {formatWithPattern(req.preferred_date, 'dd MMM')}
                                 </div>
                               )}
                             </div>
@@ -522,7 +522,7 @@ export function DeviceSetupRequestsQueue({
               {detailRequest.preferred_date && (
                 <div className="text-sm">
                   <span className="text-muted-foreground">Preferred Date</span>
-                  <p>{format(new Date(detailRequest.preferred_date), 'dd MMMM yyyy')} {detailRequest.preferred_time && `(${detailRequest.preferred_time})`}</p>
+                  <p>{formatWithPattern(detailRequest.preferred_date, 'dd MMMM yyyy')} {detailRequest.preferred_time && `(${detailRequest.preferred_time})`}</p>
                 </div>
               )}
               {detailRequest.sim_iccid && (

@@ -1,3 +1,4 @@
+import { formatHumanDuration } from "@truckmoov/app-core/utils/time-utils";
 import { useEffect, useRef, useState } from "react";
 import { Check, Loader2, Minus, Plus, Sparkles } from "lucide-react";
 import L, {
@@ -55,16 +56,6 @@ const LIGHT_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const OPEN_STREET_MAP_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 const OSRM_ROUTE_URL = "https://router.project-osrm.org/route/v1/driving";
-
-function formatDuration(minutes: number) {
-  if (minutes < 60) return `${minutes} min`;
-
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-  return remainingMinutes > 0
-    ? `${hours}h ${remainingMinutes}m`
-    : `${hours}h`;
-}
 
 function createLocationPin(color: string) {
   return L.divIcon({
@@ -381,7 +372,7 @@ export function RoutePreviewMap({
                       </span>
                       <span className="block text-[10px] leading-tight text-muted-foreground">
                         {route.distanceKm.toFixed(1)} km &middot;{" "}
-                        {formatDuration(route.durationMinutes)}
+                        {formatHumanDuration(route.durationMinutes * 60)}
                       </span>
                     </span>
                   </button>

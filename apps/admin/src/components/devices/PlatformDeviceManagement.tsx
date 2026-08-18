@@ -1,3 +1,4 @@
+import { formatCompactRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
@@ -47,7 +48,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import { formatDistanceToNow } from "date-fns";
 import {
   Battery,
   Building2,
@@ -102,11 +102,6 @@ const emptyFilters: DeviceFilterDraft = {
   lifecycleStatus: { enabled: false, value: "" },
   manufacturer: { enabled: false, value: "" },
 };
-
-function formatLastSeen(lastSeen: string | null) {
-  if (!lastSeen) return "Never";
-  return formatDistanceToNow(new Date(lastSeen), { addSuffix: true });
-}
 
 function formatSignal(signalStrength: number | null) {
   return signalStrength === null ? null : `${signalStrength}%`;
@@ -489,7 +484,7 @@ export function PlatformDeviceManagement() {
                       )}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {formatLastSeen(device.lastSeen)}
+                      {formatCompactRelative(device.lastSeen, "Never")}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -561,7 +556,7 @@ export function PlatformDeviceManagement() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Last Seen</p>
-                  <p className="mt-2 font-semibold">{formatLastSeen(detailDevice.lastSeen)}</p>
+                  <p className="mt-2 font-semibold">{formatCompactRelative(detailDevice.lastSeen, "Never")}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Tenant</p>

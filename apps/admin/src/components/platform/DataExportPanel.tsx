@@ -1,3 +1,4 @@
+import { addDays, formatDate, formatDateTime, formatDistance } from "@truckmoov/app-core/utils/time-utils";
 import { useMemo, useState } from "react";
 import { Card } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
@@ -13,7 +14,6 @@ import {Download, Package,
   FileText,
   ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { format, addDays, formatDistanceToNowStrict } from "date-fns";
 import type { TenantData } from "@/hooks/useTenants";
 
 interface Props {
@@ -153,15 +153,15 @@ export function DataExportPanel({ tenant }: Props) {
               <div>
                 <div className="text-muted-foreground">Generated</div>
                 <div className="font-medium">
-                  {format(terminatedAt, "MMM d, yyyy HH:mm")}
+                  {formatDateTime(terminatedAt)}
                 </div>
               </div>
               <div>
                 <div className="text-muted-foreground">Link expires</div>
                 <div className="font-medium">
-                  {format(expiresAt, "MMM d, yyyy")} ·{" "}
+                  {formatDate(expiresAt)} ·{" "}
                   <span className="text-warning">
-                    in {formatDistanceToNowStrict(expiresAt)}
+                    in {formatDistance(expiresAt)}
                   </span>
                 </div>
               </div>

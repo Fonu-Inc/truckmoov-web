@@ -1,9 +1,12 @@
 # Agent Instructions
 
-Before starting any requested task in this repository, read `docs/design.md` first, then `README.md` and the other relevant files in `docs/`, to understand the project context, conventions, and intended meaning of the request.
+Before starting any requested task in this repository, read `README.md` and **all
+of the files in `docs/`** to understand the codebase, its conventions, and the
+intended meaning of the request.
 
-`docs/design.md` describes how the running app is put together — theme tokens, layout shell, role-based navigation, and the standard page/table patterns. Read it before writing or changing any UI, styling, layout, or navigation, and follow it instead of inventing new patterns.
+Treat those documents as the first source of truth when interpreting user
+instructions. They define the established patterns for this codebase — follow
+them instead of inventing new ones.
 
-Use those documents as the first source of truth when interpreting user instructions. If a task touches APIs, TypeScript configuration, git workflow, app structure, UI/design, or any documented project behavior, consult the matching documentation in `docs/` before making changes.
-
-If you find the code and the docs disagree, the code wins — update the doc as part of your change.
+If you find the code and the docs disagree, the code wins — update the doc as
+part of your change. When you establish a new convention, document it in `docs/`.

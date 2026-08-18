@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import { toast } from "sonner";
 import { useJob, useJobTimeline } from "@truckmoov/api/dispatch";
 import { useVehicle } from "@truckmoov/api/fleet";
@@ -204,7 +204,7 @@ export function JobDetailsSheet({ open, onOpenChange, job }: JobDetailsSheetProp
             </div>
             <div>
               <FieldLabel icon={Calendar}>Deadline</FieldLabel>
-              <p className="text-sm">{format(new Date(deadline), "MMM dd, HH:mm")}</p>
+              <p className="text-sm">{formatDayMonthTime(deadline)}</p>
             </div>
             <div className="col-span-2 sm:col-span-4">
               <FieldLabel icon={FileText}>Description</FieldLabel>
@@ -309,7 +309,7 @@ export function JobDetailsSheet({ open, onOpenChange, job }: JobDetailsSheetProp
                       <p className="text-sm">{entry.summary || entry.type || "Job activity"}</p>
                       {entry.occurred_at && (
                         <div className="text-xs text-muted-foreground">
-                          {format(new Date(entry.occurred_at), "MMM dd, HH:mm")}
+                          {formatDayMonthTime(entry.occurred_at)}
                         </div>
                       )}
                     </div>

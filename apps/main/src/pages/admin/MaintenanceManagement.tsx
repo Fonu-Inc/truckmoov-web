@@ -1,3 +1,4 @@
+import { daysUntil, formatDate, toDateParam } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
@@ -55,7 +56,6 @@ import {
   Mail,
   RefreshCw,
 } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ShortcutTooltip } from "@/components/shadcn/shortcut-tooltip";
@@ -163,8 +163,8 @@ export default function MaintenanceManagement() {
   const getRecordStatus = (record: MaintenanceRecord): string => {
     if (record.status === 'completed') return 'completed';
     if (record.status === 'in_progress') return 'in_progress';
-    const daysUntil = differenceInDays(new Date(record.scheduled_date), new Date());
-    if (daysUntil < 0) return 'overdue';
+    const daysLeft = daysUntil(record.scheduled_date);
+    if (daysLeft !== null && daysLeft < 0) return 'overdue';
     return 'scheduled';
   };
 
@@ -226,7 +226,7 @@ export default function MaintenanceManagement() {
       type: (type as "preventive" | "corrective" | "inspection") || "preventive",
       category: category || "",
       description: record.notes || "",
-      scheduledDate: format(new Date(record.scheduled_date), "yyyy-MM-dd"),
+      scheduledDate: toDateParam(record.scheduled_date),
       priority: (record.priority as "low" | "medium" | "high" | "critical") || "medium",
       technician: record.technician || "",
     });
@@ -484,10 +484,10 @@ export default function MaintenanceManagement() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          {format(new Date(record.scheduled_date), "MMM dd, yyyy")}
+                          {formatDate(record.scheduled_date)}
                           {record.displayStatus === "overdue" && (
                             <p className="text-xs text-destructive">
-                              {Math.abs(differenceInDays(new Date(record.scheduled_date), new Date()))} days overdue
+                              {Math.abs(daysUntil(record.scheduled_date) ?? 0)} days overdue
                             </p>
                           )}
                         </div>
@@ -691,12 +691,12 @@ export default function MaintenanceManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground text-xs">Scheduled Date</Label>
-                  <p className="font-medium">{format(new Date(selectedRecord.scheduled_date), "MMM dd, yyyy")}</p>
+                  <p className="font-medium">{formatDate(selectedRecord.scheduled_date)}</p>
                 </div>
                 {selectedRecord.completed_date && (
                   <div>
                     <Label className="text-muted-foreground text-xs">Completed Date</Label>
-                    <p className="font-medium">{format(new Date(selectedRecord.completed_date), "MMM dd, yyyy")}</p>
+                    <p className="font-medium">{formatDate(selectedRecord.completed_date)}</p>
                   </div>
                 )}
               </div>

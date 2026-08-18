@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { Timezone, DEFAULT_TIMEZONE } from "@/lib/timezone";
+import { Timezone, DEFAULT_TIMEZONE } from "@truckmoov/app-core/utils/time-utils";
 import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 
 interface PreferencesContextType {

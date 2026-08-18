@@ -1,3 +1,4 @@
+import { formatDate, toDateParam } from "@truckmoov/app-core/utils/time-utils";
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
 import { Button } from '@/components/shadcn/button';
@@ -46,7 +47,6 @@ import {
   ChevronRight,
   Mail
 } from 'lucide-react';
-import { format } from 'date-fns';
 import { KYCNotificationHistory } from './KYCNotificationHistory';
 import { TableToolbar } from '@/components/shadcn/table-toolbar';
 import { ExportButton } from '@/components/shadcn/export-button';
@@ -349,7 +349,7 @@ export function KYCReviewWorkflow() {
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">
                               Tenant: {tenant?.company_name || doc.tenant_id} • 
-                              Submitted: {format(new Date(doc.created_at), 'MMM d, yyyy')}
+                              Submitted: {formatDate(doc.created_at)}
                             </p>
                           </div>
                         </div>
@@ -408,7 +408,7 @@ export function KYCReviewWorkflow() {
                     { header: 'Registration', accessor: (t) => t.registration_number || '' },
                     { header: 'Tax ID', accessor: (t) => t.tax_id || '' },
                     { header: 'Status', accessor: (t) => t.verification_status },
-                    { header: 'Submitted', accessor: (t) => format(new Date(t.created_at), 'yyyy-MM-dd') },
+                    { header: 'Submitted', accessor: (t) => toDateParam(t.created_at) },
                   ]}
                 />
               </div>
@@ -492,7 +492,7 @@ export function KYCReviewWorkflow() {
                           </TableCell>
                           <TableCell>{getStatusBadge(tenant.verification_status)}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {format(new Date(tenant.created_at), 'MMM d, yyyy')}
+                            {formatDate(tenant.created_at)}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
@@ -565,8 +565,8 @@ export function KYCReviewWorkflow() {
                     { header: 'Type', accessor: (d: KYCDocument) => DOCUMENT_TYPE_LABELS[d.document_type] || d.document_type },
                     { header: 'Tenant', accessor: (d: KYCDocument) => businessInfoList.find(b => b.tenant_id === d.tenant_id)?.company_name || d.tenant_id },
                     { header: 'Status', accessor: (d: KYCDocument) => d.status },
-                    { header: 'Submitted', accessor: (d: KYCDocument) => format(new Date(d.created_at), 'yyyy-MM-dd') },
-                    { header: 'Reviewed', accessor: (d: KYCDocument) => d.reviewed_at ? format(new Date(d.reviewed_at), 'yyyy-MM-dd') : '' },
+                    { header: 'Submitted', accessor: (d: KYCDocument) => toDateParam(d.created_at) },
+                    { header: 'Reviewed', accessor: (d: KYCDocument) => d.reviewed_at ? toDateParam(d.reviewed_at) : '' },
                   ]}
                   filename="kyc-documents"
                 />
@@ -656,10 +656,10 @@ export function KYCReviewWorkflow() {
                         </TableCell>
                         <TableCell>{getStatusBadge(doc.status)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(doc.created_at), 'MMM d, yyyy')}
+                          {formatDate(doc.created_at)}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {doc.reviewed_at ? format(new Date(doc.reviewed_at), 'MMM d, yyyy') : '-'}
+                          {doc.reviewed_at ? formatDate(doc.reviewed_at) : '-'}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">

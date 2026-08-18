@@ -1,3 +1,4 @@
+import { daysUntil, formatDate, formatDayMonthTime, formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { Badge } from "@/components/shadcn/badge";
@@ -7,7 +8,6 @@ import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Separator } from "@/components/shadcn/separator";
 import { Button } from "@/components/shadcn/button";
 import { Driver } from "@/types";
-import { format, differenceInDays, formatDistanceToNow } from "date-fns";
 import { 
   User, Phone, Mail, CreditCard, Calendar, Star, Truck, 
   MessageSquare, AlertTriangle, TrendingUp, Award, Clock,
@@ -219,7 +219,7 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
 
   if (!driver) return null;
 
-  const daysUntilExpiry = differenceInDays(new Date(driver.licenseExpiry), new Date());
+  const daysUntilExpiry = daysUntil(driver.licenseExpiry);
   const licenseWarning = daysUntilExpiry <= 30;
 
   // Calculate overall behavior score
@@ -377,7 +377,7 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
                 <div>
                   <p className="text-muted-foreground">Expiry Date</p>
                   <p className={`font-medium ${licenseWarning ? "text-warning" : ""}`}>
-                    {format(new Date(driver.licenseExpiry), "MMM dd, yyyy")}
+                    {formatDate(driver.licenseExpiry)}
                   </p>
                 </div>
                 <div className="col-span-2">
@@ -495,7 +495,7 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
                                 </Badge>
                               </div>
                               <span className="text-[10px] text-muted-foreground">
-                                {formatDistanceToNow(event.createdAt, { addSuffix: true })}
+                                {formatRelative(event.createdAt)}
                               </span>
                             </div>
                             {event.speed && (
@@ -569,7 +569,7 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
                             {latestFatigueAlert.risk_level} risk
                           </Badge>
                           <span className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(latestFatigueAlert.created_at), { addSuffix: true })}
+                            {formatRelative(latestFatigueAlert.created_at)}
                           </span>
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs">
@@ -673,7 +673,7 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
                               </Badge>
                             </div>
                             <span className="text-[10px] text-muted-foreground">
-                              {format(new Date(alert.created_at), 'MMM dd, HH:mm')}
+                              {formatDayMonthTime(alert.created_at)}
                             </span>
                           </div>
                         </div>
@@ -758,7 +758,7 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
                             {event.eventType.replace(/_/g, ' ')}
                           </p>
                           <p className="text-[10px] text-muted-foreground">
-                            {formatDistanceToNow(event.createdAt, { addSuffix: true })}
+                            {formatRelative(event.createdAt)}
                           </p>
                         </div>
                         <Badge variant="outline" className="text-[10px] h-4">

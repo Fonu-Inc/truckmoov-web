@@ -1,3 +1,4 @@
+import { formatRelative, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
 import { Badge } from "@/components/shadcn/badge";
@@ -15,7 +16,6 @@ import { useAuthStore } from "@/stores/authStore";
 type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
 type EscalationType = "fleetpro_internal" | "fonu_connectivity" | "vendor_installer";
 type SupportTicket = any;
-import { formatDistanceToNow, format } from "date-fns";
 import { 
   Send, 
   Loader2, 
@@ -202,7 +202,7 @@ export function AdminTicketSheet({ ticket, onClose }: AdminTicketSheetProps) {
                 </div>
                 <div className="space-y-1 col-span-2">
                   <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Created</Label>
-                  <p className="text-sm">{format(new Date(ticket.createdAt), "PPp")}</p>
+                  <p className="text-sm">{formatWithPattern(ticket.createdAt, "PPp")}</p>
                 </div>
               </div>
 
@@ -339,7 +339,7 @@ export function AdminTicketSheet({ ticket, onClose }: AdminTicketSheetProps) {
                   )}
                   {ticket.escalatedAt && (
                     <p className="text-xs text-muted-foreground">
-                      Escalated {formatDistanceToNow(new Date(ticket.escalatedAt), { addSuffix: true })}
+                      Escalated {formatRelative(ticket.escalatedAt)}
                     </p>
                   )}
                 </div>
@@ -396,7 +396,7 @@ export function AdminTicketSheet({ ticket, onClose }: AdminTicketSheetProps) {
                               </div>
                               <p className="text-sm">{msg.message}</p>
                               <p className="text-[10px] opacity-70 mt-1">
-                                {format(new Date(msg.createdAt), "MMM d, h:mm a")}
+                                {formatWithPattern(msg.createdAt, "MMM d, h:mm a")}
                               </p>
                             </div>
                           </div>
@@ -457,7 +457,7 @@ export function AdminTicketSheet({ ticket, onClose }: AdminTicketSheetProps) {
                   <p className="text-sm text-muted-foreground mt-1">
                     This ticket was escalated to {ticket.escalatedTo.replace(/_/g, " ")}
                     {ticket.escalatedAt && (
-                      <> {formatDistanceToNow(new Date(ticket.escalatedAt), { addSuffix: true })}</>
+                      <> {formatRelative(ticket.escalatedAt)}</>
                     )}
                   </p>
                 </div>

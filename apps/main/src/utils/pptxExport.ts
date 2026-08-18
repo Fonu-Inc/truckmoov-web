@@ -1,3 +1,4 @@
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import PptxGenJS from "pptxgenjs";
 import { toPng } from "html-to-image";
 
@@ -128,7 +129,7 @@ export async function generatePowerPoint(
   titleSlide.addText([
     { text: "Document Version: 1.0.0", options: { breakLine: true } },
     { text: "Classification: MTN-IT Confidential", options: { breakLine: true } },
-    { text: `Date: ${new Date().toLocaleDateString()}`, options: {} },
+    { text: `Date: ${formatDate(new Date())}`, options: {} },
   ], {
     x: 0.5,
     y: 4.2,
