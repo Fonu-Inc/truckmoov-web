@@ -1,23 +1,56 @@
-import { formatDayMonthTime, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
+import {
+  formatDayMonthTime,
+  formatWithPattern,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Code,
+  Copy,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  History,
+  Loader2,
+  MoreVertical,
+  Play,
+  Plus,
+  RefreshCw,
+  Send,
+  Trash2,
+  Webhook,
+} from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
-import { Switch } from "@/components/shadcn/switch";
-import { Separator } from "@/components/shadcn/separator";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from "@/components/shadcn/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
+import { ExportButton } from "@/components/shadcn/export-button";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
 import {
   Select,
   SelectContent,
@@ -25,6 +58,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { Separator } from "@/components/shadcn/separator";
+import { Switch } from "@/components/shadcn/switch";
 import {
   Table,
   TableBody,
@@ -33,41 +68,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/shadcn/dropdown-menu";
-import {
-  Webhook,
-  Plus,
-  Send,
-  RefreshCw,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  MoreVertical,
-  Trash2,
-  Edit,
-  Copy,
-  Eye,
-  EyeOff,
-  AlertTriangle,
-  Loader2,
-  Activity,
-  History,
-  Settings,
-  Code,
-  ExternalLink,
-  Zap,
-  Play,
-} from "lucide-react";
-import { toast } from "sonner";
-import { ExportButton } from "@/components/shadcn/export-button";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/shadcn/tabs";
 
-interface WebhookConfig {
+type WebhookConfig = {
   id: string;
   name: string;
   url: string;
@@ -81,9 +90,9 @@ interface WebhookConfig {
   status: "active" | "failing" | "disabled";
   successRate: number;
   totalCalls: number;
-}
+};
 
-interface WebhookLog {
+type WebhookLog = {
   id: string;
   webhookId: string;
   webhookName: string;
@@ -95,36 +104,115 @@ interface WebhookLog {
   duration: number | null;
   timestamp: Date;
   attempts: number;
-}
+};
 
 const availableEvents = [
-  { value: "job.created", label: "Job Created", category: "Jobs" },
-  { value: "job.updated", label: "Job Updated", category: "Jobs" },
-  { value: "job.completed", label: "Job Completed", category: "Jobs" },
-  { value: "job.cancelled", label: "Job Cancelled", category: "Jobs" },
-  { value: "driver.assigned", label: "Driver Assigned", category: "Drivers" },
-  { value: "driver.status_change", label: "Driver Status Change", category: "Drivers" },
-  { value: "driver.location_update", label: "Driver Location Update", category: "Drivers" },
-  { value: "vehicle.geofence_enter", label: "Geofence Entry", category: "Vehicles" },
-  { value: "vehicle.geofence_exit", label: "Geofence Exit", category: "Vehicles" },
-  { value: "vehicle.alert", label: "Vehicle Alert", category: "Vehicles" },
-  { value: "device.offline", label: "Device Offline", category: "IoT" },
-  { value: "device.online", label: "Device Online", category: "IoT" },
-  { value: "device.low_battery", label: "Low Battery", category: "IoT" },
-  { value: "payment.success", label: "Payment Success", category: "Billing" },
-  { value: "payment.failed", label: "Payment Failed", category: "Billing" },
-  { value: "invoice.created", label: "Invoice Created", category: "Billing" },
-  { value: "security.login", label: "User Login", category: "Security" },
-  { value: "security.suspicious_activity", label: "Suspicious Activity", category: "Security" },
+  {
+    value: "job.created",
+    label: "Job Created",
+    category: "Jobs",
+  },
+  {
+    value: "job.updated",
+    label: "Job Updated",
+    category: "Jobs",
+  },
+  {
+    value: "job.completed",
+    label: "Job Completed",
+    category: "Jobs",
+  },
+  {
+    value: "job.cancelled",
+    label: "Job Cancelled",
+    category: "Jobs",
+  },
+  {
+    value: "driver.assigned",
+    label: "Driver Assigned",
+    category: "Drivers",
+  },
+  {
+    value: "driver.status_change",
+    label: "Driver Status Change",
+    category: "Drivers",
+  },
+  {
+    value: "driver.location_update",
+    label: "Driver Location Update",
+    category: "Drivers",
+  },
+  {
+    value: "vehicle.geofence_enter",
+    label: "Geofence Entry",
+    category: "Vehicles",
+  },
+  {
+    value: "vehicle.geofence_exit",
+    label: "Geofence Exit",
+    category: "Vehicles",
+  },
+  {
+    value: "vehicle.alert",
+    label: "Vehicle Alert",
+    category: "Vehicles",
+  },
+  {
+    value: "device.offline",
+    label: "Device Offline",
+    category: "IoT",
+  },
+  {
+    value: "device.online",
+    label: "Device Online",
+    category: "IoT",
+  },
+  {
+    value: "device.low_battery",
+    label: "Low Battery",
+    category: "IoT",
+  },
+  {
+    value: "payment.success",
+    label: "Payment Success",
+    category: "Billing",
+  },
+  {
+    value: "payment.failed",
+    label: "Payment Failed",
+    category: "Billing",
+  },
+  {
+    value: "invoice.created",
+    label: "Invoice Created",
+    category: "Billing",
+  },
+  {
+    value: "security.login",
+    label: "User Login",
+    category: "Security",
+  },
+  {
+    value: "security.suspicious_activity",
+    label: "Suspicious Activity",
+    category: "Security",
+  },
 ];
 
 export function WebhookManagement() {
-  const [webhooks, setWebhooks] = useState<WebhookConfig[]>([
+  const [
+    webhooks,
+    setWebhooks,
+  ] = useState<WebhookConfig[]>([
     {
       id: "wh-1",
       name: "Job Notifications",
       url: "https://api.example.com/webhooks/jobs",
-      events: ["job.created", "job.completed", "job.cancelled"],
+      events: [
+        "job.created",
+        "job.completed",
+        "job.cancelled",
+      ],
       enabled: true,
       secret: "whsec_abc123xyz",
       retryCount: 3,
@@ -139,7 +227,10 @@ export function WebhookManagement() {
       id: "wh-2",
       name: "Driver Status Updates",
       url: "https://api.example.com/webhooks/drivers",
-      events: ["driver.assigned", "driver.status_change"],
+      events: [
+        "driver.assigned",
+        "driver.status_change",
+      ],
       enabled: true,
       secret: "whsec_def456uvw",
       retryCount: 3,
@@ -154,12 +245,16 @@ export function WebhookManagement() {
       id: "wh-3",
       name: "Payment Events",
       url: "https://api.example.com/webhooks/payments",
-      events: ["payment.success", "payment.failed", "invoice.created"],
+      events: [
+        "payment.success",
+        "payment.failed",
+        "invoice.created",
+      ],
       enabled: true,
       secret: "whsec_ghi789rst",
       retryCount: 5,
       retryDelay: 15,
-      headers: { "Authorization": "Bearer token123" },
+      headers: { Authorization: "Bearer token123" },
       lastTriggered: new Date(Date.now() - 3600000),
       status: "failing",
       successRate: 72.3,
@@ -182,7 +277,10 @@ export function WebhookManagement() {
     },
   ]);
 
-  const [logs, setLogs] = useState<WebhookLog[]>([
+  const [
+    logs,
+    setLogs,
+  ] = useState<WebhookLog[]>([
     {
       id: "log-1",
       webhookId: "wh-1",
@@ -190,8 +288,8 @@ export function WebhookManagement() {
       event: "job.completed",
       status: "success",
       statusCode: 200,
-      requestBody: '{"event":"job.completed","data":{"jobId":"JOB-001"}}',
-      responseBody: '{"received":true}',
+      requestBody: "{\"event\":\"job.completed\",\"data\":{\"jobId\":\"JOB-001\"}}",
+      responseBody: "{\"received\":true}",
       duration: 245,
       timestamp: new Date(Date.now() - 300000),
       attempts: 1,
@@ -203,8 +301,8 @@ export function WebhookManagement() {
       event: "driver.assigned",
       status: "success",
       statusCode: 200,
-      requestBody: '{"event":"driver.assigned","data":{"driverId":"DRV-001"}}',
-      responseBody: '{"ok":true}',
+      requestBody: "{\"event\":\"driver.assigned\",\"data\":{\"driverId\":\"DRV-001\"}}",
+      responseBody: "{\"ok\":true}",
       duration: 189,
       timestamp: new Date(Date.now() - 60000),
       attempts: 1,
@@ -216,8 +314,8 @@ export function WebhookManagement() {
       event: "payment.success",
       status: "failed",
       statusCode: 500,
-      requestBody: '{"event":"payment.success","data":{"paymentId":"PAY-001"}}',
-      responseBody: '{"error":"Internal Server Error"}',
+      requestBody: "{\"event\":\"payment.success\",\"data\":{\"paymentId\":\"PAY-001\"}}",
+      responseBody: "{\"error\":\"Internal Server Error\"}",
       duration: 1523,
       timestamp: new Date(Date.now() - 3600000),
       attempts: 3,
@@ -229,7 +327,7 @@ export function WebhookManagement() {
       event: "job.created",
       status: "retrying",
       statusCode: null,
-      requestBody: '{"event":"job.created","data":{"jobId":"JOB-002"}}',
+      requestBody: "{\"event\":\"job.created\",\"data\":{\"jobId\":\"JOB-002\"}}",
       responseBody: null,
       duration: null,
       timestamp: new Date(),
@@ -237,20 +335,53 @@ export function WebhookManagement() {
     },
   ]);
 
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
-  const [isLogDialogOpen, setIsLogDialogOpen] = useState(false);
-  const [selectedWebhook, setSelectedWebhook] = useState<WebhookConfig | null>(null);
-  const [selectedLog, setSelectedLog] = useState<WebhookLog | null>(null);
-  const [testingWebhook, setTestingWebhook] = useState<string | null>(null);
-  const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
+  const [
+    isAddDialogOpen,
+    setIsAddDialogOpen,
+  ] = useState(false);
+  const [
+    isTestDialogOpen,
+    setIsTestDialogOpen,
+  ] = useState(false);
+  const [
+    isLogDialogOpen,
+    setIsLogDialogOpen,
+  ] = useState(false);
+  const [
+    selectedWebhook,
+    setSelectedWebhook,
+  ] = useState<WebhookConfig | null>(null);
+  const [
+    selectedLog,
+    setSelectedLog,
+  ] = useState<WebhookLog | null>(null);
+  const [
+    testingWebhook,
+    setTestingWebhook,
+  ] = useState<string | null>(null);
+  const [
+    showSecrets,
+    setShowSecrets,
+  ] = useState<Record<string, boolean>>({});
 
   // Recent Deliveries toolbar state
-  const [logSearch, setLogSearch] = useState("");
-  const [logStatusFilter, setLogStatusFilter] = useState("all");
-  const [logFilters, setLogFilters] = useState<import("@/components/ui/table-toolbar").FilterValues>({});
+  const [
+    logSearch,
+    setLogSearch,
+  ] = useState("");
+  const [
+    logStatusFilter,
+    setLogStatusFilter,
+  ] = useState("all");
+  const [
+    logFilters,
+    setLogFilters,
+  ] = useState<import("@/components/ui/table-toolbar").FilterValues>({});
 
-  const [newWebhook, setNewWebhook] = useState({
+  const [
+    newWebhook,
+    setNewWebhook,
+  ] = useState({
     name: "",
     url: "",
     events: [] as string[],
@@ -271,7 +402,10 @@ export function WebhookManagement() {
       url: newWebhook.url,
       events: newWebhook.events,
       enabled: true,
-      secret: newWebhook.secret || `whsec_${Math.random().toString(36).substring(2, 15)}`,
+      secret: newWebhook.secret || `whsec_${Math.random().toString(36).substring(
+        2,
+        15,
+      )}`,
       retryCount: newWebhook.retryCount,
       retryDelay: newWebhook.retryDelay,
       headers: {},
@@ -281,8 +415,18 @@ export function WebhookManagement() {
       totalCalls: 0,
     };
 
-    setWebhooks(prev => [...prev, webhook]);
-    setNewWebhook({ name: "", url: "", events: [], retryCount: 3, retryDelay: 5, secret: "" });
+    setWebhooks(prev => [
+      ...prev,
+      webhook,
+    ]);
+    setNewWebhook({
+      name: "",
+      url: "",
+      events: [],
+      retryCount: 3,
+      retryDelay: 5,
+      secret: "",
+    });
     setIsAddDialogOpen(false);
     toast.success("Webhook created successfully");
   };
@@ -296,19 +440,24 @@ export function WebhookManagement() {
     setWebhooks(prev =>
       prev.map(w =>
         w.id === id
-          ? { ...w, enabled: !w.enabled, status: !w.enabled ? "active" : "disabled" }
-          : w
-      )
-    );
+          ? {
+              ...w,
+              enabled: !w.enabled,
+              status: !w.enabled ? "active" : "disabled",
+            }
+          : w));
   };
 
   const handleTestWebhook = async (webhook: WebhookConfig) => {
     setTestingWebhook(webhook.id);
-    
+
     try {
       // Simulate webhook test
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      await new Promise(resolve => setTimeout(
+        resolve,
+        2000,
+      ));
+
       const log: WebhookLog = {
         id: `log-${Date.now()}`,
         webhookId: webhook.id,
@@ -316,18 +465,26 @@ export function WebhookManagement() {
         event: "test.ping",
         status: "success",
         statusCode: 200,
-        requestBody: JSON.stringify({ event: "test.ping", timestamp: new Date().toISOString() }),
-        responseBody: '{"received":true}',
+        requestBody: JSON.stringify({
+          event: "test.ping",
+          timestamp: new Date().toISOString(),
+        }),
+        responseBody: "{\"received\":true}",
         duration: Math.floor(Math.random() * 300) + 100,
         timestamp: new Date(),
         attempts: 1,
       };
 
-      setLogs(prev => [log, ...prev]);
+      setLogs(prev => [
+        log,
+        ...prev,
+      ]);
       toast.success(`Test webhook sent to ${webhook.name}`);
-    } catch (error) {
+    }
+    catch (error) {
       toast.error("Failed to send test webhook");
-    } finally {
+    }
+    finally {
       setTestingWebhook(null);
     }
   };
@@ -338,10 +495,17 @@ export function WebhookManagement() {
   };
 
   const handleRegenerateSecret = (id: string) => {
-    const newSecret = `whsec_${Math.random().toString(36).substring(2, 15)}`;
+    const newSecret = `whsec_${Math.random().toString(36).substring(
+      2,
+      15,
+    )}`;
     setWebhooks(prev =>
-      prev.map(w => (w.id === id ? { ...w, secret: newSecret } : w))
-    );
+      prev.map(w => (w.id === id
+        ? {
+            ...w,
+            secret: newSecret,
+          }
+        : w)));
     toast.success("Secret regenerated");
   };
 
@@ -374,7 +538,10 @@ export function WebhookManagement() {
       ...prev,
       events: prev.events.includes(event)
         ? prev.events.filter(e => e !== event)
-        : [...prev.events, event],
+        : [
+            ...prev.events,
+            event,
+          ],
     }));
   };
 
@@ -391,7 +558,10 @@ export function WebhookManagement() {
             Configure webhooks to receive real-time event notifications
           </p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <Dialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+        >
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -412,7 +582,10 @@ export function WebhookManagement() {
                   <Input
                     placeholder="My Webhook"
                     value={newWebhook.name}
-                    onChange={e => setNewWebhook(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={e => setNewWebhook(prev => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))}
                   />
                 </div>
                 <div className="space-y-2">
@@ -420,7 +593,10 @@ export function WebhookManagement() {
                   <Input
                     placeholder="https://api.example.com/webhook"
                     value={newWebhook.url}
-                    onChange={e => setNewWebhook(prev => ({ ...prev, url: e.target.value }))}
+                    onChange={e => setNewWebhook(prev => ({
+                      ...prev,
+                      url: e.target.value,
+                    }))}
                   />
                 </div>
               </div>
@@ -441,7 +617,10 @@ export function WebhookManagement() {
                           className="rounded border-border"
                         />
                         <span className="text-sm">{event.label}</span>
-                        <Badge variant="outline" className="text-xs ml-auto">
+                        <Badge
+                          variant="outline"
+                          className="text-xs ml-auto"
+                        >
                           {event.category}
                         </Badge>
                       </label>
@@ -455,7 +634,10 @@ export function WebhookManagement() {
                   <Label>Retry Count</Label>
                   <Select
                     value={newWebhook.retryCount.toString()}
-                    onValueChange={v => setNewWebhook(prev => ({ ...prev, retryCount: parseInt(v) }))}
+                    onValueChange={v => setNewWebhook(prev => ({
+                      ...prev,
+                      retryCount: parseInt(v),
+                    }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -472,7 +654,10 @@ export function WebhookManagement() {
                   <Label>Retry Delay (seconds)</Label>
                   <Select
                     value={newWebhook.retryDelay.toString()}
-                    onValueChange={v => setNewWebhook(prev => ({ ...prev, retryDelay: parseInt(v) }))}
+                    onValueChange={v => setNewWebhook(prev => ({
+                      ...prev,
+                      retryDelay: parseInt(v),
+                    }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -492,7 +677,10 @@ export function WebhookManagement() {
                 <Input
                   placeholder="Leave empty to auto-generate"
                   value={newWebhook.secret}
-                  onChange={e => setNewWebhook(prev => ({ ...prev, secret: e.target.value }))}
+                  onChange={e => setNewWebhook(prev => ({
+                    ...prev,
+                    secret: e.target.value,
+                  }))}
                 />
                 <p className="text-xs text-muted-foreground">
                   Used to verify webhook authenticity via HMAC signature
@@ -500,7 +688,10 @@ export function WebhookManagement() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsAddDialogOpen(false)}
+              >
                 Cancel
               </Button>
               <Button onClick={handleAddWebhook}>Create Webhook</Button>
@@ -562,7 +753,10 @@ export function WebhookManagement() {
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {webhooks.reduce((acc, w) => acc + w.totalCalls, 0).toLocaleString()}
+                  {webhooks.reduce(
+                    (acc, w) => acc + w.totalCalls,
+                    0,
+                  ).toLocaleString()}
                 </p>
                 <p className="text-sm text-muted-foreground">Total Calls</p>
               </div>
@@ -572,20 +766,32 @@ export function WebhookManagement() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="webhooks" className="space-y-4">
+      <Tabs
+        defaultValue="webhooks"
+        className="space-y-4"
+      >
         <TabsList>
-          <TabsTrigger value="webhooks" className="gap-2">
+          <TabsTrigger
+            value="webhooks"
+            className="gap-2"
+          >
             <Webhook className="h-4 w-4" />
             Endpoints
           </TabsTrigger>
-          <TabsTrigger value="logs" className="gap-2">
+          <TabsTrigger
+            value="logs"
+            className="gap-2"
+          >
             <History className="h-4 w-4" />
             Delivery Logs
           </TabsTrigger>
         </TabsList>
 
         {/* Webhooks Tab */}
-        <TabsContent value="webhooks" className="space-y-4">
+        <TabsContent
+          value="webhooks"
+          className="space-y-4"
+        >
           {webhooks.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
@@ -603,7 +809,10 @@ export function WebhookManagement() {
           ) : (
             <div className="space-y-4">
               {webhooks.map(webhook => (
-                <Card key={webhook.id} className="border-border/50">
+                <Card
+                  key={webhook.id}
+                  className="border-border/50"
+                >
                   <CardContent className="pt-6">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 space-y-3">
@@ -623,7 +832,11 @@ export function WebhookManagement() {
                         </div>
                         <div className="flex flex-wrap gap-1">
                           {webhook.events.map(event => (
-                            <Badge key={event} variant="outline" className="text-xs">
+                            <Badge
+                              key={event}
+                              variant="outline"
+                              className="text-xs"
+                            >
                               {event}
                             </Badge>
                           ))}
@@ -632,11 +845,21 @@ export function WebhookManagement() {
                           {webhook.lastTriggered && (
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              Last triggered: {formatDayMonthTime(webhook.lastTriggered)}
+                              Last triggered:
+                              {" "}
+                              {formatDayMonthTime(webhook.lastTriggered)}
                             </span>
                           )}
-                          <span>Success rate: {webhook.successRate}%</span>
-                          <span>{webhook.totalCalls.toLocaleString()} calls</span>
+                          <span>
+                            Success rate:
+                            {webhook.successRate}
+                            %
+                          </span>
+                          <span>
+                            {webhook.totalCalls.toLocaleString()}
+                            {" "}
+                            calls
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -646,15 +869,20 @@ export function WebhookManagement() {
                           onClick={() => handleTestWebhook(webhook)}
                           disabled={testingWebhook === webhook.id || !webhook.enabled}
                         >
-                          {testingWebhook === webhook.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Play className="h-4 w-4" />
-                          )}
+                          {testingWebhook === webhook.id
+                            ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              )
+                            : (
+                                <Play className="h-4 w-4" />
+                              )}
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                            >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -701,14 +929,18 @@ export function WebhookManagement() {
                             size="icon"
                             className="h-6 w-6"
                             onClick={() =>
-                              setShowSecrets(prev => ({ ...prev, [webhook.id]: !prev[webhook.id] }))
-                            }
+                              setShowSecrets(prev => ({
+                                ...prev,
+                                [webhook.id]: !prev[webhook.id],
+                              }))}
                           >
-                            {showSecrets[webhook.id] ? (
-                              <EyeOff className="h-3 w-3" />
-                            ) : (
-                              <Eye className="h-3 w-3" />
-                            )}
+                            {showSecrets[webhook.id]
+                              ? (
+                                  <EyeOff className="h-3 w-3" />
+                                )
+                              : (
+                                  <Eye className="h-3 w-3" />
+                                )}
                           </Button>
                           <Button
                             variant="ghost"
@@ -721,7 +953,14 @@ export function WebhookManagement() {
                         </div>
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        Retries: {webhook.retryCount} | Delay: {webhook.retryDelay}s
+                        Retries:
+                        {" "}
+                        {webhook.retryCount}
+                        {" "}
+                        | Delay:
+                        {" "}
+                        {webhook.retryDelay}
+                        s
                       </div>
                     </div>
                   </CardContent>
@@ -732,7 +971,10 @@ export function WebhookManagement() {
         </TabsContent>
 
         {/* Logs Tab */}
-        <TabsContent value="logs" className="space-y-4">
+        <TabsContent
+          value="logs"
+          className="space-y-4"
+        >
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between gap-3">
@@ -747,20 +989,44 @@ export function WebhookManagement() {
                   filename="webhook-deliveries"
                   rows={logs}
                   columns={[
-                    { header: "Webhook", accessor: (l) => l.webhookName },
-                    { header: "Event", accessor: (l) => l.event },
-                    { header: "Status", accessor: (l) => l.status },
-                    { header: "Status Code", accessor: (l) => l.statusCode ?? "" },
-                    { header: "Duration (ms)", accessor: (l) => l.duration ?? "" },
-                    { header: "Attempts", accessor: (l) => l.attempts },
-                    { header: "Timestamp", accessor: (l) => formatWithPattern(l.timestamp, "yyyy-MM-dd HH:mm:ss") },
+                    {
+                      header: "Webhook",
+                      accessor: l => l.webhookName,
+                    },
+                    {
+                      header: "Event",
+                      accessor: l => l.event,
+                    },
+                    {
+                      header: "Status",
+                      accessor: l => l.status,
+                    },
+                    {
+                      header: "Status Code",
+                      accessor: l => l.statusCode ?? "",
+                    },
+                    {
+                      header: "Duration (ms)",
+                      accessor: l => l.duration ?? "",
+                    },
+                    {
+                      header: "Attempts",
+                      accessor: l => l.attempts,
+                    },
+                    {
+                      header: "Timestamp",
+                      accessor: l => formatWithPattern(
+                        l.timestamp,
+                        "yyyy-MM-dd HH:mm:ss",
+                      ),
+                    },
                   ]}
                 />
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {(() => {
-                const eventOptions = Array.from(new Set(logs.map((l) => l.event))).map((e) => ({
+                const eventOptions = Array.from(new Set(logs.map(l => l.event))).map(e => ({
                   value: e,
                   label: e,
                 }));
@@ -772,14 +1038,31 @@ export function WebhookManagement() {
                     status={logStatusFilter}
                     onStatusChange={setLogStatusFilter}
                     statusOptions={[
-                      { value: "success", label: "Success" },
-                      { value: "failed", label: "Failed" },
-                      { value: "pending", label: "Pending" },
-                      { value: "retrying", label: "Retrying" },
+                      {
+                        value: "success",
+                        label: "Success",
+                      },
+                      {
+                        value: "failed",
+                        label: "Failed",
+                      },
+                      {
+                        value: "pending",
+                        label: "Pending",
+                      },
+                      {
+                        value: "retrying",
+                        label: "Retrying",
+                      },
                     ]}
                     filterEntity="deliveries"
                     filterFields={[
-                      { type: "select", key: "event", label: "Event", options: eventOptions },
+                      {
+                        type: "select",
+                        key: "event",
+                        label: "Event",
+                        options: eventOptions,
+                      },
                       {
                         type: "range",
                         key: "duration",
@@ -787,7 +1070,11 @@ export function WebhookManagement() {
                         placeholderFrom: "Min",
                         placeholderTo: "Max",
                       },
-                      { type: "date", key: "after", label: "After date" },
+                      {
+                        type: "date",
+                        key: "after",
+                        label: "After date",
+                      },
                     ]}
                     filterValues={logFilters}
                     onFiltersApply={setLogFilters}
@@ -807,14 +1094,18 @@ export function WebhookManagement() {
                   ? new Date(logFilters.after.date)
                   : undefined;
                 const filteredLogs = logs.filter((log) => {
-                  if (q && !`${log.webhookName} ${log.event}`.toLowerCase().includes(q)) return false;
-                  if (logStatusFilter !== "all" && log.status !== logStatusFilter) return false;
-                  if (eventVal && log.event !== eventVal) return false;
+                  if (q && !`${log.webhookName} ${log.event}`.toLowerCase().includes(q))
+                    return false;
+                  if (logStatusFilter !== "all" && log.status !== logStatusFilter)
+                    return false;
+                  if (eventVal && log.event !== eventVal)
+                    return false;
                   if (durFrom !== undefined && !Number.isNaN(durFrom) && (log.duration ?? 0) < durFrom)
                     return false;
                   if (durTo !== undefined && !Number.isNaN(durTo) && (log.duration ?? 0) > durTo)
                     return false;
-                  if (afterDate && log.timestamp < afterDate) return false;
+                  if (afterDate && log.timestamp < afterDate)
+                    return false;
                   return true;
                 });
                 return (
@@ -832,47 +1123,55 @@ export function WebhookManagement() {
                     </TableHeader>
                     <TableBody>
                       {filteredLogs.map(log => (
-                    <TableRow key={log.id}>
-                      <TableCell className="font-medium">{log.webhookName}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {log.event}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{getLogStatusBadge(log.status)}</TableCell>
-                      <TableCell>
-                        {log.statusCode ? (
-                          <code
-                            className={`text-xs ${
-                              log.statusCode >= 200 && log.statusCode < 300
-                                ? "text-success"
-                                : "text-destructive"
-                            }`}
-                          >
-                            {log.statusCode}
-                          </code>
-                        ) : (
-                          "-"
-                        )}
-                      </TableCell>
-                      <TableCell>{log.duration ? `${log.duration}ms` : "-"}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {formatWithPattern(log.timestamp, "MMM d, HH:mm:ss")}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setSelectedLog(log);
-                            setIsLogDialogOpen(true);
-                          }}
-                        >
-                          <Code className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        <TableRow key={log.id}>
+                          <TableCell className="font-medium">{log.webhookName}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              {log.event}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{getLogStatusBadge(log.status)}</TableCell>
+                          <TableCell>
+                            {log.statusCode
+                              ? (
+                                  <code
+                                    className={`text-xs ${
+                                      log.statusCode >= 200 && log.statusCode < 300
+                                        ? "text-success"
+                                        : "text-destructive"
+                                    }`}
+                                  >
+                                    {log.statusCode}
+                                  </code>
+                                )
+                              : (
+                                  "-"
+                                )}
+                          </TableCell>
+                          <TableCell>{log.duration ? `${log.duration}ms` : "-"}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {formatWithPattern(
+                              log.timestamp,
+                              "MMM d, HH:mm:ss",
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedLog(log);
+                                setIsLogDialogOpen(true);
+                              }}
+                            >
+                              <Code className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                     </TableBody>
                   </Table>
                 );
@@ -883,12 +1182,17 @@ export function WebhookManagement() {
       </Tabs>
 
       {/* Test Dialog */}
-      <Dialog open={isTestDialogOpen} onOpenChange={setIsTestDialogOpen}>
+      <Dialog
+        open={isTestDialogOpen}
+        onOpenChange={setIsTestDialogOpen}
+      >
         <DialogContent className="bg-card border-border">
           <DialogHeader>
             <DialogTitle>Send Test Event</DialogTitle>
             <DialogDescription>
-              Send a test event to {selectedWebhook?.name}
+              Send a test event to
+              {" "}
+              {selectedWebhook?.name}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -901,7 +1205,10 @@ export function WebhookManagement() {
                 <SelectContent>
                   <SelectItem value="test.ping">test.ping</SelectItem>
                   {selectedWebhook?.events.map(event => (
-                    <SelectItem key={event} value={event}>
+                    <SelectItem
+                      key={event}
+                      value={event}
+                    >
                       {event}
                     </SelectItem>
                   ))}
@@ -912,17 +1219,28 @@ export function WebhookManagement() {
               <Label>Payload (JSON)</Label>
               <textarea
                 className="w-full min-h-[150px] p-3 rounded-lg border border-border bg-background font-mono text-sm"
-                defaultValue={JSON.stringify({ event: "test.ping", timestamp: new Date().toISOString() }, null, 2)}
+                defaultValue={JSON.stringify(
+                  {
+                    event: "test.ping",
+                    timestamp: new Date().toISOString(),
+                  },
+                  null,
+                  2,
+                )}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsTestDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsTestDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button
               onClick={() => {
-                if (selectedWebhook) handleTestWebhook(selectedWebhook);
+                if (selectedWebhook)
+                  handleTestWebhook(selectedWebhook);
                 setIsTestDialogOpen(false);
               }}
             >
@@ -934,12 +1252,18 @@ export function WebhookManagement() {
       </Dialog>
 
       {/* Log Detail Dialog */}
-      <Dialog open={isLogDialogOpen} onOpenChange={setIsLogDialogOpen}>
+      <Dialog
+        open={isLogDialogOpen}
+        onOpenChange={setIsLogDialogOpen}
+      >
         <DialogContent className="bg-card border-border max-w-2xl">
           <DialogHeader>
             <DialogTitle>Delivery Details</DialogTitle>
             <DialogDescription>
-              {selectedLog?.webhookName} - {selectedLog?.event}
+              {selectedLog?.webhookName}
+              {" "}
+              -
+              {selectedLog?.event}
             </DialogDescription>
           </DialogHeader>
           {selectedLog && (
@@ -947,29 +1271,45 @@ export function WebhookManagement() {
               <div className="flex items-center gap-4">
                 {getLogStatusBadge(selectedLog.status)}
                 <span className="text-sm text-muted-foreground">
-                  {formatWithPattern(selectedLog.timestamp, "PPpp")}
+                  {formatWithPattern(
+                    selectedLog.timestamp,
+                    "PPpp",
+                  )}
                 </span>
                 {selectedLog.duration && (
                   <span className="text-sm text-muted-foreground">
-                    {selectedLog.duration}ms
+                    {selectedLog.duration}
+                    ms
                   </span>
                 )}
                 {selectedLog.attempts > 1 && (
-                  <Badge variant="outline">{selectedLog.attempts} attempts</Badge>
+                  <Badge variant="outline">
+                    {selectedLog.attempts}
+                    {" "}
+                    attempts
+                  </Badge>
                 )}
               </div>
               <Separator />
               <div className="space-y-2">
                 <Label>Request Body</Label>
                 <pre className="p-3 rounded-lg bg-muted/50 text-sm overflow-auto max-h-48">
-                  {JSON.stringify(JSON.parse(selectedLog.requestBody), null, 2)}
+                  {JSON.stringify(
+                    JSON.parse(selectedLog.requestBody),
+                    null,
+                    2,
+                  )}
                 </pre>
               </div>
               {selectedLog.responseBody && (
                 <div className="space-y-2">
                   <Label>Response Body</Label>
                   <pre className="p-3 rounded-lg bg-muted/50 text-sm overflow-auto max-h-48">
-                    {JSON.stringify(JSON.parse(selectedLog.responseBody), null, 2)}
+                    {JSON.stringify(
+                      JSON.parse(selectedLog.responseBody),
+                      null,
+                      2,
+                    )}
                   </pre>
                 </div>
               )}
@@ -980,6 +1320,3 @@ export function WebhookManagement() {
     </div>
   );
 }
-
-
-

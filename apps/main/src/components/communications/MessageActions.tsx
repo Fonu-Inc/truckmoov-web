@@ -1,20 +1,20 @@
+import {
+  CheckCircle, Clock, Copy, MessageSquare, MoreVertical,
+  Phone, RefreshCw, Trash2, XCircle,
+} from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/shadcn/button";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
-import {
-  MoreVertical, RefreshCw, Copy, Trash2, MessageSquare,
-  Phone, CheckCircle, XCircle, Clock
-} from "lucide-react";
-import { toast } from "sonner";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 
-interface MessageActionsProps {
+type MessageActionsProps = {
   messageId: string;
   messageType: string;
   status: string;
@@ -23,7 +23,7 @@ interface MessageActionsProps {
   driverId: string;
   driverName: string;
   onResend?: () => void;
-}
+};
 
 export function MessageActions({
   messageId,
@@ -35,13 +35,15 @@ export function MessageActions({
   driverName,
   onResend,
 }: MessageActionsProps) {
-  const [isResending, setIsResending] = useState(false);
+  const [
+    isResending,
+    setIsResending,
+  ] = useState(false);
 
-  const canResend = status === 'failed' || status === 'pending';
+  const canResend = status === "failed" || status === "pending";
 
   const handleResend = async () => {
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
   const handleCopyContent = () => {
@@ -51,18 +53,72 @@ export function MessageActions({
 
   const getStatusBadge = () => {
     switch (status) {
-      case 'sent':
-        return <Badge variant="secondary" className="gap-1"><CheckCircle className="h-3 w-3" /> Sent</Badge>;
-      case 'delivered':
-        return <Badge variant="default" className="gap-1 bg-success"><CheckCircle className="h-3 w-3" /> Delivered</Badge>;
-      case 'read':
-        return <Badge variant="default" className="gap-1 bg-primary"><CheckCircle className="h-3 w-3" /> Read</Badge>;
-      case 'failed':
-        return <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" /> Failed</Badge>;
-      case 'resent':
-        return <Badge variant="outline" className="gap-1"><RefreshCw className="h-3 w-3" /> Resent</Badge>;
+      case "sent":
+        return (
+          <Badge
+            variant="secondary"
+            className="gap-1"
+          >
+            <CheckCircle className="h-3 w-3" />
+            {" "}
+            Sent
+          </Badge>
+        );
+      case "delivered":
+        return (
+          <Badge
+            variant="default"
+            className="gap-1 bg-success"
+          >
+            <CheckCircle className="h-3 w-3" />
+            {" "}
+            Delivered
+          </Badge>
+        );
+      case "read":
+        return (
+          <Badge
+            variant="default"
+            className="gap-1 bg-primary"
+          >
+            <CheckCircle className="h-3 w-3" />
+            {" "}
+            Read
+          </Badge>
+        );
+      case "failed":
+        return (
+          <Badge
+            variant="destructive"
+            className="gap-1"
+          >
+            <XCircle className="h-3 w-3" />
+            {" "}
+            Failed
+          </Badge>
+        );
+      case "resent":
+        return (
+          <Badge
+            variant="outline"
+            className="gap-1"
+          >
+            <RefreshCw className="h-3 w-3" />
+            {" "}
+            Resent
+          </Badge>
+        );
       default:
-        return <Badge variant="outline" className="gap-1"><Clock className="h-3 w-3" /> Pending</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="gap-1"
+          >
+            <Clock className="h-3 w-3" />
+            {" "}
+            Pending
+          </Badge>
+        );
     }
   };
 
@@ -79,14 +135,18 @@ export function MessageActions({
             onClick={handleResend}
             disabled={isResending}
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${isResending ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${isResending ? "animate-spin" : ""}`} />
           </Button>
         </TooltipWrapper>
       )}
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-7 w-7">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+          >
             <MoreVertical className="h-3.5 w-3.5" />
           </Button>
         </DropdownMenuTrigger>
@@ -96,7 +156,10 @@ export function MessageActions({
             Copy Message
           </DropdownMenuItem>
           {canResend && (
-            <DropdownMenuItem onClick={handleResend} disabled={isResending}>
+            <DropdownMenuItem
+              onClick={handleResend}
+              disabled={isResending}
+            >
               <RefreshCw className="h-4 w-4 mr-2" />
               Resend Message
             </DropdownMenuItem>

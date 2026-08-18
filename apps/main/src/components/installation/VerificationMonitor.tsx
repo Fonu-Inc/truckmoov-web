@@ -1,126 +1,176 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
-import { Button } from '@/components/shadcn/button';
-import { Badge } from '@/components/shadcn/badge';
-import { Input } from '@/components/shadcn/input';
-import { Checkbox } from '@/components/shadcn/checkbox';
-import { cn } from '@/lib/utils';
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
+import {
+  AlertTriangle, Check, Clock, Download, SlidersHorizontal as Filter, Hourglass, Radio, Search, ShieldCheck,
+} from "lucide-react";
+import { useState } from "react";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { Input } from "@/components/shadcn/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/shadcn/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from '@/components/shadcn/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue } from '@/components/shadcn/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger } from '@/components/shadcn/popover';
-type ConfigQueueDevice = any;
-import { Skeleton } from '@/components/shadcn/skeleton';
-import { formatRelative } from '@truckmoov/app-core/utils/time-utils';
-import {Radio, AlertTriangle, Check, Clock, Search, SlidersHorizontal as Filter, Hourglass, ShieldCheck, Download} from 'lucide-react';
+  TableRow,
+} from "@/components/shadcn/table";
+import { cn } from "@/lib/utils";
 
-interface VerificationMonitorProps {
+type ConfigQueueDevice = any;
+
+type VerificationMonitorProps = {
   devices: ConfigQueueDevice[];
   loading: boolean;
   onRefresh: () => void;
   onTroubleshoot: (deviceId: string) => void;
-}
+};
 
 export function VerificationMonitor({
   devices,
   loading,
-  onTroubleshoot }: VerificationMonitorProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [deviceFilter, setDeviceFilter] = useState<string>('all');
-  const [lastSeenFilter, setLastSeenFilter] = useState<string>('all');
-  const [timeSinceFrom, setTimeSinceFrom] = useState<string>('');
-  const [timeSinceTo, setTimeSinceTo] = useState<string>('');
+  onTroubleshoot,
+}: VerificationMonitorProps) {
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState<string>("all");
+  const [
+    deviceFilter,
+    setDeviceFilter,
+  ] = useState<string>("all");
+  const [
+    lastSeenFilter,
+    setLastSeenFilter,
+  ] = useState<string>("all");
+  const [
+    timeSinceFrom,
+    setTimeSinceFrom,
+  ] = useState<string>("");
+  const [
+    timeSinceTo,
+    setTimeSinceTo,
+  ] = useState<string>("");
 
   const pendingDevices = devices.filter(d =>
-    d.lifecycle_status === 'configured' &&
-    (d as any).verification_status !== 'verified'
-  );
+    d.lifecycle_status === "configured"
+    && (d as any).verification_status !== "verified");
 
   const failedDevices = devices.filter(d =>
-    (d as any).verification_status === 'failed'
-  );
+    (d as any).verification_status === "failed");
 
   const verifiedToday = devices.filter(d =>
-    d.lifecycle_status === 'verified_online' || d.lifecycle_status === 'assignable'
-  ).length;
+    d.lifecycle_status === "verified_online" || d.lifecycle_status === "assignable").length;
 
   const manufacturers = [...new Set(devices.map(d => d.manufacturer))];
 
   const matchesLastSeen = (device: ConfigQueueDevice) => {
-    if (lastSeenFilter === 'all') return true;
-    if (!device.last_seen) return lastSeenFilter === 'never';
+    if (lastSeenFilter === "all")
+      return true;
+    if (!device.last_seen)
+      return lastSeenFilter === "never";
     const hours = (Date.now() - new Date(device.last_seen).getTime()) / (1000 * 60 * 60);
-    if (lastSeenFilter === '1h') return hours <= 1;
-    if (lastSeenFilter === '24h') return hours <= 24;
-    if (lastSeenFilter === '7d') return hours <= 24 * 7;
-    if (lastSeenFilter === 'older') return hours > 24 * 7;
+    if (lastSeenFilter === "1h")
+      return hours <= 1;
+    if (lastSeenFilter === "24h")
+      return hours <= 24;
+    if (lastSeenFilter === "7d")
+      return hours <= 24 * 7;
+    if (lastSeenFilter === "older")
+      return hours > 24 * 7;
     return true;
   };
 
   const matchesTimeSinceConfigured = (device: ConfigQueueDevice) => {
     const configuredAt = (device as any).configured_at;
-    if (!configuredAt) return !timeSinceFrom && !timeSinceTo;
+    if (!configuredAt)
+      return !timeSinceFrom && !timeSinceTo;
     const t = new Date(configuredAt).getTime();
-    if (timeSinceFrom && t < new Date(timeSinceFrom).getTime()) return false;
-    if (timeSinceTo && t > new Date(timeSinceTo).getTime()) return false;
+    if (timeSinceFrom && t < new Date(timeSinceFrom).getTime())
+      return false;
+    if (timeSinceTo && t > new Date(timeSinceTo).getTime())
+      return false;
     return true;
   };
 
-  const filtered = pendingDevices.filter(device => {
-    const matchesSearch =
-      device.imei.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      device.manufacturer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (device.model?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+  const filtered = pendingDevices.filter((device) => {
+    const matchesSearch
+      = device.imei.toLowerCase().includes(searchQuery.toLowerCase())
+        || device.manufacturer.toLowerCase().includes(searchQuery.toLowerCase())
+        || (device.model?.toLowerCase() || "").includes(searchQuery.toLowerCase());
 
-    const hasError = (device as any).verification_status === 'failed';
-    const matchesStatus =
-      statusFilter === 'all' ||
-      (statusFilter === 'failed' && hasError) ||
-      (statusFilter === 'waiting' && !hasError);
+    const hasError = (device as any).verification_status === "failed";
+    const matchesStatus
+      = statusFilter === "all"
+        || (statusFilter === "failed" && hasError)
+        || (statusFilter === "waiting" && !hasError);
 
-    const matchesDevice = deviceFilter === 'all' || device.manufacturer === deviceFilter;
+    const matchesDevice = deviceFilter === "all" || device.manufacturer === deviceFilter;
 
     return matchesSearch && matchesStatus && matchesDevice && matchesLastSeen(device) && matchesTimeSinceConfigured(device);
   });
 
   const exportData = () => {
-    const headers = ['IMEI', 'Manufacturer', 'Model', 'Status', 'Configured At', 'Last Seen', 'Error'];
+    const headers = [
+      "IMEI",
+      "Manufacturer",
+      "Model",
+      "Status",
+      "Configured At",
+      "Last Seen",
+      "Error",
+    ];
     const rows = filtered.map(d => [
       d.imei,
       d.manufacturer,
-      d.model || '',
+      d.model || "",
       d.lifecycle_status,
-      (d as any).configured_at || '',
-      d.last_seen || '',
-      (d as any).verification_error_message || '',
+      (d as any).configured_at || "",
+      d.last_seen || "",
+      (d as any).verification_error_message || "",
     ]);
-    const csv = [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const csv = [
+      headers,
+      ...rows,
+    ].map(row => row.map(v => `"${String(v).replace(
+      /"/g,
+      "\"\"",
+    )}"`).join(",")).join("\n");
+    const blob = new Blob(
+      [csv],
+      { type: "text/csv" },
+    );
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `verification-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `verification-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const activeFilterCount = [
-    deviceFilter !== 'all',
-    lastSeenFilter !== 'all',
+    deviceFilter !== "all",
+    lastSeenFilter !== "all",
     !!timeSinceFrom,
     !!timeSinceTo,
   ].filter(Boolean).length;
@@ -154,7 +204,11 @@ export function VerificationMonitor({
               Real-time monitoring of devices awaiting first telemetry
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={exportData}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportData}
+          >
             <Download className="h-4 w-4 mr-2" />
             Export Data
           </Button>
@@ -199,11 +253,14 @@ export function VerificationMonitor({
             <Input
               placeholder="Search by IMEI, manufacturer, model..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="pl-10 bg-transparent border-border"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={statusFilter}
+            onValueChange={setStatusFilter}
+          >
             <SelectTrigger className="w-[180px] bg-transparent border-border">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -215,17 +272,27 @@ export function VerificationMonitor({
           </Select>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+              >
                 <Filter className="h-4 w-4 mr-2" />
                 Filter
                 {activeFilterCount > 0 && (
-                  <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-[10px]">
+                  <Badge
+                    variant="secondary"
+                    className="ml-2 h-5 px-1.5 text-[10px]"
+                  >
                     {activeFilterCount}
                   </Badge>
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="end" sideOffset={8} className="w-[280px] p-3 rounded-xl">
+            <PopoverContent
+              align="end"
+              sideOffset={8}
+              className="w-[280px] p-3 rounded-xl"
+            >
               <div className="space-y-2.5">
                 <h4 className="text-xs font-medium text-foreground px-0.5">
                   Only show devices by...
@@ -235,25 +302,34 @@ export function VerificationMonitor({
                 <div className="space-y-1.5">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <Checkbox
-                      checked={deviceFilter !== 'all'}
-                      onCheckedChange={(c) => setDeviceFilter(c ? (manufacturers[0] ?? 'all') : 'all')}
+                      checked={deviceFilter !== "all"}
+                      onCheckedChange={c => setDeviceFilter(c ? (manufacturers[0] ?? "all") : "all")}
                       className="h-3.5 w-3.5"
                     />
-                    <span className={cn("text-xs font-medium", deviceFilter === 'all' && "text-muted-foreground")}>
+                    <span className={cn(
+                      "text-xs font-medium",
+                      deviceFilter === "all" && "text-muted-foreground",
+                    )}
+                    >
                       Device
                     </span>
                   </label>
                   <Select
-                    value={deviceFilter === 'all' ? '' : deviceFilter}
-                    onValueChange={(v) => setDeviceFilter(v || 'all')}
-                    disabled={deviceFilter === 'all'}
+                    value={deviceFilter === "all" ? "" : deviceFilter}
+                    onValueChange={v => setDeviceFilter(v || "all")}
+                    disabled={deviceFilter === "all"}
                   >
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Select device" />
                     </SelectTrigger>
                     <SelectContent>
                       {manufacturers.map(m => (
-                        <SelectItem key={m} value={m}>{m}</SelectItem>
+                        <SelectItem
+                          key={m}
+                          value={m}
+                        >
+                          {m}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -263,18 +339,22 @@ export function VerificationMonitor({
                 <div className="space-y-1.5">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <Checkbox
-                      checked={lastSeenFilter !== 'all'}
-                      onCheckedChange={(c) => setLastSeenFilter(c ? '24h' : 'all')}
+                      checked={lastSeenFilter !== "all"}
+                      onCheckedChange={c => setLastSeenFilter(c ? "24h" : "all")}
                       className="h-3.5 w-3.5"
                     />
-                    <span className={cn("text-xs font-medium", lastSeenFilter === 'all' && "text-muted-foreground")}>
+                    <span className={cn(
+                      "text-xs font-medium",
+                      lastSeenFilter === "all" && "text-muted-foreground",
+                    )}
+                    >
                       Last seen
                     </span>
                   </label>
                   <Select
-                    value={lastSeenFilter === 'all' ? '' : lastSeenFilter}
-                    onValueChange={(v) => setLastSeenFilter(v || 'all')}
-                    disabled={lastSeenFilter === 'all'}
+                    value={lastSeenFilter === "all" ? "" : lastSeenFilter}
+                    onValueChange={v => setLastSeenFilter(v || "all")}
+                    disabled={lastSeenFilter === "all"}
                   >
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Any time" />
@@ -295,11 +375,15 @@ export function VerificationMonitor({
                     <Checkbox
                       checked={!!timeSinceFrom || !!timeSinceTo}
                       onCheckedChange={(c) => {
-                        if (!c) { setTimeSinceFrom(''); setTimeSinceTo(''); }
+                        if (!c) { setTimeSinceFrom(""); setTimeSinceTo(""); }
                       }}
                       className="h-3.5 w-3.5"
                     />
-                    <span className={cn("text-xs font-medium", !timeSinceFrom && !timeSinceTo && "text-muted-foreground")}>
+                    <span className={cn(
+                      "text-xs font-medium",
+                      !timeSinceFrom && !timeSinceTo && "text-muted-foreground",
+                    )}
+                    >
                       Time since configured
                     </span>
                   </label>
@@ -308,21 +392,24 @@ export function VerificationMonitor({
                       type="datetime-local"
                       placeholder="From"
                       value={timeSinceFrom}
-                      onChange={(e) => setTimeSinceFrom(e.target.value)}
+                      onChange={e => setTimeSinceFrom(e.target.value)}
                       className="h-8 text-xs"
                     />
                     <Input
                       type="datetime-local"
                       placeholder="To"
                       value={timeSinceTo}
-                      onChange={(e) => setTimeSinceTo(e.target.value)}
+                      onChange={e => setTimeSinceTo(e.target.value)}
                       className="h-8 text-xs"
                     />
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 pt-1">
-                  <Button size="sm" className="flex-1 h-8 text-xs">
+                  <Button
+                    size="sm"
+                    className="flex-1 h-8 text-xs"
+                  >
                     Apply
                   </Button>
                   <Button
@@ -330,10 +417,10 @@ export function VerificationMonitor({
                     size="sm"
                     className="flex-1 h-8 text-xs"
                     onClick={() => {
-                      setDeviceFilter('all');
-                      setLastSeenFilter('all');
-                      setTimeSinceFrom('');
-                      setTimeSinceTo('');
+                      setDeviceFilter("all");
+                      setLastSeenFilter("all");
+                      setTimeSinceFrom("");
+                      setTimeSinceTo("");
                     }}
                   >
                     Show All
@@ -359,64 +446,82 @@ export function VerificationMonitor({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    <Check className="h-8 w-8 mx-auto mb-2 text-success" />
-                    <p>{pendingDevices.length === 0 ? 'All configured devices have been verified!' : 'No devices match your filters'}</p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filtered.map(device => {
-                  const hasError = (device as any).verification_status === 'failed';
-
-                  return (
-                    <TableRow key={device.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{device.manufacturer}</p>
-                          <p className="text-xs text-muted-foreground">{device.model}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">{device.imei}</TableCell>
-                      <TableCell>
-                        {hasError ? (
-                          <Badge variant="destructive">Failed</Badge>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                            <span className="text-sm">Waiting...</span>
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatRelative((device as any).configured_at, 'Unknown')}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatRelative(device.last_seen, 'Never')}
-                      </TableCell>
-                      <TableCell>
-                        {(device as any).verification_error_code ? (
-                          <Badge variant="outline" className="text-destructive">
-                            {(device as any).verification_error_code}
-                          </Badge>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onTroubleshoot(device.id)}
-                        >
-                          <AlertTriangle className="h-4 w-4" />
-                        </Button>
+              {filtered.length === 0
+                ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="text-center py-8 text-muted-foreground"
+                      >
+                        <Check className="h-8 w-8 mx-auto mb-2 text-success" />
+                        <p>{pendingDevices.length === 0 ? "All configured devices have been verified!" : "No devices match your filters"}</p>
                       </TableCell>
                     </TableRow>
-                  );
-                })
-              )}
+                  )
+                : (
+                    filtered.map((device) => {
+                      const hasError = (device as any).verification_status === "failed";
+
+                      return (
+                        <TableRow key={device.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{device.manufacturer}</p>
+                              <p className="text-xs text-muted-foreground">{device.model}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">{device.imei}</TableCell>
+                          <TableCell>
+                            {hasError
+                              ? (
+                                  <Badge variant="destructive">Failed</Badge>
+                                )
+                              : (
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                                    <span className="text-sm">Waiting...</span>
+                                  </div>
+                                )}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatRelative(
+                              (device as any).configured_at,
+                              "Unknown",
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatRelative(
+                              device.last_seen,
+                              "Never",
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {(device as any).verification_error_code
+                              ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-destructive"
+                                  >
+                                    {(device as any).verification_error_code}
+                                  </Badge>
+                                )
+                              : (
+                                  <span className="text-sm text-muted-foreground">—</span>
+                                )}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onTroubleshoot(device.id)}
+                            >
+                              <AlertTriangle className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
             </TableBody>
           </Table>
         </div>

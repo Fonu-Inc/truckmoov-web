@@ -1,8 +1,12 @@
-import { LogOut, Settings, Sun, Moon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "@/stores/authStore";
-import { Button } from "@/components/shadcn/button";
+import {
+  LogOut,
+  Moon,
+  Settings,
+  Sun,
+} from "lucide-react";
 import { useTheme } from "next-themes";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/shadcn/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,8 +15,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
+import { useAuthStore } from "@/stores/authStore";
 
-const getRoleLabel = (role?: string) => {
+function getRoleLabel(role?: string) {
   switch (role) {
     case "SUPER_ADMIN":
       return "Super Administrator";
@@ -26,16 +31,22 @@ const getRoleLabel = (role?: string) => {
         ? role
             .toLowerCase()
             .split("_")
-            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
             .join(" ")
         : "Administrator";
   }
-};
+}
 
 export function UserProfileDropdown() {
-  const { user, logout } = useAuthStore();
+  const {
+    user,
+    logout,
+  } = useAuthStore();
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
+  const {
+    theme,
+    setTheme,
+  } = useTheme();
   const isDark = theme === "dark";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
   const roleLabel = getRoleLabel(user?.role);
@@ -50,9 +61,11 @@ export function UserProfileDropdown() {
   };
 
   const getInitials = (name?: string) => {
-    if (!name) return "U";
+    if (!name)
+      return "U";
     const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    if (parts.length === 1)
+      return parts[0].charAt(0).toUpperCase();
     return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
   };
 
@@ -76,7 +89,11 @@ export function UserProfileDropdown() {
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-72 bg-popover border-border" align="end" forceMount>
+      <DropdownMenuContent
+        className="w-72 bg-popover border-border"
+        align="end"
+        forceMount
+      >
         <DropdownMenuLabel className="font-normal">
           <div className="flex min-w-0 flex-col space-y-1">
             <p className="truncate text-sm font-medium leading-none">{roleLabel}</p>
@@ -86,7 +103,10 @@ export function UserProfileDropdown() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSettingsClick} className="cursor-pointer">
+        <DropdownMenuItem
+          onClick={handleSettingsClick}
+          className="cursor-pointer"
+        >
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>
@@ -97,11 +117,13 @@ export function UserProfileDropdown() {
           }}
           className="cursor-pointer"
         >
-          {isDark ? (
-            <Sun className="mr-2 h-4 w-4" />
-          ) : (
-            <Moon className="mr-2 h-4 w-4" />
-          )}
+          {isDark
+            ? (
+                <Sun className="mr-2 h-4 w-4" />
+              )
+            : (
+                <Moon className="mr-2 h-4 w-4" />
+              )}
           <span>{isDark ? "Light mode" : "Dark mode"}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

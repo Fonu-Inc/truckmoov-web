@@ -1,50 +1,58 @@
-import { formatRelative, formatTime, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
-import { IoTDevice, Vehicle, SIMCard } from "@/types";
+import type { DeviceHealth } from "@truckmoov/api/tracking";
+import type { DeviceHealthStatus } from "./DeviceHealthBadge";
+import type {
+  IoTDevice, SIMCard, Vehicle,
+} from "@/types";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/shadcn/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Badge } from "@/components/shadcn/badge";
-import { Progress } from "@/components/shadcn/progress";
+  useDeviceConnectivity,
+  useDeviceFirmware,
+  useDeviceOverview,
+  useDeviceTelemetry,
+} from "@truckmoov/api/tracking";
 import {
+  formatRelative, formatTime, formatWithPattern,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  Activity,
+  Battery,
+  Clock,
   Cpu,
+  Database,
+  RefreshCw,
+  Settings,
+  Signal,
   Truck,
   Wifi,
   WifiOff,
-  Signal,
-  Battery,
-  Settings,
-  RefreshCw,
-  Activity,
-  Clock,
-  Database,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import {
-  useDeviceOverview,
-  useDeviceConnectivity,
-  useDeviceTelemetry,
-  useDeviceFirmware,
-} from "@truckmoov/api/tracking";
-import type { DeviceHealth } from "@truckmoov/api/tracking";
-import {
-  ResponsiveContainer,
-  LineChart,
+  CartesianGrid,
+  Legend,
   Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
 } from "recharts";
-import { DeviceHealthStatus } from "./DeviceHealthBadge";
+import { Badge } from "@/components/shadcn/badge";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
+import { Progress } from "@/components/shadcn/progress";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
+import { cn } from "@/lib/utils";
 
-interface ExtendedDevice extends IoTDevice {
+type ExtendedDevice = {
   health_status?: DeviceHealthStatus | null;
   expected_heartbeat_seconds?: number;
   online_threshold_seconds?: number;
@@ -53,15 +61,15 @@ interface ExtendedDevice extends IoTDevice {
   last_status_change_at?: string | null;
   last_seen?: string | null;
   lifecycle_status?: string;
-}
+} & IoTDevice;
 
-interface DeviceDetailsSheetProps {
+type DeviceDetailsSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   device: ExtendedDevice | null;
   vehicle?: Vehicle | null;
   sim?: SIMCard | null;
-}
+};
 
 const healthTone: Record<DeviceHealth, string> = {
   online: "text-success",
@@ -71,8 +79,10 @@ const healthTone: Record<DeviceHealth, string> = {
 };
 
 function formatSeconds(seconds: number | null | undefined) {
-  if (seconds == null) return "—";
-  if (seconds < 60) return `${Math.round(seconds)}s`;
+  if (seconds == null)
+    return "—";
+  if (seconds < 60)
+    return `${Math.round(seconds)}s`;
   const mins = Math.floor(seconds / 60);
   const rem = Math.round(seconds % 60);
   return rem ? `${mins}m ${rem}s` : `${mins}m`;
@@ -91,7 +101,8 @@ export function DeviceDetailsSheet({
   const telemetryQuery = useDeviceTelemetry(deviceId);
   const firmwareQuery = useDeviceFirmware(deviceId);
 
-  if (!device) return null;
+  if (!device)
+    return null;
 
   const overview = overviewQuery.data;
   const connectivity = connectivityQuery.data;
@@ -105,20 +116,23 @@ export function DeviceDetailsSheet({
   const batteryLevel = device.batteryLevel;
   const averageIntervalSeconds = telemetry?.aggregates_24h.sample_count && telemetry.aggregates_24h.sample_count > 1
     ? (new Date(telemetry.aggregates_24h.window_end).getTime() - new Date(telemetry.aggregates_24h.window_start).getTime())
-      / 1000 / (telemetry.aggregates_24h.sample_count - 1)
+    / 1000 / (telemetry.aggregates_24h.sample_count - 1)
     : null;
 
   const chartData = (telemetry?.history ?? [])
     .slice()
     .sort((a, b) => new Date(a.observed_at).getTime() - new Date(b.observed_at).getTime())
-    .map((p) => ({
+    .map(p => ({
       time: formatTime(p.observed_at),
       signal: p.signal_strength,
       battery: p.battery_level,
     }));
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
@@ -126,19 +140,27 @@ export function DeviceDetailsSheet({
               "flex h-12 w-12 items-center justify-center rounded-xl",
               status === "active" || status === "assigned"
                 ? "bg-success/10"
-                : "bg-secondary"
-            )}>
+                : "bg-secondary",
+            )}
+            >
               <Cpu className={cn(
                 "h-6 w-6",
                 status === "active" || status === "assigned"
                   ? "text-success"
-                  : "text-muted-foreground"
-              )} />
+                  : "text-muted-foreground",
+              )}
+              />
             </div>
             <div>
-              <span className="block">{device.manufacturer} {device.model}</span>
+              <span className="block">
+                {device.manufacturer}
+                {" "}
+                {device.model}
+              </span>
               <span className="text-sm font-normal text-muted-foreground font-mono">
-                IMEI: {device.imei}
+                IMEI:
+                {" "}
+                {device.imei}
               </span>
             </div>
           </DialogTitle>
@@ -146,7 +168,10 @@ export function DeviceDetailsSheet({
         </DialogHeader>
 
         <div className="mt-6">
-          <Tabs defaultValue="overview" className="w-full">
+          <Tabs
+            defaultValue="overview"
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="connectivity">Connectivity</TabsTrigger>
@@ -155,7 +180,10 @@ export function DeviceDetailsSheet({
             </TabsList>
 
             {/* ─── Overview ─────────────────────────────────────────────── */}
-            <TabsContent value="overview" className="mt-4 space-y-4">
+            <TabsContent
+              value="overview"
+              className="mt-4 space-y-4"
+            >
               <Card>
                 <CardContent className="p-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -165,8 +193,9 @@ export function DeviceDetailsSheet({
                         "mt-1",
                         status === "active" && "bg-success hover:bg-success",
                         status === "assigned" && "bg-primary hover:bg-primary",
-                        status === "faulty" && "bg-destructive hover:bg-destructive"
-                      )}>
+                        status === "faulty" && "bg-destructive hover:bg-destructive",
+                      )}
+                      >
                         {status}
                       </Badge>
                     </div>
@@ -195,13 +224,19 @@ export function DeviceDetailsSheet({
                           </div>
                           <span className={cn(
                             "font-medium",
-                            signalStrength > 70 ? "text-success" :
-                            signalStrength > 40 ? "text-warning" : "text-destructive"
-                          )}>
-                            {signalStrength}%
+                            signalStrength > 70
+                              ? "text-success"
+                              : signalStrength > 40 ? "text-warning" : "text-destructive",
+                          )}
+                          >
+                            {signalStrength}
+                            %
                           </span>
                         </div>
-                        <Progress value={signalStrength} className="h-2" />
+                        <Progress
+                          value={signalStrength}
+                          className="h-2"
+                        />
                       </div>
                     )}
                     {batteryLevel != null && (
@@ -213,13 +248,19 @@ export function DeviceDetailsSheet({
                           </div>
                           <span className={cn(
                             "font-medium",
-                            batteryLevel > 50 ? "text-success" :
-                            batteryLevel > 20 ? "text-warning" : "text-destructive"
-                          )}>
-                            {batteryLevel}%
+                            batteryLevel > 50
+                              ? "text-success"
+                              : batteryLevel > 20 ? "text-warning" : "text-destructive",
+                          )}
+                          >
+                            {batteryLevel}
+                            %
                           </span>
                         </div>
-                        <Progress value={batteryLevel} className="h-2" />
+                        <Progress
+                          value={batteryLevel}
+                          className="h-2"
+                        />
                       </div>
                     )}
                   </CardContent>
@@ -234,21 +275,25 @@ export function DeviceDetailsSheet({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {vehicle ? (
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                        <Truck className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{vehicle.registrationNumber}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {vehicle.make} {vehicle.model}
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No vehicle assigned</p>
-                  )}
+                  {vehicle
+                    ? (
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                            <Truck className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{vehicle.registrationNumber}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {vehicle.make}
+                              {" "}
+                              {vehicle.model}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    : (
+                        <p className="text-sm text-muted-foreground">No vehicle assigned</p>
+                      )}
                 </CardContent>
               </Card>
 
@@ -260,30 +305,41 @@ export function DeviceDetailsSheet({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {sim ? (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Mobile Number</span>
-                        <span className="font-medium">{sim.mobileNumber}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Operator</span>
-                        <span>{sim.networkOperator}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Data Usage</span>
-                        <span>{sim.dataUsage}/{sim.dataLimit} GB</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No SIM assigned</p>
-                  )}
+                  {sim
+                    ? (
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Mobile Number</span>
+                            <span className="font-medium">{sim.mobileNumber}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Operator</span>
+                            <span>{sim.networkOperator}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Data Usage</span>
+                            <span>
+                              {sim.dataUsage}
+                              /
+                              {sim.dataLimit}
+                              {" "}
+                              GB
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    : (
+                        <p className="text-sm text-muted-foreground">No SIM assigned</p>
+                      )}
                 </CardContent>
               </Card>
             </TabsContent>
 
             {/* ─── Connectivity ─────────────────────────────────────────── */}
-            <TabsContent value="connectivity" className="mt-4">
+            <TabsContent
+              value="connectivity"
+              className="mt-4"
+            >
               {connectivityQuery.isLoading ? (
                 <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">Loading connectivity…</CardContent></Card>
               ) : !connectivity ? (
@@ -299,7 +355,13 @@ export function DeviceDetailsSheet({
                   <CardContent className="space-y-6">
                     <div>
                       <p className="text-sm font-medium mb-2">Connection Status</p>
-                      <Badge variant="outline" className={cn("gap-1.5 capitalize", healthTone[connectivity.health])}>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "gap-1.5 capitalize",
+                          healthTone[connectivity.health],
+                        )}
+                      >
                         {connectivity.health === "online" ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
                         {connectivity.health}
                       </Badge>
@@ -313,7 +375,9 @@ export function DeviceDetailsSheet({
                     <div className="grid grid-cols-2 gap-4 border-t pt-4">
                       <div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                          <Clock className="h-3.5 w-3.5" /> Last Telemetry
+                          <Clock className="h-3.5 w-3.5" />
+                          {" "}
+                          Last Telemetry
                         </p>
                         <p className="text-sm font-medium mt-1">
                           {lastSeen
@@ -323,7 +387,9 @@ export function DeviceDetailsSheet({
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                          <Activity className="h-3.5 w-3.5" /> Last Health Check
+                          <Activity className="h-3.5 w-3.5" />
+                          {" "}
+                          Last Health Check
                         </p>
                         <p className="text-sm font-medium mt-1">
                           {connectivity.last_health_check?.at
@@ -357,74 +423,122 @@ export function DeviceDetailsSheet({
             </TabsContent>
 
             {/* ─── Telemetry ────────────────────────────────────────────── */}
-            <TabsContent value="telemetry" className="mt-4 space-y-4">
-              {telemetryQuery.isLoading ? (
-                <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">Loading telemetry…</CardContent></Card>
-              ) : !telemetry ? (
-                <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">No telemetry data available.</CardContent></Card>
-              ) : (
-                <>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm font-medium flex items-center gap-2">
-                        <Activity className="h-4 w-4 text-primary" />
-                        Signal &amp; Battery (24h)
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {chartData.length === 0 ? (
-                        <p className="py-8 text-center text-sm text-muted-foreground">No telemetry history in the last 24h.</p>
-                      ) : (
-                        <ResponsiveContainer width="100%" height={240}>
-                          <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                            <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                            <Tooltip
-                              contentStyle={{
-                                background: "hsl(var(--card))",
-                                border: "1px solid hsl(var(--border))",
-                                borderRadius: 8,
-                                fontSize: 12,
-                              }}
-                            />
-                            <Legend />
-                            <Line type="monotone" dataKey="signal" name="Signal" stroke="hsl(var(--warning))" strokeWidth={2} dot={false} connectNulls />
-                            <Line type="monotone" dataKey="battery" name="Battery" stroke="hsl(var(--success))" strokeWidth={2} dot={false} connectNulls />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      )}
-                    </CardContent>
-                  </Card>
+            <TabsContent
+              value="telemetry"
+              className="mt-4 space-y-4"
+            >
+              {telemetryQuery.isLoading
+                ? (
+                    <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">Loading telemetry…</CardContent></Card>
+                  )
+                : !telemetry
+                    ? (
+                        <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">No telemetry data available.</CardContent></Card>
+                      )
+                    : (
+                        <>
+                          <Card>
+                            <CardHeader>
+                              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                <Activity className="h-4 w-4 text-primary" />
+                                Signal &amp; Battery (24h)
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              {chartData.length === 0
+                                ? (
+                                    <p className="py-8 text-center text-sm text-muted-foreground">No telemetry history in the last 24h.</p>
+                                  )
+                                : (
+                                    <ResponsiveContainer
+                                      width="100%"
+                                      height={240}
+                                    >
+                                      <LineChart data={chartData}>
+                                        <CartesianGrid
+                                          strokeDasharray="3 3"
+                                          stroke="hsl(var(--border))"
+                                        />
+                                        <XAxis
+                                          dataKey="time"
+                                          stroke="hsl(var(--muted-foreground))"
+                                          fontSize={12}
+                                        />
+                                        <YAxis
+                                          domain={[
+                                            0,
+                                            100,
+                                          ]}
+                                          stroke="hsl(var(--muted-foreground))"
+                                          fontSize={12}
+                                        />
+                                        <Tooltip
+                                          contentStyle={{
+                                            background: "hsl(var(--card))",
+                                            border: "1px solid hsl(var(--border))",
+                                            borderRadius: 8,
+                                            fontSize: 12,
+                                          }}
+                                        />
+                                        <Legend />
+                                        <Line
+                                          type="monotone"
+                                          dataKey="signal"
+                                          name="Signal"
+                                          stroke="hsl(var(--warning))"
+                                          strokeWidth={2}
+                                          dot={false}
+                                          connectNulls
+                                        />
+                                        <Line
+                                          type="monotone"
+                                          dataKey="battery"
+                                          name="Battery"
+                                          stroke="hsl(var(--success))"
+                                          strokeWidth={2}
+                                          dot={false}
+                                          connectNulls
+                                        />
+                                      </LineChart>
+                                    </ResponsiveContainer>
+                                  )}
+                            </CardContent>
+                          </Card>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm font-medium flex items-center gap-2">
-                        <Database className="h-4 w-4 text-primary" />
-                        Data Transmission
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Today's Records</span>
-                        <span className="font-medium">{telemetry.aggregates_24h.sample_count.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Avg. Interval</span>
-                        <span className="font-medium">{formatSeconds(averageIntervalSeconds)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Data Quality</span>
-                        <span className="font-medium text-success">{telemetry.aggregates_24h.data_quality_pct}%</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </>
-              )}
+                          <Card>
+                            <CardHeader>
+                              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                <Database className="h-4 w-4 text-primary" />
+                                Data Transmission
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Today's Records</span>
+                                <span className="font-medium">{telemetry.aggregates_24h.sample_count.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Avg. Interval</span>
+                                <span className="font-medium">{formatSeconds(averageIntervalSeconds)}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Data Quality</span>
+                                <span className="font-medium text-success">
+                                  {telemetry.aggregates_24h.data_quality_pct}
+                                  %
+                                </span>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </>
+                      )}
             </TabsContent>
 
             {/* ─── Firmware ─────────────────────────────────────────────── */}
-            <TabsContent value="firmware" className="mt-4 space-y-4">
+            <TabsContent
+              value="firmware"
+              className="mt-4 space-y-4"
+            >
               <Card>
                 <CardHeader>
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -454,35 +568,42 @@ export function DeviceDetailsSheet({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {firmwareQuery.isLoading ? (
-                    <p className="text-sm text-muted-foreground">Loading firmware history…</p>
-                  ) : !firmware?.history?.length ? (
-                    <p className="text-sm text-muted-foreground">No firmware history available.</p>
-                  ) : (
-                    firmware.history.map((entry) => {
-                      const isCurrent = entry.is_current || entry.version === device.firmwareVersion;
-                      const seenAt = entry.installed_at || entry.first_seen || entry.last_seen;
-                      return (
-                        <div
-                          key={`${entry.version}-${seenAt ?? "unknown"}`}
-                          className={cn(
-                            "flex items-center justify-between rounded-lg border p-3",
-                            isCurrent && "border-primary/50 bg-primary/5"
+                  {firmwareQuery.isLoading
+                    ? (
+                        <p className="text-sm text-muted-foreground">Loading firmware history…</p>
+                      )
+                    : !firmware?.history?.length
+                        ? (
+                            <p className="text-sm text-muted-foreground">No firmware history available.</p>
+                          )
+                        : (
+                            firmware.history.map((entry) => {
+                              const isCurrent = entry.is_current || entry.version === device.firmwareVersion;
+                              const seenAt = entry.installed_at || entry.first_seen || entry.last_seen;
+                              return (
+                                <div
+                                  key={`${entry.version}-${seenAt ?? "unknown"}`}
+                                  className={cn(
+                                    "flex items-center justify-between rounded-lg border p-3",
+                                    isCurrent && "border-primary/50 bg-primary/5",
+                                  )}
+                                >
+                                  <div>
+                                    <p className="text-sm font-mono">{entry.version}</p>
+                                    {seenAt && (
+                                      <p className="text-xs text-muted-foreground">
+                                        {formatWithPattern(
+                                          seenAt,
+                                          "MMMM do, yyyy",
+                                        )}
+                                      </p>
+                                    )}
+                                  </div>
+                                  {isCurrent && <Badge className="bg-primary hover:bg-primary">Current</Badge>}
+                                </div>
+                              );
+                            })
                           )}
-                        >
-                          <div>
-                            <p className="text-sm font-mono">{entry.version}</p>
-                            {seenAt && (
-                              <p className="text-xs text-muted-foreground">
-                                {formatWithPattern(seenAt, "MMMM do, yyyy")}
-                              </p>
-                            )}
-                          </div>
-                          {isCurrent && <Badge className="bg-primary hover:bg-primary">Current</Badge>}
-                        </div>
-                      );
-                    })
-                  )}
                 </CardContent>
               </Card>
             </TabsContent>

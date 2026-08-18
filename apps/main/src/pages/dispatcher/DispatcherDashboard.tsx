@@ -1,25 +1,30 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { StatCard } from "@/components/dashboard/StatCard";
-import { AlertList } from "@/components/alerts/AlertList";
-import { DispatchPanel } from "@/components/supervisor/DispatchPanel";
+import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import {
-  Truck, Users, AlertTriangle, Package, Loader2, Clock,
-  CheckCircle2, XCircle, Send, MessageSquare, Phone,
-  ArrowUpRight, Activity, MapPin, Timer, ChevronRight,
+  Activity, AlertTriangle, ArrowUpRight, CheckCircle2, ChevronRight, Clock,
+  Loader2, MapPin, MessageSquare, Package, Phone,
+  Send, Timer, Truck, Users, XCircle,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  useMemo, useState,
+} from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell,
+  Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from "recharts";
+import { AlertList } from "@/components/alerts/AlertList";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { Progress } from "@/components/shadcn/progress";
-import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
-import { cn } from "@/lib/utils";
 import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
-  CartesianGrid, BarChart, Bar, PieChart, Pie, Cell, Legend,
-} from "recharts";
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
+import { Progress } from "@/components/shadcn/progress";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { DispatchPanel } from "@/components/supervisor/DispatchPanel";
+import { cn } from "@/lib/utils";
 
 const CHART_COLORS = {
   primary: "hsl(var(--primary))",
@@ -31,14 +36,26 @@ const CHART_COLORS = {
 
 export default function DispatcherDashboard() {
   const navigate = useNavigate();
-  const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
-  const [dispatchDialogOpen, setDispatchDialogOpen] = useState(false);
-  const [slaRange, setSlaRange] = useState<ChartDateRange>("today");
-  const [statusMixRange, setStatusMixRange] = useState<ChartDateRange>("today");
+  const [
+    selectedVehicle,
+    setSelectedVehicle,
+  ] = useState<string | null>(null);
+  const [
+    dispatchDialogOpen,
+    setDispatchDialogOpen,
+  ] = useState(false);
+  const [
+    slaRange,
+    setSlaRange,
+  ] = useState<ChartDateRange>("today");
+  const [
+    statusMixRange,
+    setStatusMixRange,
+  ] = useState<ChartDateRange>("today");
 
   const RANGE_MULTIPLIER: Record<ChartDateRange, number> = {
-    today: 1,
-    yesterday: 1,
+    "today": 1,
+    "yesterday": 1,
     "7d": 7,
     "30d": 30,
     "90d": 90,
@@ -55,110 +72,168 @@ export default function DispatcherDashboard() {
 
   const isLoading = vehiclesLoading || jobsLoading || alertsLoading;
 
-  const driversForPanel = useMemo(() => drivers.map((d) => ({
-    id: d.id,
-    name: d.name,
-    phone: d.phone,
-    email: d.email || undefined,
-    licenseNumber: d.licenseNumber,
-    licenseExpiry: new Date(d.licenseExpiry),
-    status: d.status as 'active' | 'available' | 'offline' | 'suspended',
-    rating: d.rating,
-    totalTrips: d.totalTrips,
-    currentVehicle: d.currentVehicleId || undefined,
-    communicationPreference: d.communicationPreference as 'whatsapp' | 'sms' | 'email' | 'voice',
-  })), [drivers]);
+  const driversForPanel = useMemo(
+    () => drivers.map(d => ({
+      id: d.id,
+      name: d.name,
+      phone: d.phone,
+      email: d.email || undefined,
+      licenseNumber: d.licenseNumber,
+      licenseExpiry: new Date(d.licenseExpiry),
+      status: d.status as "active" | "available" | "offline" | "suspended",
+      rating: d.rating,
+      totalTrips: d.totalTrips,
+      currentVehicle: d.currentVehicleId || undefined,
+      communicationPreference: d.communicationPreference as "whatsapp" | "sms" | "email" | "voice",
+    })),
+    [drivers],
+  );
 
-  const vehiclesForDispatch = useMemo(() => vehicles.map((v) => ({
-    id: v.id,
-    vin: v.vin,
-    registrationNumber: v.registrationNumber,
-    make: v.make,
-    model: v.model,
-    year: v.year,
-    type: v.type as 'truck' | 'van' | 'trailer',
-    status: v.status,
-    capacity: v.capacity || 0,
-    currentDriver: v.currentDriverId || undefined,
-    deviceId: v.deviceId || undefined,
-    fuelLevel: v.fuelLevel || undefined,
-    location: undefined,
-  })), [vehicles]);
+  const vehiclesForDispatch = useMemo(
+    () => vehicles.map(v => ({
+      id: v.id,
+      vin: v.vin,
+      registrationNumber: v.registrationNumber,
+      make: v.make,
+      model: v.model,
+      year: v.year,
+      type: v.type as "truck" | "van" | "trailer",
+      status: v.status,
+      capacity: v.capacity || 0,
+      currentDriver: v.currentDriverId || undefined,
+      deviceId: v.deviceId || undefined,
+      fuelLevel: v.fuelLevel || undefined,
+      location: undefined,
+    })),
+    [vehicles],
+  );
 
-  const alertsForList = useMemo(() => alerts.map((a) => ({
-    id: a.id,
-    type: a.type as 'geofence' | 'speed' | 'maintenance' | 'fuel' | 'sos' | 'offline',
-    severity: a.severity as 'low' | 'medium' | 'high' | 'critical',
-    message: a.message,
-    vehicleId: a.vehicleId || '',
-    driverId: a.driverId || undefined,
-    timestamp: new Date(a.createdAt),
-    acknowledged: a.acknowledged,
-  })), [alerts]);
+  const alertsForList = useMemo(
+    () => alerts.map(a => ({
+      id: a.id,
+      type: a.type as "geofence" | "speed" | "maintenance" | "fuel" | "sos" | "offline",
+      severity: a.severity as "low" | "medium" | "high" | "critical",
+      message: a.message,
+      vehicleId: a.vehicleId || "",
+      driverId: a.driverId || undefined,
+      timestamp: new Date(a.createdAt),
+      acknowledged: a.acknowledged,
+    })),
+    [alerts],
+  );
 
   // ─── Dispatcher KPIs ───────────────────────────────
-  const activeAlerts = alerts.filter((a) => !a.acknowledged);
-  const pendingJobs = jobs.filter((j) => j.status === "created");
-  const inProgressJobs = jobs.filter((j) => j.status === "in_progress" || j.status === "assigned");
+  const activeAlerts = alerts.filter(a => !a.acknowledged);
+  const pendingJobs = jobs.filter(j => j.status === "created");
+  const inProgressJobs = jobs.filter(j => j.status === "in_progress" || j.status === "assigned");
   const completedToday = jobs.filter((j) => {
-    if (j.status !== "completed") return false;
+    if (j.status !== "completed")
+      return false;
     const updated = new Date((j as any).updatedAt || (j as any).completedAt || Date.now());
     return updated.toDateString() === new Date().toDateString();
   });
-  const availableDrivers = drivers.filter((d) => (d.status as string) === "available").length;
-  const onJobDrivers = drivers.filter((d) => (d.status as string) === "on_trip" || (d.status as string) === "active").length;
-  const offlineDrivers = drivers.filter((d) => (d.status as string) === "offline").length;
+  const availableDrivers = drivers.filter(d => (d.status as string) === "available").length;
+  const onJobDrivers = drivers.filter(d => (d.status as string) === "on_trip" || (d.status as string) === "active").length;
+  const offlineDrivers = drivers.filter(d => (d.status as string) === "offline").length;
 
   // Avg dispatch lead time (mocked from job timestamps when available)
   const avgDispatchMinutes = 14;
 
   // ─── Charts data ───────────────────────────────────
   // Hourly dispatch throughput (mock 12h window from job counts modulated)
-  const throughputData = useMemo(() => {
-    const hours = ["08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"];
-    const total = Math.max(jobs.length, 12);
-    return hours.map((h, i) => ({
-      hour: `${h}:00`,
-      dispatched: Math.round((Math.sin(i / 2) + 1.4) * (total / 8) + (i % 3)),
-      completed: Math.round((Math.sin((i - 1) / 2) + 1.2) * (total / 9)),
-    }));
-  }, [jobs.length]);
+  const throughputData = useMemo(
+    () => {
+      const hours = [
+        "08",
+        "09",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+      ];
+      const total = Math.max(
+        jobs.length,
+        12,
+      );
+      return hours.map((h, i) => ({
+        hour: `${h}:00`,
+        dispatched: Math.round((Math.sin(i / 2) + 1.4) * (total / 8) + (i % 3)),
+        completed: Math.round((Math.sin((i - 1) / 2) + 1.2) * (total / 9)),
+      }));
+    },
+    [jobs.length],
+  );
 
   // Job status distribution (scaled by selected range)
   const statusMixMult = RANGE_MULTIPLIER[statusMixRange];
   const statusDistribution = [
-    { name: "Pending", value: (pendingJobs.length || 1) * statusMixMult, color: CHART_COLORS.warning },
-    { name: "In Progress", value: (inProgressJobs.length || 1) * statusMixMult, color: CHART_COLORS.primary },
-    { name: "Completed", value: (completedToday.length || 1) * statusMixMult, color: CHART_COLORS.success },
-    { name: "Cancelled", value: (jobs.filter(j => j.status === "cancelled").length || 0) * statusMixMult, color: CHART_COLORS.destructive },
+    {
+      name: "Pending", value: (pendingJobs.length || 1) * statusMixMult, color: CHART_COLORS.warning,
+    },
+    {
+      name: "In Progress", value: (inProgressJobs.length || 1) * statusMixMult, color: CHART_COLORS.primary,
+    },
+    {
+      name: "Completed", value: (completedToday.length || 1) * statusMixMult, color: CHART_COLORS.success,
+    },
+    {
+      name: "Cancelled", value: (jobs.filter(j => j.status === "cancelled").length || 0) * statusMixMult, color: CHART_COLORS.destructive,
+    },
   ].filter(d => d.value > 0);
 
   // Driver availability for the next dispatch
   const driverAvailability = [
-    { label: "Available", value: availableDrivers, color: CHART_COLORS.success },
-    { label: "On Job", value: onJobDrivers, color: CHART_COLORS.primary },
-    { label: "Offline", value: offlineDrivers, color: CHART_COLORS.muted },
+    {
+      label: "Available", value: availableDrivers, color: CHART_COLORS.success,
+    },
+    {
+      label: "On Job", value: onJobDrivers, color: CHART_COLORS.primary,
+    },
+    {
+      label: "Offline", value: offlineDrivers, color: CHART_COLORS.muted,
+    },
   ];
 
   // Vehicle utilization
-  const totalVehicles = Math.max(vehicles.length, 1);
+  const totalVehicles = Math.max(
+    vehicles.length,
+    1,
+  );
   const activeVehiclesCount = vehicles.filter(v => v.status === "active").length;
   const utilizationPct = Math.round((activeVehiclesCount / totalVehicles) * 100);
 
   // SLA breakdown (mock from jobs, scaled by selected range)
   const slaMult = RANGE_MULTIPLIER[slaRange];
   const onTime = completedToday.length * slaMult;
-  const late = Math.max(0, Math.round(completedToday.length * 0.18 * slaMult));
+  const late = Math.max(
+    0,
+    Math.round(completedToday.length * 0.18 * slaMult),
+  );
   const atRisk = inProgressJobs.length * slaMult;
   const slaData = [
-    { name: "On Time", value: onTime || 6 * slaMult, color: CHART_COLORS.success },
-    { name: "At Risk", value: atRisk || 2 * slaMult, color: CHART_COLORS.warning },
-    { name: "Late", value: late || 1 * slaMult, color: CHART_COLORS.destructive },
+    {
+      name: "On Time", value: onTime || 6 * slaMult, color: CHART_COLORS.success,
+    },
+    {
+      name: "At Risk", value: atRisk || 2 * slaMult, color: CHART_COLORS.warning,
+    },
+    {
+      name: "Late", value: late || 1 * slaMult, color: CHART_COLORS.destructive,
+    },
   ];
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Operations Center" subtitle="Dispatcher command view">
+      <DashboardLayout
+        title="Operations Center"
+        subtitle="Dispatcher command view"
+      >
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -181,12 +256,20 @@ export default function DispatcherDashboard() {
           <CardContent>
             <div className="flex gap-3 overflow-x-auto pb-2 -mb-2 snap-x snap-mandatory [scrollbar-width:thin]">
               {[
-                { title: "Create Dispatch", desc: "Assign a job to an available driver and vehicle.", icon: Send, cta: "New dispatch", onClick: () => setDispatchDialogOpen(true) },
-                
-                { title: "Message Drivers", desc: "Broadcast or message drivers via SMS / WhatsApp.", icon: MessageSquare, cta: "Open messages", onClick: () => navigate("/supervisor/messages") },
-                { title: "Open Inbox", desc: "Inbound calls and conversations across channels.", icon: Phone, cta: "Open inbox", onClick: () => navigate("/supervisor/inbox") },
-                { title: "Review Alerts", desc: "Acknowledge geofence, SOS and harsh-event alerts.", icon: AlertTriangle, cta: "Open alerts", onClick: () => navigate("/supervisor/alerts") },
-              ].map((qa) => (
+                {
+                  title: "Create Dispatch", desc: "Assign a job to an available driver and vehicle.", icon: Send, cta: "New dispatch", onClick: () => setDispatchDialogOpen(true),
+                },
+
+                {
+                  title: "Message Drivers", desc: "Broadcast or message drivers via SMS / WhatsApp.", icon: MessageSquare, cta: "Open messages", onClick: () => navigate("/supervisor/messages"),
+                },
+                {
+                  title: "Open Inbox", desc: "Inbound calls and conversations across channels.", icon: Phone, cta: "Open inbox", onClick: () => navigate("/supervisor/inbox"),
+                },
+                {
+                  title: "Review Alerts", desc: "Acknowledge geofence, SOS and harsh-event alerts.", icon: AlertTriangle, cta: "Open alerts", onClick: () => navigate("/supervisor/alerts"),
+                },
+              ].map(qa => (
                 <button
                   key={qa.title}
                   onClick={qa.onClick}
@@ -200,7 +283,9 @@ export default function DispatcherDashboard() {
                       <p className="text-sm font-medium">{qa.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{qa.desc}</p>
                       <span className="text-xs text-primary mt-2 inline-flex items-center gap-1 group-hover:underline">
-                        {qa.cta} <ChevronRight className="h-3 w-3" />
+                        {qa.cta}
+                        {" "}
+                        <ChevronRight className="h-3 w-3" />
                       </span>
                     </div>
                   </div>
@@ -246,7 +331,11 @@ export default function DispatcherDashboard() {
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">Avg Dispatch Lead</p>
-                <p className="text-xl font-bold truncate">{avgDispatchMinutes} min</p>
+                <p className="text-xl font-bold truncate">
+                  {avgDispatchMinutes}
+                  {" "}
+                  min
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -269,8 +358,14 @@ export default function DispatcherDashboard() {
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-muted-foreground">Fleet Utilization</p>
                 <div className="flex items-center gap-2">
-                  <p className="text-xl font-bold truncate">{utilizationPct}%</p>
-                  <Progress value={utilizationPct} className="h-1.5 flex-1" />
+                  <p className="text-xl font-bold truncate">
+                    {utilizationPct}
+                    %
+                  </p>
+                  <Progress
+                    value={utilizationPct}
+                    className="h-1.5 flex-1"
+                  />
                 </div>
               </div>
             </CardContent>
@@ -297,29 +392,90 @@ export default function DispatcherDashboard() {
                 <CardTitle>Dispatch Throughput (Today)</CardTitle>
                 <p className="text-xs text-muted-foreground mt-1">Jobs dispatched vs completed by hour</p>
               </div>
-              <Badge variant="outline" className="gap-1">
-                <ArrowUpRight className="h-3 w-3" /> Live
+              <Badge
+                variant="outline"
+                className="gap-1"
+              >
+                <ArrowUpRight className="h-3 w-3" />
+                {" "}
+                Live
               </Badge>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={260}>
+              <ResponsiveContainer
+                width="100%"
+                height={260}
+              >
                 <AreaChart data={throughputData}>
                   <defs>
-                    <linearGradient id="dispatched" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={CHART_COLORS.primary} stopOpacity={0.4} />
-                      <stop offset="95%" stopColor={CHART_COLORS.primary} stopOpacity={0} />
+                    <linearGradient
+                      id="dispatched"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor={CHART_COLORS.primary}
+                        stopOpacity={0.4}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={CHART_COLORS.primary}
+                        stopOpacity={0}
+                      />
                     </linearGradient>
-                    <linearGradient id="completed" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={CHART_COLORS.success} stopOpacity={0.4} />
-                      <stop offset="95%" stopColor={CHART_COLORS.success} stopOpacity={0} />
+                    <linearGradient
+                      id="completed"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor={CHART_COLORS.success}
+                        stopOpacity={0.4}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={CHART_COLORS.success}
+                        stopOpacity={0}
+                      />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="hour" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 6 }} />
-                  <Area type="monotone" dataKey="dispatched" stroke={CHART_COLORS.primary} fill="url(#dispatched)" strokeWidth={2} />
-                  <Area type="monotone" dataKey="completed" stroke={CHART_COLORS.success} fill="url(#completed)" strokeWidth={2} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="hour"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={11}
+                  />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={11}
+                  />
+                  <Tooltip contentStyle={{
+                    background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 6,
+                  }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="dispatched"
+                    stroke={CHART_COLORS.primary}
+                    fill="url(#dispatched)"
+                    strokeWidth={2}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="completed"
+                    stroke={CHART_COLORS.success}
+                    fill="url(#completed)"
+                    strokeWidth={2}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
@@ -336,12 +492,21 @@ export default function DispatcherDashboard() {
                 <ChartDateFilter
                   value={slaRange}
                   onValueChange={setSlaRange}
-                  options={["today", "yesterday", "7d", "30d", "90d"]}
+                  options={[
+                    "today",
+                    "yesterday",
+                    "7d",
+                    "30d",
+                    "90d",
+                  ]}
                 />
               </div>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer
+                width="100%"
+                height={220}
+              >
                 <PieChart>
                   <Pie
                     data={slaData}
@@ -350,11 +515,17 @@ export default function DispatcherDashboard() {
                     paddingAngle={3}
                     dataKey="value"
                   >
-                    {slaData.map((d) => (
-                      <Cell key={d.name} fill={d.color} />
+                    {slaData.map(d => (
+                      <Cell
+                        key={d.name}
+                        fill={d.color}
+                      />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 6 }} />
+                  <Tooltip contentStyle={{
+                    background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 6,
+                  }}
+                  />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>
@@ -375,20 +546,60 @@ export default function DispatcherDashboard() {
                 <ChartDateFilter
                   value={statusMixRange}
                   onValueChange={setStatusMixRange}
-                  options={["today", "yesterday", "7d", "30d", "90d"]}
+                  options={[
+                    "today",
+                    "yesterday",
+                    "7d",
+                    "30d",
+                    "90d",
+                  ]}
                 />
               </div>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={statusDistribution} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                  <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                  <YAxis dataKey="name" type="category" stroke="hsl(var(--muted-foreground))" fontSize={11} width={80} />
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 6 }} />
-                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                    {statusDistribution.map((d) => (
-                      <Cell key={d.name} fill={d.color} />
+              <ResponsiveContainer
+                width="100%"
+                height={220}
+              >
+                <BarChart
+                  data={statusDistribution}
+                  layout="vertical"
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                    horizontal={false}
+                  />
+                  <XAxis
+                    type="number"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={11}
+                  />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={11}
+                    width={80}
+                  />
+                  <Tooltip contentStyle={{
+                    background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 6,
+                  }}
+                  />
+                  <Bar
+                    dataKey="value"
+                    radius={[
+                      0,
+                      4,
+                      4,
+                      0,
+                    ]}
+                  >
+                    {statusDistribution.map(d => (
+                      <Cell
+                        key={d.name}
+                        fill={d.color}
+                      />
                     ))}
                   </Bar>
                 </BarChart>
@@ -405,19 +616,38 @@ export default function DispatcherDashboard() {
             <CardContent>
               <div className="space-y-4">
                 {driverAvailability.map((d) => {
-                  const total = driverAvailability.reduce((s, x) => s + x.value, 0) || 1;
+                  const total = driverAvailability.reduce(
+                    (s, x) => s + x.value,
+                    0,
+                  ) || 1;
                   const pct = Math.round((d.value / total) * 100);
                   return (
                     <div key={d.label}>
                       <div className="flex items-center justify-between mb-1.5 text-sm">
                         <div className="flex items-center gap-2">
-                          <span className="h-2.5 w-2.5 rounded-full" style={{ background: d.color }} />
+                          <span
+                            className="h-2.5 w-2.5 rounded-full"
+                            style={{ background: d.color }}
+                          />
                           <span>{d.label}</span>
                         </div>
-                        <span className="font-medium">{d.value} <span className="text-muted-foreground text-xs">({pct}%)</span></span>
+                        <span className="font-medium">
+                          {d.value}
+                          {" "}
+                          <span className="text-muted-foreground text-xs">
+                            (
+                            {pct}
+                            %)
+                          </span>
+                        </span>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: d.color }} />
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${pct}%`, background: d.color,
+                          }}
+                        />
                       </div>
                     </div>
                   );
@@ -439,58 +669,77 @@ export default function DispatcherDashboard() {
               <Badge variant="outline">{pendingJobs.length}</Badge>
             </CardHeader>
             <CardContent>
-              {pendingJobs.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <CheckCircle2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Queue is clear</p>
-                </div>
-              ) : (
-                <ScrollArea className="h-[280px] pr-2">
-                  <div className="space-y-2">
-                    {pendingJobs.slice(0, 8).map((j) => (
-                      <div
-                        key={j.id}
-                        className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/40 cursor-pointer"
-                        onClick={() => setDispatchDialogOpen(true)}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-sm truncate">
-                              {(j as any).reference || j.id.slice(0, 8).toUpperCase()}
-                            </span>
-                            <Badge variant="secondary" className="text-[10px]">
-                              {(j as any).priority || "normal"}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground truncate">
-                            <MapPin className="h-3 w-3 flex-shrink-0" />
-                            <span className="truncate">
-                              {j.pickupAddress} → {j.deliveryAddress}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 ml-3">
-                          <div className="text-right">
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {new Date(j.deadline).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                            </p>
-                          </div>
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDispatchDialogOpen(true);
-                            }}
+              {pendingJobs.length === 0
+                ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <CheckCircle2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Queue is clear</p>
+                    </div>
+                  )
+                : (
+                    <ScrollArea className="h-[280px] pr-2">
+                      <div className="space-y-2">
+                        {pendingJobs.slice(
+                          0,
+                          8,
+                        ).map(j => (
+                          <div
+                            key={j.id}
+                            className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/40 cursor-pointer"
+                            onClick={() => setDispatchDialogOpen(true)}
                           >
-                            Dispatch
-                          </Button>
-                        </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-sm truncate">
+                                  {(j as any).reference || j.id.slice(
+                                    0,
+                                    8,
+                                  ).toUpperCase()}
+                                </span>
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[10px]"
+                                >
+                                  {(j as any).priority || "normal"}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground truncate">
+                                <MapPin className="h-3 w-3 flex-shrink-0" />
+                                <span className="truncate">
+                                  {j.pickupAddress}
+                                  {" "}
+                                  →
+                                  {j.deliveryAddress}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 ml-3">
+                              <div className="text-right">
+                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {new Date(j.deadline).toLocaleTimeString(
+                                    [],
+                                    {
+                                      hour: "2-digit", minute: "2-digit",
+                                    },
+                                  )}
+                                </p>
+                              </div>
+                              <Button
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDispatchDialogOpen(true);
+                                }}
+                              >
+                                Dispatch
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              )}
+                    </ScrollArea>
+                  )}
             </CardContent>
           </Card>
 
@@ -501,23 +750,30 @@ export default function DispatcherDashboard() {
                 <AlertTriangle className="h-5 w-5 text-warning" />
                 Active Alerts
               </CardTitle>
-              <Badge variant="outline" className="text-destructive border-destructive/40">
-                {activeAlerts.length} live
+              <Badge
+                variant="outline"
+                className="text-destructive border-destructive/40"
+              >
+                {activeAlerts.length}
+                {" "}
+                live
               </Badge>
             </CardHeader>
             <CardContent>
-              {alertsForList.filter(a => !a.acknowledged).length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <CheckCircle2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No active alerts</p>
-                </div>
-              ) : (
-                <AlertList
-                  alerts={alertsForList.filter(a => !a.acknowledged)}
-                  maxItems={5}
-                  onAcknowledge={(id) => acknowledgeAlert(id)}
-                />
-              )}
+              {!alertsForList.some(a => !a.acknowledged)
+                ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <CheckCircle2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No active alerts</p>
+                    </div>
+                  )
+                : (
+                    <AlertList
+                      alerts={alertsForList.filter(a => !a.acknowledged)}
+                      maxItems={5}
+                      onAcknowledge={id => acknowledgeAlert(id)}
+                    />
+                  )}
             </CardContent>
           </Card>
         </div>
@@ -529,49 +785,63 @@ export default function DispatcherDashboard() {
               <Users className="h-5 w-5 text-primary" />
               Driver Board
             </CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/supervisor/drivers")}>
-              View all <ArrowUpRight className="h-3 w-3 ml-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/supervisor/drivers")}
+            >
+              View all
+              {" "}
+              <ArrowUpRight className="h-3 w-3 ml-1" />
             </Button>
           </CardHeader>
           <CardContent>
-            {drivers.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No drivers registered</p>
-              </div>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {drivers.slice(0, 8).map((driver) => (
-                  <div
-                    key={driver.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-muted/40 cursor-pointer"
-                    onClick={() => navigate(`/supervisor/drivers?id=${driver.id}`)}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold flex-shrink-0">
-                        {driver.name.charAt(0)}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{driver.name}</p>
-                        <p className="text-xs text-muted-foreground capitalize truncate">
-                          {driver.status.replace("_", " ")}
-                        </p>
-                      </div>
-                    </div>
-                    <div
-                      className={cn(
-                        "h-2.5 w-2.5 rounded-full flex-shrink-0 ml-2",
-                        driver.status === "on_trip"
-                          ? "bg-success"
-                          : (driver.status as string) === "available"
-                          ? "bg-primary"
-                          : "bg-muted-foreground"
-                      )}
-                    />
+            {drivers.length === 0
+              ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No drivers registered</p>
                   </div>
-                ))}
-              </div>
-            )}
+                )
+              : (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {drivers.slice(
+                      0,
+                      8,
+                    ).map(driver => (
+                      <div
+                        key={driver.id}
+                        className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-muted/40 cursor-pointer"
+                        onClick={() => navigate(`/supervisor/drivers?id=${driver.id}`)}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold flex-shrink-0">
+                            {driver.name.charAt(0)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{driver.name}</p>
+                            <p className="text-xs text-muted-foreground capitalize truncate">
+                              {driver.status.replace(
+                                "_",
+                                " ",
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <div
+                          className={cn(
+                            "h-2.5 w-2.5 rounded-full flex-shrink-0 ml-2",
+                            driver.status === "on_trip"
+                              ? "bg-success"
+                              : (driver.status as string) === "available"
+                                  ? "bg-primary"
+                                  : "bg-muted-foreground",
+                          )}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
           </CardContent>
         </Card>
       </div>

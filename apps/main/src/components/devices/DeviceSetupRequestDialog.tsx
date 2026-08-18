@@ -1,25 +1,32 @@
-import { useState, useEffect } from 'react';
+import type { SimBundleValue } from "./SimBundlePicker";
+import {
+  Cpu, Loader2, Upload,
+} from "lucide-react";
+import {
+  useEffect, useState,
+} from "react";
+import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from '@/components/shadcn/dialog';
-import { Button } from '@/components/shadcn/button';
-import { Input } from '@/components/shadcn/input';
-import { Label } from '@/components/shadcn/label';
-import { Textarea } from '@/components/shadcn/textarea';
-import { Switch } from '@/components/shadcn/switch';
+} from "@/components/shadcn/dialog";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/shadcn/select';
-import { Cpu, Upload, Loader2 } from 'lucide-react';
-import { SimBundlePicker, SimBundleValue, formatSimBundle } from './SimBundlePicker';
+} from "@/components/shadcn/select";
+import { Switch } from "@/components/shadcn/switch";
+import { Textarea } from "@/components/shadcn/textarea";
+import {
+  formatSimBundle, SimBundlePicker,
+} from "./SimBundlePicker";
 
 type RequestVehicleOption = {
   id: string;
@@ -28,14 +35,14 @@ type RequestVehicleOption = {
   model?: string | null;
 };
 
-interface DeviceSetupRequestDialogProps {
+type DeviceSetupRequestDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: any) => Promise<unknown>;
-  onUploadFile?: (file: File, requestId: string, type: 'device_photo' | 'receipt') => Promise<string | null>;
+  onUploadFile?: (file: File, requestId: string, type: "device_photo" | "receipt") => Promise<string | null>;
   manufacturers?: string[];
   vehicles?: RequestVehicleOption[];
-}
+};
 
 const DEFAULT_MANUFACTURERS = [
   "Teltonika",
@@ -56,59 +63,127 @@ export function DeviceSetupRequestDialog({
   manufacturers: manufacturerOptions = DEFAULT_MANUFACTURERS,
   vehicles = [],
 }: DeviceSetupRequestDialogProps) {
-  const [manufacturer, setManufacturer] = useState('');
-  const [model, setModel] = useState('');
-  const [catalogId, setCatalogId] = useState<string | undefined>();
-  const [imei, setImei] = useState('');
-  const [trackerType, setTrackerType] = useState('hardwired');
-  const [simIccid, setSimIccid] = useState('');
-  const [needsSim, setNeedsSim] = useState(false);
-  const [simCarrier, setSimCarrier] = useState('');
-  const [simBundle, setSimBundle] = useState<SimBundleValue>({ amount: 1, unit: 'GB', cycle: 'monthly' });
-  const [vehicleId, setVehicleId] = useState('');
-  const [installationState, setInstallationState] = useState('');
-  const [installationCity, setInstallationCity] = useState('');
-  const [preferredDate, setPreferredDate] = useState('');
-  const [preferredTime, setPreferredTime] = useState('');
-  const [useCase, setUseCase] = useState('');
-  const [notes, setNotes] = useState('');
-  const [quantity, setQuantity] = useState<number>(1);
-  const [submitting, setSubmitting] = useState(false);
+  const [
+    manufacturer,
+    setManufacturer,
+  ] = useState("");
+  const [
+    model,
+    setModel,
+  ] = useState("");
+  const [
+    catalogId,
+    setCatalogId,
+  ] = useState<string | undefined>();
+  const [
+    imei,
+    setImei,
+  ] = useState("");
+  const [
+    trackerType,
+    setTrackerType,
+  ] = useState("hardwired");
+  const [
+    simIccid,
+    setSimIccid,
+  ] = useState("");
+  const [
+    needsSim,
+    setNeedsSim,
+  ] = useState(false);
+  const [
+    simCarrier,
+    setSimCarrier,
+  ] = useState("");
+  const [
+    simBundle,
+    setSimBundle,
+  ] = useState<SimBundleValue>({
+    amount: 1, unit: "GB", cycle: "monthly",
+  });
+  const [
+    vehicleId,
+    setVehicleId,
+  ] = useState("");
+  const [
+    installationState,
+    setInstallationState,
+  ] = useState("");
+  const [
+    installationCity,
+    setInstallationCity,
+  ] = useState("");
+  const [
+    preferredDate,
+    setPreferredDate,
+  ] = useState("");
+  const [
+    preferredTime,
+    setPreferredTime,
+  ] = useState("");
+  const [
+    useCase,
+    setUseCase,
+  ] = useState("");
+  const [
+    notes,
+    setNotes,
+  ] = useState("");
+  const [
+    quantity,
+    setQuantity,
+  ] = useState<number>(1);
+  const [
+    submitting,
+    setSubmitting,
+  ] = useState(false);
 
   // Auto-select vehicle if only one
-  useEffect(() => {
-    if (vehicles.length === 1 && !vehicleId) {
-      setVehicleId(vehicles[0].id);
-    }
-  }, [vehicles, vehicleId]);
+  useEffect(
+    () => {
+      if (vehicles.length === 1 && !vehicleId) {
+        setVehicleId(vehicles[0].id);
+      }
+    },
+    [
+      vehicles,
+      vehicleId,
+    ],
+  );
 
   const resetForm = () => {
-    setManufacturer('');
-    setModel('');
+    setManufacturer("");
+    setModel("");
     setCatalogId(undefined);
-    setImei('');
-    setTrackerType('hardwired');
-    setSimIccid('');
+    setImei("");
+    setTrackerType("hardwired");
+    setSimIccid("");
     setNeedsSim(false);
-    setSimCarrier('');
-    setSimBundle({ amount: 1, unit: 'GB', cycle: 'monthly' });
-    setVehicleId('');
-    setInstallationState('');
-    setInstallationCity('');
-    setPreferredDate('');
-    setPreferredTime('');
-    setUseCase('');
-    setNotes('');
+    setSimCarrier("");
+    setSimBundle({
+      amount: 1, unit: "GB", cycle: "monthly",
+    });
+    setVehicleId("");
+    setInstallationState("");
+    setInstallationCity("");
+    setPreferredDate("");
+    setPreferredTime("");
+    setUseCase("");
+    setNotes("");
     setQuantity(1);
   };
 
   const handleSubmit = async () => {
-    if (!manufacturer || !useCase.trim()) return;
+    if (!manufacturer || !useCase.trim())
+      return;
     setSubmitting(true);
 
     const data: any = {
       manufacturer,
-      quantity: Math.max(1, quantity),
+      quantity: Math.max(
+        1,
+        quantity,
+      ),
       model: model || undefined,
       trackerType,
       simRequired: needsSim,
@@ -135,7 +210,10 @@ export function DeviceSetupRequestDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -157,7 +235,10 @@ export function DeviceSetupRequestDialog({
               type="number"
               min={1}
               value={quantity}
-              onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+              onChange={e => setQuantity(Math.max(
+                1,
+                Number(e.target.value) || 1,
+              ))}
             />
           </div>
 
@@ -165,11 +246,19 @@ export function DeviceSetupRequestDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Manufacturer *</Label>
-              <Select value={manufacturer} onValueChange={(v) => { setManufacturer(v); setModel(''); }}>
+              <Select
+                value={manufacturer}
+                onValueChange={(v) => { setManufacturer(v); setModel(""); }}
+              >
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                 <SelectContent>
                   {manufacturerOptions.map(m => (
-                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                    <SelectItem
+                      key={m}
+                      value={m}
+                    >
+                      {m}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -178,7 +267,7 @@ export function DeviceSetupRequestDialog({
               <Label>Model</Label>
               <Input
                 value={model}
-                onChange={(event) => setModel(event.target.value)}
+                onChange={event => setModel(event.target.value)}
                 disabled={!manufacturer}
                 placeholder="e.g. FMC130"
               />
@@ -190,7 +279,10 @@ export function DeviceSetupRequestDialog({
           {/* Tracker Type */}
           <div className="space-y-1.5">
             <Label>Tracker Type *</Label>
-            <Select value={trackerType} onValueChange={setTrackerType}>
+            <Select
+              value={trackerType}
+              onValueChange={setTrackerType}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="obd">OBD-II Plug & Play</SelectItem>
@@ -204,7 +296,10 @@ export function DeviceSetupRequestDialog({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>I need a SIM card</Label>
-              <Switch checked={needsSim} onCheckedChange={setNeedsSim} />
+              <Switch
+                checked={needsSim}
+                onCheckedChange={setNeedsSim}
+              />
             </div>
             {needsSim && (
               <SimBundlePicker
@@ -221,12 +316,23 @@ export function DeviceSetupRequestDialog({
           {/* Vehicle */}
           <div className="space-y-1.5">
             <Label>Attach to Vehicle</Label>
-            <Select value={vehicleId} onValueChange={setVehicleId}>
+            <Select
+              value={vehicleId}
+              onValueChange={setVehicleId}
+            >
               <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
               <SelectContent>
                 {vehicles.map(v => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.registrationNumber} — {v.make} {v.model}
+                  <SelectItem
+                    key={v.id}
+                    value={v.id}
+                  >
+                    {v.registrationNumber}
+                    {" "}
+                    —
+                    {v.make}
+                    {" "}
+                    {v.model}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -265,7 +371,10 @@ export function DeviceSetupRequestDialog({
             </div>
             <div className="space-y-1.5">
               <Label>Preferred Time</Label>
-              <Select value={preferredTime} onValueChange={setPreferredTime}>
+              <Select
+                value={preferredTime}
+                onValueChange={setPreferredTime}
+              >
                 <SelectTrigger><SelectValue placeholder="Any time" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="morning">Morning (8am–12pm)</SelectItem>
@@ -304,18 +413,27 @@ export function DeviceSetupRequestDialog({
 
         {/* Submit */}
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting || !manufacturer || !useCase.trim()}>
-            {submitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              'Submit Request'
-            )}
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting || !manufacturer || !useCase.trim()}
+          >
+            {submitting
+              ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Submitting...
+                  </>
+                )
+              : (
+                  "Submit Request"
+                )}
           </Button>
         </div>
       </DialogContent>

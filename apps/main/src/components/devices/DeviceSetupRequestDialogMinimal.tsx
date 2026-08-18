@@ -1,15 +1,18 @@
+import type { SimBundleValue } from "./SimBundlePicker";
+import {
+  AlertTriangle, Cpu, Loader2,
+} from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/shadcn/dialog";
-import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Textarea } from "@/components/shadcn/textarea";
 import {
   Select,
   SelectContent,
@@ -18,8 +21,7 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Switch } from "@/components/shadcn/switch";
-import { Cpu, Loader2, AlertTriangle } from "lucide-react";
-import { type SimBundleValue } from "./SimBundlePicker";
+import { Textarea } from "@/components/shadcn/textarea";
 
 /**
  * Minimal Device Request dialog used in the Get Started / Activate System flow.
@@ -35,7 +37,7 @@ import { type SimBundleValue } from "./SimBundlePicker";
  * still used post-onboarding from the Devices page.
  */
 
-export interface MinimalDeviceRequestData {
+export type MinimalDeviceRequestData = {
   quantity: number;
   manufacturer: string;
   model: string;
@@ -45,9 +47,9 @@ export interface MinimalDeviceRequestData {
   sim_iccid?: string;
   sim_carrier?: string;
   sim_bundle?: SimBundleValue;
-}
+};
 
-interface Props {
+type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: MinimalDeviceRequestData) => Promise<unknown>;
@@ -55,19 +57,44 @@ interface Props {
   quotaRemaining?: number;
   /** Plan label shown in the warning message (e.g. "Starter"). */
   quotaLabel?: string;
-}
+};
 
-export function DeviceSetupRequestDialogMinimal({ open, onOpenChange, onSubmit, quotaRemaining, quotaLabel }: Props) {
+export function DeviceSetupRequestDialogMinimal({
+  open, onOpenChange, onSubmit, quotaRemaining, quotaLabel,
+}: Props) {
   const getManufacturers = (): string[] => [];
-  const getModelsForManufacturer = (_manufacturer: string): { id: string; model: string }[] => [];
+  const getModelsForManufacturer = (_manufacturer: string): {
+    id: string; model: string;
+  }[] => [];
 
-  const [quantity, setQuantity] = useState<number>(1);
-  const [manufacturer, setManufacturer] = useState("");
-  const [model, setModel] = useState("");
-  const [useCase, setUseCase] = useState("");
-  const [notes, setNotes] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [needsSim, setNeedsSim] = useState(false);
+  const [
+    quantity,
+    setQuantity,
+  ] = useState<number>(1);
+  const [
+    manufacturer,
+    setManufacturer,
+  ] = useState("");
+  const [
+    model,
+    setModel,
+  ] = useState("");
+  const [
+    useCase,
+    setUseCase,
+  ] = useState("");
+  const [
+    notes,
+    setNotes,
+  ] = useState("");
+  const [
+    submitting,
+    setSubmitting,
+  ] = useState(false);
+  const [
+    needsSim,
+    setNeedsSim,
+  ] = useState(false);
 
   const manufacturers = getManufacturers();
   const models = manufacturer ? getModelsForManufacturer(manufacturer) : [];
@@ -85,7 +112,8 @@ export function DeviceSetupRequestDialogMinimal({ open, onOpenChange, onSubmit, 
   const isValid = quantity >= 1 && !!manufacturer && !!model.trim() && !!useCase.trim() && !overQuota;
 
   const handleSubmit = async () => {
-    if (!isValid) return;
+    if (!isValid)
+      return;
     setSubmitting(true);
     const result = await onSubmit({
       quantity,
@@ -102,12 +130,18 @@ export function DeviceSetupRequestDialogMinimal({ open, onOpenChange, onSubmit, 
     setSubmitting(false);
     if (result) {
       onOpenChange(false);
-      setTimeout(reset, 0);
+      setTimeout(
+        reset,
+        0,
+      );
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -129,18 +163,44 @@ export function DeviceSetupRequestDialogMinimal({ open, onOpenChange, onSubmit, 
               type="number"
               min={1}
               value={quantity}
-              onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+              onChange={e => setQuantity(Math.max(
+                1,
+                Number(e.target.value) || 1,
+              ))}
             />
             {typeof quotaRemaining === "number" && (
               <p className={`text-xs ${overQuota ? "text-destructive" : "text-muted-foreground"}`}>
-                {overQuota ? (
-                  <span className="inline-flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    Exceeds your {quotaLabel ?? "current"} plan quota. You can request up to {quotaRemaining} more device{quotaRemaining === 1 ? "" : "s"}.
-                  </span>
-                ) : (
-                  <>You can request up to {quotaRemaining} more device{quotaRemaining === 1 ? "" : "s"} on your {quotaLabel ?? "current"} plan.</>
-                )}
+                {overQuota
+                  ? (
+                      <span className="inline-flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        Exceeds your
+                        {" "}
+                        {quotaLabel ?? "current"}
+                        {" "}
+                        plan quota. You can request up to
+                        {" "}
+                        {quotaRemaining}
+                        {" "}
+                        more device
+                        {quotaRemaining === 1 ? "" : "s"}
+                        .
+                      </span>
+                    )
+                  : (
+                      <>
+                        You can request up to
+                        {quotaRemaining}
+                        {" "}
+                        more device
+                        {quotaRemaining === 1 ? "" : "s"}
+                        {" "}
+                        on your
+                        {quotaLabel ?? "current"}
+                        {" "}
+                        plan.
+                      </>
+                    )}
               </p>
             )}
           </div>
@@ -159,8 +219,11 @@ export function DeviceSetupRequestDialogMinimal({ open, onOpenChange, onSubmit, 
                 <SelectValue placeholder="Select manufacturer (e.g. Teltonika, Queclink)" />
               </SelectTrigger>
               <SelectContent>
-                {manufacturers.map((m) => (
-                  <SelectItem key={m} value={m}>
+                {manufacturers.map(m => (
+                  <SelectItem
+                    key={m}
+                    value={m}
+                  >
                     {m}
                   </SelectItem>
                 ))}
@@ -171,27 +234,36 @@ export function DeviceSetupRequestDialogMinimal({ open, onOpenChange, onSubmit, 
           {/* Model — dependent dropdown if catalog has matches, else free text */}
           <div className="space-y-1.5">
             <Label>Model *</Label>
-            {models.length > 0 ? (
-              <Select value={model} onValueChange={setModel} disabled={!manufacturer}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select model" />
-                </SelectTrigger>
-                <SelectContent>
-                  {models.map((m) => (
-                    <SelectItem key={m.id} value={m.model}>
-                      {m.model}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="Enter model name"
-                disabled={!manufacturer}
-              />
-            )}
+            {models.length > 0
+              ? (
+                  <Select
+                    value={model}
+                    onValueChange={setModel}
+                    disabled={!manufacturer}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {models.map(m => (
+                        <SelectItem
+                          key={m.id}
+                          value={m.model}
+                        >
+                          {m.model}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )
+              : (
+                  <Input
+                    value={model}
+                    onChange={e => setModel(e.target.value)}
+                    placeholder="Enter model name"
+                    disabled={!manufacturer}
+                  />
+                )}
           </div>
 
           {/* Use Case */}
@@ -199,7 +271,7 @@ export function DeviceSetupRequestDialogMinimal({ open, onOpenChange, onSubmit, 
             <Label>Use Case *</Label>
             <Textarea
               value={useCase}
-              onChange={(e) => setUseCase(e.target.value)}
+              onChange={e => setUseCase(e.target.value)}
               placeholder="Describe how you intend to use these devices"
               rows={3}
             />
@@ -210,7 +282,10 @@ export function DeviceSetupRequestDialogMinimal({ open, onOpenChange, onSubmit, 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>I need a new SIM card</Label>
-              <Switch checked={needsSim} onCheckedChange={setNeedsSim} />
+              <Switch
+                checked={needsSim}
+                onCheckedChange={setNeedsSim}
+              />
             </div>
           </div>
 
@@ -219,7 +294,7 @@ export function DeviceSetupRequestDialogMinimal({ open, onOpenChange, onSubmit, 
             <Label>Additional Notes</Label>
             <Textarea
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={e => setNotes(e.target.value)}
               placeholder="Anything else our team should know (optional)"
               rows={2}
             />
@@ -227,18 +302,27 @@ export function DeviceSetupRequestDialogMinimal({ open, onOpenChange, onSubmit, 
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting || !isValid}>
-            {submitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              "Submit Request"
-            )}
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting || !isValid}
+          >
+            {submitting
+              ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Submitting...
+                  </>
+                )
+              : (
+                  "Submit Request"
+                )}
           </Button>
         </div>
       </DialogContent>

@@ -1,48 +1,56 @@
-import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import type { OrganizationUser } from "@truckmoov/api/auth";
+import type {
+  FilterField, FilterValues,
+} from "@/components/shadcn/table-toolbar";
+import type { OrgMembership } from "@/types/orgRoles";
 import { useQuery } from "@tanstack/react-query";
-import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   getOrganizationUsersQueryOptions,
+
   useChangeRole,
   useDeleteOrganizationUser,
   useInviteUser,
   useResendOrgInvite,
+  UserRole,
   useUpdateOrganizationUser,
   useUpdateOrganizationUserStatus,
-  UserRole,
-  type OrganizationUser,
 } from "@truckmoov/api/auth";
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
+import {
+  BarChart3, Bell, Bot, Building2, CheckCircle,
+  Clock, CreditCard, FileCheck, HardDrive, Mail, MapPin, MoreHorizontal,
+  Palette, Pencil, Phone, Plug, Plus, Receipt, Trash2, UserCheck, Users, UserX,
+  Wrench, XCircle,
+} from "lucide-react";
+import {
+  useEffect, useState,
+} from "react";
+import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
+import { SubscriptionInvoicesPanel } from "@/components/billing/SubscriptionInvoicesPanel";
+import { MaintenanceConfigPanel } from "@/components/fleet/MaintenanceConfigPanel";
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { TenantKYCVerification } from "@/components/platform/TenantKYCVerification";
+import { AccountingIntegrationPanel } from "@/components/settings/AccountingIntegrationPanel";
+import { AIUsageAnalyticsPanel } from "@/components/settings/AIUsageAnalyticsPanel";
+import { NotificationPreferencesPanel } from "@/components/settings/NotificationPreferencesPanel";
+import { OrganizationSettingsForm } from "@/components/settings/OrganizationSettingsForm";
+import { RolePermissionsMatrix } from "@/components/settings/RolePermissionsMatrix";
+import { StoragePanel } from "@/components/settings/StoragePanel";
+import { TenantAIConfigPanel } from "@/components/settings/TenantAIConfigPanel";
+import { TenantBrandingPanel } from "@/components/settings/TenantBrandingPanel";
+import { TenantCommunicationSettings } from "@/components/settings/TenantCommunicationSettings";
+import { TenantInvoiceConfigPanel } from "@/components/settings/TenantInvoiceConfigPanel";
+import { TenantSubscriptionCard } from "@/components/settings/TenantSubscriptionCard";
+import {
+  Avatar, AvatarFallback,
+} from "@/components/shadcn/avatar";
 import { Badge } from "@/components/shadcn/badge";
-import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { Separator } from "@/components/shadcn/separator";
+import { Button } from "@/components/shadcn/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/shadcn/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/shadcn/dropdown-menu";
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
@@ -51,32 +59,36 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/shadcn/dialog";
-import { 
-  Building2, Bell, Users, Plug, Plus,
-  MoreHorizontal, Pencil, Trash2, Mail, Phone, Clock, MapPin,
-  CheckCircle, XCircle, FileCheck, Bot, Wrench, CreditCard, BarChart3, Palette, Receipt, HardDrive,
-  UserCheck, UserX
-} from "lucide-react";
-import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
-import { toast } from "sonner";
-import { TenantKYCVerification } from "@/components/platform/TenantKYCVerification";
-import { TenantAIConfigPanel } from "@/components/settings/TenantAIConfigPanel";
-import { AIUsageAnalyticsPanel } from "@/components/settings/AIUsageAnalyticsPanel";
-import { MaintenanceConfigPanel } from "@/components/fleet/MaintenanceConfigPanel";
-import { AccountingIntegrationPanel } from "@/components/settings/AccountingIntegrationPanel";
-import { TenantSubscriptionCard } from "@/components/settings/TenantSubscriptionCard";
-import { StoragePanel } from "@/components/settings/StoragePanel";
-import { SubscriptionInvoicesPanel } from "@/components/billing/SubscriptionInvoicesPanel";
-import { TenantCommunicationSettings } from "@/components/settings/TenantCommunicationSettings";
-import { TenantBrandingPanel } from "@/components/settings/TenantBrandingPanel";
-import { RolePermissionsMatrix } from "@/components/settings/RolePermissionsMatrix";
-import { TableToolbar, type FilterField, type FilterValues } from "@/components/shadcn/table-toolbar";
-import { TenantInvoiceConfigPanel } from "@/components/settings/TenantInvoiceConfigPanel";
-import { OrganizationSettingsForm } from "@/components/settings/OrganizationSettingsForm";
-import { NotificationPreferencesPanel } from "@/components/settings/NotificationPreferencesPanel";
-import { useAuthStore } from "@/stores/authStore";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
+import { Separator } from "@/components/shadcn/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/shadcn/table";
+import { TableToolbar } from "@/components/shadcn/table-toolbar";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
 import { useActiveOrgStore } from "@/stores/activeOrgStore";
-import type { OrgMembership } from "@/types/orgRoles";
+import { useAuthStore } from "@/stores/authStore";
 
 /** Human labels for the backend roles. */
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -102,21 +114,39 @@ const ROLE_LABELS: Record<UserRole, string> = {
  */
 const INVITE_ROLES_BY_ORG_TYPE: Record<
   string,
-  Array<{ value: UserRole; label: string }>
+  Array<{
+    value: UserRole; label: string;
+  }>
 > = {
   ENTERPRISE: [
-    { value: UserRole.OPERATIONS_MANAGER, label: "Operations Manager - Run day-to-day operations" },
-    { value: UserRole.DISPATCHER, label: "Dispatcher - Assign jobs & track drivers" },
-    { value: UserRole.FINANCE_VIEWER, label: "Finance Viewer - Billing, invoices & wallet" },
+    {
+      value: UserRole.OPERATIONS_MANAGER, label: "Operations Manager - Run day-to-day operations",
+    },
+    {
+      value: UserRole.DISPATCHER, label: "Dispatcher - Assign jobs & track drivers",
+    },
+    {
+      value: UserRole.FINANCE_VIEWER, label: "Finance Viewer - Billing, invoices & wallet",
+    },
   ],
   FLEET_PROVIDER: [
-    { value: UserRole.OPERATIONS_MANAGER, label: "Operations Manager - Run day-to-day operations" },
-    { value: UserRole.DISPATCHER, label: "Dispatcher - Assign jobs & track drivers" },
-    { value: UserRole.FINANCE_VIEWER, label: "Finance Viewer - Billing, invoices & wallet" },
+    {
+      value: UserRole.OPERATIONS_MANAGER, label: "Operations Manager - Run day-to-day operations",
+    },
+    {
+      value: UserRole.DISPATCHER, label: "Dispatcher - Assign jobs & track drivers",
+    },
+    {
+      value: UserRole.FINANCE_VIEWER, label: "Finance Viewer - Billing, invoices & wallet",
+    },
   ],
   AGGREGATOR: [
-    { value: UserRole.OPERATIONS_MANAGER, label: "Operations Manager - Cross-fleet coordination" },
-    { value: UserRole.FINANCE_VIEWER, label: "Finance Viewer - Reporting & insights" },
+    {
+      value: UserRole.OPERATIONS_MANAGER, label: "Operations Manager - Cross-fleet coordination",
+    },
+    {
+      value: UserRole.FINANCE_VIEWER, label: "Finance Viewer - Reporting & insights",
+    },
   ],
   OWNER_OPERATOR: [],
 };
@@ -129,7 +159,7 @@ const ADMIN_ROLE_BY_ORG_TYPE: Record<string, UserRole> = {
   OWNER_OPERATOR: UserRole.OWNER_OPERATOR,
 };
 
-interface TenantUser {
+type TenantUser = {
   id: string;
   name: string;
   email: string;
@@ -137,20 +167,32 @@ interface TenantUser {
   status: string;
   lastActive: string;
   accountStatus: string;
-}
+};
 
 export default function Settings() {
   const { user } = useAuthStore();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [
+    searchParams,
+    setSearchParams,
+  ] = useSearchParams();
   const tabFromUrl = searchParams.get("tab") || "organization";
-  const [activeTab, setActiveTab] = useState(tabFromUrl);
+  const [
+    activeTab,
+    setActiveTab,
+  ] = useState(tabFromUrl);
 
   // Sync tab with URL
-  useEffect(() => {
-    if (tabFromUrl !== activeTab) {
-      setActiveTab(tabFromUrl);
-    }
-  }, [activeTab, tabFromUrl]);
+  useEffect(
+    () => {
+      if (tabFromUrl !== activeTab) {
+        setActiveTab(tabFromUrl);
+      }
+    },
+    [
+      activeTab,
+      tabFromUrl,
+    ],
+  );
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -165,38 +207,77 @@ export default function Settings() {
   const defaultInviteRole: UserRole = inviteRoleOptions[0]?.value ?? UserRole.FINANCE_VIEWER;
   const orgAdminRole = ADMIN_ROLE_BY_ORG_TYPE[activeOrgType] ?? UserRole.FLEET_ADMIN;
 
-  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState(defaultInviteRole);
+  const [
+    isInviteDialogOpen,
+    setIsInviteDialogOpen,
+  ] = useState(false);
+  const [
+    inviteEmail,
+    setInviteEmail,
+  ] = useState("");
+  const [
+    inviteRole,
+    setInviteRole,
+  ] = useState(defaultInviteRole);
 
   // Keep inviteRole valid when the active org type changes
-  useEffect(() => {
-    if (!inviteRoleOptions.find((r) => r.value === inviteRole)) {
-      setInviteRole(defaultInviteRole);
-    }
-  }, [activeOrgType]); // eslint-disable-line react-hooks/exhaustive-deps
-  const [showApiKey, setShowApiKey] = useState(false);
+  useEffect(
+    () => {
+      if (!inviteRoleOptions.some(r => r.value === inviteRole)) {
+        setInviteRole(defaultInviteRole);
+      }
+    },
+    [activeOrgType],
+  ); // eslint-disable-line react-hooks/exhaustive-deps
+  const [
+    showApiKey,
+    setShowApiKey,
+  ] = useState(false);
   // Edit user state
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<TenantUser | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editRole, setEditRole] = useState<UserRole>(UserRole.FINANCE_VIEWER);
+  const [
+    isEditDialogOpen,
+    setIsEditDialogOpen,
+  ] = useState(false);
+  const [
+    editingUser,
+    setEditingUser,
+  ] = useState<TenantUser | null>(null);
+  const [
+    editName,
+    setEditName,
+  ] = useState("");
+  const [
+    editRole,
+    setEditRole,
+  ] = useState<UserRole>(UserRole.FINANCE_VIEWER);
 
   /**
    * Roles offered when editing a member: the org's admin role + the invitable
    * roles, plus the member's current role so it always has a matching option.
    */
-  const editRoleOptions: Array<{ value: UserRole; label: string }> = [
-    { value: orgAdminRole, label: `${ROLE_LABELS[orgAdminRole]} - Full access` },
+  const editRoleOptions: Array<{
+    value: UserRole; label: string;
+  }> = [
+    {
+      value: orgAdminRole, label: `${ROLE_LABELS[orgAdminRole]} - Full access`,
+    },
     ...inviteRoleOptions,
   ];
-  if (!editRoleOptions.some((o) => o.value === editRole)) {
-    editRoleOptions.push({ value: editRole, label: ROLE_LABELS[editRole] ?? editRole });
+  if (!editRoleOptions.some(o => o.value === editRole)) {
+    editRoleOptions.push({
+      value: editRole, label: ROLE_LABELS[editRole] ?? editRole,
+    });
   }
 
   // Remove user state
-  const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
-  const [removingUser, setRemovingUser] = useState<TenantUser | null>(null);
+  const [
+    isRemoveDialogOpen,
+    setIsRemoveDialogOpen,
+  ] = useState(false);
+  const [
+    removingUser,
+    setRemovingUser,
+  ] = useState<TenantUser | null>(null);
 
   const organizationUsersQuery = useQuery({
     ...getOrganizationUsersQueryOptions(),
@@ -219,7 +300,10 @@ export default function Settings() {
         organizationUser.accountStatus === "disabled"
           ? "disabled"
           : organizationUser.status,
-      lastActive: formatRelative(organizationUser.lastActiveAt, "Never"),
+      lastActive: formatRelative(
+        organizationUser.lastActiveAt,
+        "Never",
+      ),
       accountStatus: organizationUser.accountStatus,
     }),
   );
@@ -246,7 +330,7 @@ export default function Settings() {
           setInviteEmail("");
           setIsInviteDialogOpen(false);
         },
-        onError: (error) => toast.error(error.message),
+        onError: error => toast.error(error.message),
       },
     );
   };
@@ -265,7 +349,8 @@ export default function Settings() {
 
   // Save user changes
   const handleSaveUser = async () => {
-    if (!editingUser) return;
+    if (!editingUser)
+      return;
     const nextRole = editRole;
     const currentRole = editingUser.role;
 
@@ -282,14 +367,17 @@ export default function Settings() {
       if (nextRole !== currentRole) {
         updates.push(
           changeRoleMutation.mutateAsync({
-            data: { targetUserId: editingUser.id, newRole: nextRole },
+            data: {
+              targetUserId: editingUser.id, newRole: nextRole,
+            },
           }),
         );
       }
       await Promise.all(updates);
       toast.success(updates.length ? "User updated" : "No changes to save");
       setIsEditDialogOpen(false);
-    } catch (error) {
+    }
+    catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to update user");
     }
   };
@@ -302,7 +390,8 @@ export default function Settings() {
 
   // Remove user
   const handleRemoveUser = async () => {
-    if (!removingUser) return;
+    if (!removingUser)
+      return;
     deleteUserMutation.mutate(
       { id: removingUser.id },
       {
@@ -311,7 +400,7 @@ export default function Settings() {
           setIsRemoveDialogOpen(false);
           setRemovingUser(null);
         },
-        onError: (error) => toast.error(error.message),
+        onError: error => toast.error(error.message),
       },
     );
   };
@@ -319,10 +408,12 @@ export default function Settings() {
   const handleToggleUserStatus = (tenantUser: TenantUser) => {
     const accountStatus = tenantUser.accountStatus === "disabled" ? "enabled" : "disabled";
     updateStatusMutation.mutate(
-      { id: tenantUser.id, data: { accountStatus } },
+      {
+        id: tenantUser.id, data: { accountStatus },
+      },
       {
         onSuccess: () => toast.success(`User ${accountStatus}`),
-        onError: (error) => toast.error(error.message),
+        onError: error => toast.error(error.message),
       },
     );
   };
@@ -332,7 +423,7 @@ export default function Settings() {
       { data: { email: tenantUser.email } },
       {
         onSuccess: () => toast.success("Invitation resent"),
-        onError: (error) => toast.error(error.message),
+        onError: error => toast.error(error.message),
       },
     );
   };
@@ -363,9 +454,18 @@ export default function Settings() {
   };
 
   // Team members table toolbar state
-  const [teamSearch, setTeamSearch] = useState("");
-  const [teamStatus, setTeamStatus] = useState("all");
-  const [teamFilters, setTeamFilters] = useState<FilterValues>({});
+  const [
+    teamSearch,
+    setTeamSearch,
+  ] = useState("");
+  const [
+    teamStatus,
+    setTeamStatus,
+  ] = useState("all");
+  const [
+    teamFilters,
+    setTeamFilters,
+  ] = useState<FilterValues>({});
 
   const teamFilterFields: FilterField[] = [
     {
@@ -373,7 +473,7 @@ export default function Settings() {
       key: "role",
       label: "Role",
       // ponytail: offer only the roles actually present in this org
-      options: [...new Set(tenantUsers.map((u) => u.role))].map((role) => ({
+      options: [...new Set(tenantUsers.map(u => u.role))].map(role => ({
         value: role,
         label: ROLE_LABELS[role] ?? role,
       })),
@@ -383,192 +483,295 @@ export default function Settings() {
       key: "lastActive",
       label: "Last Active",
       options: [
-        { value: "today", label: "Today" },
-        { value: "week", label: "This week" },
-        { value: "older", label: "Older" },
+        {
+          value: "today", label: "Today",
+        },
+        {
+          value: "week", label: "This week",
+        },
+        {
+          value: "older", label: "Older",
+        },
       ],
     },
   ];
 
   const filteredTenantUsers = tenantUsers.filter((u) => {
     const q = teamSearch.trim().toLowerCase();
-    if (q && !`${u.name} ${u.email}`.toLowerCase().includes(q)) return false;
-    if (teamStatus !== "all" && u.status !== teamStatus) return false;
+    if (q && !`${u.name} ${u.email}`.toLowerCase().includes(q))
+      return false;
+    if (teamStatus !== "all" && u.status !== teamStatus)
+      return false;
     const roleF = teamFilters.role;
-    if (roleF?.enabled && roleF.value && u.role !== roleF.value) return false;
+    if (roleF?.enabled && roleF.value && u.role !== roleF.value)
+      return false;
     const laF = teamFilters.lastActive;
     if (laF?.enabled && laF.value) {
       const la = (u.lastActive || "").toLowerCase();
       const isToday = /min|hour|today/.test(la);
       const isWeek = isToday || /day|yesterday/.test(la);
-      if (laF.value === "today" && !isToday) return false;
-      if (laF.value === "week" && !isWeek) return false;
-      if (laF.value === "older" && isWeek) return false;
+      if (laF.value === "today" && !isToday)
+        return false;
+      if (laF.value === "week" && !isWeek)
+        return false;
+      if (laF.value === "older" && isWeek)
+        return false;
     }
     return true;
   });
 
   return (
     <DashboardLayout title="Settings">
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="space-y-6"
+      >
         <TabsList className="bg-muted/50 flex flex-wrap gap-1 h-auto p-1">
-          <TabsTrigger value="organization" className="flex items-center gap-2">
+          <TabsTrigger
+            value="organization"
+            className="flex items-center gap-2"
+          >
             <Building2 className="h-4 w-4" />
             <span className="hidden sm:inline">Organization</span>
           </TabsTrigger>
-          <TabsTrigger value="subscription" className="flex items-center gap-2">
+          <TabsTrigger
+            value="subscription"
+            className="flex items-center gap-2"
+          >
             <CreditCard className="h-4 w-4" />
             <span className="hidden sm:inline">Subscription</span>
           </TabsTrigger>
-          <TabsTrigger value="storage" className="flex items-center gap-2">
+          <TabsTrigger
+            value="storage"
+            className="flex items-center gap-2"
+          >
             <HardDrive className="h-4 w-4" />
             <span className="hidden sm:inline">Storage</span>
           </TabsTrigger>
-          <TabsTrigger value="invoicing" className="flex items-center gap-2">
+          <TabsTrigger
+            value="invoicing"
+            className="flex items-center gap-2"
+          >
             <Receipt className="h-4 w-4" />
             <span className="hidden sm:inline">Invoicing</span>
           </TabsTrigger>
-          <TabsTrigger value="kyc" className="flex items-center gap-2">
+          <TabsTrigger
+            value="kyc"
+            className="flex items-center gap-2"
+          >
             <FileCheck className="h-4 w-4" />
             <span className="hidden sm:inline">KYC</span>
           </TabsTrigger>
-          <TabsTrigger value="fleet" className="flex items-center gap-2">
+          <TabsTrigger
+            value="fleet"
+            className="flex items-center gap-2"
+          >
             <Wrench className="h-4 w-4" />
             <span className="hidden sm:inline">Fleet</span>
           </TabsTrigger>
-          <TabsTrigger value="ai" className="flex items-center gap-2">
+          <TabsTrigger
+            value="ai"
+            className="flex items-center gap-2"
+          >
             <Bot className="h-4 w-4" />
             <span className="hidden sm:inline">AI Matching</span>
           </TabsTrigger>
-          <TabsTrigger value="ai-usage" className="flex items-center gap-2">
+          <TabsTrigger
+            value="ai-usage"
+            className="flex items-center gap-2"
+          >
             <BarChart3 className="h-4 w-4" />
             <span className="hidden sm:inline">AI Usage</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
+          <TabsTrigger
+            value="notifications"
+            className="flex items-center gap-2"
+          >
             <Bell className="h-4 w-4" />
             <span className="hidden sm:inline">Notifications</span>
           </TabsTrigger>
-          <TabsTrigger value="communication" className="flex items-center gap-2">
+          <TabsTrigger
+            value="communication"
+            className="flex items-center gap-2"
+          >
             <Bell className="h-4 w-4" />
             <span className="hidden sm:inline">Communication</span>
           </TabsTrigger>
           {activeOrgType !== "OWNER_OPERATOR" && (
-            <TabsTrigger value="users" className="flex items-center gap-2">
+            <TabsTrigger
+              value="users"
+              className="flex items-center gap-2"
+            >
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Users</span>
             </TabsTrigger>
           )}
-          <TabsTrigger value="branding" className="flex items-center gap-2">
+          <TabsTrigger
+            value="branding"
+            className="flex items-center gap-2"
+          >
             <Palette className="h-4 w-4" />
             <span className="hidden sm:inline">Branding</span>
           </TabsTrigger>
-          <TabsTrigger value="integrations" className="flex items-center gap-2">
+          <TabsTrigger
+            value="integrations"
+            className="flex items-center gap-2"
+          >
             <Plug className="h-4 w-4" />
             <span className="hidden sm:inline">Connections</span>
           </TabsTrigger>
         </TabsList>
 
         {/* Organization Tab */}
-        <TabsContent value="organization" className="space-y-6">
+        <TabsContent
+          value="organization"
+          className="space-y-6"
+        >
           <OrganizationSettingsForm />
         </TabsContent>
 
         {/* KYC Verification Tab */}
-        <TabsContent value="kyc" className="space-y-6">
-          <TenantKYCVerification tenantId={user?.tenantId || ''} />
+        <TabsContent
+          value="kyc"
+          className="space-y-6"
+        >
+          <TenantKYCVerification tenantId={user?.tenantId || ""} />
         </TabsContent>
 
-        <TabsContent value="invoicing" className="space-y-6">
+        <TabsContent
+          value="invoicing"
+          className="space-y-6"
+        >
           <TenantInvoiceConfigPanel />
         </TabsContent>
 
         {/* Fleet Tab */}
-        <TabsContent value="fleet" className="space-y-6">
+        <TabsContent
+          value="fleet"
+          className="space-y-6"
+        >
           <MaintenanceConfigPanel />
         </TabsContent>
 
         {/* AI Matching Tab */}
-        <TabsContent value="ai" className="space-y-6">
-          <TenantAIConfigPanel tenantId={user?.tenantId || ''} />
+        <TabsContent
+          value="ai"
+          className="space-y-6"
+        >
+          <TenantAIConfigPanel tenantId={user?.tenantId || ""} />
         </TabsContent>
 
         {/* AI Usage Tab */}
-        <TabsContent value="ai-usage" className="space-y-6">
+        <TabsContent
+          value="ai-usage"
+          className="space-y-6"
+        >
           <AIUsageAnalyticsPanel />
         </TabsContent>
 
         {/* Notifications Tab */}
-        <TabsContent value="notifications" className="space-y-6">
+        <TabsContent
+          value="notifications"
+          className="space-y-6"
+        >
           <NotificationPreferencesPanel />
         </TabsContent>
 
         {/* Communication Settings Tab */}
-        <TabsContent value="communication" className="space-y-6">
+        <TabsContent
+          value="communication"
+          className="space-y-6"
+        >
           <TenantCommunicationSettings />
         </TabsContent>
 
         {/* Users Tab */}
         {activeOrgType !== "OWNER_OPERATOR" && (
-          <TabsContent value="users" className="space-y-6">
+          <TabsContent
+            value="users"
+            className="space-y-6"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold">Team Members</h3>
                 <p className="text-sm text-muted-foreground">Manage who has access to your organization</p>
               </div>
-              {canInviteUsers ? (
-                <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="gradient">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Invite User
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-card border-border">
-                    <DialogHeader>
-                      <DialogTitle>Invite Team Member</DialogTitle>
-                      <DialogDescription>Send an invitation to join your organization</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="inviteEmail">Email Address</Label>
-                        <Input
-                          id="inviteEmail"
-                          type="email"
-                          placeholder="colleague@company.com"
-                          value={inviteEmail}
-                          onChange={(e) => setInviteEmail(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="inviteRole">Role</Label>
-                        <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as UserRole)}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {inviteRoleOptions.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-3">
-                      <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)} disabled={isInviting}>Cancel</Button>
-                      <Button variant="gradient" onClick={handleInviteUser} disabled={isInviting}>
-                        {isInviting ? "Sending..." : "Send Invitation"}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              ) : (
-                <span className="text-xs text-muted-foreground">
-                  Owner-operator accounts are single-user. Inviting additional team
-                  members isn't available on this plan.
-                </span>
-              )}
+              {canInviteUsers
+                ? (
+                    <Dialog
+                      open={isInviteDialogOpen}
+                      onOpenChange={setIsInviteDialogOpen}
+                    >
+                      <DialogTrigger asChild>
+                        <Button variant="gradient">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Invite User
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-card border-border">
+                        <DialogHeader>
+                          <DialogTitle>Invite Team Member</DialogTitle>
+                          <DialogDescription>Send an invitation to join your organization</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="inviteEmail">Email Address</Label>
+                            <Input
+                              id="inviteEmail"
+                              type="email"
+                              placeholder="colleague@company.com"
+                              value={inviteEmail}
+                              onChange={e => setInviteEmail(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="inviteRole">Role</Label>
+                            <Select
+                              value={inviteRole}
+                              onValueChange={v => setInviteRole(v as UserRole)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {inviteRoleOptions.map(opt => (
+                                  <SelectItem
+                                    key={opt.value}
+                                    value={opt.value}
+                                  >
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-3">
+                          <Button
+                            variant="outline"
+                            onClick={() => setIsInviteDialogOpen(false)}
+                            disabled={isInviting}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="gradient"
+                            onClick={handleInviteUser}
+                            disabled={isInviting}
+                          >
+                            {isInviting ? "Sending..." : "Send Invitation"}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )
+                : (
+                    <span className="text-xs text-muted-foreground">
+                      Owner-operator accounts are single-user. Inviting additional team
+                      members isn't available on this plan.
+                    </span>
+                  )}
             </div>
 
             <Card className="bg-card/50 border-border/50">
@@ -580,10 +783,18 @@ export default function Settings() {
                   status={teamStatus}
                   onStatusChange={setTeamStatus}
                   statusOptions={[
-                    { value: "all", label: "All statuses" },
-                    { value: "active", label: "Active" },
-                    { value: "invited", label: "Invited" },
-                    { value: "disabled", label: "Disabled" },
+                    {
+                      value: "all", label: "All statuses",
+                    },
+                    {
+                      value: "active", label: "Active",
+                    },
+                    {
+                      value: "invited", label: "Invited",
+                    },
+                    {
+                      value: "disabled", label: "Disabled",
+                    },
                   ]}
                   filterEntity="team members"
                   filterFields={teamFilterFields}
@@ -602,110 +813,136 @@ export default function Settings() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isLoadingUsers ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        Loading users...
-                      </TableCell>
-                    </TableRow>
-                  ) : organizationUsersQuery.isError ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8">
-                        <p className="text-destructive">Unable to load team members.</p>
-                        <Button
-                          variant="link"
-                          className="mt-1"
-                          onClick={() => organizationUsersQuery.refetch()}
-                        >
-                          Try again
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredTenantUsers.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        {tenantUsers.length === 0 ? "No team members yet. Invite someone to get started." : "No team members match your filters."}
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredTenantUsers.map((tenantUser) => (
-                    <TableRow key={tenantUser.id} className="border-border/50">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-xs">
-                              {tenantUser.name.split(" ").map((n) => n[0]).join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{tenantUser.name}</p>
-                            <p className="text-sm text-muted-foreground">{tenantUser.email}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={roleColors[tenantUser.role]}>
-                          {ROLE_LABELS[tenantUser.role] ?? tenantUser.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[tenantUser.status]}>{tenantUser.status}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {tenantUser.lastActive}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEditUser(tenantUser)}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Edit User
-                            </DropdownMenuItem>
-                            {tenantUser.status === "invited" && (
-                              <DropdownMenuItem
-                                onClick={() => handleResendInvite(tenantUser)}
-                                disabled={resendInviteMutation.isPending}
+                  {isLoadingUsers
+                    ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={5}
+                            className="text-center py-8 text-muted-foreground"
+                          >
+                            Loading users...
+                          </TableCell>
+                        </TableRow>
+                      )
+                    : organizationUsersQuery.isError
+                      ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={5}
+                              className="text-center py-8"
+                            >
+                              <p className="text-destructive">Unable to load team members.</p>
+                              <Button
+                                variant="link"
+                                className="mt-1"
+                                onClick={() => organizationUsersQuery.refetch()}
                               >
-                                <Mail className="h-4 w-4 mr-2" />
-                                Resend Invite
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem
-                              onClick={() => handleToggleUserStatus(tenantUser)}
-                              disabled={updateStatusMutation.isPending}
+                                Try again
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      : filteredTenantUsers.length === 0
+                        ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={5}
+                                className="text-center py-8 text-muted-foreground"
+                              >
+                                {tenantUsers.length === 0 ? "No team members yet. Invite someone to get started." : "No team members match your filters."}
+                              </TableCell>
+                            </TableRow>
+                          )
+                        : filteredTenantUsers.map(tenantUser => (
+                            <TableRow
+                              key={tenantUser.id}
+                              className="border-border/50"
                             >
-                              {tenantUser.accountStatus === "disabled" ? (
-                                <UserCheck className="h-4 w-4 mr-2" />
-                              ) : (
-                                <UserX className="h-4 w-4 mr-2" />
-                              )}
-                              {tenantUser.accountStatus === "disabled" ? "Enable User" : "Disable User"}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-destructive"
-                              onClick={() => handleOpenRemoveDialog(tenantUser)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Remove
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-xs">
+                                      {tenantUser.name.split(" ").map(n => n[0]).join("")}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-medium">{tenantUser.name}</p>
+                                    <p className="text-sm text-muted-foreground">{tenantUser.email}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={roleColors[tenantUser.role]}>
+                                  {ROLE_LABELS[tenantUser.role] ?? tenantUser.role}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={statusColors[tenantUser.status]}>{tenantUser.status}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                  <Clock className="h-3 w-3" />
+                                  {tenantUser.lastActive}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleEditUser(tenantUser)}>
+                                      <Pencil className="h-4 w-4 mr-2" />
+                                      Edit User
+                                    </DropdownMenuItem>
+                                    {tenantUser.status === "invited" && (
+                                      <DropdownMenuItem
+                                        onClick={() => handleResendInvite(tenantUser)}
+                                        disabled={resendInviteMutation.isPending}
+                                      >
+                                        <Mail className="h-4 w-4 mr-2" />
+                                        Resend Invite
+                                      </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuItem
+                                      onClick={() => handleToggleUserStatus(tenantUser)}
+                                      disabled={updateStatusMutation.isPending}
+                                    >
+                                      {tenantUser.accountStatus === "disabled"
+                                        ? (
+                                            <UserCheck className="h-4 w-4 mr-2" />
+                                          )
+                                        : (
+                                            <UserX className="h-4 w-4 mr-2" />
+                                          )}
+                                      {tenantUser.accountStatus === "disabled" ? "Enable User" : "Disable User"}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-destructive"
+                                      onClick={() => handleOpenRemoveDialog(tenantUser)}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Remove
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))}
                 </TableBody>
-                </Table>
+              </Table>
             </Card>
 
             {/* Edit User Dialog */}
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <Dialog
+              open={isEditDialogOpen}
+              onOpenChange={setIsEditDialogOpen}
+            >
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Edit User</DialogTitle>
@@ -720,7 +957,7 @@ export default function Settings() {
                       id="editName"
                       placeholder="Enter full name"
                       value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
+                      onChange={e => setEditName(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -735,13 +972,19 @@ export default function Settings() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="editRole">Role</Label>
-                    <Select value={editRole} onValueChange={(v) => setEditRole(v as UserRole)}>
+                    <Select
+                      value={editRole}
+                      onValueChange={v => setEditRole(v as UserRole)}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {editRoleOptions.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
+                        {editRoleOptions.map(opt => (
+                          <SelectItem
+                            key={opt.value}
+                            value={opt.value}
+                          >
                             {opt.label}
                           </SelectItem>
                         ))}
@@ -750,10 +993,18 @@ export default function Settings() {
                   </div>
                 </div>
                 <div className="flex justify-end gap-3">
-                  <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={isUpdatingUser}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditDialogOpen(false)}
+                    disabled={isUpdatingUser}
+                  >
                     Cancel
                   </Button>
-                  <Button variant="gradient" onClick={handleSaveUser} disabled={isUpdatingUser}>
+                  <Button
+                    variant="gradient"
+                    onClick={handleSaveUser}
+                    disabled={isUpdatingUser}
+                  >
                     {isUpdatingUser ? "Saving..." : "Save Changes"}
                   </Button>
                 </div>
@@ -761,29 +1012,36 @@ export default function Settings() {
             </Dialog>
 
             {/* Remove User Confirmation Dialog */}
-            <Dialog open={isRemoveDialogOpen} onOpenChange={setIsRemoveDialogOpen}>
+            <Dialog
+              open={isRemoveDialogOpen}
+              onOpenChange={setIsRemoveDialogOpen}
+            >
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Remove User</DialogTitle>
                   <DialogDescription>
-                    Are you sure you want to remove {removingUser?.name} from your organization? 
+                    Are you sure you want to remove
+                    {" "}
+                    {removingUser?.name}
+                    {" "}
+                    from your organization?
                     They will lose access to all resources.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="flex justify-end gap-3 pt-4">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => {
                       setIsRemoveDialogOpen(false);
                       setRemovingUser(null);
-                    }} 
+                    }}
                     disabled={isRemovingUser}
                   >
                     Cancel
                   </Button>
-                  <Button 
-                    variant="destructive" 
-                    onClick={handleRemoveUser} 
+                  <Button
+                    variant="destructive"
+                    onClick={handleRemoveUser}
                     disabled={isRemovingUser}
                   >
                     {isRemovingUser ? "Removing..." : "Remove User"}
@@ -798,12 +1056,18 @@ export default function Settings() {
         )}
 
         {/* Branding Tab */}
-        <TabsContent value="branding" className="space-y-6">
+        <TabsContent
+          value="branding"
+          className="space-y-6"
+        >
           <TenantBrandingPanel />
         </TabsContent>
 
         {/* Integrations Tab - External Services */}
-        <TabsContent value="integrations" className="space-y-6">
+        <TabsContent
+          value="integrations"
+          className="space-y-6"
+        >
           {/* Accounting Integration */}
           <AccountingIntegrationPanel />
 
@@ -814,12 +1078,22 @@ export default function Settings() {
             </CardHeader>
             <CardContent className="space-y-4">
               {[
-                { id: "whatsapp", name: "WhatsApp Business", icon: WhatsAppIcon, connected: true, description: "Send messages and notifications via WhatsApp" },
-                { id: "sms", name: "SMS Gateway", icon: Phone, connected: true, description: "Send SMS notifications to drivers" },
-                { id: "gmail", name: "Gmail", icon: Mail, connected: false, description: "Send emails using your Gmail account" },
-                { id: "outlook", name: "Outlook", icon: Mail, connected: false, description: "Send emails using Microsoft Outlook" },
-                { id: "maps", name: "Google Maps", icon: MapPin, connected: true, description: "Route optimization and live tracking" },
-              ].map((integration) => (
+                {
+                  id: "whatsapp", name: "WhatsApp Business", icon: WhatsAppIcon, connected: true, description: "Send messages and notifications via WhatsApp",
+                },
+                {
+                  id: "sms", name: "SMS Gateway", icon: Phone, connected: true, description: "Send SMS notifications to drivers",
+                },
+                {
+                  id: "gmail", name: "Gmail", icon: Mail, connected: false, description: "Send emails using your Gmail account",
+                },
+                {
+                  id: "outlook", name: "Outlook", icon: Mail, connected: false, description: "Send emails using Microsoft Outlook",
+                },
+                {
+                  id: "maps", name: "Google Maps", icon: MapPin, connected: true, description: "Route optimization and live tracking",
+                },
+              ].map(integration => (
                 <div
                   key={integration.id}
                   className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:border-primary/30 transition-all"
@@ -831,11 +1105,13 @@ export default function Settings() {
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="font-medium">{integration.name}</p>
-                        {integration.connected ? (
-                          <CheckCircle className="h-4 w-4 text-success" />
-                        ) : (
-                          <XCircle className="h-4 w-4 text-muted-foreground" />
-                        )}
+                        {integration.connected
+                          ? (
+                              <CheckCircle className="h-4 w-4 text-success" />
+                            )
+                          : (
+                              <XCircle className="h-4 w-4 text-muted-foreground" />
+                            )}
                       </div>
                       <p className="text-sm text-muted-foreground">{integration.description}</p>
                     </div>
@@ -854,23 +1130,38 @@ export default function Settings() {
         </TabsContent>
 
         {/* Subscription Tab */}
-        <TabsContent value="subscription" className="space-y-6">
-          <Tabs defaultValue="plan" className="space-y-4">
+        <TabsContent
+          value="subscription"
+          className="space-y-6"
+        >
+          <Tabs
+            defaultValue="plan"
+            className="space-y-4"
+          >
             <TabsList>
               <TabsTrigger value="plan">Subscription</TabsTrigger>
               <TabsTrigger value="invoices">Invoices</TabsTrigger>
             </TabsList>
-            <TabsContent value="plan" className="space-y-6">
+            <TabsContent
+              value="plan"
+              className="space-y-6"
+            >
               <TenantSubscriptionCard />
             </TabsContent>
-            <TabsContent value="invoices" className="space-y-6">
+            <TabsContent
+              value="invoices"
+              className="space-y-6"
+            >
               <SubscriptionInvoicesPanel />
             </TabsContent>
           </Tabs>
         </TabsContent>
 
         {/* Storage Tab */}
-        <TabsContent value="storage" className="space-y-6">
+        <TabsContent
+          value="storage"
+          className="space-y-6"
+        >
           <StoragePanel />
         </TabsContent>
 

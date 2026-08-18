@@ -1,29 +1,28 @@
+import type { FilterDraft } from "@/components/shadcn/platform-filter-popover";
 import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
-import { useState, useCallback, useMemo } from "react";
-import { useAuthStore } from "@/stores/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
+import {
+  AlertCircle, AlertTriangle,
+  CheckCircle,
+  Clock,
+  SlidersHorizontal as Filter,
+  HardDrive,
+  Link,
+  Loader2,
+  Play,
+  RotateCcw,
+  Search,
+  XCircle,
+  Zap,
+} from "lucide-react";
+import {
+  useCallback, useMemo, useState,
+} from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
-import { Progress } from "@/components/shadcn/progress";
-import { Input } from "@/components/shadcn/input";
-import { Search, SlidersHorizontal as Filter } from "lucide-react";
+import { Button } from "@/components/shadcn/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/shadcn/select";
-import { ExportButton } from "@/components/shadcn/export-button";
-import { PlatformFilterPopover, type FilterDraft } from "@/components/shadcn/platform-filter-popover";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
@@ -32,23 +31,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
+import { ExportButton } from "@/components/shadcn/export-button";
+import { Input } from "@/components/shadcn/input";
+import { PlatformFilterPopover } from "@/components/shadcn/platform-filter-popover";
+import { Progress } from "@/components/shadcn/progress";
 import {
-  Play,
-  Loader2,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  Zap,
-  Clock,
-  RotateCcw,
-  HardDrive,
-  Link,
-  AlertCircle,
-} from "lucide-react";
-import { toast } from "sonner";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/shadcn/table";
+import { useAuthStore } from "@/stores/authStore";
 import { DeviceLinkingResolver } from "./DeviceLinkingResolver";
 
-interface ActivationBatch {
+type ActivationBatch = {
   id: string;
   request_id: string | null;
   tenant_id: string;
@@ -75,7 +80,7 @@ interface ActivationBatch {
         device_name: string;
         imei: string;
         sim_iccid: string;
-        action: 'created' | 'updated';
+        action: "created" | "updated";
         success: boolean;
       }>;
       exceptions: Array<{
@@ -96,7 +101,7 @@ interface ActivationBatch {
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
-}
+};
 
 const _hoursAgoIso = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
 
@@ -187,56 +192,79 @@ export function ActivationBatchesPanel() {
   const { user } = useAuthStore();
   const [batches] = useState<ActivationBatch[]>(DEMO_ACTIVATION_BATCHES);
   const [loading] = useState(false);
-  const [activating, setActivating] = useState<string | null>(null);
-  const [selectedBatch, setSelectedBatch] = useState<ActivationBatch | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [resolverBatch, setResolverBatch] = useState<ActivationBatch | null>(null);
-  const [isResolverOpen, setIsResolverOpen] = useState(false);
+  const [
+    activating,
+    setActivating,
+  ] = useState<string | null>(null);
+  const [
+    selectedBatch,
+    setSelectedBatch,
+  ] = useState<ActivationBatch | null>(null);
+  const [
+    isDetailsOpen,
+    setIsDetailsOpen,
+  ] = useState(false);
+  const [
+    resolverBatch,
+    setResolverBatch,
+  ] = useState<ActivationBatch | null>(null);
+  const [
+    isResolverOpen,
+    setIsResolverOpen,
+  ] = useState(false);
 
   // Toolbar state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [filterDraft, setFilterDraft] = useState<FilterDraft>({
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState<string>("all");
+  const [
+    filterDraft,
+    setFilterDraft,
+  ] = useState<FilterDraft>({
     operator: { enabled: false },
     mode: { enabled: false },
   });
 
   const handleInitiateActivation = async (_batch: ActivationBatch) => {
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'pending':
+      case "pending":
         return (
           <Badge className="bg-muted text-muted-foreground">
             <Clock className="h-3 w-3 mr-1" />
             Pending
           </Badge>
         );
-      case 'activation_in_progress':
+      case "activation_in_progress":
         return (
           <Badge className="bg-primary/10 text-primary border-primary/30">
             <Loader2 className="h-3 w-3 mr-1 animate-spin" />
             In Progress
           </Badge>
         );
-      case 'completed':
+      case "completed":
         return (
           <Badge className="bg-success/10 text-success border-success/30">
             <CheckCircle className="h-3 w-3 mr-1" />
             Completed
           </Badge>
         );
-      case 'partially_completed':
+      case "partially_completed":
         return (
           <Badge className="bg-warning/10 text-warning border-warning/30">
             <AlertTriangle className="h-3 w-3 mr-1" />
             Partial
           </Badge>
         );
-      case 'failed':
+      case "failed":
         return (
           <Badge variant="destructive">
             <XCircle className="h-3 w-3 mr-1" />
@@ -249,63 +277,90 @@ export function ActivationBatchesPanel() {
   };
 
   const getProgressPercentage = (batch: ActivationBatch) => {
-    if (batch.status === 'pending') return 0;
-    if (batch.status === 'completed') return 100;
+    if (batch.status === "pending")
+      return 0;
+    if (batch.status === "completed")
+      return 100;
     const activated = batch.sims_activated || 0;
     const failed = batch.sims_failed || 0;
     const total = batch.quantity || 1;
     return Math.round(((activated + failed) / total) * 100);
   };
 
-  const pendingBatches = batches.filter(b => b.status === 'pending');
-  const processingBatches = batches.filter(b => b.status === 'activation_in_progress');
+  const pendingBatches = batches.filter(b => b.status === "pending");
+  const processingBatches = batches.filter(b => b.status === "activation_in_progress");
 
   // Count total exceptions across all completed batches
-  const totalExceptions = batches.reduce((sum, b) => {
-    return sum + (b.fonu_response?.device_linking?.summary?.exceptions_count || 0);
-  }, 0);
+  const totalExceptions = batches.reduce(
+    (sum, b) => {
+      return sum + (b.fonu_response?.device_linking?.summary?.exceptions_count || 0);
+    },
+    0,
+  );
 
   const batchesWithExceptions = batches.filter(
-    b => (b.fonu_response?.device_linking?.summary?.exceptions_count || 0) > 0
+    b => (b.fonu_response?.device_linking?.summary?.exceptions_count || 0) > 0,
   );
 
   // Operator + mode option lists for the filter popover
-  const operatorOptions = useMemo(() => {
-    const set = new Set<string>();
-    batches.forEach((b) => b.operator && set.add(b.operator));
-    return Array.from(set).map((v) => ({ value: v, label: v }));
-  }, [batches]);
+  const operatorOptions = useMemo(
+    () => {
+      const set = new Set<string>();
+      batches.forEach(b => b.operator && set.add(b.operator));
+      return Array.from(set).map(v => ({
+        value: v, label: v,
+      }));
+    },
+    [batches],
+  );
 
-  const modeOptions = useMemo(() => {
-    const set = new Set<string>();
-    batches.forEach((b) => b.activation_mode && set.add(b.activation_mode));
-    return Array.from(set).map((v) => ({ value: v, label: v.charAt(0).toUpperCase() + v.slice(1) }));
-  }, [batches]);
+  const modeOptions = useMemo(
+    () => {
+      const set = new Set<string>();
+      batches.forEach(b => b.activation_mode && set.add(b.activation_mode));
+      return Array.from(set).map(v => ({
+        value: v, label: v.charAt(0).toUpperCase() + v.slice(1),
+      }));
+    },
+    [batches],
+  );
 
-  const filteredBatches = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return batches.filter((b) => {
-      if (statusFilter !== "all" && b.status !== statusFilter) return false;
-      if (q) {
-        const hay = [
-          b.tenant_name,
-          b.tenant_id,
-          b.operator,
-          b.requested_plan,
-          b.fonu_batch_id,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      const op = filterDraft.operator;
-      if (op?.enabled && op.value && b.operator !== op.value) return false;
-      const md = filterDraft.mode;
-      if (md?.enabled && md.value && b.activation_mode !== md.value) return false;
-      return true;
-    });
-  }, [batches, searchQuery, statusFilter, filterDraft]);
+  const filteredBatches = useMemo(
+    () => {
+      const q = searchQuery.trim().toLowerCase();
+      return batches.filter((b) => {
+        if (statusFilter !== "all" && b.status !== statusFilter)
+          return false;
+        if (q) {
+          const hay = [
+            b.tenant_name,
+            b.tenant_id,
+            b.operator,
+            b.requested_plan,
+            b.fonu_batch_id,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+          if (!hay.includes(q))
+            return false;
+        }
+        const op = filterDraft.operator;
+        if (op?.enabled && op.value && b.operator !== op.value)
+          return false;
+        const md = filterDraft.mode;
+        if (md?.enabled && md.value && b.activation_mode !== md.value)
+          return false;
+        return true;
+      });
+    },
+    [
+      batches,
+      searchQuery,
+      statusFilter,
+      filterDraft,
+    ],
+  );
 
   if (loading) {
     return (
@@ -350,25 +405,28 @@ export function ActivationBatchesPanel() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-warning">
-              {pendingBatches.reduce((sum, b) => sum + b.quantity, 0)}
+              {pendingBatches.reduce(
+                (sum, b) => sum + b.quantity,
+                0,
+              )}
             </div>
             <p className="text-xs text-muted-foreground">Awaiting activation</p>
           </CardContent>
         </Card>
 
-        <Card className={totalExceptions > 0 ? 'border-warning/50' : ''}>
+        <Card className={totalExceptions > 0 ? "border-warning/50" : ""}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Needs Attention</CardTitle>
-            <AlertCircle className={`h-4 w-4 ${totalExceptions > 0 ? 'text-warning' : 'text-muted-foreground'}`} />
+            <AlertCircle className={`h-4 w-4 ${totalExceptions > 0 ? "text-warning" : "text-muted-foreground"}`} />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${totalExceptions > 0 ? 'text-warning' : ''}`}>
+            <div className={`text-2xl font-bold ${totalExceptions > 0 ? "text-warning" : ""}`}>
               {totalExceptions}
             </div>
             <p className="text-xs text-muted-foreground">
               {batchesWithExceptions.length > 0
                 ? `${batchesWithExceptions.length} batch(es) with exceptions`
-                : 'No device linking issues'}
+                : "No device linking issues"}
             </p>
           </CardContent>
         </Card>
@@ -390,15 +448,33 @@ export function ActivationBatchesPanel() {
               filename="activation-batches"
               rows={filteredBatches}
               columns={[
-                { header: "Tenant", accessor: (b) => b.tenant_name || b.tenant_id },
-                { header: "Mode", accessor: (b) => b.activation_mode },
-                { header: "Quantity", accessor: (b) => b.quantity },
-                { header: "Operator", accessor: (b) => b.operator || "Any" },
-                { header: "Plan", accessor: (b) => b.requested_plan || "Standard" },
-                { header: "Status", accessor: (b) => b.status },
-                { header: "Activated", accessor: (b) => b.sims_activated || 0 },
-                { header: "Failed", accessor: (b) => b.sims_failed || 0 },
-                { header: "Created", accessor: (b) => b.created_at },
+                {
+                  header: "Tenant", accessor: b => b.tenant_name || b.tenant_id,
+                },
+                {
+                  header: "Mode", accessor: b => b.activation_mode,
+                },
+                {
+                  header: "Quantity", accessor: b => b.quantity,
+                },
+                {
+                  header: "Operator", accessor: b => b.operator || "Any",
+                },
+                {
+                  header: "Plan", accessor: b => b.requested_plan || "Standard",
+                },
+                {
+                  header: "Status", accessor: b => b.status,
+                },
+                {
+                  header: "Activated", accessor: b => b.sims_activated || 0,
+                },
+                {
+                  header: "Failed", accessor: b => b.sims_failed || 0,
+                },
+                {
+                  header: "Created", accessor: b => b.created_at,
+                },
               ]}
             />
           </div>
@@ -410,11 +486,14 @@ export function ActivationBatchesPanel() {
               <Input
                 placeholder="Search batches..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="pl-9 h-9"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+            >
               <SelectTrigger className="w-[170px] h-9">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
@@ -430,8 +509,12 @@ export function ActivationBatchesPanel() {
             <PlatformFilterPopover
               entity="batches"
               fields={[
-                { key: "operator", label: "Operator", type: "select", options: operatorOptions },
-                { key: "mode", label: "Mode", type: "select", options: modeOptions },
+                {
+                  key: "operator", label: "Operator", type: "select", options: operatorOptions,
+                },
+                {
+                  key: "mode", label: "Mode", type: "select", options: modeOptions,
+                },
               ]}
               value={filterDraft}
               onApply={setFilterDraft}
@@ -439,120 +522,147 @@ export function ActivationBatchesPanel() {
                 setFilterDraft({
                   operator: { enabled: false },
                   mode: { enabled: false },
-                })
-              }
+                })}
             />
           </div>
         </CardHeader>
         <CardContent>
-          {filteredBatches.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Zap className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No activation batches match your filters</p>
-              <p className="text-sm">Adjust the search, status, or filter options above</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tenant</TableHead>
-                  <TableHead>Mode</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Operator</TableHead>
-                  <TableHead>Progress</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredBatches.map((batch) => (
-                  <TableRow key={batch.id}>
-                    <TableCell className="font-medium">
-                      {batch.tenant_name || batch.tenant_id.slice(0, 8)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="capitalize">
-                        {batch.activation_mode}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-mono">{batch.quantity}</span>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {batch.operator || 'Any'}
-                    </TableCell>
-                    <TableCell className="w-32">
-                      <div className="space-y-1">
-                        <Progress value={getProgressPercentage(batch)} className="h-2" />
-                        <p className="text-xs text-muted-foreground">
-                          {batch.sims_activated || 0} / {batch.quantity}
-                          {(batch.sims_failed || 0) > 0 && (
-                            <span className="text-destructive ml-1">
-                              ({batch.sims_failed} failed)
-                            </span>
+          {filteredBatches.length === 0
+            ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Zap className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No activation batches match your filters</p>
+                  <p className="text-sm">Adjust the search, status, or filter options above</p>
+                </div>
+              )
+            : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tenant</TableHead>
+                      <TableHead>Mode</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Operator</TableHead>
+                      <TableHead>Progress</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredBatches.map(batch => (
+                      <TableRow key={batch.id}>
+                        <TableCell className="font-medium">
+                          {batch.tenant_name || batch.tenant_id.slice(
+                            0,
+                            8,
                           )}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(batch.status)}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {formatDayMonthTime(batch.created_at)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {(batch.status === 'pending' || batch.status === 'failed' || batch.status === 'partially_completed') && (
-                          <Button
-                            size="sm"
+                        </TableCell>
+                        <TableCell>
+                          <Badge
                             variant="outline"
-                            onClick={() => handleInitiateActivation(batch)}
-                            disabled={activating === batch.id}
+                            className="capitalize"
                           >
-                            <RotateCcw className="h-4 w-4 mr-1" />
-                            Retry
-                          </Button>
-                        )}
-                        {(batch.fonu_response?.device_linking?.summary?.exceptions_count || 0) > 0 && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-warning/50 text-warning hover:bg-warning/10"
-                            onClick={() => {
-                              setResolverBatch(batch);
-                              setIsResolverOpen(true);
-                            }}
-                          >
-                            <AlertCircle className="h-4 w-4 mr-1" />
-                            Resolve
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setSelectedBatch(batch);
-                            setIsDetailsOpen(true);
-                          }}
-                        >
-                          Details
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                            {batch.activation_mode}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-mono">{batch.quantity}</span>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {batch.operator || "Any"}
+                        </TableCell>
+                        <TableCell className="w-32">
+                          <div className="space-y-1">
+                            <Progress
+                              value={getProgressPercentage(batch)}
+                              className="h-2"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {batch.sims_activated || 0}
+                              {" "}
+                              /
+                              {batch.quantity}
+                              {(batch.sims_failed || 0) > 0 && (
+                                <span className="text-destructive ml-1">
+                                  (
+                                  {batch.sims_failed}
+                                  {" "}
+                                  failed)
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(batch.status)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {formatDayMonthTime(batch.created_at)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {(batch.status === "pending" || batch.status === "failed" || batch.status === "partially_completed") && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleInitiateActivation(batch)}
+                                disabled={activating === batch.id}
+                              >
+                                <RotateCcw className="h-4 w-4 mr-1" />
+                                Retry
+                              </Button>
+                            )}
+                            {(batch.fonu_response?.device_linking?.summary?.exceptions_count || 0) > 0 && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-warning/50 text-warning hover:bg-warning/10"
+                                onClick={() => {
+                                  setResolverBatch(batch);
+                                  setIsResolverOpen(true);
+                                }}
+                              >
+                                <AlertCircle className="h-4 w-4 mr-1" />
+                                Resolve
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setSelectedBatch(batch);
+                                setIsDetailsOpen(true);
+                              }}
+                            >
+                              Details
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
         </CardContent>
       </Card>
 
       {/* Batch Details Dialog */}
-      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+      <Dialog
+        open={isDetailsOpen}
+        onOpenChange={setIsDetailsOpen}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Activation Batch Details</DialogTitle>
             <DialogDescription>
-              Batch #{selectedBatch?.id.slice(0, 8)} • {selectedBatch?.tenant_name}
+              Batch #
+              {selectedBatch?.id.slice(
+                0,
+                8,
+              )}
+              {" "}
+              •
+              {" "}
+              {selectedBatch?.tenant_name}
             </DialogDescription>
           </DialogHeader>
 
@@ -569,20 +679,24 @@ export function ActivationBatchesPanel() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Quantity</p>
-                  <p className="font-medium">{selectedBatch.quantity} SIM(s)</p>
+                  <p className="font-medium">
+                    {selectedBatch.quantity}
+                    {" "}
+                    SIM(s)
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Operator</p>
-                  <p className="font-medium">{selectedBatch.operator || 'Any'}</p>
+                  <p className="font-medium">{selectedBatch.operator || "Any"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Plan</p>
-                  <p className="font-medium">{selectedBatch.requested_plan || 'Standard'}</p>
+                  <p className="font-medium">{selectedBatch.requested_plan || "Standard"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Data Limit</p>
                   <p className="font-medium">
-                    {selectedBatch.data_limit_gb ? `${selectedBatch.data_limit_gb} GB` : 'Standard'}
+                    {selectedBatch.data_limit_gb ? `${selectedBatch.data_limit_gb} GB` : "Standard"}
                   </p>
                 </div>
               </div>
@@ -600,7 +714,12 @@ export function ActivationBatchesPanel() {
                 <div className="flex justify-between text-sm">
                   <span>Progress</span>
                   <span>
-                    {selectedBatch.sims_activated || 0} activated, {selectedBatch.sims_failed || 0} failed
+                    {selectedBatch.sims_activated || 0}
+                    {" "}
+                    activated,
+                    {selectedBatch.sims_failed || 0}
+                    {" "}
+                    failed
                   </span>
                 </div>
                 <Progress value={getProgressPercentage(selectedBatch)} />
@@ -634,17 +753,19 @@ export function ActivationBatchesPanel() {
                               {result.iccid?.slice(-10)}
                             </TableCell>
                             <TableCell className="font-mono text-xs">
-                              {result.msisdn || '-'}
+                              {result.msisdn || "-"}
                             </TableCell>
                             <TableCell className="font-mono text-xs">
-                              {result.fonu_sim_id || '-'}
+                              {result.fonu_sim_id || "-"}
                             </TableCell>
                             <TableCell>
-                              {result.status === 'activated' ? (
-                                <Badge className="bg-success/10 text-success">Activated</Badge>
-                              ) : (
-                                <Badge variant="destructive">Failed</Badge>
-                              )}
+                              {result.status === "activated"
+                                ? (
+                                    <Badge className="bg-success/10 text-success">Activated</Badge>
+                                  )
+                                : (
+                                    <Badge variant="destructive">Failed</Badge>
+                                  )}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -660,12 +781,22 @@ export function ActivationBatchesPanel() {
                   <div className="flex items-center gap-2">
                     <HardDrive className="h-4 w-4" />
                     <p className="text-sm font-medium">Device Linking</p>
-                    <Badge variant="outline" className="text-xs">
-                      {selectedBatch.fonu_response.device_linking.summary.devices_linked} linked
+                    <Badge
+                      variant="outline"
+                      className="text-xs"
+                    >
+                      {selectedBatch.fonu_response.device_linking.summary.devices_linked}
+                      {" "}
+                      linked
                     </Badge>
                     {selectedBatch.fonu_response.device_linking.summary.exceptions_count > 0 && (
-                      <Badge variant="destructive" className="text-xs">
-                        {selectedBatch.fonu_response.device_linking.summary.exceptions_count} exceptions
+                      <Badge
+                        variant="destructive"
+                        className="text-xs"
+                      >
+                        {selectedBatch.fonu_response.device_linking.summary.exceptions_count}
+                        {" "}
+                        exceptions
                       </Badge>
                     )}
                   </div>
@@ -691,9 +822,9 @@ export function ActivationBatchesPanel() {
                                 {device.imei.slice(-8)}
                               </TableCell>
                               <TableCell>
-                                <Badge className={device.action === 'created' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}>
+                                <Badge className={device.action === "created" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}>
                                   <Link className="h-3 w-3 mr-1" />
-                                  {device.action === 'created' ? 'Created & Linked' : 'Updated'}
+                                  {device.action === "created" ? "Created & Linked" : "Updated"}
                                 </Badge>
                               </TableCell>
                             </TableRow>
@@ -724,13 +855,14 @@ export function ActivationBatchesPanel() {
                             {selectedBatch.fonu_response.device_linking.exceptions.map((exception, idx) => (
                               <TableRow key={idx}>
                                 <TableCell className="text-xs">
-                                  #{exception.row_index + 1}
+                                  #
+                                  {exception.row_index + 1}
                                 </TableCell>
                                 <TableCell className="text-xs">
                                   {exception.device_name}
                                 </TableCell>
                                 <TableCell className="font-mono text-xs">
-                                  {exception.imei || '-'}
+                                  {exception.imei || "-"}
                                 </TableCell>
                                 <TableCell className="text-xs text-destructive">
                                   {exception.reason}
@@ -768,10 +900,13 @@ export function ActivationBatchesPanel() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDetailsOpen(false)}
+            >
               Close
             </Button>
-            {selectedBatch?.status === 'pending' && (
+            {selectedBatch?.status === "pending" && (
               <Button
                 onClick={() => {
                   handleInitiateActivation(selectedBatch);

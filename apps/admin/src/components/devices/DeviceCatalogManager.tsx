@@ -1,21 +1,50 @@
-import { useEffect, useState } from "react";
+import type {
+  SystemDeviceCatalogModel,
+  SystemDeviceCatalogQuery,
+} from "@truckmoov/api/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   getSystemDevicesCatalogExportQueryOptions,
   getSystemDevicesCatalogQueryOptions,
-  useDeleteDeviceCatalogEntry,
   useCreateDeviceCatalogEntry,
+  useDeleteDeviceCatalogEntry,
   useUpdateDeviceCatalogEntry,
 } from "@truckmoov/api/auth";
-import type { SystemDeviceCatalogModel, SystemDeviceCatalogQuery } from "@truckmoov/api/auth";
+import {
+  AlertTriangle,
+  Archive,
+  BookOpen,
+  Download,
+  Edit,
+  Fuel,
+  Gauge,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
+import {
+  useEffect,
+  useState,
+} from "react";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
+import { toast } from "sonner";
+import * as z from "zod";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   Dialog,
@@ -40,6 +69,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/shadcn/form";
+import { Input } from "@/components/shadcn/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
 import {
   Table,
   TableBody,
@@ -48,29 +85,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
-import {
-  AlertTriangle,
-  Archive,
-  BookOpen,
-  Download,
-  Edit,
-  Fuel,
-  Gauge,
-  Search,
-  Plus,
-  MoreHorizontal,
-  Trash2,
-  X,
-} from "lucide-react";
-import { toast } from "sonner";
 
 type CatalogStatusFilter = "all" | "supported" | "deprecated" | "blocked";
 type DeviceFeature = "obd2" | "fuel" | "sos";
@@ -82,9 +97,21 @@ const DEVICE_FEATURE_OPTIONS: Array<{
   label: string;
   icon: typeof Gauge;
 }> = [
-  { value: "obd2", label: "OBD-II", icon: Gauge },
-  { value: "fuel", label: "Fuel", icon: Fuel },
-  { value: "sos", label: "SOS", icon: AlertTriangle },
+  {
+    value: "obd2",
+    label: "OBD-II",
+    icon: Gauge,
+  },
+  {
+    value: "fuel",
+    label: "Fuel",
+    icon: Fuel,
+  },
+  {
+    value: "sos",
+    label: "SOS",
+    icon: AlertTriangle,
+  },
 ];
 const protocolBadgeClass: Record<string, string> = {
   TCP: "border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-50",
@@ -109,12 +136,31 @@ const featureIconClass: Record<string, string> = {
 };
 
 const deviceCatalogFormSchema = z.object({
-  manufacturer: z.string().trim().min(1, "Manufacturer is required."),
-  model: z.string().trim().min(1, "Model is required."),
-  protocolType: z.enum(["TCP", "HTTP", "MQTT", "UDP"]),
+  manufacturer: z.string().trim().min(
+    1,
+    "Manufacturer is required.",
+  ),
+  model: z.string().trim().min(
+    1,
+    "Model is required.",
+  ),
+  protocolType: z.enum([
+    "TCP",
+    "HTTP",
+    "MQTT",
+    "UDP",
+  ]),
   defaultPort: z.number().int().positive("Default port must be positive.").optional(),
-  supportedFeatures: z.array(z.enum(["obd2", "fuel", "sos"])),
-  status: z.enum(["supported", "deprecated", "blocked"]),
+  supportedFeatures: z.array(z.enum([
+    "obd2",
+    "fuel",
+    "sos",
+  ])),
+  status: z.enum([
+    "supported",
+    "deprecated",
+    "blocked",
+  ]),
   configurationInstructions: z.string().optional(),
 });
 
@@ -142,11 +188,20 @@ const defaultEditCatalogFormValues: EditDeviceCatalogFormValues = {
 };
 
 function getCatalogFormValues(model: SystemDeviceCatalogModel): EditDeviceCatalogFormValues {
-  const protocolType = ["TCP", "HTTP", "MQTT", "UDP"].includes(model.protocolType)
+  const protocolType = [
+    "TCP",
+    "HTTP",
+    "MQTT",
+    "UDP",
+  ].includes(model.protocolType)
     ? model.protocolType as EditDeviceCatalogFormValues["protocolType"]
     : "TCP";
   const supportedFeatures = model.supportedFeatures.filter(
-    (feature): feature is DeviceFeature => ["obd2", "fuel", "sos"].includes(feature),
+    (feature): feature is DeviceFeature => [
+      "obd2",
+      "fuel",
+      "sos",
+    ].includes(feature),
   );
 
   return {
@@ -161,12 +216,30 @@ function getCatalogFormValues(model: SystemDeviceCatalogModel): EditDeviceCatalo
 
 export function DeviceCatalogManager() {
   const queryClient = useQueryClient();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<CatalogStatusFilter>("all");
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editingModel, setEditingModel] = useState<SystemDeviceCatalogModel | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    debouncedSearchQuery,
+    setDebouncedSearchQuery,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState<CatalogStatusFilter>("all");
+  const [
+    createDialogOpen,
+    setCreateDialogOpen,
+  ] = useState(false);
+  const [
+    editingModel,
+    setEditingModel,
+  ] = useState<SystemDeviceCatalogModel | null>(null);
+  const [
+    isExporting,
+    setIsExporting,
+  ] = useState(false);
   const createCatalogEntry = useCreateDeviceCatalogEntry();
   const updateCatalogEntry = useUpdateDeviceCatalogEntry();
   const deleteCatalogEntry = useDeleteDeviceCatalogEntry();
@@ -179,14 +252,21 @@ export function DeviceCatalogManager() {
     defaultValues: defaultEditCatalogFormValues,
   });
 
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 400);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  useEffect(
+    () => {
+      const timer = setTimeout(
+        setDebouncedSearchQuery,
+        400,
+        searchQuery,
+      );
+      return () => clearTimeout(timer);
+    },
+    [searchQuery],
+  );
 
   const searchParam = debouncedSearchQuery.trim();
-  const catalogQueryPayload: SystemDeviceCatalogQuery | undefined =
-    searchParam || statusFilter !== "all"
+  const catalogQueryPayload: SystemDeviceCatalogQuery | undefined
+    = searchParam || statusFilter !== "all"
       ? {
           params: {
             ...(searchParam ? { search: searchParam } : {}),
@@ -209,9 +289,11 @@ export function DeviceCatalogManager() {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-    } catch {
+    }
+    catch {
       toast.error("Export failed");
-    } finally {
+    }
+    finally {
       setIsExporting(false);
     }
   }
@@ -315,7 +397,11 @@ export function DeviceCatalogManager() {
                 Manage supported device manufacturers and models
               </CardDescription>
             </div>
-            <Button variant="outline" onClick={handleExport} disabled={isExporting}>
+            <Button
+              variant="outline"
+              onClick={handleExport}
+              disabled={isExporting}
+            >
               <Download className="h-4 w-4 mr-2" />
               {isExporting ? "Exporting..." : "Export Data"}
             </Button>
@@ -329,12 +415,12 @@ export function DeviceCatalogManager() {
                 placeholder="Search manufacturer or model..."
                 className="pl-10"
                 value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
+                onChange={event => setSearchQuery(event.target.value)}
               />
             </div>
             <Select
               value={statusFilter}
-              onValueChange={(value) => setStatusFilter(value as CatalogStatusFilter)}
+              onValueChange={value => setStatusFilter(value as CatalogStatusFilter)}
             >
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="All Status" />
@@ -362,113 +448,147 @@ export function DeviceCatalogManager() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {catalogQuery.isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="px-5 py-8 text-center text-muted-foreground">
-                      Loading device catalog...
-                    </TableCell>
-                  </TableRow>
-                ) : models.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="px-5 py-8 text-center text-muted-foreground">
-                      No device models in catalog.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  models.map((model) => (
-                    <TableRow key={model.id} className="h-[72px]">
-                      <TableCell className="px-5 font-semibold text-foreground">{model.manufacturer}</TableCell>
-                      <TableCell className="px-5 font-semibold text-foreground">{model.model}</TableCell>
-                      <TableCell className="px-5">
-                        <Badge
-                          variant="outline"
-                          className={`h-6 rounded-md px-2 text-xs font-bold ${
-                            protocolBadgeClass[model.protocolType] ?? "border-muted bg-muted text-muted-foreground"
-                          }`}
+                {catalogQuery.isLoading
+                  ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={7}
+                          className="px-5 py-8 text-center text-muted-foreground"
                         >
-                          {model.protocolType}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="px-5 text-muted-foreground">
-                        {model.defaultPort}
-                      </TableCell>
-                      <TableCell className="px-5">
-                        <div className="flex items-center gap-1.5">
-                          {model.supportedFeatures.length > 0 ? (
-                            model.supportedFeatures.map((feature) => (
-                              <span key={feature} title={feature}>
-                                {feature === "obd2" ? (
-                                  <Gauge className={`h-4 w-4 ${featureIconClass[feature]}`} />
-                                ) : feature === "fuel" ? (
-                                  <Fuel className={`h-4 w-4 ${featureIconClass[feature]}`} />
-                                ) : feature === "sos" ? (
-                                  <AlertTriangle className={`h-4 w-4 ${featureIconClass[feature]}`} />
-                                ) : null}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-muted-foreground text-sm">Basic</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-5">
-                        <Badge
-                          variant="outline"
-                          className={`h-6 rounded-md px-2 text-xs font-bold ${
-                            statusBadgeClass[model.status] ?? "border-muted bg-muted text-muted-foreground"
-                          }`}
-                        >
-                          {statusLabel[model.status] ?? model.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="px-5 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-44">
-                            <DropdownMenuItem onClick={() => handleOpenEdit(model)}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              disabled={updateCatalogEntry.isPending}
-                              onClick={() => handleMarkDeprecated(model)}
-                            >
-                              <Archive className="mr-2 h-4 w-4" />
-                              Mark Deprecated
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              disabled={updateCatalogEntry.isPending}
-                              onClick={() => handleBlockModel(model)}
-                            >
-                              <X className="mr-2 h-4 w-4" />
-                              Block Model
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              disabled={deleteCatalogEntry.isPending}
-                              onClick={() => handleDeleteModel(model)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                          Loading device catalog...
+                        </TableCell>
+                      </TableRow>
+                    )
+                  : models.length === 0
+                    ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={7}
+                            className="px-5 py-8 text-center text-muted-foreground"
+                          >
+                            No device models in catalog.
+                          </TableCell>
+                        </TableRow>
+                      )
+                    : (
+                        models.map(model => (
+                          <TableRow
+                            key={model.id}
+                            className="h-[72px]"
+                          >
+                            <TableCell className="px-5 font-semibold text-foreground">{model.manufacturer}</TableCell>
+                            <TableCell className="px-5 font-semibold text-foreground">{model.model}</TableCell>
+                            <TableCell className="px-5">
+                              <Badge
+                                variant="outline"
+                                className={`h-6 rounded-md px-2 text-xs font-bold ${
+                                  protocolBadgeClass[model.protocolType] ?? "border-muted bg-muted text-muted-foreground"
+                                }`}
+                              >
+                                {model.protocolType}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="px-5 text-muted-foreground">
+                              {model.defaultPort}
+                            </TableCell>
+                            <TableCell className="px-5">
+                              <div className="flex items-center gap-1.5">
+                                {model.supportedFeatures.length > 0
+                                  ? (
+                                      model.supportedFeatures.map(feature => (
+                                        <span
+                                          key={feature}
+                                          title={feature}
+                                        >
+                                          {feature === "obd2"
+                                            ? (
+                                                <Gauge className={`h-4 w-4 ${featureIconClass[feature]}`} />
+                                              )
+                                            : feature === "fuel"
+                                              ? (
+                                                  <Fuel className={`h-4 w-4 ${featureIconClass[feature]}`} />
+                                                )
+                                              : feature === "sos"
+                                                ? (
+                                                    <AlertTriangle className={`h-4 w-4 ${featureIconClass[feature]}`} />
+                                                  )
+                                                : null}
+                                        </span>
+                                      ))
+                                    )
+                                  : (
+                                      <span className="text-muted-foreground text-sm">Basic</span>
+                                    )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="px-5">
+                              <Badge
+                                variant="outline"
+                                className={`h-6 rounded-md px-2 text-xs font-bold ${
+                                  statusBadgeClass[model.status] ?? "border-muted bg-muted text-muted-foreground"
+                                }`}
+                              >
+                                {statusLabel[model.status] ?? model.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="px-5 text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-44"
+                                >
+                                  <DropdownMenuItem onClick={() => handleOpenEdit(model)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    disabled={updateCatalogEntry.isPending}
+                                    onClick={() => handleMarkDeprecated(model)}
+                                  >
+                                    <Archive className="mr-2 h-4 w-4" />
+                                    Mark Deprecated
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    disabled={updateCatalogEntry.isPending}
+                                    onClick={() => handleBlockModel(model)}
+                                  >
+                                    <X className="mr-2 h-4 w-4" />
+                                    Block Model
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    disabled={deleteCatalogEntry.isPending}
+                                    onClick={() => handleDeleteModel(model)}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
 
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+      <Dialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+      >
         <DialogContent className="sm:max-w-[620px]">
           <DialogHeader>
             <DialogTitle>Add Device Model</DialogTitle>
@@ -491,7 +611,10 @@ export function DeviceCatalogManager() {
                     <FormItem>
                       <FormLabel>Manufacturer</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Teltonika" {...field} />
+                        <Input
+                          placeholder="e.g., Teltonika"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -504,7 +627,10 @@ export function DeviceCatalogManager() {
                     <FormItem>
                       <FormLabel>Model</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., FMC130" {...field} />
+                        <Input
+                          placeholder="e.g., FMC130"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -519,7 +645,11 @@ export function DeviceCatalogManager() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Protocol Type</FormLabel>
-                      <Select name={field.name} value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        name={field.name}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select protocol" />
@@ -567,15 +697,25 @@ export function DeviceCatalogManager() {
                   <FormItem>
                     <FormLabel>Supported Features</FormLabel>
                     <div className="flex flex-wrap gap-5">
-                      {DEVICE_FEATURE_OPTIONS.map(({ value, label, icon: Icon }) => (
-                        <FormItem key={value} className="flex items-center gap-2 space-y-0">
+                      {DEVICE_FEATURE_OPTIONS.map(({
+                        value,
+                        label,
+                        icon: Icon,
+                      }) => (
+                        <FormItem
+                          key={value}
+                          className="flex items-center gap-2 space-y-0"
+                        >
                           <FormControl>
                             <Checkbox
                               checked={field.value.includes(value)}
                               onCheckedChange={(checked) => {
                                 const nextValue = checked
-                                  ? [...field.value, value]
-                                  : field.value.filter((feature) => feature !== value);
+                                  ? [
+                                      ...field.value,
+                                      value,
+                                    ]
+                                  : field.value.filter(feature => feature !== value);
                                 field.onChange(nextValue);
                               }}
                             />
@@ -598,7 +738,11 @@ export function DeviceCatalogManager() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select name={field.name} value={field.value} onValueChange={field.onChange}>
+                    <Select
+                      name={field.name}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
@@ -654,7 +798,10 @@ export function DeviceCatalogManager() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={editingModel !== null} onOpenChange={handleEditDialogOpenChange}>
+      <Dialog
+        open={editingModel !== null}
+        onOpenChange={handleEditDialogOpenChange}
+      >
         <DialogContent className="sm:max-w-[620px]">
           <DialogHeader>
             <DialogTitle>Edit Device Model</DialogTitle>
@@ -677,7 +824,10 @@ export function DeviceCatalogManager() {
                     <FormItem>
                       <FormLabel>Manufacturer</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Teltonika" {...field} />
+                        <Input
+                          placeholder="e.g., Teltonika"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -690,7 +840,10 @@ export function DeviceCatalogManager() {
                     <FormItem>
                       <FormLabel>Model</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., FMC130" {...field} />
+                        <Input
+                          placeholder="e.g., FMC130"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -705,7 +858,11 @@ export function DeviceCatalogManager() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Protocol Type</FormLabel>
-                      <Select name={field.name} value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        name={field.name}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select protocol" />
@@ -753,15 +910,25 @@ export function DeviceCatalogManager() {
                   <FormItem>
                     <FormLabel>Supported Features</FormLabel>
                     <div className="flex flex-wrap gap-5">
-                      {DEVICE_FEATURE_OPTIONS.map(({ value, label, icon: Icon }) => (
-                        <FormItem key={value} className="flex items-center gap-2 space-y-0">
+                      {DEVICE_FEATURE_OPTIONS.map(({
+                        value,
+                        label,
+                        icon: Icon,
+                      }) => (
+                        <FormItem
+                          key={value}
+                          className="flex items-center gap-2 space-y-0"
+                        >
                           <FormControl>
                             <Checkbox
                               checked={field.value.includes(value)}
                               onCheckedChange={(checked) => {
                                 const nextValue = checked
-                                  ? [...field.value, value]
-                                  : field.value.filter((feature) => feature !== value);
+                                  ? [
+                                      ...field.value,
+                                      value,
+                                    ]
+                                  : field.value.filter(feature => feature !== value);
                                 field.onChange(nextValue);
                               }}
                             />

@@ -1,15 +1,21 @@
-import { useState } from "react";
 import type { ChangeEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Eye, EyeOff, Lock, ShieldCheck } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import * as z from "zod";
-
 import { useResetPassword } from "@truckmoov/api/auth";
+import {
+  ArrowLeft, Eye, EyeOff, Lock, ShieldCheck,
+} from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import {
+  Link, useNavigate, useSearchParams,
+} from "react-router-dom";
+import { toast } from "sonner";
+
+import * as z from "zod";
 import { Button } from "@/components/shadcn/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import {
   Form,
   FormControl,
@@ -22,13 +28,22 @@ import { Input } from "@/components/shadcn/input";
 
 const resetPasswordSchema = z
   .object({
-    newPassword: z.string().min(8, "Password must be at least 8 characters."),
-    confirmPassword: z.string().min(1, "Confirm your new password."),
+    newPassword: z.string().min(
+      8,
+      "Password must be at least 8 characters.",
+    ),
+    confirmPassword: z.string().min(
+      1,
+      "Confirm your new password.",
+    ),
   })
-  .refine((values) => values.newPassword === values.confirmPassword, {
-    message: "Passwords do not match.",
-    path: ["confirmPassword"],
-  });
+  .refine(
+    values => values.newPassword === values.confirmPassword,
+    {
+      message: "Passwords do not match.",
+      path: ["confirmPassword"],
+    },
+  );
 
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
@@ -51,7 +66,10 @@ function PasswordFieldControl({
   autoComplete: string;
   inputRef?: (instance: HTMLInputElement | null) => void;
 }) {
-  const [showPassword, setShowPassword] = useState(false);
+  const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
 
   return (
     <div className="relative">
@@ -71,7 +89,7 @@ function PasswordFieldControl({
       </FormControl>
       <button
         type="button"
-        onClick={() => setShowPassword((current) => !current)}
+        onClick={() => setShowPassword(current => !current)}
         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
         tabIndex={-1}
         aria-label={showPassword ? "Hide password" : "Show password"}
@@ -113,7 +131,10 @@ export default function ResetPassword() {
       {
         onSuccess: () => {
           toast.success("Password reset completed.");
-          navigate("/auth", { replace: true });
+          navigate(
+            "/auth",
+            { replace: true },
+          );
         },
         onError: (error) => {
           toast.error(error.message);
@@ -136,77 +157,90 @@ export default function ResetPassword() {
         </CardHeader>
 
         <CardContent>
-          {!hasToken ? (
-            <div className="space-y-4 text-center">
-              <p className="text-sm text-muted-foreground">
-                This reset link is invalid or missing its token. Request a new password reset link to continue.
-              </p>
-              <Button asChild className="w-full">
-                <Link to="/auth/forgot-password">
-                  Request a new link
-                </Link>
-              </Button>
-              <Button variant="ghost" asChild className="w-full">
-                <Link to="/auth">
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to sign in
-                </Link>
-              </Button>
-            </div>
-          ) : (
-            <Form {...form}>
-              <form id={RESET_PASSWORD_FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="newPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>New password</FormLabel>
-                      <PasswordFieldControl
-                        placeholder="At least 8 characters"
-                        autoComplete="new-password"
-                        value={field.value}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                        inputRef={field.ref}
-                      />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+          {!hasToken
+            ? (
+                <div className="space-y-4 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    This reset link is invalid or missing its token. Request a new password reset link to continue.
+                  </p>
+                  <Button
+                    asChild
+                    className="w-full"
+                  >
+                    <Link to="/auth/forgot-password">
+                      Request a new link
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    asChild
+                    className="w-full"
+                  >
+                    <Link to="/auth">
+                      <ArrowLeft className="h-4 w-4" />
+                      Back to sign in
+                    </Link>
+                  </Button>
+                </div>
+              )
+            : (
+                <Form {...form}>
+                  <form
+                    id={RESET_PASSWORD_FORM_ID}
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="space-y-4"
+                  >
+                    <FormField
+                      control={form.control}
+                      name="newPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>New password</FormLabel>
+                          <PasswordFieldControl
+                            placeholder="At least 8 characters"
+                            autoComplete="new-password"
+                            value={field.value}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            name={field.name}
+                            inputRef={field.ref}
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm new password</FormLabel>
-                      <PasswordFieldControl
-                        placeholder="Repeat your new password"
-                        autoComplete="new-password"
-                        value={field.value}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                        inputRef={field.ref}
-                      />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="confirmPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Confirm new password</FormLabel>
+                          <PasswordFieldControl
+                            placeholder="Repeat your new password"
+                            autoComplete="new-password"
+                            value={field.value}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            name={field.name}
+                            inputRef={field.ref}
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <Button
-                  type="submit"
-                  form={RESET_PASSWORD_FORM_ID}
-                  className="w-full"
-                  loading={resetPassword.isPending}
-                >
-                  Update password
-                </Button>
-              </form>
-            </Form>
-          )}
+                    <Button
+                      type="submit"
+                      form={RESET_PASSWORD_FORM_ID}
+                      className="w-full"
+                      loading={resetPassword.isPending}
+                    >
+                      Update password
+                    </Button>
+                  </form>
+                </Form>
+              )}
         </CardContent>
       </Card>
     </div>

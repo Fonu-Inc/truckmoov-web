@@ -1,7 +1,10 @@
-import { useState, useCallback } from 'react';
-import { toast } from 'sonner';
+import {
+  useCallback,
+  useState,
+} from "react";
+import { toast } from "sonner";
 
-export interface DeviceWithTelemetry {
+export type DeviceWithTelemetry = {
   id: string;
   imei: string;
   manufacturer: string;
@@ -21,7 +24,7 @@ export interface DeviceWithTelemetry {
   fonu_sim_id?: string | null;
   sim_operator?: string | null;
   sim_status_snapshot?: string | null;
-  health_status?: 'online' | 'degraded' | 'offline' | null;
+  health_status?: "online" | "degraded" | "offline" | null;
   expected_heartbeat_seconds?: number;
   online_threshold_seconds?: number;
   offline_threshold_seconds?: number;
@@ -33,9 +36,9 @@ export interface DeviceWithTelemetry {
   heading?: number;
   fuel_level?: number;
   engine_status?: string;
-}
+};
 
-export interface TelemetryRecord {
+export type TelemetryRecord = {
   id: string;
   device_id: string;
   timestamp: string;
@@ -49,9 +52,9 @@ export interface TelemetryRecord {
   harsh_acceleration: boolean;
   harsh_cornering: boolean;
   overspeeding: boolean;
-}
+};
 
-export interface DriverBehaviorEvent {
+export type DriverBehaviorEvent = {
   id: string;
   device_id: string;
   event_type: string;
@@ -60,31 +63,50 @@ export interface DriverBehaviorEvent {
   longitude: number | null;
   speed: number | null;
   created_at: string;
-}
+};
 
 export function useDeviceTelemetry(_providedTenantId?: string, _enableSimulation = false) {
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [trailHistory] = useState<Map<string, Array<{ lat: number; lng: number; timestamp: string }>>>(new Map());
+  const [
+    isSimulating,
+    setIsSimulating,
+  ] = useState(false);
+  const [trailHistory] = useState<Map<string, Array<{
+    lat: number;
+    lng: number;
+    timestamp: string;
+  }>>>(new Map());
 
-  const startSimulation = useCallback(() => {
-    setIsSimulating(true);
-    toast.success('Simulation Started', {
-      description: 'Devices will now move in real-time',
-    });
-  }, []);
+  const startSimulation = useCallback(
+    () => {
+      setIsSimulating(true);
+      toast.success(
+        "Simulation Started",
+        { description: "Devices will now move in real-time" },
+      );
+    },
+    [],
+  );
 
-  const stopSimulation = useCallback(() => {
-    setIsSimulating(false);
-    toast.info('Simulation Stopped', {
-      description: 'Device positions are now static',
-    });
-  }, []);
+  const stopSimulation = useCallback(
+    () => {
+      setIsSimulating(false);
+      toast.info(
+        "Simulation Stopped",
+        { description: "Device positions are now static" },
+      );
+    },
+    [],
+  );
 
-  const clearTrailHistory = useCallback(() => {
-    toast.success('Trails Cleared', {
-      description: 'All device trail history has been cleared',
-    });
-  }, []);
+  const clearTrailHistory = useCallback(
+    () => {
+      toast.success(
+        "Trails Cleared",
+        { description: "All device trail history has been cleared" },
+      );
+    },
+    [],
+  );
 
   return {
     devices: [] as DeviceWithTelemetry[],

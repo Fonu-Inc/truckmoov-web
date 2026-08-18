@@ -1,7 +1,11 @@
 import { daysBetween } from "@truckmoov/app-core/utils/time-utils";
-import { Sparkles, Clock, ArrowRight } from "lucide-react";
-import { Button } from "@/components/shadcn/button";
+import {
+  ArrowRight,
+  Clock,
+  Sparkles,
+} from "lucide-react";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/shadcn/button";
 
 /**
  * US-E01-008 — Trial banner shown to tenants in trial status.
@@ -9,22 +13,33 @@ import { Link } from "react-router-dom";
  * Auto-hides for non-trial tenants and on platform/aggregator routes.
  */
 export function TrialBanner() {
-  const tenant: { id: string; status: string; created_at: string } | null = null;
+  const tenant: {
+    id: string;
+    status: string;
+    created_at: string;
+  } | null = null;
 
-  if (!tenant || tenant.status !== "trial") return null;
+  if (!tenant || tenant.status !== "trial")
+    return null;
 
   // Default 30-day trial period from creation
   const TRIAL_LENGTH_DAYS = 30;
   const created = tenant.created_at ? new Date(tenant.created_at) : new Date();
-  const elapsed = daysBetween(created, new Date());
-  const daysRemaining = Math.max(0, TRIAL_LENGTH_DAYS - elapsed);
+  const elapsed = daysBetween(
+    created,
+    new Date(),
+  );
+  const daysRemaining = Math.max(
+    0,
+    TRIAL_LENGTH_DAYS - elapsed,
+  );
 
-  const tone =
-    daysRemaining <= 3
+  const tone
+    = daysRemaining <= 3
       ? "border-destructive/40 bg-destructive/10 text-destructive"
       : daysRemaining <= 7
-      ? "border-warning/40 bg-warning/10 text-warning"
-      : "border-primary/40 bg-primary/10 text-primary";
+        ? "border-warning/40 bg-warning/10 text-warning"
+        : "border-primary/40 bg-primary/10 text-primary";
 
   return (
     <div className={`mx-6 mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-2.5 ${tone}`}>
@@ -38,7 +53,12 @@ export function TrialBanner() {
             : `${daysRemaining} day${daysRemaining === 1 ? "" : "s"} remaining`}
         </span>
       </div>
-      <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
+      <Button
+        asChild
+        size="sm"
+        variant="outline"
+        className="h-8 gap-1.5"
+      >
         <Link to="/settings?tab=subscription">
           Upgrade now
           <ArrowRight className="h-3.5 w-3.5" />
@@ -47,6 +67,3 @@ export function TrialBanner() {
     </div>
   );
 }
-
-
-

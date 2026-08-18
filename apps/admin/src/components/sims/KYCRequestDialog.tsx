@@ -1,5 +1,10 @@
+import {
+  Building2,
+  Loader2,
+} from "lucide-react";
 import { useState } from "react";
-import { useAuthStore } from "@/stores/authStore";
+import { toast } from "sonner";
+import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
@@ -8,20 +13,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
-import { Button } from "@/components/shadcn/button";
-import { Textarea } from "@/components/shadcn/textarea";
 import { Label } from "@/components/shadcn/label";
-import { Loader2, Building2 } from "lucide-react";
-import { toast } from "sonner";
+import { Textarea } from "@/components/shadcn/textarea";
+import { useAuthStore } from "@/stores/authStore";
 
-interface KYCRequestDialogProps {
+type KYCRequestDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tenantId: string;
   tenantName: string | null;
   requestId: string;
   onComplete: () => void;
-}
+};
 
 export function KYCRequestDialog({
   open,
@@ -32,16 +35,24 @@ export function KYCRequestDialog({
   onComplete,
 }: KYCRequestDialogProps) {
   const { user } = useAuthStore();
-  const [reason, setReason] = useState("");
-  const [processing, setProcessing] = useState(false);
+  const [
+    reason,
+    setReason,
+  ] = useState("");
+  const [
+    processing,
+    setProcessing,
+  ] = useState(false);
 
   const handleSubmit = async () => {
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -49,7 +60,11 @@ export function KYCRequestDialog({
             Request KYB/KYC Completion
           </DialogTitle>
           <DialogDescription>
-            Send a notification to {tenantName || "the tenant"} requesting
+            Send a notification to
+            {" "}
+            {tenantName || "the tenant"}
+            {" "}
+            requesting
             completion of their business verification.
           </DialogDescription>
         </DialogHeader>
@@ -57,8 +72,10 @@ export function KYCRequestDialog({
         <div className="space-y-4">
           <div className="p-3 bg-warning/10 border border-warning/30 rounded-md text-sm text-warning">
             This SIM request cannot be approved until the tenant completes
-            KYB/KYC verification. The request will be marked as{" "}
-            <strong>KYB Required</strong>.
+            KYB/KYC verification. The request will be marked as
+            {" "}
+            <strong>KYB Required</strong>
+            .
           </div>
 
           <div className="space-y-2">
@@ -69,7 +86,7 @@ export function KYCRequestDialog({
               id="reason"
               placeholder="Please complete your business verification by uploading the required documents..."
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={e => setReason(e.target.value)}
               rows={4}
             />
           </div>
@@ -85,7 +102,10 @@ export function KYCRequestDialog({
           >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={processing || !reason.trim()}>
+          <Button
+            onClick={handleSubmit}
+            disabled={processing || !reason.trim()}
+          >
             {processing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Send Request
           </Button>
@@ -94,6 +114,3 @@ export function KYCRequestDialog({
     </Dialog>
   );
 }
-
-
-

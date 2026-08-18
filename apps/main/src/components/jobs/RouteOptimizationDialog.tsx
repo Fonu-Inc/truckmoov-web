@@ -1,54 +1,62 @@
-import { useState, useMemo } from "react";
+import type { DragEndEvent } from "@dnd-kit/core";
 import {
-  DndContext,
   closestCenter,
+  DndContext,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
 } from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
   useSortable,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/shadcn/dialog";
-import { Button } from "@/components/shadcn/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  AlertTriangle, ArrowRight, Brain, CheckCircle, Clock, GripVertical,
+  MapPin, Navigation, Play, Plus, RotateCcw, Route, Sparkles,
+  TrendingDown, Truck, X, Zap,
+} from "lucide-react";
+import {
+  useMemo, useState,
+} from "react";
+import { toast } from "sonner";
+import {
+  Alert, AlertDescription,
+} from "@/components/shadcn/alert";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "@/components/shadcn/dialog";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Separator } from "@/components/shadcn/separator";
-import { Alert, AlertDescription } from "@/components/shadcn/alert";
-import {
-  GripVertical, MapPin, Clock, Route, Truck, ArrowRight,
-  Play, RotateCcw, Zap, Navigation, Plus, X, CheckCircle,
-  Brain, Sparkles, AlertTriangle, TrendingDown
-} from "lucide-react";
-import { toast } from "sonner";
 
 type Waypoint = any;
 
-interface RouteOptimizationDialogProps {
+type RouteOptimizationDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialWaypoints?: Waypoint[];
   onOptimize?: (waypoints: Waypoint[]) => void;
-}
+};
 
 // Sortable waypoint item
 
 // Sortable waypoint item
-function SortableWaypoint({ 
-  waypoint, 
-  index, 
+function SortableWaypoint({
+  waypoint,
+  index,
   onRemove,
-  totalWaypoints 
-}: { 
-  waypoint: Waypoint; 
+  totalWaypoints,
+}: {
+  waypoint: Waypoint;
   index: number;
   onRemove: (id: string) => void;
   totalWaypoints: number;
@@ -80,12 +88,16 @@ function SortableWaypoint({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative"
+    >
       {/* Connector line */}
       {index < totalWaypoints - 1 && (
         <div className="absolute left-5 top-full w-0.5 h-4 bg-border z-0" />
       )}
-      
+
       <Card className={`border ${isDragging ? "ring-2 ring-primary shadow-lg" : "border-border/50"}`}>
         <CardContent className="p-3">
           <div className="flex items-start gap-3">
@@ -106,7 +118,10 @@ function SortableWaypoint({
             {/* Waypoint details */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <Badge variant="outline" className={`text-xs capitalize ${getTypeStyles()}`}>
+                <Badge
+                  variant="outline"
+                  className={`text-xs capitalize ${getTypeStyles()}`}
+                >
                   {waypoint.type}
                 </Badge>
                 {waypoint.jobReference && (
@@ -114,24 +129,30 @@ function SortableWaypoint({
                 )}
               </div>
               <p className="text-sm font-medium truncate">{waypoint.address}</p>
-              
+
               <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                 {waypoint.estimatedArrival && (
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    ETA: {waypoint.estimatedArrival}
+                    ETA:
+                    {" "}
+                    {waypoint.estimatedArrival}
                   </span>
                 )}
                 {waypoint.distance !== undefined && index > 0 && (
                   <span className="flex items-center gap-1">
                     <Navigation className="h-3 w-3" />
-                    {waypoint.distance.toFixed(1)} km
+                    {waypoint.distance.toFixed(1)}
+                    {" "}
+                    km
                   </span>
                 )}
                 {waypoint.duration !== undefined && (
                   <span className="flex items-center gap-1">
                     <MapPin className="h-3 w-3" />
-                    {waypoint.duration} min stop
+                    {waypoint.duration}
+                    {" "}
+                    min stop
                   </span>
                 )}
               </div>
@@ -206,11 +227,14 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   const R = 6371; // Earth's radius in km
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const a
+    = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+      + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
+      * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(
+    Math.sqrt(a),
+    Math.sqrt(1 - a),
+  );
   return R * c;
 }
 
@@ -218,27 +242,35 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 function calculateETAs(waypoints: Waypoint[], startTime: Date = new Date()): Waypoint[] {
   const avgSpeed = 50; // km/h
   let currentTime = new Date(startTime);
-  
+
   return waypoints.map((wp, index) => {
     let distance = 0;
     if (index > 0) {
       const prev = waypoints[index - 1];
-      distance = calculateDistance(prev.lat, prev.lng, wp.lat, wp.lng);
+      distance = calculateDistance(
+        prev.lat,
+        prev.lng,
+        wp.lat,
+        wp.lng,
+      );
       const travelTime = (distance / avgSpeed) * 60; // minutes
       currentTime = new Date(currentTime.getTime() + travelTime * 60 * 1000);
     }
-    
-    const eta = currentTime.toLocaleTimeString("en-US", { 
-      hour: "2-digit", 
-      minute: "2-digit",
-      hour12: false 
-    });
-    
+
+    const eta = currentTime.toLocaleTimeString(
+      "en-US",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      },
+    );
+
     // Add stop duration for next calculation
     if (wp.duration) {
       currentTime = new Date(currentTime.getTime() + wp.duration * 60 * 1000);
     }
-    
+
     return {
       ...wp,
       distance: index > 0 ? distance : undefined,
@@ -249,28 +281,37 @@ function calculateETAs(waypoints: Waypoint[], startTime: Date = new Date()): Way
 
 // Simple greedy optimization (nearest neighbor)
 function optimizeRoute(waypoints: Waypoint[]): Waypoint[] {
-  if (waypoints.length <= 2) return waypoints;
-  
+  if (waypoints.length <= 2)
+    return waypoints;
+
   const optimized: Waypoint[] = [waypoints[0]];
   const remaining = [...waypoints.slice(1)];
-  
+
   while (remaining.length > 0) {
     const last = optimized[optimized.length - 1];
     let nearestIndex = 0;
     let nearestDistance = Infinity;
-    
+
     remaining.forEach((wp, index) => {
-      const dist = calculateDistance(last.lat, last.lng, wp.lat, wp.lng);
+      const dist = calculateDistance(
+        last.lat,
+        last.lng,
+        wp.lat,
+        wp.lng,
+      );
       if (dist < nearestDistance) {
         nearestDistance = dist;
         nearestIndex = index;
       }
     });
-    
+
     optimized.push(remaining[nearestIndex]);
-    remaining.splice(nearestIndex, 1);
+    remaining.splice(
+      nearestIndex,
+      1,
+    );
   }
-  
+
   return optimized;
 }
 
@@ -280,65 +321,86 @@ export function RouteOptimizationDialog({
   initialWaypoints = mockWaypoints,
   onOptimize,
 }: RouteOptimizationDialogProps) {
-  const [waypoints, setWaypoints] = useState<Waypoint[]>(
-    calculateETAs(initialWaypoints)
+  const [
+    waypoints,
+    setWaypoints,
+  ] = useState<Waypoint[]>(
+    calculateETAs(initialWaypoints),
   );
-  const [aiAnalysis, setAiAnalysis] = useState<{
+  const [
+    aiAnalysis,
+    setAiAnalysis,
+  ] = useState<{
     reasoning?: string;
     traffic_considerations?: string[];
     warnings?: string[];
     savings_percentage?: string;
   } | null>(null);
-  
+
   const aiOptimize = async (...args: any[]) => {};
   const isOptimizing = false;
 
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(
+      KeyboardSensor,
+      { coordinateGetter: sortableKeyboardCoordinates },
+    ),
   );
 
   // Calculate route stats
-  const routeStats = useMemo(() => {
-    let totalDistance = 0;
-    let totalDuration = 0;
-    
-    waypoints.forEach((wp, index) => {
-      if (index > 0) {
-        const prev = waypoints[index - 1];
-        totalDistance += calculateDistance(prev.lat, prev.lng, wp.lat, wp.lng);
-      }
-      if (wp.duration) {
-        totalDuration += wp.duration;
-      }
-    });
-    
-    // Add travel time (50 km/h average)
-    const travelTime = (totalDistance / 50) * 60;
-    totalDuration += travelTime;
-    
-    const hours = Math.floor(totalDuration / 60);
-    const minutes = Math.round(totalDuration % 60);
-    
-    return {
-      totalDistance: totalDistance.toFixed(1),
-      totalDuration: hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`,
-      stopCount: waypoints.length,
-      pickups: waypoints.filter(w => w.type === "pickup").length,
-      deliveries: waypoints.filter(w => w.type === "delivery").length,
-    };
-  }, [waypoints]);
+  const routeStats = useMemo(
+    () => {
+      let totalDistance = 0;
+      let totalDuration = 0;
+
+      waypoints.forEach((wp, index) => {
+        if (index > 0) {
+          const prev = waypoints[index - 1];
+          totalDistance += calculateDistance(
+            prev.lat,
+            prev.lng,
+            wp.lat,
+            wp.lng,
+          );
+        }
+        if (wp.duration) {
+          totalDuration += wp.duration;
+        }
+      });
+
+      // Add travel time (50 km/h average)
+      const travelTime = (totalDistance / 50) * 60;
+      totalDuration += travelTime;
+
+      const hours = Math.floor(totalDuration / 60);
+      const minutes = Math.round(totalDuration % 60);
+
+      return {
+        totalDistance: totalDistance.toFixed(1),
+        totalDuration: hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`,
+        stopCount: waypoints.length,
+        pickups: waypoints.filter(w => w.type === "pickup").length,
+        deliveries: waypoints.filter(w => w.type === "delivery").length,
+      };
+    },
+    [waypoints],
+  );
 
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    
+    const {
+      active, over,
+    } = event;
+
     if (over && active.id !== over.id) {
       const oldIndex = waypoints.findIndex(w => w.id === active.id);
       const newIndex = waypoints.findIndex(w => w.id === over.id);
-      
-      const newWaypoints = arrayMove(waypoints, oldIndex, newIndex);
+
+      const newWaypoints = arrayMove(
+        waypoints,
+        oldIndex,
+        newIndex,
+      );
       setWaypoints(calculateETAs(newWaypoints));
       setAiAnalysis(null);
     }
@@ -351,13 +413,16 @@ export function RouteOptimizationDialog({
   };
 
   const handleAIOptimize = async () => {
-    const result = await aiOptimize(waypoints, {
-      startTime: new Date().toISOString(),
-      preferences: {
-        minimizeDistance: true,
-        minimizeTime: true,
+    const result = await aiOptimize(
+      waypoints,
+      {
+        startTime: new Date().toISOString(),
+        preferences: {
+          minimizeDistance: true,
+          minimizeTime: true,
+        },
       },
-    });
+    );
 
     if (result) {
       setWaypoints(result.optimized_waypoints);
@@ -390,7 +455,10 @@ export function RouteOptimizationDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -438,9 +506,9 @@ export function RouteOptimizationDialog({
 
         {/* Action buttons */}
         <div className="flex gap-2">
-          <Button 
-            variant="default" 
-            size="sm" 
+          <Button
+            variant="default"
+            size="sm"
             onClick={handleAIOptimize}
             disabled={isOptimizing}
             className="flex-1 gap-2"
@@ -449,16 +517,20 @@ export function RouteOptimizationDialog({
             {isOptimizing ? "AI Analyzing..." : "AI Optimize"}
             <Sparkles className="h-3 w-3" />
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleBasicOptimize}
             disabled={isOptimizing}
           >
             <Zap className="h-4 w-4 mr-2" />
             Quick
           </Button>
-          <Button variant="outline" size="sm" onClick={handleReset}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleReset}
+          >
             <RotateCcw className="h-4 w-4 mr-2" />
             Reset
           </Button>
@@ -467,15 +539,18 @@ export function RouteOptimizationDialog({
         {/* AI Analysis Results */}
         {aiAnalysis && (
           <div className="space-y-2">
-            {aiAnalysis.savings_percentage && parseFloat(aiAnalysis.savings_percentage) > 0 && (
+            {aiAnalysis.savings_percentage && Number.parseFloat(aiAnalysis.savings_percentage) > 0 && (
               <Alert className="border-green-500/30 bg-green-500/10">
                 <TrendingDown className="h-4 w-4 text-green-500" />
                 <AlertDescription className="text-green-400">
-                  Route optimized! Saved {aiAnalysis.savings_percentage}% travel distance
+                  Route optimized! Saved
+                  {" "}
+                  {aiAnalysis.savings_percentage}
+                  % travel distance
                 </AlertDescription>
               </Alert>
             )}
-            
+
             {aiAnalysis.reasoning && (
               <div className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
                 <p className="font-medium text-foreground mb-1 flex items-center gap-2">
@@ -498,10 +573,13 @@ export function RouteOptimizationDialog({
             )}
 
             {aiAnalysis.warnings && aiAnalysis.warnings.length > 0 && (
-              <Alert variant="destructive" className="border-yellow-500/30 bg-yellow-500/10">
+              <Alert
+                variant="destructive"
+                className="border-yellow-500/30 bg-yellow-500/10"
+              >
                 <AlertTriangle className="h-4 w-4 text-yellow-500" />
                 <AlertDescription className="text-yellow-400">
-                  {aiAnalysis.warnings.join('. ')}
+                  {aiAnalysis.warnings.join(". ")}
                 </AlertDescription>
               </Alert>
             )}
@@ -540,13 +618,23 @@ export function RouteOptimizationDialog({
         <div className="flex items-center justify-between pt-4 border-t border-border">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Truck className="h-4 w-4" />
-            <span>Estimated fuel: ~{(parseFloat(routeStats.totalDistance) * 0.12).toFixed(1)}L</span>
+            <span>
+              Estimated fuel: ~
+              {(Number.parseFloat(routeStats.totalDistance) * 0.12).toFixed(1)}
+              L
+            </span>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button variant="gradient" onClick={handleApply}>
+            <Button
+              variant="gradient"
+              onClick={handleApply}
+            >
               <CheckCircle className="h-4 w-4 mr-2" />
               Apply Route
             </Button>

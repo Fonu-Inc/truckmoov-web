@@ -1,18 +1,20 @@
-import { create } from 'zustand';
-import { useAuthStore as useApiAuthStore } from '@truckmoov/api/lib/auth-store';
-import { AuthUser } from '@truckmoov/api/auth';
+import type { AuthUser } from "@truckmoov/api/auth";
+import { useAuthStore as useApiAuthStore } from "@truckmoov/api/lib/auth-store";
+import { create } from "zustand";
 
-interface AuthState {
+type AuthState = {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isAuthReady: boolean;
   bootstrapFromSession: () => Promise<void>;
   syncFromSession: () => void;
   logout: () => void;
-}
+};
 
 function getSessionState() {
-  const { accessToken, user: apiUser } = useApiAuthStore.getState();
+  const {
+    accessToken, user: apiUser,
+  } = useApiAuthStore.getState();
 
   if (accessToken && apiUser) {
     return {
@@ -22,10 +24,12 @@ function getSessionState() {
     };
   }
 
-  return { user: null, isAuthenticated: false, isAuthReady: true };
+  return {
+    user: null, isAuthenticated: false, isAuthReady: true,
+  };
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>(set => ({
   user: null,
   isAuthenticated: false,
   isAuthReady: false,
@@ -37,6 +41,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   logout: () => {
     useApiAuthStore.getState().logout();
-    set({ user: null, isAuthenticated: false, isAuthReady: true });
+    set({
+      user: null, isAuthenticated: false, isAuthReady: true,
+    });
   },
 }));

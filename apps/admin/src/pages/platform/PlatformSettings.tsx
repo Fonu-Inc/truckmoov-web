@@ -1,15 +1,69 @@
-import { useEffect, useRef, useState } from "react";
+import type { Timezone } from "@truckmoov/app-core/utils/time-utils";
+import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
+import type { Currency } from "@/lib/currency";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
-import { getSystemSettingsQueryOptions, useUpdateProfile, useUpdateSystemSettings } from "@truckmoov/api/auth";
+import {
+  getSystemSettingsQueryOptions,
+  useUpdateProfile,
+  useUpdateSystemSettings,
+} from "@truckmoov/api/auth";
+import { TIMEZONES } from "@truckmoov/app-core/utils/time-utils";
+
+import {
+  Bell,
+  Camera,
+  CreditCard,
+  Database,
+  Globe,
+  Key,
+  RefreshCw,
+  Save,
+  Shield,
+  User as UserIcon,
+
+} from "lucide-react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/shadcn/avatar";
-import { useAuthStore } from "@/stores/authStore";
-import { Camera, User as UserIcon } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { CommunicationPricing } from "@/components/platform/CommunicationPricing";
+import { FeatureFlagsPanel } from "@/components/platform/FeatureFlagsPanel";
+import { IntegrationSettings } from "@/components/platform/IntegrationSettings";
+import { IntegrationsGovernance } from "@/components/platform/IntegrationsGovernance";
+import { KYCReviewWorkflow } from "@/components/platform/KYCReviewWorkflow";
+import { OrgUpgradeQueue } from "@/components/platform/OrgUpgradeQueue";
+import { PhoneNumberManagement } from "@/components/platform/PhoneNumberManagement";
+import { PlanPricingManager } from "@/components/platform/PlanPricingManager";
+import { PlatformAISettings } from "@/components/platform/PlatformAISettings";
+import { PlatformTeamManagement } from "@/components/platform/PlatformTeamManagement";
+import { SenderIdApprovalQueue } from "@/components/platform/SenderIdApprovalQueue";
+import { TelephonySettings } from "@/components/platform/TelephonySettings";
+import { TenantWalletManagement } from "@/components/platform/TenantWalletManagement";
+import { TieredServicesManager } from "@/components/platform/TieredServicesManager";
+import { WalletTransactionHistory } from "@/components/platform/WalletTransactionHistory";
+import { WebhookManagement } from "@/components/platform/WebhookManagement";
+import { WhatsAppAssistPanel } from "@/components/platform/WhatsAppAssistPanel";
+import { WhatsAppHealthDashboard } from "@/components/platform/WhatsAppHealthDashboard";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/shadcn/avatar";
+import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
 import {
   Form,
   FormControl,
@@ -20,10 +74,6 @@ import {
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Switch } from "@/components/shadcn/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { Separator } from "@/components/shadcn/separator";
-import { Badge } from "@/components/shadcn/badge";
 import {
   Select,
   SelectContent,
@@ -31,86 +81,91 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { Separator } from "@/components/shadcn/separator";
+import { Switch } from "@/components/shadcn/switch";
 import {
-  Settings,
-  Globe,
-  Bell,
-  Shield,
-  Database,
-  Zap,
-  Mail,
-  MessageSquare,
-  CreditCard,
-  Server,
-  Key,
-  Users,
-  Building2,
-  Save,
-  RefreshCw,
-  Phone,
-  FileCheck,
-  Wallet,
-  Bot,
-  Link2,
-  Layers,
-} from "lucide-react";
-import { TelephonySettings } from "@/components/platform/TelephonySettings";
-import { IntegrationSettings } from "@/components/platform/IntegrationSettings";
-import { WebhookManagement } from "@/components/platform/WebhookManagement";
-import { KYCReviewWorkflow } from "@/components/platform/KYCReviewWorkflow";
-import { CommunicationPricing } from "@/components/platform/CommunicationPricing";
-import { TenantWalletManagement } from "@/components/platform/TenantWalletManagement";
-import { WalletTransactionHistory } from "@/components/platform/WalletTransactionHistory";
-import { PlatformTeamManagement } from "@/components/platform/PlatformTeamManagement";
-import { WhatsAppAssistPanel } from "@/components/platform/WhatsAppAssistPanel";
-import { WhatsAppHealthDashboard } from "@/components/platform/WhatsAppHealthDashboard";
-import { PlatformAISettings } from "@/components/platform/PlatformAISettings";
-import { IntegrationsGovernance } from "@/components/platform/IntegrationsGovernance";
-import { TieredServicesManager } from "@/components/platform/TieredServicesManager";
-import { PhoneNumberManagement } from "@/components/platform/PhoneNumberManagement";
-import { SenderIdApprovalQueue } from "@/components/platform/SenderIdApprovalQueue";
-import { FeatureFlagsPanel } from "@/components/platform/FeatureFlagsPanel";
-import { OrgUpgradeQueue } from "@/components/platform/OrgUpgradeQueue";
-import { PlanPricingManager } from "@/components/platform/PlanPricingManager";
-import { toast } from "sonner";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/shadcn/tabs";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { usePreferences } from "@/contexts/PreferencesContext";
-import { CURRENCIES, type Currency } from "@/lib/currency";
-import { TIMEZONES, type Timezone } from "@truckmoov/app-core/utils/time-utils";
-import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
+import { CURRENCIES } from "@/lib/currency";
+import { useAuthStore } from "@/stores/authStore";
 
 const DATE_RANGE_OPTIONS: Record<ChartDateRange, string> = {
-  today: "Today",
-  yesterday: "Yesterday",
+  "today": "Today",
+  "yesterday": "Yesterday",
   "7d": "Last 7 Days",
   "30d": "Last 30 Days",
   "90d": "Last 90 Days",
 };
 
 const platformConfigurationSchema = z.object({
-  platformName: z.string().trim().min(1, "Platform name is required."),
+  platformName: z.string().trim().min(
+    1,
+    "Platform name is required.",
+  ),
   supportEmail: z.string().trim().email("Enter a valid support email."),
-  timezone: z.enum(["Africa/Lagos", "UTC"]),
-  language: z.enum(["en", "ha", "yo", "ig", "fr"]),
+  timezone: z.enum([
+    "Africa/Lagos",
+    "UTC",
+  ]),
+  language: z.enum([
+    "en",
+    "ha",
+    "yo",
+    "ig",
+    "fr",
+  ]),
   allowNewTenantRegistration: z.boolean(),
   maintenanceMode: z.boolean(),
   enableBetaFeatures: z.boolean(),
 });
 
 const dataRetentionSchema = z.object({
-  gpsDataRetentionDays: z.enum(["90", "180", "365", "730"]),
-  logRetentionDays: z.enum(["7", "30", "90"]),
-  backupFrequency: z.enum(["hourly", "daily", "weekly"]),
+  gpsDataRetentionDays: z.enum([
+    "90",
+    "180",
+    "365",
+    "730",
+  ]),
+  logRetentionDays: z.enum([
+    "7",
+    "30",
+    "90",
+  ]),
+  backupFrequency: z.enum([
+    "hourly",
+    "daily",
+    "weekly",
+  ]),
 });
 
 const profileSchema = z.object({
-  fullName: z.string().trim().min(1, "Full name is required."),
-  phoneNumber: z.string().trim().max(30, "Phone number is too long.").optional(),
+  fullName: z.string().trim().min(
+    1,
+    "Full name is required.",
+  ),
+  phoneNumber: z.string().trim().max(
+    30,
+    "Phone number is too long.",
+  ).optional(),
 });
 
 const displayPreferencesSchema = z.object({
-  timezone: z.enum(["WAT", "UTC"]),
-  defaultDateRange: z.enum(["today", "yesterday", "7d", "30d", "90d"]),
+  timezone: z.enum([
+    "WAT",
+    "UTC",
+  ]),
+  defaultDateRange: z.enum([
+    "today",
+    "yesterday",
+    "7d",
+    "30d",
+    "90d",
+  ]),
 });
 
 type PlatformConfigurationFormValues = z.infer<typeof platformConfigurationSchema>;
@@ -150,8 +205,16 @@ export default function PlatformSettings() {
   const updateProfile = useUpdateProfile();
   const updatePlatformConfiguration = useUpdateSystemSettings();
   const updateDataRetention = useUpdateSystemSettings();
-  const { currency, setCurrency } = useCurrency();
-  const { timezone, setTimezone, defaultDateRange, setDefaultDateRange } = usePreferences();
+  const {
+    currency,
+    setCurrency,
+  } = useCurrency();
+  const {
+    timezone,
+    setTimezone,
+    defaultDateRange,
+    setDefaultDateRange,
+  } = usePreferences();
 
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -176,79 +239,104 @@ export default function PlatformSettings() {
     defaultValues: DEFAULT_DATA_RETENTION_VALUES,
   });
 
-  const user = useAuthStore((s) => s.user);
-  const [profileAvatar, setProfileAvatar] = useState<string | undefined>(user?.avatar);
+  const user = useAuthStore(s => s.user);
+  const [
+    profileAvatar,
+    setProfileAvatar,
+  ] = useState<string | undefined>(user?.avatar);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (user) {
-      profileForm.reset({
-        fullName: user.name ?? "",
-        phoneNumber: user.phone ?? "",
-      });
-      setProfileAvatar(user.avatar);
-    }
-  }, [user?.id, profileForm]);
+  useEffect(
+    () => {
+      if (user) {
+        profileForm.reset({
+          fullName: user.name ?? "",
+          phoneNumber: user.phone ?? "",
+        });
+        setProfileAvatar(user.avatar);
+      }
+    },
+    [
+      user?.id,
+      profileForm,
+    ],
+  );
 
-  useEffect(() => {
-    displayPreferencesForm.reset({
+  useEffect(
+    () => {
+      displayPreferencesForm.reset({
+        timezone,
+        defaultDateRange,
+      });
+    },
+    [
       timezone,
       defaultDateRange,
-    });
-  }, [timezone, defaultDateRange, displayPreferencesForm]);
+      displayPreferencesForm,
+    ],
+  );
 
-  useEffect(() => {
-    if (!systemSettings) return;
+  useEffect(
+    () => {
+      if (!systemSettings)
+        return;
 
-    platformConfigurationForm.reset({
-      platformName: systemSettings.platformName ?? DEFAULT_PLATFORM_CONFIGURATION_VALUES.platformName,
-      supportEmail: systemSettings.supportEmail ?? DEFAULT_PLATFORM_CONFIGURATION_VALUES.supportEmail,
-      timezone: platformConfigurationSchema.shape.timezone.safeParse(systemSettings.defaults?.timezone).success
-        ? systemSettings.defaults?.timezone as PlatformConfigurationFormValues["timezone"]
-        : DEFAULT_PLATFORM_CONFIGURATION_VALUES.timezone,
-      language: platformConfigurationSchema.shape.language.safeParse(systemSettings.defaults?.language).success
-        ? systemSettings.defaults?.language as PlatformConfigurationFormValues["language"]
-        : DEFAULT_PLATFORM_CONFIGURATION_VALUES.language,
-      allowNewTenantRegistration:
-        systemSettings.features?.allowNewTenantRegistration ??
-        DEFAULT_PLATFORM_CONFIGURATION_VALUES.allowNewTenantRegistration,
-      maintenanceMode:
-        systemSettings.features?.maintenanceMode ??
-        DEFAULT_PLATFORM_CONFIGURATION_VALUES.maintenanceMode,
-      enableBetaFeatures:
-        systemSettings.features?.enableBetaFeatures ??
-        DEFAULT_PLATFORM_CONFIGURATION_VALUES.enableBetaFeatures,
-    });
+      platformConfigurationForm.reset({
+        platformName: systemSettings.platformName ?? DEFAULT_PLATFORM_CONFIGURATION_VALUES.platformName,
+        supportEmail: systemSettings.supportEmail ?? DEFAULT_PLATFORM_CONFIGURATION_VALUES.supportEmail,
+        timezone: platformConfigurationSchema.shape.timezone.safeParse(systemSettings.defaults?.timezone).success
+          ? systemSettings.defaults?.timezone as PlatformConfigurationFormValues["timezone"]
+          : DEFAULT_PLATFORM_CONFIGURATION_VALUES.timezone,
+        language: platformConfigurationSchema.shape.language.safeParse(systemSettings.defaults?.language).success
+          ? systemSettings.defaults?.language as PlatformConfigurationFormValues["language"]
+          : DEFAULT_PLATFORM_CONFIGURATION_VALUES.language,
+        allowNewTenantRegistration:
+        systemSettings.features?.allowNewTenantRegistration
+        ?? DEFAULT_PLATFORM_CONFIGURATION_VALUES.allowNewTenantRegistration,
+        maintenanceMode:
+        systemSettings.features?.maintenanceMode
+        ?? DEFAULT_PLATFORM_CONFIGURATION_VALUES.maintenanceMode,
+        enableBetaFeatures:
+        systemSettings.features?.enableBetaFeatures
+        ?? DEFAULT_PLATFORM_CONFIGURATION_VALUES.enableBetaFeatures,
+      });
 
-    dataRetentionForm.reset({
-      gpsDataRetentionDays: dataRetentionSchema.shape.gpsDataRetentionDays.safeParse(
-        String(systemSettings.retention?.gpsDataRetentionDays),
-      ).success
-        ? String(systemSettings.retention?.gpsDataRetentionDays) as DataRetentionFormValues["gpsDataRetentionDays"]
-        : DEFAULT_DATA_RETENTION_VALUES.gpsDataRetentionDays,
-      logRetentionDays: dataRetentionSchema.shape.logRetentionDays.safeParse(
-        String(systemSettings.retention?.logRetentionDays),
-      ).success
-        ? String(systemSettings.retention?.logRetentionDays) as DataRetentionFormValues["logRetentionDays"]
-        : DEFAULT_DATA_RETENTION_VALUES.logRetentionDays,
-      backupFrequency: dataRetentionSchema.shape.backupFrequency.safeParse(
-        systemSettings.retention?.backupFrequency,
-      ).success
-        ? systemSettings.retention?.backupFrequency as DataRetentionFormValues["backupFrequency"]
-        : DEFAULT_DATA_RETENTION_VALUES.backupFrequency,
-    });
-  }, [systemSettings, platformConfigurationForm, dataRetentionForm]);
+      dataRetentionForm.reset({
+        gpsDataRetentionDays: dataRetentionSchema.shape.gpsDataRetentionDays.safeParse(
+          String(systemSettings.retention?.gpsDataRetentionDays),
+        ).success
+          ? String(systemSettings.retention?.gpsDataRetentionDays) as DataRetentionFormValues["gpsDataRetentionDays"]
+          : DEFAULT_DATA_RETENTION_VALUES.gpsDataRetentionDays,
+        logRetentionDays: dataRetentionSchema.shape.logRetentionDays.safeParse(
+          String(systemSettings.retention?.logRetentionDays),
+        ).success
+          ? String(systemSettings.retention?.logRetentionDays) as DataRetentionFormValues["logRetentionDays"]
+          : DEFAULT_DATA_RETENTION_VALUES.logRetentionDays,
+        backupFrequency: dataRetentionSchema.shape.backupFrequency.safeParse(
+          systemSettings.retention?.backupFrequency,
+        ).success
+          ? systemSettings.retention?.backupFrequency as DataRetentionFormValues["backupFrequency"]
+          : DEFAULT_DATA_RETENTION_VALUES.backupFrequency,
+      });
+    },
+    [
+      systemSettings,
+      platformConfigurationForm,
+      dataRetentionForm,
+    ],
+  );
 
   const handleAvatarPick = () => fileInputRef.current?.click();
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file)
+      return;
     if (file.size > 2 * 1024 * 1024) {
       toast.error("Image must be smaller than 2MB");
       return;
     }
     const reader = new FileReader();
-    reader.onload = (ev) => setProfileAvatar(ev.target?.result as string);
+    reader.onload = ev => setProfileAvatar(ev.target?.result as string);
     reader.readAsDataURL(file);
   };
 
@@ -353,30 +441,116 @@ export default function PlatformSettings() {
       title="Platform Settings"
       subtitle="Configure global platform settings and integrations"
     >
-      <Tabs defaultValue="general" className="space-y-6">
+      <Tabs
+        defaultValue="general"
+        className="space-y-6"
+      >
         <div className="w-full">
           <TabsList className="flex h-auto w-full flex-wrap justify-center gap-1 p-1">
-            <TabsTrigger value="general" className="px-2.5 py-1 text-xs">General</TabsTrigger>
-            <TabsTrigger value="team" className="px-2.5 py-1 text-xs">Team</TabsTrigger>
-            <TabsTrigger value="ai-providers" className="px-2.5 py-1 text-xs">AI</TabsTrigger>
-            <TabsTrigger value="integrations" className="px-2.5 py-1 text-xs">Integrations</TabsTrigger>
-            <TabsTrigger value="api-governance" className="px-2.5 py-1 text-xs">API Governance</TabsTrigger>
-            <TabsTrigger value="whatsapp" className="px-2.5 py-1 text-xs">WhatsApp</TabsTrigger>
-            <TabsTrigger value="webhooks" className="px-2.5 py-1 text-xs">Webhooks</TabsTrigger>
-            <TabsTrigger value="kyc-review" className="px-2.5 py-1 text-xs">KYC Review</TabsTrigger>
-            <TabsTrigger value="telephony" className="px-2.5 py-1 text-xs">Telephony</TabsTrigger>
-            <TabsTrigger value="notifications" className="px-2.5 py-1 text-xs">Notifications</TabsTrigger>
-            <TabsTrigger value="security" className="px-2.5 py-1 text-xs">Security</TabsTrigger>
-            <TabsTrigger value="service-tiers" className="px-2.5 py-1 text-xs">Service Tiers</TabsTrigger>
-            <TabsTrigger value="billing" className="px-2.5 py-1 text-xs">Billing</TabsTrigger>
-            <TabsTrigger value="api" className="px-2.5 py-1 text-xs">API</TabsTrigger>
-            <TabsTrigger value="feature-flags" className="px-2.5 py-1 text-xs">Feature Flags</TabsTrigger>
-            <TabsTrigger value="upgrades" className="px-2.5 py-1 text-xs">Upgrades</TabsTrigger>
+            <TabsTrigger
+              value="general"
+              className="px-2.5 py-1 text-xs"
+            >
+              General
+            </TabsTrigger>
+            <TabsTrigger
+              value="team"
+              className="px-2.5 py-1 text-xs"
+            >
+              Team
+            </TabsTrigger>
+            <TabsTrigger
+              value="ai-providers"
+              className="px-2.5 py-1 text-xs"
+            >
+              AI
+            </TabsTrigger>
+            <TabsTrigger
+              value="integrations"
+              className="px-2.5 py-1 text-xs"
+            >
+              Integrations
+            </TabsTrigger>
+            <TabsTrigger
+              value="api-governance"
+              className="px-2.5 py-1 text-xs"
+            >
+              API Governance
+            </TabsTrigger>
+            <TabsTrigger
+              value="whatsapp"
+              className="px-2.5 py-1 text-xs"
+            >
+              WhatsApp
+            </TabsTrigger>
+            <TabsTrigger
+              value="webhooks"
+              className="px-2.5 py-1 text-xs"
+            >
+              Webhooks
+            </TabsTrigger>
+            <TabsTrigger
+              value="kyc-review"
+              className="px-2.5 py-1 text-xs"
+            >
+              KYC Review
+            </TabsTrigger>
+            <TabsTrigger
+              value="telephony"
+              className="px-2.5 py-1 text-xs"
+            >
+              Telephony
+            </TabsTrigger>
+            <TabsTrigger
+              value="notifications"
+              className="px-2.5 py-1 text-xs"
+            >
+              Notifications
+            </TabsTrigger>
+            <TabsTrigger
+              value="security"
+              className="px-2.5 py-1 text-xs"
+            >
+              Security
+            </TabsTrigger>
+            <TabsTrigger
+              value="service-tiers"
+              className="px-2.5 py-1 text-xs"
+            >
+              Service Tiers
+            </TabsTrigger>
+            <TabsTrigger
+              value="billing"
+              className="px-2.5 py-1 text-xs"
+            >
+              Billing
+            </TabsTrigger>
+            <TabsTrigger
+              value="api"
+              className="px-2.5 py-1 text-xs"
+            >
+              API
+            </TabsTrigger>
+            <TabsTrigger
+              value="feature-flags"
+              className="px-2.5 py-1 text-xs"
+            >
+              Feature Flags
+            </TabsTrigger>
+            <TabsTrigger
+              value="upgrades"
+              className="px-2.5 py-1 text-xs"
+            >
+              Upgrades
+            </TabsTrigger>
           </TabsList>
         </div>
 
         {/* General Settings */}
-        <TabsContent value="general" className="space-y-6">
+        <TabsContent
+          value="general"
+          className="space-y-6"
+        >
           {/* Admin Profile */}
           <Card>
             <CardHeader>
@@ -398,7 +572,10 @@ export default function PlatformSettings() {
                   <div className="flex items-center gap-4">
                     <div className="relative">
                       <Avatar className="h-20 w-20">
-                        <AvatarImage src={profileAvatar} alt={profileForm.watch("fullName")} />
+                        <AvatarImage
+                          src={profileAvatar}
+                          alt={profileForm.watch("fullName")}
+                        />
                         <AvatarFallback className="text-lg">
                           {(profileForm.watch("fullName") || user?.email || "U").charAt(0).toUpperCase()}
                         </AvatarFallback>
@@ -423,8 +600,14 @@ export default function PlatformSettings() {
                       <p className="font-medium">{profileForm.watch("fullName") || "Platform Admin"}</p>
                       <p className="text-xs text-muted-foreground">{user?.email}</p>
                       {user?.role && (
-                        <Badge variant="outline" className="mt-1 capitalize">
-                          {user.role.replace(/_/g, " ")}
+                        <Badge
+                          variant="outline"
+                          className="mt-1 capitalize"
+                        >
+                          {user.role.replace(
+                            /_/g,
+                            " ",
+                          )}
                         </Badge>
                       )}
                     </div>
@@ -438,7 +621,10 @@ export default function PlatformSettings() {
                         <FormItem>
                           <FormLabel>Full Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="Your name" {...field} />
+                            <Input
+                              placeholder="Your name"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -447,7 +633,10 @@ export default function PlatformSettings() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input value={user?.email ?? ""} disabled />
+                        <Input
+                          value={user?.email ?? ""}
+                          disabled
+                        />
                       </FormControl>
                     </FormItem>
                     <FormField
@@ -457,7 +646,10 @@ export default function PlatformSettings() {
                         <FormItem>
                           <FormLabel>Phone</FormLabel>
                           <FormControl>
-                            <Input placeholder="+234..." {...field} />
+                            <Input
+                              placeholder="+234..."
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -466,12 +658,24 @@ export default function PlatformSettings() {
                   </div>
 
                   <div className="flex justify-end">
-                    <Button type="submit" form={PROFILE_FORM_ID} disabled={updateProfile.isPending}>
-                      {updateProfile.isPending ? (
-                        <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Saving...</>
-                      ) : (
-                        <><Save className="h-4 w-4 mr-2" />Save Profile</>
-                      )}
+                    <Button
+                      type="submit"
+                      form={PROFILE_FORM_ID}
+                      disabled={updateProfile.isPending}
+                    >
+                      {updateProfile.isPending
+                        ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Saving...
+                            </>
+                          )
+                        : (
+                            <>
+                              <Save className="h-4 w-4 mr-2" />
+                              Save Profile
+                            </>
+                          )}
                     </Button>
                   </div>
                 </form>
@@ -505,16 +709,29 @@ export default function PlatformSettings() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Default Timezone</FormLabel>
-                          <Select value={field.value} onValueChange={field.onChange}>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {Object.entries(TIMEZONES).map(([code, tz]) => (
-                                <SelectItem key={code} value={code}>
-                                  {tz.name} ({tz.offset})
+                              {Object.entries(TIMEZONES).map(([
+                                code,
+                                tz,
+                              ]) => (
+                                <SelectItem
+                                  key={code}
+                                  value={code}
+                                >
+                                  {tz.name}
+                                  {" "}
+                                  (
+                                  {tz.offset}
+                                  )
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -529,15 +746,24 @@ export default function PlatformSettings() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Default Time Range</FormLabel>
-                          <Select value={field.value} onValueChange={field.onChange}>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {Object.entries(DATE_RANGE_OPTIONS).map(([k, label]) => (
-                                <SelectItem key={k} value={k}>
+                              {Object.entries(DATE_RANGE_OPTIONS).map(([
+                                k,
+                                label,
+                              ]) => (
+                                <SelectItem
+                                  key={k}
+                                  value={k}
+                                >
                                   {label}
                                 </SelectItem>
                               ))}
@@ -550,7 +776,10 @@ export default function PlatformSettings() {
                   </div>
 
                   <div className="flex justify-end">
-                    <Button type="submit" form={DISPLAY_PREFERENCES_FORM_ID}>
+                    <Button
+                      type="submit"
+                      form={DISPLAY_PREFERENCES_FORM_ID}
+                    >
                       <Save className="h-4 w-4 mr-2" />
                       Save Preferences
                     </Button>
@@ -585,7 +814,10 @@ export default function PlatformSettings() {
                         <FormItem>
                           <FormLabel>Platform Name</FormLabel>
                           <FormControl>
-                            <Input {...field} disabled />
+                            <Input
+                              {...field}
+                              disabled
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -598,7 +830,11 @@ export default function PlatformSettings() {
                         <FormItem>
                           <FormLabel>Support Email</FormLabel>
                           <FormControl>
-                            <Input type="email" {...field} disabled />
+                            <Input
+                              type="email"
+                              {...field}
+                              disabled
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -613,7 +849,10 @@ export default function PlatformSettings() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Default Timezone</FormLabel>
-                          <Select value={field.value} onValueChange={field.onChange}>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
@@ -638,7 +877,10 @@ export default function PlatformSettings() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Default Language</FormLabel>
-                          <Select value={field.value} onValueChange={field.onChange}>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
@@ -675,7 +917,10 @@ export default function PlatformSettings() {
                               </p>
                             </div>
                             <FormControl>
-                              <Switch checked={field.value} onCheckedChange={field.onChange} />
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
                             </FormControl>
                           </FormItem>
                         )}
@@ -692,7 +937,10 @@ export default function PlatformSettings() {
                               </p>
                             </div>
                             <FormControl>
-                              <Switch checked={field.value} onCheckedChange={field.onChange} />
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
                             </FormControl>
                           </FormItem>
                         )}
@@ -709,7 +957,10 @@ export default function PlatformSettings() {
                               </p>
                             </div>
                             <FormControl>
-                              <Switch checked={field.value} onCheckedChange={field.onChange} />
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
                             </FormControl>
                           </FormItem>
                         )}
@@ -723,11 +974,19 @@ export default function PlatformSettings() {
                       form={PLATFORM_CONFIGURATION_FORM_ID}
                       disabled={updatePlatformConfiguration.isPending}
                     >
-                      {updatePlatformConfiguration.isPending ? (
-                        <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Saving...</>
-                      ) : (
-                        <><Save className="h-4 w-4 mr-2" />Save Configuration</>
-                      )}
+                      {updatePlatformConfiguration.isPending
+                        ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Saving...
+                            </>
+                          )
+                        : (
+                            <>
+                              <Save className="h-4 w-4 mr-2" />
+                              Save Configuration
+                            </>
+                          )}
                     </Button>
                   </div>
                 </form>
@@ -759,7 +1018,10 @@ export default function PlatformSettings() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>GPS Data Retention</FormLabel>
-                          <Select value={field.value} onValueChange={field.onChange}>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
@@ -782,7 +1044,10 @@ export default function PlatformSettings() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Log Retention</FormLabel>
-                          <Select value={field.value} onValueChange={field.onChange}>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
@@ -804,7 +1069,10 @@ export default function PlatformSettings() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Backup Frequency</FormLabel>
-                          <Select value={field.value} onValueChange={field.onChange}>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
@@ -828,11 +1096,19 @@ export default function PlatformSettings() {
                       form={DATA_RETENTION_FORM_ID}
                       disabled={updateDataRetention.isPending}
                     >
-                      {updateDataRetention.isPending ? (
-                        <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Saving...</>
-                      ) : (
-                        <><Save className="h-4 w-4 mr-2" />Save Retention</>
-                      )}
+                      {updateDataRetention.isPending
+                        ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Saving...
+                            </>
+                          )
+                        : (
+                            <>
+                              <Save className="h-4 w-4 mr-2" />
+                              Save Retention
+                            </>
+                          )}
                     </Button>
                   </div>
                 </form>
@@ -842,50 +1118,77 @@ export default function PlatformSettings() {
         </TabsContent>
 
         {/* Platform Team */}
-        <TabsContent value="team" className="space-y-6">
+        <TabsContent
+          value="team"
+          className="space-y-6"
+        >
           <PlatformTeamManagement />
         </TabsContent>
 
         {/* AI Providers */}
-        <TabsContent value="ai-providers" className="space-y-6">
+        <TabsContent
+          value="ai-providers"
+          className="space-y-6"
+        >
           <PlatformAISettings />
         </TabsContent>
 
         {/* Integrations */}
-        <TabsContent value="integrations" className="space-y-6">
+        <TabsContent
+          value="integrations"
+          className="space-y-6"
+        >
           <IntegrationSettings />
         </TabsContent>
 
         {/* API Governance - Platform SuperAdmin Controls */}
-        <TabsContent value="api-governance" className="space-y-6">
+        <TabsContent
+          value="api-governance"
+          className="space-y-6"
+        >
           <IntegrationsGovernance />
         </TabsContent>
 
         {/* WhatsApp Assist & Health */}
-        <TabsContent value="whatsapp" className="space-y-6">
+        <TabsContent
+          value="whatsapp"
+          className="space-y-6"
+        >
           <WhatsAppAssistPanel />
           <WhatsAppHealthDashboard />
         </TabsContent>
 
         {/* Webhooks */}
-        <TabsContent value="webhooks" className="space-y-6">
+        <TabsContent
+          value="webhooks"
+          className="space-y-6"
+        >
           <WebhookManagement />
         </TabsContent>
 
         {/* KYC Review Workflow */}
-        <TabsContent value="kyc-review" className="space-y-6">
+        <TabsContent
+          value="kyc-review"
+          className="space-y-6"
+        >
           <KYCReviewWorkflow />
         </TabsContent>
 
         {/* Telephony Settings */}
-        <TabsContent value="telephony" className="space-y-6">
+        <TabsContent
+          value="telephony"
+          className="space-y-6"
+        >
           <TelephonySettings />
           <PhoneNumberManagement />
           <SenderIdApprovalQueue />
         </TabsContent>
 
         {/* Notifications */}
-        <TabsContent value="notifications" className="space-y-6">
+        <TabsContent
+          value="notifications"
+          className="space-y-6"
+        >
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -945,11 +1248,17 @@ export default function PlatformSettings() {
                 <h4 className="font-medium">Notification Channels</h4>
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="flex items-center space-x-2">
-                    <Switch id="email-notif" defaultChecked />
+                    <Switch
+                      id="email-notif"
+                      defaultChecked
+                    />
                     <Label htmlFor="email-notif">Email</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Switch id="sms-notif" defaultChecked />
+                    <Switch
+                      id="sms-notif"
+                      defaultChecked
+                    />
                     <Label htmlFor="sms-notif">SMS</Label>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -963,7 +1272,10 @@ export default function PlatformSettings() {
         </TabsContent>
 
         {/* Security */}
-        <TabsContent value="security" className="space-y-6">
+        <TabsContent
+          value="security"
+          className="space-y-6"
+        >
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -1064,12 +1376,18 @@ export default function PlatformSettings() {
         </TabsContent>
 
         {/* Service Tiers - Tiered Subscription Plans */}
-        <TabsContent value="service-tiers" className="space-y-6">
+        <TabsContent
+          value="service-tiers"
+          className="space-y-6"
+        >
           <TieredServicesManager />
         </TabsContent>
 
         {/* Billing - Wallet & Usage-Based Billing */}
-        <TabsContent value="billing" className="space-y-6">
+        <TabsContent
+          value="billing"
+          className="space-y-6"
+        >
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -1085,20 +1403,37 @@ export default function PlatformSettings() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Default Platform Currency</Label>
-                  <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
+                  <Select
+                    value={currency}
+                    onValueChange={v => setCurrency(v as Currency)}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(CURRENCIES).map(([code, c]) => (
-                        <SelectItem key={code} value={code}>
-                          {c.symbol} {c.code} — {c.name}
+                      {Object.entries(CURRENCIES).map(([
+                        code,
+                        c,
+                      ]) => (
+                        <SelectItem
+                          key={code}
+                          value={code}
+                        >
+                          {c.symbol}
+                          {" "}
+                          {c.code}
+                          {" "}
+                          —
+                          {" "}
+                          {c.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Currently active: <span className="font-medium">{CURRENCIES[currency].name}</span>
+                    Currently active:
+                    {" "}
+                    <span className="font-medium">{CURRENCIES[currency].name}</span>
                   </p>
                 </div>
               </div>
@@ -1111,7 +1446,10 @@ export default function PlatformSettings() {
         </TabsContent>
 
         {/* API */}
-        <TabsContent value="api" className="space-y-6">
+        <TabsContent
+          value="api"
+          className="space-y-6"
+        >
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -1160,7 +1498,11 @@ export default function PlatformSettings() {
                 <div className="space-y-2">
                   <Label>Webhook Secret</Label>
                   <div className="flex gap-2">
-                    <Input defaultValue="whsec_••••••••••••••••" type="password" className="flex-1" />
+                    <Input
+                      defaultValue="whsec_••••••••••••••••"
+                      type="password"
+                      className="flex-1"
+                    />
                     <Button variant="outline">
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Regenerate
@@ -1173,12 +1515,18 @@ export default function PlatformSettings() {
         </TabsContent>
 
         {/* Feature Flags */}
-        <TabsContent value="feature-flags" className="space-y-6">
+        <TabsContent
+          value="feature-flags"
+          className="space-y-6"
+        >
           <FeatureFlagsPanel />
         </TabsContent>
 
         {/* Upgrades */}
-        <TabsContent value="upgrades" className="space-y-6">
+        <TabsContent
+          value="upgrades"
+          className="space-y-6"
+        >
           <OrgUpgradeQueue />
         </TabsContent>
 

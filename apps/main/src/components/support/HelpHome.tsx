@@ -1,33 +1,38 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { useSupportPermissions } from "@/hooks/useSupportPermissions";
-import { 
-  HelpCircle, 
-  FileWarning, 
-  TicketCheck, 
+import {
   Activity,
+  AlertCircle,
   ArrowRight,
   Clock,
-  AlertCircle
+  FileWarning,
+  HelpCircle,
+  TicketCheck,
 } from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { useSupportPermissions } from "@/hooks/useSupportPermissions";
 
-interface HelpHomeProps {
-  onNavigate: (tab: string) => void;
-}
+type HelpHomeProps = { onNavigate: (tab: string) => void };
 
 export function HelpHome({ onNavigate }: HelpHomeProps) {
-  const { canCreateTicket, canViewTickets } = useSupportPermissions();
+  const {
+    canCreateTicket, canViewTickets,
+  } = useSupportPermissions();
   const tickets: any[] = [];
 
-  const openTickets = tickets.filter((t) => t.status === "open" || t.status === "in_progress");
-  const recentTickets = tickets.slice(0, 3);
+  const openTickets = tickets.filter(t => t.status === "open" || t.status === "in_progress");
+  const recentTickets = tickets.slice(
+    0,
+    3,
+  );
 
   return (
     <div className="space-y-6">
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card 
+        <Card
           className="cursor-pointer hover:border-primary/50 transition-colors"
           onClick={() => onNavigate("quick-help")}
         >
@@ -43,7 +48,7 @@ export function HelpHome({ onNavigate }: HelpHomeProps) {
         </Card>
 
         {canCreateTicket && (
-          <Card 
+          <Card
             className="cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => onNavigate("report")}
           >
@@ -60,7 +65,7 @@ export function HelpHome({ onNavigate }: HelpHomeProps) {
         )}
 
         {canViewTickets && (
-          <Card 
+          <Card
             className="cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => onNavigate("tickets")}
           >
@@ -73,8 +78,13 @@ export function HelpHome({ onNavigate }: HelpHomeProps) {
                 View and track your open support requests
               </CardDescription>
               {openTickets.length > 0 && (
-                <Badge variant="secondary" className="mt-2">
-                  {openTickets.length} open
+                <Badge
+                  variant="secondary"
+                  className="mt-2"
+                >
+                  {openTickets.length}
+                  {" "}
+                  open
                 </Badge>
               )}
             </CardContent>
@@ -90,7 +100,10 @@ export function HelpHome({ onNavigate }: HelpHomeProps) {
             <CardDescription>
               Check platform health and known issues
             </CardDescription>
-            <Badge variant="outline" className="mt-2 text-chart-2 border-chart-2">
+            <Badge
+              variant="outline"
+              className="mt-2 text-chart-2 border-chart-2"
+            >
               All systems operational
             </Badge>
           </CardContent>
@@ -105,32 +118,52 @@ export function HelpHome({ onNavigate }: HelpHomeProps) {
               <CardTitle>Recent Tickets</CardTitle>
               <CardDescription>Your latest support requests</CardDescription>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => onNavigate("tickets")}>
-              View all <ArrowRight className="ml-2 h-4 w-4" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onNavigate("tickets")}
+            >
+              View all
+              {" "}
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {recentTickets.map((ticket) => (
+              {recentTickets.map(ticket => (
                 <div
                   key={ticket.id}
                   className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    {ticket.status === "open" ? (
-                      <AlertCircle className="h-5 w-5 text-chart-5" />
-                    ) : (
-                      <Clock className="h-5 w-5 text-muted-foreground" />
-                    )}
+                    {ticket.status === "open"
+                      ? (
+                          <AlertCircle className="h-5 w-5 text-chart-5" />
+                        )
+                      : (
+                          <Clock className="h-5 w-5 text-muted-foreground" />
+                        )}
                     <div>
                       <p className="font-medium text-sm">{ticket.subject}</p>
                       <p className="text-xs text-muted-foreground capitalize">
-                        {ticket.category.replace("_", " ")} • {ticket.status.replace("_", " ")}
+                        {ticket.category.replace(
+                          "_",
+                          " ",
+                        )}
+                        {" "}
+                        •
+                        {ticket.status.replace(
+                          "_",
+                          " ",
+                        )}
                       </p>
                     </div>
                   </div>
                   <Badge variant={ticket.status === "open" ? "default" : "secondary"}>
-                    {ticket.status.replace("_", " ")}
+                    {ticket.status.replace(
+                      "_",
+                      " ",
+                    )}
                   </Badge>
                 </div>
               ))}

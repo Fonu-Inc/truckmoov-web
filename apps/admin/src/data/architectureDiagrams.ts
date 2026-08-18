@@ -450,6 +450,3 @@ export const aiArchitectureDiagram = `graph LR
     TRIGGERS --> ALERTS
     OPT --> ROUTES
     PREDICT --> ETA`;
-
-
-

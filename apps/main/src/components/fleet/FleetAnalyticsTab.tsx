@@ -1,27 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
-import { PeriodFilter, PeriodValue } from "./PeriodFilter";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Badge } from "@/components/shadcn/badge";
-import { Progress } from "@/components/shadcn/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
+import type {
+  FleetAnalyticsDriverScore,
+  FleetAnalyticsEvent,
+  FleetAnalyticsFuelLevel,
+  FleetAnalyticsPeriodDays,
+} from "@truckmoov/api/fleet";
+import type { PeriodValue } from "./PeriodFilter";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Pie,
-  PieChart,
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
-  Radar,
-  RadarChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+  useFleetAnalyticsDriverScores,
+  useFleetAnalyticsEvents,
+  useFleetAnalyticsFleetStatus,
+  useFleetAnalyticsFuelLevels,
+  useFleetAnalyticsJobPipeline,
+  useFleetAnalyticsSummary,
+} from "@truckmoov/api/fleet";
 import {
   Activity,
   AlertTriangle,
@@ -41,23 +32,39 @@ import {
   Wrench,
   Zap,
 } from "lucide-react";
+import {
+  useEffect, useMemo, useState,
+} from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Progress } from "@/components/shadcn/progress";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/shadcn/select";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
-import {
-  useFleetAnalyticsDriverScores,
-  useFleetAnalyticsEvents,
-  useFleetAnalyticsFleetStatus,
-  useFleetAnalyticsFuelLevels,
-  useFleetAnalyticsJobPipeline,
-  useFleetAnalyticsSummary,
-} from "@truckmoov/api/fleet";
-import type {
-  FleetAnalyticsDriverScore,
-  FleetAnalyticsEvent,
-  FleetAnalyticsFuelLevel,
-  FleetAnalyticsPeriodDays,
-} from "@truckmoov/api/fleet";
+import { PeriodFilter } from "./PeriodFilter";
 
 const CHART_TOOLTIP_STYLE = {
   backgroundColor: "hsl(var(--card))",
@@ -77,39 +84,79 @@ const EMPTY_FUEL_LEVELS: FleetAnalyticsFuelLevel[] = [];
 const EMPTY_DRIVER_SCORES: FleetAnalyticsDriverScore[] = [];
 const EMPTY_EVENTS: FleetAnalyticsEvent[] = [];
 
-const ANALYTICS_PERIOD_OPTIONS: { value: PeriodValue; label: string }[] = [
-  { value: "7", label: "Last 7 Days" },
-  { value: "30", label: "Last 30 Days" },
-  { value: "60", label: "Last 60 Days" },
-  { value: "90", label: "Last 90 Days" },
+const ANALYTICS_PERIOD_OPTIONS: {
+  value: PeriodValue; label: string;
+}[] = [
+  {
+    value: "7", label: "Last 7 Days",
+  },
+  {
+    value: "30", label: "Last 30 Days",
+  },
+  {
+    value: "60", label: "Last 60 Days",
+  },
+  {
+    value: "90", label: "Last 90 Days",
+  },
 ];
 
 const LIMIT_OPTIONS = [
-  { value: "5", label: "5 items" },
-  { value: "10", label: "10 items" },
-  { value: "20", label: "20 items" },
-  { value: "50", label: "50 items" },
+  {
+    value: "5", label: "5 items",
+  },
+  {
+    value: "10", label: "10 items",
+  },
+  {
+    value: "20", label: "20 items",
+  },
+  {
+    value: "50", label: "50 items",
+  },
 ] as const;
 
 const SEVERITY_OPTIONS = [
-  { value: "all", label: "All severity" },
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
-  { value: "critical", label: "Critical" },
+  {
+    value: "all", label: "All severity",
+  },
+  {
+    value: "low", label: "Low",
+  },
+  {
+    value: "medium", label: "Medium",
+  },
+  {
+    value: "high", label: "High",
+  },
+  {
+    value: "critical", label: "Critical",
+  },
 ] as const;
 
 type LimitValue = (typeof LIMIT_OPTIONS)[number]["value"];
 type SeverityFilter = (typeof SEVERITY_OPTIONS)[number]["value"];
 
 function clampScore(value: number) {
-  return Math.max(0, Math.min(100, Math.round(value)));
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(value),
+    ),
+  );
 }
 
 function formatLabel(value: string) {
   return value
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    .replace(
+      /_/g,
+      " ",
+    )
+    .replace(
+      /\b\w/g,
+      letter => letter.toUpperCase(),
+    );
 }
 
 function toPeriodDays(value: PeriodValue): FleetAnalyticsPeriodDays {
@@ -131,13 +178,19 @@ function LimitFilter({
   className?: string;
 }) {
   return (
-    <Select value={value} onValueChange={(nextValue) => onChange(nextValue as LimitValue)}>
+    <Select
+      value={value}
+      onValueChange={nextValue => onChange(nextValue as LimitValue)}
+    >
       <SelectTrigger className={className ?? "h-8 w-[104px]"}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {LIMIT_OPTIONS.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
+        {LIMIT_OPTIONS.map(option => (
+          <SelectItem
+            key={option.value}
+            value={option.value}
+          >
             {option.label}
           </SelectItem>
         ))}
@@ -156,13 +209,19 @@ function SeverityFilter({
   className?: string;
 }) {
   return (
-    <Select value={value} onValueChange={(nextValue) => onChange(nextValue as SeverityFilter)}>
+    <Select
+      value={value}
+      onValueChange={nextValue => onChange(nextValue as SeverityFilter)}
+    >
       <SelectTrigger className={className ?? "h-8 w-[126px]"}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {SEVERITY_OPTIONS.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
+        {SEVERITY_OPTIONS.map(option => (
+          <SelectItem
+            key={option.value}
+            value={option.value}
+          >
             {option.label}
           </SelectItem>
         ))}
@@ -184,7 +243,11 @@ function CardError({ onRetry }: { onRetry: () => void }) {
     <div className="flex h-[200px] flex-col items-center justify-center gap-3 text-center text-xs text-muted-foreground">
       <AlertTriangle className="h-5 w-5 text-warning" />
       <span>Unable to load this data.</span>
-      <Button variant="outline" size="sm" onClick={onRetry}>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onRetry}
+      >
         Retry
       </Button>
     </div>
@@ -202,21 +265,27 @@ function CardLoading() {
 function LiveIndicator({ connected }: { connected: boolean }) {
   return (
     <div className="flex items-center gap-2">
-      {connected ? (
-        <>
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-success" />
-          </span>
-          <span className="flex items-center gap-1 text-xs font-medium text-success">
-            <Wifi className="h-3 w-3" /> Live
-          </span>
-        </>
-      ) : (
-        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-          <WifiOff className="h-3 w-3" /> Offline
-        </span>
-      )}
+      {connected
+        ? (
+            <>
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-success" />
+              </span>
+              <span className="flex items-center gap-1 text-xs font-medium text-success">
+                <Wifi className="h-3 w-3" />
+                {" "}
+                Live
+              </span>
+            </>
+          )
+        : (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <WifiOff className="h-3 w-3" />
+              {" "}
+              Offline
+            </span>
+          )}
     </div>
   );
 }
@@ -272,27 +341,56 @@ function KPICard({
 
 export function FleetAnalyticsTab() {
   const { format: formatCurrency } = useCurrency();
-  const [lastRefresh, setLastRefresh] = useState(new Date());
-  const [summaryPeriod, setSummaryPeriod] = useState<PeriodValue>("30");
-  const [fleetStatusPeriod, setFleetStatusPeriod] = useState<PeriodValue>("30");
-  const [jobPipelinePeriod, setJobPipelinePeriod] = useState<PeriodValue>("30");
-  const [fuelLevelsPeriod, setFuelLevelsPeriod] = useState<PeriodValue>("30");
-  const [safetyRadarPeriod, setSafetyRadarPeriod] = useState<PeriodValue>("30");
-  const [driverScoresPeriod, setDriverScoresPeriod] = useState<PeriodValue>("30");
-  const [eventFeedPeriod, setEventFeedPeriod] = useState<PeriodValue>("30");
-  const [driverScoresLimit, setDriverScoresLimit] = useState<LimitValue>("10");
-  const [eventFeedLimit, setEventFeedLimit] = useState<LimitValue>("10");
-  const [eventFeedSeverity, setEventFeedSeverity] = useState<SeverityFilter>("all");
+  const [
+    lastRefresh,
+    setLastRefresh,
+  ] = useState(new Date());
+  const [
+    summaryPeriod,
+    setSummaryPeriod,
+  ] = useState<PeriodValue>("30");
+  const [
+    fleetStatusPeriod,
+    setFleetStatusPeriod,
+  ] = useState<PeriodValue>("30");
+  const [
+    jobPipelinePeriod,
+    setJobPipelinePeriod,
+  ] = useState<PeriodValue>("30");
+  const [
+    fuelLevelsPeriod,
+    setFuelLevelsPeriod,
+  ] = useState<PeriodValue>("30");
+  const [
+    safetyRadarPeriod,
+    setSafetyRadarPeriod,
+  ] = useState<PeriodValue>("30");
+  const [
+    driverScoresPeriod,
+    setDriverScoresPeriod,
+  ] = useState<PeriodValue>("30");
+  const [
+    eventFeedPeriod,
+    setEventFeedPeriod,
+  ] = useState<PeriodValue>("30");
+  const [
+    driverScoresLimit,
+    setDriverScoresLimit,
+  ] = useState<LimitValue>("10");
+  const [
+    eventFeedLimit,
+    setEventFeedLimit,
+  ] = useState<LimitValue>("10");
+  const [
+    eventFeedSeverity,
+    setEventFeedSeverity,
+  ] = useState<SeverityFilter>("all");
 
   const summaryQuery = useFleetAnalyticsSummary({ params: { period_days: toPeriodDays(summaryPeriod) } });
   const fleetStatusQuery = useFleetAnalyticsFleetStatus({ params: { period_days: toPeriodDays(fleetStatusPeriod) } });
   const jobPipelineQuery = useFleetAnalyticsJobPipeline({ params: { period_days: toPeriodDays(jobPipelinePeriod) } });
   const fuelLevelsQuery = useFleetAnalyticsFuelLevels({ params: { period_days: toPeriodDays(fuelLevelsPeriod) } });
-  const safetyScoresQuery = useFleetAnalyticsDriverScores({
-    params: {
-      period_days: toPeriodDays(safetyRadarPeriod),
-    },
-  });
+  const safetyScoresQuery = useFleetAnalyticsDriverScores({ params: { period_days: toPeriodDays(safetyRadarPeriod) } });
   const driverScoresQuery = useFleetAnalyticsDriverScores({
     params: {
       period_days: toPeriodDays(driverScoresPeriod),
@@ -317,10 +415,16 @@ export function FleetAnalyticsTab() {
     eventsQuery,
   ];
 
-  useEffect(() => {
-    const interval = setInterval(() => setLastRefresh(new Date()), 30000);
-    return () => clearInterval(interval);
-  }, []);
+  useEffect(
+    () => {
+      const interval = setInterval(
+        () => setLastRefresh(new Date()),
+        30000,
+      );
+      return () => clearInterval(interval);
+    },
+    [],
+  );
 
   const summary = summaryQuery.data?.data;
   const fleetStatus = fleetStatusQuery.data?.data;
@@ -330,9 +434,9 @@ export function FleetAnalyticsTab() {
   const driverScores = Array.isArray(driverScoresQuery.data?.data) ? driverScoresQuery.data.data : EMPTY_DRIVER_SCORES;
   const events = Array.isArray(eventsQuery.data?.data) ? eventsQuery.data.data : EMPTY_EVENTS;
 
-  const connected = queries.every((query) => query.isSuccess && !query.isError);
-  const isRefreshing = queries.some((query) => query.isFetching);
-  const isInitialLoading = queries.every((query) => query.isPending && !query.data);
+  const connected = queries.every(query => query.isSuccess && !query.isError);
+  const isRefreshing = queries.some(query => query.isFetching);
+  const isInitialLoading = queries.every(query => query.isPending && !query.data);
 
   const activeVehicles = summary?.vehicles.active ?? 0;
   const totalVehicles = summary?.vehicles.total ?? 0;
@@ -343,56 +447,93 @@ export function FleetAnalyticsTab() {
   const maintenanceVehicles = summary?.vehicles.maintenance ?? 0;
   const fleetUtilization = totalVehicles > 0 ? Math.round((activeVehicles / totalVehicles) * 100) : 0;
   const driverUtilization = totalDrivers > 0 ? Math.round((activeDrivers / totalDrivers) * 100) : 0;
-  const averageSafetyScore =
-    safetyScores.length > 0
-      ? clampScore(safetyScores.reduce((sum, score) => sum + score.safetyScore, 0) / safetyScores.length)
+  const averageSafetyScore
+    = safetyScores.length > 0
+      ? clampScore(safetyScores.reduce(
+          (sum, score) => sum + score.safetyScore,
+          0,
+        ) / safetyScores.length)
       : 0;
   const recent24hEvents = events.filter((event) => {
     const triggeredAt = new Date(event.triggeredAt).getTime();
     return Number.isFinite(triggeredAt) && Date.now() - triggeredAt <= 24 * 60 * 60 * 1000;
   }).length;
 
-  const fleetStatusChart = useMemo(() => {
-    const byStatus = fleetStatus?.byStatus ?? {};
-    return Object.entries(byStatus)
-      .map(([status, value]) => ({
-        name: formatLabel(status),
-        value,
-        color: STATUS_COLORS[status] ?? "hsl(var(--primary))",
-      }))
-      .filter((item) => item.value > 0);
-  }, [fleetStatus]);
+  const fleetStatusChart = useMemo(
+    () => {
+      const byStatus = fleetStatus?.byStatus ?? {};
+      return Object.entries(byStatus)
+        .map(([
+          status,
+          value,
+        ]) => ({
+          name: formatLabel(status),
+          value,
+          color: STATUS_COLORS[status] ?? "hsl(var(--primary))",
+        }))
+        .filter(item => item.value > 0);
+    },
+    [fleetStatus],
+  );
 
-  const jobPipelineData = useMemo(() => {
-    const byStatus = jobPipeline?.byStatus ?? {};
-    return [
-      { stage: "Pending", count: byStatus.pending ?? 0, fill: "hsl(var(--muted-foreground))" },
-      { stage: "In Progress", count: byStatus.in_progress ?? 0, fill: "hsl(var(--warning))" },
-      { stage: "Delivered", count: byStatus.delivered ?? 0, fill: "hsl(var(--success))" },
-    ];
-  }, [jobPipeline]);
+  const jobPipelineData = useMemo(
+    () => {
+      const byStatus = jobPipeline?.byStatus ?? {};
+      return [
+        {
+          stage: "Pending", count: byStatus.pending ?? 0, fill: "hsl(var(--muted-foreground))",
+        },
+        {
+          stage: "In Progress", count: byStatus.in_progress ?? 0, fill: "hsl(var(--warning))",
+        },
+        {
+          stage: "Delivered", count: byStatus.delivered ?? 0, fill: "hsl(var(--success))",
+        },
+      ];
+    },
+    [jobPipeline],
+  );
 
   const availableFuelLevels = fuelLevels
-    .filter((vehicle) => vehicle.fuelLevelPercent !== null)
-    .map((vehicle) => ({
+    .filter(vehicle => vehicle.fuelLevelPercent !== null)
+    .map(vehicle => ({
       vehicleId: vehicle.vehicleId,
       plateNumber: vehicle.plateNumber,
       level: clampScore(vehicle.fuelLevelPercent ?? 0),
     }))
     .sort((a, b) => a.level - b.level);
 
-  const radarChart = useMemo(() => {
-    if (safetyScores.length === 0) return [];
+  const radarChart = useMemo(
+    () => {
+      if (safetyScores.length === 0)
+        return [];
 
-    const avgHarshBraking = safetyScores.reduce((sum, driver) => sum + driver.harshBraking, 0) / safetyScores.length;
-    const avgOverspeeding = safetyScores.reduce((sum, driver) => sum + driver.overspeeding, 0) / safetyScores.length;
+      const avgHarshBraking = safetyScores.reduce(
+        (sum, driver) => sum + driver.harshBraking,
+        0,
+      ) / safetyScores.length;
+      const avgOverspeeding = safetyScores.reduce(
+        (sum, driver) => sum + driver.overspeeding,
+        0,
+      ) / safetyScores.length;
 
-    return [
-      { metric: "Braking", score: clampScore(100 - avgHarshBraking), fullMark: 100 },
-      { metric: "Speed Control", score: clampScore(100 - avgOverspeeding), fullMark: 100 },
-      { metric: "Overall Safety", score: averageSafetyScore, fullMark: 100 },
-    ];
-  }, [averageSafetyScore, safetyScores]);
+      return [
+        {
+          metric: "Braking", score: clampScore(100 - avgHarshBraking), fullMark: 100,
+        },
+        {
+          metric: "Speed Control", score: clampScore(100 - avgOverspeeding), fullMark: 100,
+        },
+        {
+          metric: "Overall Safety", score: averageSafetyScore, fullMark: 100,
+        },
+      ];
+    },
+    [
+      averageSafetyScore,
+      safetyScores,
+    ],
+  );
 
   const driverScoresChart = [...driverScores].sort((a, b) => b.safetyScore - a.safetyScore);
   const recentEvents = events.map((event) => {
@@ -404,13 +545,27 @@ export function FleetAnalyticsTab() {
       type: formatLabel(event.type),
       severity: event.severity,
       status: event.status,
-      time: hasValidDate ? triggeredAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--:--",
-      date: hasValidDate ? triggeredAt.toLocaleDateString([], { month: "short", day: "numeric" }) : "Unknown",
+      time: hasValidDate
+        ? triggeredAt.toLocaleTimeString(
+            [],
+            {
+              hour: "2-digit", minute: "2-digit",
+            },
+          )
+        : "--:--",
+      date: hasValidDate
+        ? triggeredAt.toLocaleDateString(
+            [],
+            {
+              month: "short", day: "numeric",
+            },
+          )
+        : "Unknown",
     };
   });
 
   async function refreshAll() {
-    await Promise.all(queries.map((query) => query.refetch()));
+    await Promise.all(queries.map(query => query.refetch()));
     setLastRefresh(new Date());
   }
 
@@ -428,7 +583,14 @@ export function FleetAnalyticsTab() {
         <div className="flex items-center gap-3">
           <LiveIndicator connected={connected} />
           <span className="text-xs text-muted-foreground">
-            Updated {lastRefresh.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            Updated
+            {" "}
+            {lastRefresh.toLocaleTimeString(
+              [],
+              {
+                hour: "2-digit", minute: "2-digit",
+              },
+            )}
           </span>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -438,18 +600,46 @@ export function FleetAnalyticsTab() {
             options={ANALYTICS_PERIOD_OPTIONS}
             className="h-9 w-[136px]"
           />
-          <Button variant="outline" size="sm" onClick={refreshAll} disabled={isRefreshing}>
-            <RefreshCw className={cn("mr-2 h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refreshAll}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={cn(
+              "mr-2 h-3.5 w-3.5",
+              isRefreshing && "animate-spin",
+            )}
+            />
             Refresh
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-        <KPICard title="Fleet Utilization" value={`${fleetUtilization}%`} icon={Truck} subtitle={`${activeVehicles}/${totalVehicles} active`} />
-        <KPICard title="Driver Utilization" value={`${driverUtilization}%`} icon={Users} subtitle={`${activeDrivers}/${totalDrivers} active`} />
-        <KPICard title="Active Jobs" value={inProgressJobs} icon={Package} subtitle={`${completedJobs} completed`} />
-        <KPICard title="Revenue" value={formatCurrency(0)} icon={DollarSign} />
+        <KPICard
+          title="Fleet Utilization"
+          value={`${fleetUtilization}%`}
+          icon={Truck}
+          subtitle={`${activeVehicles}/${totalVehicles} active`}
+        />
+        <KPICard
+          title="Driver Utilization"
+          value={`${driverUtilization}%`}
+          icon={Users}
+          subtitle={`${activeDrivers}/${totalDrivers} active`}
+        />
+        <KPICard
+          title="Active Jobs"
+          value={inProgressJobs}
+          icon={Package}
+          subtitle={`${completedJobs} completed`}
+        />
+        <KPICard
+          title="Revenue"
+          value={formatCurrency(0)}
+          icon={DollarSign}
+        />
         <KPICard
           title="Safety Score"
           value={averageSafetyScore || "-"}
@@ -458,7 +648,12 @@ export function FleetAnalyticsTab() {
           trend={averageSafetyScore >= 80 ? "up" : averageSafetyScore >= 60 ? "neutral" : "down"}
           trendValue={averageSafetyScore >= 80 ? "Good" : averageSafetyScore >= 60 ? "Fair" : "Poor"}
         />
-        <KPICard title="Maintenance" value={maintenanceVehicles} icon={Wrench} subtitle="vehicles in service" />
+        <KPICard
+          title="Maintenance"
+          value={maintenanceVehicles}
+          icon={Wrench}
+          subtitle="vehicles in service"
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -476,25 +671,45 @@ export function FleetAnalyticsTab() {
             />
           </CardHeader>
           <CardContent>
-            {fleetStatusQuery.isError ? (
-              <CardError onRetry={() => fleetStatusQuery.refetch()} />
-            ) : fleetStatusQuery.isPending ? (
-              <CardLoading />
-            ) : fleetStatusChart.length === 0 ? (
-              <EmptyState message="No fleet status data available." />
-            ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie data={fleetStatusChart} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
-                    {fleetStatusChart.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-                  <Legend wrapperStyle={{ fontSize: "12px" }} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
+            {fleetStatusQuery.isError
+              ? (
+                  <CardError onRetry={() => fleetStatusQuery.refetch()} />
+                )
+              : fleetStatusQuery.isPending
+                ? (
+                    <CardLoading />
+                  )
+                : fleetStatusChart.length === 0
+                  ? (
+                      <EmptyState message="No fleet status data available." />
+                    )
+                  : (
+                      <ResponsiveContainer
+                        width="100%"
+                        height={200}
+                      >
+                        <PieChart>
+                          <Pie
+                            data={fleetStatusChart}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={80}
+                            paddingAngle={3}
+                            dataKey="value"
+                          >
+                            {fleetStatusChart.map(entry => (
+                              <Cell
+                                key={entry.name}
+                                fill={entry.color}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+                          <Legend wrapperStyle={{ fontSize: "12px" }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
           </CardContent>
         </Card>
 
@@ -512,27 +727,65 @@ export function FleetAnalyticsTab() {
             />
           </CardHeader>
           <CardContent>
-            {jobPipelineQuery.isError ? (
-              <CardError onRetry={() => jobPipelineQuery.refetch()} />
-            ) : jobPipelineQuery.isPending ? (
-              <CardLoading />
-            ) : jobPipelineData.every((item) => item.count === 0) ? (
-              <EmptyState message="No job pipeline data available." />
-            ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={jobPipelineData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                  <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                  <YAxis type="category" dataKey="stage" stroke="hsl(var(--muted-foreground))" fontSize={11} width={80} />
-                  <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-                  <Bar dataKey="count" name="Jobs" radius={[0, 4, 4, 0]}>
-                    {jobPipelineData.map((entry) => (
-                      <Cell key={entry.stage} fill={entry.fill} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+            {jobPipelineQuery.isError
+              ? (
+                  <CardError onRetry={() => jobPipelineQuery.refetch()} />
+                )
+              : jobPipelineQuery.isPending
+                ? (
+                    <CardLoading />
+                  )
+                : jobPipelineData.every(item => item.count === 0)
+                  ? (
+                      <EmptyState message="No job pipeline data available." />
+                    )
+                  : (
+                      <ResponsiveContainer
+                        width="100%"
+                        height={200}
+                      >
+                        <BarChart
+                          data={jobPipelineData}
+                          layout="vertical"
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="hsl(var(--border))"
+                            horizontal={false}
+                          />
+                          <XAxis
+                            type="number"
+                            stroke="hsl(var(--muted-foreground))"
+                            fontSize={11}
+                          />
+                          <YAxis
+                            type="category"
+                            dataKey="stage"
+                            stroke="hsl(var(--muted-foreground))"
+                            fontSize={11}
+                            width={80}
+                          />
+                          <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+                          <Bar
+                            dataKey="count"
+                            name="Jobs"
+                            radius={[
+                              0,
+                              4,
+                              4,
+                              0,
+                            ]}
+                          >
+                            {jobPipelineData.map(entry => (
+                              <Cell
+                                key={entry.stage}
+                                fill={entry.fill}
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
           </CardContent>
         </Card>
 
@@ -540,7 +793,9 @@ export function FleetAnalyticsTab() {
           <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
             <div>
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                <Fuel className="h-4 w-4" /> Fuel Levels
+                <Fuel className="h-4 w-4" />
+                {" "}
+                Fuel Levels
               </CardTitle>
               <CardDescription className="text-xs">Current tank readings</CardDescription>
             </div>
@@ -552,32 +807,45 @@ export function FleetAnalyticsTab() {
             />
           </CardHeader>
           <CardContent>
-            {fuelLevelsQuery.isError ? (
-              <CardError onRetry={() => fuelLevelsQuery.refetch()} />
-            ) : fuelLevelsQuery.isPending ? (
-              <CardLoading />
-            ) : availableFuelLevels.length === 0 ? (
-              <EmptyState message="Fuel telemetry is not available for these vehicles." />
-            ) : (
-              <div className="max-h-[200px] space-y-3 overflow-y-auto pr-1">
-                {availableFuelLevels.map((vehicle) => (
-                  <div key={vehicle.vehicleId} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-mono text-muted-foreground">{vehicle.plateNumber}</span>
-                      <span
-                        className={cn(
-                          "font-medium",
-                          vehicle.level > 50 ? "text-success" : vehicle.level > 25 ? "text-warning" : "text-destructive",
-                        )}
-                      >
-                        {vehicle.level}%
-                      </span>
-                    </div>
-                    <Progress value={vehicle.level} className="h-1.5" />
-                  </div>
-                ))}
-              </div>
-            )}
+            {fuelLevelsQuery.isError
+              ? (
+                  <CardError onRetry={() => fuelLevelsQuery.refetch()} />
+                )
+              : fuelLevelsQuery.isPending
+                ? (
+                    <CardLoading />
+                  )
+                : availableFuelLevels.length === 0
+                  ? (
+                      <EmptyState message="Fuel telemetry is not available for these vehicles." />
+                    )
+                  : (
+                      <div className="max-h-[200px] space-y-3 overflow-y-auto pr-1">
+                        {availableFuelLevels.map(vehicle => (
+                          <div
+                            key={vehicle.vehicleId}
+                            className="space-y-1"
+                          >
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-mono text-muted-foreground">{vehicle.plateNumber}</span>
+                              <span
+                                className={cn(
+                                  "font-medium",
+                                  vehicle.level > 50 ? "text-success" : vehicle.level > 25 ? "text-warning" : "text-destructive",
+                                )}
+                              >
+                                {vehicle.level}
+                                %
+                              </span>
+                            </div>
+                            <Progress
+                              value={vehicle.level}
+                              className="h-1.5"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
           </CardContent>
         </Card>
       </div>
@@ -587,7 +855,9 @@ export function FleetAnalyticsTab() {
           <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
             <div>
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                <Activity className="h-4 w-4" /> Fleet Safety Radar
+                <Activity className="h-4 w-4" />
+                {" "}
+                Fleet Safety Radar
               </CardTitle>
               <CardDescription className="text-xs">Average driver behavior scores</CardDescription>
             </div>
@@ -599,23 +869,51 @@ export function FleetAnalyticsTab() {
             />
           </CardHeader>
           <CardContent>
-            {safetyScoresQuery.isError ? (
-              <CardError onRetry={() => safetyScoresQuery.refetch()} />
-            ) : safetyScoresQuery.isPending ? (
-              <CardLoading />
-            ) : radarChart.length === 0 ? (
-              <EmptyState message="No driver safety score data available." />
-            ) : (
-              <ResponsiveContainer width="100%" height={220}>
-                <RadarChart data={radarChart}>
-                  <PolarGrid stroke="hsl(var(--border))" />
-                  <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10 }} />
-                  <Radar name="Fleet Avg" dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} strokeWidth={2} />
-                  <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-                </RadarChart>
-              </ResponsiveContainer>
-            )}
+            {safetyScoresQuery.isError
+              ? (
+                  <CardError onRetry={() => safetyScoresQuery.refetch()} />
+                )
+              : safetyScoresQuery.isPending
+                ? (
+                    <CardLoading />
+                  )
+                : radarChart.length === 0
+                  ? (
+                      <EmptyState message="No driver safety score data available." />
+                    )
+                  : (
+                      <ResponsiveContainer
+                        width="100%"
+                        height={220}
+                      >
+                        <RadarChart data={radarChart}>
+                          <PolarGrid stroke="hsl(var(--border))" />
+                          <PolarAngleAxis
+                            dataKey="metric"
+                            tick={{
+                              fontSize: 11, fill: "hsl(var(--muted-foreground))",
+                            }}
+                          />
+                          <PolarRadiusAxis
+                            angle={30}
+                            domain={[
+                              0,
+                              100,
+                            ]}
+                            tick={{ fontSize: 10 }}
+                          />
+                          <Radar
+                            name="Fleet Avg"
+                            dataKey="score"
+                            stroke="hsl(var(--primary))"
+                            fill="hsl(var(--primary))"
+                            fillOpacity={0.2}
+                            strokeWidth={2}
+                          />
+                          <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    )}
           </CardContent>
         </Card>
 
@@ -632,42 +930,71 @@ export function FleetAnalyticsTab() {
                 options={ANALYTICS_PERIOD_OPTIONS}
                 className="h-8 w-[132px]"
               />
-              <LimitFilter value={driverScoresLimit} onChange={setDriverScoresLimit} />
+              <LimitFilter
+                value={driverScoresLimit}
+                onChange={setDriverScoresLimit}
+              />
             </div>
           </CardHeader>
           <CardContent>
-            {driverScoresQuery.isError ? (
-              <CardError onRetry={() => driverScoresQuery.refetch()} />
-            ) : driverScoresQuery.isPending ? (
-              <CardLoading />
-            ) : driverScoresChart.length === 0 ? (
-              <EmptyState message="No driver safety scores available." />
-            ) : (
-              <div className="max-h-[220px] space-y-2.5 overflow-y-auto pr-1">
-                {driverScoresChart.slice(0, 8).map((driver, index) => (
-                  <div key={driver.driverId} className="flex items-center gap-3 rounded-lg bg-muted/30 p-2">
-                    <span className="w-4 text-xs font-medium text-muted-foreground">{index + 1}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{driver.driverName || `Driver ${driver.driverId.substring(0, 8)}`}</p>
-                      <p className="text-xs text-muted-foreground">{driver.incidents} events</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="px-1.5 text-[10px]">
-                        {driver.harshBraking + driver.overspeeding} signals
-                      </Badge>
-                      <span
-                        className={cn(
-                          "text-sm font-bold",
-                          driver.safetyScore >= 80 ? "text-success" : driver.safetyScore >= 60 ? "text-warning" : "text-destructive",
-                        )}
-                      >
-                        {driver.safetyScore}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            {driverScoresQuery.isError
+              ? (
+                  <CardError onRetry={() => driverScoresQuery.refetch()} />
+                )
+              : driverScoresQuery.isPending
+                ? (
+                    <CardLoading />
+                  )
+                : driverScoresChart.length === 0
+                  ? (
+                      <EmptyState message="No driver safety scores available." />
+                    )
+                  : (
+                      <div className="max-h-[220px] space-y-2.5 overflow-y-auto pr-1">
+                        {driverScoresChart.slice(
+                          0,
+                          8,
+                        ).map((driver, index) => (
+                          <div
+                            key={driver.driverId}
+                            className="flex items-center gap-3 rounded-lg bg-muted/30 p-2"
+                          >
+                            <span className="w-4 text-xs font-medium text-muted-foreground">{index + 1}</span>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">
+                                {driver.driverName || `Driver ${driver.driverId.substring(
+                                  0,
+                                  8,
+                                )}`}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {driver.incidents}
+                                {" "}
+                                events
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant="secondary"
+                                className="px-1.5 text-[10px]"
+                              >
+                                {driver.harshBraking + driver.overspeeding}
+                                {" "}
+                                signals
+                              </Badge>
+                              <span
+                                className={cn(
+                                  "text-sm font-bold",
+                                  driver.safetyScore >= 80 ? "text-success" : driver.safetyScore >= 60 ? "text-warning" : "text-destructive",
+                                )}
+                              >
+                                {driver.safetyScore}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
           </CardContent>
         </Card>
 
@@ -675,7 +1002,9 @@ export function FleetAnalyticsTab() {
           <CardHeader className="space-y-3 pb-2">
             <div>
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                <Zap className="h-4 w-4" /> Live Event Feed
+                <Zap className="h-4 w-4" />
+                {" "}
+                Live Event Feed
               </CardTitle>
               <CardDescription className="text-xs">Recent driver behavior alerts</CardDescription>
             </div>
@@ -686,43 +1015,64 @@ export function FleetAnalyticsTab() {
                 options={ANALYTICS_PERIOD_OPTIONS}
                 className="h-8 w-[132px]"
               />
-              <SeverityFilter value={eventFeedSeverity} onChange={setEventFeedSeverity} />
-              <LimitFilter value={eventFeedLimit} onChange={setEventFeedLimit} />
+              <SeverityFilter
+                value={eventFeedSeverity}
+                onChange={setEventFeedSeverity}
+              />
+              <LimitFilter
+                value={eventFeedLimit}
+                onChange={setEventFeedLimit}
+              />
             </div>
           </CardHeader>
           <CardContent>
-            {eventsQuery.isError ? (
-              <CardError onRetry={() => eventsQuery.refetch()} />
-            ) : eventsQuery.isPending ? (
-              <CardLoading />
-            ) : recentEvents.length === 0 ? (
-              <EmptyState message="No recent events available." />
-            ) : (
-              <div className="max-h-[220px] space-y-2 overflow-y-auto pr-1">
-                {recentEvents.map((event) => (
-                  <div key={event.id} className="flex items-center gap-2 border-b border-border/30 py-1.5 last:border-0">
-                    <div
-                      className={cn(
-                        "h-2 w-2 shrink-0 rounded-full",
-                        event.severity === "critical" && "bg-destructive",
-                        event.severity === "high" && "bg-warning",
-                        event.severity === "medium" && "bg-primary",
-                        event.severity === "low" && "bg-muted-foreground",
-                      )}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium">{event.type}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {event.date} - {event.time}
-                      </p>
-                    </div>
-                    <Badge variant={event.severity === "critical" ? "destructive" : "secondary"} className="shrink-0 px-1.5 text-[10px]">
-                      {event.severity}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
+            {eventsQuery.isError
+              ? (
+                  <CardError onRetry={() => eventsQuery.refetch()} />
+                )
+              : eventsQuery.isPending
+                ? (
+                    <CardLoading />
+                  )
+                : recentEvents.length === 0
+                  ? (
+                      <EmptyState message="No recent events available." />
+                    )
+                  : (
+                      <div className="max-h-[220px] space-y-2 overflow-y-auto pr-1">
+                        {recentEvents.map(event => (
+                          <div
+                            key={event.id}
+                            className="flex items-center gap-2 border-b border-border/30 py-1.5 last:border-0"
+                          >
+                            <div
+                              className={cn(
+                                "h-2 w-2 shrink-0 rounded-full",
+                                event.severity === "critical" && "bg-destructive",
+                                event.severity === "high" && "bg-warning",
+                                event.severity === "medium" && "bg-primary",
+                                event.severity === "low" && "bg-muted-foreground",
+                              )}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-xs font-medium">{event.type}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {event.date}
+                                {" "}
+                                -
+                                {event.time}
+                              </p>
+                            </div>
+                            <Badge
+                              variant={event.severity === "critical" ? "destructive" : "secondary"}
+                              className="shrink-0 px-1.5 text-[10px]"
+                            >
+                              {event.severity}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    )}
           </CardContent>
         </Card>
       </div>

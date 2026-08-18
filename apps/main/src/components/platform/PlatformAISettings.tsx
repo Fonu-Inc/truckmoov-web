@@ -1,27 +1,26 @@
-import { useState, useMemo } from "react";
 import {
-  Bot,
-  Settings,
-  Shield,
+  AlertTriangle,
   BarChart3,
-  Zap,
+  Bot,
+  Check,
   Eye,
   EyeOff,
-  AlertTriangle,
-  Check,
+  Settings,
+  Shield,
   X,
+  Zap,
 } from "lucide-react";
-import { TableToolbar } from "@/components/shadcn/table-toolbar";
-import { ExportButton } from "@/components/shadcn/export-button";
-import { Label as FilterLabel } from "@/components/shadcn/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
-import { Switch } from "@/components/shadcn/switch";
+import {
+  useMemo, useState,
+} from "react";
 import { Badge } from "@/components/shadcn/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { Slider } from "@/components/shadcn/slider";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { ExportButton } from "@/components/shadcn/export-button";
+import { Input } from "@/components/shadcn/input";
+import { Label as FilterLabel } from "@/components/shadcn/label";
 import {
   Select,
   SelectContent,
@@ -31,6 +30,8 @@ import {
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
 import { Skeleton } from "@/components/shadcn/skeleton";
+import { Slider } from "@/components/shadcn/slider";
+import { Switch } from "@/components/shadcn/switch";
 import {
   Table,
   TableBody,
@@ -39,10 +40,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
+import { TableToolbar } from "@/components/shadcn/table-toolbar";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
 
-const OPENAI_MODELS = ["gpt-4o", "gpt-4o-mini", "gpt-5", "gpt-5-mini", "gpt-5-nano"];
-const ANTHROPIC_MODELS = ["claude-3.5-sonnet", "claude-3-sonnet", "claude-3-haiku", "claude-3-opus"];
-const LOVABLE_MODELS = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite", "gemini-3-flash-preview"];
+const OPENAI_MODELS = [
+  "gpt-4o",
+  "gpt-4o-mini",
+  "gpt-5",
+  "gpt-5-mini",
+  "gpt-5-nano",
+];
+const ANTHROPIC_MODELS = [
+  "claude-3.5-sonnet",
+  "claude-3-sonnet",
+  "claude-3-haiku",
+  "claude-3-opus",
+];
+const LOVABLE_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+  "gemini-2.5-flash-lite",
+  "gemini-3-flash-preview",
+];
 
 export function PlatformAISettings() {
   const config: any = {
@@ -68,33 +89,60 @@ export function PlatformAISettings() {
   const updateConfig = (_updates: any): void => {};
   const logs: any[] = [];
   const stats: any = null;
-  const [activeTab, setActiveTab] = useState("providers");
-  const [logSearch, setLogSearch] = useState("");
-  const [logStatus, setLogStatus] = useState("all");
-  const [logFilters, setLogFilters] = useState<Record<string, any>>({});
+  const [
+    activeTab,
+    setActiveTab,
+  ] = useState("providers");
+  const [
+    logSearch,
+    setLogSearch,
+  ] = useState("");
+  const [
+    logStatus,
+    setLogStatus,
+  ] = useState("all");
+  const [
+    logFilters,
+    setLogFilters,
+  ] = useState<Record<string, any>>({});
 
-  const filteredLogs = useMemo(() => {
-    const q = logSearch.trim().toLowerCase();
-    const provider = logFilters.provider?.enabled ? logFilters.provider.value : null;
-    const tokensFrom = logFilters.tokens?.enabled ? Number(logFilters.tokens.from) : null;
-    const tokensTo = logFilters.tokens?.enabled ? Number(logFilters.tokens.to) : null;
-    const dateAfter = logFilters.date?.enabled ? logFilters.date.date : null;
+  const filteredLogs = useMemo(
+    () => {
+      const q = logSearch.trim().toLowerCase();
+      const provider = logFilters.provider?.enabled ? logFilters.provider.value : null;
+      const tokensFrom = logFilters.tokens?.enabled ? Number(logFilters.tokens.from) : null;
+      const tokensTo = logFilters.tokens?.enabled ? Number(logFilters.tokens.to) : null;
+      const dateAfter = logFilters.date?.enabled ? logFilters.date.date : null;
 
-    return logs.filter((l) => {
-      if (logStatus === "success" && !l.success) return false;
-      if (logStatus === "failed" && l.success) return false;
-      if (provider && l.provider !== provider) return false;
-      if (tokensFrom !== null && !Number.isNaN(tokensFrom) && (l.tokens_used ?? 0) < tokensFrom) return false;
-      if (tokensTo !== null && !Number.isNaN(tokensTo) && (l.tokens_used ?? 0) > tokensTo) return false;
-      if (dateAfter && new Date(l.created_at) < new Date(dateAfter)) return false;
-      if (!q) return true;
-      return (
-        l.tenant_id?.toLowerCase().includes(q) ||
-        l.provider?.toLowerCase().includes(q) ||
-        l.model?.toLowerCase().includes(q)
-      );
-    });
-  }, [logs, logSearch, logStatus, logFilters]);
+      return logs.filter((l) => {
+        if (logStatus === "success" && !l.success)
+          return false;
+        if (logStatus === "failed" && l.success)
+          return false;
+        if (provider && l.provider !== provider)
+          return false;
+        if (tokensFrom !== null && !Number.isNaN(tokensFrom) && (l.tokens_used ?? 0) < tokensFrom)
+          return false;
+        if (tokensTo !== null && !Number.isNaN(tokensTo) && (l.tokens_used ?? 0) > tokensTo)
+          return false;
+        if (dateAfter && new Date(l.created_at) < new Date(dateAfter))
+          return false;
+        if (!q)
+          return true;
+        return (
+          l.tenant_id?.toLowerCase().includes(q)
+          || l.provider?.toLowerCase().includes(q)
+          || l.model?.toLowerCase().includes(q)
+        );
+      });
+    },
+    [
+      logs,
+      logSearch,
+      logStatus,
+      logFilters,
+    ],
+  );
 
   if (isLoading) {
     return (
@@ -138,7 +186,7 @@ export function PlatformAISettings() {
         <div className="flex items-center gap-2">
           <Switch
             checked={config.ai_job_matching_enabled}
-            onCheckedChange={(checked) => updateConfig({ ai_job_matching_enabled: checked })}
+            onCheckedChange={checked => updateConfig({ ai_job_matching_enabled: checked })}
             disabled={isSaving}
           />
           <Label className="font-medium">
@@ -147,28 +195,46 @@ export function PlatformAISettings() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+      >
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="providers" className="flex items-center gap-2">
+          <TabsTrigger
+            value="providers"
+            className="flex items-center gap-2"
+          >
             <Zap className="h-4 w-4" />
             Providers
           </TabsTrigger>
-          <TabsTrigger value="guardrails" className="flex items-center gap-2">
+          <TabsTrigger
+            value="guardrails"
+            className="flex items-center gap-2"
+          >
             <Shield className="h-4 w-4" />
             Guardrails
           </TabsTrigger>
-          <TabsTrigger value="defaults" className="flex items-center gap-2">
+          <TabsTrigger
+            value="defaults"
+            className="flex items-center gap-2"
+          >
             <Settings className="h-4 w-4" />
             Defaults
           </TabsTrigger>
-          <TabsTrigger value="usage" className="flex items-center gap-2">
+          <TabsTrigger
+            value="usage"
+            className="flex items-center gap-2"
+          >
             <BarChart3 className="h-4 w-4" />
             Usage
           </TabsTrigger>
         </TabsList>
 
         {/* Providers Tab */}
-        <TabsContent value="providers" className="space-y-4">
+        <TabsContent
+          value="providers"
+          className="space-y-4"
+        >
           <div className="grid gap-4 md:grid-cols-3">
             {/* OpenAI */}
             <Card className={config.openai_enabled ? "border-primary/50" : "opacity-75"}>
@@ -177,7 +243,7 @@ export function PlatformAISettings() {
                   <CardTitle className="text-lg">OpenAI</CardTitle>
                   <Switch
                     checked={config.openai_enabled}
-                    onCheckedChange={(checked) => updateConfig({ openai_enabled: checked })}
+                    onCheckedChange={checked => updateConfig({ openai_enabled: checked })}
                     disabled={isSaving}
                   />
                 </div>
@@ -196,8 +262,11 @@ export function PlatformAISettings() {
                           className="cursor-pointer text-xs"
                           onClick={() => {
                             const newModels = isAllowed
-                              ? config.openai_allowed_models.filter((m) => m !== model)
-                              : [...(config.openai_allowed_models || []), model];
+                              ? config.openai_allowed_models.filter(m => m !== model)
+                              : [
+                                  ...(config.openai_allowed_models || []),
+                                  model,
+                                ];
                             updateConfig({ openai_allowed_models: newModels });
                           }}
                         >
@@ -217,7 +286,7 @@ export function PlatformAISettings() {
                   <CardTitle className="text-lg">Anthropic</CardTitle>
                   <Switch
                     checked={config.anthropic_enabled}
-                    onCheckedChange={(checked) => updateConfig({ anthropic_enabled: checked })}
+                    onCheckedChange={checked => updateConfig({ anthropic_enabled: checked })}
                     disabled={isSaving}
                   />
                 </div>
@@ -236,8 +305,11 @@ export function PlatformAISettings() {
                           className="cursor-pointer text-xs"
                           onClick={() => {
                             const newModels = isAllowed
-                              ? config.anthropic_allowed_models.filter((m) => m !== model)
-                              : [...(config.anthropic_allowed_models || []), model];
+                              ? config.anthropic_allowed_models.filter(m => m !== model)
+                              : [
+                                  ...(config.anthropic_allowed_models || []),
+                                  model,
+                                ];
                             updateConfig({ anthropic_allowed_models: newModels });
                           }}
                         >
@@ -257,7 +329,7 @@ export function PlatformAISettings() {
                   <CardTitle className="text-lg">Lovable AI</CardTitle>
                   <Switch
                     checked={config.lovable_enabled}
-                    onCheckedChange={(checked) => updateConfig({ lovable_enabled: checked })}
+                    onCheckedChange={checked => updateConfig({ lovable_enabled: checked })}
                     disabled={isSaving}
                   />
                 </div>
@@ -276,8 +348,11 @@ export function PlatformAISettings() {
                           className="cursor-pointer text-xs"
                           onClick={() => {
                             const newModels = isAllowed
-                              ? config.lovable_allowed_models.filter((m) => m !== model)
-                              : [...(config.lovable_allowed_models || []), model];
+                              ? config.lovable_allowed_models.filter(m => m !== model)
+                              : [
+                                  ...(config.lovable_allowed_models || []),
+                                  model,
+                                ];
                             updateConfig({ lovable_allowed_models: newModels });
                           }}
                         >
@@ -293,7 +368,10 @@ export function PlatformAISettings() {
         </TabsContent>
 
         {/* Guardrails Tab */}
-        <TabsContent value="guardrails" className="space-y-4">
+        <TabsContent
+          value="guardrails"
+          className="space-y-4"
+        >
           <div className="grid gap-6 md:grid-cols-2">
             {/* Rate Limits */}
             <Card>
@@ -310,9 +388,8 @@ export function PlatformAISettings() {
                   <Input
                     type="number"
                     value={config.max_tokens_per_request}
-                    onChange={(e) =>
-                      updateConfig({ max_tokens_per_request: parseInt(e.target.value) || 4000 })
-                    }
+                    onChange={e =>
+                      updateConfig({ max_tokens_per_request: parseInt(e.target.value) || 4000 })}
                     disabled={isSaving}
                   />
                 </div>
@@ -321,9 +398,8 @@ export function PlatformAISettings() {
                   <Input
                     type="number"
                     value={config.max_requests_per_minute}
-                    onChange={(e) =>
-                      updateConfig({ max_requests_per_minute: parseInt(e.target.value) || 60 })
-                    }
+                    onChange={e =>
+                      updateConfig({ max_requests_per_minute: parseInt(e.target.value) || 60 })}
                     disabled={isSaving}
                   />
                 </div>
@@ -332,11 +408,8 @@ export function PlatformAISettings() {
                   <Input
                     type="number"
                     value={config.max_tokens_per_day_per_tenant}
-                    onChange={(e) =>
-                      updateConfig({
-                        max_tokens_per_day_per_tenant: parseInt(e.target.value) || 100000,
-                      })
-                    }
+                    onChange={e =>
+                      updateConfig({ max_tokens_per_day_per_tenant: parseInt(e.target.value) || 100000 })}
                     disabled={isSaving}
                   />
                 </div>
@@ -362,7 +435,7 @@ export function PlatformAISettings() {
                   </div>
                   <Switch
                     checked={config.redact_phone_numbers}
-                    onCheckedChange={(checked) => updateConfig({ redact_phone_numbers: checked })}
+                    onCheckedChange={checked => updateConfig({ redact_phone_numbers: checked })}
                     disabled={isSaving}
                   />
                 </div>
@@ -374,7 +447,7 @@ export function PlatformAISettings() {
                   </div>
                   <Switch
                     checked={config.redact_driver_names}
-                    onCheckedChange={(checked) => updateConfig({ redact_driver_names: checked })}
+                    onCheckedChange={checked => updateConfig({ redact_driver_names: checked })}
                     disabled={isSaving}
                   />
                 </div>
@@ -388,7 +461,7 @@ export function PlatformAISettings() {
                   </div>
                   <Switch
                     checked={config.redact_vehicle_plates}
-                    onCheckedChange={(checked) => updateConfig({ redact_vehicle_plates: checked })}
+                    onCheckedChange={checked => updateConfig({ redact_vehicle_plates: checked })}
                     disabled={isSaving}
                   />
                 </div>
@@ -402,9 +475,8 @@ export function PlatformAISettings() {
                   </div>
                   <Switch
                     checked={config.store_prompts_responses}
-                    onCheckedChange={(checked) =>
-                      updateConfig({ store_prompts_responses: checked })
-                    }
+                    onCheckedChange={checked =>
+                      updateConfig({ store_prompts_responses: checked })}
                     disabled={isSaving}
                   />
                 </div>
@@ -414,7 +486,10 @@ export function PlatformAISettings() {
         </TabsContent>
 
         {/* Defaults Tab */}
-        <TabsContent value="defaults" className="space-y-4">
+        <TabsContent
+          value="defaults"
+          className="space-y-4"
+        >
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Default Provider for Demo/Trial Tenants</CardTitle>
@@ -429,8 +504,7 @@ export function PlatformAISettings() {
                   <Select
                     value={config.default_provider}
                     onValueChange={(value: "openai" | "anthropic" | "lovable") =>
-                      updateConfig({ default_provider: value })
-                    }
+                      updateConfig({ default_provider: value })}
                     disabled={isSaving}
                   >
                     <SelectTrigger>
@@ -451,28 +525,37 @@ export function PlatformAISettings() {
                   <Label>Default Model</Label>
                   <Select
                     value={config.default_model}
-                    onValueChange={(value) => updateConfig({ default_model: value })}
+                    onValueChange={value => updateConfig({ default_model: value })}
                     disabled={isSaving}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {config.default_provider === "openai" &&
-                        config.openai_allowed_models?.map((m) => (
-                          <SelectItem key={m} value={m}>
+                      {config.default_provider === "openai"
+                        && config.openai_allowed_models?.map(m => (
+                          <SelectItem
+                            key={m}
+                            value={m}
+                          >
                             {m}
                           </SelectItem>
                         ))}
-                      {config.default_provider === "anthropic" &&
-                        config.anthropic_allowed_models?.map((m) => (
-                          <SelectItem key={m} value={m}>
+                      {config.default_provider === "anthropic"
+                        && config.anthropic_allowed_models?.map(m => (
+                          <SelectItem
+                            key={m}
+                            value={m}
+                          >
                             {m}
                           </SelectItem>
                         ))}
-                      {config.default_provider === "lovable" &&
-                        config.lovable_allowed_models?.map((m) => (
-                          <SelectItem key={m} value={m}>
+                      {config.default_provider === "lovable"
+                        && config.lovable_allowed_models?.map(m => (
+                          <SelectItem
+                            key={m}
+                            value={m}
+                          >
                             {m}
                           </SelectItem>
                         ))}
@@ -485,7 +568,10 @@ export function PlatformAISettings() {
         </TabsContent>
 
         {/* Usage Tab */}
-        <TabsContent value="usage" className="space-y-4">
+        <TabsContent
+          value="usage"
+          className="space-y-4"
+        >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Platform AI Usage</h3>
           </div>
@@ -501,20 +587,27 @@ export function PlatformAISettings() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-2xl font-bold">
-                    {(stats.totalTokens / 1000).toFixed(1)}K
+                    {(stats.totalTokens / 1000).toFixed(1)}
+                    K
                   </div>
                   <p className="text-xs text-muted-foreground">Total Tokens</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="text-2xl font-bold">{stats.successRate.toFixed(1)}%</div>
+                  <div className="text-2xl font-bold">
+                    {stats.successRate.toFixed(1)}
+                    %
+                  </div>
                   <p className="text-xs text-muted-foreground">Success Rate</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="text-2xl font-bold">{stats.avgLatency.toFixed(0)}ms</div>
+                  <div className="text-2xl font-bold">
+                    {stats.avgLatency.toFixed(0)}
+                    ms
+                  </div>
                   <p className="text-xs text-muted-foreground">Avg Latency</p>
                 </CardContent>
               </Card>
@@ -529,14 +622,25 @@ export function PlatformAISettings() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {Object.entries(stats.byProvider).map(([provider, data]) => (
-                    <div key={provider} className="flex items-center justify-between">
+                  {Object.entries(stats.byProvider).map(([
+                    provider,
+                    data,
+                  ]) => (
+                    <div
+                      key={provider}
+                      className="flex items-center justify-between"
+                    >
                       <span className="capitalize">{provider}</span>
                       <div className="flex items-center gap-4">
                         <span className="text-sm text-muted-foreground">
-                          {data.requests} requests
+                          {data.requests}
+                          {" "}
+                          requests
                         </span>
-                        <Badge variant="outline">{(data.tokens / 1000).toFixed(1)}K tokens</Badge>
+                        <Badge variant="outline">
+                          {(data.tokens / 1000).toFixed(1)}
+                          K tokens
+                        </Badge>
                       </div>
                     </div>
                   ))}
@@ -565,16 +669,34 @@ export function PlatformAISettings() {
                   </TableHeader>
                   <TableBody>
                     {Object.entries(stats.byTenant)
-                      .sort(([, a], [, b]) => b.tokens - a.tokens)
-                      .slice(0, 10)
-                      .map(([tenantId, data]) => (
+                      .sort(([
+                        , a,
+                      ], [
+                        , b,
+                      ]) => b.tokens - a.tokens)
+                      .slice(
+                        0,
+                        10,
+                      )
+                      .map(([
+                        tenantId,
+                        data,
+                      ]) => (
                         <TableRow key={tenantId}>
                           <TableCell className="font-mono text-xs">
-                            {tenantId.slice(0, 8)}...{tenantId.slice(-4)}
+                            {tenantId.slice(
+                              0,
+                              8,
+                            )}
+                            ...
+                            {tenantId.slice(-4)}
                           </TableCell>
                           <TableCell className="text-right">{data.requests}</TableCell>
                           <TableCell className="text-right">
-                            <Badge variant="outline">{(data.tokens / 1000).toFixed(1)}K</Badge>
+                            <Badge variant="outline">
+                              {(data.tokens / 1000).toFixed(1)}
+                              K
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-right text-muted-foreground">
                             {data.requests > 0 ? Math.round(data.tokens / data.requests) : 0}
@@ -582,17 +704,16 @@ export function PlatformAISettings() {
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
                               <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                                <div 
+                                <div
                                   className="h-full bg-primary rounded-full"
-                                  style={{ 
-                                    width: `${stats.totalTokens > 0 ? (data.tokens / stats.totalTokens) * 100 : 0}%` 
-                                  }}
+                                  style={{ width: `${stats.totalTokens > 0 ? (data.tokens / stats.totalTokens) * 100 : 0}%` }}
                                 />
                               </div>
                               <span className="text-xs">
-                                {stats.totalTokens > 0 
-                                  ? ((data.tokens / stats.totalTokens) * 100).toFixed(1) 
-                                  : 0}%
+                                {stats.totalTokens > 0
+                                  ? ((data.tokens / stats.totalTokens) * 100).toFixed(1)
+                                  : 0}
+                                %
                               </span>
                             </div>
                           </TableCell>
@@ -612,13 +733,27 @@ export function PlatformAISettings() {
                 rows={filteredLogs}
                 filename="ai-usage-logs"
                 columns={[
-                  { header: "Time", accessor: (l: any) => new Date(l.created_at).toISOString() },
-                  { header: "Tenant", accessor: (l: any) => l.tenant_id },
-                  { header: "Provider", accessor: (l: any) => l.provider },
-                  { header: "Model", accessor: (l: any) => l.model },
-                  { header: "Tokens", accessor: (l: any) => l.tokens_used },
-                  { header: "Latency (ms)", accessor: (l: any) => l.latency_ms },
-                  { header: "Status", accessor: (l: any) => (l.success ? "Success" : "Failed") },
+                  {
+                    header: "Time", accessor: (l: any) => new Date(l.created_at).toISOString(),
+                  },
+                  {
+                    header: "Tenant", accessor: (l: any) => l.tenant_id,
+                  },
+                  {
+                    header: "Provider", accessor: (l: any) => l.provider,
+                  },
+                  {
+                    header: "Model", accessor: (l: any) => l.model,
+                  },
+                  {
+                    header: "Tokens", accessor: (l: any) => l.tokens_used,
+                  },
+                  {
+                    header: "Latency (ms)", accessor: (l: any) => l.latency_ms,
+                  },
+                  {
+                    header: "Status", accessor: (l: any) => (l.success ? "Success" : "Failed"),
+                  },
                 ]}
               />
             </CardHeader>
@@ -630,8 +765,12 @@ export function PlatformAISettings() {
                 status={logStatus}
                 onStatusChange={setLogStatus}
                 statusOptions={[
-                  { value: "success", label: "Successful" },
-                  { value: "failed", label: "Failed" },
+                  {
+                    value: "success", label: "Successful",
+                  },
+                  {
+                    value: "failed", label: "Failed",
+                  },
                 ]}
                 filterEntity="requests"
                 filterValues={logFilters}
@@ -642,13 +781,23 @@ export function PlatformAISettings() {
                     key: "provider",
                     label: "Provider",
                     options: [
-                      { value: "openai", label: "OpenAI" },
-                      { value: "anthropic", label: "Anthropic" },
-                      { value: "lovable", label: "Lovable" },
+                      {
+                        value: "openai", label: "OpenAI",
+                      },
+                      {
+                        value: "anthropic", label: "Anthropic",
+                      },
+                      {
+                        value: "lovable", label: "Lovable",
+                      },
                     ],
                   },
-                  { type: "range", key: "tokens", label: "Tokens used" },
-                  { type: "date", key: "date", label: "After date" },
+                  {
+                    type: "range", key: "tokens", label: "Tokens used",
+                  },
+                  {
+                    type: "date", key: "date", label: "After date",
+                  },
                 ]}
               />
               <Table>
@@ -664,34 +813,52 @@ export function PlatformAISettings() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredLogs.slice(0, 10).map((log) => (
+                  {filteredLogs.slice(
+                    0,
+                    10,
+                  ).map(log => (
                     <TableRow key={log.id}>
                       <TableCell className="text-xs">
                         {new Date(log.created_at).toLocaleString()}
                       </TableCell>
                       <TableCell className="text-xs font-mono">
-                        {log.tenant_id.slice(0, 8)}...
+                        {log.tenant_id.slice(
+                          0,
+                          8,
+                        )}
+                        ...
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="capitalize">
+                        <Badge
+                          variant="outline"
+                          className="capitalize"
+                        >
                           {log.provider}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs">{log.model}</TableCell>
                       <TableCell>{log.tokens_used}</TableCell>
-                      <TableCell>{log.latency_ms}ms</TableCell>
                       <TableCell>
-                        {log.success ? (
-                          <Check className="h-4 w-4 text-success" />
-                        ) : (
-                          <X className="h-4 w-4 text-destructive" />
-                        )}
+                        {log.latency_ms}
+                        ms
+                      </TableCell>
+                      <TableCell>
+                        {log.success
+                          ? (
+                              <Check className="h-4 w-4 text-success" />
+                            )
+                          : (
+                              <X className="h-4 w-4 text-destructive" />
+                            )}
                       </TableCell>
                     </TableRow>
                   ))}
                   {filteredLogs.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground text-sm py-6">
+                      <TableCell
+                        colSpan={7}
+                        className="text-center text-muted-foreground text-sm py-6"
+                      >
                         No requests match your filters.
                       </TableCell>
                     </TableRow>

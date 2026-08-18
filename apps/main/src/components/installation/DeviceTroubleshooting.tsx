@@ -1,102 +1,131 @@
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
-import { Button } from '@/components/shadcn/button';
-import { Badge } from '@/components/shadcn/badge';
+import {
+  AlertTriangle,
+  Copy,
+  Cpu,
+  CreditCard,
+  ExternalLink,
+  Radio,
+  RotateCcw,
+  Server,
+  Wifi,
+  Wrench,
+} from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { DeviceLifecycleBadge } from "@/components/devices/DeviceLifecycleBadge";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/shadcn/accordion";
+import {
+  Alert, AlertDescription, AlertTitle,
+} from "@/components/shadcn/alert";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/shadcn/select';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/shadcn/accordion';
-import { Alert, AlertDescription, AlertTitle } from '@/components/shadcn/alert';
-type ConfigQueueDevice = any;
-import { DeviceLifecycleBadge } from '@/components/devices/DeviceLifecycleBadge';
-type DeviceLifecycleStatus = string;
-import {
-  Wrench,
-  AlertTriangle,
-  Wifi,
-  Server,
-  CreditCard,
-  Radio,
-  Copy,
-  RotateCcw,
-  ExternalLink,
-  Cpu,
-} from 'lucide-react';
-import { toast } from 'sonner';
+} from "@/components/shadcn/select";
 
-interface DeviceTroubleshootingProps {
+type ConfigQueueDevice = any;
+type DeviceLifecycleStatus = string;
+
+type DeviceTroubleshootingProps = {
   devices: ConfigQueueDevice[];
   selectedDeviceId: string | null;
   onSelectDevice: (deviceId: string | null) => void;
   onReset?: (deviceId: string, reason: string) => Promise<{ success: boolean }>;
-}
+};
 
 const COMMON_ISSUES = [
   {
-    id: 'wrong-endpoint',
-    title: 'Wrong Endpoint / Server Address',
-    symptoms: ['No data received', 'Connection timeout'],
-    solution: 'Verify the device is configured to send data to ingest.fleetpro.com',
-    action: 'copy-endpoint',
+    id: "wrong-endpoint",
+    title: "Wrong Endpoint / Server Address",
+    symptoms: [
+      "No data received",
+      "Connection timeout",
+    ],
+    solution: "Verify the device is configured to send data to ingest.fleetpro.com",
+    action: "copy-endpoint",
   },
   {
-    id: 'wrong-port',
-    title: 'Incorrect Port Configuration',
-    symptoms: ['Connection refused', 'No data received'],
-    solution: 'Ensure the port matches the protocol: HTTP (443), TCP (5001), MQTT (1883)',
-    action: 'copy-port',
+    id: "wrong-port",
+    title: "Incorrect Port Configuration",
+    symptoms: [
+      "Connection refused",
+      "No data received",
+    ],
+    solution: "Ensure the port matches the protocol: HTTP (443), TCP (5001), MQTT (1883)",
+    action: "copy-port",
   },
   {
-    id: 'wrong-protocol',
-    title: 'Protocol Mismatch',
-    symptoms: ['Garbled data', 'Parse errors'],
-    solution: 'Check that the device protocol matches the catalog specification',
+    id: "wrong-protocol",
+    title: "Protocol Mismatch",
+    symptoms: [
+      "Garbled data",
+      "Parse errors",
+    ],
+    solution: "Check that the device protocol matches the catalog specification",
     action: null,
   },
   {
-    id: 'apn-config',
-    title: 'APN Misconfigured',
-    symptoms: ['No network connection', 'SIM errors'],
-    solution: 'Contact the carrier for correct APN settings. Common formats: internet, web.gprs, data',
+    id: "apn-config",
+    title: "APN Misconfigured",
+    symptoms: [
+      "No network connection",
+      "SIM errors",
+    ],
+    solution: "Contact the carrier for correct APN settings. Common formats: internet, web.gprs, data",
     action: null,
   },
   {
-    id: 'no-data-plan',
-    title: 'No Active Data Plan',
-    symptoms: ['SIM registered but no data', 'Connection drops'],
-    solution: 'Verify with the carrier that the SIM has an active data plan',
+    id: "no-data-plan",
+    title: "No Active Data Plan",
+    symptoms: [
+      "SIM registered but no data",
+      "Connection drops",
+    ],
+    solution: "Verify with the carrier that the SIM has an active data plan",
     action: null,
   },
   {
-    id: 'sim-seating',
-    title: 'Poor SIM Card Seating',
-    symptoms: ['Intermittent connection', 'SIM not detected'],
-    solution: 'Remove and re-insert the SIM card, ensure proper contact',
+    id: "sim-seating",
+    title: "Poor SIM Card Seating",
+    symptoms: [
+      "Intermittent connection",
+      "SIM not detected",
+    ],
+    solution: "Remove and re-insert the SIM card, ensure proper contact",
     action: null,
   },
   {
-    id: 'poor-signal',
-    title: 'Poor Cellular Signal',
-    symptoms: ['Intermittent data', 'High latency'],
-    solution: 'Move device to area with better coverage, consider external antenna',
+    id: "poor-signal",
+    title: "Poor Cellular Signal",
+    symptoms: [
+      "Intermittent data",
+      "High latency",
+    ],
+    solution: "Move device to area with better coverage, consider external antenna",
     action: null,
   },
   {
-    id: 'imei-mismatch',
-    title: 'IMEI Mismatch',
-    symptoms: ['Data rejected', 'Authentication failed'],
-    solution: 'Verify the registered IMEI matches the physical device IMEI',
-    action: 'copy-imei',
+    id: "imei-mismatch",
+    title: "IMEI Mismatch",
+    symptoms: [
+      "Data rejected",
+      "Authentication failed",
+    ],
+    solution: "Verify the registered IMEI matches the physical device IMEI",
+    action: "copy-imei",
   },
 ];
 
@@ -114,14 +143,18 @@ export function DeviceTroubleshooting({
   };
 
   const handleReset = async () => {
-    if (!selectedDevice || !onReset) return;
-    
+    if (!selectedDevice || !onReset)
+      return;
+
     const confirmed = window.confirm(
-      'Are you sure you want to reset this device to Config Pending? This action is audited.'
+      "Are you sure you want to reset this device to Config Pending? This action is audited.",
     );
-    
+
     if (confirmed) {
-      await onReset(selectedDevice.id, 'Reset from Troubleshooting interface');
+      await onReset(
+        selectedDevice.id,
+        "Reset from Troubleshooting interface",
+      );
     }
   };
 
@@ -140,19 +173,30 @@ export function DeviceTroubleshooting({
         {/* Device Selector */}
         <div>
           <label className="text-sm font-medium mb-2 block">Select Device</label>
-          <Select 
-            value={selectedDeviceId || ''} 
-            onValueChange={(value) => onSelectDevice(value || null)}
+          <Select
+            value={selectedDeviceId || ""}
+            onValueChange={value => onSelectDevice(value || null)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Choose a device to troubleshoot..." />
             </SelectTrigger>
             <SelectContent>
               {devices.map(device => (
-                <SelectItem key={device.id} value={device.id}>
+                <SelectItem
+                  key={device.id}
+                  value={device.id}
+                >
                   <div className="flex items-center gap-2">
-                    <span>{device.manufacturer} {device.model}</span>
-                    <span className="text-muted-foreground">({device.imei})</span>
+                    <span>
+                      {device.manufacturer}
+                      {" "}
+                      {device.model}
+                    </span>
+                    <span className="text-muted-foreground">
+                      (
+                      {device.imei}
+                      )
+                    </span>
                   </div>
                 </SelectItem>
               ))}
@@ -168,7 +212,11 @@ export function DeviceTroubleshooting({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Device</p>
-                    <p className="font-medium">{selectedDevice.manufacturer} {selectedDevice.model}</p>
+                    <p className="font-medium">
+                      {selectedDevice.manufacturer}
+                      {" "}
+                      {selectedDevice.model}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Status</p>
@@ -177,30 +225,35 @@ export function DeviceTroubleshooting({
                   <div>
                     <p className="text-sm text-muted-foreground">Last Seen</p>
                     <p className="text-sm">
-                      {selectedDevice.last_seen 
+                      {selectedDevice.last_seen
                         ? formatRelative(selectedDevice.last_seen)
-                        : 'Never'
-                      }
+                        : "Never"}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Configured</p>
                     <p className="text-sm">
-                      {(selectedDevice as any).configured_at 
+                      {(selectedDevice as any).configured_at
                         ? formatRelative((selectedDevice as any).configured_at)
-                        : 'Not yet'
-                      }
+                        : "Not yet"}
                     </p>
                   </div>
                 </div>
 
                 {/* Error State */}
                 {(selectedDevice as any).verification_error_code && (
-                  <Alert variant="destructive" className="mt-4">
+                  <Alert
+                    variant="destructive"
+                    className="mt-4"
+                  >
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Verification Error</AlertTitle>
                     <AlertDescription>
-                      <p><strong>Code:</strong> {(selectedDevice as any).verification_error_code}</p>
+                      <p>
+                        <strong>Code:</strong>
+                        {" "}
+                        {(selectedDevice as any).verification_error_code}
+                      </p>
                       <p>{(selectedDevice as any).verification_error_message}</p>
                     </AlertDescription>
                   </Alert>
@@ -216,39 +269,47 @@ export function DeviceTroubleshooting({
                   <span className="text-sm font-medium">Expected Endpoint</span>
                 </div>
                 <code className="text-xs break-all">ingest.fleetpro.com</code>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="mt-2 w-full"
-                  onClick={() => handleCopy('ingest.fleetpro.com', 'Endpoint')}
+                  onClick={() => handleCopy(
+                    "ingest.fleetpro.com",
+                    "Endpoint",
+                  )}
                 >
                   <Copy className="h-3 w-3 mr-2" />
                   Copy
                 </Button>
               </div>
-              
+
               <div className="p-4 rounded-lg border">
                 <div className="flex items-center gap-2 mb-2">
                   <Wifi className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Protocol / Port</span>
                 </div>
                 <code className="text-xs">
-                  {selectedDevice.protocol?.toUpperCase() || 'HTTP'} / 
-                  {selectedDevice.protocol === 'mqtt' ? ' 1883' : selectedDevice.protocol === 'tcp' ? ' 5001' : ' 443'}
+                  {selectedDevice.protocol?.toUpperCase() || "HTTP"}
+                  {" "}
+                  /
+                  {selectedDevice.protocol === "mqtt" ? " 1883" : selectedDevice.protocol === "tcp" ? " 5001" : " 443"}
                 </code>
               </div>
-              
+
               <div className="p-4 rounded-lg border">
                 <div className="flex items-center gap-2 mb-2">
                   <Cpu className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Device IMEI</span>
                 </div>
                 <code className="text-xs">{selectedDevice.imei}</code>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="mt-2 w-full"
-                  onClick={() => handleCopy(selectedDevice.imei, 'IMEI')}
+                  onClick={() => handleCopy(
+                    selectedDevice.imei,
+                    "IMEI",
+                  )}
                 >
                   <Copy className="h-3 w-3 mr-2" />
                   Copy
@@ -259,9 +320,17 @@ export function DeviceTroubleshooting({
             {/* Common Issues */}
             <div>
               <h3 className="font-medium mb-3">Common Issues & Solutions</h3>
-              <Accordion type="single" collapsible className="space-y-2">
+              <Accordion
+                type="single"
+                collapsible
+                className="space-y-2"
+              >
                 {COMMON_ISSUES.map(issue => (
-                  <AccordionItem key={issue.id} value={issue.id} className="border rounded-lg px-4">
+                  <AccordionItem
+                    key={issue.id}
+                    value={issue.id}
+                    className="border rounded-lg px-4"
+                  >
                     <AccordionTrigger className="hover:no-underline">
                       <div className="flex items-center gap-2">
                         <AlertTriangle className="h-4 w-4 text-warning" />
@@ -289,20 +358,20 @@ export function DeviceTroubleshooting({
 
             {/* Actions */}
             <div className="flex flex-wrap gap-3">
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => handleCopy(
                   `https://ingest.fleetpro.com/api/v1/telemetry/${selectedDevice.imei}`,
-                  'Full endpoint URL'
+                  "Full endpoint URL",
                 )}
               >
                 <Copy className="h-4 w-4 mr-2" />
                 Re-send Setup Details
               </Button>
-              
+
               {onReset && (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="text-warning border-warning hover:bg-warning/10"
                   onClick={handleReset}
                 >
@@ -310,7 +379,7 @@ export function DeviceTroubleshooting({
                   Reset to Config Pending
                 </Button>
               )}
-              
+
               <Button variant="outline">
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Open Support Ticket

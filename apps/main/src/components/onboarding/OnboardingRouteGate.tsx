@@ -1,8 +1,6 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
-interface OnboardingRouteGateProps {
-  children: ReactNode;
-}
+type OnboardingRouteGateProps = { children: ReactNode };
 
 /**
  * Soft gate: never blocks navigation. Until KYC + Subscription are complete

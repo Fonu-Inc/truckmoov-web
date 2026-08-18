@@ -1,14 +1,20 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/shadcn/accordion";
+import {
+  ArrowUpLeft, CircleHelp, Mail,
+} from "lucide-react";
+import {
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+} from "@/components/shadcn/accordion";
 import { Button } from "@/components/shadcn/button";
-import { CircleHelp, ArrowUpLeft, Mail } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "@/components/shadcn/dialog";
 
-interface AuthHelpDialogProps {
+type AuthHelpDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: "sign-in" | "sign-up";
   onOpenChat?: () => void;
-}
+};
 
 const SIGN_IN_FAQS = [
   {
@@ -56,12 +62,17 @@ const SIGN_UP_FAQS = [
   },
 ];
 
-export function AuthHelpDialog({ open, onOpenChange, mode, onOpenChat }: AuthHelpDialogProps) {
+export function AuthHelpDialog({
+  open, onOpenChange, mode, onOpenChat,
+}: AuthHelpDialogProps) {
   const faqs = mode === "sign-up" ? SIGN_UP_FAQS : SIGN_IN_FAQS;
   const title = mode === "sign-up" ? "Sign Up Help" : "Sign In Help";
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
@@ -75,9 +86,16 @@ export function AuthHelpDialog({ open, onOpenChange, mode, onOpenChat }: AuthHel
           </div>
         </DialogHeader>
 
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion
+          type="single"
+          collapsible
+          className="w-full"
+        >
           {faqs.map((faq, idx) => (
-            <AccordionItem key={idx} value={`item-${idx}`}>
+            <AccordionItem
+              key={idx}
+              value={`item-${idx}`}
+            >
               <AccordionTrigger className="text-left text-sm font-medium">{faq.q}</AccordionTrigger>
               <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
                 {faq.a}
@@ -105,7 +123,12 @@ export function AuthHelpDialog({ open, onOpenChange, mode, onOpenChat }: AuthHel
                 Open chat support
               </Button>
             )}
-            <Button size="sm" variant="outline" asChild className="gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              asChild
+              className="gap-2"
+            >
               <a href="mailto:support@fleetpro.app">
                 <Mail className="h-4 w-4" />
                 Email us

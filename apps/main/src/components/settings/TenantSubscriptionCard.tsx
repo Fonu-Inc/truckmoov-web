@@ -1,12 +1,28 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Badge } from "@/components/shadcn/badge";
-import { Progress } from "@/components/shadcn/progress";
-import { Skeleton } from "@/components/shadcn/skeleton";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, ReferenceLine, Legend,
+  AlertTriangle,
+  Check,
+  Cpu,
+  CreditCard,
+  Loader2,
+  Lock,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+  Truck,
+  Users,
+  Wifi,
+} from "lucide-react";
+import { useState } from "react";
+import {
+  Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ReferenceLine,
+  ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
+import { toast } from "sonner";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
@@ -15,27 +31,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/shadcn/dialog";
-import {
-  CreditCard,
-  Truck,
-  Users,
-  Cpu,
-  Wifi,
-  Sparkles,
-  AlertTriangle,
-  Check,
-  TrendingUp,
-  TrendingDown,
-  Lock,
-  Loader2,
-} from "lucide-react";
+import { Progress } from "@/components/shadcn/progress";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 
 type TenantPlan = any;
-import { cn } from "@/lib/utils";
-import { useState } from "react";
-import { toast } from "sonner";
 
 // Dummy fallback plan used when no real subscription is found yet.
 // This lets users preview what their chosen plan would look like
@@ -67,10 +69,18 @@ export function TenantSubscriptionCard() {
   const realCurrentPlan: TenantPlan | null = null;
   const planFeatures: any[] = [];
   const usageStats = {
-    vehicles: { current: 0, limit: null as number | null, percentage: 0 },
-    drivers: { current: 0, limit: null as number | null, percentage: 0 },
-    devices: { current: 0, limit: null as number | null, percentage: 0 },
-    sims: { current: 0, limit: null as number | null, percentage: 0 },
+    vehicles: {
+      current: 0, limit: null as number | null, percentage: 0,
+    },
+    drivers: {
+      current: 0, limit: null as number | null, percentage: 0,
+    },
+    devices: {
+      current: 0, limit: null as number | null, percentage: 0,
+    },
+    sims: {
+      current: 0, limit: null as number | null, percentage: 0,
+    },
   };
   const upgradeOptions: TenantPlan[] = [];
   const downgradeOptions: TenantPlan[] = [];
@@ -80,13 +90,21 @@ export function TenantSubscriptionCard() {
   const currentPlan = realCurrentPlan ?? DEMO_PLAN;
   const { user } = useAuthStore();
   const { currency } = useCurrency();
-  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
-  const [downgradeDialogOpen, setDowngradeDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
+  const [
+    upgradeDialogOpen,
+    setUpgradeDialogOpen,
+  ] = useState(false);
+  const [
+    downgradeDialogOpen,
+    setDowngradeDialogOpen,
+  ] = useState(false);
+  const [
+    isSubmitting,
+    setIsSubmitting,
+  ] = useState<string | null>(null);
 
-  const handleContactSales = async (_plan: TenantPlan, _action: 'upgrade' | 'downgrade') => {
-    toast.info('Coming soon');
-    return;
+  const handleContactSales = async (_plan: TenantPlan, _action: "upgrade" | "downgrade") => {
+    toast.info("Coming soon");
   };
 
   if (isLoading) {
@@ -112,7 +130,7 @@ export function TenantSubscriptionCard() {
 
   const includedFeatures = planFeatures?.filter(f => f.is_included) || [];
   const lockedFeatures = planFeatures?.filter(f => !f.is_included) || [];
-  const hasWarnings = isApproachingLimit('vehicles') || isApproachingLimit('drivers') || isApproachingLimit('devices') || isApproachingLimit('sims');
+  const hasWarnings = isApproachingLimit("vehicles") || isApproachingLimit("drivers") || isApproachingLimit("devices") || isApproachingLimit("sims");
 
   return (
     <Card className="bg-card/50 border-border/50">
@@ -130,57 +148,94 @@ export function TenantSubscriptionCard() {
             <div
               className="h-12 w-12 rounded-full flex items-center justify-center text-xl font-bold"
               style={{
-                backgroundColor: currentPlan.tier_badge_color || 'hsl(var(--primary))',
-                color: 'white'
+                backgroundColor: currentPlan.tier_badge_color || "hsl(var(--primary))",
+                color: "white",
               }}
             >
               {currentPlan.name.charAt(0)}
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h4 className="font-semibold text-lg">{currentPlan.name} Plan</h4>
+                <h4 className="font-semibold text-lg">
+                  {currentPlan.name}
+                  {" "}
+                  Plan
+                </h4>
                 <Badge className="bg-success/20 text-success border-success/30">Active</Badge>
                 {currentPlan.is_popular && (
-                  <Badge variant="secondary" className="gap-1">
-                    <Sparkles className="h-3 w-3" /> Popular
+                  <Badge
+                    variant="secondary"
+                    className="gap-1"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    {" "}
+                    Popular
                   </Badge>
                 )}
               </div>
               <div className="flex items-center gap-2 flex-wrap mt-2">
-                <Badge variant="outline" className="text-xs capitalize">
-                  {currentPlan.billing_cycle === 'yearly' ? 'Yearly' : 'Monthly'} Plan
+                <Badge
+                  variant="outline"
+                  className="text-xs capitalize"
+                >
+                  {currentPlan.billing_cycle === "yearly" ? "Yearly" : "Monthly"}
+                  {" "}
+                  Plan
                 </Badge>
-                <Badge variant="outline" className="text-xs">
-                  Billing: {(tenant as { billing_model?: string } | null)?.billing_model
-                    ? String((tenant as { billing_model?: string }).billing_model).replace(/_/g, ' ')
-                    : 'Subscription'}
+                <Badge
+                  variant="outline"
+                  className="text-xs"
+                >
+                  Billing:
+                  {" "}
+                  {(tenant as { billing_model?: string } | null)?.billing_model
+                    ? String((tenant as { billing_model?: string }).billing_model).replace(
+                        /_/g,
+                        " ",
+                      )
+                    : "Subscription"}
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground mt-2">
-                {currentPlan.max_vehicles ? `Up to ${currentPlan.max_vehicles} vehicles` : 'Unlimited vehicles'}
-                {currentPlan.max_drivers ? `, ${currentPlan.max_drivers} drivers` : ', unlimited drivers'}
+                {currentPlan.max_vehicles ? `Up to ${currentPlan.max_vehicles} vehicles` : "Unlimited vehicles"}
+                {currentPlan.max_drivers ? `, ${currentPlan.max_drivers} drivers` : ", unlimited drivers"}
               </p>
               {currentPlan.trial_days > 0 && (
-                <p className="text-xs text-primary mt-1">{currentPlan.trial_days}-day trial included</p>
+                <p className="text-xs text-primary mt-1">
+                  {currentPlan.trial_days}
+                  -day trial included
+                </p>
               )}
             </div>
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold">
-              {currency === 'NGN'
+              {currency === "NGN"
                 ? `₦${currentPlan.price_ngn.toLocaleString()}`
-                : `$${Math.round(currentPlan.price_ngn / 1550).toLocaleString()}`
-              }
-              <span className="text-sm font-normal text-muted-foreground">/{currentPlan.billing_cycle}</span>
+                : `$${Math.round(currentPlan.price_ngn / 1550).toLocaleString()}`}
+              <span className="text-sm font-normal text-muted-foreground">
+                /
+                {currentPlan.billing_cycle}
+              </span>
             </p>
             {currentPlan.yearly_discount_percent > 0 && (
-              <p className="text-xs text-primary">{currentPlan.yearly_discount_percent}% off yearly</p>
+              <p className="text-xs text-primary">
+                {currentPlan.yearly_discount_percent}
+                % off yearly
+              </p>
             )}
             <div className="flex gap-2 mt-2">
               {upgradeOptions.length > 0 && (
-                <Dialog open={upgradeDialogOpen} onOpenChange={setUpgradeDialogOpen}>
+                <Dialog
+                  open={upgradeDialogOpen}
+                  onOpenChange={setUpgradeDialogOpen}
+                >
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1"
+                    >
                       <TrendingUp className="h-3 w-3" />
                       Upgrade
                     </Button>
@@ -198,7 +253,7 @@ export function TenantSubscriptionCard() {
                           key={plan.id}
                           className={cn(
                             "cursor-pointer transition-all hover:border-primary/50",
-                            plan.is_popular && "border-primary"
+                            plan.is_popular && "border-primary",
                           )}
                         >
                           {plan.is_popular && (
@@ -217,33 +272,55 @@ export function TenantSubscriptionCard() {
                             </CardTitle>
                             <CardDescription>
                               <span className="text-xl font-bold text-foreground">
-                                {currency === 'NGN'
+                                {currency === "NGN"
                                   ? `₦${plan.price_ngn.toLocaleString()}`
-                                  : `$${Math.round(plan.price_ngn / 1550).toLocaleString()}`
-                                }
+                                  : `$${Math.round(plan.price_ngn / 1550).toLocaleString()}`}
                               </span>
-                              <span className="text-muted-foreground">/{plan.billing_cycle}</span>
+                              <span className="text-muted-foreground">
+                                /
+                                {plan.billing_cycle}
+                              </span>
                             </CardDescription>
                           </CardHeader>
                           <CardContent className="space-y-2">
                             <div className="text-sm space-y-1">
-                              <p>• {plan.max_vehicles || 'Unlimited'} vehicles</p>
-                              <p>• {plan.max_drivers || 'Unlimited'} drivers</p>
-                              <p>• {plan.max_devices || 'Unlimited'} devices</p>
+                              <p>
+                                •
+                                {plan.max_vehicles || "Unlimited"}
+                                {" "}
+                                vehicles
+                              </p>
+                              <p>
+                                •
+                                {plan.max_drivers || "Unlimited"}
+                                {" "}
+                                drivers
+                              </p>
+                              <p>
+                                •
+                                {plan.max_devices || "Unlimited"}
+                                {" "}
+                                devices
+                              </p>
                             </div>
                             <Button
                               className="w-full mt-4"
-                              onClick={() => handleContactSales(plan, 'upgrade')}
+                              onClick={() => handleContactSales(
+                                plan,
+                                "upgrade",
+                              )}
                               disabled={isSubmitting === plan.id}
                             >
-                              {isSubmitting === plan.id ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                  Submitting...
-                                </>
-                              ) : (
-                                'Contact Sales'
-                              )}
+                              {isSubmitting === plan.id
+                                ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      Submitting...
+                                    </>
+                                  )
+                                : (
+                                    "Contact Sales"
+                                  )}
                             </Button>
                           </CardContent>
                         </Card>
@@ -253,9 +330,16 @@ export function TenantSubscriptionCard() {
                 </Dialog>
               )}
               {downgradeOptions.length > 0 && (
-                <Dialog open={downgradeDialogOpen} onOpenChange={setDowngradeDialogOpen}>
+                <Dialog
+                  open={downgradeDialogOpen}
+                  onOpenChange={setDowngradeDialogOpen}
+                >
                   <DialogTrigger asChild>
-                    <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1 text-muted-foreground"
+                    >
                       <TrendingDown className="h-3 w-3" />
                       Downgrade
                     </Button>
@@ -277,31 +361,53 @@ export function TenantSubscriptionCard() {
                             <CardTitle className="flex items-center justify-between">
                               {plan.name}
                               {plan.tier && (
-                                <Badge variant="outline" style={{ borderColor: plan.tier_badge_color, color: plan.tier_badge_color }}>
+                                <Badge
+                                  variant="outline"
+                                  style={{
+                                    borderColor: plan.tier_badge_color, color: plan.tier_badge_color,
+                                  }}
+                                >
                                   {plan.tier}
                                 </Badge>
                               )}
                             </CardTitle>
                             <CardDescription>
                               <span className="text-xl font-bold text-foreground">
-                                {currency === 'NGN'
+                                {currency === "NGN"
                                   ? `₦${plan.price_ngn.toLocaleString()}`
-                                  : `$${Math.round(plan.price_ngn / 1550).toLocaleString()}`
-                                }
+                                  : `$${Math.round(plan.price_ngn / 1550).toLocaleString()}`}
                               </span>
-                              <span className="text-muted-foreground">/{plan.billing_cycle}</span>
+                              <span className="text-muted-foreground">
+                                /
+                                {plan.billing_cycle}
+                              </span>
                             </CardDescription>
                           </CardHeader>
                           <CardContent className="space-y-2">
                             <div className="text-sm space-y-1 text-muted-foreground">
-                              <p>• {plan.max_vehicles || 'Unlimited'} vehicles</p>
-                              <p>• {plan.max_drivers || 'Unlimited'} drivers</p>
-                              <p>• {plan.max_devices || 'Unlimited'} devices</p>
+                              <p>
+                                •
+                                {plan.max_vehicles || "Unlimited"}
+                                {" "}
+                                vehicles
+                              </p>
+                              <p>
+                                •
+                                {plan.max_drivers || "Unlimited"}
+                                {" "}
+                                drivers
+                              </p>
+                              <p>
+                                •
+                                {plan.max_devices || "Unlimited"}
+                                {" "}
+                                devices
+                              </p>
                             </div>
                             {/* Warning if current usage exceeds plan limits */}
-                            {((plan.max_vehicles && usageStats.vehicles.current > plan.max_vehicles) ||
-                              (plan.max_drivers && usageStats.drivers.current > plan.max_drivers) ||
-                              (plan.max_devices && usageStats.devices.current > plan.max_devices)) && (
+                            {((plan.max_vehicles && usageStats.vehicles.current > plan.max_vehicles)
+                              || (plan.max_drivers && usageStats.drivers.current > plan.max_drivers)
+                              || (plan.max_devices && usageStats.devices.current > plan.max_devices)) && (
                               <div className="flex items-center gap-2 p-2 rounded bg-warning/10 border border-warning/20 text-warning text-xs">
                                 <AlertTriangle className="h-3 w-3 flex-shrink-0" />
                                 <span>Current usage exceeds this plan's limits</span>
@@ -310,17 +416,22 @@ export function TenantSubscriptionCard() {
                             <Button
                               variant="outline"
                               className="w-full mt-4"
-                              onClick={() => handleContactSales(plan, 'downgrade')}
+                              onClick={() => handleContactSales(
+                                plan,
+                                "downgrade",
+                              )}
                               disabled={isSubmitting === plan.id}
                             >
-                              {isSubmitting === plan.id ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                  Submitting...
-                                </>
-                              ) : (
-                                'Contact Sales'
-                              )}
+                              {isSubmitting === plan.id
+                                ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      Submitting...
+                                    </>
+                                  )
+                                : (
+                                    "Contact Sales"
+                                  )}
                             </Button>
                           </CardContent>
                         </Card>
@@ -338,7 +449,10 @@ export function TenantSubscriptionCard() {
           <h5 className="font-medium flex items-center gap-2">
             Resource Usage
             {hasWarnings && (
-              <Badge variant="outline" className="text-warning border-warning gap-1">
+              <Badge
+                variant="outline"
+                className="text-warning border-warning gap-1"
+              >
                 <AlertTriangle className="h-3 w-3" />
                 Approaching limits
               </Badge>
@@ -346,56 +460,88 @@ export function TenantSubscriptionCard() {
           </h5>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             {([
-              { key: 'vehicles' as const, label: 'Vehicles', Icon: Truck },
-              { key: 'drivers' as const, label: 'Drivers', Icon: Users },
-              { key: 'devices' as const, label: 'Devices', Icon: Cpu },
-              { key: 'sims' as const, label: 'SIMs', Icon: Wifi },
-            ]).map(({ key, label, Icon }) => {
+              {
+                key: "vehicles" as const, label: "Vehicles", Icon: Truck,
+              },
+              {
+                key: "drivers" as const, label: "Drivers", Icon: Users,
+              },
+              {
+                key: "devices" as const, label: "Devices", Icon: Cpu,
+              },
+              {
+                key: "sims" as const, label: "SIMs", Icon: Wifi,
+              },
+            ]).map(({
+              key, label, Icon,
+            }) => {
               const stat = usageStats[key];
               const atLimit = isAtLimit(key);
               const approaching = isApproachingLimit(key) && !atLimit;
               const hasLimit = stat.limit !== null && stat.limit !== undefined;
               return (
-                <div key={key} className="p-4 rounded-lg border shadow-lg bg-transparent">
+                <div
+                  key={key}
+                  className="p-4 rounded-lg border shadow-lg bg-transparent"
+                >
                   <div className="flex items-center gap-2 mb-3">
                     <Icon className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium text-foreground">{label}</span>
                     {atLimit && (
-                      <Badge variant="outline" className="ml-auto text-destructive border-destructive/40 text-[10px] py-0 px-1.5">
+                      <Badge
+                        variant="outline"
+                        className="ml-auto text-destructive border-destructive/40 text-[10px] py-0 px-1.5"
+                      >
                         Limit reached
                       </Badge>
                     )}
                     {approaching && !atLimit && (
-                      <Badge variant="outline" className="ml-auto text-warning border-warning/40 text-[10px] py-0 px-1.5">
+                      <Badge
+                        variant="outline"
+                        className="ml-auto text-warning border-warning/40 text-[10px] py-0 px-1.5"
+                      >
                         Approaching
                       </Badge>
                     )}
                   </div>
-                  {hasLimit ? (
-                    <Progress
-                      value={stat.percentage}
-                      className={cn(
-                        "h-2.5 bg-secondary",
-                        atLimit && "[&>div]:bg-destructive",
-                        approaching && "[&>div]:bg-warning",
-                        !atLimit && !approaching && "[&>div]:bg-primary"
+                  {hasLimit
+                    ? (
+                        <Progress
+                          value={stat.percentage}
+                          className={cn(
+                            "h-2.5 bg-secondary",
+                            atLimit && "[&>div]:bg-destructive",
+                            approaching && "[&>div]:bg-warning",
+                            !atLimit && !approaching && "[&>div]:bg-primary",
+                          )}
+                        />
+                      )
+                    : (
+                        <div className="h-2.5 rounded-full bg-secondary" />
                       )}
-                    />
-                  ) : (
-                    <div className="h-2.5 rounded-full bg-secondary" />
-                  )}
                   <div className="flex items-center justify-between mt-2">
                     <p className={cn(
                       "text-xs font-medium",
                       atLimit && "text-destructive",
                       approaching && "text-warning",
-                      !atLimit && !approaching && "text-primary-foreground font-medium"
-                    )}>
-                      {stat.current} of {stat.limit ?? '∞'} used
+                      !atLimit && !approaching && "text-primary-foreground font-medium",
+                    )}
+                    >
+                      {stat.current}
+                      {" "}
+                      of
+                      {stat.limit ?? "∞"}
+                      {" "}
+                      used
                     </p>
                     {hasLimit && (
                       <p className="text-xs text-primary-foreground font-medium">
-                        {Math.max(0, (stat.limit ?? 0) - stat.current)} remaining
+                        {Math.max(
+                          0,
+                          (stat.limit ?? 0) - stat.current,
+                        )}
+                        {" "}
+                        remaining
                       </p>
                     )}
                   </div>
@@ -408,9 +554,15 @@ export function TenantSubscriptionCard() {
         {/* Plan Usage Charts */}
         <PlanUsageCharts
           planName={currentPlan.name}
-          vehicles={{ used: usageStats.vehicles.current, limit: usageStats.vehicles.limit }}
-          drivers={{ used: usageStats.drivers.current, limit: usageStats.drivers.limit }}
-          devices={{ used: usageStats.devices.current, limit: usageStats.devices.limit }}
+          vehicles={{
+            used: usageStats.vehicles.current, limit: usageStats.vehicles.limit,
+          }}
+          drivers={{
+            used: usageStats.drivers.current, limit: usageStats.drivers.limit,
+          }}
+          devices={{
+            used: usageStats.devices.current, limit: usageStats.devices.limit,
+          }}
         />
 
         {/* Feature Access */}
@@ -418,7 +570,10 @@ export function TenantSubscriptionCard() {
           <div className="space-y-3">
             <h5 className="font-medium">Plan Features</h5>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {includedFeatures.slice(0, 6).map(feature => (
+              {includedFeatures.slice(
+                0,
+                6,
+              ).map(feature => (
                 <div
                   key={feature.feature_key}
                   className="flex items-center gap-2 text-sm p-2 rounded-lg bg-success/5 border border-success/20"
@@ -426,20 +581,30 @@ export function TenantSubscriptionCard() {
                   <Check className="h-4 w-4 text-success flex-shrink-0" />
                   <span>{feature.feature_name}</span>
                   {feature.usage_limit && (
-                    <Badge variant="outline" className="ml-auto text-xs">
-                      {feature.usage_limit}/mo
+                    <Badge
+                      variant="outline"
+                      className="ml-auto text-xs"
+                    >
+                      {feature.usage_limit}
+                      /mo
                     </Badge>
                   )}
                 </div>
               ))}
-              {lockedFeatures.slice(0, 4).map(feature => (
+              {lockedFeatures.slice(
+                0,
+                4,
+              ).map(feature => (
                 <div
                   key={feature.feature_key}
                   className="flex items-center gap-2 text-sm p-2 rounded-lg bg-muted/30 border border-muted text-muted-foreground"
                 >
                   <Lock className="h-4 w-4 flex-shrink-0" />
                   <span>{feature.feature_name}</span>
-                  <Badge variant="outline" className="ml-auto text-xs">
+                  <Badge
+                    variant="outline"
+                    className="ml-auto text-xs"
+                  >
                     Upgrade
                   </Badge>
                 </div>
@@ -447,7 +612,16 @@ export function TenantSubscriptionCard() {
             </div>
             {(includedFeatures.length > 6 || lockedFeatures.length > 4) && (
               <p className="text-xs text-muted-foreground">
-                +{Math.max(0, includedFeatures.length - 6) + Math.max(0, lockedFeatures.length - 4)} more features
+                +
+                {Math.max(
+                  0,
+                  includedFeatures.length - 6,
+                ) + Math.max(
+                  0,
+                  lockedFeatures.length - 4,
+                )}
+                {" "}
+                more features
               </p>
             )}
           </div>
@@ -470,7 +644,10 @@ export function TenantSubscriptionCard() {
                     : `Upgrade to access ${lockedFeatures.length} more features including ${lockedFeatures[0]?.feature_name}.`}
                 </p>
               </div>
-              <Button size="sm" onClick={() => setUpgradeDialogOpen(true)}>
+              <Button
+                size="sm"
+                onClick={() => setUpgradeDialogOpen(true)}
+              >
                 View Plans
               </Button>
             </div>
@@ -487,31 +664,48 @@ function rand(seed: number) {
   return x - Math.floor(x);
 }
 
-interface PlanUsageChartsProps {
+type PlanUsageChartsProps = {
   planName: string;
-  vehicles: { used: number; limit: number | null };
-  drivers: { used: number; limit: number | null };
-  devices: { used: number; limit: number | null };
-}
+  vehicles: {
+    used: number; limit: number | null;
+  };
+  drivers: {
+    used: number; limit: number | null;
+  };
+  devices: {
+    used: number; limit: number | null;
+  };
+};
 
-function PlanUsageCharts({ planName, vehicles, drivers, devices }: PlanUsageChartsProps) {
+function PlanUsageCharts({
+  planName, vehicles, drivers, devices,
+}: PlanUsageChartsProps) {
   const usageVsLimit = [
     {
       name: "Vehicles",
       Used: vehicles.used,
-      Remaining: Math.max(0, (vehicles.limit ?? vehicles.used) - vehicles.used),
+      Remaining: Math.max(
+        0,
+        (vehicles.limit ?? vehicles.used) - vehicles.used,
+      ),
       limit: vehicles.limit,
     },
     {
       name: "Drivers",
       Used: drivers.used,
-      Remaining: Math.max(0, (drivers.limit ?? drivers.used) - drivers.used),
+      Remaining: Math.max(
+        0,
+        (drivers.limit ?? drivers.used) - drivers.used,
+      ),
       limit: drivers.limit,
     },
     {
       name: "Devices",
       Used: devices.used,
-      Remaining: Math.max(0, (devices.limit ?? devices.used) - devices.used),
+      Remaining: Math.max(
+        0,
+        (devices.limit ?? devices.used) - devices.used,
+      ),
       limit: devices.limit,
     },
   ];
@@ -524,9 +718,18 @@ function PlanUsageCharts({ planName, vehicles, drivers, devices }: PlanUsageChar
     date.setDate(date.getDate() - (14 - dayIdx));
     return {
       label: `${date.getMonth() + 1}/${date.getDate()}`,
-      Vehicles: Math.max(0, Math.round(vehicles.used * progress * noise(1))),
-      Drivers: Math.max(0, Math.round(drivers.used * progress * noise(2))),
-      Devices: Math.max(0, Math.round(devices.used * progress * noise(3))),
+      Vehicles: Math.max(
+        0,
+        Math.round(vehicles.used * progress * noise(1)),
+      ),
+      Drivers: Math.max(
+        0,
+        Math.round(drivers.used * progress * noise(2)),
+      ),
+      Devices: Math.max(
+        0,
+        Math.round(devices.used * progress * noise(3)),
+      ),
     };
   });
 
@@ -537,14 +740,40 @@ function PlanUsageCharts({ planName, vehicles, drivers, devices }: PlanUsageChar
       <Card className="bg-card/50 border-border/50">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Plan Allocation</CardTitle>
-          <CardDescription>{planName} plan — used vs remaining</CardDescription>
+          <CardDescription>
+            {planName}
+            {" "}
+            plan — used vs remaining
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={usageVsLimit} layout="vertical" margin={{ left: 8, right: 16 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-              <XAxis type="number" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} className="fill-muted-foreground" width={70} />
+          <ResponsiveContainer
+            width="100%"
+            height={220}
+          >
+            <BarChart
+              data={usageVsLimit}
+              layout="vertical"
+              margin={{
+                left: 8, right: 16,
+              }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                className="stroke-border/30"
+              />
+              <XAxis
+                type="number"
+                tick={{ fontSize: 11 }}
+                className="fill-muted-foreground"
+              />
+              <YAxis
+                type="category"
+                dataKey="name"
+                tick={{ fontSize: 12 }}
+                className="fill-muted-foreground"
+                width={70}
+              />
               <Tooltip
                 contentStyle={{
                   backgroundColor: "hsl(var(--card))",
@@ -552,13 +781,41 @@ function PlanUsageCharts({ planName, vehicles, drivers, devices }: PlanUsageChar
                   borderRadius: 8,
                 }}
                 formatter={(value: number, name: string, item: any) => {
-                  if (name === "Used") return [`${value} / ${item.payload.limit ?? "∞"}`, "Used"];
-                  return [value, name];
+                  if (name === "Used") {
+                    return [
+                      `${value} / ${item.payload.limit ?? "∞"}`,
+                      "Used",
+                    ];
+                  }
+                  return [
+                    value,
+                    name,
+                  ];
                 }}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="Used" stackId="a" fill="hsl(var(--primary))" radius={[4, 0, 0, 4]} />
-              <Bar dataKey="Remaining" stackId="a" fill="hsl(var(--muted))" radius={[0, 4, 4, 0]} />
+              <Bar
+                dataKey="Used"
+                stackId="a"
+                fill="hsl(var(--primary))"
+                radius={[
+                  4,
+                  0,
+                  0,
+                  4,
+                ]}
+              />
+              <Bar
+                dataKey="Remaining"
+                stackId="a"
+                fill="hsl(var(--muted))"
+                radius={[
+                  0,
+                  4,
+                  4,
+                  0,
+                ]}
+              />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -567,14 +824,33 @@ function PlanUsageCharts({ planName, vehicles, drivers, devices }: PlanUsageChar
       <Card className="bg-card/50 border-border/50">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Last 14 Days Usage</CardTitle>
-          <CardDescription>Resource growth toward your {planName} plan limits</CardDescription>
+          <CardDescription>
+            Resource growth toward your
+            {planName}
+            {" "}
+            plan limits
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer
+            width="100%"
+            height={220}
+          >
             <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-              <XAxis dataKey="label" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-              <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" allowDecimals={false} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                className="stroke-border/30"
+              />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11 }}
+                className="fill-muted-foreground"
+              />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                className="fill-muted-foreground"
+                allowDecimals={false}
+              />
               <Tooltip
                 contentStyle={{
                   backgroundColor: "hsl(var(--card))",
@@ -588,12 +864,32 @@ function PlanUsageCharts({ planName, vehicles, drivers, devices }: PlanUsageChar
                   y={planLimitLine}
                   stroke="hsl(var(--warning))"
                   strokeDasharray="4 4"
-                  label={{ value: `Vehicle limit (${planLimitLine})`, fontSize: 10, fill: "hsl(var(--warning))", position: "insideTopRight" }}
+                  label={{
+                    value: `Vehicle limit (${planLimitLine})`, fontSize: 10, fill: "hsl(var(--warning))", position: "insideTopRight",
+                  }}
                 />
               )}
-              <Line type="monotone" dataKey="Vehicles" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="Drivers" stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="Devices" stroke="hsl(var(--success))" strokeWidth={2} dot={false} />
+              <Line
+                type="monotone"
+                dataKey="Vehicles"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="Drivers"
+                stroke="hsl(var(--accent))"
+                strokeWidth={2}
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="Devices"
+                stroke="hsl(var(--success))"
+                strokeWidth={2}
+                dot={false}
+              />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>

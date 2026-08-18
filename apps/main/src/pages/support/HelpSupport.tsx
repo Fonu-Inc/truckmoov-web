@@ -1,36 +1,65 @@
-import { useState, useEffect } from "react";
+import { Ticket } from "lucide-react";
+import {
+  useEffect, useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { Button } from "@/components/shadcn/button";
-import { Ticket } from "lucide-react";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
+import { LogTicketDialog } from "@/components/support/LogTicketDialog";
+import { MyTickets } from "@/components/support/MyTickets";
+import { ReportIssue } from "@/components/support/ReportIssue";
 import { useSupportPermissions } from "@/hooks/useSupportPermissions";
 import { useAuthStore } from "@/stores/authStore";
-import { ReportIssue } from "@/components/support/ReportIssue";
-import { MyTickets } from "@/components/support/MyTickets";
-import { LogTicketDialog } from "@/components/support/LogTicketDialog";
 
 export default function HelpSupport() {
-  const [activeTab, setActiveTab] = useState("tickets");
-  const [logTicketOpen, setLogTicketOpen] = useState(false);
-  const { hasNoAccess, canViewTickets, canCreateTicket } = useSupportPermissions();
+  const [
+    activeTab,
+    setActiveTab,
+  ] = useState("tickets");
+  const [
+    logTicketOpen,
+    setLogTicketOpen,
+  ] = useState(false);
+  const {
+    hasNoAccess, canViewTickets, canCreateTicket,
+  } = useSupportPermissions();
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!user || hasNoAccess) {
-      navigate("/auth", { replace: true });
-    }
-  }, [user, hasNoAccess, navigate]);
+  useEffect(
+    () => {
+      if (!user || hasNoAccess) {
+        navigate(
+          "/auth",
+          { replace: true },
+        );
+      }
+    },
+    [
+      user,
+      hasNoAccess,
+      navigate,
+    ],
+  );
 
   if (!user || hasNoAccess) {
     return null;
   }
 
   return (
-    <DashboardLayout title="Ticketing & Support" subtitle="View tickets and report issues to the platform">
+    <DashboardLayout
+      title="Ticketing & Support"
+      subtitle="View tickets and report issues to the platform"
+    >
       <div className="space-y-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-6"
+        >
           <div className="flex justify-center">
             <TabsList>
               {canViewTickets && (
@@ -43,7 +72,10 @@ export default function HelpSupport() {
           </div>
 
           {canViewTickets && (
-            <TabsContent value="tickets" className="space-y-6">
+            <TabsContent
+              value="tickets"
+              className="space-y-6"
+            >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="text-2xl font-bold tracking-tight">Tickets</h2>
@@ -52,7 +84,11 @@ export default function HelpSupport() {
                   </p>
                 </div>
                 {canCreateTicket && (
-                  <Button size="sm" onClick={() => setLogTicketOpen(true)} className="shrink-0">
+                  <Button
+                    size="sm"
+                    onClick={() => setLogTicketOpen(true)}
+                    className="shrink-0"
+                  >
                     <Ticket className="h-4 w-4 mr-2" />
                     Log Ticket
                   </Button>
@@ -63,7 +99,10 @@ export default function HelpSupport() {
           )}
 
           {canCreateTicket && (
-            <TabsContent value="report" className="space-y-6">
+            <TabsContent
+              value="report"
+              className="space-y-6"
+            >
               <div>
                 <h2 className="text-2xl font-bold tracking-tight">Report an Issue</h2>
                 <p className="text-sm text-muted-foreground">
@@ -75,8 +114,10 @@ export default function HelpSupport() {
           )}
         </Tabs>
       </div>
-      <LogTicketDialog open={logTicketOpen} onOpenChange={setLogTicketOpen} />
+      <LogTicketDialog
+        open={logTicketOpen}
+        onOpenChange={setLogTicketOpen}
+      />
     </DashboardLayout>
   );
 }
-

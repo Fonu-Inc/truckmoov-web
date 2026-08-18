@@ -1,12 +1,23 @@
 import { formatTime } from "@truckmoov/app-core/utils/time-utils";
+import {
+  CheckCircle2,
+  ExternalLink,
+  Loader2,
+  Mail,
+  Plus,
+  RefreshCw,
+  Settings,
+  Shield,
+  Trash2,
+  XCircle,
+} from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
-import { Switch } from "@/components/shadcn/switch";
-import { Separator } from "@/components/shadcn/separator";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +26,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/shadcn/dialog";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
 import {
   Select,
   SelectContent,
@@ -22,36 +35,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Mail,
-  CheckCircle2,
-  XCircle,
-  ExternalLink,
-  RefreshCw,
-  Loader2,
-  Shield,
-  Settings,
-  Trash2,
-  Plus,
-} from "lucide-react";
-import { toast } from "sonner";
+import { Separator } from "@/components/shadcn/separator";
+import { Switch } from "@/components/shadcn/switch";
 
-interface EmailAccount {
+type EmailAccount = {
   id: string;
   provider: "gmail" | "outlook";
   email: string;
   connected: boolean;
   lastSync: Date | null;
   isPrimary: boolean;
-}
+};
 
 export function EmailConfigurationPanel() {
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [connectDialogOpen, setConnectDialogOpen] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState<"gmail" | "outlook" | null>(null);
-  
-  const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([
+  const [
+    isConnecting,
+    setIsConnecting,
+  ] = useState(false);
+  const [
+    isSyncing,
+    setIsSyncing,
+  ] = useState(false);
+  const [
+    connectDialogOpen,
+    setConnectDialogOpen,
+  ] = useState(false);
+  const [
+    selectedProvider,
+    setSelectedProvider,
+  ] = useState<"gmail" | "outlook" | null>(null);
+
+  const [
+    emailAccounts,
+    setEmailAccounts,
+  ] = useState<EmailAccount[]>([
     {
       id: "1",
       provider: "gmail",
@@ -62,7 +79,10 @@ export function EmailConfigurationPanel() {
     },
   ]);
 
-  const [emailSettings, setEmailSettings] = useState({
+  const [
+    emailSettings,
+    setEmailSettings,
+  ] = useState({
     autoSync: true,
     syncInterval: "5",
     notifyOnNew: true,
@@ -73,56 +93,70 @@ export function EmailConfigurationPanel() {
   const handleConnectProvider = async (provider: "gmail" | "outlook") => {
     setIsConnecting(true);
     setSelectedProvider(provider);
-    
+
     // Simulate OAuth flow
-    setTimeout(() => {
-      const oauthUrl = provider === "gmail" 
-        ? "https://accounts.google.com/o/oauth2/v2/auth"
-        : "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
-      
-      toast.info(`Redirecting to ${provider === "gmail" ? "Google" : "Microsoft"} for authentication...`);
-      
-      // In a real implementation, this would redirect to the OAuth URL
-      // For demo, we'll simulate a successful connection
-      setTimeout(() => {
-        const newAccount: EmailAccount = {
-          id: Date.now().toString(),
-          provider,
-          email: provider === "gmail" ? "new.account@gmail.com" : "new.account@outlook.com",
-          connected: true,
-          lastSync: null,
-          isPrimary: emailAccounts.length === 0,
-        };
-        setEmailAccounts((prev) => [...prev, newAccount]);
-        setIsConnecting(false);
-        setConnectDialogOpen(false);
-        toast.success(`${provider === "gmail" ? "Gmail" : "Outlook"} account connected successfully`);
-      }, 2000);
-    }, 500);
+    setTimeout(
+      () => {
+        const oauthUrl = provider === "gmail"
+          ? "https://accounts.google.com/o/oauth2/v2/auth"
+          : "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
+
+        toast.info(`Redirecting to ${provider === "gmail" ? "Google" : "Microsoft"} for authentication...`);
+
+        // In a real implementation, this would redirect to the OAuth URL
+        // For demo, we'll simulate a successful connection
+        setTimeout(
+          () => {
+            const newAccount: EmailAccount = {
+              id: Date.now().toString(),
+              provider,
+              email: provider === "gmail" ? "new.account@gmail.com" : "new.account@outlook.com",
+              connected: true,
+              lastSync: null,
+              isPrimary: emailAccounts.length === 0,
+            };
+            setEmailAccounts(prev => [
+              ...prev,
+              newAccount,
+            ]);
+            setIsConnecting(false);
+            setConnectDialogOpen(false);
+            toast.success(`${provider === "gmail" ? "Gmail" : "Outlook"} account connected successfully`);
+          },
+          2000,
+        );
+      },
+      500,
+    );
   };
 
   const handleDisconnect = (accountId: string) => {
-    setEmailAccounts((prev) => prev.filter((a) => a.id !== accountId));
+    setEmailAccounts(prev => prev.filter(a => a.id !== accountId));
     toast.success("Email account disconnected");
   };
 
   const handleSetPrimary = (accountId: string) => {
-    setEmailAccounts((prev) =>
-      prev.map((a) => ({ ...a, isPrimary: a.id === accountId }))
-    );
+    setEmailAccounts(prev =>
+      prev.map(a => ({
+        ...a, isPrimary: a.id === accountId,
+      })));
     toast.success("Primary email account updated");
   };
 
   const handleSyncNow = async () => {
     setIsSyncing(true);
     // Simulate sync
-    setTimeout(() => {
-      setEmailAccounts((prev) =>
-        prev.map((a) => ({ ...a, lastSync: new Date() }))
-      );
-      setIsSyncing(false);
-      toast.success("Email synchronized successfully");
-    }, 2000);
+    setTimeout(
+      () => {
+        setEmailAccounts(prev =>
+          prev.map(a => ({
+            ...a, lastSync: new Date(),
+          })));
+        setIsSyncing(false);
+        toast.success("Email synchronized successfully");
+      },
+      2000,
+    );
   };
 
   const getProviderIcon = (provider: "gmail" | "outlook") => {
@@ -159,15 +193,23 @@ export function EmailConfigurationPanel() {
                 onClick={handleSyncNow}
                 disabled={isSyncing || emailAccounts.length === 0}
               >
-                {isSyncing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
+                {isSyncing
+                  ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    )
+                  : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
               </Button>
-              <Dialog open={connectDialogOpen} onOpenChange={setConnectDialogOpen}>
+              <Dialog
+                open={connectDialogOpen}
+                onOpenChange={setConnectDialogOpen}
+              >
                 <DialogTrigger asChild>
-                  <Button variant="gradient" size="sm">
+                  <Button
+                    variant="gradient"
+                    size="sm"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Connect Account
                   </Button>
@@ -198,7 +240,7 @@ export function EmailConfigurationPanel() {
                         <Loader2 className="h-5 w-5 animate-spin" />
                       )}
                     </button>
-                    
+
                     <button
                       onClick={() => handleConnectProvider("outlook")}
                       disabled={isConnecting}
@@ -228,65 +270,74 @@ export function EmailConfigurationPanel() {
           </div>
         </CardHeader>
         <CardContent>
-          {emailAccounts.length === 0 ? (
-            <div className="text-center py-8">
-              <Mail className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <p className="font-medium">No email accounts connected</p>
-              <p className="text-sm text-muted-foreground mb-4">
-                Connect Gmail or Outlook to start sending and receiving emails
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {emailAccounts.map((account) => (
-                <div
-                  key={account.id}
-                  className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-muted/20"
-                >
-                  <div className="flex items-center gap-3">
-                    {getProviderIcon(account.provider)}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{account.email}</p>
-                        {account.isPrimary && (
-                          <Badge variant="secondary" className="text-xs">Primary</Badge>
-                        )}
-                        {account.connected ? (
-                          <CheckCircle2 className="h-4 w-4 text-success" />
-                        ) : (
-                          <XCircle className="h-4 w-4 text-destructive" />
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {account.lastSync
-                          ? `Last synced ${formatTime(account.lastSync)}`
-                          : "Never synced"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {!account.isPrimary && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleSetPrimary(account.id)}
-                      >
-                        Set as Primary
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDisconnect(account.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+          {emailAccounts.length === 0
+            ? (
+                <div className="text-center py-8">
+                  <Mail className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <p className="font-medium">No email accounts connected</p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Connect Gmail or Outlook to start sending and receiving emails
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
+              )
+            : (
+                <div className="space-y-3">
+                  {emailAccounts.map(account => (
+                    <div
+                      key={account.id}
+                      className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-muted/20"
+                    >
+                      <div className="flex items-center gap-3">
+                        {getProviderIcon(account.provider)}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{account.email}</p>
+                            {account.isPrimary && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs"
+                              >
+                                Primary
+                              </Badge>
+                            )}
+                            {account.connected
+                              ? (
+                                  <CheckCircle2 className="h-4 w-4 text-success" />
+                                )
+                              : (
+                                  <XCircle className="h-4 w-4 text-destructive" />
+                                )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {account.lastSync
+                              ? `Last synced ${formatTime(account.lastSync)}`
+                              : "Never synced"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {!account.isPrimary && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSetPrimary(account.id)}
+                          >
+                            Set as Primary
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDisconnect(account.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
         </CardContent>
       </Card>
 
@@ -312,9 +363,10 @@ export function EmailConfigurationPanel() {
               </div>
               <Switch
                 checked={emailSettings.autoSync}
-                onCheckedChange={(checked) =>
-                  setEmailSettings({ ...emailSettings, autoSync: checked })
-                }
+                onCheckedChange={checked =>
+                  setEmailSettings({
+                    ...emailSettings, autoSync: checked,
+                  })}
               />
             </div>
 
@@ -322,9 +374,10 @@ export function EmailConfigurationPanel() {
               <Label>Sync Interval</Label>
               <Select
                 value={emailSettings.syncInterval}
-                onValueChange={(value) =>
-                  setEmailSettings({ ...emailSettings, syncInterval: value })
-                }
+                onValueChange={value =>
+                  setEmailSettings({
+                    ...emailSettings, syncInterval: value,
+                  })}
                 disabled={!emailSettings.autoSync}
               >
                 <SelectTrigger>
@@ -348,9 +401,10 @@ export function EmailConfigurationPanel() {
               </div>
               <Switch
                 checked={emailSettings.notifyOnNew}
-                onCheckedChange={(checked) =>
-                  setEmailSettings({ ...emailSettings, notifyOnNew: checked })
-                }
+                onCheckedChange={checked =>
+                  setEmailSettings({
+                    ...emailSettings, notifyOnNew: checked,
+                  })}
               />
             </div>
 
@@ -358,16 +412,20 @@ export function EmailConfigurationPanel() {
               <Label>Default Sender</Label>
               <Select
                 value={emailSettings.defaultSender}
-                onValueChange={(value) =>
-                  setEmailSettings({ ...emailSettings, defaultSender: value })
-                }
+                onValueChange={value =>
+                  setEmailSettings({
+                    ...emailSettings, defaultSender: value,
+                  })}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {emailAccounts.map((account) => (
-                    <SelectItem key={account.id} value={account.email}>
+                  {emailAccounts.map(account => (
+                    <SelectItem
+                      key={account.id}
+                      value={account.email}
+                    >
                       {account.email}
                     </SelectItem>
                   ))}
@@ -383,9 +441,10 @@ export function EmailConfigurationPanel() {
             <textarea
               className="w-full min-h-[100px] p-3 rounded-lg border border-border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               value={emailSettings.signature}
-              onChange={(e) =>
-                setEmailSettings({ ...emailSettings, signature: e.target.value })
-              }
+              onChange={e =>
+                setEmailSettings({
+                  ...emailSettings, signature: e.target.value,
+                })}
               placeholder="Enter your email signature..."
             />
           </div>

@@ -1,35 +1,57 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  AlertTriangle, CheckCircle2, XCircle,
+} from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
-import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 
-interface SystemComponent {
+type SystemComponent = {
   name: string;
   status: "operational" | "degraded" | "outage";
   description?: string;
-}
+};
 
 // This would typically come from an API
 const systemComponents: SystemComponent[] = [
-  { name: "Platform Core", status: "operational" },
-  { name: "Telemetry Ingestion", status: "operational" },
-  { name: "WhatsApp Delivery", status: "operational" },
-  { name: "SMS Gateway", status: "operational" },
-  { name: "IoT SIM Provisioning", status: "operational" },
-  { name: "Billing & Payments", status: "operational" },
+  {
+    name: "Platform Core", status: "operational",
+  },
+  {
+    name: "Telemetry Ingestion", status: "operational",
+  },
+  {
+    name: "WhatsApp Delivery", status: "operational",
+  },
+  {
+    name: "SMS Gateway", status: "operational",
+  },
+  {
+    name: "IoT SIM Provisioning", status: "operational",
+  },
+  {
+    name: "Billing & Payments", status: "operational",
+  },
 ];
 
 const statusConfig = {
-  operational: { label: "Operational", icon: CheckCircle2, color: "text-chart-2" },
-  degraded: { label: "Degraded", icon: AlertTriangle, color: "text-chart-5" },
-  outage: { label: "Outage", icon: XCircle, color: "text-destructive" },
+  operational: {
+    label: "Operational", icon: CheckCircle2, color: "text-chart-2",
+  },
+  degraded: {
+    label: "Degraded", icon: AlertTriangle, color: "text-chart-5",
+  },
+  outage: {
+    label: "Outage", icon: XCircle, color: "text-destructive",
+  },
 };
 
 export function SystemStatus() {
-  const overallStatus = systemComponents.every((c) => c.status === "operational")
+  const overallStatus = systemComponents.every(c => c.status === "operational")
     ? "operational"
-    : systemComponents.some((c) => c.status === "outage")
-    ? "outage"
-    : "degraded";
+    : systemComponents.some(c => c.status === "outage")
+      ? "outage"
+      : "degraded";
 
   const overall = statusConfig[overallStatus];
   const OverallIcon = overall.icon;

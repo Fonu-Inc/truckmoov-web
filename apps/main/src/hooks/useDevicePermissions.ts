@@ -1,18 +1,18 @@
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from "@/stores/authStore";
 
 export function useDevicePermissions() {
   const { user } = useAuthStore();
   const hasOrgRole = (_key: string) => false;
 
-  const isPlatformAdmin = user?.role === 'platform_admin';
-  const canManage = hasOrgRole('ADMIN') || hasOrgRole('OPERATIONS_MANAGER');
-  const canView =
-    isPlatformAdmin ||
-    canManage ||
-    hasOrgRole('DISPATCHER') ||
-    hasOrgRole('SUPERVISOR') ||
-    hasOrgRole('VIEWER') ||
-    hasOrgRole('FINANCE');
+  const isPlatformAdmin = user?.role === "platform_admin";
+  const canManage = hasOrgRole("ADMIN") || hasOrgRole("OPERATIONS_MANAGER");
+  const canView
+    = isPlatformAdmin
+      || canManage
+      || hasOrgRole("DISPATCHER")
+      || hasOrgRole("SUPERVISOR")
+      || hasOrgRole("VIEWER")
+      || hasOrgRole("FINANCE");
 
   return {
     canView,

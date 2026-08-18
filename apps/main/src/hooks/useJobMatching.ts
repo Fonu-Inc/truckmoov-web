@@ -2,7 +2,7 @@ import { useState } from "react";
 
 type MatchResult = any;
 
-interface UseJobMatchingReturn {
+type UseJobMatchingReturn = {
   matches: MatchResult[];
   isMatching: boolean;
   matchProgress: number;
@@ -27,14 +27,29 @@ interface UseJobMatchingReturn {
   defaultMode: string;
   eligibleVehicleCount: number;
   eligibleDriverCount: number;
-}
+};
 
 export function useJobMatching(): UseJobMatchingReturn {
-  const [matches, setMatches] = useState<MatchResult[]>([]);
-  const [isMatching, setIsMatching] = useState(false);
-  const [matchProgress, setMatchProgress] = useState(0);
-  const [analysis, setAnalysis] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [
+    matches,
+    setMatches,
+  ] = useState<MatchResult[]>([]);
+  const [
+    isMatching,
+    setIsMatching,
+  ] = useState(false);
+  const [
+    matchProgress,
+    setMatchProgress,
+  ] = useState(0);
+  const [
+    analysis,
+    setAnalysis,
+  ] = useState<string | null>(null);
+  const [
+    error,
+    setError,
+  ] = useState<string | null>(null);
 
   const runMatching = async (job: any, vehicles: any[], drivers: any[], _mode?: string) => {
     setIsMatching(true);
@@ -43,13 +58,24 @@ export function useJobMatching(): UseJobMatchingReturn {
 
     try {
       // Stub: simulate progress and return top 3 vehicle/driver pairs
-      for (const pct of [30, 60, 90, 100]) {
-        await new Promise((r) => setTimeout(r, 300));
+      for (const pct of [
+        30,
+        60,
+        90,
+        100,
+      ]) {
+        await new Promise(r => setTimeout(
+          r,
+          300,
+        ));
         setMatchProgress(pct);
       }
 
-      const availableVehicles = vehicles.filter((v) => v.status === "active").slice(0, 3);
-      const availableDrivers = drivers.filter((d) => d.status === "available" || d.status === "active");
+      const availableVehicles = vehicles.filter(v => v.status === "active").slice(
+        0,
+        3,
+      );
+      const availableDrivers = drivers.filter(d => d.status === "available" || d.status === "active");
 
       const stubMatches = availableVehicles.map((vehicle, i) => ({
         vehicle,
@@ -58,14 +84,19 @@ export function useJobMatching(): UseJobMatchingReturn {
         confidence: 0.9 - i * 0.05,
         estimatedTime: `${30 + i * 10} min`,
         distance: 15 + i * 5,
-        reasons: ["Available", "Capacity match"],
+        reasons: [
+          "Available",
+          "Capacity match",
+        ],
       }));
 
       setMatches(stubMatches);
       setAnalysis("AI matching complete. Top candidates identified based on proximity and capacity.");
-    } catch {
+    }
+    catch {
       setError("AI matching unavailable. Please select manually.");
-    } finally {
+    }
+    finally {
       setIsMatching(false);
     }
   };

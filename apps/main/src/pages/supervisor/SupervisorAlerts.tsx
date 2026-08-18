@@ -1,8 +1,23 @@
 import { formatTime } from "@truckmoov/app-core/utils/time-utils";
+import {
+  AlertCircle,
+  AlertTriangle,
+  Bell,
+  CheckCircle,
+  SlidersHorizontal as Filter,
+  Info,
+  Loader2,
+  RefreshCw,
+  Search,
+  X,
+} from "lucide-react";
+import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import { Input } from "@/components/shadcn/input";
 import {
   Select,
@@ -11,20 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Bell,
-  Search,
-  SlidersHorizontal as Filter,
-  AlertTriangle,
-  AlertCircle,
-  Info,
-  CheckCircle,
-  X,
-  RefreshCw,
-  Loader2,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
 
 export default function SupervisorAlerts() {
   const alerts: any[] = [];
@@ -34,17 +36,26 @@ export default function SupervisorAlerts() {
   const refetch = async (...args: any[]) => {};
   const acknowledgeAlert = async (...args: any[]) => {};
 
-  const [severityFilter, setSeverityFilter] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [localDismissed, setLocalDismissed] = useState<Set<string>>(new Set());
+  const [
+    severityFilter,
+    setSeverityFilter,
+  ] = useState<string>("all");
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    localDismissed,
+    setLocalDismissed,
+  ] = useState<Set<string>>(new Set());
 
   const filteredAlerts = alerts
-    .filter((alert) => !localDismissed.has(alert.id))
+    .filter(alert => !localDismissed.has(alert.id))
     .filter((alert) => {
       const matchesSeverity = severityFilter === "all" || alert.severity === severityFilter;
-      const matchesSearch =
-        alert.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        alert.message.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch
+        = alert.type.toLowerCase().includes(searchQuery.toLowerCase())
+          || alert.message.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesSeverity && matchesSearch;
     });
 
@@ -75,7 +86,7 @@ export default function SupervisorAlerts() {
   };
 
   const dismissAlert = (alertId: string) => {
-    setLocalDismissed((prev) => new Set(prev).add(alertId));
+    setLocalDismissed(prev => new Set(prev).add(alertId));
   };
 
   const acknowledgeAllAlerts = async () => {
@@ -86,7 +97,10 @@ export default function SupervisorAlerts() {
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Alerts Center" subtitle="Loading...">
+      <DashboardLayout
+        title="Alerts Center"
+        subtitle="Loading..."
+      >
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -142,7 +156,11 @@ export default function SupervisorAlerts() {
                   <p className="text-sm text-muted-foreground">Last Update</p>
                   <p className="text-lg font-bold">{formatTime(new Date())}</p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={refetch}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={refetch}
+                >
                   <RefreshCw className="h-5 w-5" />
                 </Button>
               </div>
@@ -155,8 +173,8 @@ export default function SupervisorAlerts() {
           <CardHeader>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>Real-Time Alerts</CardTitle>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={acknowledgeAllAlerts}
                 disabled={unacknowledgedAlerts.length === 0}
               >
@@ -172,11 +190,14 @@ export default function SupervisorAlerts() {
                 <Input
                   placeholder="Search alerts..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   className="pl-9"
                 />
               </div>
-              <Select value={severityFilter} onValueChange={setSeverityFilter}>
+              <Select
+                value={severityFilter}
+                onValueChange={setSeverityFilter}
+              >
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Filter by severity" />
@@ -193,22 +214,32 @@ export default function SupervisorAlerts() {
 
             {/* Alerts List */}
             <div className="space-y-3">
-              {filteredAlerts.map((alert) => (
+              {filteredAlerts.map(alert => (
                 <div
                   key={alert.id}
                   className={cn(
                     "flex flex-col gap-3 rounded-lg border p-4 transition-colors sm:flex-row sm:items-center sm:justify-between",
-                    alert.acknowledged ? "border-border bg-muted/30" : "border-warning/50 bg-warning/5"
+                    alert.acknowledged ? "border-border bg-muted/30" : "border-warning/50 bg-warning/5",
                   )}
                 >
                   <div className="flex items-start gap-3">
                     {getSeverityIcon(alert.severity)}
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="font-semibold capitalize">{alert.type.replace(/_/g, " ")}</p>
+                        <p className="font-semibold capitalize">
+                          {alert.type.replace(
+                            /_/g,
+                            " ",
+                          )}
+                        </p>
                         {getSeverityBadge(alert.severity)}
                         {alert.acknowledged && (
-                          <Badge variant="outline" className="text-xs">Acknowledged</Badge>
+                          <Badge
+                            variant="outline"
+                            className="text-xs"
+                          >
+                            Acknowledged
+                          </Badge>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground mb-1">{alert.message}</p>

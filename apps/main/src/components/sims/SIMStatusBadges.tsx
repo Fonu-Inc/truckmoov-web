@@ -1,18 +1,21 @@
-import { Badge } from "@/components/shadcn/badge";
 import {
-  Clock,
-  CheckCircle,
-  XCircle,
-  ShieldCheck,
-  ShieldAlert,
   AlertTriangle,
+  CheckCircle,
+  Clock,
+  ShieldAlert,
+  ShieldCheck,
+  XCircle,
 } from "lucide-react";
+import { Badge } from "@/components/shadcn/badge";
 
 /** Renders a KYC verification status badge for a tenant. */
 export function KYCBadge({ status }: { status: string | null }) {
   if (!status) {
     return (
-      <Badge variant="outline" className="text-muted-foreground">
+      <Badge
+        variant="outline"
+        className="text-muted-foreground"
+      >
         <AlertTriangle className="h-3 w-3 mr-1" />
         No KYC
       </Badge>

@@ -1,16 +1,22 @@
 import { formatClockDuration } from "@truckmoov/app-core/utils/time-utils";
-import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
-import { Button } from "@/components/shadcn/button";
-import { Badge } from "@/components/shadcn/badge";
-import { Textarea } from "@/components/shadcn/textarea";
-import { Label } from "@/components/shadcn/label";
-import { Phone, PhoneCall, PhoneOff, Mic, MicOff, StickyNote, Circle, Square } from "lucide-react";
+import {
+  Circle, Mic, MicOff, Phone, PhoneCall, PhoneOff, Square, StickyNote,
+} from "lucide-react";
+import {
+  useEffect, useState,
+} from "react";
 import { toast } from "sonner";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/shadcn/dialog";
+import { Label } from "@/components/shadcn/label";
+import { Textarea } from "@/components/shadcn/textarea";
 
 export type CallStatus = "idle" | "connecting" | "ringing" | "connected" | "ended" | "failed";
 
-interface CallInteractionModalProps {
+type CallInteractionModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contactName?: string;
@@ -23,7 +29,7 @@ interface CallInteractionModalProps {
   /** Optional: enable record button. If omitted, button is hidden. */
   onToggleRecord?: (recording: boolean) => Promise<void> | void;
   recordingEnabled?: boolean;
-}
+};
 
 export function CallInteractionModal({
   open,
@@ -37,39 +43,57 @@ export function CallInteractionModal({
   onToggleRecord,
   recordingEnabled = false,
 }: CallInteractionModalProps) {
-  const [showNotes, setShowNotes] = useState(false);
-  const [note, setNote] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
-  const [savingNote, setSavingNote] = useState(false);
+  const [
+    showNotes,
+    setShowNotes,
+  ] = useState(false);
+  const [
+    note,
+    setNote,
+  ] = useState("");
+  const [
+    isRecording,
+    setIsRecording,
+  ] = useState(false);
+  const [
+    savingNote,
+    setSavingNote,
+  ] = useState(false);
 
-  useEffect(() => {
-    if (!open) {
-      setShowNotes(false);
-      setNote("");
-      setIsRecording(false);
-    }
-  }, [open]);
+  useEffect(
+    () => {
+      if (!open) {
+        setShowNotes(false);
+        setNote("");
+        setIsRecording(false);
+      }
+    },
+    [open],
+  );
 
   const initials = (contactName || "?")
     .split(" ")
-    .map((n) => n[0])
+    .map(n => n[0])
     .filter(Boolean)
-    .slice(0, 2)
+    .slice(
+      0,
+      2,
+    )
     .join("")
     .toUpperCase();
 
-  const statusLabel =
-    status === "connecting"
+  const statusLabel
+    = status === "connecting"
       ? "Calling..."
       : status === "ringing"
-      ? "Ringing..."
-      : status === "connected"
-      ? "On Call"
-      : status === "ended"
-      ? "Call Ended"
-      : status === "failed"
-      ? "Call Failed"
-      : "";
+        ? "Ringing..."
+        : status === "connected"
+          ? "On Call"
+          : status === "ended"
+            ? "Call Ended"
+            : status === "failed"
+              ? "Call Failed"
+              : "";
 
   const handleSaveNote = async () => {
     if (!note.trim()) {
@@ -90,7 +114,8 @@ export function CallInteractionModal({
         setNote("");
         setShowNotes(false);
       }
-    } finally {
+    }
+    finally {
       setSavingNote(false);
     }
   };
@@ -101,7 +126,8 @@ export function CallInteractionModal({
     try {
       await onToggleRecord?.(next);
       toast.success(next ? "Recording started" : "Recording stopped");
-    } catch {
+    }
+    catch {
       setIsRecording(!next);
       toast.error("Failed to toggle recording");
     }
@@ -110,7 +136,10 @@ export function CallInteractionModal({
   const liveCall = status === "connecting" || status === "ringing" || status === "connected";
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
           <DialogTitle className="text-center">{statusLabel}</DialogTitle>
@@ -133,7 +162,10 @@ export function CallInteractionModal({
 
           <div className="flex items-center gap-2 mt-4 flex-wrap justify-center">
             {(status === "connecting" || status === "ringing") && (
-              <Badge variant="secondary" className="animate-pulse">
+              <Badge
+                variant="secondary"
+                className="animate-pulse"
+              >
                 <PhoneCall className="h-3 w-3 mr-1" />
                 {status === "ringing" ? "Ringing" : "Connecting"}
               </Badge>
@@ -144,13 +176,19 @@ export function CallInteractionModal({
                   <Phone className="h-3 w-3 mr-1" />
                   On Call
                 </Badge>
-                <Badge variant="outline" className="font-mono">
+                <Badge
+                  variant="outline"
+                  className="font-mono"
+                >
                   {formatClockDuration(durationSeconds)}
                 </Badge>
               </>
             )}
             {isRecording && (
-              <Badge variant="destructive" className="gap-1">
+              <Badge
+                variant="destructive"
+                className="gap-1"
+              >
                 <Circle className="h-2 w-2 fill-current animate-pulse" />
                 REC
               </Badge>
@@ -186,7 +224,7 @@ export function CallInteractionModal({
               variant="outline"
               size="lg"
               className="rounded-full h-12 w-12"
-              onClick={() => setShowNotes((s) => !s)}
+              onClick={() => setShowNotes(s => !s)}
               title="Add notes"
             >
               <StickyNote className="h-5 w-5" />
@@ -201,14 +239,22 @@ export function CallInteractionModal({
                 id="call-note"
                 placeholder="Log call details, outcomes, follow-ups..."
                 value={note}
-                onChange={(e) => setNote(e.target.value)}
+                onChange={e => setNote(e.target.value)}
                 rows={3}
               />
               <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setShowNotes(false)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowNotes(false)}
+                >
                   Cancel
                 </Button>
-                <Button size="sm" onClick={handleSaveNote} disabled={savingNote || !note.trim()}>
+                <Button
+                  size="sm"
+                  onClick={handleSaveNote}
+                  disabled={savingNote || !note.trim()}
+                >
                   {savingNote ? "Saving..." : "Save Note"}
                 </Button>
               </div>

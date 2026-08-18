@@ -1,11 +1,14 @@
-import { Link } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, ArrowRight, Mail, Truck } from "lucide-react";
+import { useForgotPassword } from "@truckmoov/api/auth";
+import { AuthBrandingPanel } from "@truckmoov/reusables/components/layouts/AuthBrandingPanel";
+import {
+  ArrowLeft, ArrowRight, Mail, Truck,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
+import { Link } from "react-router-dom";
+
 import { toast } from "sonner";
 import * as z from "zod";
-
-import { useForgotPassword } from "@truckmoov/api/auth";
 import { Button } from "@/components/shadcn/button";
 import {
   Form,
@@ -16,11 +19,8 @@ import {
   FormMessage,
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
-import { AuthBrandingPanel } from "@truckmoov/reusables/components/layouts/AuthBrandingPanel";
 
-const forgotPasswordSchema = z.object({
-  email: z.string().trim().email("Enter a valid email address."),
-});
+const forgotPasswordSchema = z.object({ email: z.string().trim().email("Enter a valid email address.") });
 
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
@@ -45,9 +45,7 @@ export default function ForgotPasswordPage() {
 
   const form = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
-    defaultValues: {
-      email: "",
-    },
+    defaultValues: { email: "" },
   });
 
   function onSubmit(values: ForgotPasswordFormValues) {
@@ -69,7 +67,12 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-sm space-y-6">
         <MobileLogo />
 
-        <Button variant="ghost" size="sm" asChild className="-ml-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="-ml-3"
+        >
           <Link to="/auth">
             <ArrowLeft className="h-4 w-4" />
             Back to sign in
@@ -82,7 +85,11 @@ export default function ForgotPasswordPage() {
         </div>
 
         <Form {...form}>
-          <form id={FORGOT_PASSWORD_FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            id={FORGOT_PASSWORD_FORM_ID}
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="email"
@@ -92,7 +99,13 @@ export default function ForgotPasswordPage() {
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <FormControl>
-                      <Input type="email" placeholder="you@example.com" className="pl-10" autoComplete="email" {...field} />
+                      <Input
+                        type="email"
+                        placeholder="you@example.com"
+                        className="pl-10"
+                        autoComplete="email"
+                        {...field}
+                      />
                     </FormControl>
                   </div>
                   <FormMessage />
@@ -100,7 +113,13 @@ export default function ForgotPasswordPage() {
               )}
             />
 
-            <Button type="submit" form={FORGOT_PASSWORD_FORM_ID} className="w-full" size="lg" loading={forgotPassword.isPending}>
+            <Button
+              type="submit"
+              form={FORGOT_PASSWORD_FORM_ID}
+              className="w-full"
+              size="lg"
+              loading={forgotPassword.isPending}
+            >
               <span className="flex items-center gap-2">
                 Send reset link
                 <ArrowRight className="h-4 w-4" />

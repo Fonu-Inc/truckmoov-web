@@ -1,14 +1,63 @@
-import { formatDayMonthTime, formatRelativeStrict, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
-import { useMemo, useState } from "react";
+import {
+  formatDayMonthTime,
+  formatRelativeStrict,
+  formatWithPattern,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Building2,
+  Calendar,
+  CheckCircle2,
+  History,
+  Inbox,
+  KeyRound,
+  Loader2,
+  Mail,
+  MessageSquare,
+  Phone,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
+import {
+  useMemo,
+  useState,
+} from "react";
+import { toast } from "sonner";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/shadcn/alert";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import {
   Table,
   TableBody,
@@ -18,48 +67,20 @@ import {
   TableRow,
 } from "@/components/shadcn/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/shadcn/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/shadcn/select";
-import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
-import {
-  MessageSquare,
-  Phone,
-  Building2,
-  Calendar,
-  CheckCircle2,
-  Loader2,
-  ShieldCheck,
-  AlertTriangle,
-  ArrowRight,
-  KeyRound,
-  Mail,
-  RefreshCw,
-  History,
-  Inbox,
-  Sparkles,
-} from "lucide-react";
-import { toast } from "sonner";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/shadcn/tabs";
 
-type RequestStatus =
-  | "pending"
-  | "allocating"
-  | "verifying"
-  | "active"
-  | "failed";
+type RequestStatus
+  = | "pending"
+    | "allocating"
+    | "verifying"
+    | "active"
+    | "failed";
 
-interface NumberRequest {
+type NumberRequest = {
   id: string;
   tenantId: string;
   tenantName: string;
@@ -74,13 +95,13 @@ interface NumberRequest {
   verifiedAt?: string;
   failureReason?: string;
   actor?: string;
-}
+};
 
-interface PoolNumber {
+type PoolNumber = {
   msisdn: string;
   state: "available" | "in_use" | "cooldown";
   cooldownUntil?: string;
-}
+};
 
 const INITIAL_REQUESTS: NumberRequest[] = [
   {
@@ -152,13 +173,34 @@ const HISTORY_REQUESTS: NumberRequest[] = [
 ];
 
 const POOL: PoolNumber[] = [
-  { msisdn: "+2348091000567", state: "available" },
-  { msisdn: "+2348091000568", state: "available" },
-  { msisdn: "+2348091000569", state: "available" },
-  { msisdn: "+2348091000570", state: "available" },
-  { msisdn: "+2348091000571", state: "available" },
-  { msisdn: "+2348091000128", state: "in_use" },
-  { msisdn: "+2348091000234", state: "in_use" },
+  {
+    msisdn: "+2348091000567",
+    state: "available",
+  },
+  {
+    msisdn: "+2348091000568",
+    state: "available",
+  },
+  {
+    msisdn: "+2348091000569",
+    state: "available",
+  },
+  {
+    msisdn: "+2348091000570",
+    state: "available",
+  },
+  {
+    msisdn: "+2348091000571",
+    state: "available",
+  },
+  {
+    msisdn: "+2348091000128",
+    state: "in_use",
+  },
+  {
+    msisdn: "+2348091000234",
+    state: "in_use",
+  },
   {
     msisdn: "+2348091000412",
     state: "cooldown",
@@ -172,22 +214,40 @@ const POOL: PoolNumber[] = [
 ];
 
 export default function PlatformCommunications() {
-  const [tab, setTab] = useState("pending");
-  const [requests, setRequests] = useState<NumberRequest[]>(INITIAL_REQUESTS);
-  const [history, setHistory] = useState<NumberRequest[]>(HISTORY_REQUESTS);
-  const [provisionFor, setProvisionFor] = useState<NumberRequest | null>(null);
+  const [
+    tab,
+    setTab,
+  ] = useState("pending");
+  const [
+    requests,
+    setRequests,
+  ] = useState<NumberRequest[]>(INITIAL_REQUESTS);
+  const [
+    history,
+    setHistory,
+  ] = useState<NumberRequest[]>(HISTORY_REQUESTS);
+  const [
+    provisionFor,
+    setProvisionFor,
+  ] = useState<NumberRequest | null>(null);
 
-  const pendingCount = requests.filter((r) => r.status === "pending").length;
+  const pendingCount = requests.filter(r => r.status === "pending").length;
 
   const handleProvisioned = (req: NumberRequest) => {
-    setRequests((rs) => rs.filter((r) => r.id !== req.id));
-    setHistory((h) => [req, ...h]);
+    setRequests(rs => rs.filter(r => r.id !== req.id));
+    setHistory(h => [
+      req,
+      ...h,
+    ]);
     setProvisionFor(null);
     setTab("history");
   };
 
   return (
-    <DashboardLayout title="Channel Providers" subtitle="Provision tenant communication assets">
+    <DashboardLayout
+      title="Channel Providers"
+      subtitle="Provision tenant communication assets"
+    >
       <div className="space-y-6">
         {/* KPI strip */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -200,42 +260,64 @@ export default function PlatformCommunications() {
           <Kpi
             icon={Phone}
             label="Active WhatsApp Numbers"
-            value={String(history.filter((h) => h.status === "active").length)}
+            value={String(history.filter(h => h.status === "active").length)}
             tone="success"
           />
           <Kpi
             icon={Sparkles}
             label="MSISDN Pool — Available"
-            value={String(POOL.filter((p) => p.state === "available").length)}
+            value={String(POOL.filter(p => p.state === "available").length)}
           />
           <Kpi
             icon={History}
             label="In Cooldown (30d)"
-            value={String(POOL.filter((p) => p.state === "cooldown").length)}
+            value={String(POOL.filter(p => p.state === "cooldown").length)}
             tone="muted"
           />
         </div>
 
-        <Tabs value={tab} onValueChange={setTab}>
+        <Tabs
+          value={tab}
+          onValueChange={setTab}
+        >
           <TabsList>
-            <TabsTrigger value="pending" className="gap-2">
+            <TabsTrigger
+              value="pending"
+              className="gap-2"
+            >
               <Inbox className="h-4 w-4" />
               Pending Requests
               {pendingCount > 0 && (
-                <Badge variant="secondary" className="ml-1">
+                <Badge
+                  variant="secondary"
+                  className="ml-1"
+                >
                   {pendingCount}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="pool" className="gap-2">
-              <Phone className="h-4 w-4" /> Number Pool
+            <TabsTrigger
+              value="pool"
+              className="gap-2"
+            >
+              <Phone className="h-4 w-4" />
+              {" "}
+              Number Pool
             </TabsTrigger>
-            <TabsTrigger value="history" className="gap-2">
-              <History className="h-4 w-4" /> Provisioning History
+            <TabsTrigger
+              value="history"
+              className="gap-2"
+            >
+              <History className="h-4 w-4" />
+              {" "}
+              Provisioning History
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="pending" className="mt-4">
+          <TabsContent
+            value="pending"
+            className="mt-4"
+          >
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -249,63 +331,73 @@ export default function PlatformCommunications() {
                 </div>
               </CardHeader>
               <CardContent>
-                {requests.length === 0 ? (
-                  <div className="text-center py-12 text-sm text-muted-foreground">
-                    <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success" />
-                    No pending requests.
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Tenant</TableHead>
-                        <TableHead>Display Name</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Submitted</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {requests.map((r) => (
-                        <TableRow key={r.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Building2 className="h-4 w-4 text-muted-foreground" />
-                              <div>
-                                <div className="font-medium text-sm">{r.tenantName}</div>
-                                <div className="text-xs text-muted-foreground font-mono">
-                                  {r.id}
+                {requests.length === 0
+                  ? (
+                      <div className="text-center py-12 text-sm text-muted-foreground">
+                        <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success" />
+                        No pending requests.
+                      </div>
+                    )
+                  : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Tenant</TableHead>
+                            <TableHead>Display Name</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead>Submitted</TableHead>
+                            <TableHead className="text-right">Action</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {requests.map(r => (
+                            <TableRow key={r.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                                  <div>
+                                    <div className="font-medium text-sm">{r.tenantName}</div>
+                                    <div className="text-xs text-muted-foreground font-mono">
+                                      {r.id}
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm">{r.displayName}</TableCell>
-                          <TableCell className="text-sm">{r.category}</TableCell>
-                          <TableCell className="text-sm max-w-xs truncate">
-                            {r.description}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            <div className="flex items-center gap-1 text-muted-foreground">
-                              <Calendar className="h-3 w-3" />
-                              {formatDayMonthTime(r.submittedAt)}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button size="sm" onClick={() => setProvisionFor(r)}>
-                              Provision <ArrowRight className="h-3 w-3 ml-1" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
+                              </TableCell>
+                              <TableCell className="text-sm">{r.displayName}</TableCell>
+                              <TableCell className="text-sm">{r.category}</TableCell>
+                              <TableCell className="text-sm max-w-xs truncate">
+                                {r.description}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                  <Calendar className="h-3 w-3" />
+                                  {formatDayMonthTime(r.submittedAt)}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  size="sm"
+                                  onClick={() => setProvisionFor(r)}
+                                >
+                                  Provision
+                                  {" "}
+                                  <ArrowRight className="h-3 w-3 ml-1" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="pool" className="mt-4">
+          <TabsContent
+            value="pool"
+            className="mt-4"
+          >
             <Card>
               <CardHeader>
                 <CardTitle>Telconix MTN MVNO Number Pool</CardTitle>
@@ -324,7 +416,7 @@ export default function PlatformCommunications() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {POOL.map((p) => (
+                    {POOL.map(p => (
                       <TableRow key={p.msisdn}>
                         <TableCell className="font-mono text-sm">{p.msisdn}</TableCell>
                         <TableCell>
@@ -345,7 +437,10 @@ export default function PlatformCommunications() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="history" className="mt-4">
+          <TabsContent
+            value="history"
+            className="mt-4"
+          >
             <Card>
               <CardHeader>
                 <CardTitle>Provisioning History</CardTitle>
@@ -366,7 +461,7 @@ export default function PlatformCommunications() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {history.map((r) => (
+                    {history.map(r => (
                       <TableRow key={r.id}>
                         <TableCell className="text-sm">
                           <div className="font-medium">{r.tenantName}</div>
@@ -387,15 +482,21 @@ export default function PlatformCommunications() {
                         </TableCell>
                         <TableCell className="text-xs">{r.actor ?? "—"}</TableCell>
                         <TableCell>
-                          {r.status === "active" ? (
-                            <Badge className="bg-success/15 text-success border-success/30">
-                              <CheckCircle2 className="h-3 w-3 mr-1" /> Active
-                            </Badge>
-                          ) : (
-                            <Badge variant="destructive">
-                              <AlertTriangle className="h-3 w-3 mr-1" /> Failed
-                            </Badge>
-                          )}
+                          {r.status === "active"
+                            ? (
+                                <Badge className="bg-success/15 text-success border-success/30">
+                                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  {" "}
+                                  Active
+                                </Badge>
+                              )
+                            : (
+                                <Badge variant="destructive">
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  {" "}
+                                  Failed
+                                </Badge>
+                              )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -429,8 +530,8 @@ function Kpi({
   value: string;
   tone?: "warning" | "success" | "muted";
 }) {
-  const iconBg =
-    tone === "warning"
+  const iconBg
+    = tone === "warning"
       ? "bg-warning/15 text-warning"
       : tone === "success"
         ? "bg-success/15 text-success"
@@ -453,24 +554,26 @@ function Kpi({
 }
 
 function PoolBadge({ state }: { state: PoolNumber["state"] }) {
-  if (state === "available")
+  if (state === "available") {
     return (
       <Badge className="bg-success/15 text-success border-success/30">Available</Badge>
     );
-  if (state === "in_use") return <Badge variant="secondary">In Use</Badge>;
+  }
+  if (state === "in_use")
+    return <Badge variant="secondary">In Use</Badge>;
   return (
     <Badge className="bg-warning/15 text-warning border-warning/30">Cooldown</Badge>
   );
 }
 
-type Step =
-  | "select"
-  | "allocating"
-  | "creating_waba"
-  | "otp_sent"
-  | "verifying"
-  | "active"
-  | "failed";
+type Step
+  = | "select"
+    | "allocating"
+    | "creating_waba"
+    | "otp_sent"
+    | "verifying"
+    | "active"
+    | "failed";
 
 function ProvisionDialog({
   request,
@@ -482,15 +585,33 @@ function ProvisionDialog({
   onComplete: (r: NumberRequest) => void;
 }) {
   const available = useMemo(
-    () => POOL.filter((p) => p.state === "available"),
-    []
+    () => POOL.filter(p => p.state === "available"),
+    [],
   );
-  const [msisdn, setMsisdn] = useState<string>(available[0]?.msisdn ?? "");
-  const [step, setStep] = useState<Step>("select");
-  const [otp, setOtp] = useState("");
-  const [generatedOtp, setGeneratedOtp] = useState("");
-  const [wabaId] = useState(() => `waba_${Math.random().toString(16).slice(2, 10)}`);
-  const [failure, setFailure] = useState<string | null>(null);
+  const [
+    msisdn,
+    setMsisdn,
+  ] = useState<string>(available[0]?.msisdn ?? "");
+  const [
+    step,
+    setStep,
+  ] = useState<Step>("select");
+  const [
+    otp,
+    setOtp,
+  ] = useState("");
+  const [
+    generatedOtp,
+    setGeneratedOtp,
+  ] = useState("");
+  const [wabaId] = useState(() => `waba_${Math.random().toString(16).slice(
+    2,
+    10,
+  )}`);
+  const [
+    failure,
+    setFailure,
+  ] = useState<string | null>(null);
 
   const start = async () => {
     if (!msisdn) {
@@ -505,9 +626,10 @@ function ProvisionDialog({
     const code = String(Math.floor(100000 + Math.random() * 900000));
     setGeneratedOtp(code);
     setStep("otp_sent");
-    toast.info("OTP sent to allocated MSISDN", {
-      description: `Forwarded to Meta WABA verification flow`,
-    });
+    toast.info(
+      "OTP sent to allocated MSISDN",
+      { description: `Forwarded to Meta WABA verification flow` },
+    );
   };
 
   const verify = async () => {
@@ -515,7 +637,7 @@ function ProvisionDialog({
     await wait(900);
     if (otp.trim() !== generatedOtp) {
       setFailure(
-        "Meta verification failed: OTP mismatch. The code entered does not match the OTP sent to the allocated MSISDN."
+        "Meta verification failed: OTP mismatch. The code entered does not match the OTP sent to the allocated MSISDN.",
       );
       setStep("failed");
       return;
@@ -529,9 +651,10 @@ function ProvisionDialog({
       verifiedAt: new Date().toISOString(),
       actor: "platform@truckmoov.com",
     };
-    toast.success(`${request.tenantName} provisioned`, {
-      description: `${msisdn} verified on Meta WABA. Tenant notified by email.`,
-    });
+    toast.success(
+      `${request.tenantName} provisioned`,
+      { description: `${msisdn} verified on Meta WABA. Tenant notified by email.` },
+    );
     await wait(700);
     onComplete(completed);
   };
@@ -543,19 +666,25 @@ function ProvisionDialog({
   };
 
   const escalate = () => {
-    toast.success("Escalated to Meta Support", {
-      description: "Failure logged with WABA ID and audit trail entry created.",
-    });
+    toast.success(
+      "Escalated to Meta Support",
+      { description: "Failure logged with WABA ID and audit trail entry created." },
+    );
     onClose();
   };
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
+    <Dialog
+      open
+      onOpenChange={open => !open && onClose()}
+    >
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-primary" />
-            Provision WhatsApp Number — {request.tenantName}
+            Provision WhatsApp Number —
+            {" "}
+            {request.tenantName}
           </DialogTitle>
           <DialogDescription>
             Allocate a Telconix MTN MVNO number, register on Meta Business Manager,
@@ -565,9 +694,18 @@ function ProvisionDialog({
 
         {/* Request summary */}
         <div className="rounded-lg border bg-muted/40 p-3 text-xs grid grid-cols-2 gap-2">
-          <SummaryRow label="Display name" value={request.displayName} />
-          <SummaryRow label="Category" value={request.category} />
-          <SummaryRow label="Tenant email" value={request.contactEmail} />
+          <SummaryRow
+            label="Display name"
+            value={request.displayName}
+          />
+          <SummaryRow
+            label="Category"
+            value={request.category}
+          />
+          <SummaryRow
+            label="Tenant email"
+            value={request.contactEmail}
+          />
           <SummaryRow
             label="Submitted"
             value={formatDayMonthTime(request.submittedAt)}
@@ -582,13 +720,19 @@ function ProvisionDialog({
         {step === "select" && (
           <div className="space-y-3">
             <Label>Allocate MSISDN from MTN MVNO pool</Label>
-            <Select value={msisdn} onValueChange={setMsisdn}>
+            <Select
+              value={msisdn}
+              onValueChange={setMsisdn}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Choose an available number" />
               </SelectTrigger>
               <SelectContent>
-                {available.map((p) => (
-                  <SelectItem key={p.msisdn} value={p.msisdn}>
+                {available.map(p => (
+                  <SelectItem
+                    key={p.msisdn}
+                    value={p.msisdn}
+                  >
                     <span className="font-mono">{p.msisdn}</span>
                   </SelectItem>
                 ))}
@@ -614,7 +758,10 @@ function ProvisionDialog({
           <div className="space-y-3">
             <Alert>
               <KeyRound className="h-4 w-4" />
-              <AlertTitle>OTP sent to {msisdn}</AlertTitle>
+              <AlertTitle>
+                OTP sent to
+                {msisdn}
+              </AlertTitle>
               <AlertDescription className="text-xs">
                 The platform sent a 6-digit OTP to the allocated MSISDN and forwarded
                 it to the Meta WABA verification flow. Confirm the code below to
@@ -622,14 +769,16 @@ function ProvisionDialog({
               </AlertDescription>
             </Alert>
             <div className="rounded border border-dashed p-2 text-center font-mono text-lg tracking-widest text-muted-foreground">
-              demo OTP: {generatedOtp}
+              demo OTP:
+              {" "}
+              {generatedOtp}
             </div>
             <div className="space-y-2">
               <Label htmlFor="otp">Enter OTP</Label>
               <Input
                 id="otp"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value)}
+                onChange={e => setOtp(e.target.value)}
                 placeholder="6-digit code"
                 maxLength={6}
                 inputMode="numeric"
@@ -644,7 +793,11 @@ function ProvisionDialog({
             <CheckCircle2 className="h-4 w-4 text-success" />
             <AlertTitle>Verified</AlertTitle>
             <AlertDescription className="text-xs">
-              {msisdn} is now active on WABA <span className="font-mono">{wabaId}</span>.
+              {msisdn}
+              {" "}
+              is now active on WABA
+              <span className="font-mono">{wabaId}</span>
+              .
               Tenant notified by email.
             </AlertDescription>
           </Alert>
@@ -666,33 +819,61 @@ function ProvisionDialog({
             <ShieldCheck className="h-3 w-3" />
             Audit trail (will be written on success)
           </div>
-          <AuditLine label="MSISDN" value={msisdn || "—"} />
-          <AuditLine label="WABA ID" value={wabaId} />
+          <AuditLine
+            label="MSISDN"
+            value={msisdn || "—"}
+          />
+          <AuditLine
+            label="WABA ID"
+            value={wabaId}
+          />
           <AuditLine
             label="Meta verified at"
-            value={step === "active" ? formatWithPattern(new Date(), "PPpp") : "pending"}
+            value={step === "active"
+              ? formatWithPattern(
+                  new Date(),
+                  "PPpp",
+                )
+              : "pending"}
           />
-          <AuditLine label="Actor" value="platform@truckmoov.com" />
+          <AuditLine
+            label="Actor"
+            value="platform@truckmoov.com"
+          />
         </div>
 
         <DialogFooter className="gap-2">
           {step === "select" && (
             <>
-              <Button variant="outline" onClick={onClose}>
+              <Button
+                variant="outline"
+                onClick={onClose}
+              >
                 Cancel
               </Button>
-              <Button onClick={start} disabled={!msisdn}>
+              <Button
+                onClick={start}
+                disabled={!msisdn}
+              >
                 Allocate & Create WABA
               </Button>
             </>
           )}
           {step === "otp_sent" && (
             <>
-              <Button variant="outline" onClick={onClose}>
+              <Button
+                variant="outline"
+                onClick={onClose}
+              >
                 Cancel
               </Button>
-              <Button onClick={verify} disabled={otp.length !== 6}>
-                <Mail className="h-4 w-4 mr-1" /> Verify with Meta
+              <Button
+                onClick={verify}
+                disabled={otp.length !== 6}
+              >
+                <Mail className="h-4 w-4 mr-1" />
+                {" "}
+                Verify with Meta
               </Button>
             </>
           )}
@@ -704,11 +885,16 @@ function ProvisionDialog({
           )}
           {step === "failed" && (
             <>
-              <Button variant="outline" onClick={escalate}>
+              <Button
+                variant="outline"
+                onClick={escalate}
+              >
                 Escalate to Meta Support
               </Button>
               <Button onClick={retry}>
-                <RefreshCw className="h-4 w-4 mr-1" /> Retry
+                <RefreshCw className="h-4 w-4 mr-1" />
+                {" "}
+                Retry
               </Button>
             </>
           )}
@@ -721,7 +907,13 @@ function ProvisionDialog({
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
+function SummaryRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
   return (
     <div>
       <div className="text-muted-foreground">{label}</div>
@@ -730,7 +922,13 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function AuditLine({ label, value }: { label: string; value: string }) {
+function AuditLine({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
   return (
     <div className="flex justify-between gap-3">
       <span className="text-muted-foreground">{label}</span>
@@ -749,8 +947,8 @@ function ProgressStep({ label }: { label: string }) {
 }
 
 function wait(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
+  return new Promise(r => setTimeout(
+    r,
+    ms,
+  ));
 }
-
-
-

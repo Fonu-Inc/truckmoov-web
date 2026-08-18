@@ -1,6 +1,9 @@
-import { useState, useCallback } from 'react';
+import {
+  useCallback,
+  useState,
+} from "react";
 
-export interface RealtimeVehicleLocation {
+export type RealtimeVehicleLocation = {
   deviceId: string;
   vehicleId?: string;
   latitude: number;
@@ -15,13 +18,13 @@ export interface RealtimeVehicleLocation {
   batteryVoltage?: number;
   timestamp: Date;
   tenantId: string;
-}
+};
 
-interface UseRealtimeTrackingOptions {
+type UseRealtimeTrackingOptions = {
   tenantId?: string;
   autoConnect?: boolean;
   onLocationUpdate?: (location: RealtimeVehicleLocation) => void;
-}
+};
 
 export function useRealtimeTracking(_options: UseRealtimeTrackingOptions = {}) {
   const [locations] = useState<Map<string, RealtimeVehicleLocation>>(new Map());
@@ -29,15 +32,24 @@ export function useRealtimeTracking(_options: UseRealtimeTrackingOptions = {}) {
   const [connectionError] = useState<string | null>(null);
   const [lastUpdate] = useState<Date | null>(null);
 
-  const getLocationsArray = useCallback(() => {
-    return Array.from(locations.values());
-  }, [locations]);
+  const getLocationsArray = useCallback(
+    () => {
+      return Array.from(locations.values());
+    },
+    [locations],
+  );
 
-  const getDeviceLocation = useCallback((_deviceId: string) => {
-    return undefined;
-  }, []);
+  const getDeviceLocation = useCallback(
+    (_deviceId: string) => {
+      return undefined;
+    },
+    [],
+  );
 
-  const refresh = useCallback(async () => {}, []);
+  const refresh = useCallback(
+    async () => {},
+    [],
+  );
 
   return {
     locations: getLocationsArray(),

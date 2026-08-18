@@ -1,9 +1,26 @@
+import type { ExportColumn } from "@/lib/exportTable";
+import {
+  ArrowUpRight,
+  CheckCircle2,
+  CircleDot,
+  Eye,
+  Loader2,
+  MessageSquare,
+  Search,
+  SlidersHorizontal,
+  Ticket as TicketIcon,
+} from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/shadcn/select";
 import {
   Table,
   TableBody,
@@ -12,44 +29,55 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
+import { AdminTicketSheet } from "./AdminTicketSheet";
 // Local type aliases (hook deleted)
 type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
 type TicketPriority = "low" | "medium" | "high" | "critical";
 type TicketCategory = "device_tracking" | "sim_connectivity" | "messaging" | "billing" | "account_access" | "billing_subscription" | "other";
 type ContextType = "device" | "sim" | "vehicle" | "whatsapp" | "billing" | "none";
 type SupportTicket = any;
-import { AdminTicketSheet } from "./AdminTicketSheet";
-import { ExportButton } from "@/components/shadcn/export-button";
-import type { ExportColumn } from "@/lib/exportTable";
-import {
-  Search,
-  CheckCircle2,
-  Loader2,
-  MessageSquare,
-  ArrowUpRight,
-  Ticket as TicketIcon,
-  CircleDot,
-  Eye,
-  SlidersHorizontal,
-} from "lucide-react";
 
-const statusConfig: Record<TicketStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  open: { label: "Open", variant: "default" },
-  in_progress: { label: "In Progress", variant: "secondary" },
-  waiting_on_tenant: { label: "Awaiting Response", variant: "outline" },
-  escalated: { label: "Escalated", variant: "destructive" },
-  resolved: { label: "Resolved", variant: "secondary" },
-  closed: { label: "Closed", variant: "outline" },
+const statusConfig: Record<TicketStatus, {
+  label: string; variant: "default" | "secondary" | "destructive" | "outline";
+}> = {
+  open: {
+    label: "Open", variant: "default",
+  },
+  in_progress: {
+    label: "In Progress", variant: "secondary",
+  },
+  waiting_on_tenant: {
+    label: "Awaiting Response", variant: "outline",
+  },
+  escalated: {
+    label: "Escalated", variant: "destructive",
+  },
+  resolved: {
+    label: "Resolved", variant: "secondary",
+  },
+  closed: {
+    label: "Closed", variant: "outline",
+  },
 };
 
-const priorityConfig: Record<TicketPriority, { label: string; className: string }> = {
-  low: { label: "Low", className: "bg-muted text-muted-foreground" },
-  medium: { label: "Medium", className: "bg-primary/10 text-primary" },
-  high: { label: "High", className: "bg-chart-5/10 text-chart-5" },
-  critical: { label: "Critical", className: "bg-destructive/10 text-destructive" },
+const priorityConfig: Record<TicketPriority, {
+  label: string; className: string;
+}> = {
+  low: {
+    label: "Low", className: "bg-muted text-muted-foreground",
+  },
+  medium: {
+    label: "Medium", className: "bg-primary/10 text-primary",
+  },
+  high: {
+    label: "High", className: "bg-chart-5/10 text-chart-5",
+  },
+  critical: {
+    label: "Critical", className: "bg-destructive/10 text-destructive",
+  },
 };
 
-const channelFromContext = (c: ContextType): string => {
+function channelFromContext(c: ContextType): string {
   switch (c) {
     case "device": return "Device";
     case "sim": return "SIM";
@@ -58,14 +86,30 @@ const channelFromContext = (c: ContextType): string => {
     case "billing": return "Billing";
     default: return "Web";
   }
+}
+
+function formatCategory(c: TicketCategory) {
+  return c.replace(
+    /_/g,
+    " ",
+  ).replace(
+    /\b\w/g,
+    l => l.toUpperCase(),
+  );
+}
+
+function shortId(id?: string) {
+  return id
+    ? id.slice(
+        0,
+        8,
+      )
+    : "—";
+}
+
+type DemoTicket = SupportTicket & {
+  reporterName?: string; tenantName?: string;
 };
-
-const formatCategory = (c: TicketCategory) =>
-  c.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-
-const shortId = (id?: string) => (id ? id.slice(0, 8) : "—");
-
-type DemoTicket = SupportTicket & { reporterName?: string; tenantName?: string };
 
 const REPORTER_NAMES: Record<string, string> = {
   "usr-21f4a8c0": "Adaeze Okafor",
@@ -88,48 +132,85 @@ const TENANT_NAMES: Record<string, string> = {
   "demo-tenant-ibadan": "Ibadan Swift Transit",
 };
 
-const reporterName = (ticket: DemoTicket) =>
-  ticket.reporterName || REPORTER_NAMES[ticket.createdBy] || shortId(ticket.createdBy);
+function reporterName(ticket: DemoTicket) {
+  return ticket.reporterName || REPORTER_NAMES[ticket.createdBy] || shortId(ticket.createdBy);
+}
 
-const tenantLabel = (ticket: DemoTicket) =>
-  ticket.tenantName || TENANT_NAMES[ticket.tenantId] || `Tenant ${shortId(ticket.tenantId)}`;
+function tenantLabel(ticket: DemoTicket) {
+  return ticket.tenantName || TENANT_NAMES[ticket.tenantId] || `Tenant ${shortId(ticket.tenantId)}`;
+}
 
 // Demo dataset spanning multiple tenants — only used when no real tickets exist
 const DEMO_TICKETS: DemoTicket[] = [
-  { id: "tkt-20000001-aaaa", tenantId: "demo-tenant-lagos", category: "device_tracking", subject: "GPS tracker offline on TRK-204", description: "Device stopped reporting since 06:42. Last known position Apapa.", status: "open", priority: "high", contextType: "device", createdBy: "usr-21f4a8c0", createdAt: new Date(Date.now() - 1000 * 60 * 35).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-20000002-bbbb", tenantId: "demo-tenant-lagos", category: "sim_connectivity", subject: "SIM not activating after swap", description: "ICCID 8923440100… stuck in 'pending activation' for 4h.", status: "in_progress", priority: "medium", contextType: "sim", createdBy: "usr-9a3b1c44", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-20000003-cccc", tenantId: "demo-tenant-abuja", category: "billing", subject: "Wallet top-up not reflecting", description: "₦250,000 top-up via MoMo not credited to wallet.", status: "escalated", priority: "critical", contextType: "billing", createdBy: "usr-55cd0091", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-20000004-dddd", tenantId: "demo-tenant-abuja", category: "messaging", subject: "WhatsApp template rejected", description: "Template 'oo_job_offer_v3' rejected by Meta with policy violation.", status: "waiting_on_tenant", priority: "medium", contextType: "whatsapp", createdBy: "usr-ab991122", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-20000005-eeee", tenantId: "demo-tenant-portharcourt", category: "account_access", subject: "Manager locked out of dashboard", description: "Operations manager unable to log in after password reset.", status: "in_progress", priority: "critical", contextType: "none", createdBy: "usr-31aa55b9", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-20000006-ffff", tenantId: "demo-tenant-portharcourt", category: "device_tracking", subject: "Geofence alerts not firing", description: "Geofence Apapa-Port created but no entry/exit alerts received.", status: "resolved", priority: "low", contextType: "device", createdBy: "usr-7711eecc", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), updatedAt: new Date().toISOString(), resolvedAt: new Date().toISOString() },
-  { id: "tkt-20000007-0000", tenantId: "demo-tenant-kano", category: "sim_connectivity", subject: "SIM data exhausted early", description: "5GB plan consumed in 2 days — possible misuse.", status: "resolved", priority: "medium", contextType: "sim", createdBy: "usr-cc220011", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(), updatedAt: new Date().toISOString(), resolvedAt: new Date().toISOString() },
-  { id: "tkt-20000008-1111", tenantId: "demo-tenant-kano", category: "other", subject: "Driver app crashes on launch", description: "Latest mobile app build crashes on Android 12 devices.", status: "escalated", priority: "high", contextType: "none", createdBy: "usr-66aa00ee", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-20000009-2222", tenantId: "demo-tenant-ibadan", category: "billing", subject: "Wallet top-up not credited", description: "Bank transfer of ₦100k not reflecting in wallet.", status: "open", priority: "high", contextType: "billing", createdBy: "usr-aa11bbcc", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-20000010-3333", tenantId: "demo-tenant-ibadan", category: "messaging", subject: "SMS delivery delayed", description: "Bulk SMS notifications taking >10 min to deliver.", status: "in_progress", priority: "low", contextType: "whatsapp", createdBy: "usr-12340987", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), updatedAt: new Date().toISOString() },
+  {
+    id: "tkt-20000001-aaaa", tenantId: "demo-tenant-lagos", category: "device_tracking", subject: "GPS tracker offline on TRK-204", description: "Device stopped reporting since 06:42. Last known position Apapa.", status: "open", priority: "high", contextType: "device", createdBy: "usr-21f4a8c0", createdAt: new Date(Date.now() - 1000 * 60 * 35).toISOString(), updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-20000002-bbbb", tenantId: "demo-tenant-lagos", category: "sim_connectivity", subject: "SIM not activating after swap", description: "ICCID 8923440100… stuck in 'pending activation' for 4h.", status: "in_progress", priority: "medium", contextType: "sim", createdBy: "usr-9a3b1c44", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-20000003-cccc", tenantId: "demo-tenant-abuja", category: "billing", subject: "Wallet top-up not reflecting", description: "₦250,000 top-up via MoMo not credited to wallet.", status: "escalated", priority: "critical", contextType: "billing", createdBy: "usr-55cd0091", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-20000004-dddd", tenantId: "demo-tenant-abuja", category: "messaging", subject: "WhatsApp template rejected", description: "Template 'oo_job_offer_v3' rejected by Meta with policy violation.", status: "waiting_on_tenant", priority: "medium", contextType: "whatsapp", createdBy: "usr-ab991122", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-20000005-eeee", tenantId: "demo-tenant-portharcourt", category: "account_access", subject: "Manager locked out of dashboard", description: "Operations manager unable to log in after password reset.", status: "in_progress", priority: "critical", contextType: "none", createdBy: "usr-31aa55b9", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-20000006-ffff", tenantId: "demo-tenant-portharcourt", category: "device_tracking", subject: "Geofence alerts not firing", description: "Geofence Apapa-Port created but no entry/exit alerts received.", status: "resolved", priority: "low", contextType: "device", createdBy: "usr-7711eecc", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), updatedAt: new Date().toISOString(), resolvedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-20000007-0000", tenantId: "demo-tenant-kano", category: "sim_connectivity", subject: "SIM data exhausted early", description: "5GB plan consumed in 2 days — possible misuse.", status: "resolved", priority: "medium", contextType: "sim", createdBy: "usr-cc220011", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(), updatedAt: new Date().toISOString(), resolvedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-20000008-1111", tenantId: "demo-tenant-kano", category: "other", subject: "Driver app crashes on launch", description: "Latest mobile app build crashes on Android 12 devices.", status: "escalated", priority: "high", contextType: "none", createdBy: "usr-66aa00ee", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(), updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-20000009-2222", tenantId: "demo-tenant-ibadan", category: "billing", subject: "Wallet top-up not credited", description: "Bank transfer of ₦100k not reflecting in wallet.", status: "open", priority: "high", contextType: "billing", createdBy: "usr-aa11bbcc", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-20000010-3333", tenantId: "demo-tenant-ibadan", category: "messaging", subject: "SMS delivery delayed", description: "Bulk SMS notifications taking >10 min to deliver.", status: "in_progress", priority: "low", contextType: "whatsapp", createdBy: "usr-12340987", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), updatedAt: new Date().toISOString(),
+  },
 ];
 
 export function AllTickets() {
   const realTickets: any[] = [];
   const isLoading = false;
   const tickets: DemoTicket[] = realTickets.length > 0 ? realTickets : DEMO_TICKETS;
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState<string>("all");
+  const [
+    selectedTicket,
+    setSelectedTicket,
+  ] = useState<SupportTicket | null>(null);
 
   const filteredTickets = tickets.filter((ticket) => {
     const q = search.toLowerCase();
-    const matchesSearch =
-      ticket.subject.toLowerCase().includes(q) ||
-      ticket.description.toLowerCase().includes(q) ||
-      ticket.id.toLowerCase().includes(q) ||
-      tenantLabel(ticket).toLowerCase().includes(q) ||
-      reporterName(ticket).toLowerCase().includes(q);
+    const matchesSearch
+      = ticket.subject.toLowerCase().includes(q)
+        || ticket.description.toLowerCase().includes(q)
+        || ticket.id.toLowerCase().includes(q)
+        || tenantLabel(ticket).toLowerCase().includes(q)
+        || reporterName(ticket).toLowerCase().includes(q);
 
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "open" && !["resolved", "closed"].includes(ticket.status)) ||
-      (statusFilter === "closed" && ["resolved", "closed"].includes(ticket.status)) ||
-      ticket.status === statusFilter;
+    const matchesStatus
+      = statusFilter === "all"
+        || (statusFilter === "open" && ![
+          "resolved",
+          "closed",
+        ].includes(ticket.status))
+        || (statusFilter === "closed" && [
+          "resolved",
+          "closed",
+        ].includes(ticket.status))
+        || ticket.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
@@ -143,29 +224,63 @@ export function AllTickets() {
   }
 
   const totalCount = tickets.length;
-  const openCount = tickets.filter((t) => !["resolved", "closed"].includes(t.status)).length;
-  const inProgressCount = tickets.filter((t) => t.status === "in_progress").length;
-  const escalatedCount = tickets.filter((t) => t.status === "escalated").length;
-  const closedCount = tickets.filter((t) => ["resolved", "closed"].includes(t.status)).length;
+  const openCount = tickets.filter(t => ![
+    "resolved",
+    "closed",
+  ].includes(t.status)).length;
+  const inProgressCount = tickets.filter(t => t.status === "in_progress").length;
+  const escalatedCount = tickets.filter(t => t.status === "escalated").length;
+  const closedCount = tickets.filter(t => [
+    "resolved",
+    "closed",
+  ].includes(t.status)).length;
 
   const kpis = [
-    { label: "Total Tickets", value: totalCount, icon: TicketIcon, accent: "text-foreground" },
-    { label: "Open", value: openCount, icon: CircleDot, accent: "text-chart-5" },
-    { label: "In Progress", value: inProgressCount, icon: Loader2, accent: "text-primary" },
-    { label: "Escalated", value: escalatedCount, icon: ArrowUpRight, accent: "text-destructive" },
-    { label: "Closed", value: closedCount, icon: CheckCircle2, accent: "text-muted-foreground" },
+    {
+      label: "Total Tickets", value: totalCount, icon: TicketIcon, accent: "text-foreground",
+    },
+    {
+      label: "Open", value: openCount, icon: CircleDot, accent: "text-chart-5",
+    },
+    {
+      label: "In Progress", value: inProgressCount, icon: Loader2, accent: "text-primary",
+    },
+    {
+      label: "Escalated", value: escalatedCount, icon: ArrowUpRight, accent: "text-destructive",
+    },
+    {
+      label: "Closed", value: closedCount, icon: CheckCircle2, accent: "text-muted-foreground",
+    },
   ];
 
   const exportColumns: ExportColumn<DemoTicket>[] = [
-    { header: "Ticket ID", accessor: (r) => r.id },
-    { header: "Title", accessor: (r) => r.subject },
-    { header: "Tenant", accessor: (r) => tenantLabel(r) },
-    { header: "Reporter", accessor: (r) => reporterName(r) },
-    { header: "Channel", accessor: (r) => channelFromContext(r.contextType) },
-    { header: "Category", accessor: (r) => formatCategory(r.category) },
-    { header: "Status", accessor: (r) => statusConfig[r.status]?.label ?? r.status },
-    { header: "Priority", accessor: (r) => priorityConfig[r.priority]?.label ?? r.priority },
-    { header: "Created", accessor: (r) => new Date(r.createdAt).toISOString() },
+    {
+      header: "Ticket ID", accessor: r => r.id,
+    },
+    {
+      header: "Title", accessor: r => r.subject,
+    },
+    {
+      header: "Tenant", accessor: r => tenantLabel(r),
+    },
+    {
+      header: "Reporter", accessor: r => reporterName(r),
+    },
+    {
+      header: "Channel", accessor: r => channelFromContext(r.contextType),
+    },
+    {
+      header: "Category", accessor: r => formatCategory(r.category),
+    },
+    {
+      header: "Status", accessor: r => statusConfig[r.status]?.label ?? r.status,
+    },
+    {
+      header: "Priority", accessor: r => priorityConfig[r.priority]?.label ?? r.priority,
+    },
+    {
+      header: "Created", accessor: r => new Date(r.createdAt).toISOString(),
+    },
   ];
 
   return (
@@ -214,12 +329,15 @@ export function AllTickets() {
                 <Input
                   placeholder="Search by ID, title, tenant, or reporter..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={e => setSearch(e.target.value)}
                   className="pl-9 h-9 border-border bg-transparent font-semibold placeholder:font-normal hover:bg-secondary"
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select
+                  value={statusFilter}
+                  onValueChange={setStatusFilter}
+                >
                   <SelectTrigger className="h-9 w-[160px] border-border bg-transparent font-semibold hover:bg-secondary">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
@@ -233,7 +351,11 @@ export function AllTickets() {
                     <SelectItem value="closed">Closed</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="sm" className="h-9 font-semibold">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 font-semibold"
+                >
                   <SlidersHorizontal className="h-4 w-4 mr-2" />
                   Filter
                 </Button>
@@ -241,90 +363,101 @@ export function AllTickets() {
             </div>
           </CardHeader>
           <CardContent>
-            {filteredTickets.length === 0 ? (
-              <div className="py-12 text-center">
-                <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">No tickets found</h3>
-                <p className="text-sm text-muted-foreground">
-                  {search ? "Try adjusting your search or filters" : "No support tickets have been logged yet"}
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Ticket ID</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Tenant</TableHead>
-                      <TableHead>Reporter</TableHead>
-                      <TableHead>Channel</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Priority</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTickets.map((ticket) => {
-                      const status = statusConfig[ticket.status];
-                      const priority = priorityConfig[ticket.priority];
-                      const reporter = reporterName(ticket);
-                      const initials = reporter
-                        .split(" ")
-                        .map((p) => p[0])
-                        .filter(Boolean)
-                        .slice(0, 2)
-                        .join("")
-                        .toUpperCase();
-                      return (
-                        <TableRow
-                          key={ticket.id}
-                          className="cursor-pointer"
-                          onClick={() => setSelectedTicket(ticket)}
-                        >
-                          <TableCell className="font-mono text-xs">#{shortId(ticket.id)}</TableCell>
-                          <TableCell className="font-medium max-w-[220px] truncate">{ticket.subject}</TableCell>
-                          <TableCell className="text-sm max-w-[180px] truncate">{tenantLabel(ticket)}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2 min-w-0">
-                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
-                                {initials || "?"}
-                              </div>
-                              <span className="text-sm truncate">{reporter}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm">{channelFromContext(ticket.contextType)}</TableCell>
-                          <TableCell className="text-sm">{formatCategory(ticket.category)}</TableCell>
-                          <TableCell>
-                            <Badge variant={status.variant}>{status.label}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={priority.className}>
-                              {priority.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedTicket(ticket);
-                              }}
-                            >
-                              <Eye className="h-4 w-4 mr-1.5" />
-                              Manage
-                            </Button>
-                          </TableCell>
+            {filteredTickets.length === 0
+              ? (
+                  <div className="py-12 text-center">
+                    <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No tickets found</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {search ? "Try adjusting your search or filters" : "No support tickets have been logged yet"}
+                    </p>
+                  </div>
+                )
+              : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Ticket ID</TableHead>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Tenant</TableHead>
+                          <TableHead>Reporter</TableHead>
+                          <TableHead>Channel</TableHead>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Priority</TableHead>
+                          <TableHead className="text-right">Action</TableHead>
                         </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+                      </TableHeader>
+                      <TableBody>
+                        {filteredTickets.map((ticket) => {
+                          const status = statusConfig[ticket.status];
+                          const priority = priorityConfig[ticket.priority];
+                          const reporter = reporterName(ticket);
+                          const initials = reporter
+                            .split(" ")
+                            .map(p => p[0])
+                            .filter(Boolean)
+                            .slice(
+                              0,
+                              2,
+                            )
+                            .join("")
+                            .toUpperCase();
+                          return (
+                            <TableRow
+                              key={ticket.id}
+                              className="cursor-pointer"
+                              onClick={() => setSelectedTicket(ticket)}
+                            >
+                              <TableCell className="font-mono text-xs">
+                                #
+                                {shortId(ticket.id)}
+                              </TableCell>
+                              <TableCell className="font-medium max-w-[220px] truncate">{ticket.subject}</TableCell>
+                              <TableCell className="text-sm max-w-[180px] truncate">{tenantLabel(ticket)}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
+                                    {initials || "?"}
+                                  </div>
+                                  <span className="text-sm truncate">{reporter}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm">{channelFromContext(ticket.contextType)}</TableCell>
+                              <TableCell className="text-sm">{formatCategory(ticket.category)}</TableCell>
+                              <TableCell>
+                                <Badge variant={status.variant}>{status.label}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className={priority.className}
+                                >
+                                  {priority.label}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedTicket(ticket);
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4 mr-1.5" />
+                                  Manage
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
           </CardContent>
         </Card>
       </div>

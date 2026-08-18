@@ -1,69 +1,126 @@
 import { formatClockDuration } from "@truckmoov/app-core/utils/time-utils";
-import { useState, useRef, useEffect } from "react";
+import {
+  Download, Pause, Play, RotateCcw, Volume2, VolumeX,
+} from "lucide-react";
+import {
+  useEffect, useRef, useState,
+} from "react";
 import { Button } from "@/components/shadcn/button";
 import { Slider } from "@/components/shadcn/slider";
-import {Play, Pause, Volume2, VolumeX, RotateCcw, Download} from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface CallRecordingPlayerProps {
+type CallRecordingPlayerProps = {
   recordingUrl: string;
   duration?: number;
   className?: string;
-}
+};
 
-export function CallRecordingPlayer({ recordingUrl, duration, className }: CallRecordingPlayerProps) {
+export function CallRecordingPlayer({
+  recordingUrl, duration, className,
+}: CallRecordingPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [audioDuration, setAudioDuration] = useState(duration || 0);
-  const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [
+    isPlaying,
+    setIsPlaying,
+  ] = useState(false);
+  const [
+    currentTime,
+    setCurrentTime,
+  ] = useState(0);
+  const [
+    audioDuration,
+    setAudioDuration,
+  ] = useState(duration || 0);
+  const [
+    volume,
+    setVolume,
+  ] = useState(1);
+  const [
+    isMuted,
+    setIsMuted,
+  ] = useState(false);
+  const [
+    isLoading,
+    setIsLoading,
+  ] = useState(true);
+  const [
+    error,
+    setError,
+  ] = useState<string | null>(null);
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+  useEffect(
+    () => {
+      const audio = audioRef.current;
+      if (!audio)
+        return;
 
-    const handleLoadedMetadata = () => {
-      setAudioDuration(audio.duration);
-      setIsLoading(false);
-    };
+      const handleLoadedMetadata = () => {
+        setAudioDuration(audio.duration);
+        setIsLoading(false);
+      };
 
-    const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
-    };
+      const handleTimeUpdate = () => {
+        setCurrentTime(audio.currentTime);
+      };
 
-    const handleEnded = () => {
-      setIsPlaying(false);
-      setCurrentTime(0);
-    };
+      const handleEnded = () => {
+        setIsPlaying(false);
+        setCurrentTime(0);
+      };
 
-    const handleError = () => {
-      setError("Failed to load recording");
-      setIsLoading(false);
-    };
+      const handleError = () => {
+        setError("Failed to load recording");
+        setIsLoading(false);
+      };
 
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('error', handleError);
+      audio.addEventListener(
+        "loadedmetadata",
+        handleLoadedMetadata,
+      );
+      audio.addEventListener(
+        "timeupdate",
+        handleTimeUpdate,
+      );
+      audio.addEventListener(
+        "ended",
+        handleEnded,
+      );
+      audio.addEventListener(
+        "error",
+        handleError,
+      );
 
-    return () => {
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('error', handleError);
-    };
-  }, []);
+      return () => {
+        audio.removeEventListener(
+          "loadedmetadata",
+          handleLoadedMetadata,
+        );
+        audio.removeEventListener(
+          "timeupdate",
+          handleTimeUpdate,
+        );
+        audio.removeEventListener(
+          "ended",
+          handleEnded,
+        );
+        audio.removeEventListener(
+          "error",
+          handleError,
+        );
+      };
+    },
+    [],
+  );
 
   const togglePlay = () => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio)
+      return;
 
     if (isPlaying) {
       audio.pause();
-    } else {
+    }
+    else {
       audio.play();
     }
     setIsPlaying(!isPlaying);
@@ -71,16 +128,18 @@ export function CallRecordingPlayer({ recordingUrl, duration, className }: CallR
 
   const handleSeek = (value: number[]) => {
     const audio = audioRef.current;
-    if (!audio) return;
-    
+    if (!audio)
+      return;
+
     audio.currentTime = value[0];
     setCurrentTime(value[0]);
   };
 
   const handleVolumeChange = (value: number[]) => {
     const audio = audioRef.current;
-    if (!audio) return;
-    
+    if (!audio)
+      return;
+
     const newVolume = value[0];
     audio.volume = newVolume;
     setVolume(newVolume);
@@ -89,12 +148,14 @@ export function CallRecordingPlayer({ recordingUrl, duration, className }: CallR
 
   const toggleMute = () => {
     const audio = audioRef.current;
-    if (!audio) return;
-    
+    if (!audio)
+      return;
+
     if (isMuted) {
       audio.volume = volume || 1;
       setIsMuted(false);
-    } else {
+    }
+    else {
       audio.volume = 0;
       setIsMuted(true);
     }
@@ -102,8 +163,9 @@ export function CallRecordingPlayer({ recordingUrl, duration, className }: CallR
 
   const handleRestart = () => {
     const audio = audioRef.current;
-    if (!audio) return;
-    
+    if (!audio)
+      return;
+
     audio.currentTime = 0;
     setCurrentTime(0);
     if (!isPlaying) {
@@ -113,7 +175,7 @@ export function CallRecordingPlayer({ recordingUrl, duration, className }: CallR
   };
 
   const handleDownload = () => {
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = recordingUrl;
     link.download = `call-recording-${Date.now()}.mp3`;
     document.body.appendChild(link);
@@ -123,16 +185,28 @@ export function CallRecordingPlayer({ recordingUrl, duration, className }: CallR
 
   if (error) {
     return (
-      <div className={cn("flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm", className)}>
+      <div className={cn(
+        "flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm",
+        className,
+      )}
+      >
         <span>{error}</span>
       </div>
     );
   }
 
   return (
-    <div className={cn("flex items-center gap-3 p-3 rounded-lg bg-muted/50", className)}>
-      <audio ref={audioRef} src={recordingUrl} preload="metadata" />
-      
+    <div className={cn(
+      "flex items-center gap-3 p-3 rounded-lg bg-muted/50",
+      className,
+    )}
+    >
+      <audio
+        ref={audioRef}
+        src={recordingUrl}
+        preload="metadata"
+      />
+
       {/* Play/Pause Button */}
       <Button
         variant="ghost"
@@ -141,11 +215,13 @@ export function CallRecordingPlayer({ recordingUrl, duration, className }: CallR
         onClick={togglePlay}
         disabled={isLoading}
       >
-        {isPlaying ? (
-          <Pause className="h-4 w-4" />
-        ) : (
-          <Play className="h-4 w-4" />
-        )}
+        {isPlaying
+          ? (
+              <Pause className="h-4 w-4" />
+            )
+          : (
+              <Play className="h-4 w-4" />
+            )}
       </Button>
 
       {/* Time & Progress */}
@@ -172,11 +248,13 @@ export function CallRecordingPlayer({ recordingUrl, duration, className }: CallR
           className="h-8 w-8"
           onClick={toggleMute}
         >
-          {isMuted ? (
-            <VolumeX className="h-4 w-4" />
-          ) : (
-            <Volume2 className="h-4 w-4" />
-          )}
+          {isMuted
+            ? (
+                <VolumeX className="h-4 w-4" />
+              )
+            : (
+                <Volume2 className="h-4 w-4" />
+              )}
         </Button>
       </div>
 

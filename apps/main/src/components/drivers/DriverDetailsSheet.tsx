@@ -1,31 +1,42 @@
-import { daysUntil, formatDate, formatDayMonthTime, formatRelative } from "@truckmoov/app-core/utils/time-utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import type { Driver } from "@/types";
+import {
+  daysUntil, formatDate, formatDayMonthTime, formatRelative,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  Activity, AlertTriangle, Award, Brain, Calendar, Car, Clock,
+  Coffee, CreditCard, Fuel, Gauge, Loader2,
+  Mail, MessageSquare, Minus, Phone, Play, RefreshCw, RotateCcw, Route,
+  Shield, Star, TrendingDown, TrendingUp, Truck, User, Zap,
+} from "lucide-react";
+import {
+  useMemo, useState,
+} from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/shadcn/dialog";
 import { Progress } from "@/components/shadcn/progress";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Separator } from "@/components/shadcn/separator";
-import { Button } from "@/components/shadcn/button";
-import { Driver } from "@/types";
-import { 
-  User, Phone, Mail, CreditCard, Calendar, Star, Truck, 
-  MessageSquare, AlertTriangle, TrendingUp, Award, Clock,
-  Shield, Fuel, Route, Activity, Brain, Car, Zap, RotateCcw,
-  Gauge, Coffee, TrendingDown, Minus, RefreshCw, Loader2, Play
-} from "lucide-react";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
+import { mockVehicles } from "@/data/mockData";
+
 type DriverScore = any;
 type DriverBehaviorEvent = any;
 type FatigueAlert = any;
-import { useMemo, useState } from "react";
-import { mockVehicles } from "@/data/mockData";
-import { toast } from "sonner";
 
-interface DriverDetailsSheetProps {
+type DriverDetailsSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   driver: Driver | null;
-}
+};
 
 const statusColors: Record<string, string> = {
   available: "bg-success/20 text-success border-success/30",
@@ -42,17 +53,23 @@ const commIcons: Record<string, React.ReactNode> = {
 };
 
 const riskLevelColors: Record<string, string> = {
-  low: 'bg-green-500/20 text-green-400 border-green-500/30',
-  medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  high: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-  critical: 'bg-red-500/20 text-red-400 border-red-500/30',
+  low: "bg-green-500/20 text-green-400 border-green-500/30",
+  medium: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+  high: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+  critical: "bg-red-500/20 text-red-400 border-red-500/30",
 };
 
 // Score gauge component
-function ScoreGauge({ score, label, size = "md" }: { score: number; label: string; size?: "sm" | "md" }) {
+function ScoreGauge({
+  score, label, size = "md",
+}: {
+  score: number; label: string; size?: "sm" | "md";
+}) {
   const getScoreColor = (s: number) => {
-    if (s >= 80) return "text-success";
-    if (s >= 60) return "text-warning";
+    if (s >= 80)
+      return "text-success";
+    if (s >= 60)
+      return "text-warning";
     return "text-destructive";
   };
 
@@ -62,7 +79,10 @@ function ScoreGauge({ score, label, size = "md" }: { score: number; label: strin
   return (
     <div className="text-center space-y-1">
       <div className={`relative ${dimensions} mx-auto`}>
-        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+        <svg
+          className="w-full h-full transform -rotate-90"
+          viewBox="0 0 36 36"
+        >
           <path
             d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
             fill="none"
@@ -92,15 +112,21 @@ function ScoreGauge({ score, label, size = "md" }: { score: number; label: strin
 function FatigueGauge({ score }: { score: number }) {
   const percentage = (score / 10) * 100;
   const getColor = () => {
-    if (score <= 3) return 'text-success';
-    if (score <= 5) return 'text-warning';
-    if (score <= 7) return 'text-orange-400';
-    return 'text-destructive';
+    if (score <= 3)
+      return "text-success";
+    if (score <= 5)
+      return "text-warning";
+    if (score <= 7)
+      return "text-orange-400";
+    return "text-destructive";
   };
 
   return (
     <div className="relative w-24 h-24">
-      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+      <svg
+        className="w-full h-full transform -rotate-90"
+        viewBox="0 0 100 100"
+      >
         <circle
           cx="50"
           cy="50"
@@ -131,71 +157,113 @@ function FatigueGauge({ score }: { score: number }) {
 }
 
 function normalizeDeviceId(deviceId?: string) {
-  if (!deviceId) return undefined;
+  if (!deviceId)
+    return undefined;
 
   // Demo data uses dev1/dev2/... but real telemetry uses deterministic UUIDs.
   // Map: dev1 -> d1a1a1a1-0001-4000-8000-000000000001
   const match = /^dev(\d+)$/.exec(deviceId);
-  if (!match) return deviceId;
+  if (!match)
+    return deviceId;
 
   const n = match[1];
-  const segment = n.padStart(4, "0");
-  const suffix = n.padStart(12, "0");
+  const segment = n.padStart(
+    4,
+    "0",
+  );
+  const suffix = n.padStart(
+    12,
+    "0",
+  );
   return `d1a1a1a1-${segment}-4000-8000-${suffix}`;
 }
 
-export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetailsSheetProps) {
+export function DriverDetailsSheet({
+  open, onOpenChange, driver,
+}: DriverDetailsSheetProps) {
   const events: any[] = [];
   const driverScores: any[] = [];
   const fatigueAlerts: any[] = [];
   const analyzeFatigue = async (...args: any[]) => {};
   const isAnalyzing = false;
   const refetchFatigue = () => null;
-  const [isRunningAnalysis, setIsRunningAnalysis] = useState(false);
+  const [
+    isRunningAnalysis,
+    setIsRunningAnalysis,
+  ] = useState(false);
 
   // Find device ID(s) associated with this driver via their assigned vehicle
-  const driverDeviceIds = useMemo(() => {
-    if (!driver) return [];
-    // Find vehicles where this driver is assigned
-    const assignedVehicles = mockVehicles.filter(
-      (v) => v.currentDriver === driver.id || (driver.currentVehicle && v.id === driver.currentVehicle)
-    );
+  const driverDeviceIds = useMemo(
+    () => {
+      if (!driver)
+        return [];
+      // Find vehicles where this driver is assigned
+      const assignedVehicles = mockVehicles.filter(
+        v => v.currentDriver === driver.id || (driver.currentVehicle && v.id === driver.currentVehicle),
+      );
 
-    return assignedVehicles
-      .map((v) => normalizeDeviceId(v.deviceId))
-      .filter(Boolean) as string[];
-  }, [driver]);
+      return assignedVehicles
+        .map(v => normalizeDeviceId(v.deviceId))
+        .filter(Boolean) as string[];
+    },
+    [driver],
+  );
 
   // Get driver-specific data - match by driver_id OR device_id
-  const driverScore = useMemo(() => {
-    return driverScores.find(s => 
-      s.driverId === driver?.id || 
-      driverDeviceIds.includes(s.driverId)
-    );
-  }, [driverScores, driver?.id, driverDeviceIds]);
+  const driverScore = useMemo(
+    () => {
+      return driverScores.find(s =>
+        s.driverId === driver?.id
+        || driverDeviceIds.includes(s.driverId));
+    },
+    [
+      driverScores,
+      driver?.id,
+      driverDeviceIds,
+    ],
+  );
 
-  const driverEvents = useMemo(() => {
-    return events.filter(e => 
-      e.driverId === driver?.id || 
-      driverDeviceIds.includes(e.deviceId)
-    ).slice(0, 10);
-  }, [events, driver?.id, driverDeviceIds]);
+  const driverEvents = useMemo(
+    () => {
+      return events.filter(e =>
+        e.driverId === driver?.id
+        || driverDeviceIds.includes(e.deviceId)).slice(
+        0,
+        10,
+      );
+    },
+    [
+      events,
+      driver?.id,
+      driverDeviceIds,
+    ],
+  );
 
-  const driverFatigueAlerts = useMemo(() => {
-    return fatigueAlerts.filter(a => 
-      a.driver_id === driver?.id || 
-      driverDeviceIds.includes(a.device_id)
-    ).slice(0, 5);
-  }, [fatigueAlerts, driver?.id, driverDeviceIds]);
+  const driverFatigueAlerts = useMemo(
+    () => {
+      return fatigueAlerts.filter(a =>
+        a.driver_id === driver?.id
+        || driverDeviceIds.includes(a.device_id)).slice(
+        0,
+        5,
+      );
+    },
+    [
+      fatigueAlerts,
+      driver?.id,
+      driverDeviceIds,
+    ],
+  );
 
   const latestFatigueAlert = driverFatigueAlerts[0];
 
   // Run fatigue analysis for the driver's device
   const handleRunFatigueAnalysis = async () => {
     if (!driver || driverDeviceIds.length === 0) {
-      toast.error("No Device Assigned", {
-        description: "This driver has no assigned vehicle/device to analyze."
-      });
+      toast.error(
+        "No Device Assigned",
+        { description: "This driver has no assigned vehicle/device to analyze." },
+      );
       return;
     }
 
@@ -206,18 +274,29 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
       // Determine tenant (for demo use tenant-001)
       const tenantId = "tenant-001";
 
-      await analyzeFatigue(deviceId, tenantId, driver.id, driver.name);
-      
+      await analyzeFatigue(
+        deviceId,
+        tenantId,
+        driver.id,
+        driver.name,
+      );
+
       // Refresh alerts to show the new one
-      setTimeout(() => refetchFatigue(), 500);
-    } catch (error) {
+      setTimeout(
+        refetchFatigue,
+        500,
+      );
+    }
+    catch (error) {
       // Error handled by the hook
-    } finally {
+    }
+    finally {
       setIsRunningAnalysis(false);
     }
   };
 
-  if (!driver) return null;
+  if (!driver)
+    return null;
 
   const daysUntilExpiry = daysUntil(driver.licenseExpiry);
   const licenseWarning = daysUntilExpiry <= 30;
@@ -228,33 +307,36 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
 
   const getEventIcon = (eventType: string) => {
     switch (eventType) {
-      case 'harsh_braking': return <Car className="h-3 w-3" />;
-      case 'harsh_acceleration': return <Zap className="h-3 w-3" />;
-      case 'harsh_cornering': return <RotateCcw className="h-3 w-3" />;
-      case 'overspeeding': return <Gauge className="h-3 w-3" />;
+      case "harsh_braking": return <Car className="h-3 w-3" />;
+      case "harsh_acceleration": return <Zap className="h-3 w-3" />;
+      case "harsh_cornering": return <RotateCcw className="h-3 w-3" />;
+      case "overspeeding": return <Gauge className="h-3 w-3" />;
       default: return <AlertTriangle className="h-3 w-3" />;
     }
   };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical': return "bg-destructive/10 text-destructive border-destructive/30";
-      case 'high': return "bg-warning/10 text-warning border-warning/30";
-      case 'medium': return "bg-primary/10 text-primary border-primary/30";
+      case "critical": return "bg-destructive/10 text-destructive border-destructive/30";
+      case "high": return "bg-warning/10 text-warning border-warning/30";
+      case "medium": return "bg-primary/10 text-primary border-primary/30";
       default: return "bg-muted text-muted-foreground border-border";
     }
   };
 
   const getTrendIcon = (trend?: string) => {
     switch (trend) {
-      case 'improving': return <TrendingUp className="h-4 w-4 text-success" />;
-      case 'declining': return <TrendingDown className="h-4 w-4 text-destructive" />;
+      case "improving": return <TrendingUp className="h-4 w-4 text-success" />;
+      case "declining": return <TrendingDown className="h-4 w-4 text-destructive" />;
       default: return <Minus className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-card border-border p-6">
         <DialogHeader className="space-y-4">
           <div className="flex items-start justify-between">
@@ -266,7 +348,10 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
                 <DialogTitle className="text-xl">{driver.name}</DialogTitle>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge className={statusColors[driver.status]}>
-                    {driver.status.replace("_", " ")}
+                    {driver.status.replace(
+                      "_",
+                      " ",
+                    )}
                   </Badge>
                   <div className="flex items-center gap-1 text-warning">
                     <Star className="h-4 w-4 fill-current" />
@@ -289,7 +374,10 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
             <Card className={`border-border/50 ${fatigueScore > 5 ? "bg-warning/10" : "bg-muted/30"}`}>
               <CardContent className="p-3 text-center">
                 <Brain className="h-5 w-5 mx-auto mb-1 text-primary" />
-                <p className="text-xl font-bold">{fatigueScore}/10</p>
+                <p className="text-xl font-bold">
+                  {fatigueScore}
+                  /10
+                </p>
                 <p className="text-xs text-muted-foreground">Fatigue</p>
               </CardContent>
             </Card>
@@ -303,7 +391,10 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
           </div>
         </DialogHeader>
 
-        <Tabs defaultValue="overview" className="mt-6">
+        <Tabs
+          defaultValue="overview"
+          className="mt-6"
+        >
           <TabsList className="grid w-full grid-cols-4 bg-muted/50">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="behavior">Behavior</TabsTrigger>
@@ -311,7 +402,10 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
             <TabsTrigger value="history">History</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-4 mt-4">
+          <TabsContent
+            value="overview"
+            className="space-y-4 mt-4"
+          >
             {/* Contact Information */}
             <Card className="bg-muted/30 border-border/50">
               <CardHeader className="pb-3">
@@ -333,18 +427,28 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
                 )}
                 <div className="flex items-center gap-2">
                   {commIcons[driver.communicationPreference]}
-                  <span className="capitalize">Preferred: {driver.communicationPreference}</span>
+                  <span className="capitalize">
+                    Preferred:
+                    {driver.communicationPreference}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Truck className="h-4 w-4 text-muted-foreground" />
-                  <span>{driver.totalTrips} total trips</span>
+                  <span>
+                    {driver.totalTrips}
+                    {" "}
+                    total trips
+                  </span>
                 </div>
                 {/* US-E02-005 / US-E09-005 — WhatsApp opt-in status */}
                 <div className="col-span-2 flex items-center justify-between rounded-md border border-border/50 bg-background/40 p-2">
                   <div className="flex items-center gap-2">
                     <MessageSquare className="h-4 w-4 text-muted-foreground" />
                     <span className="text-xs">WhatsApp opt-in</span>
-                    <Badge variant="outline" className="bg-success/10 text-success border-success/30 text-[10px]">
+                    <Badge
+                      variant="outline"
+                      className="bg-success/10 text-success border-success/30 text-[10px]"
+                    >
                       Opted In
                     </Badge>
                   </div>
@@ -383,12 +487,17 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
                 <div className="col-span-2">
                   <p className="text-muted-foreground mb-1">Days Until Expiry</p>
                   <div className="flex items-center gap-3">
-                    <Progress 
-                      value={Math.min(100, (daysUntilExpiry / 365) * 100)} 
+                    <Progress
+                      value={Math.min(
+                        100,
+                        (daysUntilExpiry / 365) * 100,
+                      )}
                       className="flex-1 h-2"
                     />
                     <span className={`text-sm font-medium ${licenseWarning ? "text-warning" : ""}`}>
-                      {daysUntilExpiry} days
+                      {daysUntilExpiry}
+                      {" "}
+                      days
                     </span>
                   </div>
                 </div>
@@ -406,12 +515,16 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <ScoreGauge score={overallBehaviorScore} label="Overall" size="sm" />
+                    <ScoreGauge
+                      score={overallBehaviorScore}
+                      label="Overall"
+                      size="sm"
+                    />
                     <div>
                       <p className="font-medium">Behavior Score</p>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         {getTrendIcon(driverScore?.trend)}
-                        {driverScore?.trend || 'stable'}
+                        {driverScore?.trend || "stable"}
                       </p>
                     </div>
                   </div>
@@ -420,7 +533,7 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
                     <div>
                       <p className="font-medium">Fatigue Level</p>
                       <p className="text-xs text-muted-foreground">
-                        {fatigueScore <= 3 ? 'Low risk' : fatigueScore <= 5 ? 'Moderate' : 'High risk'}
+                        {fatigueScore <= 3 ? "Low risk" : fatigueScore <= 5 ? "Moderate" : "High risk"}
                       </p>
                     </div>
                   </div>
@@ -429,7 +542,10 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
             </Card>
           </TabsContent>
 
-          <TabsContent value="behavior" className="space-y-4 mt-4">
+          <TabsContent
+            value="behavior"
+            className="space-y-4 mt-4"
+          >
             {/* Detailed Behavior Scores */}
             {driverScore ? (
               <>
@@ -440,19 +556,35 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
                       Driving Behavior Scores
                     </CardTitle>
                     <CardDescription>
-                      Based on {driverScore.totalEvents} recorded events
+                      Based on
+                      {" "}
+                      {driverScore.totalEvents}
+                      {" "}
+                      recorded events
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-4 gap-3 mb-4">
-                      <ScoreGauge score={driverScore.brakingScore} label="Braking" />
-                      <ScoreGauge score={driverScore.accelerationScore} label="Accel" />
-                      <ScoreGauge score={driverScore.corneringScore} label="Cornering" />
-                      <ScoreGauge score={driverScore.speedingScore} label="Speed" />
+                      <ScoreGauge
+                        score={driverScore.brakingScore}
+                        label="Braking"
+                      />
+                      <ScoreGauge
+                        score={driverScore.accelerationScore}
+                        label="Accel"
+                      />
+                      <ScoreGauge
+                        score={driverScore.corneringScore}
+                        label="Cornering"
+                      />
+                      <ScoreGauge
+                        score={driverScore.speedingScore}
+                        label="Speed"
+                      />
                     </div>
-                    
+
                     <Separator className="my-4" />
-                    
+
                     <div className="grid grid-cols-4 gap-2 text-center text-xs">
                       <div className="p-2 rounded-lg bg-destructive/10">
                         <p className="font-semibold text-destructive">{driverScore.eventBreakdown.harshBraking}</p>
@@ -482,34 +614,49 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
                   <CardContent>
                     <ScrollArea className="h-[200px] pr-2">
                       <div className="space-y-2">
-                        {driverEvents.length > 0 ? driverEvents.map((event) => (
-                          <div key={event.id} className={`p-2 rounded-lg border ${getSeverityColor(event.severity)}`}>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                {getEventIcon(event.eventType)}
-                                <span className="text-xs font-medium capitalize">
-                                  {event.eventType.replace(/_/g, ' ')}
-                                </span>
-                                <Badge variant="outline" className="text-[10px] h-4">
-                                  {event.severity}
-                                </Badge>
+                        {driverEvents.length > 0
+                          ? driverEvents.map(event => (
+                              <div
+                                key={event.id}
+                                className={`p-2 rounded-lg border ${getSeverityColor(event.severity)}`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    {getEventIcon(event.eventType)}
+                                    <span className="text-xs font-medium capitalize">
+                                      {event.eventType.replace(
+                                        /_/g,
+                                        " ",
+                                      )}
+                                    </span>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] h-4"
+                                    >
+                                      {event.severity}
+                                    </Badge>
+                                  </div>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {formatRelative(event.createdAt)}
+                                  </span>
+                                </div>
+                                {event.speed && (
+                                  <p className="text-[10px] mt-1 text-muted-foreground">
+                                    Speed:
+                                    {" "}
+                                    {event.speed}
+                                    {" "}
+                                    km/h
+                                  </p>
+                                )}
                               </div>
-                              <span className="text-[10px] text-muted-foreground">
-                                {formatRelative(event.createdAt)}
-                              </span>
-                            </div>
-                            {event.speed && (
-                              <p className="text-[10px] mt-1 text-muted-foreground">
-                                Speed: {event.speed} km/h
-                              </p>
+                            ))
+                          : (
+                              <div className="text-center py-6">
+                                <Shield className="h-8 w-8 mx-auto mb-2 text-success" />
+                                <p className="text-sm text-muted-foreground">No behavior events recorded</p>
+                              </div>
                             )}
-                          </div>
-                        )) : (
-                          <div className="text-center py-6">
-                            <Shield className="h-8 w-8 mx-auto mb-2 text-success" />
-                            <p className="text-sm text-muted-foreground">No behavior events recorded</p>
-                          </div>
-                        )}
                       </div>
                     </ScrollArea>
                   </CardContent>
@@ -528,7 +675,10 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
             )}
           </TabsContent>
 
-          <TabsContent value="fatigue" className="space-y-4 mt-4">
+          <TabsContent
+            value="fatigue"
+            className="space-y-4 mt-4"
+          >
             {/* Current Fatigue Status */}
             <Card className={`border-border/50 ${latestFatigueAlert && Number(latestFatigueAlert.fatigue_score) > 5 ? "bg-warning/10 border-warning/30" : "bg-muted/30"}`}>
               <CardHeader className="pb-3">
@@ -544,113 +694,132 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
                     disabled={isRunningAnalysis || isAnalyzing || driverDeviceIds.length === 0}
                     className="gap-1.5 h-7 text-xs"
                   >
-                    {isRunningAnalysis || isAnalyzing ? (
-                      <>
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="h-3 w-3" />
-                        Run Analysis
-                      </>
-                    )}
+                    {isRunningAnalysis || isAnalyzing
+                      ? (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Analyzing...
+                          </>
+                        )
+                      : (
+                          <>
+                            <RefreshCw className="h-3 w-3" />
+                            Run Analysis
+                          </>
+                        )}
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                {latestFatigueAlert ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <FatigueGauge score={Number(latestFatigueAlert.fatigue_score)} />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge className={riskLevelColors[latestFatigueAlert.risk_level]}>
-                            {latestFatigueAlert.risk_level} risk
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {formatRelative(latestFatigueAlert.created_at)}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {latestFatigueAlert.driving_duration_minutes} min driving
+                {latestFatigueAlert
+                  ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-4">
+                          <FatigueGauge score={Number(latestFatigueAlert.fatigue_score)} />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge className={riskLevelColors[latestFatigueAlert.risk_level]}>
+                                {latestFatigueAlert.risk_level}
+                                {" "}
+                                risk
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {formatRelative(latestFatigueAlert.created_at)}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {latestFatigueAlert.driving_duration_minutes}
+                                {" "}
+                                min driving
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Coffee className="h-3 w-3" />
+                                Rest:
+                                {" "}
+                                {latestFatigueAlert.rest_compliance_score}
+                                /10
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Coffee className="h-3 w-3" />
-                            Rest: {latestFatigueAlert.rest_compliance_score}/10
-                          </div>
                         </div>
+
+                        {latestFatigueAlert.recommendations.length > 0 && (
+                          <>
+                            <Separator />
+                            <div>
+                              <p className="text-xs font-medium mb-2 flex items-center gap-1">
+                                <Shield className="h-3 w-3 text-success" />
+                                Recommendations
+                              </p>
+                              <ul className="space-y-1">
+                                {latestFatigueAlert.recommendations.slice(
+                                  0,
+                                  3,
+                                ).map((rec, idx) => (
+                                  <li
+                                    key={idx}
+                                    className="text-xs text-muted-foreground flex items-start gap-1"
+                                  >
+                                    <span className="text-success mt-0.5">✓</span>
+                                    {rec}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </>
+                        )}
+
+                        {latestFatigueAlert.ai_analysis && (
+                          <>
+                            <Separator />
+                            <div>
+                              <p className="text-xs font-medium mb-2 flex items-center gap-1">
+                                <Brain className="h-3 w-3 text-primary" />
+                                AI Analysis
+                              </p>
+                              <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
+                                {latestFatigueAlert.ai_analysis}
+                              </p>
+                            </div>
+                          </>
+                        )}
                       </div>
-                    </div>
-
-                    {latestFatigueAlert.recommendations.length > 0 && (
-                      <>
-                        <Separator />
-                        <div>
-                          <p className="text-xs font-medium mb-2 flex items-center gap-1">
-                            <Shield className="h-3 w-3 text-success" />
-                            Recommendations
+                    )
+                  : (
+                      <div className="text-center py-6">
+                        <Brain className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
+                        <p className="font-medium">No Fatigue Alerts</p>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Run an AI fatigue analysis to assess this driver's condition
+                        </p>
+                        <Button
+                          onClick={handleRunFatigueAnalysis}
+                          disabled={isRunningAnalysis || isAnalyzing || driverDeviceIds.length === 0}
+                          className="gap-2"
+                        >
+                          {isRunningAnalysis || isAnalyzing
+                            ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  Analyzing...
+                                </>
+                              )
+                            : (
+                                <>
+                                  <Play className="h-4 w-4" />
+                                  Run Fatigue Analysis
+                                </>
+                              )}
+                        </Button>
+                        {driverDeviceIds.length === 0 && (
+                          <p className="text-xs text-warning mt-2">
+                            No device assigned to this driver
                           </p>
-                          <ul className="space-y-1">
-                            {latestFatigueAlert.recommendations.slice(0, 3).map((rec, idx) => (
-                              <li key={idx} className="text-xs text-muted-foreground flex items-start gap-1">
-                                <span className="text-success mt-0.5">✓</span>
-                                {rec}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </>
+                        )}
+                      </div>
                     )}
-
-                    {latestFatigueAlert.ai_analysis && (
-                      <>
-                        <Separator />
-                        <div>
-                          <p className="text-xs font-medium mb-2 flex items-center gap-1">
-                            <Brain className="h-3 w-3 text-primary" />
-                            AI Analysis
-                          </p>
-                          <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
-                            {latestFatigueAlert.ai_analysis}
-                          </p>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <Brain className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-                    <p className="font-medium">No Fatigue Alerts</p>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Run an AI fatigue analysis to assess this driver's condition
-                    </p>
-                    <Button
-                      onClick={handleRunFatigueAnalysis}
-                      disabled={isRunningAnalysis || isAnalyzing || driverDeviceIds.length === 0}
-                      className="gap-2"
-                    >
-                      {isRunningAnalysis || isAnalyzing ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Analyzing...
-                        </>
-                      ) : (
-                        <>
-                          <Play className="h-4 w-4" />
-                          Run Fatigue Analysis
-                        </>
-                      )}
-                    </Button>
-                    {driverDeviceIds.length === 0 && (
-                      <p className="text-xs text-warning mt-2">
-                        No device assigned to this driver
-                      </p>
-                    )}
-                  </div>
-                )}
               </CardContent>
             </Card>
 
@@ -663,12 +832,21 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
                 <CardContent>
                   <ScrollArea className="h-[200px] pr-2">
                     <div className="space-y-2">
-                      {driverFatigueAlerts.slice(1).map((alert) => (
-                        <div key={alert.id} className="p-2 rounded-lg border border-border/50 bg-muted/20">
+                      {driverFatigueAlerts.slice(1).map(alert => (
+                        <div
+                          key={alert.id}
+                          className="p-2 rounded-lg border border-border/50 bg-muted/20"
+                        >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium">{alert.fatigue_score}/10</span>
-                              <Badge variant="outline" className={`text-[10px] h-4 ${riskLevelColors[alert.risk_level]}`}>
+                              <span className="text-sm font-medium">
+                                {alert.fatigue_score}
+                                /10
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] h-4 ${riskLevelColors[alert.risk_level]}`}
+                              >
                                 {alert.risk_level}
                               </Badge>
                             </div>
@@ -685,7 +863,10 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
             )}
           </TabsContent>
 
-          <TabsContent value="history" className="space-y-4 mt-4">
+          <TabsContent
+            value="history"
+            className="space-y-4 mt-4"
+          >
             {/* Trip & Performance History */}
             <Card className="bg-muted/30 border-border/50">
               <CardHeader className="pb-3">
@@ -717,9 +898,15 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
                       <Shield className="h-4 w-4 text-success" />
                       Safety Score
                     </span>
-                    <span className="text-sm font-medium">{overallBehaviorScore}%</span>
+                    <span className="text-sm font-medium">
+                      {overallBehaviorScore}
+                      %
+                    </span>
                   </div>
-                  <Progress value={overallBehaviorScore} className="h-2" />
+                  <Progress
+                    value={overallBehaviorScore}
+                    className="h-2"
+                  />
                 </div>
 
                 <div>
@@ -729,12 +916,13 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
                       Rest Compliance
                     </span>
                     <span className="text-sm font-medium">
-                      {latestFatigueAlert?.rest_compliance_score ?? 8}/10
+                      {latestFatigueAlert?.rest_compliance_score ?? 8}
+                      /10
                     </span>
                   </div>
-                  <Progress 
-                    value={((latestFatigueAlert?.rest_compliance_score ?? 8) / 10) * 100} 
-                    className="h-2" 
+                  <Progress
+                    value={((latestFatigueAlert?.rest_compliance_score ?? 8) / 10) * 100}
+                    className="h-2"
                   />
                 </div>
               </CardContent>
@@ -748,20 +936,32 @@ export function DriverDetailsSheet({ open, onOpenChange, driver }: DriverDetails
               <CardContent>
                 <ScrollArea className="h-[200px] pr-2">
                   <div className="space-y-2">
-                    {driverEvents.slice(0, 5).map((event) => (
-                      <div key={event.id} className="flex items-center gap-3 p-2 rounded-lg border border-border/50">
+                    {driverEvents.slice(
+                      0,
+                      5,
+                    ).map(event => (
+                      <div
+                        key={event.id}
+                        className="flex items-center gap-3 p-2 rounded-lg border border-border/50"
+                      >
                         <div className={`p-1.5 rounded-full ${getSeverityColor(event.severity)}`}>
                           {getEventIcon(event.eventType)}
                         </div>
                         <div className="flex-1">
                           <p className="text-xs font-medium capitalize">
-                            {event.eventType.replace(/_/g, ' ')}
+                            {event.eventType.replace(
+                              /_/g,
+                              " ",
+                            )}
                           </p>
                           <p className="text-[10px] text-muted-foreground">
                             {formatRelative(event.createdAt)}
                           </p>
                         </div>
-                        <Badge variant="outline" className="text-[10px] h-4">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] h-4"
+                        >
                           {event.severity}
                         </Badge>
                       </div>

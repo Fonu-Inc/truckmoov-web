@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect, useState,
+} from "react";
 
 import { Button } from "@/components/shadcn/button";
 import { Checkbox } from "@/components/shadcn/checkbox";
@@ -17,7 +19,7 @@ import {
 } from "@/components/shadcn/select";
 import { cn } from "@/lib/utils";
 
-export interface VehiclesFilterValue {
+export type VehiclesFilterValue = {
   statusEnabled: boolean;
   status: string;
   assignedEnabled: boolean;
@@ -26,16 +28,16 @@ export interface VehiclesFilterValue {
   type: string;
   yearEnabled: boolean;
   yearRange: [number, number];
-}
+};
 
-interface VehiclesFilterDialogProps {
+type VehiclesFilterDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   value: VehiclesFilterValue;
   onApply: (value: VehiclesFilterValue) => void;
   onReset: () => void;
   trigger: React.ReactNode;
-}
+};
 
 export function buildDefaultVehiclesFilterValue(): VehiclesFilterValue {
   return {
@@ -46,16 +48,23 @@ export function buildDefaultVehiclesFilterValue(): VehiclesFilterValue {
     typeEnabled: false,
     type: "all",
     yearEnabled: false,
-    yearRange: [0, 0],
+    yearRange: [
+      0,
+      0,
+    ],
   };
 }
 
 export function countActiveVehicleFilters(value: VehiclesFilterValue): number {
   let n = 0;
-  if (value.statusEnabled && value.status !== "all") n++;
-  if (value.assignedEnabled && value.assigned !== "all") n++;
-  if (value.typeEnabled && value.type !== "all") n++;
-  if (value.yearEnabled) n++;
+  if (value.statusEnabled && value.status !== "all")
+    n++;
+  if (value.assignedEnabled && value.assigned !== "all")
+    n++;
+  if (value.typeEnabled && value.type !== "all")
+    n++;
+  if (value.yearEnabled)
+    n++;
   return n;
 }
 
@@ -67,11 +76,21 @@ export function VehiclesFilterDialog({
   onReset,
   trigger,
 }: VehiclesFilterDialogProps) {
-  const [draft, setDraft] = useState<VehiclesFilterValue>(value);
+  const [
+    draft,
+    setDraft,
+  ] = useState<VehiclesFilterValue>(value);
 
-  useEffect(() => {
-    if (open) setDraft(value);
-  }, [open, value]);
+  useEffect(
+    () => {
+      if (open)
+        setDraft(value);
+    },
+    [
+      open,
+      value,
+    ],
+  );
 
   const handleApply = () => {
     onApply(draft);
@@ -86,16 +105,22 @@ export function VehiclesFilterDialog({
 
   const updateYear = (index: 0 | 1, raw: string) => {
     const num = raw === "" ? 0 : Number(raw);
-    if (Number.isNaN(num)) return;
+    if (Number.isNaN(num))
+      return;
     setDraft((d) => {
       const next: [number, number] = [...d.yearRange] as [number, number];
       next[index] = num;
-      return { ...d, yearRange: next };
+      return {
+        ...d, yearRange: next,
+      };
     });
   };
 
   return (
-    <Popover open={open} onOpenChange={onOpenChange}>
+    <Popover
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
         align="end"
@@ -112,9 +137,10 @@ export function VehiclesFilterDialog({
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <Checkbox
                 checked={draft.statusEnabled}
-                onCheckedChange={(c) =>
-                  setDraft((d) => ({ ...d, statusEnabled: !!c }))
-                }
+                onCheckedChange={c =>
+                  setDraft(d => ({
+                    ...d, statusEnabled: !!c,
+                  }))}
                 className="h-3.5 w-3.5"
               />
               <span
@@ -128,7 +154,9 @@ export function VehiclesFilterDialog({
             </label>
             <Select
               value={draft.status}
-              onValueChange={(v) => setDraft((d) => ({ ...d, status: v }))}
+              onValueChange={v => setDraft(d => ({
+                ...d, status: v,
+              }))}
               disabled={!draft.statusEnabled}
             >
               <SelectTrigger className="h-8 text-xs">
@@ -149,9 +177,10 @@ export function VehiclesFilterDialog({
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <Checkbox
                 checked={draft.assignedEnabled}
-                onCheckedChange={(c) =>
-                  setDraft((d) => ({ ...d, assignedEnabled: !!c }))
-                }
+                onCheckedChange={c =>
+                  setDraft(d => ({
+                    ...d, assignedEnabled: !!c,
+                  }))}
                 className="h-3.5 w-3.5"
               />
               <span
@@ -165,7 +194,9 @@ export function VehiclesFilterDialog({
             </label>
             <Select
               value={draft.assigned}
-              onValueChange={(v) => setDraft((d) => ({ ...d, assigned: v }))}
+              onValueChange={v => setDraft(d => ({
+                ...d, assigned: v,
+              }))}
               disabled={!draft.assignedEnabled}
             >
               <SelectTrigger className="h-8 text-xs">
@@ -184,9 +215,10 @@ export function VehiclesFilterDialog({
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <Checkbox
                 checked={draft.typeEnabled}
-                onCheckedChange={(c) =>
-                  setDraft((d) => ({ ...d, typeEnabled: !!c }))
-                }
+                onCheckedChange={c =>
+                  setDraft(d => ({
+                    ...d, typeEnabled: !!c,
+                  }))}
                 className="h-3.5 w-3.5"
               />
               <span
@@ -200,7 +232,9 @@ export function VehiclesFilterDialog({
             </label>
             <Select
               value={draft.type}
-              onValueChange={(v) => setDraft((d) => ({ ...d, type: v }))}
+              onValueChange={v => setDraft(d => ({
+                ...d, type: v,
+              }))}
               disabled={!draft.typeEnabled}
             >
               <SelectTrigger className="h-8 text-xs">
@@ -220,9 +254,10 @@ export function VehiclesFilterDialog({
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <Checkbox
                 checked={draft.yearEnabled}
-                onCheckedChange={(c) =>
-                  setDraft((d) => ({ ...d, yearEnabled: !!c }))
-                }
+                onCheckedChange={c =>
+                  setDraft(d => ({
+                    ...d, yearEnabled: !!c,
+                  }))}
                 className="h-3.5 w-3.5"
               />
               <span
@@ -241,7 +276,10 @@ export function VehiclesFilterDialog({
                 placeholder="From"
                 disabled={!draft.yearEnabled}
                 value={draft.yearEnabled ? draft.yearRange[0] || "" : ""}
-                onChange={(e) => updateYear(0, e.target.value)}
+                onChange={e => updateYear(
+                  0,
+                  e.target.value,
+                )}
                 className="h-8 text-xs"
               />
               <Input
@@ -250,14 +288,21 @@ export function VehiclesFilterDialog({
                 placeholder="To"
                 disabled={!draft.yearEnabled}
                 value={draft.yearEnabled ? draft.yearRange[1] || "" : ""}
-                onChange={(e) => updateYear(1, e.target.value)}
+                onChange={e => updateYear(
+                  1,
+                  e.target.value,
+                )}
                 className="h-8 text-xs"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-1.5 pt-1">
-            <Button onClick={handleApply} size="sm" className="flex-1 h-8 text-xs">
+            <Button
+              onClick={handleApply}
+              size="sm"
+              className="flex-1 h-8 text-xs"
+            >
               Apply
             </Button>
             <Button

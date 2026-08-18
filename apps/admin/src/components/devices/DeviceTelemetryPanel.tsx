@@ -1,30 +1,41 @@
+import type {
+  DeviceWithTelemetry,
+  DriverBehaviorEvent,
+} from "@/hooks/useDeviceTelemetry";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card';
-import { Badge } from '@/components/shadcn/badge';
-import { Progress } from '@/components/shadcn/progress';
-import { ScrollArea } from '@/components/shadcn/scroll-area';
-import { Separator } from '@/components/shadcn/separator';
 import {
-  Gauge,
-  Fuel,
-  Battery,
-  Signal,
   Activity,
-  Navigation,
   AlertTriangle,
+  Battery,
   Clock,
+  Fuel,
+  Gauge,
+  Navigation,
+  Signal,
   Zap,
-} from 'lucide-react';
-import { DeviceWithTelemetry, DriverBehaviorEvent } from '@/hooks/useDeviceTelemetry';
-import { DeviceHealthBadge } from './DeviceHealthBadge';
+} from "lucide-react";
+import React from "react";
+import { Badge } from "@/components/shadcn/badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
+import { Progress } from "@/components/shadcn/progress";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Separator } from "@/components/shadcn/separator";
+import { DeviceHealthBadge } from "./DeviceHealthBadge";
 
-interface DeviceTelemetryPanelProps {
+type DeviceTelemetryPanelProps = {
   device: DeviceWithTelemetry | null;
   recentEvents: DriverBehaviorEvent[];
-}
+};
 
-export function DeviceTelemetryPanel({ device, recentEvents }: DeviceTelemetryPanelProps) {
+export function DeviceTelemetryPanel({
+  device,
+  recentEvents,
+}: DeviceTelemetryPanelProps) {
   if (!device) {
     return (
       <Card>
@@ -39,30 +50,29 @@ export function DeviceTelemetryPanel({ device, recentEvents }: DeviceTelemetryPa
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      active: 'bg-green-500',
-      configured: 'bg-blue-500',
-      assigned: 'bg-purple-500',
-      registered: 'bg-amber-500',
-      faulty: 'bg-red-500',
-      decommissioned: 'bg-gray-500',
+      active: "bg-green-500",
+      configured: "bg-blue-500",
+      assigned: "bg-purple-500",
+      registered: "bg-amber-500",
+      faulty: "bg-red-500",
+      decommissioned: "bg-gray-500",
     };
-    return colors[status] || 'bg-gray-500';
+    return colors[status] || "bg-gray-500";
   };
 
   const getSeverityColor = (severity: string) => {
     const colors: Record<string, string> = {
-      low: 'bg-blue-500',
-      medium: 'bg-amber-500',
-      high: 'bg-orange-500',
-      critical: 'bg-red-500',
+      low: "bg-blue-500",
+      medium: "bg-amber-500",
+      high: "bg-orange-500",
+      critical: "bg-red-500",
     };
-    return colors[severity] || 'bg-gray-500';
+    return colors[severity] || "bg-gray-500";
   };
 
   const formatEventType = (type: string) => {
-    return type.split('_').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
+    return type.split("_").map(word =>
+      word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
   };
 
   return (
@@ -73,7 +83,7 @@ export function DeviceTelemetryPanel({ device, recentEvents }: DeviceTelemetryPa
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">{device.imei}</CardTitle>
             <div className="flex items-center gap-2">
-              <DeviceHealthBadge 
+              <DeviceHealthBadge
                 healthStatus={device.health_status || null}
                 lastSeen={device.last_seen}
                 size="md"
@@ -84,14 +94,22 @@ export function DeviceTelemetryPanel({ device, recentEvents }: DeviceTelemetryPa
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            {device.manufacturer} {device.model || ''} • {device.protocol?.toUpperCase() || 'HTTP'}
+            {device.manufacturer}
+            {" "}
+            {device.model || ""}
+            {" "}
+            •
+            {" "}
+            {device.protocol?.toUpperCase() || "HTTP"}
           </p>
         </CardHeader>
         <CardContent>
           {device.last_seen && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
-              Last seen {formatRelative(device.last_seen)}
+              Last seen
+              {" "}
+              {formatRelative(device.last_seen)}
             </div>
           )}
         </CardContent>
@@ -113,7 +131,9 @@ export function DeviceTelemetryPanel({ device, recentEvents }: DeviceTelemetryPa
               <span className="text-sm">Speed</span>
             </div>
             <span className="font-mono text-lg">
-              {device.speed?.toFixed(0) || '0'} <span className="text-sm text-muted-foreground">km/h</span>
+              {device.speed?.toFixed(0) || "0"}
+              {" "}
+              <span className="text-sm text-muted-foreground">km/h</span>
             </span>
           </div>
 
@@ -124,7 +144,8 @@ export function DeviceTelemetryPanel({ device, recentEvents }: DeviceTelemetryPa
               <span className="text-sm">Heading</span>
             </div>
             <span className="font-mono text-lg">
-              {device.heading || 0}°
+              {device.heading || 0}
+              °
             </span>
           </div>
 
@@ -137,9 +158,15 @@ export function DeviceTelemetryPanel({ device, recentEvents }: DeviceTelemetryPa
                 <Fuel className="h-4 w-4 text-amber-500" />
                 <span className="text-sm">Fuel Level</span>
               </div>
-              <span className="font-mono">{device.fuel_level?.toFixed(0) || 0}%</span>
+              <span className="font-mono">
+                {device.fuel_level?.toFixed(0) || 0}
+                %
+              </span>
             </div>
-            <Progress value={device.fuel_level || 0} className="h-2" />
+            <Progress
+              value={device.fuel_level || 0}
+              className="h-2"
+            />
           </div>
 
           {/* Battery Level */}
@@ -149,11 +176,14 @@ export function DeviceTelemetryPanel({ device, recentEvents }: DeviceTelemetryPa
                 <Battery className="h-4 w-4 text-green-500" />
                 <span className="text-sm">Device Battery</span>
               </div>
-              <span className="font-mono">{device.battery_level || 0}%</span>
+              <span className="font-mono">
+                {device.battery_level || 0}
+                %
+              </span>
             </div>
-            <Progress 
-              value={device.battery_level || 0} 
-              className={`h-2 ${(device.battery_level || 0) < 20 ? 'bg-red-200' : ''}`}
+            <Progress
+              value={device.battery_level || 0}
+              className={`h-2 ${(device.battery_level || 0) < 20 ? "bg-red-200" : ""}`}
             />
           </div>
 
@@ -164,9 +194,15 @@ export function DeviceTelemetryPanel({ device, recentEvents }: DeviceTelemetryPa
                 <Signal className="h-4 w-4 text-blue-500" />
                 <span className="text-sm">Signal Strength</span>
               </div>
-              <span className="font-mono">{device.signal_strength || 0}%</span>
+              <span className="font-mono">
+                {device.signal_strength || 0}
+                %
+              </span>
             </div>
-            <Progress value={device.signal_strength || 0} className="h-2" />
+            <Progress
+              value={device.signal_strength || 0}
+              className="h-2"
+            />
           </div>
 
           {/* Engine Status */}
@@ -176,7 +212,7 @@ export function DeviceTelemetryPanel({ device, recentEvents }: DeviceTelemetryPa
                 <Zap className="h-4 w-4 text-purple-500" />
                 <span className="text-sm">Engine</span>
               </div>
-              <Badge variant={device.engine_status === 'on' ? 'default' : 'secondary'}>
+              <Badge variant={device.engine_status === "on" ? "default" : "secondary"}>
                 {device.engine_status.toUpperCase()}
               </Badge>
             </div>
@@ -187,7 +223,9 @@ export function DeviceTelemetryPanel({ device, recentEvents }: DeviceTelemetryPa
             <div className="pt-2 border-t">
               <div className="text-sm text-muted-foreground">Location</div>
               <div className="font-mono text-sm">
-                {device.latitude.toFixed(6)}, {device.longitude.toFixed(6)}
+                {device.latitude.toFixed(6)}
+                ,
+                {device.longitude.toFixed(6)}
               </div>
             </div>
           )}
@@ -204,46 +242,51 @@ export function DeviceTelemetryPanel({ device, recentEvents }: DeviceTelemetryPa
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[200px]">
-            {deviceEvents.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No recent events
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {deviceEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className="flex items-start justify-between p-2 rounded-lg bg-muted/50"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Badge className={`${getSeverityColor(event.severity)} text-white text-xs`}>
-                          {event.severity}
-                        </Badge>
-                        <span className="text-sm font-medium">
-                          {formatEventType(event.event_type)}
+            {deviceEvents.length === 0
+              ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No recent events
+                  </p>
+                )
+              : (
+                  <div className="space-y-3">
+                    {deviceEvents.map(event => (
+                      <div
+                        key={event.id}
+                        className="flex items-start justify-between p-2 rounded-lg bg-muted/50"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Badge className={`${getSeverityColor(event.severity)} text-white text-xs`}>
+                              {event.severity}
+                            </Badge>
+                            <span className="text-sm font-medium">
+                              {formatEventType(event.event_type)}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {event.speed && `${event.speed.toFixed(0)} km/h`}
+                            {event.latitude && event.longitude && (
+                              <span>
+                                {" "}
+                                at
+                                {event.latitude.toFixed(4)}
+                                ,
+                                {event.longitude.toFixed(4)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {formatRelative(event.created_at)}
                         </span>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {event.speed && `${event.speed.toFixed(0)} km/h`}
-                        {event.latitude && event.longitude && (
-                          <span> at {event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}</span>
-                        )}
-                      </div>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {formatRelative(event.created_at)}
-                    </span>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
+                )}
           </ScrollArea>
         </CardContent>
       </Card>
     </div>
   );
 }
-
-
-

@@ -1,15 +1,19 @@
+import type { Alert as AlertType } from "@/types";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
-import { cn } from "@/lib/utils";
-import { Alert as AlertType } from "@/types";
-import { AlertTriangle, MapPin, Gauge, Wrench, Fuel, AlertCircle, Bell } from "lucide-react";
+import {
+  AlertCircle, AlertTriangle, Bell, Fuel, Gauge, MapPin, Wrench,
+} from "lucide-react";
 import { Button } from "@/components/shadcn/button";
+import { cn } from "@/lib/utils";
 
-interface AlertItemProps {
+type AlertItemProps = {
   alert: AlertType;
   onAcknowledge?: (id: string) => void;
-}
+};
 
-export function AlertItem({ alert, onAcknowledge }: AlertItemProps) {
+export function AlertItem({
+  alert, onAcknowledge,
+}: AlertItemProps) {
   const typeIcons = {
     geofence: MapPin,
     speed: Gauge,
@@ -33,7 +37,7 @@ export function AlertItem({ alert, onAcknowledge }: AlertItemProps) {
       className={cn(
         "rounded-lg border border-border border-l-4 p-4 transition-all duration-200",
         severityColors[alert.severity],
-        alert.acknowledged && "opacity-60"
+        alert.acknowledged && "opacity-60",
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -44,8 +48,8 @@ export function AlertItem({ alert, onAcknowledge }: AlertItemProps) {
               alert.severity === "critical" || alert.severity === "high"
                 ? "bg-destructive/20 text-destructive"
                 : alert.severity === "medium"
-                ? "bg-warning/20 text-warning"
-                : "bg-info/20 text-info"
+                  ? "bg-warning/20 text-warning"
+                  : "bg-info/20 text-info",
             )}
           >
             <Icon className="h-4 w-4" />
@@ -72,20 +76,35 @@ export function AlertItem({ alert, onAcknowledge }: AlertItemProps) {
   );
 }
 
-interface AlertListProps {
+type AlertListProps = {
   alerts: AlertType[];
   onAcknowledge?: (id: string) => void;
   maxItems?: number;
   className?: string;
-}
+};
 
-export function AlertList({ alerts, onAcknowledge, maxItems, className }: AlertListProps) {
-  const displayedAlerts = maxItems ? alerts.slice(0, maxItems) : alerts;
+export function AlertList({
+  alerts, onAcknowledge, maxItems, className,
+}: AlertListProps) {
+  const displayedAlerts = maxItems
+    ? alerts.slice(
+        0,
+        maxItems,
+      )
+    : alerts;
 
   return (
-    <div className={cn("space-y-3", className)}>
-      {displayedAlerts.map((alert) => (
-        <AlertItem key={alert.id} alert={alert} onAcknowledge={onAcknowledge} />
+    <div className={cn(
+      "space-y-3",
+      className,
+    )}
+    >
+      {displayedAlerts.map(alert => (
+        <AlertItem
+          key={alert.id}
+          alert={alert}
+          onAcknowledge={onAcknowledge}
+        />
       ))}
       {alerts.length === 0 && (
         <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">

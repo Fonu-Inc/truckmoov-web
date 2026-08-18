@@ -1,8 +1,45 @@
+import type {
+  SystemDeviceInventoryItem,
+  SystemDevicesQuery,
+} from "@truckmoov/api/auth";
+import {
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  getSystemDeviceQueryOptions,
+  getSystemDevicesCatalogExportQueryOptions,
+  getSystemDevicesQueryOptions,
+  getSystemDevicesSummaryQueryOptions,
+
+} from "@truckmoov/api/auth";
 import { formatCompactRelative } from "@truckmoov/app-core/utils/time-utils";
-import { useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  Battery,
+  Building2,
+  Cpu,
+  Download,
+  Eye,
+  MoreHorizontal,
+  Search,
+  Signal,
+  SlidersHorizontal,
+} from "lucide-react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   Dialog,
@@ -24,15 +61,6 @@ import {
   PopoverTrigger,
 } from "@/components/shadcn/popover";
 import { Progress } from "@/components/shadcn/progress";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  getSystemDeviceQueryOptions,
-  getSystemDevicesCatalogExportQueryOptions,
-  getSystemDevicesQueryOptions,
-  getSystemDevicesSummaryQueryOptions,
-  type SystemDevicesQuery,
-  type SystemDeviceInventoryItem,
-} from "@truckmoov/api/auth";
 import {
   Select,
   SelectContent,
@@ -48,38 +76,71 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import {
-  Battery,
-  Building2,
-  Cpu,
-  Download,
-  Eye,
-  MoreHorizontal,
-  Search,
-  Signal,
-  SlidersHorizontal,
-} from "lucide-react";
-import { toast } from "sonner";
 
 const lifecycleStatuses = [
-  { value: "all", label: "All Statuses" },
-  { value: "registered", label: "Registered" },
-  { value: "config_pending", label: "Config Pending" },
-  { value: "configured", label: "Configured" },
-  { value: "verified_online", label: "Verified Online" },
-  { value: "assignable", label: "Assignable" },
-  { value: "assigned", label: "Assigned" },
-  { value: "faulty", label: "Faulty" },
-  { value: "decommissioned", label: "Decommissioned" },
+  {
+    value: "all",
+    label: "All Statuses",
+  },
+  {
+    value: "registered",
+    label: "Registered",
+  },
+  {
+    value: "config_pending",
+    label: "Config Pending",
+  },
+  {
+    value: "configured",
+    label: "Configured",
+  },
+  {
+    value: "verified_online",
+    label: "Verified Online",
+  },
+  {
+    value: "assignable",
+    label: "Assignable",
+  },
+  {
+    value: "assigned",
+    label: "Assigned",
+  },
+  {
+    value: "faulty",
+    label: "Faulty",
+  },
+  {
+    value: "decommissioned",
+    label: "Decommissioned",
+  },
 ];
 
 const operationalStatuses = [
-  { value: "registered", label: "Registered" },
-  { value: "configured", label: "Configured" },
-  { value: "assigned", label: "Assigned" },
-  { value: "active", label: "Active" },
-  { value: "faulty", label: "Faulty" },
-  { value: "decommissioned", label: "Decommissioned" },
+  {
+    value: "registered",
+    label: "Registered",
+  },
+  {
+    value: "configured",
+    label: "Configured",
+  },
+  {
+    value: "assigned",
+    label: "Assigned",
+  },
+  {
+    value: "active",
+    label: "Active",
+  },
+  {
+    value: "faulty",
+    label: "Faulty",
+  },
+  {
+    value: "decommissioned",
+    label: "Decommissioned",
+  },
 ];
 
 type DeviceFilterDraft = {
@@ -98,9 +159,18 @@ type DeviceFilterDraft = {
 };
 
 const emptyFilters: DeviceFilterDraft = {
-  operationalStatus: { enabled: false, value: "" },
-  lifecycleStatus: { enabled: false, value: "" },
-  manufacturer: { enabled: false, value: "" },
+  operationalStatus: {
+    enabled: false,
+    value: "",
+  },
+  lifecycleStatus: {
+    enabled: false,
+    value: "",
+  },
+  manufacturer: {
+    enabled: false,
+    value: "",
+  },
 };
 
 function formatSignal(signalStrength: number | null) {
@@ -110,7 +180,7 @@ function formatSignal(signalStrength: number | null) {
 function formatStatusLabel(status: string) {
   return status
     .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 }
 
@@ -136,33 +206,67 @@ function getStatusBadgeClass(status: string) {
 
 export function PlatformDeviceManagement() {
   const queryClient = useQueryClient();
-  const [selectedDevice, setSelectedDevice] = useState<SystemDeviceInventoryItem | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [filterDraft, setFilterDraft] = useState<DeviceFilterDraft>(emptyFilters);
-  const [appliedFilters, setAppliedFilters] = useState<DeviceFilterDraft>(emptyFilters);
-  const [isExporting, setIsExporting] = useState(false);
+  const [
+    selectedDevice,
+    setSelectedDevice,
+  ] = useState<SystemDeviceInventoryItem | null>(null);
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    debouncedSearchQuery,
+    setDebouncedSearchQuery,
+  ] = useState("");
+  const [
+    filterOpen,
+    setFilterOpen,
+  ] = useState(false);
+  const [
+    filterDraft,
+    setFilterDraft,
+  ] = useState<DeviceFilterDraft>(emptyFilters);
+  const [
+    appliedFilters,
+    setAppliedFilters,
+  ] = useState<DeviceFilterDraft>(emptyFilters);
+  const [
+    isExporting,
+    setIsExporting,
+  ] = useState(false);
   const summaryQuery = useQuery(getSystemDevicesSummaryQueryOptions());
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 400);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  const devicesQueryPayload = useMemo<SystemDevicesQuery>(() => ({
-    params: {
-      ...(debouncedSearchQuery.trim() ? { search: debouncedSearchQuery.trim() } : {}),
-      ...(appliedFilters.operationalStatus.enabled && appliedFilters.operationalStatus.value
-        ? { status: appliedFilters.operationalStatus.value as NonNullable<SystemDevicesQuery["params"]>["status"] }
-        : {}),
-      ...(appliedFilters.lifecycleStatus.enabled && appliedFilters.lifecycleStatus.value
-        ? { lifecycleStatus: appliedFilters.lifecycleStatus.value as NonNullable<SystemDevicesQuery["params"]>["lifecycleStatus"] }
-        : {}),
-      ...(appliedFilters.manufacturer.enabled && appliedFilters.manufacturer.value.trim()
-        ? { manufacturer: appliedFilters.manufacturer.value.trim() }
-        : {}),
+  useEffect(
+    () => {
+      const timer = setTimeout(
+        setDebouncedSearchQuery,
+        400,
+        searchQuery,
+      );
+      return () => clearTimeout(timer);
     },
-  }), [appliedFilters, debouncedSearchQuery]);
+    [searchQuery],
+  );
+
+  const devicesQueryPayload = useMemo<SystemDevicesQuery>(
+    () => ({
+      params: {
+        ...(debouncedSearchQuery.trim() ? { search: debouncedSearchQuery.trim() } : {}),
+        ...(appliedFilters.operationalStatus.enabled && appliedFilters.operationalStatus.value
+          ? { status: appliedFilters.operationalStatus.value as NonNullable<SystemDevicesQuery["params"]>["status"] }
+          : {}),
+        ...(appliedFilters.lifecycleStatus.enabled && appliedFilters.lifecycleStatus.value
+          ? { lifecycleStatus: appliedFilters.lifecycleStatus.value as NonNullable<SystemDevicesQuery["params"]>["lifecycleStatus"] }
+          : {}),
+        ...(appliedFilters.manufacturer.enabled && appliedFilters.manufacturer.value.trim()
+          ? { manufacturer: appliedFilters.manufacturer.value.trim() }
+          : {}),
+      },
+    }),
+    [
+      appliedFilters,
+      debouncedSearchQuery,
+    ],
+  );
 
   const devicesQuery = useQuery(getSystemDevicesQueryOptions(devicesQueryPayload));
   const selectedDeviceDetailQuery = useQuery({
@@ -174,15 +278,38 @@ export function PlatformDeviceManagement() {
     () => devicesQuery.data?.data?.devices ?? [],
     [devicesQuery.data],
   );
-  const summaryCards = useMemo(() => [
-    { label: "Registered", value: summary?.registeredDevices ?? "N/A", className: "text-muted-foreground" },
-    { label: "Configured", value: summary?.configuredDevices ?? "N/A", className: "text-info" },
-    { label: "Assignable", value: summary?.assignableDevices ?? "N/A", className: "text-success" },
-    { label: "Assigned", value: summary?.assignedDevices ?? "N/A", className: "text-primary" },
-    { label: "Active", value: summary?.activeDevices ?? "N/A", className: "text-success" },
-  ], [summary]);
+  const summaryCards = useMemo(
+    () => [
+      {
+        label: "Registered",
+        value: summary?.registeredDevices ?? "N/A",
+        className: "text-muted-foreground",
+      },
+      {
+        label: "Configured",
+        value: summary?.configuredDevices ?? "N/A",
+        className: "text-info",
+      },
+      {
+        label: "Assignable",
+        value: summary?.assignableDevices ?? "N/A",
+        className: "text-success",
+      },
+      {
+        label: "Assigned",
+        value: summary?.assignedDevices ?? "N/A",
+        className: "text-primary",
+      },
+      {
+        label: "Active",
+        value: summary?.activeDevices ?? "N/A",
+        className: "text-success",
+      },
+    ],
+    [summary],
+  );
   const activeFilterCount = useMemo(
-    () => Object.values(appliedFilters).filter((filter) => filter.enabled).length,
+    () => Object.values(appliedFilters).filter(filter => filter.enabled).length,
     [appliedFilters],
   );
 
@@ -202,9 +329,11 @@ export function PlatformDeviceManagement() {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-    } catch {
+    }
+    catch {
       toast.error("Export failed");
-    } finally {
+    }
+    finally {
       setIsExporting(false);
     }
   };
@@ -220,15 +349,23 @@ export function PlatformDeviceManagement() {
             </CardTitle>
             <CardDescription>Platform-wide device overview (read-only)</CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={isExporting}
+          >
             <Download className="h-4 w-4 mr-2" />
             {isExporting ? "Exporting..." : "Export Data"}
           </Button>
         </div>
 
         <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-2 lg:grid-cols-5">
-          {summaryCards.map((stat) => (
-            <div key={stat.label} className="flex min-h-[84px] flex-col justify-center rounded-lg border bg-card px-4 py-3">
+          {summaryCards.map(stat => (
+            <div
+              key={stat.label}
+              className="flex min-h-[84px] flex-col justify-center rounded-lg border bg-card px-4 py-3"
+            >
               <p className={`text-2xl font-bold leading-none ${stat.className}`}>{stat.value}</p>
               <p className="mt-2 text-sm leading-tight text-muted-foreground">{stat.label}</p>
             </div>
@@ -244,26 +381,40 @@ export function PlatformDeviceManagement() {
               placeholder="Search by tenant..."
               className="pl-10"
               value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
+              onChange={event => setSearchQuery(event.target.value)}
             />
           </div>
 
-          <Popover open={filterOpen} onOpenChange={(open) => {
-            setFilterOpen(open);
-            if (open) setFilterDraft(appliedFilters);
-          }}>
+          <Popover
+            open={filterOpen}
+            onOpenChange={(open) => {
+              setFilterOpen(open);
+              if (open)
+                setFilterDraft(appliedFilters);
+            }}
+          >
             <PopoverTrigger asChild>
-              <Button variant="outline" className="justify-start gap-2">
+              <Button
+                variant="outline"
+                className="justify-start gap-2"
+              >
                 <SlidersHorizontal className="h-4 w-4" />
                 Filter
                 {activeFilterCount > 0 && (
-                  <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                  <Badge
+                    variant="secondary"
+                    className="h-5 px-1.5 text-xs"
+                  >
                     {activeFilterCount}
                   </Badge>
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="end" sideOffset={8} className="w-[324px] rounded-xl p-3">
+            <PopoverContent
+              align="end"
+              sideOffset={8}
+              className="w-[324px] rounded-xl p-3"
+            >
               <div className="space-y-3">
                 <h4 className="px-0.5 text-xs font-semibold text-foreground">
                   Only show devices by...
@@ -273,15 +424,14 @@ export function PlatformDeviceManagement() {
                   <label className="flex cursor-pointer select-none items-center gap-2">
                     <Checkbox
                       checked={filterDraft.operationalStatus.enabled}
-                      onCheckedChange={(checked) =>
-                        setFilterDraft((current) => ({
+                      onCheckedChange={checked =>
+                        setFilterDraft(current => ({
                           ...current,
                           operationalStatus: {
                             ...current.operationalStatus,
                             enabled: !!checked,
                           },
-                        }))
-                      }
+                        }))}
                       className="h-3.5 w-3.5"
                     />
                     <span className="text-xs font-medium text-muted-foreground">
@@ -291,19 +441,24 @@ export function PlatformDeviceManagement() {
                   <Select
                     disabled={!filterDraft.operationalStatus.enabled}
                     value={filterDraft.operationalStatus.value}
-                    onValueChange={(value) =>
-                      setFilterDraft((current) => ({
+                    onValueChange={value =>
+                      setFilterDraft(current => ({
                         ...current,
-                        operationalStatus: { ...current.operationalStatus, value },
-                      }))
-                    }
+                        operationalStatus: {
+                          ...current.operationalStatus,
+                          value,
+                        },
+                      }))}
                   >
                     <SelectTrigger className="h-9 text-xs">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      {operationalStatuses.map((status) => (
-                        <SelectItem key={status.value} value={status.value}>
+                      {operationalStatuses.map(status => (
+                        <SelectItem
+                          key={status.value}
+                          value={status.value}
+                        >
                           {status.label}
                         </SelectItem>
                       ))}
@@ -315,15 +470,14 @@ export function PlatformDeviceManagement() {
                   <label className="flex cursor-pointer select-none items-center gap-2">
                     <Checkbox
                       checked={filterDraft.lifecycleStatus.enabled}
-                      onCheckedChange={(checked) =>
-                        setFilterDraft((current) => ({
+                      onCheckedChange={checked =>
+                        setFilterDraft(current => ({
                           ...current,
                           lifecycleStatus: {
                             ...current.lifecycleStatus,
                             enabled: !!checked,
                           },
-                        }))
-                      }
+                        }))}
                       className="h-3.5 w-3.5"
                     />
                     <span className="text-xs font-medium text-muted-foreground">
@@ -333,21 +487,26 @@ export function PlatformDeviceManagement() {
                   <Select
                     disabled={!filterDraft.lifecycleStatus.enabled}
                     value={filterDraft.lifecycleStatus.value}
-                    onValueChange={(value) =>
-                      setFilterDraft((current) => ({
+                    onValueChange={value =>
+                      setFilterDraft(current => ({
                         ...current,
-                        lifecycleStatus: { ...current.lifecycleStatus, value },
-                      }))
-                    }
+                        lifecycleStatus: {
+                          ...current.lifecycleStatus,
+                          value,
+                        },
+                      }))}
                   >
                     <SelectTrigger className="h-9 text-xs">
                       <SelectValue placeholder="Select lifecycle status" />
                     </SelectTrigger>
                     <SelectContent>
                       {lifecycleStatuses
-                        .filter((status) => status.value !== "all")
-                        .map((status) => (
-                          <SelectItem key={status.value} value={status.value}>
+                        .filter(status => status.value !== "all")
+                        .map(status => (
+                          <SelectItem
+                            key={status.value}
+                            value={status.value}
+                          >
                             {status.label}
                           </SelectItem>
                         ))}
@@ -359,15 +518,14 @@ export function PlatformDeviceManagement() {
                   <label className="flex cursor-pointer select-none items-center gap-2">
                     <Checkbox
                       checked={filterDraft.manufacturer.enabled}
-                      onCheckedChange={(checked) =>
-                        setFilterDraft((current) => ({
+                      onCheckedChange={checked =>
+                        setFilterDraft(current => ({
                           ...current,
                           manufacturer: {
                             ...current.manufacturer,
                             enabled: !!checked,
                           },
-                        }))
-                      }
+                        }))}
                       className="h-3.5 w-3.5"
                     />
                     <span className="text-xs font-medium text-muted-foreground">
@@ -379,12 +537,14 @@ export function PlatformDeviceManagement() {
                     placeholder="Enter manufacturer"
                     className="h-9 text-xs"
                     value={filterDraft.manufacturer.value}
-                    onChange={(event) =>
-                      setFilterDraft((current) => ({
+                    onChange={event =>
+                      setFilterDraft(current => ({
                         ...current,
-                        manufacturer: { ...current.manufacturer, value: event.target.value },
-                      }))
-                    }
+                        manufacturer: {
+                          ...current.manufacturer,
+                          value: event.target.value,
+                        },
+                      }))}
                   />
                 </div>
 
@@ -431,86 +591,107 @@ export function PlatformDeviceManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {devicesQuery.isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    Loading devices...
-                  </TableCell>
-                </TableRow>
-              ) : devices.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    No devices to display.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                devices.map((device) => (
-                  <TableRow key={device.id}>
-                    <TableCell className="font-mono text-sm font-medium text-foreground">{device.imei}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-semibold text-foreground">{device.manufacturer}</p>
-                        <p className="text-xs text-muted-foreground">{device.model}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-semibold text-foreground">
-                          {device.tenantName ?? "Unknown tenant"}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge className={getStatusBadgeClass(device.lifecycleStatus)}>
-                          {formatStatusLabel(device.lifecycleStatus)}
-                        </Badge>
-                        {device.operationalStatus && device.operationalStatus !== device.lifecycleStatus && (
-                          <Badge className={getStatusBadgeClass(device.operationalStatus)}>
-                            {formatStatusLabel(device.operationalStatus)}
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {formatSignal(device.signalStrength) ? (
-                        <div className="flex items-center gap-2 font-semibold text-foreground">
-                          <Signal className="h-4 w-4 text-emerald-500" />
-                          {formatSignal(device.signalStrength)}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">.</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatCompactRelative(device.lastSeen, "Never")}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setSelectedDevice(device)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+              {devicesQuery.isLoading
+                ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="text-center py-8 text-muted-foreground"
+                      >
+                        Loading devices...
+                      </TableCell>
+                    </TableRow>
+                  )
+                : devices.length === 0
+                  ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={7}
+                          className="text-center py-8 text-muted-foreground"
+                        >
+                          No devices to display.
+                        </TableCell>
+                      </TableRow>
+                    )
+                  : (
+                      devices.map(device => (
+                        <TableRow key={device.id}>
+                          <TableCell className="font-mono text-sm font-medium text-foreground">{device.imei}</TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-semibold text-foreground">{device.manufacturer}</p>
+                              <p className="text-xs text-muted-foreground">{device.model}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm font-semibold text-foreground">
+                                {device.tenantName ?? "Unknown tenant"}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge className={getStatusBadgeClass(device.lifecycleStatus)}>
+                                {formatStatusLabel(device.lifecycleStatus)}
+                              </Badge>
+                              {device.operationalStatus && device.operationalStatus !== device.lifecycleStatus && (
+                                <Badge className={getStatusBadgeClass(device.operationalStatus)}>
+                                  {formatStatusLabel(device.operationalStatus)}
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {formatSignal(device.signalStrength)
+                              ? (
+                                  <div className="flex items-center gap-2 font-semibold text-foreground">
+                                    <Signal className="h-4 w-4 text-emerald-500" />
+                                    {formatSignal(device.signalStrength)}
+                                  </div>
+                                )
+                              : (
+                                  <span className="text-muted-foreground">.</span>
+                                )}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatCompactRelative(
+                              device.lastSeen,
+                              "Never",
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setSelectedDevice(device)}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
             </TableBody>
           </Table>
         </div>
 
         <div className="mt-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-3">
           <p className="text-xs text-muted-foreground">
-            <strong>Platform Admin View:</strong> This is a read-only overview. Device
+            <strong>Platform Admin View:</strong>
+            {" "}
+            This is a read-only overview. Device
             registration, configuration, and vehicle assignment are managed by tenant
             administrators. Use the Device Catalog tab to manage supported manufacturers
             and models.
@@ -518,7 +699,10 @@ export function PlatformDeviceManagement() {
         </div>
       </CardContent>
 
-      <Dialog open={!!selectedDevice} onOpenChange={(open) => !open && setSelectedDevice(null)}>
+      <Dialog
+        open={!!selectedDevice}
+        onOpenChange={open => !open && setSelectedDevice(null)}
+      >
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-4">
@@ -526,9 +710,15 @@ export function PlatformDeviceManagement() {
                 <Cpu className="h-7 w-7" />
               </span>
               <span>
-                <span className="block text-xl">{detailDevice?.manufacturer} {detailDevice?.model}</span>
+                <span className="block text-xl">
+                  {detailDevice?.manufacturer}
+                  {" "}
+                  {detailDevice?.model}
+                </span>
                 <span className="block font-mono text-sm font-normal text-muted-foreground">
-                  IMEI: {detailDevice?.imei}
+                  IMEI:
+                  {" "}
+                  {detailDevice?.imei}
                 </span>
               </span>
             </DialogTitle>
@@ -556,7 +746,12 @@ export function PlatformDeviceManagement() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Last Seen</p>
-                  <p className="mt-2 font-semibold">{formatCompactRelative(detailDevice.lastSeen, "Never")}</p>
+                  <p className="mt-2 font-semibold">
+                    {formatCompactRelative(
+                      detailDevice.lastSeen,
+                      "Never",
+                    )}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Tenant</p>
@@ -579,7 +774,10 @@ export function PlatformDeviceManagement() {
                         <Signal className="h-4 w-4 text-muted-foreground" />
                         Signal Strength
                       </div>
-                      <span className="font-semibold">{detailDevice.signalStrength ?? 0}%</span>
+                      <span className="font-semibold">
+                        {detailDevice.signalStrength ?? 0}
+                        %
+                      </span>
                     </div>
                     <Progress value={selectedSignal} />
                   </div>
@@ -595,7 +793,10 @@ export function PlatformDeviceManagement() {
                           : `${detailDevice.batteryLevel}%`}
                       </span>
                     </div>
-                    <Progress value={selectedBattery} variant="warning" />
+                    <Progress
+                      value={selectedBattery}
+                      variant="warning"
+                    />
                   </div>
                 </div>
               </div>

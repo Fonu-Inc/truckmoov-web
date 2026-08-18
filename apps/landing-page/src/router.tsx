@@ -1,15 +1,15 @@
-import { createBrowserRouter } from "react-router"
+import { createBrowserRouter } from "react-router";
 
-import Layout from "./ui/components/layout"
-import Home from "./ui/pages/home"
-import FleetProvider from "./ui/pages/fleet-provider"
-import EnterpriseAdmin from "./ui/pages/enterprise-admin"
-import OwnerOperator from "./ui/pages/owner-operator"
-import AggregatorAdmin from "./ui/pages/aggregator-admin"
-import FleetManagement from "./ui/pages/fleet-management"
-import LiveTracking from "./ui/pages/live-tracking"
-import DispatchManagement from "./ui/pages/dispatch-management"
-import AiOptimisation from "./ui/pages/ai-optimisation"
+import Layout from "./ui/components/layout";
+import AggregatorAdmin from "./ui/pages/aggregator-admin";
+import AiOptimisation from "./ui/pages/ai-optimisation";
+import DispatchManagement from "./ui/pages/dispatch-management";
+import EnterpriseAdmin from "./ui/pages/enterprise-admin";
+import FleetManagement from "./ui/pages/fleet-management";
+import FleetProvider from "./ui/pages/fleet-provider";
+import Home from "./ui/pages/home";
+import LiveTracking from "./ui/pages/live-tracking";
+import OwnerOperator from "./ui/pages/owner-operator";
 
 export const router = createBrowserRouter([
   {
@@ -25,43 +25,43 @@ export const router = createBrowserRouter([
         children: [
           {
             path: "fleet-provider",
-            element: <FleetProvider />
+            element: <FleetProvider />,
           },
           {
             path: "enterprise-admin",
-            element: <EnterpriseAdmin />
+            element: <EnterpriseAdmin />,
           },
           {
             path: "owner-operator",
-            element: <OwnerOperator />
+            element: <OwnerOperator />,
           },
           {
             path: "aggregator-admin",
-            element: <AggregatorAdmin />
+            element: <AggregatorAdmin />,
           },
-        ]
+        ],
       },
       {
         path: "/product",
         children: [
           {
             path: "fleet-management",
-            element: <FleetManagement />
+            element: <FleetManagement />,
           },
           {
             path: "live-tracking",
-            element: <LiveTracking />
+            element: <LiveTracking />,
           },
           {
             path: "dispatch-management",
-            element: <DispatchManagement />
+            element: <DispatchManagement />,
           },
           {
             path: "ai-optimisation",
-            element: <AiOptimisation />
+            element: <AiOptimisation />,
           },
-        ]
+        ],
       },
     ],
   },
-])
+]);

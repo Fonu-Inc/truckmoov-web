@@ -1,46 +1,56 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
-import { Input } from '@/components/shadcn/input';
-import { Badge } from '@/components/shadcn/badge';
+import {
+  BookOpen,
+  Cpu,
+  FileText,
+  Search,
+  Server,
+  Wifi,
+} from "lucide-react";
+import { useState } from "react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/shadcn/accordion';
-type DeviceCatalogEntry = any;
-import { Skeleton } from '@/components/shadcn/skeleton';
+} from "@/components/shadcn/accordion";
+import { Badge } from "@/components/shadcn/badge";
 import {
-  Search,
-  BookOpen,
-  Cpu,
-  Wifi,
-  Server,
-  FileText,
-} from 'lucide-react';
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Input } from "@/components/shadcn/input";
+import { Skeleton } from "@/components/shadcn/skeleton";
 
-interface InstallerGuideProps {
+type DeviceCatalogEntry = any;
+
+type InstallerGuideProps = {
   catalog: DeviceCatalogEntry[];
   loading: boolean;
-}
+};
 
-export function InstallerGuide({ catalog, loading }: InstallerGuideProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+export function InstallerGuide({
+  catalog, loading,
+}: InstallerGuideProps) {
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
 
-  const supportedCatalog = catalog.filter(c => c.status === 'supported' || c.status === 'deprecated');
-  
+  const supportedCatalog = catalog.filter(c => c.status === "supported" || c.status === "deprecated");
+
   const filteredCatalog = supportedCatalog.filter(entry =>
-    entry.manufacturer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    entry.model.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+    entry.manufacturer.toLowerCase().includes(searchQuery.toLowerCase())
+    || entry.model.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  const groupedByManufacturer = filteredCatalog.reduce((acc, entry) => {
-    if (!acc[entry.manufacturer]) {
-      acc[entry.manufacturer] = [];
-    }
-    acc[entry.manufacturer].push(entry);
-    return acc;
-  }, {} as Record<string, DeviceCatalogEntry[]>);
+  const groupedByManufacturer = filteredCatalog.reduce(
+    (acc, entry) => {
+      if (!acc[entry.manufacturer]) {
+        acc[entry.manufacturer] = [];
+      }
+      acc[entry.manufacturer].push(entry);
+      return acc;
+    },
+    {} as Record<string, DeviceCatalogEntry[]>,
+  );
 
   if (loading) {
     return (
@@ -75,7 +85,7 @@ export function InstallerGuide({ catalog, loading }: InstallerGuideProps) {
           <Input
             placeholder="Search by manufacturer or model..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
             className="pl-10 bg-transparent border-border"
           />
         </div>
@@ -86,20 +96,34 @@ export function InstallerGuide({ catalog, loading }: InstallerGuideProps) {
             <p>No device models found in catalog</p>
           </div>
         ) : (
-          <Accordion type="multiple" className="space-y-4">
-            {Object.entries(groupedByManufacturer).map(([manufacturer, models]) => (
-              <AccordionItem key={manufacturer} value={manufacturer} className="border rounded-lg px-4">
+          <Accordion
+            type="multiple"
+            className="space-y-4"
+          >
+            {Object.entries(groupedByManufacturer).map(([
+              manufacturer,
+              models,
+            ]) => (
+              <AccordionItem
+                key={manufacturer}
+                value={manufacturer}
+                className="border rounded-lg px-4"
+              >
                 <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-3">
                     <Cpu className="h-5 w-5 text-primary" />
                     <span className="font-semibold">{manufacturer}</span>
-                    <Badge variant="secondary">{models.length} models</Badge>
+                    <Badge variant="secondary">
+                      {models.length}
+                      {" "}
+                      models
+                    </Badge>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-4 pt-2">
                     {models.map(model => (
-                      <div 
+                      <div
                         key={model.id}
                         className="p-4 rounded-lg border bg-muted/30"
                       >
@@ -107,16 +131,24 @@ export function InstallerGuide({ catalog, loading }: InstallerGuideProps) {
                           <div>
                             <h4 className="font-medium">{model.model}</h4>
                             <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="outline" className="uppercase text-xs">
+                              <Badge
+                                variant="outline"
+                                className="uppercase text-xs"
+                              >
                                 {model.protocol_type}
                               </Badge>
                               {model.default_port && (
                                 <span className="text-xs text-muted-foreground">
-                                  Port: {model.default_port}
+                                  Port:
+                                  {" "}
+                                  {model.default_port}
                                 </span>
                               )}
-                              {model.status === 'deprecated' && (
-                                <Badge variant="destructive" className="text-xs">
+                              {model.status === "deprecated" && (
+                                <Badge
+                                  variant="destructive"
+                                  className="text-xs"
+                                >
                                   Deprecated
                                 </Badge>
                               )}
@@ -124,13 +156,28 @@ export function InstallerGuide({ catalog, loading }: InstallerGuideProps) {
                           </div>
                           <div className="flex gap-1">
                             {model.supports_obd && (
-                              <Badge variant="secondary" className="text-xs">OBD</Badge>
+                              <Badge
+                                variant="secondary"
+                                className="text-xs"
+                              >
+                                OBD
+                              </Badge>
                             )}
                             {model.supports_fuel && (
-                              <Badge variant="secondary" className="text-xs">Fuel</Badge>
+                              <Badge
+                                variant="secondary"
+                                className="text-xs"
+                              >
+                                Fuel
+                              </Badge>
                             )}
                             {model.supports_sos && (
-                              <Badge variant="secondary" className="text-xs">SOS</Badge>
+                              <Badge
+                                variant="secondary"
+                                className="text-xs"
+                              >
+                                SOS
+                              </Badge>
                             )}
                           </div>
                         </div>
@@ -143,29 +190,34 @@ export function InstallerGuide({ catalog, loading }: InstallerGuideProps) {
                           </div>
                           <div className="flex items-center gap-2">
                             <Server className="h-4 w-4 text-muted-foreground" />
-                            <span>Port {model.default_port || 'N/A'}</span>
+                            <span>
+                              Port
+                              {model.default_port || "N/A"}
+                            </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <FileText className="h-4 w-4 text-muted-foreground" />
-                            <span>{model.config_instructions ? 'Instructions' : 'No docs'}</span>
+                            <span>{model.config_instructions ? "Instructions" : "No docs"}</span>
                           </div>
                         </div>
 
                         {/* Instructions */}
-                        {model.config_instructions ? (
-                          <div className="p-3 rounded bg-background border text-sm">
-                            <p className="text-xs font-medium text-muted-foreground mb-2">
-                              Setup Instructions:
-                            </p>
-                            <div className="whitespace-pre-wrap">
-                              {model.config_instructions}
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground italic">
-                            No specific setup instructions. Refer to manufacturer documentation.
-                          </p>
-                        )}
+                        {model.config_instructions
+                          ? (
+                              <div className="p-3 rounded bg-background border text-sm">
+                                <p className="text-xs font-medium text-muted-foreground mb-2">
+                                  Setup Instructions:
+                                </p>
+                                <div className="whitespace-pre-wrap">
+                                  {model.config_instructions}
+                                </div>
+                              </div>
+                            )
+                          : (
+                              <p className="text-sm text-muted-foreground italic">
+                                No specific setup instructions. Refer to manufacturer documentation.
+                              </p>
+                            )}
                       </div>
                     ))}
                   </div>

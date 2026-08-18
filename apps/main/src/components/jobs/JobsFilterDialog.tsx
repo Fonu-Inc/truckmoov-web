@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect, useState,
+} from "react";
 
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
@@ -8,19 +10,19 @@ import {
   PopoverTrigger,
 } from "@/components/shadcn/popover";
 
-export interface JobsFilterValue {
+export type JobsFilterValue = {
   driverId: string;
   vehicleId: string;
-}
+};
 
-export interface JobsFilterBounds {
+export type JobsFilterBounds = {
   weightMin: number;
   weightMax: number;
   amountMin: number;
   amountMax: number;
-}
+};
 
-interface JobsFilterDialogProps {
+type JobsFilterDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   bounds: JobsFilterBounds;
@@ -28,7 +30,7 @@ interface JobsFilterDialogProps {
   onApply: (value: JobsFilterValue) => void;
   onReset: () => void;
   trigger: React.ReactNode;
-}
+};
 
 export function buildDefaultFilterValue(_bounds: JobsFilterBounds): JobsFilterValue {
   return {
@@ -39,8 +41,10 @@ export function buildDefaultFilterValue(_bounds: JobsFilterBounds): JobsFilterVa
 
 export function countActiveFilters(value: JobsFilterValue): number {
   let n = 0;
-  if (value.driverId.trim()) n++;
-  if (value.vehicleId.trim()) n++;
+  if (value.driverId.trim())
+    n++;
+  if (value.vehicleId.trim())
+    n++;
   return n;
 }
 
@@ -53,11 +57,21 @@ export function JobsFilterDialog({
   onReset,
   trigger,
 }: JobsFilterDialogProps) {
-  const [draft, setDraft] = useState<JobsFilterValue>(value);
+  const [
+    draft,
+    setDraft,
+  ] = useState<JobsFilterValue>(value);
 
-  useEffect(() => {
-    if (open) setDraft(value);
-  }, [open, value]);
+  useEffect(
+    () => {
+      if (open)
+        setDraft(value);
+    },
+    [
+      open,
+      value,
+    ],
+  );
 
   void bounds;
 
@@ -74,7 +88,10 @@ export function JobsFilterDialog({
   };
 
   return (
-    <Popover open={open} onOpenChange={onOpenChange}>
+    <Popover
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
         align="end"
@@ -93,9 +110,10 @@ export function JobsFilterDialog({
             <Input
               placeholder="driver_id"
               value={draft.driverId}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, driverId: e.target.value }))
-              }
+              onChange={e =>
+                setDraft(d => ({
+                  ...d, driverId: e.target.value,
+                }))}
               className="h-8 text-xs"
             />
           </div>
@@ -107,15 +125,20 @@ export function JobsFilterDialog({
             <Input
               placeholder="vehicle_id"
               value={draft.vehicleId}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, vehicleId: e.target.value }))
-              }
+              onChange={e =>
+                setDraft(d => ({
+                  ...d, vehicleId: e.target.value,
+                }))}
               className="h-8 text-xs"
             />
           </div>
 
           <div className="flex items-center gap-1.5 pt-1">
-            <Button onClick={handleApply} size="sm" className="flex-1 h-8 text-xs">
+            <Button
+              onClick={handleApply}
+              size="sm"
+              className="flex-1 h-8 text-xs"
+            >
               Apply
             </Button>
             <Button

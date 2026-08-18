@@ -1,77 +1,112 @@
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
-import { useEffect, useMemo, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
-import { Button } from '@/components/shadcn/button';
-import { Input } from '@/components/shadcn/input';
-import { Label } from '@/components/shadcn/label';
-import { Badge } from '@/components/shadcn/badge';
-import { Separator } from '@/components/shadcn/separator';
-import { DollarSign, RefreshCw, Save, TrendingUp } from 'lucide-react';
+import {
+  DollarSign, RefreshCw, Save, TrendingUp,
+} from "lucide-react";
+import {
+  useEffect, useMemo, useState,
+} from "react";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Separator } from "@/components/shadcn/separator";
 
-interface DraftRow {
+type DraftRow = {
   id: string;
   name: string;
   tier: string | null;
   billing_cycle: string;
   price_ngn: number;
   yearly_price_ngn: number;
-}
+};
 
 export function PlanPricingManager() {
   const plans: any[] = [];
   const isLoading = false;
-  const updatePlan = { mutateAsync: async (..._args: any[]) => {}, isPending: false };
+  const updatePlan = {
+    mutateAsync: async (..._args: any[]) => {}, isPending: false,
+  };
   const rate = 0;
   const updatedAt: string | null = null;
   const fxLoading = false;
-  const updateFx = { mutateAsync: async (..._args: any[]) => {}, isPending: false };
+  const updateFx = {
+    mutateAsync: async (..._args: any[]) => {}, isPending: false,
+  };
 
-  const [fxDraft, setFxDraft] = useState<string>(String(rate));
-  const [drafts, setDrafts] = useState<Record<string, DraftRow>>({});
+  const [
+    fxDraft,
+    setFxDraft,
+  ] = useState<string>(String(rate));
+  const [
+    drafts,
+    setDrafts,
+  ] = useState<Record<string, DraftRow>>({});
 
-  useEffect(() => setFxDraft(String(rate)), [rate]);
+  useEffect(
+    () => setFxDraft(String(rate)),
+    [rate],
+  );
 
-  useEffect(() => {
-    if (!plans) return;
-    const map: Record<string, DraftRow> = {};
-    for (const p of plans) {
-      map[p.id] = {
-        id: p.id,
-        name: p.name,
-        tier: p.tier,
-        billing_cycle: p.billing_cycle,
-        price_ngn: Number(p.price_ngn ?? 0),
-        yearly_price_ngn: Number(p.yearly_price_ngn ?? 0),
-      };
-    }
-    setDrafts(map);
-  }, [plans]);
-
-  const dirtyIds = useMemo(() => {
-    if (!plans) return new Set<string>();
-    const s = new Set<string>();
-    for (const p of plans) {
-      const d = drafts[p.id];
-      if (!d) continue;
-      if (Number(d.price_ngn) !== Number(p.price_ngn ?? 0) || Number(d.yearly_price_ngn) !== Number(p.yearly_price_ngn ?? 0)) {
-        s.add(p.id);
+  useEffect(
+    () => {
+      if (!plans)
+        return;
+      const map: Record<string, DraftRow> = {};
+      for (const p of plans) {
+        map[p.id] = {
+          id: p.id,
+          name: p.name,
+          tier: p.tier,
+          billing_cycle: p.billing_cycle,
+          price_ngn: Number(p.price_ngn ?? 0),
+          yearly_price_ngn: Number(p.yearly_price_ngn ?? 0),
+        };
       }
-    }
-    return s;
-  }, [drafts, plans]);
+      setDrafts(map);
+    },
+    [plans],
+  );
+
+  const dirtyIds = useMemo(
+    () => {
+      if (!plans)
+        return new Set<string>();
+      const s = new Set<string>();
+      for (const p of plans) {
+        const d = drafts[p.id];
+        if (!d)
+          continue;
+        if (Number(d.price_ngn) !== Number(p.price_ngn ?? 0) || Number(d.yearly_price_ngn) !== Number(p.yearly_price_ngn ?? 0)) {
+          s.add(p.id);
+        }
+      }
+      return s;
+    },
+    [
+      drafts,
+      plans,
+    ],
+  );
 
   const handleSaveRow = async (id: string) => {
     const d = drafts[id];
-    if (!d) return;
+    if (!d)
+      return;
     await updatePlan.mutateAsync({
       id,
-      updates: { price_ngn: Number(d.price_ngn), yearly_price_ngn: Number(d.yearly_price_ngn) },
+      updates: {
+        price_ngn: Number(d.price_ngn), yearly_price_ngn: Number(d.yearly_price_ngn),
+      },
     });
   };
 
   const handleSaveFx = async () => {
     const n = Number(fxDraft);
-    if (!Number.isFinite(n) || n <= 0) return;
+    if (!Number.isFinite(n) || n <= 0)
+      return;
     await updateFx.mutateAsync(n);
   };
 
@@ -98,7 +133,7 @@ export function PlanPricingManager() {
                   min={1}
                   step="0.01"
                   value={fxDraft}
-                  onChange={(e) => setFxDraft(e.target.value)}
+                  onChange={e => setFxDraft(e.target.value)}
                   className="w-40"
                   disabled={fxLoading}
                 />
@@ -114,7 +149,9 @@ export function PlanPricingManager() {
             </Button>
             {updatedAt && (
               <span className="text-xs text-muted-foreground">
-                Last updated {formatRelative(updatedAt)}
+                Last updated
+                {" "}
+                {formatRelative(updatedAt)}
               </span>
             )}
           </div>
@@ -138,17 +175,33 @@ export function PlanPricingManager() {
           )}
           {plans?.map((p) => {
             const d = drafts[p.id];
-            if (!d) return null;
+            if (!d)
+              return null;
             const isDirty = dirtyIds.has(p.id);
             const usdMonthly = rate > 0 ? d.price_ngn / rate : 0;
             const usdYearly = rate > 0 ? d.yearly_price_ngn / rate : 0;
             return (
-              <div key={p.id} className="rounded-lg border p-4 space-y-3">
+              <div
+                key={p.id}
+                className="rounded-lg border p-4 space-y-3"
+              >
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{p.name}</span>
-                    {p.tier && <Badge variant="outline" className="capitalize">{p.tier}</Badge>}
-                    <Badge variant="secondary" className="capitalize">{p.billing_cycle}</Badge>
+                    {p.tier && (
+                      <Badge
+                        variant="outline"
+                        className="capitalize"
+                      >
+                        {p.tier}
+                      </Badge>
+                    )}
+                    <Badge
+                      variant="secondary"
+                      className="capitalize"
+                    >
+                      {p.billing_cycle}
+                    </Badge>
                     {!p.is_active && <Badge variant="destructive">Inactive</Badge>}
                   </div>
                   <Button
@@ -168,11 +221,22 @@ export function PlanPricingManager() {
                       type="number"
                       min={0}
                       value={d.price_ngn}
-                      onChange={(e) =>
-                        setDrafts((prev) => ({ ...prev, [p.id]: { ...prev[p.id], price_ngn: Number(e.target.value) } }))
-                      }
+                      onChange={e =>
+                        setDrafts(prev => ({
+                          ...prev, [p.id]: {
+                            ...prev[p.id], price_ngn: Number(e.target.value),
+                          },
+                        }))}
                     />
-                    <p className="text-xs text-muted-foreground">≈ ${usdMonthly.toLocaleString(undefined, { maximumFractionDigits: 2 })} USD</p>
+                    <p className="text-xs text-muted-foreground">
+                      ≈ $
+                      {usdMonthly.toLocaleString(
+                        undefined,
+                        { maximumFractionDigits: 2 },
+                      )}
+                      {" "}
+                      USD
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label>Yearly Price (NGN)</Label>
@@ -180,11 +244,22 @@ export function PlanPricingManager() {
                       type="number"
                       min={0}
                       value={d.yearly_price_ngn}
-                      onChange={(e) =>
-                        setDrafts((prev) => ({ ...prev, [p.id]: { ...prev[p.id], yearly_price_ngn: Number(e.target.value) } }))
-                      }
+                      onChange={e =>
+                        setDrafts(prev => ({
+                          ...prev, [p.id]: {
+                            ...prev[p.id], yearly_price_ngn: Number(e.target.value),
+                          },
+                        }))}
                     />
-                    <p className="text-xs text-muted-foreground">≈ ${usdYearly.toLocaleString(undefined, { maximumFractionDigits: 2 })} USD</p>
+                    <p className="text-xs text-muted-foreground">
+                      ≈ $
+                      {usdYearly.toLocaleString(
+                        undefined,
+                        { maximumFractionDigits: 2 },
+                      )}
+                      {" "}
+                      USD
+                    </p>
                   </div>
                 </div>
               </div>

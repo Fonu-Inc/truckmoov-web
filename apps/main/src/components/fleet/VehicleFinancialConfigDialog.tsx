@@ -1,31 +1,42 @@
-import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { toast } from "sonner";
+import type { FleetFinancialConfig } from "@truckmoov/api/fleet";
 import {
+
   useFleetFinancialConfig,
   useUpdateFleetFinancialConfig,
   useVehicles,
-  type FleetFinancialConfig,
 } from "@truckmoov/api/fleet";
+import {
+  useEffect, useMemo, useState,
+} from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "@/components/shadcn/dialog";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/shadcn/select";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
 
-interface Vehicle {
+type Vehicle = {
   id: string;
   registration_number: string;
   make?: string;
   model?: string;
-}
+};
 
-interface VehicleFinancialConfigDialogProps {
+type VehicleFinancialConfigDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   vehicles: Vehicle[];
-}
+};
 
 export function VehicleFinancialConfigDialog({
   open,
@@ -34,34 +45,88 @@ export function VehicleFinancialConfigDialog({
 }: VehicleFinancialConfigDialogProps) {
   const vehiclesQuery = useVehicles();
   const updateConfigMutation = useUpdateFleetFinancialConfig();
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
+  const [
+    selectedVehicleId,
+    setSelectedVehicleId,
+  ] = useState<string>("");
   const configQuery = useFleetFinancialConfig({ vehicleId: selectedVehicleId });
-  const vehicleOptions = useMemo(() => {
-    const apiVehicles = vehiclesQuery.data?.data?.map((vehicle) => ({
-      id: vehicle.id,
-      registration_number: vehicle.registrationNumber || vehicle.plateNumber || vehicle.id,
-      make: vehicle.make || undefined,
-      model: vehicle.model || undefined,
-    })) ?? [];
-    return apiVehicles.length > 0 ? apiVehicles : vehicles;
-  }, [vehicles, vehiclesQuery.data?.data]);
-  
+  const vehicleOptions = useMemo(
+    () => {
+      const apiVehicles = vehiclesQuery.data?.data?.map(vehicle => ({
+        id: vehicle.id,
+        registration_number: vehicle.registrationNumber || vehicle.plateNumber || vehicle.id,
+        make: vehicle.make || undefined,
+        model: vehicle.model || undefined,
+      })) ?? [];
+      return apiVehicles.length > 0 ? apiVehicles : vehicles;
+    },
+    [
+      vehicles,
+      vehiclesQuery.data?.data,
+    ],
+  );
+
   // Form state
-  const [fuelEstimate, setFuelEstimate] = useState("");
-  const [maintenanceEstimate, setMaintenanceEstimate] = useState("");
-  const [monthlyInsurance, setMonthlyInsurance] = useState("");
-  const [monthlyWage, setMonthlyWage] = useState("");
-  const [monthlyDepreciation, setMonthlyDepreciation] = useState("");
-  const [monthlyParking, setMonthlyParking] = useState("");
-  const [monthlyOther, setMonthlyOther] = useState("");
-  const [purchasePrice, setPurchasePrice] = useState("");
-  const [purchaseDate, setPurchaseDate] = useState("");
-  const [usefulLife, setUsefulLife] = useState("60");
-  const [salvageValue, setSalvageValue] = useState("");
-  const [depreciationMethod, setDepreciationMethod] = useState<"straight_line" | "declining_balance">("straight_line");
-  const [perTripWage, setPerTripWage] = useState("");
-  const [perKmWage, setPerKmWage] = useState("");
-  const [wageMethod, setWageMethod] = useState<"fixed" | "per_trip" | "per_km" | "hybrid">("fixed");
+  const [
+    fuelEstimate,
+    setFuelEstimate,
+  ] = useState("");
+  const [
+    maintenanceEstimate,
+    setMaintenanceEstimate,
+  ] = useState("");
+  const [
+    monthlyInsurance,
+    setMonthlyInsurance,
+  ] = useState("");
+  const [
+    monthlyWage,
+    setMonthlyWage,
+  ] = useState("");
+  const [
+    monthlyDepreciation,
+    setMonthlyDepreciation,
+  ] = useState("");
+  const [
+    monthlyParking,
+    setMonthlyParking,
+  ] = useState("");
+  const [
+    monthlyOther,
+    setMonthlyOther,
+  ] = useState("");
+  const [
+    purchasePrice,
+    setPurchasePrice,
+  ] = useState("");
+  const [
+    purchaseDate,
+    setPurchaseDate,
+  ] = useState("");
+  const [
+    usefulLife,
+    setUsefulLife,
+  ] = useState("60");
+  const [
+    salvageValue,
+    setSalvageValue,
+  ] = useState("");
+  const [
+    depreciationMethod,
+    setDepreciationMethod,
+  ] = useState<"straight_line" | "declining_balance">("straight_line");
+  const [
+    perTripWage,
+    setPerTripWage,
+  ] = useState("");
+  const [
+    perKmWage,
+    setPerKmWage,
+  ] = useState("");
+  const [
+    wageMethod,
+    setWageMethod,
+  ] = useState<"fixed" | "per_trip" | "per_km" | "hybrid">("fixed");
 
   const resetForm = () => {
     setFuelEstimate("");
@@ -99,10 +164,14 @@ export function VehicleFinancialConfigDialog({
     setWageMethod("fixed");
   };
 
-  useEffect(() => {
-    const config = configQuery.data?.data;
-    if (config) populateForm(config);
-  }, [configQuery.data?.data]);
+  useEffect(
+    () => {
+      const config = configQuery.data?.data;
+      if (config)
+        populateForm(config);
+    },
+    [configQuery.data?.data],
+  );
 
   const loadVehicleConfig = (vehicleId: string) => {
     setSelectedVehicleId(vehicleId);
@@ -119,24 +188,31 @@ export function VehicleFinancialConfigDialog({
       await updateConfigMutation.mutateAsync({
         vehicleId: selectedVehicleId,
         data: {
-          fuelEstimateNgnPerMonth: parseFloat(fuelEstimate) || 0,
-          maintenanceEstimateNgnPerMonth: parseFloat(maintenanceEstimate) || 0,
-          monthlyWagesNgn: parseFloat(monthlyWage) || 0,
-          monthlyInsuranceNgn: parseFloat(monthlyInsurance) || 0,
-          monthlyDepreciationNgn: parseFloat(monthlyDepreciation) || 0,
-          monthlyOtherNgn: (parseFloat(monthlyParking) || 0) + (parseFloat(monthlyOther) || 0),
+          fuelEstimateNgnPerMonth: Number.parseFloat(fuelEstimate) || 0,
+          maintenanceEstimateNgnPerMonth: Number.parseFloat(maintenanceEstimate) || 0,
+          monthlyWagesNgn: Number.parseFloat(monthlyWage) || 0,
+          monthlyInsuranceNgn: Number.parseFloat(monthlyInsurance) || 0,
+          monthlyDepreciationNgn: Number.parseFloat(monthlyDepreciation) || 0,
+          monthlyOtherNgn: (Number.parseFloat(monthlyParking) || 0) + (Number.parseFloat(monthlyOther) || 0),
         },
       });
       toast.success("Vehicle financial configuration saved");
       onOpenChange(false);
-    } catch (error) {
-      console.error("Failed to save config:", error);
+    }
+    catch (error) {
+      console.error(
+        "Failed to save config:",
+        error,
+      );
       toast.error("Failed to save vehicle financial configuration");
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Configure Vehicle Financials</DialogTitle>
@@ -149,18 +225,32 @@ export function VehicleFinancialConfigDialog({
           {/* Vehicle Selector */}
           <div className="space-y-2">
             <Label>Select Vehicle</Label>
-            <Select value={selectedVehicleId} onValueChange={loadVehicleConfig}>
+            <Select
+              value={selectedVehicleId}
+              onValueChange={loadVehicleConfig}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Choose a vehicle" />
               </SelectTrigger>
               <SelectContent>
-                {vehicleOptions.map((vehicle) => (
-                  <SelectItem key={vehicle.id} value={vehicle.id}>
-                    {vehicle.registration_number} — {vehicle.make} {vehicle.model}
+                {vehicleOptions.map(vehicle => (
+                  <SelectItem
+                    key={vehicle.id}
+                    value={vehicle.id}
+                  >
+                    {vehicle.registration_number}
+                    {" "}
+                    —
+                    {vehicle.make}
+                    {" "}
+                    {vehicle.model}
                   </SelectItem>
                 ))}
                 {vehiclesQuery.isLoading && (
-                  <SelectItem value="loading" disabled>
+                  <SelectItem
+                    value="loading"
+                    disabled
+                  >
                     Loading vehicles...
                   </SelectItem>
                 )}
@@ -169,14 +259,20 @@ export function VehicleFinancialConfigDialog({
           </div>
 
           {selectedVehicleId && (
-            <Tabs defaultValue="fixed" className="w-full">
+            <Tabs
+              defaultValue="fixed"
+              className="w-full"
+            >
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="fixed">Fixed Costs</TabsTrigger>
                 <TabsTrigger value="wages">Wage Setup</TabsTrigger>
                 <TabsTrigger value="depreciation">Depreciation</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="fixed" className="space-y-4 pt-4">
+              <TabsContent
+                value="fixed"
+                className="space-y-4 pt-4"
+              >
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">Monthly Fixed Costs</CardTitle>
@@ -190,7 +286,7 @@ export function VehicleFinancialConfigDialog({
                         type="number"
                         placeholder="0"
                         value={fuelEstimate}
-                        onChange={(e) => setFuelEstimate(e.target.value)}
+                        onChange={e => setFuelEstimate(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -200,7 +296,7 @@ export function VehicleFinancialConfigDialog({
                         type="number"
                         placeholder="0"
                         value={maintenanceEstimate}
-                        onChange={(e) => setMaintenanceEstimate(e.target.value)}
+                        onChange={e => setMaintenanceEstimate(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -210,7 +306,7 @@ export function VehicleFinancialConfigDialog({
                         type="number"
                         placeholder="0"
                         value={monthlyInsurance}
-                        onChange={(e) => setMonthlyInsurance(e.target.value)}
+                        onChange={e => setMonthlyInsurance(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -220,7 +316,7 @@ export function VehicleFinancialConfigDialog({
                         type="number"
                         placeholder="0"
                         value={monthlyParking}
-                        onChange={(e) => setMonthlyParking(e.target.value)}
+                        onChange={e => setMonthlyParking(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -230,7 +326,7 @@ export function VehicleFinancialConfigDialog({
                         type="number"
                         placeholder="0"
                         value={monthlyDepreciation}
-                        onChange={(e) => setMonthlyDepreciation(e.target.value)}
+                        onChange={e => setMonthlyDepreciation(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2 col-span-2">
@@ -240,14 +336,17 @@ export function VehicleFinancialConfigDialog({
                         type="number"
                         placeholder="0"
                         value={monthlyOther}
-                        onChange={(e) => setMonthlyOther(e.target.value)}
+                        onChange={e => setMonthlyOther(e.target.value)}
                       />
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
 
-              <TabsContent value="wages" className="space-y-4 pt-4">
+              <TabsContent
+                value="wages"
+                className="space-y-4 pt-4"
+              >
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">Driver Wage Allocation</CardTitle>
@@ -256,7 +355,10 @@ export function VehicleFinancialConfigDialog({
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label>Allocation Method</Label>
-                      <Select value={wageMethod} onValueChange={(v) => setWageMethod(v as typeof wageMethod)}>
+                      <Select
+                        value={wageMethod}
+                        onValueChange={v => setWageMethod(v as typeof wageMethod)}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -277,7 +379,7 @@ export function VehicleFinancialConfigDialog({
                           type="number"
                           placeholder="0"
                           value={monthlyWage}
-                          onChange={(e) => setMonthlyWage(e.target.value)}
+                          onChange={e => setMonthlyWage(e.target.value)}
                         />
                       </div>
                     )}
@@ -290,7 +392,7 @@ export function VehicleFinancialConfigDialog({
                           type="number"
                           placeholder="0"
                           value={perTripWage}
-                          onChange={(e) => setPerTripWage(e.target.value)}
+                          onChange={e => setPerTripWage(e.target.value)}
                         />
                       </div>
                     )}
@@ -303,7 +405,7 @@ export function VehicleFinancialConfigDialog({
                           type="number"
                           placeholder="0"
                           value={perKmWage}
-                          onChange={(e) => setPerKmWage(e.target.value)}
+                          onChange={e => setPerKmWage(e.target.value)}
                         />
                       </div>
                     )}
@@ -311,7 +413,10 @@ export function VehicleFinancialConfigDialog({
                 </Card>
               </TabsContent>
 
-              <TabsContent value="depreciation" className="space-y-4 pt-4">
+              <TabsContent
+                value="depreciation"
+                className="space-y-4 pt-4"
+              >
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">Asset Depreciation</CardTitle>
@@ -325,7 +430,7 @@ export function VehicleFinancialConfigDialog({
                         type="number"
                         placeholder="0"
                         value={purchasePrice}
-                        onChange={(e) => setPurchasePrice(e.target.value)}
+                        onChange={e => setPurchasePrice(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -334,7 +439,7 @@ export function VehicleFinancialConfigDialog({
                         id="purchaseDate"
                         type="date"
                         value={purchaseDate}
-                        onChange={(e) => setPurchaseDate(e.target.value)}
+                        onChange={e => setPurchaseDate(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -344,7 +449,7 @@ export function VehicleFinancialConfigDialog({
                         type="number"
                         placeholder="60"
                         value={usefulLife}
-                        onChange={(e) => setUsefulLife(e.target.value)}
+                        onChange={e => setUsefulLife(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -354,14 +459,14 @@ export function VehicleFinancialConfigDialog({
                         type="number"
                         placeholder="0"
                         value={salvageValue}
-                        onChange={(e) => setSalvageValue(e.target.value)}
+                        onChange={e => setSalvageValue(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2 col-span-2">
                       <Label>Depreciation Method</Label>
-                      <Select 
-                        value={depreciationMethod} 
-                        onValueChange={(v) => setDepreciationMethod(v as typeof depreciationMethod)}
+                      <Select
+                        value={depreciationMethod}
+                        onValueChange={v => setDepreciationMethod(v as typeof depreciationMethod)}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -379,10 +484,16 @@ export function VehicleFinancialConfigDialog({
           )}
 
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={!selectedVehicleId || updateConfigMutation.isPending}>
+            <Button
+              onClick={handleSave}
+              disabled={!selectedVehicleId || updateConfigMutation.isPending}
+            >
               {updateConfigMutation.isPending ? "Saving..." : "Save Configuration"}
             </Button>
           </div>

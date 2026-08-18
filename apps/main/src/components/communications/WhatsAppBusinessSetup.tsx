@@ -1,14 +1,34 @@
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
+import {
+  AlertTriangle,
+  Building2,
+  CheckCircle,
+  Clock,
+  FileText,
+  Info,
+  LinkIcon,
+  Loader2,
+  MessageSquare,
+  Phone,
+  RefreshCw,
+  Send,
+  Shield,
+  Star,
+  Unlink,
+  XCircle,
+  Zap,
+} from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
+import { toast } from "sonner";
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
+import {
+  Alert, AlertDescription,
+} from "@/components/shadcn/alert";
 import { Badge } from "@/components/shadcn/badge";
-import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
-import { Alert, AlertDescription } from "@/components/shadcn/alert";
-import { Separator } from "@/components/shadcn/separator";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
@@ -17,33 +37,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Separator } from "@/components/shadcn/separator";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
-  MessageSquare,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  RefreshCw,
-  Shield,
-  Phone,
-  Building2,
-  Loader2,
-  Info,
-  LinkIcon,
-  Unlink,
-  Star,
-  Send,
-  Clock,
-  Zap,
-  FileText,
-} from "lucide-react";
-import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
-import { toast } from "sonner";
-type WhatsAppAccount = any;
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
 import { WhatsAppTemplatesManager } from "./WhatsAppTemplatesManager";
 
-interface WhatsAppBusinessSetupProps {
-  tenantId: string;
-}
+type WhatsAppAccount = any;
+
+type WhatsAppBusinessSetupProps = { tenantId: string };
 
 export function WhatsAppBusinessSetup({ tenantId }: WhatsAppBusinessSetupProps) {
   const accounts: any[] = [];
@@ -58,12 +63,21 @@ export function WhatsAppBusinessSetup({ tenantId }: WhatsAppBusinessSetupProps) 
   const setAsDefault = async (...args: any[]) => {};
   const sendTestMessage = async (...args: any[]) => {};
 
-  const [testDialogOpen, setTestDialogOpen] = useState(false);
-  const [testPhone, setTestPhone] = useState("");
-  const [isSendingTest, setIsSendingTest] = useState(false);
+  const [
+    testDialogOpen,
+    setTestDialogOpen,
+  ] = useState(false);
+  const [
+    testPhone,
+    setTestPhone,
+  ] = useState("");
+  const [
+    isSendingTest,
+    setIsSendingTest,
+  ] = useState(false);
 
-  const defaultAccount = accounts.find(a => a.is_default_sender && a.status === 'CONNECTED');
-  const hasConnectedAccount = accounts.some(a => a.status === 'CONNECTED');
+  const defaultAccount = accounts.find(a => a.is_default_sender && a.status === "CONNECTED");
+  const hasConnectedAccount = accounts.some(a => a.status === "CONNECTED");
 
   const handleSendTest = async () => {
     if (!testPhone) {
@@ -75,20 +89,33 @@ export function WhatsAppBusinessSetup({ tenantId }: WhatsAppBusinessSetupProps) 
       await sendTestMessage(testPhone);
       setTestDialogOpen(false);
       setTestPhone("");
-    } finally {
+    }
+    finally {
       setIsSendingTest(false);
     }
   };
 
-  const getStatusBadge = (status: WhatsAppAccount['status']) => {
+  const getStatusBadge = (status: WhatsAppAccount["status"]) => {
     const config = {
-      CONNECTED: { color: "bg-success", label: "Connected", icon: CheckCircle },
-      PENDING: { color: "bg-warning", label: "Pending", icon: Clock },
-      NOT_CONNECTED: { color: "bg-muted", label: "Not Connected", icon: XCircle },
-      NEEDS_ATTENTION: { color: "bg-destructive", label: "Needs Attention", icon: AlertTriangle },
-      DISABLED: { color: "bg-muted", label: "Disabled", icon: XCircle },
+      CONNECTED: {
+        color: "bg-success", label: "Connected", icon: CheckCircle,
+      },
+      PENDING: {
+        color: "bg-warning", label: "Pending", icon: Clock,
+      },
+      NOT_CONNECTED: {
+        color: "bg-muted", label: "Not Connected", icon: XCircle,
+      },
+      NEEDS_ATTENTION: {
+        color: "bg-destructive", label: "Needs Attention", icon: AlertTriangle,
+      },
+      DISABLED: {
+        color: "bg-muted", label: "Disabled", icon: XCircle,
+      },
     };
-    const { color, label, icon: Icon } = config[status] || config.NOT_CONNECTED;
+    const {
+      color, label, icon: Icon,
+    } = config[status] || config.NOT_CONNECTED;
     return (
       <Badge className={`${color} text-white gap-1`}>
         <Icon className="h-3 w-3" />
@@ -116,8 +143,11 @@ export function WhatsAppBusinessSetup({ tenantId }: WhatsAppBusinessSetupProps) 
   return (
     <div className="space-y-6">
       {/* KYC Warning */}
-      {tenantStatus !== 'active' && (
-        <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
+      {tenantStatus !== "active" && (
+        <Alert
+          variant="destructive"
+          className="border-destructive/30 bg-destructive/5"
+        >
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             Your business verification (KYC) is not complete. You can connect WhatsApp, but messaging
@@ -126,19 +156,31 @@ export function WhatsAppBusinessSetup({ tenantId }: WhatsAppBusinessSetupProps) 
         </Alert>
       )}
 
-      <Tabs defaultValue="connection" className="space-y-6">
+      <Tabs
+        defaultValue="connection"
+        className="space-y-6"
+      >
         <TabsList>
-          <TabsTrigger value="connection" className="flex items-center gap-2">
+          <TabsTrigger
+            value="connection"
+            className="flex items-center gap-2"
+          >
             <WhatsAppIcon className="h-4 w-4" />
             Connection
           </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-2">
+          <TabsTrigger
+            value="templates"
+            className="flex items-center gap-2"
+          >
             <FileText className="h-4 w-4" />
             Templates
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="connection" className="space-y-6">
+        <TabsContent
+          value="connection"
+          className="space-y-6"
+        >
           {/* Connection Status Card */}
           <Card className="border-border/50">
             <CardHeader>
@@ -154,27 +196,29 @@ export function WhatsAppBusinessSetup({ tenantId }: WhatsAppBusinessSetupProps) 
                     </CardDescription>
                   </div>
                 </div>
-                {hasConnectedAccount && getStatusBadge('CONNECTED')}
+                {hasConnectedAccount && getStatusBadge("CONNECTED")}
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              {!hasConnectedAccount ? (
-                <NotConnectedState 
-                  isConnecting={isConnecting}
-                  onConnect={startEmbeddedSignup}
-                />
-              ) : (
-                <ConnectedState
-                  accounts={accounts}
-                  defaultAccount={defaultAccount}
-                  canSend={canSend}
-                  isDisconnecting={isDisconnecting}
-                  onDisconnect={disconnect}
-                  onSetDefault={setAsDefault}
-                  onTestMessage={() => setTestDialogOpen(true)}
-                  onRefresh={refetch}
-                />
-              )}
+              {!hasConnectedAccount
+                ? (
+                    <NotConnectedState
+                      isConnecting={isConnecting}
+                      onConnect={startEmbeddedSignup}
+                    />
+                  )
+                : (
+                    <ConnectedState
+                      accounts={accounts}
+                      defaultAccount={defaultAccount}
+                      canSend={canSend}
+                      isDisconnecting={isDisconnecting}
+                      onDisconnect={disconnect}
+                      onSetDefault={setAsDefault}
+                      onTestMessage={() => setTestDialogOpen(true)}
+                      onRefresh={refetch}
+                    />
+                  )}
             </CardContent>
           </Card>
 
@@ -188,7 +232,10 @@ export function WhatsAppBusinessSetup({ tenantId }: WhatsAppBusinessSetupProps) 
       </Tabs>
 
       {/* Test Message Dialog */}
-      <Dialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
+      <Dialog
+        open={testDialogOpen}
+        onOpenChange={setTestDialogOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -205,7 +252,7 @@ export function WhatsAppBusinessSetup({ tenantId }: WhatsAppBusinessSetupProps) 
               <Input
                 placeholder="+234 801 234 5678"
                 value={testPhone}
-                onChange={(e) => setTestPhone(e.target.value)}
+                onChange={e => setTestPhone(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
                 Enter the full phone number with country code
@@ -213,21 +260,29 @@ export function WhatsAppBusinessSetup({ tenantId }: WhatsAppBusinessSetupProps) 
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setTestDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setTestDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleSendTest} disabled={isSendingTest}>
-              {isSendingTest ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Send Test
-                </>
-              )}
+            <Button
+              onClick={handleSendTest}
+              disabled={isSendingTest}
+            >
+              {isSendingTest
+                ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  )
+                : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Send Test
+                    </>
+                  )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -238,11 +293,11 @@ export function WhatsAppBusinessSetup({ tenantId }: WhatsAppBusinessSetupProps) 
 
 // ============== SUB-COMPONENTS ==============
 
-function NotConnectedState({ 
-  isConnecting, 
-  onConnect 
-}: { 
-  isConnecting: boolean; 
+function NotConnectedState({
+  isConnecting,
+  onConnect,
+}: {
+  isConnecting: boolean;
   onConnect: () => void;
 }) {
   return (
@@ -250,8 +305,10 @@ function NotConnectedState({
       <Alert className="border-primary/30 bg-primary/5">
         <Info className="h-4 w-4 text-primary" />
         <AlertDescription className="text-sm">
-          Connect your WhatsApp Business account using the embedded signup flow powered by{" "}
-          <strong>Telconix Inc</strong>, FleetPro's Meta Tech Provider. This allows you to:
+          Connect your WhatsApp Business account using the embedded signup flow powered by
+          {" "}
+          <strong>Telconix Inc</strong>
+          , FleetPro's Meta Tech Provider. This allows you to:
           <ul className="list-disc list-inside mt-2 space-y-1">
             <li>Send messages to drivers via WhatsApp</li>
             <li>Receive incoming messages from drivers</li>
@@ -270,24 +327,26 @@ function NotConnectedState({
           Start the embedded signup process to connect your WhatsApp Business number and begin
           communicating with drivers instantly.
         </p>
-        <Button 
-          onClick={onConnect} 
+        <Button
+          onClick={onConnect}
           disabled={isConnecting}
           size="lg"
           className="gap-2"
           variant="default"
         >
-          {isConnecting ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Connecting...
-            </>
-          ) : (
-            <>
-              <LinkIcon className="h-4 w-4" />
-              Connect with WhatsApp
-            </>
-          )}
+          {isConnecting
+            ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Connecting...
+                </>
+              )
+            : (
+                <>
+                  <LinkIcon className="h-4 w-4" />
+                  Connect with WhatsApp
+                </>
+              )}
         </Button>
       </div>
     </div>
@@ -313,7 +372,7 @@ function ConnectedState({
   onTestMessage: () => void;
   onRefresh: () => void;
 }) {
-  const connectedAccounts = accounts.filter(a => a.status === 'CONNECTED');
+  const connectedAccounts = accounts.filter(a => a.status === "CONNECTED");
 
   return (
     <div className="space-y-4">
@@ -325,14 +384,14 @@ function ConnectedState({
               <Building2 className="h-4 w-4" />
               Business Name
             </div>
-            <p className="font-medium">{defaultAccount.verified_name || 'FleetPro Fleet'}</p>
+            <p className="font-medium">{defaultAccount.verified_name || "FleetPro Fleet"}</p>
           </div>
           <div className="p-4 rounded-lg bg-muted/30 space-y-2">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Phone className="h-4 w-4" />
               Business Phone
             </div>
-            <p className="font-medium">{defaultAccount.display_phone_number || 'Not set'}</p>
+            <p className="font-medium">{defaultAccount.display_phone_number || "Not set"}</p>
           </div>
         </div>
       )}
@@ -347,8 +406,13 @@ function ConnectedState({
             </div>
             <div className="flex items-center gap-2">
               {defaultAccount.quality_rating && (
-                <Badge variant="outline" className="text-xs">
-                  Quality: {defaultAccount.quality_rating}
+                <Badge
+                  variant="outline"
+                  className="text-xs"
+                >
+                  Quality:
+                  {" "}
+                  {defaultAccount.quality_rating}
                 </Badge>
               )}
               {defaultAccount.is_default_sender && (
@@ -360,18 +424,23 @@ function ConnectedState({
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Connected on {defaultAccount.connected_at 
-              ? formatDate(defaultAccount.connected_at) 
-              : 'N/A'}
-            {' via '}
-            {defaultAccount.connection_method === 'EMBEDDED_SIGNUP' ? 'Embedded Signup' : 'Admin Setup'}
+            Connected on
+            {" "}
+            {defaultAccount.connected_at
+              ? formatDate(defaultAccount.connected_at)
+              : "N/A"}
+            {" via "}
+            {defaultAccount.connection_method === "EMBEDDED_SIGNUP" ? "Embedded Signup" : "Admin Setup"}
           </p>
         </div>
       )}
 
       {/* Sending Status */}
       {!canSend && (
-        <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
+        <Alert
+          variant="destructive"
+          className="border-destructive/30 bg-destructive/5"
+        >
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             Messaging is disabled. Complete your business verification (KYC) to enable sending.
@@ -384,10 +453,14 @@ function ConnectedState({
       {/* All Connected Accounts */}
       {connectedAccounts.length > 1 && (
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Connected Accounts ({connectedAccounts.length})</Label>
+          <Label className="text-sm font-medium">
+            Connected Accounts (
+            {connectedAccounts.length}
+            )
+          </Label>
           <div className="space-y-2">
             {connectedAccounts.map(account => (
-              <div 
+              <div
                 key={account.id}
                 className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/50"
               >
@@ -399,13 +472,24 @@ function ConnectedState({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {account.is_default_sender ? (
-                    <Badge variant="outline" className="text-xs">Default</Badge>
-                  ) : (
-                    <Button variant="ghost" size="sm" onClick={() => onSetDefault(account.id)}>
-                      Set Default
-                    </Button>
-                  )}
+                  {account.is_default_sender
+                    ? (
+                        <Badge
+                          variant="outline"
+                          className="text-xs"
+                        >
+                          Default
+                        </Badge>
+                      )
+                    : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onSetDefault(account.id)}
+                        >
+                          Set Default
+                        </Button>
+                      )}
                 </div>
               </div>
             ))}
@@ -417,37 +501,43 @@ function ConnectedState({
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3">
-        <Button 
-          variant="outline" 
-          onClick={onTestMessage} 
+        <Button
+          variant="outline"
+          onClick={onTestMessage}
           className="gap-2"
           disabled={!canSend}
         >
           <Send className="h-4 w-4" />
           Send Test Message
         </Button>
-        <Button variant="outline" className="gap-2" onClick={onRefresh}>
+        <Button
+          variant="outline"
+          className="gap-2"
+          onClick={onRefresh}
+        >
           <RefreshCw className="h-4 w-4" />
           Sync Status
         </Button>
         {defaultAccount && (
-          <Button 
-            variant="destructive" 
+          <Button
+            variant="destructive"
             onClick={() => onDisconnect(defaultAccount.id)}
             disabled={isDisconnecting}
             className="gap-2 ml-auto"
           >
-            {isDisconnecting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Disconnecting...
-              </>
-            ) : (
-              <>
-                <Unlink className="h-4 w-4" />
-                Disconnect
-              </>
-            )}
+            {isDisconnecting
+              ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Disconnecting...
+                  </>
+                )
+              : (
+                  <>
+                    <Unlink className="h-4 w-4" />
+                    Disconnect
+                  </>
+                )}
           </Button>
         )}
       </div>

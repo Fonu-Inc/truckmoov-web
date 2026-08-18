@@ -1,14 +1,18 @@
-import { useEffect, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import {
+  useCallback, useEffect,
+} from "react";
+import {
+  useLocation, useNavigate,
+} from "react-router-dom";
 
-interface ShortcutAction {
+type ShortcutAction = {
   key: string;
   ctrl?: boolean;
   shift?: boolean;
   alt?: boolean;
   action: () => void;
   description: string;
-}
+};
 
 export function useKeyboardShortcuts(shortcuts: ShortcutAction[]) {
   const handleKeyDown = useCallback(
@@ -16,12 +20,13 @@ export function useKeyboardShortcuts(shortcuts: ShortcutAction[]) {
       // Don't trigger shortcuts when typing in inputs
       const target = event.target as HTMLElement;
       if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
+        target.tagName === "INPUT"
+        || target.tagName === "TEXTAREA"
+        || target.isContentEditable
       ) {
         // Allow Escape key in inputs
-        if (event.key !== "Escape") return;
+        if (event.key !== "Escape")
+          return;
       }
 
       for (const shortcut of shortcuts) {
@@ -32,10 +37,10 @@ export function useKeyboardShortcuts(shortcuts: ShortcutAction[]) {
         const altMatch = shortcut.alt ? event.altKey : !event.altKey;
 
         if (
-          event.key.toLowerCase() === shortcut.key.toLowerCase() &&
-          ctrlMatch &&
-          shiftMatch &&
-          altMatch
+          event.key.toLowerCase() === shortcut.key.toLowerCase()
+          && ctrlMatch
+          && shiftMatch
+          && altMatch
         ) {
           event.preventDefault();
           shortcut.action();
@@ -43,13 +48,22 @@ export function useKeyboardShortcuts(shortcuts: ShortcutAction[]) {
         }
       }
     },
-    [shortcuts]
+    [shortcuts],
   );
 
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
+  useEffect(
+    () => {
+      window.addEventListener(
+        "keydown",
+        handleKeyDown,
+      );
+      return () => window.removeEventListener(
+        "keydown",
+        handleKeyDown,
+      );
+    },
+    [handleKeyDown],
+  );
 }
 
 export function useGlobalShortcuts(callbacks?: {
@@ -94,11 +108,13 @@ export function useGlobalShortcuts(callbacks?: {
 // Helper to format shortcut for display
 export function formatShortcut(
   key: string,
-  options?: { ctrl?: boolean; shift?: boolean; alt?: boolean }
+  options?: {
+    ctrl?: boolean; shift?: boolean; alt?: boolean;
+  },
 ): string {
-  const isMac =
-    typeof navigator !== "undefined" &&
-    navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+  const isMac
+    = typeof navigator !== "undefined"
+      && navigator.platform.toUpperCase().includes("MAC");
 
   const parts: string[] = [];
 
@@ -114,8 +130,10 @@ export function formatShortcut(
 
   // Format the key
   let displayKey = key.toUpperCase();
-  if (key === "Escape") displayKey = "Esc";
-  if (key === "/") displayKey = "/";
+  if (key === "Escape")
+    displayKey = "Esc";
+  if (key === "/")
+    displayKey = "/";
 
   parts.push(displayKey);
 
@@ -124,10 +142,36 @@ export function formatShortcut(
 
 // Common shortcut definitions
 export const SHORTCUTS = {
-  search: { key: "k", ctrl: true, display: () => formatShortcut("k", { ctrl: true }) },
-  searchAlt: { key: "/", display: () => "/" },
-  refresh: { key: "r", ctrl: true, shift: true, display: () => formatShortcut("r", { ctrl: true, shift: true }) },
-  escape: { key: "Escape", display: () => "Esc" },
-  save: { key: "s", ctrl: true, display: () => formatShortcut("s", { ctrl: true }) },
-  newItem: { key: "n", ctrl: true, display: () => formatShortcut("n", { ctrl: true }) },
+  search: {
+    key: "k", ctrl: true, display: () => formatShortcut(
+      "k",
+      { ctrl: true },
+    ),
+  },
+  searchAlt: {
+    key: "/", display: () => "/",
+  },
+  refresh: {
+    key: "r", ctrl: true, shift: true, display: () => formatShortcut(
+      "r",
+      {
+        ctrl: true, shift: true,
+      },
+    ),
+  },
+  escape: {
+    key: "Escape", display: () => "Esc",
+  },
+  save: {
+    key: "s", ctrl: true, display: () => formatShortcut(
+      "s",
+      { ctrl: true },
+    ),
+  },
+  newItem: {
+    key: "n", ctrl: true, display: () => formatShortcut(
+      "n",
+      { ctrl: true },
+    ),
+  },
 } as const;

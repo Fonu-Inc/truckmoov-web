@@ -1,5 +1,5 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { JobOffersInbox } from "@/components/jobs/JobOffersInbox";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 export default function JobOffersPage() {
   return (

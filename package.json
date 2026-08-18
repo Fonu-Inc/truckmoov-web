@@ -8,6 +8,7 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
+    "lint:fix": "turbo lint -- --fix",
     "dev:landing": "turbo dev --filter landing-page",
     "dev:main": "turbo dev --filter main",
     "dev:admin": "turbo dev --filter admin",

@@ -1,5 +1,5 @@
-import { useCurrency } from "@/contexts/CurrencyContext";
-import { Currency, CURRENCIES } from "@/lib/currency";
+import type { Currency } from "@/lib/currency";
+import { DollarSign } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -7,24 +7,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { DollarSign } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { CURRENCIES } from "@/lib/currency";
 
-interface CurrencySelectorProps {
-  compact?: boolean;
-}
+type CurrencySelectorProps = { compact?: boolean };
 
 export function CurrencySelector({ compact = false }: CurrencySelectorProps) {
-  const { currency, setCurrency } = useCurrency();
+  const {
+    currency,
+    setCurrency,
+  } = useCurrency();
 
   return (
-    <Select value={currency} onValueChange={(value) => setCurrency(value as Currency)}>
+    <Select
+      value={currency}
+      onValueChange={value => setCurrency(value as Currency)}
+    >
       <SelectTrigger className={compact ? "w-[120px]" : "w-[160px]"}>
         <DollarSign className="h-4 w-4 mr-1" />
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {Object.entries(CURRENCIES).map(([code, details]) => (
-          <SelectItem key={code} value={code}>
+        {Object.entries(CURRENCIES).map(([
+          code,
+          details,
+        ]) => (
+          <SelectItem
+            key={code}
+            value={code}
+          >
             {`${details.symbol} ${details.code}`}
           </SelectItem>
         ))}
@@ -32,6 +43,3 @@ export function CurrencySelector({ compact = false }: CurrencySelectorProps) {
     </Select>
   );
 }
-
-
-

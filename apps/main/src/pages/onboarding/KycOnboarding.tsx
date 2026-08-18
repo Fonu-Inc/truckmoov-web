@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { OnboardingKYCStep } from "@/components/onboarding/OnboardingKYCStep";
 import { useAuthStore } from "@/stores/authStore";
 import { OnboardingLayout } from "./OnboardingLayout";
-import { OnboardingKYCStep } from "@/components/onboarding/OnboardingKYCStep";
 
 /**
  * Onboarding "Verify Business" step.
@@ -17,10 +17,13 @@ export default function KycOnboarding() {
   const tenantId = user?.tenantId ?? "";
 
   const handleSkip = () => {
-    toast.info("KYC skipped for now", {
-      description:
+    toast.info(
+      "KYC skipped for now",
+      {
+        description:
         "You'll see a reminder on every page until your business is verified.",
-    });
+      },
+    );
     navigate("/onboarding/activate");
   };
 
@@ -34,13 +37,19 @@ export default function KycOnboarding() {
       title="Verify your business"
       subtitle="Submit your business details and documents so our team can verify your account. You can continue to the dashboard at any time — we'll keep reminding you until verification is complete."
     >
-      {tenantId ? (
-        <OnboardingKYCStep tenantId={tenantId} onContinue={handleContinue} onSkip={handleSkip} />
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          We couldn't find a tenant for your account. Please contact support.
-        </p>
-      )}
+      {tenantId
+        ? (
+            <OnboardingKYCStep
+              tenantId={tenantId}
+              onContinue={handleContinue}
+              onSkip={handleSkip}
+            />
+          )
+        : (
+            <p className="text-sm text-muted-foreground">
+              We couldn't find a tenant for your account. Please contact support.
+            </p>
+          )}
     </OnboardingLayout>
   );
 }

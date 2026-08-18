@@ -1,54 +1,61 @@
 import { formatHumanDuration } from "@truckmoov/app-core/utils/time-utils";
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card';
-import { Button } from '@/components/shadcn/button';
-import { Badge } from '@/components/shadcn/badge';
-import { ScrollArea } from '@/components/shadcn/scroll-area';
-import { Separator } from '@/components/shadcn/separator';
-import { 
-  Navigation, 
-  MapPin, 
-  Clock, 
+import {
   ArrowRight,
+  ArrowUp,
   ChevronLeft,
   ChevronRight,
+  Clock,
   CornerDownRight,
   CornerUpRight,
-  ArrowUp,
-  RotateCcw,
+  MapPin,
   Maximize2,
-  Minimize2
-} from 'lucide-react';
-type RouteDirection = any;
-type RouteWaypoint = { lat: number; lng: number; name?: string };
-import { cn } from '@/lib/utils';
+  Minimize2,
+  Navigation,
+  RotateCcw,
+} from "lucide-react";
+import mapboxgl from "mapbox-gl";
+import React, {
+  useCallback, useEffect, useRef, useState,
+} from "react";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Separator } from "@/components/shadcn/separator";
+import { cn } from "@/lib/utils";
+import "mapbox-gl/dist/mapbox-gl.css";
 
-interface MapboxRouteMapProps {
+type RouteDirection = any;
+type RouteWaypoint = {
+  lat: number; lng: number; name?: string;
+};
+
+type MapboxRouteMapProps = {
   waypoints: RouteWaypoint[];
   mapboxToken: string;
   className?: string;
   showDirections?: boolean;
   onRouteCalculated?: (distance: number, duration: number) => void;
-}
+};
 
 function getManeuverIcon(type: string, modifier?: string) {
   switch (type) {
-    case 'turn':
-      return modifier?.includes('left') ? 
-        <CornerDownRight className="h-4 w-4 rotate-180" /> : 
-        <CornerDownRight className="h-4 w-4" />;
-    case 'merge':
-    case 'fork':
-      return modifier?.includes('left') ? 
-        <CornerUpRight className="h-4 w-4 rotate-180" /> : 
-        <CornerUpRight className="h-4 w-4" />;
-    case 'roundabout':
+    case "turn":
+      return modifier?.includes("left")
+        ? <CornerDownRight className="h-4 w-4 rotate-180" />
+        : <CornerDownRight className="h-4 w-4" />;
+    case "merge":
+    case "fork":
+      return modifier?.includes("left")
+        ? <CornerUpRight className="h-4 w-4 rotate-180" />
+        : <CornerUpRight className="h-4 w-4" />;
+    case "roundabout":
       return <RotateCcw className="h-4 w-4" />;
-    case 'arrive':
+    case "arrive":
       return <MapPin className="h-4 w-4 text-green-500" />;
-    case 'depart':
+    case "depart":
       return <Navigation className="h-4 w-4 text-blue-500" />;
     default:
       return <ArrowUp className="h-4 w-4" />;
@@ -72,8 +79,14 @@ export function MapboxRouteMap({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [activeStep, setActiveStep] = useState(0);
+  const [
+    isExpanded,
+    setIsExpanded,
+  ] = useState(false);
+  const [
+    activeStep,
+    setActiveStep,
+  ] = useState(0);
 
   const getDirections = async (..._args: any[]) => {};
   const isLoading = false;
@@ -81,154 +94,204 @@ export function MapboxRouteMap({
   const clearRoute = () => {};
 
   // Initialize map
-  useEffect(() => {
-    if (!mapContainer.current || !mapboxToken) return;
+  useEffect(
+    () => {
+      if (!mapContainer.current || !mapboxToken)
+        return;
 
-    mapboxgl.accessToken = mapboxToken;
-    
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      center: [28.0473, -26.2041], // Johannesburg default
-      zoom: 10,
-      pitch: 45,
-    });
+      mapboxgl.accessToken = mapboxToken;
 
-    map.current.addControl(
-      new mapboxgl.NavigationControl({ visualizePitch: true }),
-      'top-right'
-    );
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: "mapbox://styles/mapbox/dark-v11",
+        center: [
+          28.0473,
+          -26.2041,
+        ], // Johannesburg default
+        zoom: 10,
+        pitch: 45,
+      });
 
-    map.current.addControl(
-      new mapboxgl.FullscreenControl(),
-      'top-right'
-    );
+      map.current.addControl(
+        new mapboxgl.NavigationControl({ visualizePitch: true }),
+        "top-right",
+      );
 
-    return () => {
-      markersRef.current.forEach(marker => marker.remove());
-      map.current?.remove();
-    };
-  }, [mapboxToken]);
+      map.current.addControl(
+        new mapboxgl.FullscreenControl(),
+        "top-right",
+      );
+
+      return () => {
+        markersRef.current.forEach(marker => marker.remove());
+        map.current?.remove();
+      };
+    },
+    [mapboxToken],
+  );
 
   // Add waypoint markers
-  useEffect(() => {
-    if (!map.current) return;
+  useEffect(
+    () => {
+      if (!map.current)
+        return;
 
-    // Clear existing markers
-    markersRef.current.forEach(marker => marker.remove());
-    markersRef.current = [];
+      // Clear existing markers
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
 
-    // Add new markers
-    waypoints.forEach((wp, index) => {
-      const el = document.createElement('div');
-      el.className = 'flex items-center justify-center w-8 h-8 rounded-full text-white text-sm font-bold shadow-lg';
-      el.style.backgroundColor = index === 0 ? '#22c55e' : index === waypoints.length - 1 ? '#ef4444' : '#3b82f6';
-      el.textContent = String(index + 1);
+      // Add new markers
+      waypoints.forEach((wp, index) => {
+        const el = document.createElement("div");
+        el.className = "flex items-center justify-center w-8 h-8 rounded-full text-white text-sm font-bold shadow-lg";
+        el.style.backgroundColor = index === 0 ? "#22c55e" : index === waypoints.length - 1 ? "#ef4444" : "#3b82f6";
+        el.textContent = String(index + 1);
 
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([wp.lng, wp.lat])
-        .setPopup(
-          new mapboxgl.Popup({ offset: 25 }).setHTML(
-            `<div class="p-2"><strong>${wp.name || `Stop ${index + 1}`}</strong></div>`
+        const marker = new mapboxgl.Marker(el)
+          .setLngLat([
+            wp.lng,
+            wp.lat,
+          ])
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 }).setHTML(
+              `<div class="p-2"><strong>${wp.name || `Stop ${index + 1}`}</strong></div>`,
+            ),
           )
-        )
-        .addTo(map.current!);
+          .addTo(map.current!);
 
-      markersRef.current.push(marker);
-    });
+        markersRef.current.push(marker);
+      });
 
-    // Fit bounds if we have waypoints
-    if (waypoints.length > 0) {
-      const bounds = new mapboxgl.LngLatBounds();
-      waypoints.forEach(wp => bounds.extend([wp.lng, wp.lat]));
-      map.current.fitBounds(bounds, { padding: 80, duration: 1000 });
-    }
-  }, [waypoints]);
+      // Fit bounds if we have waypoints
+      if (waypoints.length > 0) {
+        const bounds = new mapboxgl.LngLatBounds();
+        waypoints.forEach(wp => bounds.extend([
+          wp.lng,
+          wp.lat,
+        ]));
+        map.current.fitBounds(
+          bounds,
+          {
+            padding: 80, duration: 1000,
+          },
+        );
+      }
+    },
+    [waypoints],
+  );
 
   // Draw route on map
-  useEffect(() => {
-    if (!map.current || !routeData) return;
+  useEffect(
+    () => {
+      if (!map.current || !routeData)
+        return;
 
-    const mapInstance = map.current;
+      const mapInstance = map.current;
 
-    // Wait for map style to load
-    const addRoute = () => {
+      // Wait for map style to load
+      const addRoute = () => {
       // Remove existing route layer and source
-      if (mapInstance.getLayer('route')) {
-        mapInstance.removeLayer('route');
-      }
-      if (mapInstance.getLayer('route-outline')) {
-        mapInstance.removeLayer('route-outline');
-      }
-      if (mapInstance.getSource('route')) {
-        mapInstance.removeSource('route');
-      }
+        if (mapInstance.getLayer("route")) {
+          mapInstance.removeLayer("route");
+        }
+        if (mapInstance.getLayer("route-outline")) {
+          mapInstance.removeLayer("route-outline");
+        }
+        if (mapInstance.getSource("route")) {
+          mapInstance.removeSource("route");
+        }
 
-      // Add route source
-      mapInstance.addSource('route', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'LineString' as const,
-            coordinates: routeData.route.geometry.coordinates,
+        // Add route source
+        mapInstance.addSource(
+          "route",
+          {
+            type: "geojson",
+            data: {
+              type: "Feature",
+              properties: {},
+              geometry: {
+                type: "LineString" as const,
+                coordinates: routeData.route.geometry.coordinates,
+              },
+            },
           },
-        },
-      });
+        );
 
-      // Add route outline
-      mapInstance.addLayer({
-        id: 'route-outline',
-        type: 'line',
-        source: 'route',
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round',
-        },
-        paint: {
-          'line-color': '#1e3a5f',
-          'line-width': 10,
-        },
-      });
+        // Add route outline
+        mapInstance.addLayer({
+          id: "route-outline",
+          type: "line",
+          source: "route",
+          layout: {
+            "line-join": "round",
+            "line-cap": "round",
+          },
+          paint: {
+            "line-color": "#1e3a5f",
+            "line-width": 10,
+          },
+        });
 
-      // Add route line
-      mapInstance.addLayer({
-        id: 'route',
-        type: 'line',
-        source: 'route',
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round',
-        },
-        paint: {
-          'line-color': '#3b82f6',
-          'line-width': 6,
-        },
-      });
+        // Add route line
+        mapInstance.addLayer({
+          id: "route",
+          type: "line",
+          source: "route",
+          layout: {
+            "line-join": "round",
+            "line-cap": "round",
+          },
+          paint: {
+            "line-color": "#3b82f6",
+            "line-width": 6,
+          },
+        });
 
-      // Fit bounds to route
-      const coordinates = routeData.route.geometry.coordinates;
-      const bounds = new mapboxgl.LngLatBounds();
-      coordinates.forEach((coord) => bounds.extend(coord as [number, number]));
-      mapInstance.fitBounds(bounds, { padding: 80, duration: 1000 });
+        // Fit bounds to route
+        const coordinates = routeData.route.geometry.coordinates;
+        const bounds = new mapboxgl.LngLatBounds();
+        coordinates.forEach(coord => bounds.extend(coord as [number, number]));
+        mapInstance.fitBounds(
+          bounds,
+          {
+            padding: 80, duration: 1000,
+          },
+        );
 
-      onRouteCalculated?.(routeData.route.distance, routeData.route.duration);
-    };
+        onRouteCalculated?.(
+          routeData.route.distance,
+          routeData.route.duration,
+        );
+      };
 
-    if (mapInstance.isStyleLoaded()) {
-      addRoute();
-    } else {
-      mapInstance.on('style.load', addRoute);
-    }
-  }, [routeData, onRouteCalculated]);
+      if (mapInstance.isStyleLoaded()) {
+        addRoute();
+      }
+      else {
+        mapInstance.on(
+          "style.load",
+          addRoute,
+        );
+      }
+    },
+    [
+      routeData,
+      onRouteCalculated,
+    ],
+  );
 
   // Calculate route when waypoints change
-  const calculateRoute = useCallback(async () => {
-    if (waypoints.length >= 2) {
-      await getDirections(waypoints);
-    }
-  }, [waypoints, getDirections]);
+  const calculateRoute = useCallback(
+    async () => {
+      if (waypoints.length >= 2) {
+        await getDirections(waypoints);
+      }
+    },
+    [
+      waypoints,
+      getDirections,
+    ],
+  );
 
   const handleStepClick = (index: number, direction: RouteDirection) => {
     setActiveStep(index);
@@ -242,14 +305,22 @@ export function MapboxRouteMap({
   };
 
   return (
-    <div className={cn("relative flex gap-4", className)}>
+    <div className={cn(
+      "relative flex gap-4",
+      className,
+    )}
+    >
       {/* Map */}
       <div className={cn(
         "relative rounded-lg overflow-hidden border border-border shadow-lg transition-all duration-300",
-        isExpanded ? "flex-1" : showDirections ? "w-2/3" : "flex-1"
-      )}>
-        <div ref={mapContainer} className="w-full h-[500px]" />
-        
+        isExpanded ? "flex-1" : showDirections ? "w-2/3" : "flex-1",
+      )}
+      >
+        <div
+          ref={mapContainer}
+          className="w-full h-[500px]"
+        />
+
         {/* Map controls overlay */}
         <div className="absolute top-4 left-4 flex gap-2">
           <Button
@@ -259,8 +330,12 @@ export function MapboxRouteMap({
             disabled={isLoading || waypoints.length < 2}
             className="shadow-lg"
           >
-            <Navigation className={cn("h-4 w-4 mr-2", isLoading && "animate-pulse")} />
-            {isLoading ? 'Calculating...' : 'Get Directions'}
+            <Navigation className={cn(
+              "h-4 w-4 mr-2",
+              isLoading && "animate-pulse",
+            )}
+            />
+            {isLoading ? "Calculating..." : "Get Directions"}
           </Button>
           {routeData && (
             <Button
@@ -278,11 +353,17 @@ export function MapboxRouteMap({
         {/* Route summary */}
         {routeData && (
           <div className="absolute bottom-4 left-4 right-4 flex gap-3">
-            <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm px-3 py-1.5">
+            <Badge
+              variant="secondary"
+              className="bg-background/90 backdrop-blur-sm px-3 py-1.5"
+            >
               <Navigation className="h-4 w-4 mr-2 text-primary" />
               {formatDistance(routeData.route.distance)}
             </Badge>
-            <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm px-3 py-1.5">
+            <Badge
+              variant="secondary"
+              className="bg-background/90 backdrop-blur-sm px-3 py-1.5"
+            >
               <Clock className="h-4 w-4 mr-2 text-primary" />
               {formatHumanDuration(routeData.route.duration)}
             </Badge>
@@ -311,7 +392,11 @@ export function MapboxRouteMap({
               Turn-by-Turn Directions
             </CardTitle>
             <div className="flex gap-2 mt-2">
-              <Badge variant="outline">{routeData.directions.length} steps</Badge>
+              <Badge variant="outline">
+                {routeData.directions.length}
+                {" "}
+                steps
+              </Badge>
               <Badge variant="outline">{formatDistance(routeData.route.distance)}</Badge>
             </div>
           </CardHeader>
@@ -321,20 +406,27 @@ export function MapboxRouteMap({
                 {routeData.directions.map((direction, index) => (
                   <button
                     key={`${direction.legIndex}-${direction.stepIndex}`}
-                    onClick={() => handleStepClick(index, direction)}
+                    onClick={() => handleStepClick(
+                      index,
+                      direction,
+                    )}
                     className={cn(
                       "w-full text-left p-3 rounded-lg transition-all",
-                      activeStep === index 
-                        ? "bg-primary/20 border border-primary/30" 
-                        : "hover:bg-muted/50"
+                      activeStep === index
+                        ? "bg-primary/20 border border-primary/30"
+                        : "hover:bg-muted/50",
                     )}
                   >
                     <div className="flex items-start gap-3">
                       <div className={cn(
                         "flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center",
-                        activeStep === index ? "bg-primary text-primary-foreground" : "bg-muted"
-                      )}>
-                        {getManeuverIcon(direction.type, direction.modifier)}
+                        activeStep === index ? "bg-primary text-primary-foreground" : "bg-muted",
+                      )}
+                      >
+                        {getManeuverIcon(
+                          direction.type,
+                          direction.modifier,
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium leading-tight">

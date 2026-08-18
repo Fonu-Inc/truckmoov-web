@@ -45,9 +45,11 @@ const SKIP_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 function storage(key: string): Storage | null {
   try {
-    if (typeof window === "undefined") return null;
+    if (typeof window === "undefined")
+      return null;
     return PERSISTENT_KEYS.has(key) ? window.localStorage : window.sessionStorage;
-  } catch {
+  }
+  catch {
     return null;
   }
 }
@@ -59,9 +61,17 @@ function readBool(key: string): boolean {
 
 function writeBool(key: string, value: boolean) {
   const s = storage(key);
-  if (!s) return;
-  if (value) s.setItem(key, "1");
-  else s.removeItem(key);
+  if (!s)
+    return;
+  if (value) {
+    s.setItem(
+      key,
+      "1",
+    );
+  }
+  else {
+    s.removeItem(key);
+  }
 }
 
 function readString(key: string): string | null {
@@ -70,14 +80,23 @@ function readString(key: string): string | null {
 
 function writeString(key: string, value: string | null) {
   const s = storage(key);
-  if (!s) return;
-  if (value) s.setItem(key, value);
-  else s.removeItem(key);
+  if (!s)
+    return;
+  if (value) {
+    s.setItem(
+      key,
+      value,
+    );
+  }
+  else {
+    s.removeItem(key);
+  }
 }
 
 function readNumber(key: string): number | null {
   const v = readString(key);
-  if (!v) return null;
+  if (!v)
+    return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 }
@@ -85,72 +104,119 @@ function readNumber(key: string): number | null {
 function readStringSet(key: string): string[] {
   try {
     const raw = readString(key);
-    if (!raw) return [];
+    if (!raw)
+      return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((v) => typeof v === "string") : [];
-  } catch {
+    return Array.isArray(parsed) ? parsed.filter(v => typeof v === "string") : [];
+  }
+  catch {
     return [];
   }
 }
 
 function writeStringSet(key: string, value: string[]) {
   const s = storage(key);
-  if (!s) return;
-  s.setItem(key, JSON.stringify(value));
+  if (!s)
+    return;
+  s.setItem(
+    key,
+    JSON.stringify(value),
+  );
 }
 
 /** Public helpers — exported so AuthPage can detect new vs existing user. */
 export function isKnownEmail(email: string): boolean {
   const normalized = email.trim().toLowerCase();
-  if (!normalized) return false;
+  if (!normalized)
+    return false;
   return readStringSet(KNOWN_EMAILS_KEY).includes(normalized);
 }
 
 export function registerKnownEmail(email: string) {
   const normalized = email.trim().toLowerCase();
-  if (!normalized) return;
+  if (!normalized)
+    return;
   const current = readStringSet(KNOWN_EMAILS_KEY);
   if (!current.includes(normalized)) {
     current.push(normalized);
-    writeStringSet(KNOWN_EMAILS_KEY, current);
+    writeStringSet(
+      KNOWN_EMAILS_KEY,
+      current,
+    );
   }
 }
 
 /**
  * Heuristic stakeholder detection from email — for the demo flow.
  */
-export type DetectedStakeholder =
-  | { type: "ENTERPRISE"; label: "Enterprise Admin" }
-  | { type: "FLEET_PROVIDER"; label: "Fleet Provider" }
-  | { type: "AGGREGATOR"; label: "Aggregator" }
-  | { type: "OWNER_OPERATOR"; label: "Owner Operator" }
-  | { type: "PLATFORM_ADMIN"; label: "Platform Admin" };
+export type DetectedStakeholder
+  = | {
+    type: "ENTERPRISE";
+    label: "Enterprise Admin";
+  }
+  | {
+    type: "FLEET_PROVIDER";
+    label: "Fleet Provider";
+  }
+  | {
+    type: "AGGREGATOR";
+    label: "Aggregator";
+  }
+  | {
+    type: "OWNER_OPERATOR";
+    label: "Owner Operator";
+  }
+  | {
+    type: "PLATFORM_ADMIN";
+    label: "Platform Admin";
+  };
 
 export function detectStakeholderFromEmail(email: string): DetectedStakeholder | null {
   const normalized = email.trim().toLowerCase();
-  if (!normalized || !normalized.includes("@")) return null;
-  const [local, domain = ""] = normalized.split("@");
+  if (!normalized || !normalized.includes("@"))
+    return null;
+  const [
+    local,
+    domain = "",
+  ] = normalized.split("@");
   const haystack = `${local} ${domain}`;
 
   if (/(platform|admin@truckmoov|superadmin)/.test(haystack)) {
-    return { type: "PLATFORM_ADMIN", label: "Platform Admin" };
+    return {
+      type: "PLATFORM_ADMIN",
+      label: "Platform Admin",
+    };
   }
   if (/(aggregator|network|broker)/.test(haystack)) {
-    return { type: "AGGREGATOR", label: "Aggregator" };
+    return {
+      type: "AGGREGATOR",
+      label: "Aggregator",
+    };
   }
   if (/(owner|operator|driver-owner|oo\b)/.test(haystack)) {
-    return { type: "OWNER_OPERATOR", label: "Owner Operator" };
+    return {
+      type: "OWNER_OPERATOR",
+      label: "Owner Operator",
+    };
   }
   if (/(fleet|provider|carrier|logistics|transport)/.test(haystack)) {
-    return { type: "FLEET_PROVIDER", label: "Fleet Provider" };
+    return {
+      type: "FLEET_PROVIDER",
+      label: "Fleet Provider",
+    };
   }
-  return { type: "ENTERPRISE", label: "Enterprise Admin" };
+  return {
+    type: "ENTERPRISE",
+    label: "Enterprise Admin",
+  };
 }
 
 /** True when the panel should be visible right now based on time + skip rules. */
 function computePanelVisible(): boolean {
-  if (!readBool(NEW_USER_KEY)) return false;
-  if (readBool(ONBOARDING_DONE_KEY)) return false;
+  if (!readBool(NEW_USER_KEY))
+    return false;
+  if (readBool(ONBOARDING_DONE_KEY))
+    return false;
 
   const activatedAt = readNumber(ACTIVATED_AT_KEY);
   if (activatedAt && Date.now() - activatedAt > ONBOARDING_WINDOW_MS) {
@@ -165,7 +231,7 @@ function computePanelVisible(): boolean {
   return true;
 }
 
-interface OnboardingState {
+type OnboardingState = {
   isNewUser: boolean;
   onboardingDone: boolean;
   /** Welcome modal visible right now. */
@@ -218,38 +284,44 @@ interface OnboardingState {
   refreshVisibility: () => void;
   /** Wipe everything — call on logout. */
   reset: () => void;
-}
+};
 
 function readJsonObject(key: string): Record<string, string | string[]> {
   try {
     const raw = readString(key);
-    if (!raw) return {};
+    if (!raw)
+      return {};
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
-  } catch {
+  }
+  catch {
     return {};
   }
 }
 
 function writeJsonObject(key: string, value: Record<string, string | string[]>) {
   const s = storage(key);
-  if (!s) return;
-  s.setItem(key, JSON.stringify(value));
+  if (!s)
+    return;
+  s.setItem(
+    key,
+    JSON.stringify(value),
+  );
 }
 
-export const useOnboardingStore = create<OnboardingState>((set) => ({
+export const useOnboardingStore = create<OnboardingState>(set => ({
   isNewUser: readBool(NEW_USER_KEY),
   onboardingDone: readBool(ONBOARDING_DONE_KEY),
   showWelcome:
-    readBool(NEW_USER_KEY) &&
-    !readBool(WELCOME_SEEN_KEY) &&
-    !readBool(ONBOARDING_DONE_KEY),
+    readBool(NEW_USER_KEY)
+    && !readBool(WELCOME_SEEN_KEY)
+    && !readBool(ONBOARDING_DONE_KEY),
   showQuestionnaire: false,
   questionnaireDone: readBool(QUESTIONNAIRE_DONE_KEY),
   showPanel:
-    computePanelVisible() &&
-    readBool(WELCOME_SEEN_KEY) &&
-    readBool(QUESTIONNAIRE_DONE_KEY),
+    computePanelVisible()
+    && readBool(WELCOME_SEEN_KEY)
+    && readBool(QUESTIONNAIRE_DONE_KEY),
   panelCollapsed: readBool(PANEL_COLLAPSED_KEY),
   showSubscriptionModal: readBool(SUB_MODAL_OPEN_KEY),
   completedSteps: readStringSet(COMPLETED_ACTIONS_KEY),
@@ -259,17 +331,47 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
 
   startActivation: () => {
     const now = Date.now();
-    writeBool(NEW_USER_KEY, true);
-    writeString(ACTIVATED_AT_KEY, String(now));
-    writeBool(ONBOARDING_DONE_KEY, false);
-    writeString(SKIPPED_UNTIL_KEY, null);
-    writeBool(WELCOME_SEEN_KEY, false);
-    writeBool(PANEL_COLLAPSED_KEY, false);
-    writeBool(QUESTIONNAIRE_DONE_KEY, false);
-    writeJsonObject(QUESTIONNAIRE_ANSWERS_KEY, {});
-    writeStringSet(COMPLETED_ACTIONS_KEY, []);
+    writeBool(
+      NEW_USER_KEY,
+      true,
+    );
+    writeString(
+      ACTIVATED_AT_KEY,
+      String(now),
+    );
+    writeBool(
+      ONBOARDING_DONE_KEY,
+      false,
+    );
+    writeString(
+      SKIPPED_UNTIL_KEY,
+      null,
+    );
+    writeBool(
+      WELCOME_SEEN_KEY,
+      false,
+    );
+    writeBool(
+      PANEL_COLLAPSED_KEY,
+      false,
+    );
+    writeBool(
+      QUESTIONNAIRE_DONE_KEY,
+      false,
+    );
+    writeJsonObject(
+      QUESTIONNAIRE_ANSWERS_KEY,
+      {},
+    );
+    writeStringSet(
+      COMPLETED_ACTIONS_KEY,
+      [],
+    );
     // Clear any leftover plan selection from a previous demo session.
-    writeString(PLAN_KEY, null);
+    writeString(
+      PLAN_KEY,
+      null,
+    );
     set({
       isNewUser: true,
       onboardingDone: false,
@@ -285,9 +387,18 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
     });
   },
   openChecklist: () => {
-    writeBool(WELCOME_SEEN_KEY, true);
-    writeString(SKIPPED_UNTIL_KEY, null);
-    writeBool(PANEL_COLLAPSED_KEY, false);
+    writeBool(
+      WELCOME_SEEN_KEY,
+      true,
+    );
+    writeString(
+      SKIPPED_UNTIL_KEY,
+      null,
+    );
+    writeBool(
+      PANEL_COLLAPSED_KEY,
+      false,
+    );
     const qDone = readBool(QUESTIONNAIRE_DONE_KEY);
     set({
       showWelcome: false,
@@ -298,14 +409,29 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
     });
   },
   dismissWelcome: () => {
-    writeBool(WELCOME_SEEN_KEY, true);
-    set({ showWelcome: false, showPanel: computePanelVisible() && readBool(QUESTIONNAIRE_DONE_KEY) });
+    writeBool(
+      WELCOME_SEEN_KEY,
+      true,
+    );
+    set({
+      showWelcome: false,
+      showPanel: computePanelVisible() && readBool(QUESTIONNAIRE_DONE_KEY),
+    });
   },
   skipOnboarding: () => {
     const until = Date.now() + SKIP_WINDOW_MS;
-    writeBool(WELCOME_SEEN_KEY, true);
-    writeString(SKIPPED_UNTIL_KEY, String(until));
-    writeBool(PANEL_COLLAPSED_KEY, false);
+    writeBool(
+      WELCOME_SEEN_KEY,
+      true,
+    );
+    writeString(
+      SKIPPED_UNTIL_KEY,
+      String(until),
+    );
+    writeBool(
+      PANEL_COLLAPSED_KEY,
+      false,
+    );
     set({
       showWelcome: false,
       showQuestionnaire: false,
@@ -314,9 +440,18 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
     });
   },
   resumeOnboarding: () => {
-    writeBool(WELCOME_SEEN_KEY, true);
-    writeString(SKIPPED_UNTIL_KEY, null);
-    writeBool(PANEL_COLLAPSED_KEY, false);
+    writeBool(
+      WELCOME_SEEN_KEY,
+      true,
+    );
+    writeString(
+      SKIPPED_UNTIL_KEY,
+      null,
+    );
+    writeBool(
+      PANEL_COLLAPSED_KEY,
+      false,
+    );
     const qDone = readBool(QUESTIONNAIRE_DONE_KEY);
     set({
       showWelcome: false,
@@ -326,29 +461,57 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
     });
   },
   collapsePanel: () => {
-    writeBool(PANEL_COLLAPSED_KEY, true);
+    writeBool(
+      PANEL_COLLAPSED_KEY,
+      true,
+    );
     set({ panelCollapsed: true });
   },
   expandPanel: () => {
-    writeBool(PANEL_COLLAPSED_KEY, false);
+    writeBool(
+      PANEL_COLLAPSED_KEY,
+      false,
+    );
     set({ panelCollapsed: false });
   },
-  completeStep: (groupId) =>
+  completeStep: groupId =>
     set((state) => {
-      if (state.completedSteps.includes(groupId)) return state;
-      const next = [...state.completedSteps, groupId];
-      writeStringSet(COMPLETED_ACTIONS_KEY, next);
+      if (state.completedSteps.includes(groupId))
+        return state;
+      const next = [
+        ...state.completedSteps,
+        groupId,
+      ];
+      writeStringSet(
+        COMPLETED_ACTIONS_KEY,
+        next,
+      );
       return { completedSteps: next };
     }),
-  markActionClicked: (actionId) =>
+  markActionClicked: actionId =>
     set((state) => {
-      if (state.clickedActions.includes(actionId)) return state;
-      return { clickedActions: [...state.clickedActions, actionId] };
+      if (state.clickedActions.includes(actionId))
+        return state;
+      return {
+        clickedActions: [
+          ...state.clickedActions,
+          actionId,
+        ],
+      };
     }),
   completeOnboarding: () => {
-    writeBool(ONBOARDING_DONE_KEY, true);
-    writeString(SKIPPED_UNTIL_KEY, null);
-    writeBool(PANEL_COLLAPSED_KEY, false);
+    writeBool(
+      ONBOARDING_DONE_KEY,
+      true,
+    );
+    writeString(
+      SKIPPED_UNTIL_KEY,
+      null,
+    );
+    writeBool(
+      PANEL_COLLAPSED_KEY,
+      false,
+    );
     set({
       onboardingDone: true,
       showPanel: false,
@@ -358,19 +521,31 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
     });
   },
   setShowSubscriptionModal: (open) => {
-    writeBool(SUB_MODAL_OPEN_KEY, open);
+    writeBool(
+      SUB_MODAL_OPEN_KEY,
+      open,
+    );
     set({ showSubscriptionModal: open });
   },
   setSelectedPlan: (planId) => {
-    writeString(PLAN_KEY, planId);
+    writeString(
+      PLAN_KEY,
+      planId,
+    );
     set({ selectedPlan: planId });
   },
   setQuestionnaireAnswers: (answers) => {
-    writeJsonObject(QUESTIONNAIRE_ANSWERS_KEY, answers);
+    writeJsonObject(
+      QUESTIONNAIRE_ANSWERS_KEY,
+      answers,
+    );
     set({ questionnaireAnswers: answers });
   },
   completeQuestionnaire: () => {
-    writeBool(QUESTIONNAIRE_DONE_KEY, true);
+    writeBool(
+      QUESTIONNAIRE_DONE_KEY,
+      true,
+    );
     set({
       questionnaireDone: true,
       showQuestionnaire: false,
@@ -380,23 +555,56 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
   refreshVisibility: () => {
     set({
       showPanel:
-        computePanelVisible() &&
-        readBool(WELCOME_SEEN_KEY) &&
-        readBool(QUESTIONNAIRE_DONE_KEY),
+        computePanelVisible()
+        && readBool(WELCOME_SEEN_KEY)
+        && readBool(QUESTIONNAIRE_DONE_KEY),
     });
   },
   reset: () => {
-    writeBool(NEW_USER_KEY, false);
-    writeString(ACTIVATED_AT_KEY, null);
-    writeBool(ONBOARDING_DONE_KEY, false);
-    writeString(SKIPPED_UNTIL_KEY, null);
-    writeBool(WELCOME_SEEN_KEY, false);
-    writeBool(PANEL_COLLAPSED_KEY, false);
-    writeBool(SUB_MODAL_OPEN_KEY, false);
-    writeBool(QUESTIONNAIRE_DONE_KEY, false);
-    writeJsonObject(QUESTIONNAIRE_ANSWERS_KEY, {});
-    writeStringSet(COMPLETED_ACTIONS_KEY, []);
-    writeString(PLAN_KEY, null);
+    writeBool(
+      NEW_USER_KEY,
+      false,
+    );
+    writeString(
+      ACTIVATED_AT_KEY,
+      null,
+    );
+    writeBool(
+      ONBOARDING_DONE_KEY,
+      false,
+    );
+    writeString(
+      SKIPPED_UNTIL_KEY,
+      null,
+    );
+    writeBool(
+      WELCOME_SEEN_KEY,
+      false,
+    );
+    writeBool(
+      PANEL_COLLAPSED_KEY,
+      false,
+    );
+    writeBool(
+      SUB_MODAL_OPEN_KEY,
+      false,
+    );
+    writeBool(
+      QUESTIONNAIRE_DONE_KEY,
+      false,
+    );
+    writeJsonObject(
+      QUESTIONNAIRE_ANSWERS_KEY,
+      {},
+    );
+    writeStringSet(
+      COMPLETED_ACTIONS_KEY,
+      [],
+    );
+    writeString(
+      PLAN_KEY,
+      null,
+    );
     set({
       isNewUser: false,
       onboardingDone: false,

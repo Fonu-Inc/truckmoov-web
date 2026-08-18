@@ -1,28 +1,34 @@
-import { formatRelative, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getSimRequestsQueryOptions } from "@truckmoov/api/auth";
-import { useAuthStore } from "@/stores/authStore";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
-import { Badge } from "@/components/shadcn/badge";
-import { Skeleton } from "@/components/shadcn/skeleton";
 import {
-  FileText,
-  Clock,
+  formatRelative, formatWithPattern,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
   CheckCircle,
-  XCircle,
   ChevronDown,
   ChevronUp,
+  Clock,
+  FileText,
   Wifi,
+  XCircle,
 } from "lucide-react";
+import { useState } from "react";
+import { Badge } from "@/components/shadcn/badge";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/authStore";
 
-interface SIMRequestsTrackerProps {
+type SIMRequestsTrackerProps = {
   // Reserved for future use; section is read-only and has no actions.
   onNewRequest?: () => void;
-}
+};
 
-const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+const statusConfig: Record<string, {
+  label: string; color: string; icon: React.ReactNode;
+}> = {
   pending_review: {
     label: "Pending Review",
     color: "bg-warning/10 text-warning border-warning/30",
@@ -55,7 +61,10 @@ export function SIMRequestsTracker(_props: SIMRequestsTrackerProps) {
   const requestsQuery = useQuery(getSimRequestsQueryOptions());
   const requests = requestsQuery.data?.data.items ?? [];
   const loading = requestsQuery.isLoading;
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [
+    expandedId,
+    setExpandedId,
+  ] = useState<string | null>(null);
 
   const getStatusInfo = (status: string) => statusConfig[status] || statusConfig.pending_review;
 
@@ -70,8 +79,15 @@ export function SIMRequestsTracker(_props: SIMRequestsTrackerProps) {
           <CardDescription>Track every IoT SIM request you've submitted — from approval and activation through to device assignment.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-20 w-full" />
+          {[
+            1,
+            2,
+            3,
+          ].map(i => (
+            <Skeleton
+              key={i}
+              className="h-20 w-full"
+            />
           ))}
         </CardContent>
       </Card>
@@ -118,7 +134,12 @@ export function SIMRequestsTracker(_props: SIMRequestsTrackerProps) {
                       </div>
                       <div className="text-left">
                         <p className="font-medium text-sm">
-                          {request.quantity} SIM{request.quantity > 1 ? "s" : ""} Request
+                          {request.quantity}
+                          {" "}
+                          SIM
+                          {request.quantity > 1 ? "s" : ""}
+                          {" "}
+                          Request
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {formatRelative(request.createdAt)}
@@ -126,15 +147,23 @@ export function SIMRequestsTracker(_props: SIMRequestsTrackerProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={cn("text-xs", statusInfo.color)}>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-xs",
+                          statusInfo.color,
+                        )}
+                      >
                         {statusInfo.icon}
                         <span className="ml-1">{statusInfo.label}</span>
                       </Badge>
-                      {isExpanded ? (
-                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                      )}
+                      {isExpanded
+                        ? (
+                            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                          )
+                        : (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          )}
                     </div>
                   </button>
 
@@ -189,14 +218,20 @@ export function SIMRequestsTracker(_props: SIMRequestsTrackerProps) {
                           <p className="text-xs text-muted-foreground mb-2">Timeline</p>
                           <div className="space-y-2">
                             {request.timeline.map((entry, idx) => (
-                              <div key={idx} className="flex items-center gap-2 text-xs">
+                              <div
+                                key={idx}
+                                className="flex items-center gap-2 text-xs"
+                              >
                                 <div className="h-2 w-2 rounded-full bg-primary" />
                                 <span className="text-muted-foreground">
                                   {entry.label}
                                   {entry.by && ` by ${entry.by}`}
                                 </span>
                                 <span className="ml-auto">
-                                  {formatWithPattern(entry.at, "MMM d, yyyy h:mm a")}
+                                  {formatWithPattern(
+                                    entry.at,
+                                    "MMM d, yyyy h:mm a",
+                                  )}
                                 </span>
                               </div>
                             ))}

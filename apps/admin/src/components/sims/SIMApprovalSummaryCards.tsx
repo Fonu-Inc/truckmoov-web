@@ -1,19 +1,34 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Clock, CheckCircle, XCircle, Wifi } from "lucide-react";
+import {
+  CheckCircle,
+  Clock,
+  Wifi,
+  XCircle,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
 
-interface Props {
+type Props = {
   pendingCount: number | string;
   approvedCount: number | string;
   rejectedCount: number | string;
   totalRequested?: number | string;
-}
+};
 
-export function SIMApprovalSummaryCards({ pendingCount, approvedCount, rejectedCount, totalRequested }: Props) {
-  const total =
-    totalRequested ??
-    (typeof pendingCount === "number" && typeof approvedCount === "number" && typeof rejectedCount === "number"
-      ? pendingCount + approvedCount + rejectedCount
-      : "...");
+export function SIMApprovalSummaryCards({
+  pendingCount,
+  approvedCount,
+  rejectedCount,
+  totalRequested,
+}: Props) {
+  const total
+    = totalRequested
+      ?? (typeof pendingCount === "number" && typeof approvedCount === "number" && typeof rejectedCount === "number"
+        ? pendingCount + approvedCount + rejectedCount
+        : "...");
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
@@ -62,5 +77,3 @@ export function SIMApprovalSummaryCards({ pendingCount, approvedCount, rejectedC
     </div>
   );
 }
-
-

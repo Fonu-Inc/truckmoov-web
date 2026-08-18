@@ -1,5 +1,12 @@
+import {
+  Loader2, MessageSquare, Phone,
+} from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
+import { Button } from "@/components/shadcn/button";
+import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -10,23 +17,24 @@ import {
 } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Button } from "@/components/shadcn/button";
-import { Checkbox } from "@/components/shadcn/checkbox";
-import { Loader2, MessageSquare, Phone } from "lucide-react";
-import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
-import { toast } from "sonner";
 
 const contactSchema = z.object({
-  name: z.string().trim().min(1, "Name required").max(100),
+  name: z.string().trim().min(
+    1,
+    "Name required",
+  ).max(100),
   phone: z
     .string()
     .trim()
-    .regex(/^\+?[0-9\s-]{7,20}$/, "Invalid phone number"),
+    .regex(
+      /^\+?[0-9\s-]{7,20}$/,
+      "Invalid phone number",
+    ),
 });
 
 export type Channel = "whatsapp" | "sms" | "voice";
 
-interface NewContactDialogProps {
+type NewContactDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: {
@@ -34,34 +42,54 @@ interface NewContactDialogProps {
     phone: string;
     channels: Channel[];
   }) => Promise<void> | void;
-}
+};
 
-export function NewContactDialog({ open, onOpenChange, onSubmit }: NewContactDialogProps) {
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [channels, setChannels] = useState<Record<Channel, boolean>>({
+export function NewContactDialog({
+  open, onOpenChange, onSubmit,
+}: NewContactDialogProps) {
+  const [
+    name,
+    setName,
+  ] = useState("");
+  const [
+    phone,
+    setPhone,
+  ] = useState("");
+  const [
+    channels,
+    setChannels,
+  ] = useState<Record<Channel, boolean>>({
     whatsapp: true,
     sms: false,
     voice: false,
   });
-  const [submitting, setSubmitting] = useState(false);
+  const [
+    submitting,
+    setSubmitting,
+  ] = useState(false);
 
   const reset = () => {
     setName("");
     setPhone("");
-    setChannels({ whatsapp: true, sms: false, voice: false });
+    setChannels({
+      whatsapp: true, sms: false, voice: false,
+    });
   };
 
   const toggleChannel = (c: Channel) =>
-    setChannels((prev) => ({ ...prev, [c]: !prev[c] }));
+    setChannels(prev => ({
+      ...prev, [c]: !prev[c],
+    }));
 
   const handleSubmit = async () => {
-    const parsed = contactSchema.safeParse({ name, phone });
+    const parsed = contactSchema.safeParse({
+      name, phone,
+    });
     if (!parsed.success) {
       toast.error(parsed.error.errors[0]?.message ?? "Invalid input");
       return;
     }
-    const selected = (Object.keys(channels) as Channel[]).filter((c) => channels[c]);
+    const selected = (Object.keys(channels) as Channel[]).filter(c => channels[c]);
     if (selected.length === 0) {
       toast.error("Select at least one channel");
       return;
@@ -75,15 +103,23 @@ export function NewContactDialog({ open, onOpenChange, onSubmit }: NewContactDia
       });
       reset();
       onOpenChange(false);
-    } catch {
+    }
+    catch {
       // toast handled by caller
-    } finally {
+    }
+    finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!submitting) onOpenChange(o); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!submitting)
+          onOpenChange(o);
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>New Contact</DialogTitle>
@@ -99,7 +135,7 @@ export function NewContactDialog({ open, onOpenChange, onSubmit }: NewContactDia
               id="contact-name"
               placeholder="e.g. Adaeze Okonkwo"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
               maxLength={100}
             />
           </div>
@@ -110,7 +146,7 @@ export function NewContactDialog({ open, onOpenChange, onSubmit }: NewContactDia
               id="contact-phone"
               placeholder="+234 801 234 5678"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={e => setPhone(e.target.value)}
               maxLength={20}
             />
             <p className="text-xs text-muted-foreground">
@@ -150,10 +186,17 @@ export function NewContactDialog({ open, onOpenChange, onSubmit }: NewContactDia
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting}
+          >
             {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Add Contact
           </Button>

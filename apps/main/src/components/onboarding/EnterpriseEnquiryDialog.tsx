@@ -25,19 +25,28 @@ import { Input } from "@/components/shadcn/input";
 import { Textarea } from "@/components/shadcn/textarea";
 
 const enquirySchema = z.object({
-  name: z.string().min(2, "Name is required"),
+  name: z.string().min(
+    2,
+    "Name is required",
+  ),
   email: z.string().email("Enter a valid email"),
-  phone: z.string().min(7, "Enter a valid phone number"),
-  companyName: z.string().min(1, "Company name is required"),
+  phone: z.string().min(
+    7,
+    "Enter a valid phone number",
+  ),
+  companyName: z.string().min(
+    1,
+    "Company name is required",
+  ),
   message: z.string().optional(),
 });
 type EnquiryValues = z.infer<typeof enquirySchema>;
 
-interface EnterpriseEnquiryDialogProps {
+type EnterpriseEnquiryDialogProps = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   planName: string;
-}
+};
 
 export function EnterpriseEnquiryDialog({
   open,
@@ -47,7 +56,9 @@ export function EnterpriseEnquiryDialog({
   const mutation = useSubmitEnterpriseEnquiry();
   const form = useForm<EnquiryValues>({
     resolver: zodResolver(enquirySchema),
-    defaultValues: { name: "", email: "", phone: "", companyName: "", message: "" },
+    defaultValues: {
+      name: "", email: "", phone: "", companyName: "", message: "",
+    },
   });
 
   const onSubmit = (values: EnquiryValues) => {
@@ -63,9 +74,10 @@ export function EnterpriseEnquiryDialog({
       },
       {
         onSuccess: () => {
-          toast.success("Enquiry submitted", {
-            description: "Our sales team will reach out to you shortly.",
-          });
+          toast.success(
+            "Enquiry submitted",
+            { description: "Our sales team will reach out to you shortly." },
+          );
           onOpenChange(false);
           form.reset();
         },
@@ -77,16 +89,25 @@ export function EnterpriseEnquiryDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !mutation.isPending && onOpenChange(v)}>
+    <Dialog
+      open={open}
+      onOpenChange={v => !mutation.isPending && onOpenChange(v)}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Get in touch about {planName}</DialogTitle>
+          <DialogTitle>
+            Get in touch about
+            {planName}
+          </DialogTitle>
           <DialogDescription>
             Fill in your details and our sales team will reach out within one business day.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="mt-2 space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="mt-2 space-y-4"
+          >
             <FormField
               control={form.control}
               name="name"
@@ -94,7 +115,11 @@ export function EnterpriseEnquiryDialog({
                 <FormItem>
                   <FormLabel>Full name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ada Okonkwo" disabled={mutation.isPending} {...field} />
+                    <Input
+                      placeholder="Ada Okonkwo"
+                      disabled={mutation.isPending}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -174,7 +199,11 @@ export function EnterpriseEnquiryDialog({
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={mutation.isPending}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={mutation.isPending}
+            >
               {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Submit enquiry
             </Button>

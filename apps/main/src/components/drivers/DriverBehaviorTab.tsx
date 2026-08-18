@@ -1,31 +1,45 @@
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
+import {
+  Activity, AlertTriangle, Bell, Car, Gauge,
+  MapPin, Minus, RefreshCw, RotateCcw, Shield, TrendingDown, TrendingUp, User,
+  Wifi, WifiOff, Zap,
+} from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
+import { mockDrivers } from "@/data/mockData";
+
 type DriverScore = any;
 type DriverBehaviorEvent = any;
 type GeofenceAlert = any;
-import { mockDrivers } from "@/data/mockData";
-import {
-  Activity, AlertTriangle, TrendingUp, TrendingDown, Minus,
-  Gauge, Car, RotateCcw, Zap, MapPin, Shield, Bell, RefreshCw,
-  Wifi, WifiOff, User
-} from "lucide-react";
 
-function ScoreGauge({ score, label }: { score: number; label: string }) {
+function ScoreGauge({
+  score, label,
+}: {
+  score: number; label: string;
+}) {
   const getScoreColor = (s: number) => {
-    if (s >= 80) return "text-success";
-    if (s >= 60) return "text-warning";
+    if (s >= 80)
+      return "text-success";
+    if (s >= 60)
+      return "text-warning";
     return "text-destructive";
   };
 
   return (
     <div className="text-center space-y-2">
       <div className="relative w-20 h-20 mx-auto">
-        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+        <svg
+          className="w-full h-full transform -rotate-90"
+          viewBox="0 0 36 36"
+        >
           <path
             d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
             fill="none"
@@ -51,23 +65,44 @@ function ScoreGauge({ score, label }: { score: number; label: string }) {
   );
 }
 
-function DriverScoreCard({ score, rank }: { score: DriverScore; rank: number }) {
+function DriverScoreCard({
+  score, rank,
+}: {
+  score: DriverScore; rank: number;
+}) {
   const driver = mockDrivers.find(d => d.id === score.driverId);
-  const driverName = driver?.name || `Driver ${score.driverId.slice(0, 6)}`;
+  const driverName = driver?.name || `Driver ${score.driverId.slice(
+    0,
+    6,
+  )}`;
 
   const getTrendIcon = () => {
     switch (score.trend) {
-      case 'improving': return <TrendingUp className="h-4 w-4 text-success" />;
-      case 'declining': return <TrendingDown className="h-4 w-4 text-destructive" />;
+      case "improving": return <TrendingUp className="h-4 w-4 text-success" />;
+      case "declining": return <TrendingDown className="h-4 w-4 text-destructive" />;
       default: return <Minus className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
   const getScoreBadge = (s: number) => {
-    if (s >= 90) return { label: "Excellent", className: "bg-success text-success-foreground" };
-    if (s >= 80) return { label: "Good", className: "bg-primary text-primary-foreground" };
-    if (s >= 60) return { label: "Fair", className: "bg-warning text-warning-foreground" };
-    return { label: "Poor", className: "" };
+    if (s >= 90) {
+      return {
+        label: "Excellent", className: "bg-success text-success-foreground",
+      };
+    }
+    if (s >= 80) {
+      return {
+        label: "Good", className: "bg-primary text-primary-foreground",
+      };
+    }
+    if (s >= 60) {
+      return {
+        label: "Fair", className: "bg-warning text-warning-foreground",
+      };
+    }
+    return {
+      label: "Poor", className: "",
+    };
   };
 
   const badge = getScoreBadge(score.overallScore);
@@ -78,11 +113,16 @@ function DriverScoreCard({ score, rank }: { score: DriverScore; rank: number }) 
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground font-bold">
-              #{rank}
+              #
+              {rank}
             </div>
             <div>
               <p className="font-semibold">{driverName}</p>
-              <p className="text-xs text-muted-foreground">{score.totalEvents} events recorded</p>
+              <p className="text-xs text-muted-foreground">
+                {score.totalEvents}
+                {" "}
+                events recorded
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -92,10 +132,22 @@ function DriverScoreCard({ score, rank }: { score: DriverScore; rank: number }) 
         </div>
 
         <div className="grid grid-cols-4 gap-2 mb-4">
-          <ScoreGauge score={score.brakingScore} label="Braking" />
-          <ScoreGauge score={score.accelerationScore} label="Accel" />
-          <ScoreGauge score={score.corneringScore} label="Cornering" />
-          <ScoreGauge score={score.speedingScore} label="Speed" />
+          <ScoreGauge
+            score={score.brakingScore}
+            label="Braking"
+          />
+          <ScoreGauge
+            score={score.accelerationScore}
+            label="Accel"
+          />
+          <ScoreGauge
+            score={score.corneringScore}
+            label="Cornering"
+          />
+          <ScoreGauge
+            score={score.speedingScore}
+            label="Speed"
+          />
         </div>
 
         <div className="grid grid-cols-4 gap-2 text-center text-xs">
@@ -124,19 +176,19 @@ function DriverScoreCard({ score, rank }: { score: DriverScore; rank: number }) 
 function EventItem({ event }: { event: DriverBehaviorEvent }) {
   const getEventIcon = () => {
     switch (event.eventType) {
-      case 'harsh_braking': return <Car className="h-4 w-4" />;
-      case 'harsh_acceleration': return <Zap className="h-4 w-4" />;
-      case 'harsh_cornering': return <RotateCcw className="h-4 w-4" />;
-      case 'overspeeding': return <Gauge className="h-4 w-4" />;
+      case "harsh_braking": return <Car className="h-4 w-4" />;
+      case "harsh_acceleration": return <Zap className="h-4 w-4" />;
+      case "harsh_cornering": return <RotateCcw className="h-4 w-4" />;
+      case "overspeeding": return <Gauge className="h-4 w-4" />;
       default: return <AlertTriangle className="h-4 w-4" />;
     }
   };
 
   const getSeverityColor = () => {
     switch (event.severity) {
-      case 'critical': return "bg-destructive/10 text-destructive border-destructive/30";
-      case 'high': return "bg-warning/10 text-warning border-warning/30";
-      case 'medium': return "bg-primary/10 text-primary border-primary/30";
+      case "critical": return "bg-destructive/10 text-destructive border-destructive/30";
+      case "high": return "bg-warning/10 text-warning border-warning/30";
+      case "medium": return "bg-primary/10 text-primary border-primary/30";
       default: return "bg-muted text-muted-foreground border-border";
     }
   };
@@ -147,9 +199,15 @@ function EventItem({ event }: { event: DriverBehaviorEvent }) {
         <div className="flex items-center gap-2">
           {getEventIcon()}
           <span className="font-medium text-sm capitalize">
-            {event.eventType.replace(/_/g, ' ')}
+            {event.eventType.replace(
+              /_/g,
+              " ",
+            )}
           </span>
-          <Badge variant="outline" className="text-xs capitalize">
+          <Badge
+            variant="outline"
+            className="text-xs capitalize"
+          >
             {event.severity}
           </Badge>
         </div>
@@ -159,7 +217,11 @@ function EventItem({ event }: { event: DriverBehaviorEvent }) {
       </div>
       {event.speed && (
         <p className="text-xs mt-1 text-muted-foreground">
-          Speed: {event.speed} km/h
+          Speed:
+          {" "}
+          {event.speed}
+          {" "}
+          km/h
         </p>
       )}
     </div>
@@ -167,22 +229,31 @@ function EventItem({ event }: { event: DriverBehaviorEvent }) {
 }
 
 function GeofenceAlertItem({ alert }: { alert: GeofenceAlert }) {
-  const isEntry = alert.alertType === 'entry';
+  const isEntry = alert.alertType === "entry";
 
   return (
-    <div className={`p-3 rounded-lg border ${isEntry ? 'bg-success/10 border-success/30' : 'bg-warning/10 border-warning/30'}`}>
+    <div className={`p-3 rounded-lg border ${isEntry ? "bg-success/10 border-success/30" : "bg-warning/10 border-warning/30"}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <MapPin className={`h-4 w-4 ${isEntry ? 'text-success' : 'text-warning'}`} />
+          <MapPin className={`h-4 w-4 ${isEntry ? "text-success" : "text-warning"}`} />
           <div>
             <p className="font-medium text-sm">{alert.geofenceName}</p>
             <p className="text-xs text-muted-foreground">
-              Device {alert.deviceId.slice(0, 8)}...
+              Device
+              {" "}
+              {alert.deviceId.slice(
+                0,
+                8,
+              )}
+              ...
             </p>
           </div>
         </div>
         <div className="text-right">
-          <Badge variant={isEntry ? "default" : "secondary"} className="text-xs">
+          <Badge
+            variant={isEntry ? "default" : "secondary"}
+            className="text-xs"
+          >
             {alert.alertType.toUpperCase()}
           </Badge>
           <p className="text-xs text-muted-foreground mt-1">
@@ -197,19 +268,26 @@ function GeofenceAlertItem({ alert }: { alert: GeofenceAlert }) {
 export function DriverBehaviorTab() {
   const realEvents: DriverBehaviorEvent[] = [];
   const realScores: DriverScore[] = [];
-  const realBehaviorStats = { averageScore: 0, last24h: 0, critical: 0, total: 0 };
+  const realBehaviorStats = {
+    averageScore: 0, last24h: 0, critical: 0, total: 0,
+  };
   const behaviorLoading = false;
   const behaviorConnected = false;
   const refreshBehavior = () => null;
 
   const realAlerts: GeofenceAlert[] = [];
-  const realGeofenceStats = { entries: 0, exits: 0 };
+  const realGeofenceStats = {
+    entries: 0, exits: 0,
+  };
   const geofenceConnected = false;
   const realUnreadCount = 0;
   const markAllRead = () => null;
   const refreshGeofence = () => null;
 
-  const [activeTab, setActiveTab] = useState("scores");
+  const [
+    activeTab,
+    setActiveTab,
+  ] = useState("scores");
 
   const driverScores = realScores;
   const events = realEvents;
@@ -230,16 +308,23 @@ export function DriverBehaviorTab() {
         <Card className="col-span-2 md:col-span-1">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              {behaviorConnected && geofenceConnected ? (
-                <Wifi className="h-4 w-4 text-success" />
-              ) : (
-                <WifiOff className="h-4 w-4 text-warning" />
-              )}
+              {behaviorConnected && geofenceConnected
+                ? (
+                    <Wifi className="h-4 w-4 text-success" />
+                  )
+                : (
+                    <WifiOff className="h-4 w-4 text-warning" />
+                  )}
               <span className="text-xs font-medium">
-                {behaviorConnected && geofenceConnected ? 'Live' : 'Connecting...'}
+                {behaviorConnected && geofenceConnected ? "Live" : "Connecting..."}
               </span>
             </div>
-            <Button variant="outline" size="sm" onClick={handleRefresh} className="w-full">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              className="w-full"
+            >
               <RefreshCw className="h-3 w-3 mr-1" />
               Refresh
             </Button>
@@ -291,60 +376,101 @@ export function DriverBehaviorTab() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Driver Scores & Events */}
         <div className="lg:col-span-2">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+          >
             <TabsList className="mb-4">
-              <TabsTrigger value="scores" className="gap-2">
+              <TabsTrigger
+                value="scores"
+                className="gap-2"
+              >
                 <Activity className="h-4 w-4" />
                 Driver Scores
               </TabsTrigger>
-              <TabsTrigger value="events" className="gap-2">
+              <TabsTrigger
+                value="events"
+                className="gap-2"
+              >
                 <AlertTriangle className="h-4 w-4" />
                 Behavior Events
                 {behaviorStats.critical > 0 && (
-                  <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                  <Badge
+                    variant="destructive"
+                    className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]"
+                  >
                     {behaviorStats.critical}
                   </Badge>
                 )}
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="scores" className="mt-0">
-              {behaviorLoading ? (
-                <div className="grid gap-4">
-                  {[1, 2, 3].map(i => (
-                    <Card key={i} className="h-48 animate-pulse bg-muted/50" />
-                  ))}
-                </div>
-              ) : driverScores.length > 0 ? (
-                <div className="grid gap-4">
-                  {driverScores.map((score, index) => (
-                    <DriverScoreCard key={score.driverId} score={score} rank={index + 1} />
-                  ))}
-                </div>
-              ) : (
-                <Card className="p-8 text-center">
-                  <Activity className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-                  <p className="font-medium">No Driver Data</p>
-                  <p className="text-sm text-muted-foreground">
-                    Driver behavior events will appear here as they're recorded
-                  </p>
-                </Card>
-              )}
+            <TabsContent
+              value="scores"
+              className="mt-0"
+            >
+              {behaviorLoading
+                ? (
+                    <div className="grid gap-4">
+                      {[
+                        1,
+                        2,
+                        3,
+                      ].map(i => (
+                        <Card
+                          key={i}
+                          className="h-48 animate-pulse bg-muted/50"
+                        />
+                      ))}
+                    </div>
+                  )
+                : driverScores.length > 0
+                  ? (
+                      <div className="grid gap-4">
+                        {driverScores.map((score, index) => (
+                          <DriverScoreCard
+                            key={score.driverId}
+                            score={score}
+                            rank={index + 1}
+                          />
+                        ))}
+                      </div>
+                    )
+                  : (
+                      <Card className="p-8 text-center">
+                        <Activity className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
+                        <p className="font-medium">No Driver Data</p>
+                        <p className="text-sm text-muted-foreground">
+                          Driver behavior events will appear here as they're recorded
+                        </p>
+                      </Card>
+                    )}
             </TabsContent>
 
-            <TabsContent value="events" className="mt-0">
+            <TabsContent
+              value="events"
+              className="mt-0"
+            >
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm">Recent Behavior Events</CardTitle>
                   <CardDescription>
-                    {behaviorStats.total} total events recorded
+                    {behaviorStats.total}
+                    {" "}
+                    total events recorded
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-[500px] pr-4">
                     <div className="space-y-2">
-                      {events.slice(0, 50).map(event => (
-                        <EventItem key={event.id} event={event} />
+                      {events.slice(
+                        0,
+                        50,
+                      ).map(event => (
+                        <EventItem
+                          key={event.id}
+                          event={event}
+                        />
                       ))}
                       {events.length === 0 && (
                         <div className="text-center py-8">
@@ -369,13 +495,20 @@ export function DriverBehaviorTab() {
                   <Shield className="h-4 w-4" />
                   Geofence Alerts
                   {unreadCount > 0 && (
-                    <Badge variant="destructive" className="h-5 min-w-[20px] p-0 flex items-center justify-center text-[10px]">
+                    <Badge
+                      variant="destructive"
+                      className="h-5 min-w-[20px] p-0 flex items-center justify-center text-[10px]"
+                    >
                       {unreadCount}
                     </Badge>
                   )}
                 </CardTitle>
                 {unreadCount > 0 && (
-                  <Button variant="ghost" size="sm" onClick={markAllRead}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={markAllRead}
+                  >
                     Mark read
                   </Button>
                 )}
@@ -387,19 +520,24 @@ export function DriverBehaviorTab() {
             <CardContent>
               <ScrollArea className="h-[550px] pr-4">
                 <div className="space-y-2">
-                  {alerts.length > 0 ? (
-                    alerts.map(alert => (
-                      <GeofenceAlertItem key={alert.id} alert={alert} />
-                    ))
-                  ) : (
-                    <div className="text-center py-8">
-                      <MapPin className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">No geofence alerts</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Alerts will appear when vehicles enter or exit zones
-                      </p>
-                    </div>
-                  )}
+                  {alerts.length > 0
+                    ? (
+                        alerts.map(alert => (
+                          <GeofenceAlertItem
+                            key={alert.id}
+                            alert={alert}
+                          />
+                        ))
+                      )
+                    : (
+                        <div className="text-center py-8">
+                          <MapPin className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">No geofence alerts</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Alerts will appear when vehicles enter or exit zones
+                          </p>
+                        </div>
+                      )}
                 </div>
               </ScrollArea>
             </CardContent>

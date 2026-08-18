@@ -1,13 +1,16 @@
-import { useForm } from "react-hook-form";
+import type { IoTDevice } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { IoTDevice } from "@/types";
+import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/shadcn/dialog";
 import {
   Form,
@@ -18,8 +21,6 @@ import {
   FormMessage,
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
-import { Button } from "@/components/shadcn/button";
-import { Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -27,27 +28,44 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { useEffect } from "react";
 
 const CUSTOM_VALUE = "__custom__";
 
 const deviceSchema = z
   .object({
-    deviceName: z.string().min(1, "Device name is required").max(60),
+    deviceName: z.string().min(
+      1,
+      "Device name is required",
+    ).max(60),
     imei: z
       .string()
-      .min(15, "IMEI must be 15 digits")
-      .max(15, "IMEI must be 15 digits")
-      .regex(/^\d+$/, "IMEI must contain only digits"),
-    manufacturer: z.string().min(1, "Manufacturer is required").max(50),
+      .min(
+        15,
+        "IMEI must be 15 digits",
+      )
+      .max(
+        15,
+        "IMEI must be 15 digits",
+      )
+      .regex(
+        /^\d+$/,
+        "IMEI must contain only digits",
+      ),
+    manufacturer: z.string().min(
+      1,
+      "Manufacturer is required",
+    ).max(50),
     customManufacturer: z.string().max(50).optional(),
-    model: z.string().min(1, "Model is required").max(50),
+    model: z.string().min(
+      1,
+      "Model is required",
+    ).max(50),
     firmwareVersion: z.string().max(50).optional(),
   })
   .refine(
-    (data) =>
-      data.manufacturer !== CUSTOM_VALUE ||
-      (data.customManufacturer && data.customManufacturer.trim().length > 0),
+    data =>
+      data.manufacturer !== CUSTOM_VALUE
+      || (data.customManufacturer && data.customManufacturer.trim().length > 0),
     {
       message: "Please enter a custom manufacturer",
       path: ["customManufacturer"],
@@ -56,14 +74,14 @@ const deviceSchema = z
 
 type DeviceFormData = z.infer<typeof deviceSchema>;
 
-interface DeviceFormDialogProps {
+type DeviceFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: Partial<IoTDevice>) => void;
   device?: IoTDevice | null;
   title: string;
   isSubmitting?: boolean;
-}
+};
 
 const manufacturers = [
   "Teltonika",
@@ -96,35 +114,43 @@ export function DeviceFormDialog({
     },
   });
 
-  useEffect(() => {
-    if (device) {
-      const isKnown = manufacturers.includes(device.manufacturer);
-      form.reset({
-        deviceName: (device as IoTDevice & { deviceName?: string }).deviceName ?? "",
-        imei: device.imei,
-        manufacturer: isKnown ? device.manufacturer : CUSTOM_VALUE,
-        customManufacturer: isKnown ? "" : device.manufacturer,
-        model: device.model,
-        firmwareVersion: device.firmwareVersion || "",
-      });
-    } else {
-      form.reset({
-        deviceName: "",
-        imei: "",
-        manufacturer: "",
-        customManufacturer: "",
-        model: "",
-        firmwareVersion: "",
-      });
-    }
-  }, [device, form, open]);
+  useEffect(
+    () => {
+      if (device) {
+        const isKnown = manufacturers.includes(device.manufacturer);
+        form.reset({
+          deviceName: (device as IoTDevice & { deviceName?: string }).deviceName ?? "",
+          imei: device.imei,
+          manufacturer: isKnown ? device.manufacturer : CUSTOM_VALUE,
+          customManufacturer: isKnown ? "" : device.manufacturer,
+          model: device.model,
+          firmwareVersion: device.firmwareVersion || "",
+        });
+      }
+      else {
+        form.reset({
+          deviceName: "",
+          imei: "",
+          manufacturer: "",
+          customManufacturer: "",
+          model: "",
+          firmwareVersion: "",
+        });
+      }
+    },
+    [
+      device,
+      form,
+      open,
+    ],
+  );
 
   const manufacturerValue = form.watch("manufacturer");
   const isEditing = Boolean(device);
 
   const handleSubmit = (data: DeviceFormData) => {
-    const resolvedManufacturer =
-      data.manufacturer === CUSTOM_VALUE
+    const resolvedManufacturer
+      = data.manufacturer === CUSTOM_VALUE
         ? (data.customManufacturer ?? "").trim()
         : data.manufacturer;
     const payload: Partial<IoTDevice> = {
@@ -143,7 +169,8 @@ export function DeviceFormDialog({
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!isSubmitting) onOpenChange(nextOpen);
+        if (!isSubmitting)
+          onOpenChange(nextOpen);
       }}
     >
       <DialogContent className="sm:max-w-[450px]">
@@ -155,7 +182,10 @@ export function DeviceFormDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="deviceName"
@@ -202,15 +232,24 @@ export function DeviceFormDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Manufacturer</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={isSubmitting}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select manufacturer" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {manufacturers.map((m) => (
-                        <SelectItem key={m} value={m}>{m}</SelectItem>
+                      {manufacturers.map(m => (
+                        <SelectItem
+                          key={m}
+                          value={m}
+                        >
+                          {m}
+                        </SelectItem>
                       ))}
                       <SelectItem value={CUSTOM_VALUE}>Custom…</SelectItem>
                     </SelectContent>
@@ -248,7 +287,11 @@ export function DeviceFormDialog({
                 <FormItem>
                   <FormLabel>Model</FormLabel>
                   <FormControl>
-                    <Input placeholder="FMC130" disabled={isSubmitting} {...field} />
+                    <Input
+                      placeholder="FMC130"
+                      disabled={isSubmitting}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -285,7 +328,10 @@ export function DeviceFormDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+              >
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSubmitting
                   ? device ? "Saving..." : "Registering..."

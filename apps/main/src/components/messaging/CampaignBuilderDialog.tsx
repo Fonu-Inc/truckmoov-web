@@ -1,46 +1,79 @@
-import { useState, useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/shadcn/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/shadcn/form";
-import { Input } from "@/components/shadcn/input";
-import { Textarea } from "@/components/shadcn/textarea";
-import { Button } from "@/components/shadcn/button";
-import { Badge } from "@/components/shadcn/badge";
-import { Checkbox } from "@/components/shadcn/checkbox";
-import { Card, CardContent } from "@/components/shadcn/card";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { mockDrivers } from "@/data/mockData";
-import { MessagePreview } from "./MessagePreview";
-import { FormattingToolbar } from "./FormattingToolbar";
-import { 
-  MessageSquare, Phone, Mail, Users, Send, Clock,
-  CheckCircle, Sparkles
+import {
+  CheckCircle, Clock, Mail, MessageSquare, Phone, Send,
+  Sparkles, Users,
 } from "lucide-react";
+import {
+  useEffect, useRef, useState,
+} from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent,
+} from "@/components/shadcn/card";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "@/components/shadcn/dialog";
+import {
+  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
+} from "@/components/shadcn/form";
+import { Input } from "@/components/shadcn/input";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Textarea } from "@/components/shadcn/textarea";
+import { mockDrivers } from "@/data/mockData";
+import { FormattingToolbar } from "./FormattingToolbar";
+import { MessagePreview } from "./MessagePreview";
 
 const campaignSchema = z.object({
-  name: z.string().min(3, "Campaign name required").max(100),
+  name: z.string().min(
+    3,
+    "Campaign name required",
+  ).max(100),
   subject: z.string().max(200).optional(),
-  message: z.string().min(10, "Message must be at least 10 characters").max(1000),
-  scheduleType: z.enum(["now", "scheduled"]),
+  message: z.string().min(
+    10,
+    "Message must be at least 10 characters",
+  ).max(1000),
+  scheduleType: z.enum([
+    "now",
+    "scheduled",
+  ]),
   scheduledDate: z.string().optional(),
 });
 
 type CampaignFormData = z.infer<typeof campaignSchema>;
 
-interface CampaignBuilderDialogProps {
+type CampaignBuilderDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: CampaignFormData & { channels: string[]; recipients: string[] }) => void;
-}
+  onSubmit: (data: CampaignFormData & {
+    channels: string[]; recipients: string[];
+  }) => void;
+};
 
-export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: CampaignBuilderDialogProps) {
-  const [step, setStep] = useState(1);
-  const [selectedChannels, setSelectedChannels] = useState<string[]>(["whatsapp"]);
-  const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
-  const [selectAll, setSelectAll] = useState(false);
+export function CampaignBuilderDialog({
+  open, onOpenChange, onSubmit,
+}: CampaignBuilderDialogProps) {
+  const [
+    step,
+    setStep,
+  ] = useState(1);
+  const [
+    selectedChannels,
+    setSelectedChannels,
+  ] = useState<string[]>(["whatsapp"]);
+  const [
+    selectedDrivers,
+    setSelectedDrivers,
+  ] = useState<string[]>([]);
+  const [
+    selectAll,
+    setSelectAll,
+  ] = useState(false);
 
   const form = useForm<CampaignFormData>({
     resolver: zodResolver(campaignSchema),
@@ -61,40 +94,72 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
     const textarea = textareaRef.current;
     if (!textarea) {
       const current = form.getValues("message");
-      form.setValue("message", current + text);
+      form.setValue(
+        "message",
+        current + text,
+      );
       return;
     }
-    
+
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const current = form.getValues("message");
-    const newValue = current.substring(0, start) + text + current.substring(end);
-    form.setValue("message", newValue);
-    
+    const newValue = current.substring(
+      0,
+      start,
+    ) + text + current.substring(end);
+    form.setValue(
+      "message",
+      newValue,
+    );
+
     // Restore cursor position
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + text.length, start + text.length);
-    }, 0);
+    setTimeout(
+      () => {
+        textarea.focus();
+        textarea.setSelectionRange(
+          start + text.length,
+          start + text.length,
+        );
+      },
+      0,
+    );
   };
 
   const wrapSelection = (prefix: string, suffix: string) => {
     const textarea = textareaRef.current;
-    if (!textarea) return;
-    
+    if (!textarea)
+      return;
+
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const current = form.getValues("message");
-    const selectedText = current.substring(start, end);
-    
+    const selectedText = current.substring(
+      start,
+      end,
+    );
+
     if (selectedText) {
-      const newValue = current.substring(0, start) + prefix + selectedText + suffix + current.substring(end);
-      form.setValue("message", newValue);
-      setTimeout(() => {
-        textarea.focus();
-        textarea.setSelectionRange(start + prefix.length, end + prefix.length);
-      }, 0);
-    } else {
+      const newValue = current.substring(
+        0,
+        start,
+      ) + prefix + selectedText + suffix + current.substring(end);
+      form.setValue(
+        "message",
+        newValue,
+      );
+      setTimeout(
+        () => {
+          textarea.focus();
+          textarea.setSelectionRange(
+            start + prefix.length,
+            end + prefix.length,
+          );
+        },
+        0,
+      );
+    }
+    else {
       // No selection, insert placeholder
       const placeholder = `${prefix}text${suffix}`;
       insertAtCursor(placeholder);
@@ -104,22 +169,36 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
   const handleFormat = (type: string, value?: string) => {
     switch (type) {
       case "bold":
-        wrapSelection("*", "*");
+        wrapSelection(
+          "*",
+          "*",
+        );
         break;
       case "italic":
-        wrapSelection("_", "_");
+        wrapSelection(
+          "_",
+          "_",
+        );
         break;
       case "strikethrough":
-        wrapSelection("~", "~");
+        wrapSelection(
+          "~",
+          "~",
+        );
         break;
       case "code":
-        wrapSelection("`", "`");
+        wrapSelection(
+          "`",
+          "`",
+        );
         break;
       case "link":
-        if (value) insertAtCursor(value);
+        if (value)
+          insertAtCursor(value);
         break;
       case "image":
-        if (value) insertAtCursor(`[Image: ${value}]`);
+        if (value)
+          insertAtCursor(`[Image: ${value}]`);
         break;
     }
   };
@@ -128,33 +207,48 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
     insertAtCursor(emoji);
   };
 
-  useEffect(() => {
-    if (!open) {
-      setStep(1);
-      setSelectedChannels(["whatsapp"]);
-      setSelectedDrivers([]);
-      setSelectAll(false);
-      form.reset();
-    }
-  }, [open, form]);
+  useEffect(
+    () => {
+      if (!open) {
+        setStep(1);
+        setSelectedChannels(["whatsapp"]);
+        setSelectedDrivers([]);
+        setSelectAll(false);
+        form.reset();
+      }
+    },
+    [
+      open,
+      form,
+    ],
+  );
 
   const toggleChannel = (channel: string) => {
-    setSelectedChannels((prev) =>
-      prev.includes(channel) ? prev.filter((c) => c !== channel) : [...prev, channel]
-    );
+    setSelectedChannels(prev =>
+      prev.includes(channel)
+        ? prev.filter(c => c !== channel)
+        : [
+            ...prev,
+            channel,
+          ]);
   };
 
   const toggleDriver = (driverId: string) => {
-    setSelectedDrivers((prev) =>
-      prev.includes(driverId) ? prev.filter((d) => d !== driverId) : [...prev, driverId]
-    );
+    setSelectedDrivers(prev =>
+      prev.includes(driverId)
+        ? prev.filter(d => d !== driverId)
+        : [
+            ...prev,
+            driverId,
+          ]);
   };
 
   const handleSelectAll = (checked: boolean) => {
     setSelectAll(checked);
     if (checked) {
-      setSelectedDrivers(mockDrivers.map((d) => d.id));
-    } else {
+      setSelectedDrivers(mockDrivers.map(d => d.id));
+    }
+    else {
       setSelectedDrivers([]);
     }
   };
@@ -169,19 +263,34 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
   };
 
   const channelOptions = [
-    { id: "whatsapp", label: "WhatsApp", icon: WhatsAppIcon, color: "text-success" },
-    { id: "sms", label: "SMS", icon: MessageSquare, color: "text-primary" },
-    { id: "email", label: "Email", icon: Mail, color: "text-warning" },
+    {
+      id: "whatsapp", label: "WhatsApp", icon: WhatsAppIcon, color: "text-success",
+    },
+    {
+      id: "sms", label: "SMS", icon: MessageSquare, color: "text-primary",
+    },
+    {
+      id: "email", label: "Email", icon: Mail, color: "text-warning",
+    },
   ];
 
   const messageTemplates = [
-    { id: 1, name: "Job Assignment", content: "Hi {name}, you have been assigned a new job. Check your dashboard for details." },
-    { id: 2, name: "Reminder", content: "Reminder: Your delivery is scheduled for today. Please confirm your availability." },
-    { id: 3, name: "Safety Alert", content: "Safety notice: Please be aware of weather conditions in your area today." },
+    {
+      id: 1, name: "Job Assignment", content: "Hi {name}, you have been assigned a new job. Check your dashboard for details.",
+    },
+    {
+      id: 2, name: "Reminder", content: "Reminder: Your delivery is scheduled for today. Please confirm your availability.",
+    },
+    {
+      id: 3, name: "Safety Alert", content: "Safety notice: Please be aware of weather conditions in your area today.",
+    },
   ];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-hidden bg-card border-border">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -189,12 +298,22 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
             Campaign Builder
           </DialogTitle>
           <DialogDescription>
-            Step {step} of 3: {step === 1 ? "Select Channels & Recipients" : step === 2 ? "Compose Message" : "Review & Send"}
+            Step
+            {" "}
+            {step}
+            {" "}
+            of 3:
+            {" "}
+            {step === 1 ? "Select Channels & Recipients" : step === 2 ? "Compose Message" : "Review & Send"}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex gap-2 mb-4">
-          {[1, 2, 3].map((s) => (
+          {[
+            1,
+            2,
+            3,
+          ].map(s => (
             <div
               key={s}
               className={`flex-1 h-1 rounded-full ${s <= step ? "bg-primary" : "bg-muted"}`}
@@ -214,7 +333,10 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
                     <FormItem>
                       <FormLabel>Campaign Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Weekly Driver Update" {...field} />
+                        <Input
+                          placeholder="Weekly Driver Update"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -224,7 +346,7 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
                 <div>
                   <FormLabel className="mb-3 block">Select Channels</FormLabel>
                   <div className="flex gap-3">
-                    {channelOptions.map((channel) => (
+                    {channelOptions.map(channel => (
                       <Card
                         key={channel.id}
                         className={`flex-1 cursor-pointer transition-all ${
@@ -255,14 +377,19 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
                         onCheckedChange={handleSelectAll}
                         id="select-all"
                       />
-                      <label htmlFor="select-all" className="text-sm cursor-pointer">
-                        Select All ({mockDrivers.length})
+                      <label
+                        htmlFor="select-all"
+                        className="text-sm cursor-pointer"
+                      >
+                        Select All (
+                        {mockDrivers.length}
+                        )
                       </label>
                     </div>
                   </div>
                   <ScrollArea className="h-[200px] border rounded-lg p-2">
                     <div className="space-y-2">
-                      {mockDrivers.map((driver) => (
+                      {mockDrivers.map(driver => (
                         <div
                           key={driver.id}
                           className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
@@ -277,13 +404,16 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
                             onCheckedChange={() => toggleDriver(driver.id)}
                           />
                           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xs font-medium text-primary-foreground">
-                            {driver.name.split(" ").map((n) => n[0]).join("")}
+                            {driver.name.split(" ").map(n => n[0]).join("")}
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium">{driver.name}</p>
                             <p className="text-xs text-muted-foreground">{driver.phone}</p>
                           </div>
-                          <Badge variant="outline" className="text-xs capitalize">
+                          <Badge
+                            variant="outline"
+                            className="text-xs capitalize"
+                          >
                             {driver.communicationPreference}
                           </Badge>
                         </div>
@@ -291,7 +421,9 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
                     </div>
                   </ScrollArea>
                   <p className="text-xs text-muted-foreground mt-2">
-                    {selectedDrivers.length} recipient(s) selected
+                    {selectedDrivers.length}
+                    {" "}
+                    recipient(s) selected
                   </p>
                 </div>
               </div>
@@ -310,7 +442,10 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
                         <FormItem>
                           <FormLabel>Email Subject</FormLabel>
                           <FormControl>
-                            <Input placeholder="Important update from FleetPro" {...field} />
+                            <Input
+                              placeholder="Important update from FleetPro"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -321,12 +456,15 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
                   <div>
                     <FormLabel className="mb-2 block">Quick Templates</FormLabel>
                     <div className="flex gap-2 flex-wrap">
-                      {messageTemplates.map((template) => (
+                      {messageTemplates.map(template => (
                         <Badge
                           key={template.id}
                           variant="outline"
                           className="cursor-pointer hover:bg-primary/10"
-                          onClick={() => form.setValue("message", template.content)}
+                          onClick={() => form.setValue(
+                            "message",
+                            template.content,
+                          )}
                         >
                           {template.name}
                         </Badge>
@@ -359,7 +497,14 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
                         </FormControl>
                         <div className="flex items-center justify-between mt-1">
                           <p className="text-xs text-muted-foreground">
-                            Variables: {"{name}"}, {"{phone}"} • Formatting: *bold* _italic_ ~strike~ `code`
+                            Variables:
+                            {" "}
+                            {"{name}"}
+                            ,
+                            {" "}
+                            {"{phone}"}
+                            {" "}
+                            • Formatting: *bold* _italic_ ~strike~ `code`
                           </p>
                         </div>
                         <FormMessage />
@@ -419,7 +564,10 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
                         <FormItem>
                           <FormLabel>Schedule Date & Time</FormLabel>
                           <FormControl>
-                            <Input type="datetime-local" {...field} />
+                            <Input
+                              type="datetime-local"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -452,8 +600,12 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Channels</span>
                         <div className="flex gap-2">
-                          {selectedChannels.map((ch) => (
-                            <Badge key={ch} variant="outline" className="capitalize">
+                          {selectedChannels.map(ch => (
+                            <Badge
+                              key={ch}
+                              variant="outline"
+                              className="capitalize"
+                            >
                               {ch}
                             </Badge>
                           ))}
@@ -461,7 +613,11 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Recipients</span>
-                        <span className="font-medium">{selectedDrivers.length} drivers</span>
+                        <span className="font-medium">
+                          {selectedDrivers.length}
+                          {" "}
+                          drivers
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Timing</span>
@@ -475,8 +631,16 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
                     <Users className="h-5 w-5 text-primary" />
                     <p className="text-sm">
-                      This campaign will send <strong>{selectedChannels.length * selectedDrivers.length}</strong> messages
-                      across {selectedChannels.length} channel(s)
+                      This campaign will send
+                      {" "}
+                      <strong>{selectedChannels.length * selectedDrivers.length}</strong>
+                      {" "}
+                      messages
+                      across
+                      {" "}
+                      {selectedChannels.length}
+                      {" "}
+                      channel(s)
                     </p>
                   </div>
                 </div>
@@ -501,24 +665,29 @@ export function CampaignBuilderDialog({ open, onOpenChange, onSubmit }: Campaign
               >
                 {step === 1 ? "Cancel" : "Back"}
               </Button>
-              {step < 3 ? (
-                <Button
-                  type="button"
-                  variant="gradient"
-                  onClick={() => setStep(step + 1)}
-                  disabled={
-                    (step === 1 && (selectedChannels.length === 0 || selectedDrivers.length === 0 || !form.getValues("name"))) ||
-                    (step === 2 && !form.getValues("message"))
-                  }
-                >
-                  Continue
-                </Button>
-              ) : (
-                <Button type="submit" variant="gradient">
-                  <Send className="h-4 w-4 mr-2" />
-                  Launch Campaign
-                </Button>
-              )}
+              {step < 3
+                ? (
+                    <Button
+                      type="button"
+                      variant="gradient"
+                      onClick={() => setStep(step + 1)}
+                      disabled={
+                        (step === 1 && (selectedChannels.length === 0 || selectedDrivers.length === 0 || !form.getValues("name")))
+                        || (step === 2 && !form.getValues("message"))
+                      }
+                    >
+                      Continue
+                    </Button>
+                  )
+                : (
+                    <Button
+                      type="submit"
+                      variant="gradient"
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Launch Campaign
+                    </Button>
+                  )}
             </div>
           </form>
         </Form>

@@ -1,13 +1,49 @@
+import {
+  Activity,
+  AlertTriangle,
+  Brain,
+  CheckCircle2,
+  Cpu,
+  CreditCard,
+  Eye,
+  EyeOff,
+  Globe,
+  Loader2,
+  Mail,
+  Map,
+  MessageSquare,
+  RefreshCw,
+  Router,
+  Send,
+  Signal,
+  Sparkles,
+  TestTube,
+  Wifi,
+  XCircle,
+  Zap,
+} from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { toast } from "sonner";
+import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
+import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Switch } from "@/components/shadcn/switch";
-import { Badge } from "@/components/shadcn/badge";
-import { Separator } from "@/components/shadcn/separator";
 import { Progress } from "@/components/shadcn/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import {
   Select,
   SelectContent,
@@ -15,55 +51,47 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { Separator } from "@/components/shadcn/separator";
+import { Switch } from "@/components/shadcn/switch";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/shadcn/dialog";
-import {
-  MessageSquare,
-  Mail,
-  Zap,
-  CreditCard,
-  Brain,
-  Map,
-  Router,
-  RefreshCw,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Loader2,
-  Eye,
-  EyeOff,
-  Activity,
-  Send,
-  TestTube,
-  Sparkles,
-  Globe,
-  Cpu,
-  Signal,
-  Wifi,
-} from "lucide-react";
-import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
-import { toast } from "sonner";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/shadcn/tabs";
 
-interface IntegrationStatus {
+type IntegrationStatus = {
   connected: boolean;
   lastChecked: Date;
   status: "connected" | "disconnected" | "error" | "degraded";
-}
+};
 
 export function IntegrationSettings() {
-  const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
-  const [testingIntegration, setTestingIntegration] = useState<string | null>(null);
-  const [testDialogOpen, setTestDialogOpen] = useState(false);
-  const [testRecipient, setTestRecipient] = useState("");
-  const [activeTestType, setActiveTestType] = useState<string>("");
+  const [
+    showSecrets,
+    setShowSecrets,
+  ] = useState<Record<string, boolean>>({});
+  const [
+    testingIntegration,
+    setTestingIntegration,
+  ] = useState<string | null>(null);
+  const [
+    testDialogOpen,
+    setTestDialogOpen,
+  ] = useState(false);
+  const [
+    testRecipient,
+    setTestRecipient,
+  ] = useState("");
+  const [
+    activeTestType,
+    setActiveTestType,
+  ] = useState<string>("");
 
-  const [integrations, setIntegrations] = useState({
+  const [
+    integrations,
+    setIntegrations,
+  ] = useState({
     whatsapp: {
       enabled: true,
       phoneNumberId: "1234567890123456",
@@ -139,11 +167,14 @@ export function IntegrationSettings() {
   });
 
   const toggleSecret = (key: string) => {
-    setShowSecrets(prev => ({ ...prev, [key]: !prev[key] }));
+    setShowSecrets(prev => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
   };
 
   const handleTestIntegration = async (_type: string, _recipient?: string) => {
-    toast.info('Coming soon');
+    toast.info("Coming soon");
     setTestingIntegration(null);
     setTestDialogOpen(false);
     setTestRecipient("");
@@ -181,7 +212,10 @@ export function IntegrationSettings() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="messaging" className="space-y-6">
+      <Tabs
+        defaultValue="messaging"
+        className="space-y-6"
+      >
         <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="messaging">Messaging</TabsTrigger>
           <TabsTrigger value="ai">AI & LLM</TabsTrigger>
@@ -190,7 +224,10 @@ export function IntegrationSettings() {
         </TabsList>
 
         {/* Messaging Integrations */}
-        <TabsContent value="messaging" className="space-y-6">
+        <TabsContent
+          value="messaging"
+          className="space-y-6"
+        >
           <div className="grid gap-6 md:grid-cols-2">
             {/* WhatsApp */}
             <Card>
@@ -202,9 +239,14 @@ export function IntegrationSettings() {
                   </CardTitle>
                   <Switch
                     checked={integrations.whatsapp.enabled}
-                    onCheckedChange={(checked) =>
-                      setIntegrations(prev => ({ ...prev, whatsapp: { ...prev.whatsapp, enabled: checked } }))
-                    }
+                    onCheckedChange={checked =>
+                      setIntegrations(prev => ({
+                        ...prev,
+                        whatsapp: {
+                          ...prev.whatsapp,
+                          enabled: checked,
+                        },
+                      }))}
                   />
                 </div>
                 <CardDescription>Meta Cloud API for business messaging</CardDescription>
@@ -221,12 +263,21 @@ export function IntegrationSettings() {
                       <Input
                         type={showSecrets.whatsappPhone ? "text" : "password"}
                         value={integrations.whatsapp.phoneNumberId}
-                        onChange={(e) =>
-                          setIntegrations(prev => ({ ...prev, whatsapp: { ...prev.whatsapp, phoneNumberId: e.target.value } }))
-                        }
+                        onChange={e =>
+                          setIntegrations(prev => ({
+                            ...prev,
+                            whatsapp: {
+                              ...prev.whatsapp,
+                              phoneNumberId: e.target.value,
+                            },
+                          }))}
                         className="flex-1"
                       />
-                      <Button variant="ghost" size="icon" onClick={() => toggleSecret("whatsappPhone")}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleSecret("whatsappPhone")}
+                      >
                         {showSecrets.whatsappPhone ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
@@ -237,12 +288,21 @@ export function IntegrationSettings() {
                       <Input
                         type={showSecrets.whatsappToken ? "text" : "password"}
                         value={integrations.whatsapp.accessToken}
-                        onChange={(e) =>
-                          setIntegrations(prev => ({ ...prev, whatsapp: { ...prev.whatsapp, accessToken: e.target.value } }))
-                        }
+                        onChange={e =>
+                          setIntegrations(prev => ({
+                            ...prev,
+                            whatsapp: {
+                              ...prev.whatsapp,
+                              accessToken: e.target.value,
+                            },
+                          }))}
                         className="flex-1"
                       />
-                      <Button variant="ghost" size="icon" onClick={() => toggleSecret("whatsappToken")}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleSecret("whatsappToken")}
+                      >
                         {showSecrets.whatsappToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
@@ -252,9 +312,18 @@ export function IntegrationSettings() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Messages this month</span>
-                    <span className="font-medium">{integrations.whatsapp.messagesThisMonth.toLocaleString()} / {integrations.whatsapp.messageLimit.toLocaleString()}</span>
+                    <span className="font-medium">
+                      {integrations.whatsapp.messagesThisMonth.toLocaleString()}
+                      {" "}
+                      /
+                      {" "}
+                      {integrations.whatsapp.messageLimit.toLocaleString()}
+                    </span>
                   </div>
-                  <Progress value={(integrations.whatsapp.messagesThisMonth / integrations.whatsapp.messageLimit) * 100} className="h-2" />
+                  <Progress
+                    value={(integrations.whatsapp.messagesThisMonth / integrations.whatsapp.messageLimit) * 100}
+                    className="h-2"
+                  />
                 </div>
                 <Button
                   variant="outline"
@@ -262,11 +331,13 @@ export function IntegrationSettings() {
                   onClick={() => handleTestIntegration("whatsapp")}
                   disabled={testingIntegration === "whatsapp"}
                 >
-                  {testingIntegration === "whatsapp" ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <TestTube className="h-4 w-4 mr-2" />
-                  )}
+                  {testingIntegration === "whatsapp"
+                    ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      )
+                    : (
+                        <TestTube className="h-4 w-4 mr-2" />
+                      )}
                   Test Connection
                 </Button>
               </CardContent>
@@ -282,9 +353,14 @@ export function IntegrationSettings() {
                   </CardTitle>
                   <Switch
                     checked={integrations.email.enabled}
-                    onCheckedChange={(checked) =>
-                      setIntegrations(prev => ({ ...prev, email: { ...prev.email, enabled: checked } }))
-                    }
+                    onCheckedChange={checked =>
+                      setIntegrations(prev => ({
+                        ...prev,
+                        email: {
+                          ...prev.email,
+                          enabled: checked,
+                        },
+                      }))}
                   />
                 </div>
                 <CardDescription>Transactional and notification emails</CardDescription>
@@ -301,12 +377,21 @@ export function IntegrationSettings() {
                       <Input
                         type={showSecrets.emailKey ? "text" : "password"}
                         value={integrations.email.apiKey}
-                        onChange={(e) =>
-                          setIntegrations(prev => ({ ...prev, email: { ...prev.email, apiKey: e.target.value } }))
-                        }
+                        onChange={e =>
+                          setIntegrations(prev => ({
+                            ...prev,
+                            email: {
+                              ...prev.email,
+                              apiKey: e.target.value,
+                            },
+                          }))}
                         className="flex-1"
                       />
-                      <Button variant="ghost" size="icon" onClick={() => toggleSecret("emailKey")}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleSecret("emailKey")}
+                      >
                         {showSecrets.emailKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
@@ -316,25 +401,37 @@ export function IntegrationSettings() {
                       <Label>From Email</Label>
                       <Input
                         value={integrations.email.fromEmail}
-                        onChange={(e) =>
-                          setIntegrations(prev => ({ ...prev, email: { ...prev.email, fromEmail: e.target.value } }))
-                        }
+                        onChange={e =>
+                          setIntegrations(prev => ({
+                            ...prev,
+                            email: {
+                              ...prev.email,
+                              fromEmail: e.target.value,
+                            },
+                          }))}
                       />
                     </div>
                     <div className="space-y-2">
                       <Label>From Name</Label>
                       <Input
                         value={integrations.email.fromName}
-                        onChange={(e) =>
-                          setIntegrations(prev => ({ ...prev, email: { ...prev.email, fromName: e.target.value } }))
-                        }
+                        onChange={e =>
+                          setIntegrations(prev => ({
+                            ...prev,
+                            email: {
+                              ...prev.email,
+                              fromName: e.target.value,
+                            },
+                          }))}
                       />
                     </div>
                   </div>
                 </div>
                 <Separator />
                 <div className="text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">{integrations.email.emailsThisMonth.toLocaleString()}</span> emails sent this month
+                  <span className="font-medium text-foreground">{integrations.email.emailsThisMonth.toLocaleString()}</span>
+                  {" "}
+                  emails sent this month
                 </div>
                 <Button
                   variant="outline"
@@ -342,11 +439,13 @@ export function IntegrationSettings() {
                   onClick={() => openTestDialog("email")}
                   disabled={testingIntegration === "email"}
                 >
-                  {testingIntegration === "email" ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4 mr-2" />
-                  )}
+                  {testingIntegration === "email"
+                    ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      )
+                    : (
+                        <Send className="h-4 w-4 mr-2" />
+                      )}
                   Send Test Email
                 </Button>
               </CardContent>
@@ -362,9 +461,14 @@ export function IntegrationSettings() {
                   </CardTitle>
                   <Switch
                     checked={integrations.sms.enabled}
-                    onCheckedChange={(checked) =>
-                      setIntegrations(prev => ({ ...prev, sms: { ...prev.sms, enabled: checked } }))
-                    }
+                    onCheckedChange={checked =>
+                      setIntegrations(prev => ({
+                        ...prev,
+                        sms: {
+                          ...prev.sms,
+                          enabled: checked,
+                        },
+                      }))}
                   />
                 </div>
                 <CardDescription>SMS alerts and driver notifications</CardDescription>
@@ -374,7 +478,8 @@ export function IntegrationSettings() {
                   {getStatusBadge(integrations.sms.status)}
                   {getStatusIcon(integrations.sms.status)}
                   <span className="text-xs text-muted-foreground">
-                    {integrations.sms.deliveryRate}% delivery rate
+                    {integrations.sms.deliveryRate}
+                    % delivery rate
                   </span>
                 </div>
                 <div className="space-y-3">
@@ -384,12 +489,21 @@ export function IntegrationSettings() {
                       <Input
                         type={showSecrets.smsSid ? "text" : "password"}
                         value={integrations.sms.accountSid}
-                        onChange={(e) =>
-                          setIntegrations(prev => ({ ...prev, sms: { ...prev.sms, accountSid: e.target.value } }))
-                        }
+                        onChange={e =>
+                          setIntegrations(prev => ({
+                            ...prev,
+                            sms: {
+                              ...prev.sms,
+                              accountSid: e.target.value,
+                            },
+                          }))}
                         className="flex-1"
                       />
-                      <Button variant="ghost" size="icon" onClick={() => toggleSecret("smsSid")}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleSecret("smsSid")}
+                      >
                         {showSecrets.smsSid ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
@@ -400,12 +514,21 @@ export function IntegrationSettings() {
                       <Input
                         type={showSecrets.smsToken ? "text" : "password"}
                         value={integrations.sms.authToken}
-                        onChange={(e) =>
-                          setIntegrations(prev => ({ ...prev, sms: { ...prev.sms, authToken: e.target.value } }))
-                        }
+                        onChange={e =>
+                          setIntegrations(prev => ({
+                            ...prev,
+                            sms: {
+                              ...prev.sms,
+                              authToken: e.target.value,
+                            },
+                          }))}
                         className="flex-1"
                       />
-                      <Button variant="ghost" size="icon" onClick={() => toggleSecret("smsToken")}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleSecret("smsToken")}
+                      >
                         {showSecrets.smsToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
@@ -414,15 +537,22 @@ export function IntegrationSettings() {
                     <Label>From Number</Label>
                     <Input
                       value={integrations.sms.fromNumber}
-                      onChange={(e) =>
-                        setIntegrations(prev => ({ ...prev, sms: { ...prev.sms, fromNumber: e.target.value } }))
-                      }
+                      onChange={e =>
+                        setIntegrations(prev => ({
+                          ...prev,
+                          sms: {
+                            ...prev.sms,
+                            fromNumber: e.target.value,
+                          },
+                        }))}
                     />
                   </div>
                 </div>
                 <Separator />
                 <div className="text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">{integrations.sms.smsThisMonth.toLocaleString()}</span> SMS sent this month
+                  <span className="font-medium text-foreground">{integrations.sms.smsThisMonth.toLocaleString()}</span>
+                  {" "}
+                  SMS sent this month
                 </div>
                 <Button
                   variant="outline"
@@ -430,11 +560,13 @@ export function IntegrationSettings() {
                   onClick={() => openTestDialog("sms")}
                   disabled={testingIntegration === "sms"}
                 >
-                  {testingIntegration === "sms" ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                  )}
+                  {testingIntegration === "sms"
+                    ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      )
+                    : (
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                      )}
                   Send Test SMS
                 </Button>
               </CardContent>
@@ -443,7 +575,10 @@ export function IntegrationSettings() {
         </TabsContent>
 
         {/* AI & LLM */}
-        <TabsContent value="ai" className="space-y-6">
+        <TabsContent
+          value="ai"
+          className="space-y-6"
+        >
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -458,9 +593,14 @@ export function IntegrationSettings() {
                 </div>
                 <Switch
                   checked={integrations.llm.enabled}
-                  onCheckedChange={(checked) =>
-                    setIntegrations(prev => ({ ...prev, llm: { ...prev.llm, enabled: checked } }))
-                  }
+                  onCheckedChange={checked =>
+                    setIntegrations(prev => ({
+                      ...prev,
+                      llm: {
+                        ...prev.llm,
+                        enabled: checked,
+                      },
+                    }))}
                 />
               </div>
             </CardHeader>
@@ -468,7 +608,10 @@ export function IntegrationSettings() {
               <div className="flex items-center gap-3">
                 {getStatusBadge(integrations.llm.status)}
                 {getStatusIcon(integrations.llm.status)}
-                <Badge variant="outline" className="gap-1">
+                <Badge
+                  variant="outline"
+                  className="gap-1"
+                >
                   <Sparkles className="h-3 w-3" />
                   Lovable AI
                 </Badge>
@@ -480,9 +623,14 @@ export function IntegrationSettings() {
                     <Label>AI Model</Label>
                     <Select
                       value={integrations.llm.model}
-                      onValueChange={(value) =>
-                        setIntegrations(prev => ({ ...prev, llm: { ...prev.llm, model: value } }))
-                      }
+                      onValueChange={value =>
+                        setIntegrations(prev => ({
+                          ...prev,
+                          llm: {
+                            ...prev.llm,
+                            model: value,
+                          },
+                        }))}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -528,7 +676,10 @@ export function IntegrationSettings() {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Tokens Used</span>
                       <span className="font-medium">
-                        {(integrations.llm.tokensUsed / 1000000).toFixed(2)}M / {(integrations.llm.tokenLimit / 1000000).toFixed(0)}M
+                        {(integrations.llm.tokensUsed / 1000000).toFixed(2)}
+                        M /
+                        {(integrations.llm.tokenLimit / 1000000).toFixed(0)}
+                        M
                       </span>
                     </div>
                     <Progress
@@ -556,11 +707,13 @@ export function IntegrationSettings() {
                 onClick={() => handleTestIntegration("llm")}
                 disabled={testingIntegration === "llm"}
               >
-                {testingIntegration === "llm" ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <TestTube className="h-4 w-4 mr-2" />
-                )}
+                {testingIntegration === "llm"
+                  ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    )
+                  : (
+                      <TestTube className="h-4 w-4 mr-2" />
+                    )}
                 Test AI Integration
               </Button>
             </CardContent>
@@ -568,7 +721,10 @@ export function IntegrationSettings() {
         </TabsContent>
 
         {/* Maps & IoT */}
-        <TabsContent value="maps" className="space-y-6">
+        <TabsContent
+          value="maps"
+          className="space-y-6"
+        >
           <div className="grid gap-6 md:grid-cols-2">
             {/* Mapbox */}
             <Card>
@@ -580,9 +736,14 @@ export function IntegrationSettings() {
                   </CardTitle>
                   <Switch
                     checked={integrations.map.enabled}
-                    onCheckedChange={(checked) =>
-                      setIntegrations(prev => ({ ...prev, map: { ...prev.map, enabled: checked } }))
-                    }
+                    onCheckedChange={checked =>
+                      setIntegrations(prev => ({
+                        ...prev,
+                        map: {
+                          ...prev.map,
+                          enabled: checked,
+                        },
+                      }))}
                   />
                 </div>
                 <CardDescription>Interactive maps and route visualization</CardDescription>
@@ -599,12 +760,21 @@ export function IntegrationSettings() {
                       <Input
                         type={showSecrets.mapToken ? "text" : "password"}
                         value={integrations.map.publicToken}
-                        onChange={(e) =>
-                          setIntegrations(prev => ({ ...prev, map: { ...prev.map, publicToken: e.target.value } }))
-                        }
+                        onChange={e =>
+                          setIntegrations(prev => ({
+                            ...prev,
+                            map: {
+                              ...prev.map,
+                              publicToken: e.target.value,
+                            },
+                          }))}
                         className="flex-1"
                       />
-                      <Button variant="ghost" size="icon" onClick={() => toggleSecret("mapToken")}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleSecret("mapToken")}
+                      >
                         {showSecrets.mapToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
@@ -613,9 +783,14 @@ export function IntegrationSettings() {
                     <Label>Map Style</Label>
                     <Select
                       value={integrations.map.style}
-                      onValueChange={(value) =>
-                        setIntegrations(prev => ({ ...prev, map: { ...prev.map, style: value } }))
-                      }
+                      onValueChange={value =>
+                        setIntegrations(prev => ({
+                          ...prev,
+                          map: {
+                            ...prev.map,
+                            style: value,
+                          },
+                        }))}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -634,7 +809,10 @@ export function IntegrationSettings() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">API Requests</span>
                     <span className="font-medium">
-                      {integrations.map.requestsThisMonth.toLocaleString()} / {integrations.map.requestLimit.toLocaleString()}
+                      {integrations.map.requestsThisMonth.toLocaleString()}
+                      {" "}
+                      /
+                      {integrations.map.requestLimit.toLocaleString()}
                     </span>
                   </div>
                   <Progress
@@ -648,11 +826,13 @@ export function IntegrationSettings() {
                   onClick={() => handleTestIntegration("map")}
                   disabled={testingIntegration === "map"}
                 >
-                  {testingIntegration === "map" ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Globe className="h-4 w-4 mr-2" />
-                  )}
+                  {testingIntegration === "map"
+                    ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      )
+                    : (
+                        <Globe className="h-4 w-4 mr-2" />
+                      )}
                   Test Route API
                 </Button>
               </CardContent>
@@ -668,9 +848,14 @@ export function IntegrationSettings() {
                   </CardTitle>
                   <Switch
                     checked={integrations.iot.enabled}
-                    onCheckedChange={(checked) =>
-                      setIntegrations(prev => ({ ...prev, iot: { ...prev.iot, enabled: checked } }))
-                    }
+                    onCheckedChange={checked =>
+                      setIntegrations(prev => ({
+                        ...prev,
+                        iot: {
+                          ...prev.iot,
+                          enabled: checked,
+                        },
+                      }))}
                   />
                 </div>
                 <CardDescription>MQTT broker for GPS trackers and sensors</CardDescription>
@@ -679,9 +864,14 @@ export function IntegrationSettings() {
                 <div className="flex items-center gap-2">
                   {getStatusBadge(integrations.iot.status)}
                   {getStatusIcon(integrations.iot.status)}
-                  <Badge variant="outline" className="gap-1">
+                  <Badge
+                    variant="outline"
+                    className="gap-1"
+                  >
                     <Signal className="h-3 w-3" />
-                    {integrations.iot.connectedDevices} devices
+                    {integrations.iot.connectedDevices}
+                    {" "}
+                    devices
                   </Badge>
                 </div>
                 <div className="space-y-3">
@@ -689,9 +879,14 @@ export function IntegrationSettings() {
                     <Label>MQTT Broker URL</Label>
                     <Input
                       value={integrations.iot.brokerUrl}
-                      onChange={(e) =>
-                        setIntegrations(prev => ({ ...prev, iot: { ...prev.iot, brokerUrl: e.target.value } }))
-                      }
+                      onChange={e =>
+                        setIntegrations(prev => ({
+                          ...prev,
+                          iot: {
+                            ...prev.iot,
+                            brokerUrl: e.target.value,
+                          },
+                        }))}
                     />
                   </div>
                   <div className="grid gap-2 grid-cols-2">
@@ -699,9 +894,14 @@ export function IntegrationSettings() {
                       <Label>Username</Label>
                       <Input
                         value={integrations.iot.username}
-                        onChange={(e) =>
-                          setIntegrations(prev => ({ ...prev, iot: { ...prev.iot, username: e.target.value } }))
-                        }
+                        onChange={e =>
+                          setIntegrations(prev => ({
+                            ...prev,
+                            iot: {
+                              ...prev.iot,
+                              username: e.target.value,
+                            },
+                          }))}
                       />
                     </div>
                     <div className="space-y-2">
@@ -710,12 +910,21 @@ export function IntegrationSettings() {
                         <Input
                           type={showSecrets.iotPassword ? "text" : "password"}
                           value={integrations.iot.password}
-                          onChange={(e) =>
-                            setIntegrations(prev => ({ ...prev, iot: { ...prev.iot, password: e.target.value } }))
-                          }
+                          onChange={e =>
+                            setIntegrations(prev => ({
+                              ...prev,
+                              iot: {
+                                ...prev.iot,
+                                password: e.target.value,
+                              },
+                            }))}
                           className="flex-1"
                         />
-                        <Button variant="ghost" size="icon" onClick={() => toggleSecret("iotPassword")}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => toggleSecret("iotPassword")}
+                        >
                           {showSecrets.iotPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </Button>
                       </div>
@@ -731,7 +940,10 @@ export function IntegrationSettings() {
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30 text-center">
                     <Activity className="h-5 w-5 mx-auto mb-1 text-primary" />
-                    <p className="text-lg font-bold">{(integrations.iot.messagesPerDay / 1000).toFixed(0)}K</p>
+                    <p className="text-lg font-bold">
+                      {(integrations.iot.messagesPerDay / 1000).toFixed(0)}
+                      K
+                    </p>
                     <p className="text-xs text-muted-foreground">Msgs/day</p>
                   </div>
                 </div>
@@ -741,11 +953,13 @@ export function IntegrationSettings() {
                   onClick={() => handleTestIntegration("iot")}
                   disabled={testingIntegration === "iot"}
                 >
-                  {testingIntegration === "iot" ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                  )}
+                  {testingIntegration === "iot"
+                    ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      )
+                    : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
                   Test Gateway Connection
                 </Button>
               </CardContent>
@@ -754,7 +968,10 @@ export function IntegrationSettings() {
         </TabsContent>
 
         {/* Payments */}
-        <TabsContent value="payments" className="space-y-6">
+        <TabsContent
+          value="payments"
+          className="space-y-6"
+        >
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -769,9 +986,14 @@ export function IntegrationSettings() {
                 </div>
                 <Switch
                   checked={integrations.payment.enabled}
-                  onCheckedChange={(checked) =>
-                    setIntegrations(prev => ({ ...prev, payment: { ...prev.payment, enabled: checked } }))
-                  }
+                  onCheckedChange={checked =>
+                    setIntegrations(prev => ({
+                      ...prev,
+                      payment: {
+                        ...prev.payment,
+                        enabled: checked,
+                      },
+                    }))}
                 />
               </div>
             </CardHeader>
@@ -790,12 +1012,21 @@ export function IntegrationSettings() {
                       <Input
                         type={showSecrets.stripePublic ? "text" : "password"}
                         value={integrations.payment.publishableKey}
-                        onChange={(e) =>
-                          setIntegrations(prev => ({ ...prev, payment: { ...prev.payment, publishableKey: e.target.value } }))
-                        }
+                        onChange={e =>
+                          setIntegrations(prev => ({
+                            ...prev,
+                            payment: {
+                              ...prev.payment,
+                              publishableKey: e.target.value,
+                            },
+                          }))}
                         className="flex-1"
                       />
-                      <Button variant="ghost" size="icon" onClick={() => toggleSecret("stripePublic")}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleSecret("stripePublic")}
+                      >
                         {showSecrets.stripePublic ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
@@ -806,12 +1037,21 @@ export function IntegrationSettings() {
                       <Input
                         type={showSecrets.stripeSecret ? "text" : "password"}
                         value={integrations.payment.secretKey}
-                        onChange={(e) =>
-                          setIntegrations(prev => ({ ...prev, payment: { ...prev.payment, secretKey: e.target.value } }))
-                        }
+                        onChange={e =>
+                          setIntegrations(prev => ({
+                            ...prev,
+                            payment: {
+                              ...prev.payment,
+                              secretKey: e.target.value,
+                            },
+                          }))}
                         className="flex-1"
                       />
-                      <Button variant="ghost" size="icon" onClick={() => toggleSecret("stripeSecret")}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleSecret("stripeSecret")}
+                      >
                         {showSecrets.stripeSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
@@ -822,12 +1062,21 @@ export function IntegrationSettings() {
                       <Input
                         type={showSecrets.stripeWebhook ? "text" : "password"}
                         value={integrations.payment.webhookSecret}
-                        onChange={(e) =>
-                          setIntegrations(prev => ({ ...prev, payment: { ...prev.payment, webhookSecret: e.target.value } }))
-                        }
+                        onChange={e =>
+                          setIntegrations(prev => ({
+                            ...prev,
+                            payment: {
+                              ...prev.payment,
+                              webhookSecret: e.target.value,
+                            },
+                          }))}
                         className="flex-1"
                       />
-                      <Button variant="ghost" size="icon" onClick={() => toggleSecret("stripeWebhook")}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleSecret("stripeWebhook")}
+                      >
                         {showSecrets.stripeWebhook ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
@@ -844,8 +1093,16 @@ export function IntegrationSettings() {
                       <p className="text-sm text-muted-foreground">Transactions this month</p>
                     </div>
                   </div>
-                  <Button variant="outline" className="w-full" asChild>
-                    <a href="https://dashboard.stripe.com" target="_blank" rel="noopener noreferrer">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    asChild
+                  >
+                    <a
+                      href="https://dashboard.stripe.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       Open Stripe Dashboard
                     </a>
                   </Button>
@@ -857,11 +1114,13 @@ export function IntegrationSettings() {
                 onClick={() => handleTestIntegration("payment")}
                 disabled={testingIntegration === "payment"}
               >
-                {testingIntegration === "payment" ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <TestTube className="h-4 w-4 mr-2" />
-                )}
+                {testingIntegration === "payment"
+                  ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    )
+                  : (
+                      <TestTube className="h-4 w-4 mr-2" />
+                    )}
                 Test Payment API
               </Button>
             </CardContent>
@@ -870,14 +1129,23 @@ export function IntegrationSettings() {
       </Tabs>
 
       {/* Test Dialog */}
-      <Dialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
+      <Dialog
+        open={testDialogOpen}
+        onOpenChange={setTestDialogOpen}
+      >
         <DialogContent className="bg-card border-border">
           <DialogHeader>
             <DialogTitle>
-              Send Test {activeTestType === "email" ? "Email" : "SMS"}
+              Send Test
+              {" "}
+              {activeTestType === "email" ? "Email" : "SMS"}
             </DialogTitle>
             <DialogDescription>
-              Enter a {activeTestType === "email" ? "email address" : "phone number"} to send a test message
+              Enter a
+              {" "}
+              {activeTestType === "email" ? "email address" : "phone number"}
+              {" "}
+              to send a test message
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -887,19 +1155,24 @@ export function IntegrationSettings() {
                 type={activeTestType === "email" ? "email" : "tel"}
                 placeholder={activeTestType === "email" ? "test@example.com" : "+234801234567"}
                 value={testRecipient}
-                onChange={(e) => setTestRecipient(e.target.value)}
+                onChange={e => setTestRecipient(e.target.value)}
               />
             </div>
             <Button
               className="w-full"
-              onClick={() => handleTestIntegration(activeTestType, testRecipient)}
+              onClick={() => handleTestIntegration(
+                activeTestType,
+                testRecipient,
+              )}
               disabled={testingIntegration === activeTestType}
             >
-              {testingIntegration === activeTestType ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4 mr-2" />
-              )}
+              {testingIntegration === activeTestType
+                ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  )
+                : (
+                    <Send className="h-4 w-4 mr-2" />
+                  )}
               Send Test
             </Button>
           </div>
@@ -908,6 +1181,3 @@ export function IntegrationSettings() {
     </div>
   );
 }
-
-
-

@@ -1,23 +1,22 @@
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Document,
-  Packer,
-  Paragraph,
-  TextRun,
-  HeadingLevel,
-  Table,
-  TableRow,
-  TableCell,
-  WidthType,
-  BorderStyle,
-  ImageRun,
   AlignmentType,
-  ShadingType,
-  PageBreak,
-  Header,
+  BorderStyle,
+  Document,
   Footer,
+  Header,
+  HeadingLevel,
+  ImageRun,
+  Packer,
+  PageBreak,
   PageNumber,
-  NumberFormat,
+  Paragraph,
+  ShadingType,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun,
+  WidthType,
 } from "docx";
 import { saveAs } from "file-saver";
 import { toPng } from "html-to-image";
@@ -37,32 +36,51 @@ async function svgToPngBlob(svgElement: SVGElement): Promise<Uint8Array> {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   const img = new Image();
-  
+
   const svgData = new XMLSerializer().serializeToString(svgElement);
-  const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+  const svgBlob = new Blob(
+    [svgData],
+    { type: "image/svg+xml;charset=utf-8" },
+  );
   const url = URL.createObjectURL(svgBlob);
 
   return new Promise((resolve, reject) => {
     img.onload = () => {
       canvas.width = img.width * 2;
       canvas.height = img.height * 2;
-      ctx?.scale(2, 2);
+      ctx?.scale(
+        2,
+        2,
+      );
       if (ctx) {
         ctx.fillStyle = "#1e293b";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(
+          0,
+          0,
+          canvas.width,
+          canvas.height,
+        );
       }
-      ctx?.drawImage(img, 0, 0);
-      
-      canvas.toBlob((blob) => {
-        if (blob) {
-          blob.arrayBuffer().then(buffer => {
-            resolve(new Uint8Array(buffer));
-            URL.revokeObjectURL(url);
-          });
-        } else {
-          reject(new Error("Failed to create blob"));
-        }
-      }, "image/png");
+      ctx?.drawImage(
+        img,
+        0,
+        0,
+      );
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            blob.arrayBuffer().then((buffer) => {
+              resolve(new Uint8Array(buffer));
+              URL.revokeObjectURL(url);
+            });
+          }
+          else {
+            reject(new Error("Failed to create blob"));
+          }
+        },
+        "image/png",
+      );
     };
     img.onerror = reject;
     img.src = url;
@@ -73,33 +91,41 @@ async function svgToPngBlob(svgElement: SVGElement): Promise<Uint8Array> {
 async function captureDiagramImage(diagramId: string): Promise<Uint8Array | null> {
   try {
     const container = document.querySelector(`[data-diagram-id="${diagramId}"]`);
-    if (!container) return null;
-    
+    if (!container)
+      return null;
+
     const svg = container.querySelector("svg");
     if (svg) {
       return await svgToPngBlob(svg);
     }
     return null;
-  } catch (error) {
-    console.error("Error capturing diagram:", error);
+  }
+  catch (error) {
+    console.error(
+      "Error capturing diagram:",
+      error,
+    );
     return null;
   }
 }
 
 // Document sections data
-export interface DocumentSection {
+export type DocumentSection = {
   number: string;
   title: string;
   content: string[];
-  tables?: { headers: string[]; rows: string[][] }[];
+  tables?: {
+    headers: string[];
+    rows: string[][];
+  }[];
   bullets?: string[];
   diagramId?: string;
-}
+};
 
 // Generate Word Document
 export async function generateWordDocument(
   sections: DocumentSection[],
-  diagramImages: Map<string, Uint8Array>
+  diagramImages: Map<string, Uint8Array>,
 ): Promise<void> {
   const children: (Paragraph | Table)[] = [];
 
@@ -116,7 +142,10 @@ export async function generateWordDocument(
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { before: 2000, after: 400 },
+      spacing: {
+        before: 2000,
+        after: 400,
+      },
     }),
     new Paragraph({
       children: [
@@ -166,9 +195,7 @@ export async function generateWordDocument(
       alignment: AlignmentType.CENTER,
       spacing: { after: 400 },
     }),
-    new Paragraph({
-      children: [new PageBreak()],
-    })
+    new Paragraph({ children: [new PageBreak()] }),
   );
 
   // Table of Contents Header
@@ -176,8 +203,11 @@ export async function generateWordDocument(
     new Paragraph({
       text: "Table of Contents",
       heading: HeadingLevel.HEADING_1,
-      spacing: { before: 400, after: 200 },
-    })
+      spacing: {
+        before: 400,
+        after: 200,
+      },
+    }),
   );
 
   // TOC entries
@@ -192,14 +222,12 @@ export async function generateWordDocument(
           }),
         ],
         spacing: { before: 100 },
-      })
+      }),
     );
   });
 
   children.push(
-    new Paragraph({
-      children: [new PageBreak()],
-    })
+    new Paragraph({ children: [new PageBreak()] }),
   );
 
   // Document sections
@@ -217,7 +245,10 @@ export async function generateWordDocument(
           }),
         ],
         heading: HeadingLevel.HEADING_1,
-        spacing: { before: 400, after: 200 },
+        spacing: {
+          before: 400,
+          after: 200,
+        },
         border: {
           bottom: {
             color: COLORS.primary,
@@ -226,7 +257,7 @@ export async function generateWordDocument(
             space: 4,
           },
         },
-      })
+      }),
     );
 
     // Content paragraphs
@@ -240,8 +271,11 @@ export async function generateWordDocument(
               font: "DM Sans",
             }),
           ],
-          spacing: { before: 100, after: 100 },
-        })
+          spacing: {
+            before: 100,
+            after: 100,
+          },
+        }),
       );
     });
 
@@ -259,7 +293,7 @@ export async function generateWordDocument(
             ],
             spacing: { before: 50 },
             indent: { left: 400 },
-          })
+          }),
         );
       });
     }
@@ -273,7 +307,7 @@ export async function generateWordDocument(
         tableRows.push(
           new TableRow({
             children: tableData.headers.map(
-              (header) =>
+              header =>
                 new TableCell({
                   children: [
                     new Paragraph({
@@ -298,10 +332,10 @@ export async function generateWordDocument(
                     left: 100,
                     right: 100,
                   },
-                })
+                }),
             ),
             tableHeader: true,
-          })
+          }),
         );
 
         // Data rows
@@ -309,7 +343,7 @@ export async function generateWordDocument(
           tableRows.push(
             new TableRow({
               children: row.map(
-                (cell) =>
+                cell =>
                   new TableCell({
                     children: [
                       new Paragraph({
@@ -332,9 +366,9 @@ export async function generateWordDocument(
                       left: 100,
                       right: 100,
                     },
-                  })
+                  }),
               ),
-            })
+            }),
           );
         });
 
@@ -345,14 +379,14 @@ export async function generateWordDocument(
               size: 100,
               type: WidthType.PERCENTAGE,
             },
-          })
+          }),
         );
 
         children.push(
           new Paragraph({
             children: [],
             spacing: { after: 200 },
-          })
+          }),
         );
       });
     }
@@ -373,17 +407,18 @@ export async function generateWordDocument(
             }),
           ],
           alignment: AlignmentType.CENTER,
-          spacing: { before: 200, after: 200 },
-        })
+          spacing: {
+            before: 200,
+            after: 200,
+          },
+        }),
       );
     }
 
     // Page break after each major section
     if (parseInt(section.number) < sections.length) {
       children.push(
-        new Paragraph({
-          children: [new PageBreak()],
-        })
+        new Paragraph({ children: [new PageBreak()] }),
       );
     }
   }
@@ -465,36 +500,46 @@ export async function generateWordDocument(
   });
 
   const blob = await Packer.toBlob(doc);
-  saveAs(blob, "FleetPro_Technical_Architecture.docx");
+  saveAs(
+    blob,
+    "FleetPro_Technical_Architecture.docx",
+  );
 }
 
 // Export helper to get all diagram images
 export async function getAllDiagramImages(): Promise<Map<string, Uint8Array>> {
   const images = new Map<string, Uint8Array>();
   const diagramContainers = document.querySelectorAll("[data-diagram-id]");
-  
+
   for (const container of diagramContainers) {
     const diagramId = container.getAttribute("data-diagram-id");
     if (diagramId) {
       try {
-        const dataUrl = await toPng(container as HTMLElement, {
-          backgroundColor: "#1e293b",
-          quality: 1,
-          pixelRatio: 2,
-        });
-        
+        const dataUrl = await toPng(
+          container as HTMLElement,
+          {
+            backgroundColor: "#1e293b",
+            quality: 1,
+            pixelRatio: 2,
+          },
+        );
+
         const response = await fetch(dataUrl);
         const blob = await response.blob();
         const arrayBuffer = await blob.arrayBuffer();
-        images.set(diagramId, new Uint8Array(arrayBuffer));
-      } catch (error) {
-        console.error(`Error capturing diagram ${diagramId}:`, error);
+        images.set(
+          diagramId,
+          new Uint8Array(arrayBuffer),
+        );
+      }
+      catch (error) {
+        console.error(
+          `Error capturing diagram ${diagramId}:`,
+          error,
+        );
       }
     }
   }
-  
+
   return images;
 }
-
-
-

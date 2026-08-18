@@ -1,16 +1,8 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/shadcn/dialog";
+  AlertCircle, CheckCircle2, RefreshCw, Zap,
+} from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,44 +13,78 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
-import { RefreshCw, Zap, AlertCircle, CheckCircle2 } from "lucide-react";
-import { toast } from "sonner";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
 
-interface AutoTopupSettingsProps {
+type AutoTopupSettingsProps = {
   tenantId: string;
   onSettingsUpdated?: () => void;
-}
+};
 
-interface AutoTopupConfig {
+type AutoTopupConfig = {
   enabled: boolean;
   threshold: number;
   amount: number;
   phone: string;
-}
+};
 
-export function AutoTopupSettings({ tenantId, onSettingsUpdated }: AutoTopupSettingsProps) {
-  const [saving, setSaving] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [confirmDisableOpen, setConfirmDisableOpen] = useState(false);
-  const [config, setConfig] = useState<AutoTopupConfig>({
+export function AutoTopupSettings({
+  tenantId, onSettingsUpdated,
+}: AutoTopupSettingsProps) {
+  const [
+    saving,
+    setSaving,
+  ] = useState(false);
+  const [
+    dialogOpen,
+    setDialogOpen,
+  ] = useState(false);
+  const [
+    confirmDisableOpen,
+    setConfirmDisableOpen,
+  ] = useState(false);
+  const [
+    config,
+    setConfig,
+  ] = useState<AutoTopupConfig>({
     enabled: false,
     threshold: 500,
     amount: 5000,
-    phone: '',
+    phone: "",
   });
 
   const handleSaveFromDialog = async () => {
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
   const handleDisable = async () => {
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
-  const quickAmounts = [2000, 5000, 10000, 20000];
-  const quickThresholds = [500, 1000, 2000, 5000];
+  const quickAmounts = [
+    2000,
+    5000,
+    10000,
+    20000,
+  ];
+  const quickThresholds = [
+    500,
+    1000,
+    2000,
+    5000,
+  ];
 
   return (
     <>
@@ -73,67 +99,87 @@ export function AutoTopupSettings({ tenantId, onSettingsUpdated }: AutoTopupSett
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 pb-4 flex-1 flex flex-col">
-          {config.enabled ? (
-            <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                <p className="text-sm font-semibold text-foreground">Auto Top-Up is active</p>
-              </div>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between items-center pb-2 border-b border-border/50">
-                  <span className="text-muted-foreground">Trigger when balance drops below</span>
-                  <span className="font-semibold text-foreground">₦{config.threshold.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center pb-2 border-b border-border/50">
-                  <span className="text-muted-foreground">Top-up amount</span>
-                  <span className="font-semibold text-foreground">₦{config.amount.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center pb-2 border-b border-border/50">
-                  <span className="text-muted-foreground">Payment method</span>
-                  <span className="font-semibold text-foreground">MTN MoMo</span>
-                </div>
-                {config.phone && (
-                  <div className="flex justify-between items-center gap-2">
-                    <span className="text-muted-foreground">MoMo number</span>
-                    <span className="font-semibold text-foreground truncate">{config.phone}</span>
+          {config.enabled
+            ? (
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                    <p className="text-sm font-semibold text-foreground">Auto Top-Up is active</p>
                   </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center py-6 px-4 rounded-lg border border-dashed border-border bg-muted/20">
-              <Zap className="h-8 w-8 text-muted-foreground/40 mb-2" />
-              <p className="text-sm text-muted-foreground">
-                Auto Top-Up is currently disabled. Enable it to keep your wallet funded automatically when the balance is low.
-              </p>
-            </div>
-          )}
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between items-center pb-2 border-b border-border/50">
+                      <span className="text-muted-foreground">Trigger when balance drops below</span>
+                      <span className="font-semibold text-foreground">
+                        ₦
+                        {config.threshold.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center pb-2 border-b border-border/50">
+                      <span className="text-muted-foreground">Top-up amount</span>
+                      <span className="font-semibold text-foreground">
+                        ₦
+                        {config.amount.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center pb-2 border-b border-border/50">
+                      <span className="text-muted-foreground">Payment method</span>
+                      <span className="font-semibold text-foreground">MTN MoMo</span>
+                    </div>
+                    {config.phone && (
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-muted-foreground">MoMo number</span>
+                        <span className="font-semibold text-foreground truncate">{config.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            : (
+                <div className="flex-1 flex flex-col items-center justify-center text-center py-6 px-4 rounded-lg border border-dashed border-border bg-muted/20">
+                  <Zap className="h-8 w-8 text-muted-foreground/40 mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    Auto Top-Up is currently disabled. Enable it to keep your wallet funded automatically when the balance is low.
+                  </p>
+                </div>
+              )}
 
           <div className="mt-auto space-y-2">
-            {config.enabled ? (
-              <>
-                <Button onClick={() => setDialogOpen(true)} variant="outline" className="w-full">
-                  Edit Settings
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => setConfirmDisableOpen(true)}
-                  disabled={saving}
-                  className="w-full"
-                >
-                  Disable Auto Top-Up
-                </Button>
-              </>
-            ) : (
-              <Button onClick={() => setDialogOpen(true)} className="w-full">
-                Enable Auto Top-Up
-              </Button>
-            )}
+            {config.enabled
+              ? (
+                  <>
+                    <Button
+                      onClick={() => setDialogOpen(true)}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Edit Settings
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => setConfirmDisableOpen(true)}
+                      disabled={saving}
+                      className="w-full"
+                    >
+                      Disable Auto Top-Up
+                    </Button>
+                  </>
+                )
+              : (
+                  <Button
+                    onClick={() => setDialogOpen(true)}
+                    className="w-full"
+                  >
+                    Enable Auto Top-Up
+                  </Button>
+                )}
           </div>
         </CardContent>
       </Card>
 
-      <AlertDialog open={confirmDisableOpen} onOpenChange={setConfirmDisableOpen}>
+      <AlertDialog
+        open={confirmDisableOpen}
+        onOpenChange={setConfirmDisableOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Disable Auto Top-Up?</AlertDialogTitle>
@@ -143,7 +189,10 @@ export function AutoTopupSettings({ tenantId, onSettingsUpdated }: AutoTopupSett
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDisable} disabled={saving}>
+            <AlertDialogAction
+              onClick={handleDisable}
+              disabled={saving}
+            >
               {saving && <RefreshCw className="h-4 w-4 mr-2 animate-spin" />}
               Disable
             </AlertDialogAction>
@@ -151,12 +200,15 @@ export function AutoTopupSettings({ tenantId, onSettingsUpdated }: AutoTopupSett
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      >
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Zap className="h-5 w-5 text-primary" />
-              {config.enabled ? 'Edit Auto Top-Up' : 'Enable Auto Top-Up'}
+              {config.enabled ? "Edit Auto Top-Up" : "Enable Auto Top-Up"}
             </DialogTitle>
             <DialogDescription>
               Automatically add funds when your balance drops below a threshold
@@ -169,8 +221,13 @@ export function AutoTopupSettings({ tenantId, onSettingsUpdated }: AutoTopupSett
               <div className="text-sm">
                 <p className="font-medium text-foreground">How it works</p>
                 <p className="text-muted-foreground">
-                  When your wallet balance drops below ₦{config.threshold.toLocaleString()},
-                  we'll automatically top up ₦{config.amount.toLocaleString()} using MTN MoMo.
+                  When your wallet balance drops below ₦
+                  {config.threshold.toLocaleString()}
+                  ,
+                  we'll automatically top up ₦
+                  {config.amount.toLocaleString()}
+                  {" "}
+                  using MTN MoMo.
                 </p>
               </div>
             </div>
@@ -179,22 +236,27 @@ export function AutoTopupSettings({ tenantId, onSettingsUpdated }: AutoTopupSett
               <div className="space-y-2">
                 <Label>Top-up when balance drops below</Label>
                 <div className="flex gap-2 flex-wrap">
-                  {quickThresholds.map((t) => (
+                  {quickThresholds.map(t => (
                     <Button
                       key={t}
                       type="button"
                       variant={config.threshold === t ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setConfig({ ...config, threshold: t })}
+                      onClick={() => setConfig({
+                        ...config, threshold: t,
+                      })}
                     >
-                      ₦{t.toLocaleString()}
+                      ₦
+                      {t.toLocaleString()}
                     </Button>
                   ))}
                 </div>
                 <Input
                   type="number"
                   value={config.threshold}
-                  onChange={(e) => setConfig({ ...config, threshold: parseFloat(e.target.value) || 0 })}
+                  onChange={e => setConfig({
+                    ...config, threshold: Number.parseFloat(e.target.value) || 0,
+                  })}
                   placeholder="Custom threshold"
                   className="mt-2"
                 />
@@ -203,22 +265,27 @@ export function AutoTopupSettings({ tenantId, onSettingsUpdated }: AutoTopupSett
               <div className="space-y-2">
                 <Label>Amount to add each time</Label>
                 <div className="flex gap-2 flex-wrap">
-                  {quickAmounts.map((a) => (
+                  {quickAmounts.map(a => (
                     <Button
                       key={a}
                       type="button"
                       variant={config.amount === a ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setConfig({ ...config, amount: a })}
+                      onClick={() => setConfig({
+                        ...config, amount: a,
+                      })}
                     >
-                      ₦{a.toLocaleString()}
+                      ₦
+                      {a.toLocaleString()}
                     </Button>
                   ))}
                 </div>
                 <Input
                   type="number"
                   value={config.amount}
-                  onChange={(e) => setConfig({ ...config, amount: parseFloat(e.target.value) || 0 })}
+                  onChange={e => setConfig({
+                    ...config, amount: Number.parseFloat(e.target.value) || 0,
+                  })}
                   placeholder="Custom amount"
                   className="mt-2"
                 />
@@ -229,7 +296,9 @@ export function AutoTopupSettings({ tenantId, onSettingsUpdated }: AutoTopupSett
                 <Input
                   type="tel"
                   value={config.phone}
-                  onChange={(e) => setConfig({ ...config, phone: e.target.value })}
+                  onChange={e => setConfig({
+                    ...config, phone: e.target.value,
+                  })}
                   placeholder="e.g., 0803 123 4567"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -240,12 +309,19 @@ export function AutoTopupSettings({ tenantId, onSettingsUpdated }: AutoTopupSett
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              disabled={saving}
+            >
               Cancel
             </Button>
-            <Button onClick={handleSaveFromDialog} disabled={saving}>
+            <Button
+              onClick={handleSaveFromDialog}
+              disabled={saving}
+            >
               {saving && <RefreshCw className="h-4 w-4 mr-2 animate-spin" />}
-              {config.enabled ? 'Save Changes' : 'Enable Auto Top-Up'}
+              {config.enabled ? "Save Changes" : "Enable Auto Top-Up"}
             </Button>
           </DialogFooter>
         </DialogContent>

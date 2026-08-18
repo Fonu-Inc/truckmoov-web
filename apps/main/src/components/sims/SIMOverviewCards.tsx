@@ -1,16 +1,22 @@
-import { Card, CardContent } from "@/components/shadcn/card";
+import {
+  Pause, Signal, Wifi,
+} from "lucide-react";
+import {
+  Card, CardContent,
+} from "@/components/shadcn/card";
 import { Progress } from "@/components/shadcn/progress";
-import { Wifi, Signal, Pause } from "lucide-react";
 
-interface Props {
+type Props = {
   totalSIMs: number;
   activeSIMs: number;
   suspendedSIMs: number;
   totalDataUsage: number;
   totalDataLimit: number;
-}
+};
 
-export function SIMOverviewCards({ totalSIMs, activeSIMs, suspendedSIMs, totalDataUsage, totalDataLimit }: Props) {
+export function SIMOverviewCards({
+  totalSIMs, activeSIMs, suspendedSIMs, totalDataUsage, totalDataLimit,
+}: Props) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
@@ -58,10 +64,18 @@ export function SIMOverviewCards({ totalSIMs, activeSIMs, suspendedSIMs, totalDa
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">Data Usage</p>
               <span className="text-xs text-muted-foreground">
-                {totalDataUsage.toFixed(1)} / {totalDataLimit} GB
+                {totalDataUsage.toFixed(1)}
+                {" "}
+                /
+                {totalDataLimit}
+                {" "}
+                GB
               </span>
             </div>
-            <Progress value={totalDataLimit > 0 ? (totalDataUsage / totalDataLimit) * 100 : 0} className="h-2" />
+            <Progress
+              value={totalDataLimit > 0 ? (totalDataUsage / totalDataLimit) * 100 : 0}
+              className="h-2"
+            />
           </div>
         </CardContent>
       </Card>

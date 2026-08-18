@@ -1,23 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
-import { Button } from '@/components/shadcn/button';
-import { Input } from '@/components/shadcn/input';
-import { Label } from '@/components/shadcn/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shadcn/select';
-import { Progress } from '@/components/shadcn/progress';
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/shadcn/dialog';
-import { Gauge, AlertTriangle, RotateCcw, Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { useQueryClient } from '@tanstack/react-query';
-import { useCurrency } from '@/contexts/CurrencyContext';
-import { useAuthStore } from '@/stores/authStore';
+  AlertCircle, AlertTriangle, CheckCircle2, Gauge, Mail, RotateCcw,
+} from "lucide-react";
+import {
+  useEffect, useState,
+} from "react";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,47 +16,87 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/shadcn/alert-dialog';
+} from "@/components/shadcn/alert-dialog";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Progress } from "@/components/shadcn/progress";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/shadcn/select";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { useAuthStore } from "@/stores/authStore";
 
-interface SpendingLimitSettingsProps {
+type SpendingLimitSettingsProps = {
   tenantId: string;
   onUpdate?: () => void;
-}
+};
 
-export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSettingsProps) {
+export function SpendingLimitSettings({
+  tenantId, onUpdate,
+}: SpendingLimitSettingsProps) {
   const { format } = useCurrency();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
-  const isPlatformAdmin = user?.role === 'platform_admin';
+  const isPlatformAdmin = user?.role === "platform_admin";
 
   const settings = null;
   const isLoading = false;
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [confirmDisableOpen, setConfirmDisableOpen] = useState(false);
-  const [monthlyLimit, setMonthlyLimit] = useState('50000');
-  const [resetDay, setResetDay] = useState('1');
-  const [alertEmail, setAlertEmail] = useState('');
-  const [isPersisting, setIsPersisting] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
+  const [
+    dialogOpen,
+    setDialogOpen,
+  ] = useState(false);
+  const [
+    confirmDisableOpen,
+    setConfirmDisableOpen,
+  ] = useState(false);
+  const [
+    monthlyLimit,
+    setMonthlyLimit,
+  ] = useState("50000");
+  const [
+    resetDay,
+    setResetDay,
+  ] = useState("1");
+  const [
+    alertEmail,
+    setAlertEmail,
+  ] = useState("");
+  const [
+    isPersisting,
+    setIsPersisting,
+  ] = useState(false);
+  const [
+    isResetting,
+    setIsResetting,
+  ] = useState(false);
 
   const handleSave = () => {
-    if (!monthlyLimit || parseFloat(monthlyLimit) <= 0) {
-      toast.error('Please enter a valid monthly limit');
+    if (!monthlyLimit || Number.parseFloat(monthlyLimit) <= 0) {
+      toast.error("Please enter a valid monthly limit");
       return;
     }
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
   const handleDisable = () => {
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
   const handleReset = () => {
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
   const enabled = false;
@@ -107,7 +135,10 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
             {isPlatformAdmin && currentSpending > 0 && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                  >
                     <RotateCcw className="h-4 w-4 mr-2" />
                     Reset Counter
                   </Button>
@@ -116,7 +147,11 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
                   <AlertDialogHeader>
                     <AlertDialogTitle>Reset Monthly Spending Counter?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will reset the current month spending counter from {format(currentSpending)} to ₦0.
+                      This will reset the current month spending counter from
+                      {" "}
+                      {format(currentSpending)}
+                      {" "}
+                      to ₦0.
                       This action cannot be undone. Use this for billing adjustments or corrections.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
@@ -126,7 +161,7 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
                       onClick={handleReset}
                       disabled={isResetting}
                     >
-                      {isResetting ? 'Resetting...' : 'Reset Counter'}
+                      {isResetting ? "Resetting..." : "Reset Counter"}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -139,13 +174,16 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Current Month Usage</span>
-                <span className={isNearLimit ? 'text-destructive font-medium' : ''}>
-                  {format(currentSpending)} / {format(limit)}
+                <span className={isNearLimit ? "text-destructive font-medium" : ""}>
+                  {format(currentSpending)}
+                  {" "}
+                  /
+                  {format(limit)}
                 </span>
               </div>
               <Progress
                 value={spendingPercentage}
-                className={isNearLimit ? '[&>div]:bg-destructive' : ''}
+                className={isNearLimit ? "[&>div]:bg-destructive" : ""}
               />
               {isNearLimit && (
                 <div className="flex items-center gap-2 text-sm text-destructive">
@@ -173,7 +211,11 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
                 </div>
                 <div>
                   <p className="text-muted-foreground">Spending Cap</p>
-                  <p className="font-medium text-foreground">{format(limit)} / month</p>
+                  <p className="font-medium text-foreground">
+                    {format(limit)}
+                    {" "}
+                    / month
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Trigger</p>
@@ -202,30 +244,42 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
           )}
 
           <div className="mt-auto space-y-2">
-            {enabled ? (
-              <>
-                <Button onClick={() => setDialogOpen(true)} variant="outline" className="w-full">
-                  Edit Settings
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => setConfirmDisableOpen(true)}
-                  disabled={isPersisting}
-                  className="w-full"
-                >
-                  Disable Spending Limit
-                </Button>
-              </>
-            ) : (
-              <Button onClick={() => setDialogOpen(true)} className="w-full">
-                Enable Spending Limit
-              </Button>
-            )}
+            {enabled
+              ? (
+                  <>
+                    <Button
+                      onClick={() => setDialogOpen(true)}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Edit Settings
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => setConfirmDisableOpen(true)}
+                      disabled={isPersisting}
+                      className="w-full"
+                    >
+                      Disable Spending Limit
+                    </Button>
+                  </>
+                )
+              : (
+                  <Button
+                    onClick={() => setDialogOpen(true)}
+                    className="w-full"
+                  >
+                    Enable Spending Limit
+                  </Button>
+                )}
           </div>
         </CardContent>
       </Card>
 
-      <AlertDialog open={confirmDisableOpen} onOpenChange={setConfirmDisableOpen}>
+      <AlertDialog
+        open={confirmDisableOpen}
+        onOpenChange={setConfirmDisableOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Disable Spending Limit?</AlertDialogTitle>
@@ -239,18 +293,21 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
               onClick={handleDisable}
               disabled={isPersisting}
             >
-              {isPersisting ? 'Disabling...' : 'Disable'}
+              {isPersisting ? "Disabling..." : "Disable"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      >
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Gauge className="h-5 w-5 text-primary" />
-              {enabled ? 'Edit Spending Limit' : 'Enable Spending Limit'}
+              {enabled ? "Edit Spending Limit" : "Enable Spending Limit"}
             </DialogTitle>
             <DialogDescription>
               Cap your monthly communication costs and get notified before you hit the limit
@@ -275,7 +332,7 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
                 id="monthlyLimit"
                 type="number"
                 value={monthlyLimit}
-                onChange={(e) => setMonthlyLimit(e.target.value)}
+                onChange={e => setMonthlyLimit(e.target.value)}
                 placeholder="50000"
                 min="1000"
               />
@@ -283,14 +340,25 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
 
             <div className="space-y-2">
               <Label htmlFor="resetDay">Reset Day of Month</Label>
-              <Select value={resetDay} onValueChange={setResetDay}>
+              <Select
+                value={resetDay}
+                onValueChange={setResetDay}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select day" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
-                    <SelectItem key={day} value={day.toString()}>
-                      Day {day}
+                  {Array.from(
+                    { length: 28 },
+                    (_, i) => i + 1,
+                  ).map(day => (
+                    <SelectItem
+                      key={day}
+                      value={day.toString()}
+                    >
+                      Day
+                      {" "}
+                      {day}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -301,7 +369,10 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="alertEmail" className="flex items-center gap-2">
+              <Label
+                htmlFor="alertEmail"
+                className="flex items-center gap-2"
+              >
                 <Mail className="h-4 w-4" />
                 Alert Email
               </Label>
@@ -309,7 +380,7 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
                 id="alertEmail"
                 type="email"
                 value={alertEmail}
-                onChange={(e) => setAlertEmail(e.target.value)}
+                onChange={e => setAlertEmail(e.target.value)}
                 placeholder="alerts@company.com"
               />
               <p className="text-xs text-muted-foreground">
@@ -319,11 +390,18 @@ export function SpendingLimitSettings({ tenantId, onUpdate }: SpendingLimitSetti
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isPersisting}>
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              disabled={isPersisting}
+            >
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={isPersisting}>
-              {isPersisting ? 'Saving...' : enabled ? 'Save Changes' : 'Enable Spending Limit'}
+            <Button
+              onClick={handleSave}
+              disabled={isPersisting}
+            >
+              {isPersisting ? "Saving..." : enabled ? "Save Changes" : "Enable Spending Limit"}
             </Button>
           </DialogFooter>
         </DialogContent>

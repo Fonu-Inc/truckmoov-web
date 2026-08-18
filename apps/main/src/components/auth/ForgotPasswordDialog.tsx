@@ -1,28 +1,41 @@
+import {
+  Loader2, Mail,
+} from "lucide-react";
 import { useState } from "react";
-import { Mail, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/shadcn/dialog";
-import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 
-interface ForgotPasswordDialogProps {
+type ForgotPasswordDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultEmail?: string;
-}
+};
 
-export function ForgotPasswordDialog({ open, onOpenChange, defaultEmail = "" }: ForgotPasswordDialogProps) {
-  const [email, setEmail] = useState(defaultEmail);
-  const [submitting, setSubmitting] = useState(false);
-  const [sent, setSent] = useState(false);
+export function ForgotPasswordDialog({
+  open, onOpenChange, defaultEmail = "",
+}: ForgotPasswordDialogProps) {
+  const [
+    email,
+    setEmail,
+  ] = useState(defaultEmail);
+  const [
+    submitting,
+    setSubmitting,
+  ] = useState(false);
+  const [
+    sent,
+    setSent,
+  ] = useState(false);
 
   // Keep email in sync when dialog reopens with a new default
   if (open && defaultEmail && email === "" && !sent) {
@@ -31,25 +44,31 @@ export function ForgotPasswordDialog({ open, onOpenChange, defaultEmail = "" }: 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim())
+      return;
 
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
       // reset state when closing
-      setTimeout(() => {
-        setSent(false);
-        setEmail("");
-      }, 200);
+      setTimeout(
+        () => {
+          setSent(false);
+          setEmail("");
+        },
+        200,
+      );
     }
     onOpenChange(next);
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={handleOpenChange}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Reset your password</DialogTitle>
@@ -61,7 +80,10 @@ export function ForgotPasswordDialog({ open, onOpenChange, defaultEmail = "" }: 
         </DialogHeader>
 
         {!sent && (
-          <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4 pt-2"
+          >
             <div className="space-y-1.5">
               <Label htmlFor="reset-email">Email</Label>
               <div className="relative">
@@ -71,7 +93,7 @@ export function ForgotPasswordDialog({ open, onOpenChange, defaultEmail = "" }: 
                   type="email"
                   placeholder="you@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={e => setEmail(e.target.value)}
                   className="pl-10"
                   required
                   autoFocus
@@ -81,10 +103,17 @@ export function ForgotPasswordDialog({ open, onOpenChange, defaultEmail = "" }: 
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
-              <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => handleOpenChange(false)}
+              >
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitting || !email.trim()}>
+              <Button
+                type="submit"
+                disabled={submitting || !email.trim()}
+              >
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Send reset link
               </Button>
@@ -94,7 +123,10 @@ export function ForgotPasswordDialog({ open, onOpenChange, defaultEmail = "" }: 
 
         {sent && (
           <DialogFooter className="pt-2">
-            <Button onClick={() => handleOpenChange(false)} className="w-full">
+            <Button
+              onClick={() => handleOpenChange(false)}
+              className="w-full"
+            >
               Done
             </Button>
           </DialogFooter>

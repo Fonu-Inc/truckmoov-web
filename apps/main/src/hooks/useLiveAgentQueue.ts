@@ -1,19 +1,35 @@
-import { useState, useCallback } from 'react';
-import { useAuthStore } from '@/stores/authStore';
-import type { LiveSession, LiveMessage } from './useLiveAgentSession';
+import type {
+  LiveMessage, LiveSession,
+} from "./useLiveAgentSession";
+import {
+  useCallback, useState,
+} from "react";
+import { useAuthStore } from "@/stores/authStore";
 
 /**
  * Platform-agent view of the live support queue.
  */
 export function useLiveAgentQueue() {
   const [sessions] = useState<LiveSession[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [
+    activeSessionId,
+    setActiveSessionId,
+  ] = useState<string | null>(null);
   const [messages] = useState<LiveMessage[]>([]);
   const isLoading = false;
 
-  const claim = useCallback(async (_sessionId: string) => {}, []);
-  const sendMessage = useCallback(async (_text: string) => {}, []);
-  const endSession = useCallback(async (_sessionId: string, _reason?: string) => {}, []);
+  const claim = useCallback(
+    async (_sessionId: string) => {},
+    [],
+  );
+  const sendMessage = useCallback(
+    async (_text: string) => {},
+    [],
+  );
+  const endSession = useCallback(
+    async (_sessionId: string, _reason?: string) => {},
+    [],
+  );
 
   return {
     sessions,

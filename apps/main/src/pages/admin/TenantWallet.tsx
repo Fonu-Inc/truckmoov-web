@@ -1,83 +1,126 @@
-import { formatDate, formatTime } from "@truckmoov/app-core/utils/time-utils";
-import { useState, useEffect } from "react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
-import { Badge } from "@/components/shadcn/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow } from "@/components/shadcn/table";
+  formatDate, formatTime,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  AlertTriangle, ArrowDownRight, ArrowUpRight, BarChart3, CreditCard, Download, FileText, SlidersHorizontal as Filter, History, MessageCircle, MessageSquare, Phone, Plus, RefreshCw, Search, Smartphone, TrendingUp, Wallet,
+} from "lucide-react";
+import {
+  useEffect, useState,
+} from "react";
+import { toast } from "sonner";
+import { SubscriptionInvoicesCard } from "@/components/billing/SubscriptionInvoicesCard";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle } from "@/components/shadcn/dialog";
-import {Wallet, CreditCard, Phone, MessageSquare, MessageCircle, ArrowUpRight, ArrowDownRight, RefreshCw, Plus, TrendingUp, AlertTriangle, History, Smartphone, BarChart3, FileText, Search, SlidersHorizontal as Filter, Download} from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
-import { Checkbox } from "@/components/shadcn/checkbox";
-import { Separator } from "@/components/shadcn/separator";
-import { useAuthStore } from "@/stores/authStore";
-import { toast } from "sonner";
-import { UsageAnalyticsChart } from "@/components/wallet/UsageAnalyticsChart";
-import { AutoTopupSettings } from "@/components/wallet/AutoTopupSettings";
-import { SpendingLimitSettings } from "@/components/wallet/SpendingLimitSettings";
-import { PostpaidUsageDashboard } from "@/components/wallet/PostpaidUsageDashboard";
-import { SubscriptionInvoicesCard } from "@/components/billing/SubscriptionInvoicesCard";
+  DialogTitle,
+} from "@/components/shadcn/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/shadcn/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from "@/components/shadcn/select";
+  SelectValue,
+} from "@/components/shadcn/select";
+import { Separator } from "@/components/shadcn/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/shadcn/table";
+import { AutoTopupSettings } from "@/components/wallet/AutoTopupSettings";
+import { PostpaidUsageDashboard } from "@/components/wallet/PostpaidUsageDashboard";
+import { SpendingLimitSettings } from "@/components/wallet/SpendingLimitSettings";
+import { UsageAnalyticsChart } from "@/components/wallet/UsageAnalyticsChart";
+import { useAuthStore } from "@/stores/authStore";
 
 type UsageRange = "today" | "yesterday" | "last_7_days" | "last_30_days" | "last_90_days";
-const USAGE_RANGE_OPTIONS: { value: UsageRange; label: string }[] = [
-  { value: "today", label: "Today" },
-  { value: "yesterday", label: "Yesterday" },
-  { value: "last_7_days", label: "Last 7 days" },
-  { value: "last_30_days", label: "Last 30 days" },
-  { value: "last_90_days", label: "Last 90 days" },
+const USAGE_RANGE_OPTIONS: {
+  value: UsageRange; label: string;
+}[] = [
+  {
+    value: "today", label: "Today",
+  },
+  {
+    value: "yesterday", label: "Yesterday",
+  },
+  {
+    value: "last_7_days", label: "Last 7 days",
+  },
+  {
+    value: "last_30_days", label: "Last 30 days",
+  },
+  {
+    value: "last_90_days", label: "Last 90 days",
+  },
 ];
-function getUsageRangeBounds(range: UsageRange): { start: Date; end: Date } {
+function getUsageRangeBounds(range: UsageRange): {
+  start: Date; end: Date;
+} {
   const now = new Date();
   const end = new Date(now);
   const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
+  start.setHours(
+    0,
+    0,
+    0,
+    0,
+  );
   switch (range) {
     case "today":
-      return { start, end };
+      return {
+        start, end,
+      };
     case "yesterday": {
       const yStart = new Date(start); yStart.setDate(yStart.getDate() - 1);
       const yEnd = new Date(start); yEnd.setMilliseconds(-1);
-      return { start: yStart, end: yEnd };
+      return {
+        start: yStart, end: yEnd,
+      };
     }
-    case "last_7_days": start.setDate(start.getDate() - 6); return { start, end };
-    case "last_30_days": start.setDate(start.getDate() - 29); return { start, end };
-    case "last_90_days": start.setDate(start.getDate() - 89); return { start, end };
+    case "last_7_days": start.setDate(start.getDate() - 6); return {
+      start, end,
+    };
+    case "last_30_days": start.setDate(start.getDate() - 29); return {
+      start, end,
+    };
+    case "last_90_days": start.setDate(start.getDate() - 89); return {
+      start, end,
+    };
   }
 }
 
-interface WalletInfo {
+type WalletInfo = {
   balance: number;
   credit_enabled: boolean;
   credit_limit: number;
   low_balance_threshold: number;
-}
+};
 
-interface Transaction {
+type Transaction = {
   id: string;
   transaction_type: string;
   communication_type: string | null;
@@ -88,58 +131,154 @@ interface Transaction {
   balance_after_ngn: number;
   description: string | null;
   created_at: string;
-}
+};
 
-interface Rate {
+type Rate = {
   communication_type: string;
   rate_ngn: number;
   rate_unit: string;
-}
+};
 
 export default function TenantWallet() {
   const { user } = useAuthStore();
-  const tenantId = user?.tenantId || 'default';
-  
-  const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [rates, setRates] = useState<Rate[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [topupDialogOpen, setTopupDialogOpen] = useState(false);
-  const [topupAmount, setTopupAmount] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [topupLoading, setTopupLoading] = useState(false);
-  const [usageRange, setUsageRange] = useState<UsageRange>("last_30_days");
-  const [rateFilter, setRateFilter] = useState<string>("all");
-  const [txSearch, setTxSearch] = useState("");
-  // Applied filter values
-  const [txTypeEnabled, setTxTypeEnabled] = useState(false);
-  const [txTypeValue, setTxTypeValue] = useState<string>("all");
-  const [txChannelEnabled, setTxChannelEnabled] = useState(false);
-  const [txChannelValue, setTxChannelValue] = useState<string>("all");
-  const [txAmountEnabled, setTxAmountEnabled] = useState(false);
-  const [txAmountFrom, setTxAmountFrom] = useState<string>("");
-  const [txAmountTo, setTxAmountTo] = useState<string>("");
-  const [txDateEnabled, setTxDateEnabled] = useState(false);
-  const [txDateFrom, setTxDateFrom] = useState<string>("");
-  const [txDateTo, setTxDateTo] = useState<string>("");
-  // Draft state (used inside the popover before Apply)
-  const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
-  const [draftTypeEnabled, setDraftTypeEnabled] = useState(false);
-  const [draftType, setDraftType] = useState<string>("all");
-  const [draftChannelEnabled, setDraftChannelEnabled] = useState(false);
-  const [draftChannel, setDraftChannel] = useState<string>("all");
-  const [draftAmountEnabled, setDraftAmountEnabled] = useState(false);
-  const [draftAmountFrom, setDraftAmountFrom] = useState("");
-  const [draftAmountTo, setDraftAmountTo] = useState("");
-  const [draftDateEnabled, setDraftDateEnabled] = useState(false);
-  const [draftDateFrom, setDraftDateFrom] = useState("");
-  const [draftDateTo, setDraftDateTo] = useState("");
+  const tenantId = user?.tenantId || "default";
 
-  const activeFilterCount =
-    (txTypeEnabled ? 1 : 0) +
-    (txChannelEnabled ? 1 : 0) +
-    (txAmountEnabled ? 1 : 0) +
-    (txDateEnabled ? 1 : 0);
+  const [
+    walletInfo,
+    setWalletInfo,
+  ] = useState<WalletInfo | null>(null);
+  const [
+    transactions,
+    setTransactions,
+  ] = useState<Transaction[]>([]);
+  const [
+    rates,
+    setRates,
+  ] = useState<Rate[]>([]);
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+  const [
+    topupDialogOpen,
+    setTopupDialogOpen,
+  ] = useState(false);
+  const [
+    topupAmount,
+    setTopupAmount,
+  ] = useState("");
+  const [
+    phoneNumber,
+    setPhoneNumber,
+  ] = useState("");
+  const [
+    topupLoading,
+    setTopupLoading,
+  ] = useState(false);
+  const [
+    usageRange,
+    setUsageRange,
+  ] = useState<UsageRange>("last_30_days");
+  const [
+    rateFilter,
+    setRateFilter,
+  ] = useState<string>("all");
+  const [
+    txSearch,
+    setTxSearch,
+  ] = useState("");
+  // Applied filter values
+  const [
+    txTypeEnabled,
+    setTxTypeEnabled,
+  ] = useState(false);
+  const [
+    txTypeValue,
+    setTxTypeValue,
+  ] = useState<string>("all");
+  const [
+    txChannelEnabled,
+    setTxChannelEnabled,
+  ] = useState(false);
+  const [
+    txChannelValue,
+    setTxChannelValue,
+  ] = useState<string>("all");
+  const [
+    txAmountEnabled,
+    setTxAmountEnabled,
+  ] = useState(false);
+  const [
+    txAmountFrom,
+    setTxAmountFrom,
+  ] = useState<string>("");
+  const [
+    txAmountTo,
+    setTxAmountTo,
+  ] = useState<string>("");
+  const [
+    txDateEnabled,
+    setTxDateEnabled,
+  ] = useState(false);
+  const [
+    txDateFrom,
+    setTxDateFrom,
+  ] = useState<string>("");
+  const [
+    txDateTo,
+    setTxDateTo,
+  ] = useState<string>("");
+  // Draft state (used inside the popover before Apply)
+  const [
+    filterPopoverOpen,
+    setFilterPopoverOpen,
+  ] = useState(false);
+  const [
+    draftTypeEnabled,
+    setDraftTypeEnabled,
+  ] = useState(false);
+  const [
+    draftType,
+    setDraftType,
+  ] = useState<string>("all");
+  const [
+    draftChannelEnabled,
+    setDraftChannelEnabled,
+  ] = useState(false);
+  const [
+    draftChannel,
+    setDraftChannel,
+  ] = useState<string>("all");
+  const [
+    draftAmountEnabled,
+    setDraftAmountEnabled,
+  ] = useState(false);
+  const [
+    draftAmountFrom,
+    setDraftAmountFrom,
+  ] = useState("");
+  const [
+    draftAmountTo,
+    setDraftAmountTo,
+  ] = useState("");
+  const [
+    draftDateEnabled,
+    setDraftDateEnabled,
+  ] = useState(false);
+  const [
+    draftDateFrom,
+    setDraftDateFrom,
+  ] = useState("");
+  const [
+    draftDateTo,
+    setDraftDateTo,
+  ] = useState("");
+
+  const activeFilterCount
+    = (txTypeEnabled ? 1 : 0)
+      + (txChannelEnabled ? 1 : 0)
+      + (txAmountEnabled ? 1 : 0)
+      + (txDateEnabled ? 1 : 0);
 
   const syncDraftsFromApplied = () => {
     setDraftTypeEnabled(txTypeEnabled); setDraftType(txTypeValue);
@@ -168,13 +307,20 @@ export default function TenantWallet() {
     setFilterPopoverOpen(false);
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [tenantId]);
+  useEffect(
+    () => {
+      fetchData();
+    },
+    [tenantId],
+  );
 
   const fetchData = async () => {
     setLoading(true);
-    await Promise.all([fetchWallet(), fetchTransactions(), fetchRates()]);
+    await Promise.all([
+      fetchWallet(),
+      fetchTransactions(),
+      fetchRates(),
+    ]);
     setLoading(false);
   };
 
@@ -191,32 +337,57 @@ export default function TenantWallet() {
   };
 
   const handleTopup = async () => {
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
   const getTypeIcon = (commType: string | null) => {
     switch (commType) {
-      case 'call':
+      case "call":
         return <Phone className="h-4 w-4" />;
-      case 'sms':
+      case "sms":
         return <MessageSquare className="h-4 w-4" />;
-      case 'whatsapp':
+      case "whatsapp":
         return <MessageCircle className="h-4 w-4" />;
       default:
         return null;
     }
   };
 
-  const quickTopupAmounts = [5000, 10000, 25000, 50000, 100000];
+  const quickTopupAmounts = [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000,
+  ];
 
   // ── Demo transactions fallback so wallet UI is always populated ──
   const demoTransactions: Transaction[] = (() => {
-    const channels = ["call", "sms", "whatsapp"] as const;
+    const channels = [
+      "call",
+      "sms",
+      "whatsapp",
+    ] as const;
     const descriptions: Record<string, string[]> = {
-      call: ["Driver dispatch call", "Customer follow-up call", "IVR job offer", "Support callback"],
-      sms: ["Job assignment SMS", "ETA update SMS", "OTP verification", "Delivery confirmation"],
-      whatsapp: ["Waybill confirmation", "Job offer broadcast", "Delivery photo request", "Driver check-in"] };
+      call: [
+        "Driver dispatch call",
+        "Customer follow-up call",
+        "IVR job offer",
+        "Support callback",
+      ],
+      sms: [
+        "Job assignment SMS",
+        "ETA update SMS",
+        "OTP verification",
+        "Delivery confirmation",
+      ],
+      whatsapp: [
+        "Waybill confirmation",
+        "Job offer broadcast",
+        "Delivery photo request",
+        "Driver check-in",
+      ],
+    };
     let balance = 250_000;
     const out: Transaction[] = [];
     for (let i = 0; i < 60; i++) {
@@ -225,7 +396,12 @@ export default function TenantWallet() {
       const minutesAgo = i * 73 + Math.floor(Math.random() * 40);
       const created = new Date(Date.now() - minutesAgo * 60_000).toISOString();
       if (isTopup) {
-        const amt = [5000, 10000, 25000, 50000][i % 4];
+        const amt = [
+          5000,
+          10000,
+          25000,
+          50000,
+        ][i % 4];
         balance += amt;
         out.push({
           id: `demo-tx-${i}`,
@@ -237,8 +413,10 @@ export default function TenantWallet() {
           balance_before_ngn: balance - amt,
           balance_after_ngn: balance,
           description: "MTN Mobile Money top-up",
-          created_at: created });
-      } else {
+          created_at: created,
+        });
+      }
+      else {
         const rate = ch === "call" ? 22 : ch === "sms" ? 4 : 8;
         const qty = ch === "call" ? 1 + (i % 6) : 1 + (i % 4);
         const amt = rate * qty;
@@ -254,7 +432,8 @@ export default function TenantWallet() {
           balance_before_ngn: balance + amt,
           balance_after_ngn: balance,
           description: desc,
-          created_at: created });
+          created_at: created,
+        });
       }
     }
     return out;
@@ -263,75 +442,107 @@ export default function TenantWallet() {
   const displayTransactions = transactions.length > 0 ? transactions : demoTransactions;
 
   // Calculate usage stats (this-month for KPIs at the top)
-  const thisMonthTransactions = displayTransactions.filter(tx => {
+  const thisMonthTransactions = displayTransactions.filter((tx) => {
     const txDate = new Date(tx.created_at);
     const now = new Date();
     return txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
   });
 
   const totalSpentThisMonth = thisMonthTransactions
-    .filter(tx => tx.transaction_type === 'debit')
-    .reduce((sum, tx) => sum + tx.amount_ngn, 0);
+    .filter(tx => tx.transaction_type === "debit")
+    .reduce(
+      (sum, tx) => sum + tx.amount_ngn,
+      0,
+    );
 
   // Range-filtered usage breakdown (driven by date dropdown on the Usage card)
   const usageRangeBounds = getUsageRangeBounds(usageRange);
   const usageByType = displayTransactions
-    .filter(tx => {
-      if (tx.transaction_type !== 'debit' || !tx.communication_type) return false;
+    .filter((tx) => {
+      if (tx.transaction_type !== "debit" || !tx.communication_type)
+        return false;
       const d = new Date(tx.created_at);
       return d >= usageRangeBounds.start && d <= usageRangeBounds.end;
     })
-    .reduce((acc, tx) => {
-      const type = tx.communication_type!;
-      if (!acc[type]) acc[type] = { count: 0, amount: 0 };
-      acc[type].count += tx.quantity || 1;
-      acc[type].amount += tx.amount_ngn;
-      return acc;
-    }, {} as Record<string, { count: number; amount: number }>);
+    .reduce(
+      (acc, tx) => {
+        const type = tx.communication_type!;
+        if (!acc[type]) {
+          acc[type] = {
+            count: 0, amount: 0,
+          };
+        }
+        acc[type].count += tx.quantity || 1;
+        acc[type].amount += tx.amount_ngn;
+        return acc;
+      },
+      {} as Record<string, {
+        count: number; amount: number;
+      }>,
+    );
   const usageRangeLabel = USAGE_RANGE_OPTIONS.find(o => o.value === usageRange)?.label.toLowerCase();
 
   const exportToCSV = () => {
     if (transactions.length === 0) {
-      toast.error('No transactions to export');
+      toast.error("No transactions to export");
       return;
     }
 
-    const headers = ['Date', 'Time', 'Type', 'Channel', 'Quantity', 'Rate (₦)', 'Amount (₦)', 'Balance After (₦)', 'Description'];
+    const headers = [
+      "Date",
+      "Time",
+      "Type",
+      "Channel",
+      "Quantity",
+      "Rate (₦)",
+      "Amount (₦)",
+      "Balance After (₦)",
+      "Description",
+    ];
     const rows = transactions.map(tx => [
       formatDate(tx.created_at),
       formatTime(tx.created_at),
       tx.transaction_type,
-      tx.communication_type || '',
-      tx.quantity || '',
-      tx.unit_rate_ngn || '',
+      tx.communication_type || "",
+      tx.quantity || "",
+      tx.unit_rate_ngn || "",
       tx.amount_ngn,
       tx.balance_after_ngn,
-      tx.description || ''
+      tx.description || "",
     ]);
 
     const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(",")),
+    ].join("\n");
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    const blob = new Blob(
+      [csvContent],
+      { type: "text/csv;charset=utf-8;" },
+    );
+    const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `wallet-transactions-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `wallet-transactions-${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
     URL.revokeObjectURL(link.href);
-    toast.success('CSV exported successfully');
+    toast.success("CSV exported successfully");
   };
 
   const exportToPDF = () => {
     if (transactions.length === 0) {
-      toast.error('No transactions to export');
+      toast.error("No transactions to export");
       return;
     }
 
     // Create a printable HTML document
-    const totalDebits = transactions.filter(tx => tx.transaction_type === 'debit').reduce((sum, tx) => sum + tx.amount_ngn, 0);
-    const totalCredits = transactions.filter(tx => tx.transaction_type !== 'debit').reduce((sum, tx) => sum + tx.amount_ngn, 0);
+    const totalDebits = transactions.filter(tx => tx.transaction_type === "debit").reduce(
+      (sum, tx) => sum + tx.amount_ngn,
+      0,
+    );
+    const totalCredits = transactions.filter(tx => tx.transaction_type !== "debit").reduce(
+      (sum, tx) => sum + tx.amount_ngn,
+      0,
+    );
 
     const printContent = `
       <!DOCTYPE html>
@@ -390,14 +601,14 @@ export default function TenantWallet() {
                 <tr>
                   <td>${new Date(tx.created_at).toLocaleString()}</td>
                   <td>${tx.transaction_type}</td>
-                  <td>${tx.communication_type || '-'}</td>
-                  <td>${tx.quantity ? `${tx.quantity} ${tx.communication_type === 'call' ? 'min' : 'msg'}` : ''} ${tx.description || ''}</td>
-                  <td class="text-right ${tx.transaction_type === 'debit' ? 'debit' : 'credit'}">
-                    ${tx.transaction_type === 'debit' ? '-' : '+'}₦${tx.amount_ngn.toLocaleString()}
+                  <td>${tx.communication_type || "-"}</td>
+                  <td>${tx.quantity ? `${tx.quantity} ${tx.communication_type === "call" ? "min" : "msg"}` : ""} ${tx.description || ""}</td>
+                  <td class="text-right ${tx.transaction_type === "debit" ? "debit" : "credit"}">
+                    ${tx.transaction_type === "debit" ? "-" : "+"}₦${tx.amount_ngn.toLocaleString()}
                   </td>
                   <td class="text-right">₦${tx.balance_after_ngn.toLocaleString()}</td>
                 </tr>
-              `).join('')}
+              `).join("")}
             </tbody>
           </table>
           
@@ -408,17 +619,24 @@ export default function TenantWallet() {
       </html>
     `;
 
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open(
+      "",
+      "_blank",
+    );
     if (printWindow) {
       printWindow.document.write(printContent);
       printWindow.document.close();
       printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-      }, 250);
-      toast.success('PDF export opened - use Print to save as PDF');
-    } else {
-      toast.error('Please allow popups to export PDF');
+      setTimeout(
+        () => {
+          printWindow.print();
+        },
+        250,
+      );
+      toast.success("PDF export opened - use Print to save as PDF");
+    }
+    else {
+      toast.error("Please allow popups to export PDF");
     }
   };
 
@@ -445,12 +663,14 @@ export default function TenantWallet() {
               <CardContent>
                 <div className="flex items-end justify-between">
                   <div>
-                    <p className={`text-4xl font-bold ${(walletInfo?.balance || 0) < 0 ? 'text-destructive' : ''}`}>
-                      ₦{(walletInfo?.balance || 0).toLocaleString()}
+                    <p className={`text-4xl font-bold ${(walletInfo?.balance || 0) < 0 ? "text-destructive" : ""}`}>
+                      ₦
+                      {(walletInfo?.balance || 0).toLocaleString()}
                     </p>
                     {walletInfo?.credit_enabled && (
                       <p className="text-sm text-muted-foreground mt-1">
-                        Credit limit: ₦{walletInfo.credit_limit.toLocaleString()}
+                        Credit limit: ₦
+                        {walletInfo.credit_limit.toLocaleString()}
                       </p>
                     )}
                   </div>
@@ -473,9 +693,14 @@ export default function TenantWallet() {
                 <CardTitle className="text-sm font-medium">This Month Spent</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-bold">₦{totalSpentThisMonth.toLocaleString()}</p>
+                <p className="text-2xl font-bold">
+                  ₦
+                  {totalSpentThisMonth.toLocaleString()}
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {thisMonthTransactions.filter(tx => tx.transaction_type === 'debit').length} transactions
+                  {thisMonthTransactions.filter(tx => tx.transaction_type === "debit").length}
+                  {" "}
+                  transactions
                 </p>
               </CardContent>
             </Card>
@@ -486,13 +711,19 @@ export default function TenantWallet() {
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold text-green-600">
-                  ₦{thisMonthTransactions
-                    .filter(tx => tx.transaction_type === 'topup')
-                    .reduce((sum, tx) => sum + tx.amount_ngn, 0)
+                  ₦
+                  {thisMonthTransactions
+                    .filter(tx => tx.transaction_type === "topup")
+                    .reduce(
+                      (sum, tx) => sum + tx.amount_ngn,
+                      0,
+                    )
                     .toLocaleString()}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {thisMonthTransactions.filter(tx => tx.transaction_type === 'topup').length} top-ups
+                  {thisMonthTransactions.filter(tx => tx.transaction_type === "topup").length}
+                  {" "}
+                  top-ups
                 </p>
               </CardContent>
             </Card>
@@ -511,15 +742,25 @@ export default function TenantWallet() {
                       <TrendingUp className="h-4 w-4 text-primary shrink-0" />
                       <span className="truncate">Usage Breakdown</span>
                     </CardTitle>
-                    <CardDescription className="text-xs truncate">Channel usage for the {usageRangeLabel}</CardDescription>
+                    <CardDescription className="text-xs truncate">
+                      Channel usage for the
+                      {usageRangeLabel}
+                    </CardDescription>
                   </div>
-                  <Select value={usageRange} onValueChange={(v) => setUsageRange(v as UsageRange)}>
+                  <Select
+                    value={usageRange}
+                    onValueChange={v => setUsageRange(v as UsageRange)}
+                  >
                     <SelectTrigger className="h-7 w-[120px] shrink-0 text-[11px] px-2">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {USAGE_RANGE_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                      {USAGE_RANGE_OPTIONS.map(opt => (
+                        <SelectItem
+                          key={opt.value}
+                          value={opt.value}
+                          className="text-xs"
+                        >
                           {opt.label}
                         </SelectItem>
                       ))}
@@ -529,30 +770,46 @@ export default function TenantWallet() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {Object.entries(usageByType).length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4">No usage for the selected range</p>
-                  ) : (
-                    Object.entries(usageByType).map(([type, data]) => (
-                      <div key={type} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${
-                            type === 'call' ? 'bg-blue-500/10 text-blue-500' :
-                            type === 'sms' ? 'bg-green-500/10 text-green-500' :
-                            'bg-emerald-500/10 text-emerald-500'
-                          }`}>
-                            {getTypeIcon(type)}
-                          </div>
-                          <div>
-                            <p className="font-medium capitalize">{type}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {data.count} {type === 'call' ? 'minutes' : 'messages'}
+                  {Object.entries(usageByType).length === 0
+                    ? (
+                        <p className="text-muted-foreground text-center py-4">No usage for the selected range</p>
+                      )
+                    : (
+                        Object.entries(usageByType).map(([
+                          type,
+                          data,
+                        ]) => (
+                          <div
+                            key={type}
+                            className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-lg ${
+                                type === "call"
+                                  ? "bg-blue-500/10 text-blue-500"
+                                  : type === "sms"
+                                    ? "bg-green-500/10 text-green-500"
+                                    : "bg-emerald-500/10 text-emerald-500"
+                              }`}
+                              >
+                                {getTypeIcon(type)}
+                              </div>
+                              <div>
+                                <p className="font-medium capitalize">{type}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {data.count}
+                                  {" "}
+                                  {type === "call" ? "minutes" : "messages"}
+                                </p>
+                              </div>
+                            </div>
+                            <p className="font-semibold">
+                              ₦
+                              {data.amount.toLocaleString()}
                             </p>
                           </div>
-                        </div>
-                        <p className="font-semibold">₦{data.amount.toLocaleString()}</p>
-                      </div>
-                    ))
-                  )}
+                        ))
+                      )}
                 </div>
               </CardContent>
             </Card>
@@ -567,15 +824,25 @@ export default function TenantWallet() {
                     </CardTitle>
                     <CardDescription className="text-xs truncate">Charges per unit for each channel</CardDescription>
                   </div>
-                  <Select value={rateFilter} onValueChange={setRateFilter}>
+                  <Select
+                    value={rateFilter}
+                    onValueChange={setRateFilter}
+                  >
                     <SelectTrigger className="h-7 w-[130px] text-[11px] shrink-0">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All channels</SelectItem>
                       {rates.map(r => (
-                        <SelectItem key={r.communication_type} value={r.communication_type} className="capitalize">
-                          {r.communication_type.replace(/_/g, ' ')}
+                        <SelectItem
+                          key={r.communication_type}
+                          value={r.communication_type}
+                          className="capitalize"
+                        >
+                          {r.communication_type.replace(
+                            /_/g,
+                            " ",
+                          )}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -585,27 +852,36 @@ export default function TenantWallet() {
               <CardContent>
                 <div className="space-y-3">
                   {rates
-                    .filter(r => rateFilter === 'all' || r.communication_type === rateFilter)
-                    .map((rate) => (
-                    <div key={rate.communication_type} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${
-                          rate.communication_type === 'call' ? 'bg-blue-500/10 text-blue-500' :
-                          rate.communication_type === 'sms' ? 'bg-green-500/10 text-green-500' :
-                          'bg-emerald-500/10 text-emerald-500'
-                        }`}>
-                          {getTypeIcon(rate.communication_type)}
+                    .filter(r => rateFilter === "all" || r.communication_type === rateFilter)
+                    .map(rate => (
+                      <div
+                        key={rate.communication_type}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${
+                            rate.communication_type === "call"
+                              ? "bg-blue-500/10 text-blue-500"
+                              : rate.communication_type === "sms"
+                                ? "bg-green-500/10 text-green-500"
+                                : "bg-emerald-500/10 text-emerald-500"
+                          }`}
+                          >
+                            {getTypeIcon(rate.communication_type)}
+                          </div>
+                          <span className="font-medium capitalize">{rate.communication_type}</span>
                         </div>
-                        <span className="font-medium capitalize">{rate.communication_type}</span>
+                        <div className="text-right">
+                          <p className="font-bold">
+                            ₦
+                            {rate.rate_ngn}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {rate.rate_unit === "per_minute" ? "per minute" : "per message"}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold">₦{rate.rate_ngn}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {rate.rate_unit === 'per_minute' ? 'per minute' : 'per message'}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </CardContent>
             </Card>
@@ -613,8 +889,14 @@ export default function TenantWallet() {
 
           {/* Auto Top-Up & Spending Limit Settings */}
           <div className="grid gap-4 md:grid-cols-2">
-            <AutoTopupSettings tenantId={tenantId} onSettingsUpdated={fetchData} />
-            <SpendingLimitSettings tenantId={tenantId} onUpdate={fetchData} />
+            <AutoTopupSettings
+              tenantId={tenantId}
+              onSettingsUpdated={fetchData}
+            />
+            <SpendingLimitSettings
+              tenantId={tenantId}
+              onUpdate={fetchData}
+            />
           </div>
 
           {/* Postpaid Usage Section */}
@@ -638,7 +920,10 @@ export default function TenantWallet() {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                    >
                       <Download className="h-4 w-4 mr-2" />
                       Export Data
                     </Button>
@@ -661,30 +946,60 @@ export default function TenantWallet() {
                   <Input
                     placeholder="Search transactions..."
                     value={txSearch}
-                    onChange={(e) => setTxSearch(e.target.value)}
+                    onChange={e => setTxSearch(e.target.value)}
                     className="pl-9"
                   />
                 </div>
-                <Popover open={filterPopoverOpen} onOpenChange={(o) => { if (o) syncDraftsFromApplied(); setFilterPopoverOpen(o); }}>
+                <Popover
+                  open={filterPopoverOpen}
+                  onOpenChange={(o) => {
+                    if (o)
+                      syncDraftsFromApplied(); setFilterPopoverOpen(o);
+                  }}
+                >
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                    >
                       <Filter className="h-4 w-4 mr-2" />
                       Filter
                       {activeFilterCount > 0 && (
-                        <Badge variant="secondary" className="ml-2 h-5 px-1.5">{activeFilterCount}</Badge>
+                        <Badge
+                          variant="secondary"
+                          className="ml-2 h-5 px-1.5"
+                        >
+                          {activeFilterCount}
+                        </Badge>
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent align="end" className="w-80 space-y-4 max-h-[70vh] overflow-y-auto">
+                  <PopoverContent
+                    align="end"
+                    className="w-80 space-y-4 max-h-[70vh] overflow-y-auto"
+                  >
                     <h4 className="text-xs font-medium text-foreground px-0.5">Only show transactions by...</h4>
 
                     {/* Type */}
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <Checkbox id="flt-tx-type" checked={draftTypeEnabled} onCheckedChange={(c) => setDraftTypeEnabled(c === true)} />
-                        <Label htmlFor="flt-tx-type" className="text-sm cursor-pointer">Type</Label>
+                        <Checkbox
+                          id="flt-tx-type"
+                          checked={draftTypeEnabled}
+                          onCheckedChange={c => setDraftTypeEnabled(c === true)}
+                        />
+                        <Label
+                          htmlFor="flt-tx-type"
+                          className="text-sm cursor-pointer"
+                        >
+                          Type
+                        </Label>
                       </div>
-                      <Select value={draftType} onValueChange={setDraftType} disabled={!draftTypeEnabled}>
+                      <Select
+                        value={draftType}
+                        onValueChange={setDraftType}
+                        disabled={!draftTypeEnabled}
+                      >
                         <SelectTrigger><SelectValue placeholder="Any type" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">Any type</SelectItem>
@@ -698,10 +1013,23 @@ export default function TenantWallet() {
                     {/* Channel */}
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <Checkbox id="flt-tx-ch" checked={draftChannelEnabled} onCheckedChange={(c) => setDraftChannelEnabled(c === true)} />
-                        <Label htmlFor="flt-tx-ch" className="text-sm cursor-pointer">Channel</Label>
+                        <Checkbox
+                          id="flt-tx-ch"
+                          checked={draftChannelEnabled}
+                          onCheckedChange={c => setDraftChannelEnabled(c === true)}
+                        />
+                        <Label
+                          htmlFor="flt-tx-ch"
+                          className="text-sm cursor-pointer"
+                        >
+                          Channel
+                        </Label>
                       </div>
-                      <Select value={draftChannel} onValueChange={setDraftChannel} disabled={!draftChannelEnabled}>
+                      <Select
+                        value={draftChannel}
+                        onValueChange={setDraftChannel}
+                        disabled={!draftChannelEnabled}
+                      >
                         <SelectTrigger><SelectValue placeholder="Any channel" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">Any channel</SelectItem>
@@ -717,30 +1045,81 @@ export default function TenantWallet() {
                     {/* Amount */}
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <Checkbox id="flt-tx-amt" checked={draftAmountEnabled} onCheckedChange={(c) => setDraftAmountEnabled(c === true)} />
-                        <Label htmlFor="flt-tx-amt" className="text-sm cursor-pointer">Amount (₦)</Label>
+                        <Checkbox
+                          id="flt-tx-amt"
+                          checked={draftAmountEnabled}
+                          onCheckedChange={c => setDraftAmountEnabled(c === true)}
+                        />
+                        <Label
+                          htmlFor="flt-tx-amt"
+                          className="text-sm cursor-pointer"
+                        >
+                          Amount (₦)
+                        </Label>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        <Input type="number" placeholder="From" disabled={!draftAmountEnabled} value={draftAmountFrom} onChange={(e) => setDraftAmountFrom(e.target.value)} />
-                        <Input type="number" placeholder="To" disabled={!draftAmountEnabled} value={draftAmountTo} onChange={(e) => setDraftAmountTo(e.target.value)} />
+                        <Input
+                          type="number"
+                          placeholder="From"
+                          disabled={!draftAmountEnabled}
+                          value={draftAmountFrom}
+                          onChange={e => setDraftAmountFrom(e.target.value)}
+                        />
+                        <Input
+                          type="number"
+                          placeholder="To"
+                          disabled={!draftAmountEnabled}
+                          value={draftAmountTo}
+                          onChange={e => setDraftAmountTo(e.target.value)}
+                        />
                       </div>
                     </div>
 
                     {/* Date */}
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <Checkbox id="flt-tx-date" checked={draftDateEnabled} onCheckedChange={(c) => setDraftDateEnabled(c === true)} />
-                        <Label htmlFor="flt-tx-date" className="text-sm cursor-pointer">Date</Label>
+                        <Checkbox
+                          id="flt-tx-date"
+                          checked={draftDateEnabled}
+                          onCheckedChange={c => setDraftDateEnabled(c === true)}
+                        />
+                        <Label
+                          htmlFor="flt-tx-date"
+                          className="text-sm cursor-pointer"
+                        >
+                          Date
+                        </Label>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        <Input type="date" disabled={!draftDateEnabled} value={draftDateFrom} onChange={(e) => setDraftDateFrom(e.target.value)} />
-                        <Input type="date" disabled={!draftDateEnabled} value={draftDateTo} onChange={(e) => setDraftDateTo(e.target.value)} />
+                        <Input
+                          type="date"
+                          disabled={!draftDateEnabled}
+                          value={draftDateFrom}
+                          onChange={e => setDraftDateFrom(e.target.value)}
+                        />
+                        <Input
+                          type="date"
+                          disabled={!draftDateEnabled}
+                          value={draftDateTo}
+                          onChange={e => setDraftDateTo(e.target.value)}
+                        />
                       </div>
                     </div>
 
                     <div className="flex gap-2 pt-2 border-t border-border">
-                      <Button onClick={handleApplyFilters} className="flex-1">Apply</Button>
-                      <Button variant="outline" onClick={handleShowAllFilters} className="flex-1">Show All</Button>
+                      <Button
+                        onClick={handleApplyFilters}
+                        className="flex-1"
+                      >
+                        Apply
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleShowAllFilters}
+                        className="flex-1"
+                      >
+                        Show All
+                      </Button>
                     </div>
                   </PopoverContent>
                 </Popover>
@@ -761,42 +1140,62 @@ export default function TenantWallet() {
                 <TableBody>
                   {(() => {
                     const q = txSearch.trim().toLowerCase();
-                    const amtFrom = txAmountEnabled && txAmountFrom !== "" ? parseFloat(txAmountFrom) : null;
-                    const amtTo = txAmountEnabled && txAmountTo !== "" ? parseFloat(txAmountTo) : null;
+                    const amtFrom = txAmountEnabled && txAmountFrom !== "" ? Number.parseFloat(txAmountFrom) : null;
+                    const amtTo = txAmountEnabled && txAmountTo !== "" ? Number.parseFloat(txAmountTo) : null;
                     const dateFrom = txDateEnabled && txDateFrom ? new Date(txDateFrom) : null;
-                    const dateTo = txDateEnabled && txDateTo ? new Date(txDateTo + "T23:59:59") : null;
+                    const dateTo = txDateEnabled && txDateTo ? new Date(`${txDateTo}T23:59:59`) : null;
                     const filtered = displayTransactions.filter((tx) => {
-                      const type = (tx.transaction_type || '').toLowerCase();
-                      if (txTypeEnabled && txTypeValue !== "all" && type !== txTypeValue) return false;
-                      const ch = (tx.communication_type || '').toLowerCase();
+                      const type = (tx.transaction_type || "").toLowerCase();
+                      if (txTypeEnabled && txTypeValue !== "all" && type !== txTypeValue)
+                        return false;
+                      const ch = (tx.communication_type || "").toLowerCase();
                       if (txChannelEnabled && txChannelValue !== "all") {
-                        const effective = ch || 'other';
-                        const matchKey = ch && ['call','sms','whatsapp','email'].includes(ch) ? ch : 'other';
-                        if (matchKey !== txChannelValue) return false;
+                        const effective = ch || "other";
+                        const matchKey = ch && [
+                          "call",
+                          "sms",
+                          "whatsapp",
+                          "email",
+                        ].includes(ch)
+                          ? ch
+                          : "other";
+                        if (matchKey !== txChannelValue)
+                          return false;
                       }
-                      if (amtFrom !== null && tx.amount_ngn < amtFrom) return false;
-                      if (amtTo !== null && tx.amount_ngn > amtTo) return false;
+                      if (amtFrom !== null && tx.amount_ngn < amtFrom)
+                        return false;
+                      if (amtTo !== null && tx.amount_ngn > amtTo)
+                        return false;
                       if (dateFrom || dateTo) {
                         const d = new Date(tx.created_at);
-                        if (dateFrom && d < dateFrom) return false;
-                        if (dateTo && d > dateTo) return false;
+                        if (dateFrom && d < dateFrom)
+                          return false;
+                        if (dateTo && d > dateTo)
+                          return false;
                       }
                       if (q) {
-                        const hay = `${tx.description || ''} ${tx.communication_type || ''} ${tx.transaction_type || ''}`.toLowerCase();
-                        if (!hay.includes(q)) return false;
+                        const hay = `${tx.description || ""} ${tx.communication_type || ""} ${tx.transaction_type || ""}`.toLowerCase();
+                        if (!hay.includes(q))
+                          return false;
                       }
                       return true;
                     });
                     if (filtered.length === 0) {
                       return (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                            {transactions.length === 0 ? 'No transactions yet' : 'No transactions match your filters'}
+                          <TableCell
+                            colSpan={6}
+                            className="text-center py-8 text-muted-foreground"
+                          >
+                            {transactions.length === 0 ? "No transactions yet" : "No transactions match your filters"}
                           </TableCell>
                         </TableRow>
                       );
                     }
-                    return filtered.slice(0, 50).map((tx) => (
+                    return filtered.slice(
+                      0,
+                      50,
+                    ).map(tx => (
                       <TableRow key={tx.id}>
                         <TableCell className="text-sm">
                           <div>{formatDate(tx.created_at)}</div>
@@ -805,14 +1204,19 @@ export default function TenantWallet() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={tx.transaction_type === 'debit' ? 'destructive' : 'default'} className={
-                            tx.transaction_type === 'topup' ? 'bg-green-500/10 text-green-500 border-green-500/20' : ''
-                          }>
-                            {tx.transaction_type === 'debit' ? (
-                              <ArrowDownRight className="h-3 w-3 mr-1" />
-                            ) : (
-                              <ArrowUpRight className="h-3 w-3 mr-1" />
-                            )}
+                          <Badge
+                            variant={tx.transaction_type === "debit" ? "destructive" : "default"}
+                            className={
+                              tx.transaction_type === "topup" ? "bg-green-500/10 text-green-500 border-green-500/20" : ""
+                            }
+                          >
+                            {tx.transaction_type === "debit"
+                              ? (
+                                  <ArrowDownRight className="h-3 w-3 mr-1" />
+                                )
+                              : (
+                                  <ArrowUpRight className="h-3 w-3 mr-1" />
+                                )}
                             {tx.transaction_type}
                           </Badge>
                         </TableCell>
@@ -827,19 +1231,25 @@ export default function TenantWallet() {
                         <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
                           {tx.quantity && (
                             <span className="mr-2">
-                              {tx.quantity} {tx.communication_type === 'call' ? 'min' : 'msg'}
+                              {tx.quantity}
+                              {" "}
+                              {tx.communication_type === "call" ? "min" : "msg"}
                               {tx.unit_rate_ngn && ` × ₦${tx.unit_rate_ngn}`}
                             </span>
                           )}
                           {tx.description}
                         </TableCell>
                         <TableCell className={`text-right font-medium ${
-                          tx.transaction_type === 'debit' ? 'text-red-500' : 'text-green-500'
-                        }`}>
-                          {tx.transaction_type === 'debit' ? '-' : '+'}₦{tx.amount_ngn.toLocaleString()}
+                          tx.transaction_type === "debit" ? "text-red-500" : "text-green-500"
+                        }`}
+                        >
+                          {tx.transaction_type === "debit" ? "-" : "+"}
+                          ₦
+                          {tx.amount_ngn.toLocaleString()}
                         </TableCell>
                         <TableCell className="text-right">
-                          ₦{tx.balance_after_ngn.toLocaleString()}
+                          ₦
+                          {tx.balance_after_ngn.toLocaleString()}
                         </TableCell>
                       </TableRow>
                     ));
@@ -852,7 +1262,10 @@ export default function TenantWallet() {
       )}
 
       {/* Top-up Dialog */}
-      <Dialog open={topupDialogOpen} onOpenChange={setTopupDialogOpen}>
+      <Dialog
+        open={topupDialogOpen}
+        onOpenChange={setTopupDialogOpen}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -868,14 +1281,15 @@ export default function TenantWallet() {
             <div className="space-y-2">
               <Label>Quick Amounts</Label>
               <div className="grid grid-cols-3 gap-2">
-                {quickTopupAmounts.map((amount) => (
+                {quickTopupAmounts.map(amount => (
                   <Button
                     key={amount}
-                    variant={topupAmount === amount.toString() ? 'default' : 'outline'}
+                    variant={topupAmount === amount.toString() ? "default" : "outline"}
                     size="sm"
                     onClick={() => setTopupAmount(amount.toString())}
                   >
-                    ₦{amount.toLocaleString()}
+                    ₦
+                    {amount.toLocaleString()}
                   </Button>
                 ))}
               </div>
@@ -888,7 +1302,7 @@ export default function TenantWallet() {
                 type="number"
                 placeholder="Enter amount"
                 value={topupAmount}
-                onChange={(e) => setTopupAmount(e.target.value)}
+                onChange={e => setTopupAmount(e.target.value)}
               />
             </div>
 
@@ -899,7 +1313,7 @@ export default function TenantWallet() {
                 type="tel"
                 placeholder="e.g., 08031234567"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                onChange={e => setPhoneNumber(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
                 You'll receive a prompt on this number to approve the payment
@@ -910,12 +1324,16 @@ export default function TenantWallet() {
               <div className="bg-muted rounded-lg p-4">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Amount to pay:</span>
-                  <span className="text-xl font-bold">₦{parseFloat(topupAmount || '0').toLocaleString()}</span>
+                  <span className="text-xl font-bold">
+                    ₦
+                    {Number.parseFloat(topupAmount || "0").toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center mt-2 text-sm">
                   <span className="text-muted-foreground">New balance:</span>
                   <span className="font-medium text-green-600">
-                    ₦{((walletInfo?.balance || 0) + parseFloat(topupAmount || '0')).toLocaleString()}
+                    ₦
+                    {((walletInfo?.balance || 0) + Number.parseFloat(topupAmount || "0")).toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -923,15 +1341,23 @@ export default function TenantWallet() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setTopupDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setTopupDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleTopup} disabled={topupLoading || !topupAmount || !phoneNumber}>
-              {topupLoading ? (
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <CreditCard className="h-4 w-4 mr-2" />
-              )}
+            <Button
+              onClick={handleTopup}
+              disabled={topupLoading || !topupAmount || !phoneNumber}
+            >
+              {topupLoading
+                ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  )
+                : (
+                    <CreditCard className="h-4 w-4 mr-2" />
+                  )}
               Pay with MoMo
             </Button>
           </DialogFooter>

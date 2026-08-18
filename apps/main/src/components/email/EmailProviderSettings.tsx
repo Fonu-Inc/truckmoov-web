@@ -1,12 +1,24 @@
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Cloud,
+  Eye,
+  EyeOff,
+  Loader2,
+  Mail,
+  Send,
+  Settings,
+  Shield,
+  TestTube,
+  XCircle,
+} from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
-import { Switch } from "@/components/shadcn/switch";
-import { Separator } from "@/components/shadcn/separator";
-import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +26,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import {
+  RadioGroup, RadioGroupItem,
+} from "@/components/shadcn/radio-group";
 import {
   Select,
   SelectContent,
@@ -21,25 +38,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Mail,
-  CheckCircle2,
-  XCircle,
-  Loader2,
-  Shield,
-  Settings,
-  Eye,
-  EyeOff,
-  TestTube,
-  Cloud,
-  Send,
-  AlertTriangle,
-} from "lucide-react";
-import { toast } from "sonner";
+import { Separator } from "@/components/shadcn/separator";
+import { Switch } from "@/components/shadcn/switch";
 
 type EmailProvider = "sendgrid" | "aws_ses" | "resend" | "none";
 
-interface ProviderConfig {
+type ProviderConfig = {
   sendgrid: {
     apiKey: string;
     fromEmail: string;
@@ -57,18 +61,42 @@ interface ProviderConfig {
     fromEmail: string;
     fromName: string;
   };
-}
+};
 
 export function EmailProviderSettings() {
-  const [activeProvider, setActiveProvider] = useState<EmailProvider>("resend");
-  const [isConnected, setIsConnected] = useState(true);
-  const [isTesting, setIsTesting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
-  const [testDialogOpen, setTestDialogOpen] = useState(false);
-  const [testEmail, setTestEmail] = useState("");
+  const [
+    activeProvider,
+    setActiveProvider,
+  ] = useState<EmailProvider>("resend");
+  const [
+    isConnected,
+    setIsConnected,
+  ] = useState(true);
+  const [
+    isTesting,
+    setIsTesting,
+  ] = useState(false);
+  const [
+    isSaving,
+    setIsSaving,
+  ] = useState(false);
+  const [
+    showSecrets,
+    setShowSecrets,
+  ] = useState<Record<string, boolean>>({});
+  const [
+    testDialogOpen,
+    setTestDialogOpen,
+  ] = useState(false);
+  const [
+    testEmail,
+    setTestEmail,
+  ] = useState("");
 
-  const [config, setConfig] = useState<ProviderConfig>({
+  const [
+    config,
+    setConfig,
+  ] = useState<ProviderConfig>({
     sendgrid: {
       apiKey: "",
       fromEmail: "notifications@fleetpro.ng",
@@ -88,7 +116,10 @@ export function EmailProviderSettings() {
     },
   });
 
-  const [notificationSettings, setNotificationSettings] = useState({
+  const [
+    notificationSettings,
+    setNotificationSettings,
+  ] = useState({
     budgetAlerts: true,
     securityAlerts: true,
     jobNotifications: true,
@@ -97,7 +128,9 @@ export function EmailProviderSettings() {
   });
 
   const toggleShowSecret = (key: string) => {
-    setShowSecrets((prev) => ({ ...prev, [key]: !prev[key] }));
+    setShowSecrets(prev => ({
+      ...prev, [key]: !prev[key],
+    }));
   };
 
   const handleTestConnection = async () => {
@@ -105,23 +138,29 @@ export function EmailProviderSettings() {
       toast.error("Please enter a test email address");
       return;
     }
-    
+
     setIsTesting(true);
     // Simulate API call
-    setTimeout(() => {
-      setIsTesting(false);
-      setTestDialogOpen(false);
-      toast.success(`Test email sent to ${testEmail}`);
-    }, 2000);
+    setTimeout(
+      () => {
+        setIsTesting(false);
+        setTestDialogOpen(false);
+        toast.success(`Test email sent to ${testEmail}`);
+      },
+      2000,
+    );
   };
 
   const handleSave = async () => {
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      setIsConnected(true);
-      toast.success("Email provider settings saved");
-    }, 1500);
+    setTimeout(
+      () => {
+        setIsSaving(false);
+        setIsConnected(true);
+        toast.success("Email provider settings saved");
+      },
+      1500,
+    );
   };
 
   const providers = [
@@ -172,11 +211,14 @@ export function EmailProviderSettings() {
         <CardContent className="space-y-6">
           <RadioGroup
             value={activeProvider}
-            onValueChange={(value) => setActiveProvider(value as EmailProvider)}
+            onValueChange={value => setActiveProvider(value as EmailProvider)}
             className="grid gap-4 md:grid-cols-3"
           >
-            {providers.map((provider) => (
-              <div key={provider.id} className="relative">
+            {providers.map(provider => (
+              <div
+                key={provider.id}
+                className="relative"
+              >
                 <RadioGroupItem
                   value={provider.id}
                   id={provider.id}
@@ -192,7 +234,10 @@ export function EmailProviderSettings() {
                     <p className="text-xs text-muted-foreground">{provider.description}</p>
                   </div>
                   {provider.recommended && (
-                    <Badge variant="secondary" className="mt-2 text-xs">
+                    <Badge
+                      variant="secondary"
+                      className="mt-2 text-xs"
+                    >
                       Recommended
                     </Badge>
                   )}
@@ -214,12 +259,13 @@ export function EmailProviderSettings() {
                     <Input
                       type={showSecrets.sendgridApiKey ? "text" : "password"}
                       value={config.sendgrid.apiKey}
-                      onChange={(e) =>
+                      onChange={e =>
                         setConfig({
                           ...config,
-                          sendgrid: { ...config.sendgrid, apiKey: e.target.value },
-                        })
-                      }
+                          sendgrid: {
+                            ...config.sendgrid, apiKey: e.target.value,
+                          },
+                        })}
                       placeholder="SG.xxxxxxxxxxxxxxxxxxxx"
                       className="pr-10"
                     />
@@ -230,15 +276,18 @@ export function EmailProviderSettings() {
                       className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6"
                       onClick={() => toggleShowSecret("sendgridApiKey")}
                     >
-                      {showSecrets.sendgridApiKey ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {showSecrets.sendgridApiKey
+                        ? (
+                            <EyeOff className="h-4 w-4" />
+                          )
+                        : (
+                            <Eye className="h-4 w-4" />
+                          )}
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Get your API key from{" "}
+                    Get your API key from
+                    {" "}
                     <a
                       href="https://app.sendgrid.com/settings/api_keys"
                       target="_blank"
@@ -253,12 +302,13 @@ export function EmailProviderSettings() {
                   <Label>From Email</Label>
                   <Input
                     value={config.sendgrid.fromEmail}
-                    onChange={(e) =>
+                    onChange={e =>
                       setConfig({
                         ...config,
-                        sendgrid: { ...config.sendgrid, fromEmail: e.target.value },
-                      })
-                    }
+                        sendgrid: {
+                          ...config.sendgrid, fromEmail: e.target.value,
+                        },
+                      })}
                     placeholder="notifications@yourdomain.com"
                   />
                 </div>
@@ -266,12 +316,13 @@ export function EmailProviderSettings() {
                   <Label>From Name</Label>
                   <Input
                     value={config.sendgrid.fromName}
-                    onChange={(e) =>
+                    onChange={e =>
                       setConfig({
                         ...config,
-                        sendgrid: { ...config.sendgrid, fromName: e.target.value },
-                      })
-                    }
+                        sendgrid: {
+                          ...config.sendgrid, fromName: e.target.value,
+                        },
+                      })}
                     placeholder="FleetPro Notifications"
                   />
                 </div>
@@ -289,12 +340,13 @@ export function EmailProviderSettings() {
                     <Input
                       type={showSecrets.awsAccessKey ? "text" : "password"}
                       value={config.aws_ses.accessKeyId}
-                      onChange={(e) =>
+                      onChange={e =>
                         setConfig({
                           ...config,
-                          aws_ses: { ...config.aws_ses, accessKeyId: e.target.value },
-                        })
-                      }
+                          aws_ses: {
+                            ...config.aws_ses, accessKeyId: e.target.value,
+                          },
+                        })}
                       placeholder="AKIAXXXXXXXXXXXXXXXXX"
                       className="pr-10"
                     />
@@ -305,11 +357,13 @@ export function EmailProviderSettings() {
                       className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6"
                       onClick={() => toggleShowSecret("awsAccessKey")}
                     >
-                      {showSecrets.awsAccessKey ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {showSecrets.awsAccessKey
+                        ? (
+                            <EyeOff className="h-4 w-4" />
+                          )
+                        : (
+                            <Eye className="h-4 w-4" />
+                          )}
                     </Button>
                   </div>
                 </div>
@@ -319,12 +373,13 @@ export function EmailProviderSettings() {
                     <Input
                       type={showSecrets.awsSecretKey ? "text" : "password"}
                       value={config.aws_ses.secretAccessKey}
-                      onChange={(e) =>
+                      onChange={e =>
                         setConfig({
                           ...config,
-                          aws_ses: { ...config.aws_ses, secretAccessKey: e.target.value },
-                        })
-                      }
+                          aws_ses: {
+                            ...config.aws_ses, secretAccessKey: e.target.value,
+                          },
+                        })}
                       placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                       className="pr-10"
                     />
@@ -335,11 +390,13 @@ export function EmailProviderSettings() {
                       className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6"
                       onClick={() => toggleShowSecret("awsSecretKey")}
                     >
-                      {showSecrets.awsSecretKey ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {showSecrets.awsSecretKey
+                        ? (
+                            <EyeOff className="h-4 w-4" />
+                          )
+                        : (
+                            <Eye className="h-4 w-4" />
+                          )}
                     </Button>
                   </div>
                 </div>
@@ -347,12 +404,13 @@ export function EmailProviderSettings() {
                   <Label>Region</Label>
                   <Select
                     value={config.aws_ses.region}
-                    onValueChange={(value) =>
+                    onValueChange={value =>
                       setConfig({
                         ...config,
-                        aws_ses: { ...config.aws_ses, region: value },
-                      })
-                    }
+                        aws_ses: {
+                          ...config.aws_ses, region: value,
+                        },
+                      })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -371,12 +429,13 @@ export function EmailProviderSettings() {
                   <Label>From Email</Label>
                   <Input
                     value={config.aws_ses.fromEmail}
-                    onChange={(e) =>
+                    onChange={e =>
                       setConfig({
                         ...config,
-                        aws_ses: { ...config.aws_ses, fromEmail: e.target.value },
-                      })
-                    }
+                        aws_ses: {
+                          ...config.aws_ses, fromEmail: e.target.value,
+                        },
+                      })}
                     placeholder="notifications@yourdomain.com"
                   />
                 </div>
@@ -398,12 +457,13 @@ export function EmailProviderSettings() {
                     <Input
                       type={showSecrets.resendApiKey ? "text" : "password"}
                       value={config.resend.apiKey}
-                      onChange={(e) =>
+                      onChange={e =>
                         setConfig({
                           ...config,
-                          resend: { ...config.resend, apiKey: e.target.value },
-                        })
-                      }
+                          resend: {
+                            ...config.resend, apiKey: e.target.value,
+                          },
+                        })}
                       placeholder="re_xxxxxxxxxxxxxxxxxxxx"
                       className="pr-10"
                     />
@@ -414,15 +474,18 @@ export function EmailProviderSettings() {
                       className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6"
                       onClick={() => toggleShowSecret("resendApiKey")}
                     >
-                      {showSecrets.resendApiKey ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {showSecrets.resendApiKey
+                        ? (
+                            <EyeOff className="h-4 w-4" />
+                          )
+                        : (
+                            <Eye className="h-4 w-4" />
+                          )}
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Get your API key from{" "}
+                    Get your API key from
+                    {" "}
                     <a
                       href="https://resend.com/api-keys"
                       target="_blank"
@@ -437,12 +500,13 @@ export function EmailProviderSettings() {
                   <Label>From Email</Label>
                   <Input
                     value={config.resend.fromEmail}
-                    onChange={(e) =>
+                    onChange={e =>
                       setConfig({
                         ...config,
-                        resend: { ...config.resend, fromEmail: e.target.value },
-                      })
-                    }
+                        resend: {
+                          ...config.resend, fromEmail: e.target.value,
+                        },
+                      })}
                     placeholder="notifications@yourdomain.com"
                   />
                 </div>
@@ -450,12 +514,13 @@ export function EmailProviderSettings() {
                   <Label>From Name</Label>
                   <Input
                     value={config.resend.fromName}
-                    onChange={(e) =>
+                    onChange={e =>
                       setConfig({
                         ...config,
-                        resend: { ...config.resend, fromName: e.target.value },
-                      })
-                    }
+                        resend: {
+                          ...config.resend, fromName: e.target.value,
+                        },
+                      })}
                     placeholder="FleetPro Notifications"
                   />
                 </div>
@@ -469,16 +534,25 @@ export function EmailProviderSettings() {
           </div>
 
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setTestDialogOpen(true)}>
+            <Button
+              variant="outline"
+              onClick={() => setTestDialogOpen(true)}
+            >
               <TestTube className="h-4 w-4 mr-2" />
               Send Test Email
             </Button>
-            <Button variant="gradient" onClick={handleSave} disabled={isSaving}>
-              {isSaving ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Settings className="h-4 w-4 mr-2" />
-              )}
+            <Button
+              variant="gradient"
+              onClick={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving
+                ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  )
+                : (
+                    <Settings className="h-4 w-4 mr-2" />
+                  )}
               Save Configuration
             </Button>
           </div>
@@ -498,12 +572,22 @@ export function EmailProviderSettings() {
         </CardHeader>
         <CardContent className="space-y-4">
           {[
-            { key: "budgetAlerts", label: "Budget Alerts", description: "Telephony budget threshold notifications" },
-            { key: "securityAlerts", label: "Security Alerts", description: "IP blocking and suspicious activity alerts" },
-            { key: "jobNotifications", label: "Job Notifications", description: "Job assignment and completion updates" },
-            { key: "driverAlerts", label: "Driver Alerts", description: "SOS signals and driver status updates" },
-            { key: "systemReports", label: "System Reports", description: "Daily/weekly summary reports" },
-          ].map((item) => (
+            {
+              key: "budgetAlerts", label: "Budget Alerts", description: "Telephony budget threshold notifications",
+            },
+            {
+              key: "securityAlerts", label: "Security Alerts", description: "IP blocking and suspicious activity alerts",
+            },
+            {
+              key: "jobNotifications", label: "Job Notifications", description: "Job assignment and completion updates",
+            },
+            {
+              key: "driverAlerts", label: "Driver Alerts", description: "SOS signals and driver status updates",
+            },
+            {
+              key: "systemReports", label: "System Reports", description: "Daily/weekly summary reports",
+            },
+          ].map(item => (
             <div
               key={item.key}
               className="flex items-center justify-between py-3 border-b border-border/50 last:border-0"
@@ -514,9 +598,10 @@ export function EmailProviderSettings() {
               </div>
               <Switch
                 checked={notificationSettings[item.key as keyof typeof notificationSettings]}
-                onCheckedChange={(checked) =>
-                  setNotificationSettings((prev) => ({ ...prev, [item.key]: checked }))
-                }
+                onCheckedChange={checked =>
+                  setNotificationSettings(prev => ({
+                    ...prev, [item.key]: checked,
+                  }))}
               />
             </div>
           ))}
@@ -524,7 +609,10 @@ export function EmailProviderSettings() {
       </Card>
 
       {/* Test Email Dialog */}
-      <Dialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
+      <Dialog
+        open={testDialogOpen}
+        onOpenChange={setTestDialogOpen}
+      >
         <DialogContent className="bg-card border-border">
           <DialogHeader>
             <DialogTitle>Send Test Email</DialogTitle>
@@ -538,21 +626,30 @@ export function EmailProviderSettings() {
               <Input
                 type="email"
                 value={testEmail}
-                onChange={(e) => setTestEmail(e.target.value)}
+                onChange={e => setTestEmail(e.target.value)}
                 placeholder="your@email.com"
               />
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setTestDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setTestDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button variant="gradient" onClick={handleTestConnection} disabled={isTesting}>
-              {isTesting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4 mr-2" />
-              )}
+            <Button
+              variant="gradient"
+              onClick={handleTestConnection}
+              disabled={isTesting}
+            >
+              {isTesting
+                ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  )
+                : (
+                    <Send className="h-4 w-4 mr-2" />
+                  )}
               Send Test
             </Button>
           </div>

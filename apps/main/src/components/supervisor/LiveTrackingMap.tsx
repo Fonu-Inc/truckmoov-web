@@ -1,12 +1,16 @@
 import { formatTime } from "@truckmoov/app-core/utils/time-utils";
+import {
+  Navigation, RefreshCw, Truck,
+} from "lucide-react";
 import { useState } from "react";
-import { Truck, Navigation, RefreshCw } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import { cn } from "@/lib/utils";
 
-interface Vehicle {
+type Vehicle = {
   id: string;
   registrationNumber: string;
   status: string;
@@ -17,32 +21,32 @@ interface Vehicle {
     heading?: number;
   };
   currentDriver?: string;
-}
+};
 
-interface Driver {
+type Driver = {
   id: string;
   name: string;
   phone?: string;
   status: string;
-}
+};
 
-interface Job {
+type Job = {
   id: string;
   vehicleId?: string;
   status: string;
   pickup: { address: string };
   delivery: { address: string };
   deadline: Date;
-}
+};
 
-interface LiveTrackingMapProps {
+type LiveTrackingMapProps = {
   vehicles: Vehicle[];
   drivers: Driver[];
   jobs?: Job[];
   selectedVehicleId: string | null;
   onSelectVehicle: (id: string) => void;
   onDispatchClick: () => void;
-}
+};
 
 export function LiveTrackingMap({
   vehicles,
@@ -52,42 +56,60 @@ export function LiveTrackingMap({
   onSelectVehicle,
   onDispatchClick,
 }: LiveTrackingMapProps) {
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [
+    isRefreshing,
+    setIsRefreshing,
+  ] = useState(false);
+  const [
+    lastUpdate,
+    setLastUpdate,
+  ] = useState(new Date());
 
-  const activeVehicles = vehicles.filter((v) => v.status === "active");
+  const activeVehicles = vehicles.filter(v => v.status === "active");
 
   const handleRefresh = () => {
     setIsRefreshing(true);
     setLastUpdate(new Date());
-    setTimeout(() => setIsRefreshing(false), 1000);
+    setTimeout(
+      setIsRefreshing,
+      1000,
+      false,
+    );
   };
 
   const getDriverName = (driverId?: string) => {
-    if (!driverId) return "Unassigned";
-    const driver = drivers.find((d) => d.id === driverId);
+    if (!driverId)
+      return "Unassigned";
+    const driver = drivers.find(d => d.id === driverId);
     return driver?.name || "Unknown Driver";
   };
 
-  const selectedVehicle = vehicles.find((v) => v.id === selectedVehicleId);
+  const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId);
   const selectedDriver = selectedVehicle?.currentDriver
-    ? drivers.find((d) => d.id === selectedVehicle.currentDriver)
+    ? drivers.find(d => d.id === selectedVehicle.currentDriver)
     : null;
-  
+
   // Find active job for selected vehicle
-  const selectedVehicleJob = selectedVehicle 
-    ? jobs.find((j) => j.vehicleId === selectedVehicle.id && ["assigned", "accepted", "in_progress"].includes(j.status))
+  const selectedVehicleJob = selectedVehicle
+    ? jobs.find(j => j.vehicleId === selectedVehicle.id && [
+        "assigned",
+        "accepted",
+        "in_progress",
+      ].includes(j.status))
     : null;
 
   // Calculate ETA (mock calculation based on deadline)
   const getETA = (job: Job | null) => {
-    if (!job) return null;
+    if (!job)
+      return null;
     const now = new Date();
     const deadline = new Date(job.deadline);
     const diffMs = deadline.getTime() - now.getTime();
-    if (diffMs <= 0) return "Arrived";
+    if (diffMs <= 0)
+      return "Arrived";
     const diffMins = Math.floor(diffMs / 60000);
-    if (diffMins < 60) return `${diffMins} min`;
+    if (diffMins < 60)
+      return `${diffMins} min`;
     const hours = Math.floor(diffMins / 60);
     const mins = diffMins % 60;
     return `${hours}h ${mins}m`;
@@ -103,11 +125,21 @@ export function LiveTrackingMap({
 
   // Vehicle positions on the map overlay (percentages for positioning)
   const vehiclePositions = [
-    { left: "35%", top: "45%" },
-    { left: "55%", top: "35%" },
-    { left: "45%", top: "60%" },
-    { left: "65%", top: "50%" },
-    { left: "30%", top: "65%" },
+    {
+      left: "35%", top: "45%",
+    },
+    {
+      left: "55%", top: "35%",
+    },
+    {
+      left: "45%", top: "60%",
+    },
+    {
+      left: "65%", top: "50%",
+    },
+    {
+      left: "30%", top: "65%",
+    },
   ];
 
   return (
@@ -120,7 +152,9 @@ export function LiveTrackingMap({
           </CardTitle>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">
-              Updated: {formatTime(lastUpdate)}
+              Updated:
+              {" "}
+              {formatTime(lastUpdate)}
             </span>
             <Button
               variant="outline"
@@ -128,9 +162,17 @@ export function LiveTrackingMap({
               onClick={handleRefresh}
               disabled={isRefreshing}
             >
-              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+              <RefreshCw className={cn(
+                "h-4 w-4",
+                isRefreshing && "animate-spin",
+              )}
+              />
             </Button>
-            <Button size="sm" className="gap-2" onClick={onDispatchClick}>
+            <Button
+              size="sm"
+              className="gap-2"
+              onClick={onDispatchClick}
+            >
               <Truck className="h-4 w-4" />
               Dispatch Job
             </Button>
@@ -162,14 +204,16 @@ export function LiveTrackingMap({
                   onClick={() => onSelectVehicle(vehicle.id)}
                   className={cn(
                     "pointer-events-auto absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 z-10 group",
-                    isSelected && "scale-125 z-20"
+                    isSelected && "scale-125 z-20",
                   )}
-                  style={{ left: pos.left, top: pos.top }}
+                  style={{
+                    left: pos.left, top: pos.top,
+                  }}
                 >
                   <div
                     className={cn(
                       "relative flex h-11 w-11 items-center justify-center rounded-full border-3 border-white shadow-xl transition-transform group-hover:scale-110",
-                      isMoving ? "bg-emerald-500" : "bg-amber-500"
+                      isMoving ? "bg-emerald-500" : "bg-amber-500",
                     )}
                     style={{ boxShadow: "0 4px 14px rgba(0,0,0,0.3)" }}
                   >
@@ -196,7 +240,11 @@ export function LiveTrackingMap({
           {/* Location Info */}
           <div className="absolute top-4 left-4 rounded-lg bg-background/95 backdrop-blur-sm border border-border px-4 py-2 z-20 shadow-lg">
             <p className="text-sm font-semibold">Lagos, Nigeria</p>
-            <p className="text-xs text-muted-foreground">{activeVehicles.length} vehicles active</p>
+            <p className="text-xs text-muted-foreground">
+              {activeVehicles.length}
+              {" "}
+              vehicles active
+            </p>
           </div>
 
           {/* Selected Vehicle Info */}
@@ -208,8 +256,9 @@ export function LiveTrackingMap({
                     <div className="flex items-center gap-3">
                       <div className={cn(
                         "flex h-10 w-10 items-center justify-center rounded-full shadow-md",
-                        selectedVehicle.location?.speed ? "bg-emerald-500" : "bg-amber-500"
-                      )}>
+                        selectedVehicle.location?.speed ? "bg-emerald-500" : "bg-amber-500",
+                      )}
+                      >
                         <Truck className="h-5 w-5 text-white" />
                       </div>
                       <div>
@@ -217,7 +266,7 @@ export function LiveTrackingMap({
                         <p className="text-xs text-muted-foreground capitalize">{selectedVehicle.status}</p>
                       </div>
                     </div>
-                    <Badge 
+                    <Badge
                       variant={selectedVehicle.location?.speed ? "default" : "secondary"}
                       className="text-sm px-3 py-1"
                     >
@@ -235,38 +284,51 @@ export function LiveTrackingMap({
                         <span className="font-medium">{selectedDriver.phone}</span>
                       </div>
                     )}
-                    {selectedVehicleJob ? (
-                      <>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Start</span>
-                          <span className="font-medium text-right max-w-[180px] truncate" title={selectedVehicleJob.pickup.address}>
-                            {selectedVehicleJob.pickup.address}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">End</span>
-                          <span className="font-medium text-right max-w-[180px] truncate" title={selectedVehicleJob.delivery.address}>
-                            {selectedVehicleJob.delivery.address}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">ETA</span>
-                          <Badge variant="outline" className="text-xs">
-                            {getETA(selectedVehicleJob)}
-                          </Badge>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Trip</span>
-                        <span className="text-muted-foreground italic">No active trip</span>
-                      </div>
-                    )}
+                    {selectedVehicleJob
+                      ? (
+                          <>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Start</span>
+                              <span
+                                className="font-medium text-right max-w-[180px] truncate"
+                                title={selectedVehicleJob.pickup.address}
+                              >
+                                {selectedVehicleJob.pickup.address}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">End</span>
+                              <span
+                                className="font-medium text-right max-w-[180px] truncate"
+                                title={selectedVehicleJob.delivery.address}
+                              >
+                                {selectedVehicleJob.delivery.address}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">ETA</span>
+                              <Badge
+                                variant="outline"
+                                className="text-xs"
+                              >
+                                {getETA(selectedVehicleJob)}
+                              </Badge>
+                            </div>
+                          </>
+                        )
+                      : (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Trip</span>
+                            <span className="text-muted-foreground italic">No active trip</span>
+                          </div>
+                        )}
                     {selectedVehicle.location && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Coordinates</span>
                         <span className="font-mono text-xs">
-                          {selectedVehicle.location.lat.toFixed(4)}, {selectedVehicle.location.lng.toFixed(4)}
+                          {selectedVehicle.location.lat.toFixed(4)}
+                          ,
+                          {selectedVehicle.location.lng.toFixed(4)}
                         </span>
                       </div>
                     )}

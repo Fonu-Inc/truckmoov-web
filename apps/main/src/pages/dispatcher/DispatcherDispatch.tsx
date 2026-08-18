@@ -1,9 +1,34 @@
-import { useMemo, useState } from "react";
+import type {
+  JobsFilterBounds, JobsFilterValue,
+} from "@/components/jobs/JobsFilterDialog";
+import {
+  CheckCircle, Clock, Loader2, Package, Plus, Search,
+  SlidersHorizontal, Truck,
+} from "lucide-react";
+import {
+  useMemo, useState,
+} from "react";
+import { toast } from "sonner";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import { JobCard } from "@/components/jobs/JobCard";
+import { JobCompletionDialog } from "@/components/jobs/JobCompletionDialog";
+import { JobDetailsSheet } from "@/components/jobs/JobDetailsSheet";
+import { JobFormDialog } from "@/components/jobs/JobFormDialog";
+import { JobMatchingDialog } from "@/components/jobs/JobMatchingDialog";
+import {
+  buildDefaultFilterValue,
+  countActiveFilters,
+
+  JobsFilterDialog,
+
+} from "@/components/jobs/JobsFilterDialog";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Card, CardContent } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent,
+} from "@/components/shadcn/card";
+import { Input } from "@/components/shadcn/input";
 import {
   Select,
   SelectContent,
@@ -11,25 +36,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Plus, Search, Package, Clock, CheckCircle, Truck,
-  Loader2, SlidersHorizontal,
-} from "lucide-react";
-import { JobCard } from "@/components/jobs/JobCard";
-import { JobFormDialog } from "@/components/jobs/JobFormDialog";
-import { JobDetailsSheet } from "@/components/jobs/JobDetailsSheet";
-import { JobMatchingDialog } from "@/components/jobs/JobMatchingDialog";
-import { JobCompletionDialog } from "@/components/jobs/JobCompletionDialog";
-import {
-  JobsFilterDialog,
-  buildDefaultFilterValue,
-  countActiveFilters,
-  type JobsFilterBounds,
-  type JobsFilterValue,
-} from "@/components/jobs/JobsFilterDialog";
-import { EmptyState } from "@/components/dashboard/EmptyState";
+
 type JobData = any;
-import { toast } from "sonner";
 
 /**
  * Dispatcher Portal – Dispatch Page
@@ -50,64 +58,112 @@ export default function DispatcherDispatch() {
   const updateJob = async (...args: any[]) => false;
   const deleteJob = async (...args: any[]) => {};
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isMatchingOpen, setIsMatchingOpen] = useState(false);
-  const [isCompletionOpen, setIsCompletionOpen] = useState(false);
-  const [selectedJob, setSelectedJob] = useState<JobData | null>(null);
-  const [isCompleting, setIsCompleting] = useState(false);
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("all");
+  const [
+    isFormOpen,
+    setIsFormOpen,
+  ] = useState(false);
+  const [
+    isDetailsOpen,
+    setIsDetailsOpen,
+  ] = useState(false);
+  const [
+    isMatchingOpen,
+    setIsMatchingOpen,
+  ] = useState(false);
+  const [
+    isCompletionOpen,
+    setIsCompletionOpen,
+  ] = useState(false);
+  const [
+    selectedJob,
+    setSelectedJob,
+  ] = useState<JobData | null>(null);
+  const [
+    isCompleting,
+    setIsCompleting,
+  ] = useState(false);
 
-  const filterBounds: JobsFilterBounds = useMemo(() => {
-    const weights = jobs.map((j) => Number(j.cargoWeight) || 0);
-    const amounts = jobs.map((j) => Number(j.amountNgn) || 0);
-    return {
-      weightMin: weights.length ? Math.min(...weights) : 0,
-      weightMax: weights.length ? Math.max(...weights, 1) : 50,
-      amountMin: amounts.length ? Math.min(...amounts) : 0,
-      amountMax: amounts.length ? Math.max(...amounts, 1) : 1_000_000,
-    };
-  }, [jobs]);
+  const filterBounds: JobsFilterBounds = useMemo(
+    () => {
+      const weights = jobs.map(j => Number(j.cargoWeight) || 0);
+      const amounts = jobs.map(j => Number(j.amountNgn) || 0);
+      return {
+        weightMin: weights.length ? Math.min(...weights) : 0,
+        weightMax: weights.length
+          ? Math.max(
+              ...weights,
+              1,
+            )
+          : 50,
+        amountMin: amounts.length ? Math.min(...amounts) : 0,
+        amountMax: amounts.length
+          ? Math.max(
+              ...amounts,
+              1,
+            )
+          : 1_000_000,
+      };
+    },
+    [jobs],
+  );
 
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filterValue, setFilterValue] = useState<JobsFilterValue>(() =>
+  const [
+    isFilterOpen,
+    setIsFilterOpen,
+  ] = useState(false);
+  const [
+    filterValue,
+    setFilterValue,
+  ] = useState<JobsFilterValue>(() =>
     buildDefaultFilterValue({
       weightMin: 0,
       weightMax: 50,
       amountMin: 0,
       amountMax: 1_000_000,
-    }),
-  );
+    }));
   const activeFilterCount = countActiveFilters(filterValue);
 
   const filteredJobs = jobs.filter((job) => {
-    const matchesSearch =
-      job.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.pickupAddress.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.deliveryAddress.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch
+      = job.reference.toLowerCase().includes(searchQuery.toLowerCase())
+        || job.pickupAddress.toLowerCase().includes(searchQuery.toLowerCase())
+        || job.deliveryAddress.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || job.status === statusFilter;
 
     const weight = Number(job.cargoWeight) || 0;
-    const [wMin, wMax] = filterValue.weightRange;
-    const matchesWeight =
-      !filterValue.weightEnabled ||
-      (weight >= wMin && (wMax <= 0 || weight <= wMax));
+    const [
+      wMin,
+      wMax,
+    ] = filterValue.weightRange;
+    const matchesWeight
+      = !filterValue.weightEnabled
+        || (weight >= wMin && (wMax <= 0 || weight <= wMax));
 
     const amount = Number(job.amountNgn) || 0;
-    const [aMin, aMax] = filterValue.amountRange;
-    const matchesAmount =
-      !filterValue.amountEnabled ||
-      (amount >= aMin && (aMax <= 0 || amount <= aMax));
+    const [
+      aMin,
+      aMax,
+    ] = filterValue.amountRange;
+    const matchesAmount
+      = !filterValue.amountEnabled
+        || (amount >= aMin && (aMax <= 0 || amount <= aMax));
 
     return matchesSearch && matchesStatus && matchesWeight && matchesAmount;
   });
 
   const stats = {
     total: jobs.length,
-    pending: jobs.filter((j) => j.status === "created").length,
-    inProgress: jobs.filter((j) => j.status === "in_progress" || j.status === "assigned").length,
-    completed: jobs.filter((j) => j.status === "completed").length,
+    pending: jobs.filter(j => j.status === "created").length,
+    inProgress: jobs.filter(j => j.status === "in_progress" || j.status === "assigned").length,
+    completed: jobs.filter(j => j.status === "completed").length,
   };
 
   const handleAddJob = async (data: any) => {
@@ -125,25 +181,31 @@ export default function DispatcherDispatch() {
       amountNgn: data.amount,
       deadline: data.deadline,
     });
-    if (success) setIsFormOpen(false);
+    if (success)
+      setIsFormOpen(false);
   };
 
   const handleEditJob = async (data: any) => {
-    if (!selectedJob) return;
-    const success = await updateJob(selectedJob.id, {
-      pickupAddress: data.pickupAddress,
-      pickupLat: data.pickupLat,
-      pickupLng: data.pickupLng,
-      deliveryAddress: data.deliveryAddress,
-      deliveryLat: data.deliveryLat,
-      deliveryLng: data.deliveryLng,
-      cargoType: data.cargoType,
-      cargoWeight: data.cargoWeight,
-      cargoDescription: data.cargoDescription,
-      amountNgn: data.amount,
-      deadline: data.deadline,
-    });
-    if (success) setIsFormOpen(false);
+    if (!selectedJob)
+      return;
+    const success = await updateJob(
+      selectedJob.id,
+      {
+        pickupAddress: data.pickupAddress,
+        pickupLat: data.pickupLat,
+        pickupLng: data.pickupLng,
+        deliveryAddress: data.deliveryAddress,
+        deliveryLat: data.deliveryLat,
+        deliveryLng: data.deliveryLng,
+        cargoType: data.cargoType,
+        cargoWeight: data.cargoWeight,
+        cargoDescription: data.cargoDescription,
+        amountNgn: data.amount,
+        deadline: data.deadline,
+      },
+    );
+    if (success)
+      setIsFormOpen(false);
   };
 
   const handleDeleteJob = async (job: JobData) => {
@@ -152,20 +214,27 @@ export default function DispatcherDispatch() {
 
   // Dispatcher explicitly assigns — moves job to "assigned".
   const handleAssign = async (vehicleId: string, driverId: string) => {
-    if (!selectedJob) return;
-    await updateJob(selectedJob.id, {
-      status: "assigned",
-      vehicleId,
-      driverId,
-      assignedByRole: "Dispatcher",
-    });
+    if (!selectedJob)
+      return;
+    await updateJob(
+      selectedJob.id,
+      {
+        status: "assigned",
+        vehicleId,
+        driverId,
+        assignedByRole: "Dispatcher",
+      },
+    );
     toast.success("Driver assigned to job");
     setIsMatchingOpen(false);
   };
 
   // Routed through assign — both portals can assign drivers now.
   const handleRecommend = async (vehicleId: string, driverId: string) => {
-    await handleAssign(vehicleId, driverId);
+    await handleAssign(
+      vehicleId,
+      driverId,
+    );
   };
 
   const openDetails = (job: JobData) => { setSelectedJob(job); setIsDetailsOpen(true); };
@@ -180,24 +249,29 @@ export default function DispatcherDispatch() {
     customerChargeNgn?: number;
     completionNotes?: string;
   }) => {
-    if (!selectedJob) return;
+    if (!selectedJob)
+      return;
     setIsCompleting(true);
     try {
-      const success = await updateJob(selectedJob.id, {
-        status: "completed",
-        completedAt: new Date().toISOString(),
-        revenueNgn: data.revenueNgn,
-        billableKm: data.billableKm || null,
-        billableHours: data.billableHours || null,
-        customerChargeNgn: data.customerChargeNgn || null,
-        notes: data.completionNotes || selectedJob.notes,
-        assignedVehicleId: selectedJob.vehicleId,
-      });
+      const success = await updateJob(
+        selectedJob.id,
+        {
+          status: "completed",
+          completedAt: new Date().toISOString(),
+          revenueNgn: data.revenueNgn,
+          billableKm: data.billableKm || null,
+          billableHours: data.billableHours || null,
+          customerChargeNgn: data.customerChargeNgn || null,
+          notes: data.completionNotes || selectedJob.notes,
+          assignedVehicleId: selectedJob.vehicleId,
+        },
+      );
       if (success) {
         toast.success("Job marked as completed");
         setIsCompletionOpen(false);
       }
-    } finally {
+    }
+    finally {
       setIsCompleting(false);
     }
   };
@@ -206,9 +280,15 @@ export default function DispatcherDispatch() {
     id: job.id,
     reference: job.reference,
     status: job.status,
-    pickup: { address: job.pickupAddress, lat: job.pickupLat, lng: job.pickupLng },
-    delivery: { address: job.deliveryAddress, lat: job.deliveryLat, lng: job.deliveryLng },
-    cargo: { type: job.cargoType, weight: job.cargoWeight, description: job.cargoDescription },
+    pickup: {
+      address: job.pickupAddress, lat: job.pickupLat, lng: job.pickupLng,
+    },
+    delivery: {
+      address: job.deliveryAddress, lat: job.deliveryLat, lng: job.deliveryLng,
+    },
+    cargo: {
+      type: job.cargoType, weight: job.cargoWeight, description: job.cargoDescription,
+    },
     amount: job.amountNgn || 0,
     deadline: job.deadline ? new Date(job.deadline) : new Date(),
     createdAt: new Date(job.createdAt),
@@ -221,7 +301,8 @@ export default function DispatcherDispatch() {
   // (e.g. job.recommendation.sourceRole). Falls back to a sensible default.
   const getRecommendedBy = (job: JobData): string => {
     const source = (job as any).recommendedByRole as string | undefined;
-    if (source) return source;
+    if (source)
+      return source;
     return "Fleet Manager";
   };
 
@@ -304,11 +385,14 @@ export default function DispatcherDispatch() {
             <Input
               placeholder="Search by reference, pickup, or delivery..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="pl-10 bg-card/50 border-border/50"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={statusFilter}
+            onValueChange={setStatusFilter}
+          >
             <SelectTrigger className="w-full sm:w-[180px] bg-card/50 border-border/50">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
@@ -326,57 +410,67 @@ export default function DispatcherDispatch() {
             onOpenChange={setIsFilterOpen}
             bounds={filterBounds}
             value={filterValue}
-            onApply={(value) => setFilterValue(value)}
+            onApply={value => setFilterValue(value)}
             onReset={() => setFilterValue(buildDefaultFilterValue(filterBounds))}
-            trigger={
-              <Button variant="outline" className="bg-card/50 border-border/50 relative">
+            trigger={(
+              <Button
+                variant="outline"
+                className="bg-card/50 border-border/50 relative"
+              >
                 <SlidersHorizontal className="h-4 w-4 mr-2" />
                 Filter
                 {activeFilterCount > 0 && (
-                  <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1.5 text-[10px] bg-primary/20 text-primary border border-primary/30">
+                  <Badge
+                    variant="secondary"
+                    className="ml-2 h-5 min-w-5 px-1.5 text-[10px] bg-primary/20 text-primary border border-primary/30"
+                  >
                     {activeFilterCount}
                   </Badge>
                 )}
               </Button>
-            }
+            )}
           />
         </div>
 
         {/* Jobs grid — dispatcher mode */}
-        {jobs.length === 0 ? (
-          <EmptyState
-            icon={Package}
-            title="No jobs yet"
-            description="Create your first job to start dispatching deliveries"
-            actionLabel="Create Job"
-            onAction={() => { setSelectedJob(null); setIsFormOpen(true); }}
-          />
-        ) : filteredJobs.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-            {filteredJobs.map((job) => (
-              <JobCard
-                key={job.id}
-                job={mapToLegacyJob(job)}
-                onView={() => openDetails(job)}
-                onEdit={() => openEdit(job)}
-                onDelete={() => handleDeleteJob(job)}
-                onMatch={() => openMatching(job)}
-                onComplete={() => openCompletion(job)}
-                dispatcherMode
-                recommendedBy={getRecommendedBy(job)}
-                assignedByRole={job.assignedByRole ?? undefined}
+        {jobs.length === 0
+          ? (
+              <EmptyState
+                icon={Package}
+                title="No jobs yet"
+                description="Create your first job to start dispatching deliveries"
+                actionLabel="Create Job"
+                onAction={() => { setSelectedJob(null); setIsFormOpen(true); }}
               />
-            ))}
-          </div>
-        ) : (
-          <Card className="bg-card/50 border-border/50">
-            <CardContent className="p-12 text-center">
-              <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="font-medium">No jobs found</p>
-              <p className="text-sm text-muted-foreground mb-4">Try adjusting your search or filter</p>
-            </CardContent>
-          </Card>
-        )}
+            )
+          : filteredJobs.length > 0
+            ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+                  {filteredJobs.map(job => (
+                    <JobCard
+                      key={job.id}
+                      job={mapToLegacyJob(job)}
+                      onView={() => openDetails(job)}
+                      onEdit={() => openEdit(job)}
+                      onDelete={() => handleDeleteJob(job)}
+                      onMatch={() => openMatching(job)}
+                      onComplete={() => openCompletion(job)}
+                      dispatcherMode
+                      recommendedBy={getRecommendedBy(job)}
+                      assignedByRole={job.assignedByRole ?? undefined}
+                    />
+                  ))}
+                </div>
+              )
+            : (
+                <Card className="bg-card/50 border-border/50">
+                  <CardContent className="p-12 text-center">
+                    <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="font-medium">No jobs found</p>
+                    <p className="text-sm text-muted-foreground mb-4">Try adjusting your search or filter</p>
+                  </CardContent>
+                </Card>
+              )}
       </div>
 
       {/* Dialogs */}
@@ -404,13 +498,15 @@ export default function DispatcherDispatch() {
       <JobCompletionDialog
         open={isCompletionOpen}
         onOpenChange={setIsCompletionOpen}
-        job={selectedJob ? {
-          id: selectedJob.id,
-          reference: selectedJob.reference,
-          amountNgn: selectedJob.amountNgn,
-          pickupAddress: selectedJob.pickupAddress,
-          deliveryAddress: selectedJob.deliveryAddress,
-        } : null}
+        job={selectedJob
+          ? {
+              id: selectedJob.id,
+              reference: selectedJob.reference,
+              amountNgn: selectedJob.amountNgn,
+              pickupAddress: selectedJob.pickupAddress,
+              deliveryAddress: selectedJob.deliveryAddress,
+            }
+          : null}
         onComplete={handleCompleteJob}
         isSubmitting={isCompleting}
       />

@@ -1,23 +1,27 @@
-import { useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  AlertCircle,
+  ArrowUpRight,
+  CheckCircle2,
+  Clock,
+  Flame,
+  Inbox,
+  Loader2,
+  TicketCheck,
+  Timer,
+  TrendingUp,
+  UserCheck,
+  Users,
+} from "lucide-react";
+import {
+  useEffect, useMemo, useState,
+} from "react";
 import { Badge } from "@/components/shadcn/badge";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import { Progress } from "@/components/shadcn/progress";
 // Local type alias (hook deleted)
 type SupportTicket = any;
-import {
-  TicketCheck,
-  AlertCircle,
-  Clock,
-  ArrowUpRight,
-  TrendingUp,
-  Users,
-  CheckCircle2,
-  Loader2,
-  Inbox,
-  Flame,
-  UserCheck,
-  Timer,
-} from "lucide-react";
 
 // ---------- Demo data (used when no real tickets exist yet) ----------
 const DEMO_TICKETS: SupportTicket[] = [
@@ -184,101 +188,141 @@ export function SupportDashboard() {
 
   // Tenant names are resolved via the hook in the future; for now use demo map
   const tenantName = (id: string) =>
-    tenantNames[id] || DEMO_TENANT_NAMES[id] || `${id.slice(0, 8)}…`;
+    tenantNames[id] || DEMO_TENANT_NAMES[id] || `${id.slice(
+      0,
+      8,
+    )}…`;
 
-  const stats = useMemo(() => {
-    const now = Date.now();
-    const HOUR = 1000 * 60 * 60;
-    const DAY = HOUR * 24;
+  const stats = useMemo(
+    () => {
+      const now = Date.now();
+      const HOUR = 1000 * 60 * 60;
+      const DAY = HOUR * 24;
 
-    const open = tickets.filter((t) => t.status === "open");
-    const inProgress = tickets.filter((t) => t.status === "in_progress");
-    const escalated = tickets.filter((t) => t.status === "escalated");
-    const waitingTenant = tickets.filter((t) => t.status === "waiting_on_tenant");
-    const resolved = tickets.filter(
-      (t) => t.status === "resolved" || t.status === "closed",
-    );
+      const open = tickets.filter(t => t.status === "open");
+      const inProgress = tickets.filter(t => t.status === "in_progress");
+      const escalated = tickets.filter(t => t.status === "escalated");
+      const waitingTenant = tickets.filter(t => t.status === "waiting_on_tenant");
+      const resolved = tickets.filter(
+        t => t.status === "resolved" || t.status === "closed",
+      );
 
-    const activeWorkload = open.length + inProgress.length + escalated.length;
+      const activeWorkload = open.length + inProgress.length + escalated.length;
 
-    const criticalHighOpen = tickets.filter(
-      (t) =>
-        ["open", "in_progress", "escalated"].includes(t.status) &&
-        ["critical", "high"].includes(t.priority),
-    );
+      const criticalHighOpen = tickets.filter(
+        t =>
+          [
+            "open",
+            "in_progress",
+            "escalated",
+          ].includes(t.status)
+          && [
+            "critical",
+            "high",
+          ].includes(t.priority),
+      );
 
-    // SLA breach: open/in_progress/escalated for > 24h
-    const slaBreaching = tickets.filter(
-      (t) =>
-        ["open", "in_progress", "escalated"].includes(t.status) &&
-        now - new Date(t.createdAt).getTime() > DAY,
-    );
+      // SLA breach: open/in_progress/escalated for > 24h
+      const slaBreaching = tickets.filter(
+        t =>
+          [
+            "open",
+            "in_progress",
+            "escalated",
+          ].includes(t.status)
+          && now - new Date(t.createdAt).getTime() > DAY,
+      );
 
-    // First-response backlog: still "open" after 2 hours
-    const firstResponseBacklog = open.filter(
-      (t) => now - new Date(t.createdAt).getTime() > 2 * HOUR,
-    );
+      // First-response backlog: still "open" after 2 hours
+      const firstResponseBacklog = open.filter(
+        t => now - new Date(t.createdAt).getTime() > 2 * HOUR,
+      );
 
-    // Resolved in last 7 days (throughput)
-    const resolvedLast7d = resolved.filter((t) => {
-      const ts = t.resolvedAt ? new Date(t.resolvedAt).getTime() : new Date(t.updatedAt).getTime();
-      return now - ts <= 7 * DAY;
-    });
+      // Resolved in last 7 days (throughput)
+      const resolvedLast7d = resolved.filter((t) => {
+        const ts = t.resolvedAt ? new Date(t.resolvedAt).getTime() : new Date(t.updatedAt).getTime();
+        return now - ts <= 7 * DAY;
+      });
 
-    // Avg resolution time (hours) across resolved tickets
-    const resolutionTimes = resolved
-      .map((t) => {
-        const end = t.resolvedAt ? new Date(t.resolvedAt).getTime() : new Date(t.updatedAt).getTime();
-        return (end - new Date(t.createdAt).getTime()) / HOUR;
-      })
-      .filter((h) => h > 0 && Number.isFinite(h));
-    const avgResolutionHours =
-      resolutionTimes.length > 0
-        ? resolutionTimes.reduce((a, b) => a + b, 0) / resolutionTimes.length
-        : 0;
+      // Avg resolution time (hours) across resolved tickets
+      const resolutionTimes = resolved
+        .map((t) => {
+          const end = t.resolvedAt ? new Date(t.resolvedAt).getTime() : new Date(t.updatedAt).getTime();
+          return (end - new Date(t.createdAt).getTime()) / HOUR;
+        })
+        .filter(h => h > 0 && Number.isFinite(h));
+      const avgResolutionHours
+        = resolutionTimes.length > 0
+          ? resolutionTimes.reduce(
+            (a, b) => a + b,
+            0,
+          ) / resolutionTimes.length
+          : 0;
 
-    return {
-      open,
-      inProgress,
-      escalated,
-      waitingTenant,
-      resolved,
-      activeWorkload,
-      criticalHighOpen,
-      slaBreaching,
-      firstResponseBacklog,
-      resolvedLast7d,
-      avgResolutionHours,
-    };
-  }, [tickets]);
+      return {
+        open,
+        inProgress,
+        escalated,
+        waitingTenant,
+        resolved,
+        activeWorkload,
+        criticalHighOpen,
+        slaBreaching,
+        firstResponseBacklog,
+        resolvedLast7d,
+        avgResolutionHours,
+      };
+    },
+    [tickets],
+  );
 
-  const byCategory = useMemo(() => {
-    const acc: Record<string, number> = {};
-    tickets.forEach((t) => {
-      acc[t.category] = (acc[t.category] || 0) + 1;
-    });
-    return acc;
-  }, [tickets]);
-  const totalForBars = Math.max(1, ...Object.values(byCategory));
+  const byCategory = useMemo(
+    () => {
+      const acc: Record<string, number> = {};
+      tickets.forEach((t) => {
+        acc[t.category] = (acc[t.category] || 0) + 1;
+      });
+      return acc;
+    },
+    [tickets],
+  );
+  const totalForBars = Math.max(
+    1,
+    ...Object.values(byCategory),
+  );
 
-  const byTenant = useMemo(() => {
-    const acc: Record<string, number> = {};
-    tickets.forEach((t) => {
-      acc[t.tenantId] = (acc[t.tenantId] || 0) + 1;
-    });
-    return acc;
-  }, [tickets]);
+  const byTenant = useMemo(
+    () => {
+      const acc: Record<string, number> = {};
+      tickets.forEach((t) => {
+        acc[t.tenantId] = (acc[t.tenantId] || 0) + 1;
+      });
+      return acc;
+    },
+    [tickets],
+  );
 
-  const needsAttention = useMemo(() => {
-    return [...tickets]
-      .filter((t) => ["open", "escalated"].includes(t.status))
-      .sort((a, b) => {
-        if (a.status === "escalated" && b.status !== "escalated") return -1;
-        if (b.status === "escalated" && a.status !== "escalated") return 1;
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      })
-      .slice(0, 5);
-  }, [tickets]);
+  const needsAttention = useMemo(
+    () => {
+      return [...tickets]
+        .filter(t => [
+          "open",
+          "escalated",
+        ].includes(t.status))
+        .sort((a, b) => {
+          if (a.status === "escalated" && b.status !== "escalated")
+            return -1;
+          if (b.status === "escalated" && a.status !== "escalated")
+            return 1;
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        })
+        .slice(
+          0,
+          5,
+        );
+    },
+    [tickets],
+  );
 
   if (isLoading) {
     return (
@@ -430,34 +474,50 @@ export function SupportDashboard() {
             <CardDescription>Tickets requiring immediate action</CardDescription>
           </CardHeader>
           <CardContent>
-            {needsAttention.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                All caught up! No urgent tickets.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {needsAttention.map((ticket) => (
-                  <div
-                    key={ticket.id}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-card"
-                  >
-                    <div className="min-w-0 pr-3">
-                      <p className="font-medium text-sm truncate">{ticket.subject}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        #{ticket.id.slice(0, 8)} • {tenantName(ticket.tenantId)} •{" "}
-                        {CATEGORY_LABELS[ticket.category] || ticket.category}
-                      </p>
-                    </div>
-                    <Badge
-                      variant={ticket.status === "escalated" ? "destructive" : "default"}
-                      className="shrink-0 capitalize"
-                    >
-                      {ticket.status.replace(/_/g, " ")}
-                    </Badge>
+            {needsAttention.length === 0
+              ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    All caught up! No urgent tickets.
+                  </p>
+                )
+              : (
+                  <div className="space-y-3">
+                    {needsAttention.map(ticket => (
+                      <div
+                        key={ticket.id}
+                        className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                      >
+                        <div className="min-w-0 pr-3">
+                          <p className="font-medium text-sm truncate">{ticket.subject}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            #
+                            {ticket.id.slice(
+                              0,
+                              8,
+                            )}
+                            {" "}
+                            •
+                            {" "}
+                            {tenantName(ticket.tenantId)}
+                            {" "}
+                            •
+                            {" "}
+                            {CATEGORY_LABELS[ticket.category] || ticket.category}
+                          </p>
+                        </div>
+                        <Badge
+                          variant={ticket.status === "escalated" ? "destructive" : "default"}
+                          className="shrink-0 capitalize"
+                        >
+                          {ticket.status.replace(
+                            /_/g,
+                            " ",
+                          )}
+                        </Badge>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
+                )}
           </CardContent>
         </Card>
 
@@ -474,13 +534,27 @@ export function SupportDashboard() {
             <div className="space-y-4">
               {Object.entries(byCategory)
                 .sort((a, b) => b[1] - a[1])
-                .map(([category, count]) => (
-                  <div key={category} className="space-y-1.5">
+                .map(([
+                  category,
+                  count,
+                ]) => (
+                  <div
+                    key={category}
+                    className="space-y-1.5"
+                  >
                     <div className="flex items-center justify-between text-sm">
-                      <span>{CATEGORY_LABELS[category] || category.replace(/_/g, " ")}</span>
+                      <span>
+                        {CATEGORY_LABELS[category] || category.replace(
+                          /_/g,
+                          " ",
+                        )}
+                      </span>
                       <Badge variant="secondary">{count}</Badge>
                     </div>
-                    <Progress value={(count / totalForBars) * 100} className="h-1.5" />
+                    <Progress
+                      value={(count / totalForBars) * 100}
+                      className="h-1.5"
+                    />
                   </div>
                 ))}
               {Object.keys(byCategory).length === 0 && (
@@ -505,14 +579,23 @@ export function SupportDashboard() {
             <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
               {Object.entries(byTenant)
                 .sort((a, b) => b[1] - a[1])
-                .slice(0, 8)
-                .map(([tenantId, count]) => (
+                .slice(
+                  0,
+                  8,
+                )
+                .map(([
+                  tenantId,
+                  count,
+                ]) => (
                   <div
                     key={tenantId}
                     className="flex items-center justify-between p-3 rounded-lg border bg-card"
                   >
                     <span className="text-sm truncate pr-2">{tenantName(tenantId)}</span>
-                    <Badge variant="outline" className="shrink-0">
+                    <Badge
+                      variant="outline"
+                      className="shrink-0"
+                    >
                       {count}
                     </Badge>
                   </div>
@@ -536,38 +619,57 @@ export function SupportDashboard() {
             <CardDescription>Latest tickets closed by support</CardDescription>
           </CardHeader>
           <CardContent>
-            {stats.resolved.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No resolved tickets yet
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {[...stats.resolved]
-                  .sort(
-                    (a, b) =>
-                      new Date(b.resolvedAt || b.updatedAt).getTime() -
-                      new Date(a.resolvedAt || a.updatedAt).getTime(),
-                  )
-                  .slice(0, 5)
-                  .map((ticket) => (
-                    <div
-                      key={ticket.id}
-                      className="flex items-center justify-between p-3 rounded-lg border bg-card"
-                    >
-                      <div className="min-w-0 pr-3">
-                        <p className="font-medium text-sm truncate">{ticket.subject}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          #{ticket.id.slice(0, 8)} • {tenantName(ticket.tenantId)} •{" "}
-                          {CATEGORY_LABELS[ticket.category] || ticket.category}
-                        </p>
-                      </div>
-                      <Badge variant="secondary" className="shrink-0">
-                        Resolved
-                      </Badge>
-                    </div>
-                  ))}
-              </div>
-            )}
+            {stats.resolved.length === 0
+              ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No resolved tickets yet
+                  </p>
+                )
+              : (
+                  <div className="space-y-3">
+                    {[...stats.resolved]
+                      .sort(
+                        (a, b) =>
+                          new Date(b.resolvedAt || b.updatedAt).getTime()
+                            - new Date(a.resolvedAt || a.updatedAt).getTime(),
+                      )
+                      .slice(
+                        0,
+                        5,
+                      )
+                      .map(ticket => (
+                        <div
+                          key={ticket.id}
+                          className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                        >
+                          <div className="min-w-0 pr-3">
+                            <p className="font-medium text-sm truncate">{ticket.subject}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              #
+                              {ticket.id.slice(
+                                0,
+                                8,
+                              )}
+                              {" "}
+                              •
+                              {" "}
+                              {tenantName(ticket.tenantId)}
+                              {" "}
+                              •
+                              {" "}
+                              {CATEGORY_LABELS[ticket.category] || ticket.category}
+                            </p>
+                          </div>
+                          <Badge
+                            variant="secondary"
+                            className="shrink-0"
+                          >
+                            Resolved
+                          </Badge>
+                        </div>
+                      ))}
+                  </div>
+                )}
           </CardContent>
         </Card>
       </div>

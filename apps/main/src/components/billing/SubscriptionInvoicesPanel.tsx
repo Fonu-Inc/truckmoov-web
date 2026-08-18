@@ -1,79 +1,87 @@
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
-import { useMemo, useState } from "react";
+import {
+  AlertCircle,
+  Calendar,
+  CheckCircle,
+  Clock,
+  CreditCard,
+  Download,
+  Eye,
+  FileText,
+  SlidersHorizontal as FilterIcon,
+  Link2,
+  Mail,
+  MoreHorizontal,
+  Search,
+  Share2,
+  Trash2,
+  TrendingUp,
+  Wallet,
+  XCircle,
+} from "lucide-react";
+import {
+  useMemo, useState,
+} from "react";
+import { toast } from "sonner";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import { Calendar as CalendarPicker } from "@/components/shadcn/calendar";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Badge } from "@/components/shadcn/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow } from "@/components/shadcn/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue } from "@/components/shadcn/select";
-import { Separator } from "@/components/shadcn/separator";
-import {Download, 
-  Search,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  XCircle,
-  CreditCard,
-  Calendar,
-  FileText,
-  Wallet,
-  TrendingUp,
-  MoreHorizontal,
-  Eye,
-  Share2,
-  Trash2,
-  Mail,
-  Link2,
-  SlidersHorizontal as FilterIcon
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from "@/components/shadcn/dropdown-menu";
+  CardTitle,
+} from "@/components/shadcn/card";
+import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
 } from "@/components/shadcn/dialog";
-import { Label } from "@/components/shadcn/label";
-import { Checkbox } from "@/components/shadcn/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
-import { Calendar as CalendarPicker } from "@/components/shadcn/calendar";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import { downloadReceiptPDF } from "@/lib/receiptPdf";
-import { formatCurrency } from "@/lib/currency";
-import { useAuthStore } from "@/stores/authStore";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
 import { ExportButton } from "@/components/shadcn/export-button";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/shadcn/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
+import { Separator } from "@/components/shadcn/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/shadcn/table";
+import { formatCurrency } from "@/lib/currency";
+import { downloadReceiptPDF } from "@/lib/receiptPdf";
+import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/authStore";
 
 type SubInvoiceStatus = "paid" | "pending" | "failed" | "overdue";
 type BillingType = "Monthly" | "Yearly";
 type BillingModel = "Prepaid" | "Postpaid" | "Trial";
 
-interface SubscriptionInvoice {
+type SubscriptionInvoice = {
   id: string;
   invoiceNumber: string;
   plan: string;
@@ -86,8 +94,10 @@ interface SubscriptionInvoice {
   paidDate: string | null;
   paymentMethod: "mtn_momo" | "bank_transfer" | "card" | null;
   reference: string;
-  items: { description: string; quantity: number; unitPrice: number; total: number }[];
-}
+  items: {
+    description: string; quantity: number; unitPrice: number; total: number;
+  }[];
+};
 
 const DEMO_INVOICES: SubscriptionInvoice[] = [
   {
@@ -104,9 +114,14 @@ const DEMO_INVOICES: SubscriptionInvoice[] = [
     paymentMethod: "mtn_momo",
     reference: "PAY-MOMO-2026-0042",
     items: [
-      { description: "Professional Plan — Monthly", quantity: 1, unitPrice: 129900, total: 129900 },
-      { description: "Additional Vehicles (5)", quantity: 5, unitPrice: 4000, total: 20000 },
-    ] },
+      {
+        description: "Professional Plan — Monthly", quantity: 1, unitPrice: 129900, total: 129900,
+      },
+      {
+        description: "Additional Vehicles (5)", quantity: 5, unitPrice: 4000, total: 20000,
+      },
+    ],
+  },
   {
     id: "sub-inv-002",
     invoiceNumber: "SUB-2026-0031",
@@ -121,8 +136,11 @@ const DEMO_INVOICES: SubscriptionInvoice[] = [
     paymentMethod: "mtn_momo",
     reference: "PAY-MOMO-2026-0031",
     items: [
-      { description: "Professional Plan — Monthly", quantity: 1, unitPrice: 129900, total: 129900 },
-    ] },
+      {
+        description: "Professional Plan — Monthly", quantity: 1, unitPrice: 129900, total: 129900,
+      },
+    ],
+  },
   {
     id: "sub-inv-003",
     invoiceNumber: "SUB-2026-0024",
@@ -137,8 +155,11 @@ const DEMO_INVOICES: SubscriptionInvoice[] = [
     paymentMethod: "bank_transfer",
     reference: "PAY-BT-2026-0024",
     items: [
-      { description: "Professional Plan — Monthly", quantity: 1, unitPrice: 129900, total: 129900 },
-    ] },
+      {
+        description: "Professional Plan — Monthly", quantity: 1, unitPrice: 129900, total: 129900,
+      },
+    ],
+  },
   {
     id: "sub-inv-004",
     invoiceNumber: "SUB-2026-0051",
@@ -153,9 +174,14 @@ const DEMO_INVOICES: SubscriptionInvoice[] = [
     paymentMethod: null,
     reference: "—",
     items: [
-      { description: "Professional Plan — Monthly", quantity: 1, unitPrice: 129900, total: 129900 },
-      { description: "Additional Vehicles (5)", quantity: 5, unitPrice: 4000, total: 20000 },
-    ] },
+      {
+        description: "Professional Plan — Monthly", quantity: 1, unitPrice: 129900, total: 129900,
+      },
+      {
+        description: "Additional Vehicles (5)", quantity: 5, unitPrice: 4000, total: 20000,
+      },
+    ],
+  },
   {
     id: "sub-inv-005",
     invoiceNumber: "SUB-2026-0017",
@@ -170,8 +196,11 @@ const DEMO_INVOICES: SubscriptionInvoice[] = [
     paymentMethod: null,
     reference: "—",
     items: [
-      { description: "Starter Plan — Yearly", quantity: 1, unitPrice: 599000, total: 599000 },
-    ] },
+      {
+        description: "Starter Plan — Yearly", quantity: 1, unitPrice: 599000, total: 599000,
+      },
+    ],
+  },
   {
     id: "sub-inv-006",
     invoiceNumber: "SUB-2025-0998",
@@ -186,8 +215,11 @@ const DEMO_INVOICES: SubscriptionInvoice[] = [
     paymentMethod: "card",
     reference: "TRIAL-2025-0998",
     items: [
-      { description: "Free Trial — Professional Plan", quantity: 1, unitPrice: 0, total: 0 },
-    ] },
+      {
+        description: "Free Trial — Professional Plan", quantity: 1, unitPrice: 0, total: 0,
+      },
+    ],
+  },
 ];
 
 function statusBadge(s: SubInvoiceStatus) {
@@ -195,25 +227,39 @@ function statusBadge(s: SubInvoiceStatus) {
     case "paid":
       return (
         <Badge className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/10">
-          <CheckCircle className="h-3 w-3 mr-1" /> Paid
+          <CheckCircle className="h-3 w-3 mr-1" />
+          {" "}
+          Paid
         </Badge>
       );
     case "pending":
       return (
-        <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
-          <Clock className="h-3 w-3 mr-1" /> Pending
+        <Badge
+          variant="secondary"
+          className="bg-amber-500/10 text-amber-600 border-amber-500/20"
+        >
+          <Clock className="h-3 w-3 mr-1" />
+          {" "}
+          Pending
         </Badge>
       );
     case "overdue":
       return (
         <Badge variant="destructive">
-          <AlertCircle className="h-3 w-3 mr-1" /> Overdue
+          <AlertCircle className="h-3 w-3 mr-1" />
+          {" "}
+          Overdue
         </Badge>
       );
     case "failed":
       return (
-        <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">
-          <XCircle className="h-3 w-3 mr-1" /> Failed
+        <Badge
+          variant="destructive"
+          className="bg-destructive/10 text-destructive border-destructive/20"
+        >
+          <XCircle className="h-3 w-3 mr-1" />
+          {" "}
+          Failed
         </Badge>
       );
   }
@@ -223,20 +269,46 @@ function modelBadge(m: BillingModel) {
   const variants: Record<BillingModel, string> = {
     Prepaid: "bg-blue-500/10 text-blue-600 border-blue-500/20",
     Postpaid: "bg-purple-500/10 text-purple-600 border-purple-500/20",
-    Trial: "bg-muted text-muted-foreground border-muted" };
-  return <Badge variant="outline" className={variants[m]}>{m}</Badge>;
+    Trial: "bg-muted text-muted-foreground border-muted",
+  };
+  return (
+    <Badge
+      variant="outline"
+      className={variants[m]}
+    >
+      {m}
+    </Badge>
+  );
 }
 
 export function SubscriptionInvoicesPanel() {
   const { user } = useAuthStore();
   const tenantName = user?.tenantId ? "Your Organisation" : "Demo Tenant";
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [selected, setSelected] = useState<SubscriptionInvoice | null>(null);
-  const [open, setOpen] = useState(false);
-  const [shareInv, setShareInv] = useState<SubscriptionInvoice | null>(null);
-  const [shareEmail, setShareEmail] = useState("");
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState<string>("all");
+  const [
+    selected,
+    setSelected,
+  ] = useState<SubscriptionInvoice | null>(null);
+  const [
+    open,
+    setOpen,
+  ] = useState(false);
+  const [
+    shareInv,
+    setShareInv,
+  ] = useState<SubscriptionInvoice | null>(null);
+  const [
+    shareEmail,
+    setShareEmail,
+  ] = useState("");
 
   // Applied filters
   type Filters = {
@@ -246,16 +318,26 @@ export function SubscriptionInvoicesPanel() {
     dateFrom: Date | null;
     dateTo: Date | null;
   };
-  const [filters, setFilters] = useState<Filters>({
+  const [
+    filters,
+    setFilters,
+  ] = useState<Filters>({
     billingType: null,
     plan: null,
     billingModel: null,
     dateFrom: null,
-    dateTo: null });
+    dateTo: null,
+  });
 
   // Draft (popover) filters with per-field enable
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [draft, setDraft] = useState({
+  const [
+    filterOpen,
+    setFilterOpen,
+  ] = useState(false);
+  const [
+    draft,
+    setDraft,
+  ] = useState({
     billingTypeOn: false,
     billingType: "Monthly" as BillingType,
     planOn: false,
@@ -264,18 +346,19 @@ export function SubscriptionInvoicesPanel() {
     billingModel: "Postpaid" as BillingModel,
     dateOn: false,
     dateFrom: undefined as Date | undefined,
-    dateTo: undefined as Date | undefined });
+    dateTo: undefined as Date | undefined,
+  });
 
   const allPlans = useMemo(
-    () => Array.from(new Set(DEMO_INVOICES.map((i) => i.plan))),
+    () => Array.from(new Set(DEMO_INVOICES.map(i => i.plan))),
     [],
   );
 
-  const activeFilterCount =
-    (filters.billingType ? 1 : 0) +
-    (filters.plan ? 1 : 0) +
-    (filters.billingModel ? 1 : 0) +
-    (filters.dateFrom || filters.dateTo ? 1 : 0);
+  const activeFilterCount
+    = (filters.billingType ? 1 : 0)
+      + (filters.plan ? 1 : 0)
+      + (filters.billingModel ? 1 : 0)
+      + (filters.dateFrom || filters.dateTo ? 1 : 0);
 
   const openFilter = () => {
     // Seed draft from applied filters
@@ -288,7 +371,8 @@ export function SubscriptionInvoicesPanel() {
       billingModel: filters.billingModel ?? "Postpaid",
       dateOn: !!(filters.dateFrom || filters.dateTo),
       dateFrom: filters.dateFrom ?? undefined,
-      dateTo: filters.dateTo ?? undefined });
+      dateTo: filters.dateTo ?? undefined,
+    });
     setFilterOpen(true);
   };
 
@@ -298,7 +382,8 @@ export function SubscriptionInvoicesPanel() {
       plan: draft.planOn ? draft.plan : null,
       billingModel: draft.billingModelOn ? draft.billingModel : null,
       dateFrom: draft.dateOn ? draft.dateFrom ?? null : null,
-      dateTo: draft.dateOn ? draft.dateTo ?? null : null });
+      dateTo: draft.dateOn ? draft.dateTo ?? null : null,
+    });
     setFilterOpen(false);
   };
 
@@ -308,7 +393,8 @@ export function SubscriptionInvoicesPanel() {
       plan: null,
       billingModel: null,
       dateFrom: null,
-      dateTo: null });
+      dateTo: null,
+    });
     setFilterOpen(false);
   };
 
@@ -323,8 +409,9 @@ export function SubscriptionInvoicesPanel() {
   };
 
   const handleSendShare = () => {
-    if (!shareInv) return;
-    if (!shareEmail || !/^\S+@\S+\.\S+$/.test(shareEmail)) {
+    if (!shareInv)
+      return;
+    if (!shareEmail || !/^\S[^\s@]*@\S[^\s.]*\.\S+$/.test(shareEmail)) {
       toast.error("Enter a valid email address");
       return;
     }
@@ -341,48 +428,77 @@ export function SubscriptionInvoicesPanel() {
   };
 
   const handleDelete = (_inv: SubscriptionInvoice) => {
-    toast.info("Subscription invoices cannot be deleted", {
-      description: "These are platform-issued financial records retained for compliance." });
+    toast.info(
+      "Subscription invoices cannot be deleted",
+      { description: "These are platform-issued financial records retained for compliance." },
+    );
   };
 
-  const filtered = useMemo(() => {
-    return DEMO_INVOICES.filter((inv) => {
-      if (statusFilter !== "all" && inv.status !== statusFilter) return false;
-      if (filters.billingType && inv.billingType !== filters.billingType) return false;
-      if (filters.plan && inv.plan !== filters.plan) return false;
-      if (filters.billingModel && inv.billingModel !== filters.billingModel) return false;
-      if (filters.dateFrom || filters.dateTo) {
-        const issued = new Date(inv.issueDate);
-        if (filters.dateFrom && issued < filters.dateFrom) return false;
-        if (filters.dateTo) {
-          const end = new Date(filters.dateTo);
-          end.setHours(23, 59, 59, 999);
-          if (issued > end) return false;
+  const filtered = useMemo(
+    () => {
+      return DEMO_INVOICES.filter((inv) => {
+        if (statusFilter !== "all" && inv.status !== statusFilter)
+          return false;
+        if (filters.billingType && inv.billingType !== filters.billingType)
+          return false;
+        if (filters.plan && inv.plan !== filters.plan)
+          return false;
+        if (filters.billingModel && inv.billingModel !== filters.billingModel)
+          return false;
+        if (filters.dateFrom || filters.dateTo) {
+          const issued = new Date(inv.issueDate);
+          if (filters.dateFrom && issued < filters.dateFrom)
+            return false;
+          if (filters.dateTo) {
+            const end = new Date(filters.dateTo);
+            end.setHours(
+              23,
+              59,
+              59,
+              999,
+            );
+            if (issued > end)
+              return false;
+          }
         }
-      }
-      if (search) {
-        const q = search.toLowerCase();
-        return (
-          inv.invoiceNumber.toLowerCase().includes(q) ||
-          inv.plan.toLowerCase().includes(q) ||
-          inv.reference.toLowerCase().includes(q)
-        );
-      }
-      return true;
-    });
-  }, [search, statusFilter, filters]);
+        if (search) {
+          const q = search.toLowerCase();
+          return (
+            inv.invoiceNumber.toLowerCase().includes(q)
+            || inv.plan.toLowerCase().includes(q)
+            || inv.reference.toLowerCase().includes(q)
+          );
+        }
+        return true;
+      });
+    },
+    [
+      search,
+      statusFilter,
+      filters,
+    ],
+  );
 
-  const totalPaid = DEMO_INVOICES.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
-  const outstanding = DEMO_INVOICES.filter((i) => i.status !== "paid").reduce((s, i) => s + i.amount, 0);
-  const overdueCount = DEMO_INVOICES.filter((i) => i.status === "overdue").length;
-  const nextDue = DEMO_INVOICES.find((i) => i.status === "pending")?.dueDate ?? "—";
+  const totalPaid = DEMO_INVOICES.filter(i => i.status === "paid").reduce(
+    (s, i) => s + i.amount,
+    0,
+  );
+  const outstanding = DEMO_INVOICES.filter(i => i.status !== "paid").reduce(
+    (s, i) => s + i.amount,
+    0,
+  );
+  const overdueCount = DEMO_INVOICES.filter(i => i.status === "overdue").length;
+  const nextDue = DEMO_INVOICES.find(i => i.status === "pending")?.dueDate ?? "—";
 
   const handleDownload = (inv: SubscriptionInvoice) => {
     if (inv.status !== "paid" || !inv.paidDate) {
       toast.error("Download is only available after payment is confirmed");
       return;
     }
-    const subtotal = inv.items.reduce((s, i) => s + i.total, 0);
+    const subtotal = inv.items.reduce(
+      (s, i) => s + i.total,
+      0,
+    );
     downloadReceiptPDF({
       invoiceNumber: inv.invoiceNumber,
       tenantName,
@@ -392,21 +508,39 @@ export function SubscriptionInvoicesPanel() {
       paidDate: inv.paidDate,
       dueDate: inv.dueDate,
       paymentMethod: inv.paymentMethod
-        ? inv.paymentMethod.replace("_", " ").toUpperCase()
+        ? inv.paymentMethod.replace(
+            "_",
+            " ",
+          ).toUpperCase()
         : "—",
       paymentReference: inv.reference,
       items: inv.items,
       subtotal,
       amount: inv.amount,
-      currency: "NGN" });
+      currency: "NGN",
+    });
     toast.success(`Download for ${inv.invoiceNumber} downloaded`);
   };
 
   const stats = [
-    { label: "Total paid (12mo)", value: formatCurrency(totalPaid, "NGN"), icon: TrendingUp, tone: "text-green-600 bg-green-500/10" },
-    { label: "Outstanding", value: formatCurrency(outstanding, "NGN"), icon: Wallet, tone: "text-amber-600 bg-amber-500/10" },
-    { label: "Overdue invoices", value: String(overdueCount), icon: AlertCircle, tone: "text-destructive bg-destructive/10" },
-    { label: "Next due", value: nextDue, icon: Calendar, tone: "text-primary bg-primary/10" },
+    {
+      label: "Total paid (12mo)", value: formatCurrency(
+        totalPaid,
+        "NGN",
+      ), icon: TrendingUp, tone: "text-green-600 bg-green-500/10",
+    },
+    {
+      label: "Outstanding", value: formatCurrency(
+        outstanding,
+        "NGN",
+      ), icon: Wallet, tone: "text-amber-600 bg-amber-500/10",
+    },
+    {
+      label: "Overdue invoices", value: String(overdueCount), icon: AlertCircle, tone: "text-destructive bg-destructive/10",
+    },
+    {
+      label: "Next due", value: nextDue, icon: Calendar, tone: "text-primary bg-primary/10",
+    },
   ];
 
   return (
@@ -418,7 +552,10 @@ export function SubscriptionInvoicesPanel() {
       {/* KPI stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {stats.map((s, i) => (
-          <Card key={i} className="p-3">
+          <Card
+            key={i}
+            className="p-3"
+          >
             <div className="flex items-center gap-2.5">
               <div className={`h-10 w-10 rounded-lg ${s.tone} flex items-center justify-center shrink-0`}>
                 <s.icon className="h-5 w-5" />
@@ -447,14 +584,30 @@ export function SubscriptionInvoicesPanel() {
               filename="subscription-invoices"
               rows={filtered}
               columns={[
-                { header: "Invoice #", accessor: (i) => i.invoiceNumber },
-                { header: "Plan", accessor: (i) => i.plan },
-                { header: "Billing Type", accessor: (i) => i.billingType },
-                { header: "Billing Model", accessor: (i) => i.billingModel },
-                { header: "Amount (NGN)", accessor: (i) => i.amount },
-                { header: "Status", accessor: (i) => i.status },
-                { header: "Due Date", accessor: (i) => i.dueDate },
-                { header: "Paid Date", accessor: (i) => i.paidDate ?? "" },
+                {
+                  header: "Invoice #", accessor: i => i.invoiceNumber,
+                },
+                {
+                  header: "Plan", accessor: i => i.plan,
+                },
+                {
+                  header: "Billing Type", accessor: i => i.billingType,
+                },
+                {
+                  header: "Billing Model", accessor: i => i.billingModel,
+                },
+                {
+                  header: "Amount (NGN)", accessor: i => i.amount,
+                },
+                {
+                  header: "Status", accessor: i => i.status,
+                },
+                {
+                  header: "Due Date", accessor: i => i.dueDate,
+                },
+                {
+                  header: "Paid Date", accessor: i => i.paidDate ?? "",
+                },
               ]}
             />
           </div>
@@ -464,11 +617,14 @@ export function SubscriptionInvoicesPanel() {
               <Input
                 placeholder="Search invoice #, plan, reference..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={e => setSearch(e.target.value)}
                 className="pl-10 bg-card/50 border-border/50"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+            >
               <SelectTrigger className="w-full md:w-[180px] bg-card/50 border-border/50">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -481,19 +637,31 @@ export function SubscriptionInvoicesPanel() {
               </SelectContent>
             </Select>
 
-            <Popover open={filterOpen} onOpenChange={(o) => (o ? openFilter() : setFilterOpen(false))}>
+            <Popover
+              open={filterOpen}
+              onOpenChange={o => (o ? openFilter() : setFilterOpen(false))}
+            >
               <PopoverTrigger asChild>
-                <Button variant="outline" className="bg-card/50 border-border/50 gap-2">
+                <Button
+                  variant="outline"
+                  className="bg-card/50 border-border/50 gap-2"
+                >
                   <FilterIcon className="h-4 w-4" />
                   Filter
                   {activeFilterCount > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
+                    <Badge
+                      variant="secondary"
+                      className="ml-1 h-5 px-1.5 text-[10px]"
+                    >
                       {activeFilterCount}
                     </Badge>
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-80 p-0">
+              <PopoverContent
+                align="end"
+                className="w-80 p-0"
+              >
                 <div className="p-4 border-b">
                   <p className="text-sm font-semibold">Show Invoices</p>
                   <p className="text-xs text-muted-foreground">Enable a filter to apply it</p>
@@ -505,15 +673,22 @@ export function SubscriptionInvoicesPanel() {
                       <Checkbox
                         id="f-billing-type"
                         checked={draft.billingTypeOn}
-                        onCheckedChange={(c) => setDraft((d) => ({ ...d, billingTypeOn: !!c }))}
+                        onCheckedChange={c => setDraft(d => ({
+                          ...d, billingTypeOn: !!c,
+                        }))}
                       />
-                      <Label htmlFor="f-billing-type" className="text-sm font-medium cursor-pointer">
+                      <Label
+                        htmlFor="f-billing-type"
+                        className="text-sm font-medium cursor-pointer"
+                      >
                         Billing Type
                       </Label>
                     </div>
                     <Select
                       value={draft.billingType}
-                      onValueChange={(v) => setDraft((d) => ({ ...d, billingType: v as BillingType }))}
+                      onValueChange={v => setDraft(d => ({
+                        ...d, billingType: v as BillingType,
+                      }))}
                       disabled={!draft.billingTypeOn}
                     >
                       <SelectTrigger className="w-full">
@@ -532,23 +707,35 @@ export function SubscriptionInvoicesPanel() {
                       <Checkbox
                         id="f-plan"
                         checked={draft.planOn}
-                        onCheckedChange={(c) => setDraft((d) => ({ ...d, planOn: !!c }))}
+                        onCheckedChange={c => setDraft(d => ({
+                          ...d, planOn: !!c,
+                        }))}
                       />
-                      <Label htmlFor="f-plan" className="text-sm font-medium cursor-pointer">
+                      <Label
+                        htmlFor="f-plan"
+                        className="text-sm font-medium cursor-pointer"
+                      >
                         Plan
                       </Label>
                     </div>
                     <Select
                       value={draft.plan}
-                      onValueChange={(v) => setDraft((d) => ({ ...d, plan: v }))}
+                      onValueChange={v => setDraft(d => ({
+                        ...d, plan: v,
+                      }))}
                       disabled={!draft.planOn}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {allPlans.map((p) => (
-                          <SelectItem key={p} value={p}>{p}</SelectItem>
+                        {allPlans.map(p => (
+                          <SelectItem
+                            key={p}
+                            value={p}
+                          >
+                            {p}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -560,15 +747,22 @@ export function SubscriptionInvoicesPanel() {
                       <Checkbox
                         id="f-billing-model"
                         checked={draft.billingModelOn}
-                        onCheckedChange={(c) => setDraft((d) => ({ ...d, billingModelOn: !!c }))}
+                        onCheckedChange={c => setDraft(d => ({
+                          ...d, billingModelOn: !!c,
+                        }))}
                       />
-                      <Label htmlFor="f-billing-model" className="text-sm font-medium cursor-pointer">
+                      <Label
+                        htmlFor="f-billing-model"
+                        className="text-sm font-medium cursor-pointer"
+                      >
                         Billing Model
                       </Label>
                     </div>
                     <Select
                       value={draft.billingModel}
-                      onValueChange={(v) => setDraft((d) => ({ ...d, billingModel: v as BillingModel }))}
+                      onValueChange={v => setDraft(d => ({
+                        ...d, billingModel: v as BillingModel,
+                      }))}
                       disabled={!draft.billingModelOn}
                     >
                       <SelectTrigger className="w-full">
@@ -588,9 +782,14 @@ export function SubscriptionInvoicesPanel() {
                       <Checkbox
                         id="f-date"
                         checked={draft.dateOn}
-                        onCheckedChange={(c) => setDraft((d) => ({ ...d, dateOn: !!c }))}
+                        onCheckedChange={c => setDraft(d => ({
+                          ...d, dateOn: !!c,
+                        }))}
                       />
-                      <Label htmlFor="f-date" className="text-sm font-medium cursor-pointer">
+                      <Label
+                        htmlFor="f-date"
+                        className="text-sm font-medium cursor-pointer"
+                      >
                         Issue date
                       </Label>
                     </div>
@@ -609,11 +808,16 @@ export function SubscriptionInvoicesPanel() {
                             {draft.dateFrom ? formatDate(draft.dateFrom) : "From"}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent
+                          className="w-auto p-0"
+                          align="start"
+                        >
                           <CalendarPicker
                             mode="single"
                             selected={draft.dateFrom}
-                            onSelect={(d) => setDraft((dr) => ({ ...dr, dateFrom: d ?? undefined }))}
+                            onSelect={d => setDraft(dr => ({
+                              ...dr, dateFrom: d ?? undefined,
+                            }))}
                             initialFocus
                             className={cn("p-3 pointer-events-auto")}
                           />
@@ -633,11 +837,16 @@ export function SubscriptionInvoicesPanel() {
                             {draft.dateTo ? formatDate(draft.dateTo) : "To"}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent
+                          className="w-auto p-0"
+                          align="start"
+                        >
                           <CalendarPicker
                             mode="single"
                             selected={draft.dateTo}
-                            onSelect={(d) => setDraft((dr) => ({ ...dr, dateTo: d ?? undefined }))}
+                            onSelect={d => setDraft(dr => ({
+                              ...dr, dateTo: d ?? undefined,
+                            }))}
                             initialFocus
                             className={cn("p-3 pointer-events-auto")}
                           />
@@ -647,10 +856,19 @@ export function SubscriptionInvoicesPanel() {
                   </div>
                 </div>
                 <div className="p-3 border-t flex items-center gap-2">
-                  <Button size="sm" onClick={applyFilters} className="flex-1">
+                  <Button
+                    size="sm"
+                    onClick={applyFilters}
+                    className="flex-1"
+                  >
                     Apply
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={clearFilters} className="flex-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="flex-1"
+                  >
                     Show All
                   </Button>
                 </div>
@@ -673,78 +891,99 @@ export function SubscriptionInvoicesPanel() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
-                    <Download className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                    <p className="font-medium">No subscription invoices found</p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filtered.map((inv) => (
-                  <TableRow
-                    key={inv.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => { setSelected(inv); setOpen(true); }}
-                  >
-                    <TableCell className="font-mono font-medium">{inv.invoiceNumber}</TableCell>
-                    <TableCell>{inv.plan}</TableCell>
-                    <TableCell className="text-sm">{inv.billingType}</TableCell>
-                    <TableCell>{modelBadge(inv.billingModel)}</TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {formatCurrency(inv.amount, "NGN")}
-                    </TableCell>
-                    <TableCell>{statusBadge(inv.status)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {inv.paidDate ?? `Due ${inv.dueDate}`}
-                    </TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="icon" variant="ghost" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Open menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuLabel>Invoice actions</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleView(inv)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View invoice
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleShare(inv)}>
-                            <Share2 className="h-4 w-4 mr-2" />
-                            Share invoice
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDownload(inv)}
-                            disabled={inv.status !== "paid"}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download receipt
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(inv)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete invoice
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+              {filtered.length === 0
+                ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={8}
+                        className="text-center py-12 text-muted-foreground"
+                      >
+                        <Download className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                        <p className="font-medium">No subscription invoices found</p>
+                      </TableCell>
+                    </TableRow>
+                  )
+                : (
+                    filtered.map(inv => (
+                      <TableRow
+                        key={inv.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => { setSelected(inv); setOpen(true); }}
+                      >
+                        <TableCell className="font-mono font-medium">{inv.invoiceNumber}</TableCell>
+                        <TableCell>{inv.plan}</TableCell>
+                        <TableCell className="text-sm">{inv.billingType}</TableCell>
+                        <TableCell>{modelBadge(inv.billingModel)}</TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {formatCurrency(
+                            inv.amount,
+                            "NGN",
+                          )}
+                        </TableCell>
+                        <TableCell>{statusBadge(inv.status)}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {inv.paidDate ?? `Due ${inv.dueDate}`}
+                        </TableCell>
+                        <TableCell
+                          className="text-right"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Open menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="end"
+                              className="w-48"
+                            >
+                              <DropdownMenuLabel>Invoice actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleView(inv)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View invoice
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleShare(inv)}>
+                                <Share2 className="h-4 w-4 mr-2" />
+                                Share invoice
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDownload(inv)}
+                                disabled={inv.status !== "paid"}
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Download receipt
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(inv)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete invoice
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
       {/* Detail Dialog (centered) */}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+      >
         <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
@@ -754,7 +993,13 @@ export function SubscriptionInvoicesPanel() {
             <DialogDescription asChild>
               <div className="flex items-center gap-2">
                 {selected && statusBadge(selected.status)}
-                <span>{selected?.plan} · {selected?.billingType}</span>
+                <span>
+                  {selected?.plan}
+                  {" "}
+                  ·
+                  {" "}
+                  {selected?.billingType}
+                </span>
               </div>
             </DialogDescription>
           </DialogHeader>
@@ -765,7 +1010,12 @@ export function SubscriptionInvoicesPanel() {
                 <p className="text-xs text-muted-foreground mb-1">Bill to</p>
                 <p className="font-medium">{tenantName}</p>
                 <p className="text-sm text-muted-foreground">
-                  {selected.plan} · {selected.billingModel} {selected.billingType}
+                  {selected.plan}
+                  {" "}
+                  ·
+                  {selected.billingModel}
+                  {" "}
+                  {selected.billingType}
                 </p>
               </div>
 
@@ -774,20 +1024,37 @@ export function SubscriptionInvoicesPanel() {
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">Items</p>
                 {selected.items.map((it, i) => (
-                  <div key={i} className="flex justify-between text-sm p-2 rounded bg-muted/30">
+                  <div
+                    key={i}
+                    className="flex justify-between text-sm p-2 rounded bg-muted/30"
+                  >
                     <div>
                       <p>{it.description}</p>
                       <p className="text-xs text-muted-foreground">
-                        {it.quantity} × {formatCurrency(it.unitPrice, "NGN")}
+                        {it.quantity}
+                        {" "}
+                        ×
+                        {formatCurrency(
+                          it.unitPrice,
+                          "NGN",
+                        )}
                       </p>
                     </div>
-                    <p className="font-medium">{formatCurrency(it.total, "NGN")}</p>
+                    <p className="font-medium">
+                      {formatCurrency(
+                        it.total,
+                        "NGN",
+                      )}
+                    </p>
                   </div>
                 ))}
                 <div className="flex justify-between pt-2 border-t">
                   <span className="font-semibold">Total</span>
                   <span className="font-bold text-lg">
-                    {formatCurrency(selected.amount, "NGN")}
+                    {formatCurrency(
+                      selected.amount,
+                      "NGN",
+                    )}
                   </span>
                 </div>
               </div>
@@ -813,7 +1080,10 @@ export function SubscriptionInvoicesPanel() {
                   <span className="text-muted-foreground">Method</span>
                   <span className="capitalize flex items-center gap-1">
                     <CreditCard className="h-3.5 w-3.5" />
-                    {selected.paymentMethod?.replace("_", " ") || "Not paid"}
+                    {selected.paymentMethod?.replace(
+                      "_",
+                      " ",
+                    ) || "Not paid"}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -822,36 +1092,45 @@ export function SubscriptionInvoicesPanel() {
                 </div>
               </div>
 
-              {selected.status === "paid" ? (
-                <Button
-                  className="w-full bg-success hover:bg-success/90 text-success-foreground"
-                  onClick={() => handleDownload(selected)}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Receipt (PDF)
-                </Button>
-              ) : (
-                <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-3 text-sm">
-                  <p className="font-medium text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                    <Clock className="h-4 w-4" /> Awaiting payment confirmation
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Your receipt will be available here as soon as payment is confirmed by our billing team.
-                  </p>
-                </div>
-              )}
+              {selected.status === "paid"
+                ? (
+                    <Button
+                      className="w-full bg-success hover:bg-success/90 text-success-foreground"
+                      onClick={() => handleDownload(selected)}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Receipt (PDF)
+                    </Button>
+                  )
+                : (
+                    <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-3 text-sm">
+                      <p className="font-medium text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        {" "}
+                        Awaiting payment confirmation
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Your receipt will be available here as soon as payment is confirmed by our billing team.
+                      </p>
+                    </div>
+                  )}
             </div>
           )}
         </DialogContent>
       </Dialog>
 
       {/* Share Dialog */}
-      <Dialog open={!!shareInv} onOpenChange={(o) => !o && setShareInv(null)}>
+      <Dialog
+        open={!!shareInv}
+        onOpenChange={o => !o && setShareInv(null)}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Share2 className="h-5 w-5 text-primary" />
-              Share invoice {shareInv?.invoiceNumber}
+              Share invoice
+              {" "}
+              {shareInv?.invoiceNumber}
             </DialogTitle>
             <DialogDescription>
               Email a copy of this invoice or copy a shareable link.
@@ -868,7 +1147,7 @@ export function SubscriptionInvoicesPanel() {
                   type="email"
                   placeholder="finance@example.com"
                   value={shareEmail}
-                  onChange={(e) => setShareEmail(e.target.value)}
+                  onChange={e => setShareEmail(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -885,7 +1164,10 @@ export function SubscriptionInvoicesPanel() {
           </div>
 
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShareInv(null)}>
+            <Button
+              variant="ghost"
+              onClick={() => setShareInv(null)}
+            >
               Cancel
             </Button>
             <Button onClick={handleSendShare}>

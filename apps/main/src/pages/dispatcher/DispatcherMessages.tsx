@@ -1,33 +1,42 @@
 import { formatTime } from "@truckmoov/app-core/utils/time-utils";
-import { useState } from "react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { ConversationInbox } from "@/components/communications/ConversationInbox";
-import { BroadcastTracker } from "@/components/communications/BroadcastTracker";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Badge } from "@/components/shadcn/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import {
   MessageSquare,
-  Users,
   Phone,
+  Users,
 } from "lucide-react";
+import { useState } from "react";
+import { BroadcastTracker } from "@/components/communications/BroadcastTracker";
+import { ConversationInbox } from "@/components/communications/ConversationInbox";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Badge } from "@/components/shadcn/badge";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
 
 export default function DispatcherMessages() {
-  const [activeTab, setActiveTab] = useState("inbox");
+  const [
+    activeTab,
+    setActiveTab,
+  ] = useState("inbox");
 
   // Get real stats from the communications hook
   const messages: any[] = [];
-  const stats = { todayMessages: 0, todayCalls: 0 };
-  
+  const stats = {
+    todayMessages: 0, todayCalls: 0,
+  };
+
   // Count active conversations (unique drivers with messages in last 24 hours)
   const activeConversations = new Set(
     messages
-      .filter(m => {
+      .filter((m) => {
         const msgDate = new Date(m.created_at);
         const now = new Date();
         return (now.getTime() - msgDate.getTime()) < 24 * 60 * 60 * 1000;
       })
-      .map(m => m.driver_id)
+      .map(m => m.driver_id),
   ).size;
 
   return (
@@ -35,7 +44,10 @@ export default function DispatcherMessages() {
       title="Messages"
       subtitle="Communicate with drivers via WhatsApp, SMS, and Voice"
     >
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+      >
         <TabsList className="mb-6">
           <TabsTrigger value="inbox">Conversations</TabsTrigger>
           <TabsTrigger value="broadcast">Broadcasts</TabsTrigger>
@@ -87,25 +99,35 @@ export default function DispatcherMessages() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {messages.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        No recent activity
-                      </p>
-                    ) : (
-                      messages.slice(0, 3).map((msg) => (
-                        <div key={msg.id} className="flex items-start gap-3 text-sm">
-                          <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5" />
-                          <div>
-                            <p className="line-clamp-1">
-                              {msg.direction === 'outbound' ? 'Sent to' : 'Received from'} {msg.driver_name || 'Driver'}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatTime(msg.created_at)}
-                            </p>
-                          </div>
-                        </div>
-                      ))
-                    )}
+                    {messages.length === 0
+                      ? (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            No recent activity
+                          </p>
+                        )
+                      : (
+                          messages.slice(
+                            0,
+                            3,
+                          ).map(msg => (
+                            <div
+                              key={msg.id}
+                              className="flex items-start gap-3 text-sm"
+                            >
+                              <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5" />
+                              <div>
+                                <p className="line-clamp-1">
+                                  {msg.direction === "outbound" ? "Sent to" : "Received from"}
+                                  {" "}
+                                  {msg.driver_name || "Driver"}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatTime(msg.created_at)}
+                                </p>
+                              </div>
+                            </div>
+                          ))
+                        )}
                   </div>
                 </CardContent>
               </Card>

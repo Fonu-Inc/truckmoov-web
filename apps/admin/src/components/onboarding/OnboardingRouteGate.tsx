@@ -1,8 +1,6 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
-interface OnboardingRouteGateProps {
-  children: ReactNode;
-}
+type OnboardingRouteGateProps = { children: ReactNode };
 
 /**
  * Compatibility wrapper for routes that still use the tenant onboarding layout.
@@ -11,5 +9,3 @@ interface OnboardingRouteGateProps {
 export function OnboardingRouteGate({ children }: OnboardingRouteGateProps) {
   return <>{children}</>;
 }
-
-

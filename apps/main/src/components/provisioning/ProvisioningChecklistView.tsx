@@ -1,18 +1,23 @@
-import { formatDateTime, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
-import { CheckCircle2, Loader2, Circle, Settings } from "lucide-react";
+import type { ProvisioningStep } from "@/lib/provisioningEngineSim";
+import {
+  formatDateTime, formatWithPattern,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  CheckCircle2, Circle, Loader2, Settings,
+} from "lucide-react";
 import {
   DEVICE_PROVISIONING_STEPS,
+
   SIM_PROVISIONING_STEPS,
-  type ProvisioningStep,
 } from "@/lib/provisioningEngineSim";
 
-interface Props {
+type Props = {
   /** Saved checklist from DB (may be null/undefined before approval). */
   checklist?: ProvisioningStep[] | null;
   type: "device" | "sim";
   startedAt?: string | null;
   completedAt?: string | null;
-}
+};
 
 /**
  * Visualises the External Provisioning Engine progress.
@@ -25,12 +30,12 @@ export function ProvisioningChecklistView({
   startedAt,
   completedAt,
 }: Props) {
-  const fallback =
-    type === "device" ? DEVICE_PROVISIONING_STEPS : SIM_PROVISIONING_STEPS;
-  const steps =
-    Array.isArray(checklist) && checklist.length > 0 ? checklist : fallback;
+  const fallback
+    = type === "device" ? DEVICE_PROVISIONING_STEPS : SIM_PROVISIONING_STEPS;
+  const steps
+    = Array.isArray(checklist) && checklist.length > 0 ? checklist : fallback;
 
-  const completedCount = steps.filter((s) => s.status === "completed").length;
+  const completedCount = steps.filter(s => s.status === "completed").length;
   const total = steps.length;
   const pct = Math.round((completedCount / total) * 100);
 
@@ -42,7 +47,14 @@ export function ProvisioningChecklistView({
           Provisioning Engine
         </p>
         <span className="text-xs text-muted-foreground">
-          {completedCount} / {total} steps · {pct}%
+          {completedCount}
+          {" "}
+          /
+          {total}
+          {" "}
+          steps ·
+          {pct}
+          %
         </span>
       </div>
 
@@ -55,15 +67,22 @@ export function ProvisioningChecklistView({
       </div>
 
       <ul className="space-y-2 pt-1">
-        {steps.map((step) => (
-          <li key={step.key} className="flex items-start gap-2 text-sm">
-            {step.status === "completed" ? (
-              <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
-            ) : step.status === "in_progress" ? (
-              <Loader2 className="h-4 w-4 text-info mt-0.5 shrink-0 animate-spin" />
-            ) : (
-              <Circle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-            )}
+        {steps.map(step => (
+          <li
+            key={step.key}
+            className="flex items-start gap-2 text-sm"
+          >
+            {step.status === "completed"
+              ? (
+                  <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                )
+              : step.status === "in_progress"
+                ? (
+                    <Loader2 className="h-4 w-4 text-info mt-0.5 shrink-0 animate-spin" />
+                  )
+                : (
+                    <Circle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  )}
             <div className="flex-1 min-w-0">
               <p
                 className={
@@ -78,7 +97,10 @@ export function ProvisioningChecklistView({
               </p>
               {step.completed_at && (
                 <p className="text-xs text-muted-foreground">
-                  {formatWithPattern(step.completed_at, "MMM d, HH:mm:ss")}
+                  {formatWithPattern(
+                    step.completed_at,
+                    "MMM d, HH:mm:ss",
+                  )}
                 </p>
               )}
             </div>
@@ -89,10 +111,16 @@ export function ProvisioningChecklistView({
       {(startedAt || completedAt) && (
         <div className="text-xs text-muted-foreground pt-2 border-t border-border space-y-0.5">
           {startedAt && (
-            <p>Started: {formatDateTime(startedAt)}</p>
+            <p>
+              Started:
+              {formatDateTime(startedAt)}
+            </p>
           )}
           {completedAt && (
-            <p>Completed: {formatDateTime(completedAt)}</p>
+            <p>
+              Completed:
+              {formatDateTime(completedAt)}
+            </p>
           )}
         </div>
       )}

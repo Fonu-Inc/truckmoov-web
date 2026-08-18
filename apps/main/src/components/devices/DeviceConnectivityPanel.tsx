@@ -1,20 +1,25 @@
-import { formatRelative, minutesBetween, secondsBetween } from "@truckmoov/app-core/utils/time-utils";
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card';
-import { Badge } from '@/components/shadcn/badge';
-import { Separator } from '@/components/shadcn/separator';
-import { DeviceHealthBadge, DeviceHealthStatus } from './DeviceHealthBadge';
-import { 
-  Activity, 
-  Clock, 
-  Timer, 
-  AlertTriangle, 
-  Wifi, 
+import type { DeviceHealthStatus } from "./DeviceHealthBadge";
+import {
+  formatRelative, minutesBetween, secondsBetween,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  Activity,
+  AlertTriangle,
+  Clock,
+  Timer,
+  TrendingDown,
+  Wifi,
   WifiOff,
-  TrendingDown
-} from 'lucide-react';
+} from "lucide-react";
+import React from "react";
+import { Badge } from "@/components/shadcn/badge";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Separator } from "@/components/shadcn/separator";
+import { DeviceHealthBadge } from "./DeviceHealthBadge";
 
-interface DeviceConnectivityPanelProps {
+type DeviceConnectivityPanelProps = {
   healthStatus: DeviceHealthStatus | null;
   lastSeen: string | null;
   lastHealthCheckAt: string | null;
@@ -23,7 +28,7 @@ interface DeviceConnectivityPanelProps {
   onlineThresholdSeconds: number;
   offlineThresholdSeconds: number;
   lifecycleStatus: string;
-}
+};
 
 export function DeviceConnectivityPanel({
   healthStatus,
@@ -33,31 +38,41 @@ export function DeviceConnectivityPanel({
   expectedHeartbeatSeconds = 60,
   onlineThresholdSeconds = 180,
   offlineThresholdSeconds = 600,
-  lifecycleStatus
+  lifecycleStatus,
 }: DeviceConnectivityPanelProps) {
   const now = new Date();
-  const status = healthStatus || 'offline';
-  
+  const status = healthStatus || "offline";
+
   // Calculate time since last seen
-  const secondsSinceLastSeen = lastSeen 
-    ? secondsBetween(lastSeen, now)
+  const secondsSinceLastSeen = lastSeen
+    ? secondsBetween(
+        lastSeen,
+        now,
+      )
     : null;
-  
+
   // Calculate offline duration if applicable
-  const offlineDurationMinutes = lastStatusChangeAt && status === 'offline'
-    ? minutesBetween(lastStatusChangeAt, now)
+  const offlineDurationMinutes = lastStatusChangeAt && status === "offline"
+    ? minutesBetween(
+        lastStatusChangeAt,
+        now,
+      )
     : null;
 
   // Determine if device is in pre-verification state
-  const isPreVerification = ['registered', 'config_pending', 'configured'].includes(lifecycleStatus);
+  const isPreVerification = [
+    "registered",
+    "config_pending",
+    "configured",
+  ].includes(lifecycleStatus);
 
   const getStatusIcon = () => {
     switch (status) {
-      case 'online':
+      case "online":
         return <Wifi className="h-5 w-5 text-emerald-500" />;
-      case 'degraded':
+      case "degraded":
         return <TrendingDown className="h-5 w-5 text-amber-500" />;
-      case 'offline':
+      case "offline":
         return <WifiOff className="h-5 w-5 text-destructive" />;
       default:
         return <WifiOff className="h-5 w-5 text-muted-foreground" />;
@@ -66,12 +81,12 @@ export function DeviceConnectivityPanel({
 
   const getStatusDescription = () => {
     switch (status) {
-      case 'online':
-        return 'Device is actively transmitting telemetry within expected intervals.';
-      case 'degraded':
-        return 'Heartbeat is delayed. Device may be experiencing connectivity issues.';
-      case 'offline':
-        return 'No telemetry received beyond offline threshold. Check device connectivity.';
+      case "online":
+        return "Device is actively transmitting telemetry within expected intervals.";
+      case "degraded":
+        return "Heartbeat is delayed. Device may be experiencing connectivity issues.";
+      case "offline":
+        return "No telemetry received beyond offline threshold. Check device connectivity.";
     }
   };
 
@@ -90,15 +105,18 @@ export function DeviceConnectivityPanel({
             <p className="text-sm font-medium">Connection Status</p>
             <div className="flex items-center gap-2">
               {getStatusIcon()}
-              <DeviceHealthBadge 
-                healthStatus={healthStatus} 
+              <DeviceHealthBadge
+                healthStatus={healthStatus}
                 lastSeen={lastSeen}
                 size="lg"
               />
             </div>
           </div>
           {isPreVerification && (
-            <Badge variant="secondary" className="text-xs">
+            <Badge
+              variant="secondary"
+              className="text-xs"
+            >
               Awaiting First Signal
             </Badge>
           )}
@@ -119,10 +137,9 @@ export function DeviceConnectivityPanel({
               <span className="text-xs">Last Telemetry</span>
             </div>
             <p className="font-mono text-sm">
-              {lastSeen 
+              {lastSeen
                 ? formatRelative(lastSeen)
-                : 'Never received'
-              }
+                : "Never received"}
             </p>
           </div>
 
@@ -133,10 +150,9 @@ export function DeviceConnectivityPanel({
               <span className="text-xs">Last Health Check</span>
             </div>
             <p className="font-mono text-sm">
-              {lastHealthCheckAt 
+              {lastHealthCheckAt
                 ? formatRelative(lastHealthCheckAt)
-                : 'Pending'
-              }
+                : "Pending"}
             </p>
           </div>
         </div>
@@ -149,21 +165,33 @@ export function DeviceConnectivityPanel({
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div className="p-2 bg-muted/50 rounded-md text-center">
               <p className="text-muted-foreground">Expected</p>
-              <p className="font-mono font-medium">{expectedHeartbeatSeconds}s</p>
+              <p className="font-mono font-medium">
+                {expectedHeartbeatSeconds}
+                s
+              </p>
             </div>
             <div className="p-2 bg-primary/10 rounded-md text-center">
               <p className="text-muted-foreground">Online ≤</p>
-              <p className="font-mono font-medium text-primary">{onlineThresholdSeconds}s</p>
+              <p className="font-mono font-medium text-primary">
+                {onlineThresholdSeconds}
+                s
+              </p>
             </div>
             <div className="p-2 bg-destructive/10 rounded-md text-center">
-              <p className="text-muted-foreground">Offline {'>'}</p>
-              <p className="font-mono font-medium text-destructive">{offlineThresholdSeconds}s</p>
+              <p className="text-muted-foreground">
+                Offline
+                {">"}
+              </p>
+              <p className="font-mono font-medium text-destructive">
+                {offlineThresholdSeconds}
+                s
+              </p>
             </div>
           </div>
         </div>
 
         {/* Offline Duration Warning */}
-        {status === 'offline' && offlineDurationMinutes !== null && (
+        {status === "offline" && offlineDurationMinutes !== null && (
           <>
             <Separator />
             <div className="flex items-start gap-2 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
@@ -171,11 +199,18 @@ export function DeviceConnectivityPanel({
               <div>
                 <p className="text-sm font-medium text-destructive">Device Offline</p>
                 <p className="text-xs text-muted-foreground">
-                  Offline for {offlineDurationMinutes} minute{offlineDurationMinutes !== 1 ? 's' : ''}. 
-                  Last status change: {lastStatusChangeAt 
+                  Offline for
+                  {" "}
+                  {offlineDurationMinutes}
+                  {" "}
+                  minute
+                  {offlineDurationMinutes !== 1 ? "s" : ""}
+                  .
+                  Last status change:
+                  {" "}
+                  {lastStatusChangeAt
                     ? formatRelative(lastStatusChangeAt)
-                    : 'Unknown'
-                  }
+                    : "Unknown"}
                 </p>
               </div>
             </div>
@@ -183,7 +218,7 @@ export function DeviceConnectivityPanel({
         )}
 
         {/* Degraded Warning */}
-        {status === 'degraded' && secondsSinceLastSeen !== null && (
+        {status === "degraded" && secondsSinceLastSeen !== null && (
           <>
             <Separator />
             <div className="flex items-start gap-2 p-3 bg-secondary rounded-lg border">
@@ -191,8 +226,19 @@ export function DeviceConnectivityPanel({
               <div>
                 <p className="text-sm font-medium text-amber-600">Degraded Connectivity</p>
                 <p className="text-xs text-muted-foreground">
-                  No heartbeat for {Math.round(secondsSinceLastSeen / 60)} minutes. 
-                  Will transition to offline in {Math.max(0, Math.round((offlineThresholdSeconds - secondsSinceLastSeen) / 60))} minutes if no signal received.
+                  No heartbeat for
+                  {" "}
+                  {Math.round(secondsSinceLastSeen / 60)}
+                  {" "}
+                  minutes.
+                  Will transition to offline in
+                  {" "}
+                  {Math.max(
+                    0,
+                    Math.round((offlineThresholdSeconds - secondsSinceLastSeen) / 60),
+                  )}
+                  {" "}
+                  minutes if no signal received.
                 </p>
               </div>
             </div>

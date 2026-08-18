@@ -1,16 +1,32 @@
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  DollarSign,
+  MessageCircle,
+  MessageSquare,
+  Phone,
+  RefreshCw,
+  Save,
+} from "lucide-react";
+import {
+  useEffect,
+  useState,
+} from "react";
+import { toast } from "sonner";
+import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Badge } from "@/components/shadcn/badge";
-import { Switch } from "@/components/shadcn/switch";
 import { Separator } from "@/components/shadcn/separator";
-import { Phone, MessageSquare, MessageCircle, Save, RefreshCw, DollarSign } from "lucide-react";
-import { toast } from "sonner";
+import { Switch } from "@/components/shadcn/switch";
 
-interface CommunicationRate {
+type CommunicationRate = {
   id: string;
   communication_type: string;
   rate_ngn: number;
@@ -18,42 +34,60 @@ interface CommunicationRate {
   description: string | null;
   is_active: boolean;
   updated_at: string;
-}
+};
 
 export function CommunicationPricing() {
-  const [rates, setRates] = useState<CommunicationRate[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [editedRates, setEditedRates] = useState<Record<string, number>>({});
+  const [
+    rates,
+    setRates,
+  ] = useState<CommunicationRate[]>([]);
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+  const [
+    saving,
+    setSaving,
+  ] = useState(false);
+  const [
+    editedRates,
+    setEditedRates,
+  ] = useState<Record<string, number>>({});
 
-  useEffect(() => {
-    fetchRates();
-  }, []);
+  useEffect(
+    () => {
+      fetchRates();
+    },
+    [],
+  );
 
   const fetchRates = async () => {
     setLoading(false);
   };
 
   const handleRateChange = (id: string, value: string) => {
-    const numValue = parseFloat(value) || 0;
-    setEditedRates(prev => ({ ...prev, [id]: numValue }));
+    const numValue = Number.parseFloat(value) || 0;
+    setEditedRates(prev => ({
+      ...prev,
+      [id]: numValue,
+    }));
   };
 
   const handleToggleActive = async (_id: string, _isActive: boolean) => {
-    toast.info('Coming soon');
+    toast.info("Coming soon");
   };
 
   const handleSaveRates = async () => {
-    toast.info('Coming soon');
+    toast.info("Coming soon");
   };
 
   const getIcon = (type: string) => {
     switch (type) {
-      case 'call':
+      case "call":
         return <Phone className="h-5 w-5" />;
-      case 'sms':
+      case "sms":
         return <MessageSquare className="h-5 w-5" />;
-      case 'whatsapp':
+      case "whatsapp":
         return <MessageCircle className="h-5 w-5" />;
       default:
         return <DollarSign className="h-5 w-5" />;
@@ -62,14 +96,14 @@ export function CommunicationPricing() {
 
   const getTypeBadgeColor = (type: string) => {
     switch (type) {
-      case 'call':
-        return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
-      case 'sms':
-        return 'bg-green-500/10 text-green-500 border-green-500/20';
-      case 'whatsapp':
-        return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+      case "call":
+        return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+      case "sms":
+        return "bg-green-500/10 text-green-500 border-green-500/20";
+      case "whatsapp":
+        return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
       default:
-        return '';
+        return "";
     }
   };
 
@@ -98,20 +132,28 @@ export function CommunicationPricing() {
               Configure usage-based billing rates for all communication channels
             </CardDescription>
           </div>
-          <Button onClick={handleSaveRates} disabled={saving || !hasChanges}>
-            {saving ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
+          <Button
+            onClick={handleSaveRates}
+            disabled={saving || !hasChanges}
+          >
+            {saving
+              ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                )
+              : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
             Save Changes
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid gap-6 md:grid-cols-3">
-          {rates.map((rate) => (
-            <Card key={rate.id} className={`border-2 ${rate.is_active ? 'border-primary/20' : 'border-muted opacity-60'}`}>
+          {rates.map(rate => (
+            <Card
+              key={rate.id}
+              className={`border-2 ${rate.is_active ? "border-primary/20" : "border-muted opacity-60"}`}
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -121,13 +163,16 @@ export function CommunicationPricing() {
                     <div>
                       <h4 className="font-semibold capitalize">{rate.communication_type}</h4>
                       <p className="text-xs text-muted-foreground">
-                        {rate.rate_unit === 'per_minute' ? 'Per Minute' : 'Per Message'}
+                        {rate.rate_unit === "per_minute" ? "Per Minute" : "Per Message"}
                       </p>
                     </div>
                   </div>
                   <Switch
                     checked={rate.is_active}
-                    onCheckedChange={(checked) => handleToggleActive(rate.id, checked)}
+                    onCheckedChange={checked => handleToggleActive(
+                      rate.id,
+                      checked,
+                    )}
                   />
                 </div>
               </CardHeader>
@@ -142,13 +187,16 @@ export function CommunicationPricing() {
                       min="0"
                       step="0.01"
                       value={editedRates[rate.id] || 0}
-                      onChange={(e) => handleRateChange(rate.id, e.target.value)}
+                      onChange={e => handleRateChange(
+                        rate.id,
+                        e.target.value,
+                      )}
                       className="pl-8"
                       disabled={!rate.is_active}
                     />
                   </div>
                 </div>
-                
+
                 {rate.description && (
                   <p className="text-sm text-muted-foreground">{rate.description}</p>
                 )}
@@ -159,7 +207,10 @@ export function CommunicationPricing() {
                 </div>
 
                 {editedRates[rate.id] !== rate.rate_ngn && (
-                  <Badge variant="outline" className="w-full justify-center bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                  <Badge
+                    variant="outline"
+                    className="w-full justify-center bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
+                  >
                     Unsaved changes
                   </Badge>
                 )}
@@ -174,12 +225,20 @@ export function CommunicationPricing() {
           <h4 className="font-medium mb-2">Billing Summary</h4>
           <div className="grid gap-4 md:grid-cols-3 text-sm">
             {rates.filter(r => r.is_active).map(rate => (
-              <div key={rate.id} className="flex items-center justify-between">
-                <span className="capitalize text-muted-foreground">{rate.communication_type}:</span>
+              <div
+                key={rate.id}
+                className="flex items-center justify-between"
+              >
+                <span className="capitalize text-muted-foreground">
+                  {rate.communication_type}
+                  :
+                </span>
                 <span className="font-medium">
-                  ₦{editedRates[rate.id]?.toLocaleString() || rate.rate_ngn.toLocaleString()} 
+                  ₦
+                  {editedRates[rate.id]?.toLocaleString() || rate.rate_ngn.toLocaleString()}
                   <span className="text-muted-foreground ml-1">
-                    /{rate.rate_unit === 'per_minute' ? 'min' : 'msg'}
+                    /
+                    {rate.rate_unit === "per_minute" ? "min" : "msg"}
                   </span>
                 </span>
               </div>
@@ -190,6 +249,3 @@ export function CommunicationPricing() {
     </Card>
   );
 }
-
-
-

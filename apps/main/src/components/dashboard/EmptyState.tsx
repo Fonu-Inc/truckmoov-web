@@ -1,9 +1,9 @@
-import { LucideIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/shadcn/button";
 import { cn } from "@/lib/utils";
-import { useNavigate } from "react-router-dom";
 
-interface EmptyStateProps {
+type EmptyStateProps = {
   icon: LucideIcon;
   title: string;
   description: string;
@@ -11,7 +11,7 @@ interface EmptyStateProps {
   onAction?: () => void;
   actionHref?: string;
   className?: string;
-}
+};
 
 export function EmptyState({
   icon: Icon,
@@ -27,7 +27,8 @@ export function EmptyState({
   const handleAction = () => {
     if (onAction) {
       onAction();
-    } else if (actionHref) {
+    }
+    else if (actionHref) {
       navigate(actionHref);
     }
   };
@@ -36,7 +37,7 @@ export function EmptyState({
     <div
       className={cn(
         "flex flex-col items-center justify-center py-12 text-center",
-        className
+        className,
       )}
     >
       <div className="rounded-full bg-muted p-4 mb-4">
@@ -47,7 +48,10 @@ export function EmptyState({
         {description}
       </p>
       {actionLabel && (onAction || actionHref) && (
-        <Button onClick={handleAction} size="sm">
+        <Button
+          onClick={handleAction}
+          size="sm"
+        >
           {actionLabel}
         </Button>
       )}

@@ -1,11 +1,14 @@
-import { LogOut, Settings, Sun, Moon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getOrganizationSettingsQueryOptions } from "@truckmoov/api/auth";
-import { Avatar, AvatarImage, AvatarFallback } from "@truckmoov/reusables/components/shadcn/avatar";
-import { useAuthStore } from "@/stores/authStore";
-import { Button } from "@/components/shadcn/button";
+import {
+  Avatar, AvatarFallback, AvatarImage,
+} from "@truckmoov/reusables/components/shadcn/avatar";
+import {
+  LogOut, Moon, Settings, Sun,
+} from "lucide-react";
 import { useTheme } from "next-themes";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/shadcn/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,13 +17,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
+import { useAuthStore } from "@/stores/authStore";
 
-const PLATFORM_ADMIN_URL = (import.meta.env.VITE_PLATFORM_ADMIN_URL || "http://localhost:3002").replace(/\/$/, "");
+const PLATFORM_ADMIN_URL = (import.meta.env.VITE_PLATFORM_ADMIN_URL || "http://localhost:3002").replace(
+  /\/$/,
+  "",
+);
 
 export function UserProfileDropdown() {
-  const { user, logout } = useAuthStore();
+  const {
+    user, logout,
+  } = useAuthStore();
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
+  const {
+    theme, setTheme,
+  } = useTheme();
   const { data: orgSettings } = useQuery(getOrganizationSettingsQueryOptions());
   const branding = orgSettings?.data?.branding;
   const orgName = branding?.organizationName;
@@ -37,7 +48,8 @@ export function UserProfileDropdown() {
   const handleSettingsClick = () => {
     if (user?.role === "PLATFORM_ADMIN") {
       window.location.assign(`${PLATFORM_ADMIN_URL}/settings`);
-    } else {
+    }
+    else {
       navigate("/admin/settings");
     }
   };
@@ -59,9 +71,11 @@ export function UserProfileDropdown() {
   };
 
   const getInitials = (name?: string) => {
-    if (!name) return "U";
+    if (!name)
+      return "U";
     const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    if (parts.length === 1)
+      return parts[0].charAt(0).toUpperCase();
     return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
   };
 
@@ -73,7 +87,10 @@ export function UserProfileDropdown() {
           className="h-10 gap-2.5 rounded-full bg-secondary/60 py-1 pl-1.5 pr-4 hover:bg-secondary"
         >
           <Avatar className="h-7 w-7">
-            <AvatarImage src={logoUrl} alt={orgName} />
+            <AvatarImage
+              src={logoUrl}
+              alt={orgName}
+            />
             <AvatarFallback className="bg-primary text-primary-foreground font-bold text-xs">
               {getInitials(orgName)}
             </AvatarFallback>
@@ -85,7 +102,11 @@ export function UserProfileDropdown() {
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 bg-popover border-border" align="end" forceMount>
+      <DropdownMenuContent
+        className="w-56 bg-popover border-border"
+        align="end"
+        forceMount
+      >
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{orgName || "Organization"}</p>
@@ -98,7 +119,10 @@ export function UserProfileDropdown() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSettingsClick} className="cursor-pointer">
+        <DropdownMenuItem
+          onClick={handleSettingsClick}
+          className="cursor-pointer"
+        >
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>
@@ -109,11 +133,13 @@ export function UserProfileDropdown() {
           }}
           className="cursor-pointer"
         >
-          {isDark ? (
-            <Sun className="mr-2 h-4 w-4" />
-          ) : (
-            <Moon className="mr-2 h-4 w-4" />
-          )}
+          {isDark
+            ? (
+                <Sun className="mr-2 h-4 w-4" />
+              )
+            : (
+                <Moon className="mr-2 h-4 w-4" />
+              )}
           <span>{isDark ? "Light mode" : "Dark mode"}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

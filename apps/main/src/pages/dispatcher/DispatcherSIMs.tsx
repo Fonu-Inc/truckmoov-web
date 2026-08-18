@@ -1,34 +1,38 @@
-import { useState } from "react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useDeviceTelemetry } from "@/hooks/useDeviceTelemetry";
 import {
-  Search, SlidersHorizontal as Filter, Upload, Plus, ShieldAlert,
+  SlidersHorizontal as Filter, Plus, Search, ShieldAlert, Upload,
 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import {
+  Alert, AlertDescription, AlertTitle,
+} from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent,
+} from "@/components/shadcn/card";
 import { Input } from "@/components/shadcn/input";
-import { Card, CardContent } from "@/components/shadcn/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import { SIMFormDialog } from "@/components/sims/SIMFormDialog";
-import { SIMRequestFormDialog } from "@/components/sims/SIMRequestFormDialog";
-import { SIMDetailsSheet } from "@/components/sims/SIMDetailsSheet";
-import { SIMBulkUploadDialog } from "@/components/sims/SIMBulkUploadDialog";
 import { AssignSIMDialog } from "@/components/sims/AssignSIMDialog";
-import { SIMRequestsTracker } from "@/components/sims/SIMRequestsTracker";
-import { SIMOverviewCards } from "@/components/sims/SIMOverviewCards";
+import { SIMBulkUploadDialog } from "@/components/sims/SIMBulkUploadDialog";
+import { SIMDetailsSheet } from "@/components/sims/SIMDetailsSheet";
+import { SIMFormDialog } from "@/components/sims/SIMFormDialog";
 import { SIMInventoryTable } from "@/components/sims/SIMInventoryTable";
-import { toast } from "sonner";
-import { useAuthStore } from "@/stores/authStore";
+import { SIMOverviewCards } from "@/components/sims/SIMOverviewCards";
+import { SIMRequestFormDialog } from "@/components/sims/SIMRequestFormDialog";
+import { SIMRequestsTracker } from "@/components/sims/SIMRequestsTracker";
+import { useDeviceTelemetry } from "@/hooks/useDeviceTelemetry";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
+import { useAuthStore } from "@/stores/authStore";
 
 type SIMCardExtended = any;
 
 export default function DispatcherSIMs() {
   const { requireSubscription } = useRequireSubscription();
   const { user } = useAuthStore();
-const submitRequest = async (..._args: any[]) => false;
+  const submitRequest = async (..._args: any[]) => false;
   const isSubmitting = false;
   const canRequestSIM = true;
 
@@ -42,45 +46,83 @@ const submitRequest = async (..._args: any[]) => false;
   const deleteSIM = async (_id: string) => {};
   const { devices } = useDeviceTelemetry(tenantId);
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [operatorFilters, setOperatorFilters] = useState<string[]>([]);
-  const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
-  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
-  const [selectedSIM, setSelectedSIM] = useState<SIMCardExtended | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState<string>("all");
+  const [
+    operatorFilters,
+    setOperatorFilters,
+  ] = useState<string[]>([]);
+  const [
+    isRequestDialogOpen,
+    setIsRequestDialogOpen,
+  ] = useState(false);
+  const [
+    isAddDialogOpen,
+    setIsAddDialogOpen,
+  ] = useState(false);
+  const [
+    isEditDialogOpen,
+    setIsEditDialogOpen,
+  ] = useState(false);
+  const [
+    isBulkUploadOpen,
+    setIsBulkUploadOpen,
+  ] = useState(false);
+  const [
+    isAssignDialogOpen,
+    setIsAssignDialogOpen,
+  ] = useState(false);
+  const [
+    selectedSIM,
+    setSelectedSIM,
+  ] = useState<SIMCardExtended | null>(null);
+  const [
+    isDetailsOpen,
+    setIsDetailsOpen,
+  ] = useState(false);
 
   const filteredSIMs = sims.filter((sim) => {
-    const matchesSearch =
-      sim.iccid.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sim.mobileNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sim.networkOperator.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch
+      = sim.iccid.toLowerCase().includes(searchQuery.toLowerCase())
+        || sim.mobileNumber.toLowerCase().includes(searchQuery.toLowerCase())
+        || sim.networkOperator.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || sim.status === statusFilter;
     const matchesOperator = operatorFilters.length === 0 || operatorFilters.includes(sim.networkOperator);
     return matchesSearch && matchesStatus && matchesOperator;
   });
 
-  const operators = [...new Set(sims.map((s) => s.networkOperator))];
+  const operators = [...new Set(sims.map(s => s.networkOperator))];
 
   const statusCounts = {
     all: sims.length,
-    registered: sims.filter((s) => s.status === "registered").length,
-    active: sims.filter((s) => s.status === "active").length,
-    assigned: sims.filter((s) => s.status === "assigned").length,
-    suspended: sims.filter((s) => s.status === "suspended").length,
-    deactivated: sims.filter((s) => s.status === "deactivated").length,
+    registered: sims.filter(s => s.status === "registered").length,
+    active: sims.filter(s => s.status === "active").length,
+    assigned: sims.filter(s => s.status === "assigned").length,
+    suspended: sims.filter(s => s.status === "suspended").length,
+    deactivated: sims.filter(s => s.status === "deactivated").length,
   };
 
-  const totalDataUsage = sims.reduce((sum, s) => sum + s.dataUsage, 0);
-  const totalDataLimit = sims.reduce((sum, s) => sum + s.dataLimit, 0);
+  const totalDataUsage = sims.reduce(
+    (sum, s) => sum + s.dataUsage,
+    0,
+  );
+  const totalDataLimit = sims.reduce(
+    (sum, s) => sum + s.dataLimit,
+    0,
+  );
 
   const getDeviceInfo = (deviceId?: string): any => {
-    if (!deviceId) return null;
-    const device = devices.find((d) => d.id === deviceId);
-    if (!device) return null;
+    if (!deviceId)
+      return null;
+    const device = devices.find(d => d.id === deviceId);
+    if (!device)
+      return null;
     return {
       id: device.id,
       imei: device.imei,
@@ -95,8 +137,8 @@ const submitRequest = async (..._args: any[]) => false;
   };
 
   const availableDevices = devices
-    .filter((d) => !sims.some((s) => s.deviceId === d.id) && d.status !== "registered")
-    .map((device) => ({
+    .filter(d => !sims.some(s => s.deviceId === d.id) && d.status !== "registered")
+    .map(device => ({
       id: device.id,
       imei: device.imei,
       manufacturer: device.manufacturer,
@@ -115,11 +157,17 @@ const submitRequest = async (..._args: any[]) => false;
   };
 
   return (
-    <DashboardLayout title="IoT SIM Management" subtitle="Visibility over your SIMs connectivity">
+    <DashboardLayout
+      title="IoT SIM Management"
+      subtitle="Visibility over your SIMs connectivity"
+    >
       <div className="space-y-6">
         {/* Top-right actions */}
         <div className="flex items-center justify-end gap-2">
-          <Button variant="outline" onClick={() => setIsBulkUploadOpen(true)}>
+          <Button
+            variant="outline"
+            onClick={() => setIsBulkUploadOpen(true)}
+          >
             <Upload className="mr-2 h-4 w-4" />
             Bulk Import
           </Button>
@@ -148,12 +196,21 @@ const submitRequest = async (..._args: any[]) => false;
           operators={operators}
           onViewDetails={(sim) => { setSelectedSIM(sim); setIsDetailsOpen(true); }}
           onEdit={(sim) => { setSelectedSIM(sim); setIsEditDialogOpen(true); }}
-          onActivate={(id) => updateSIMStatus(id, "active")}
-          onSuspend={(id) => updateSIMStatus(id, "suspended")}
-          onResume={(id) => updateSIMStatus(id, "active")}
+          onActivate={id => updateSIMStatus(
+            id,
+            "active",
+          )}
+          onSuspend={id => updateSIMStatus(
+            id,
+            "suspended",
+          )}
+          onResume={id => updateSIMStatus(
+            id,
+            "active",
+          )}
           onAssign={(sim) => { setSelectedSIM(sim); setIsAssignDialogOpen(true); }}
-          onUnassign={(id) => unassignSIM(id)}
-          onDelete={(id) => deleteSIM(id)}
+          onUnassign={id => unassignSIM(id)}
+          onDelete={id => deleteSIM(id)}
         />
 
         <SIMRequestsTracker />
@@ -164,7 +221,8 @@ const submitRequest = async (..._args: any[]) => false;
         onOpenChange={setIsRequestDialogOpen}
         onSubmit={async (data) => {
           const success = await submitRequest(data);
-          if (success) setIsRequestDialogOpen(false);
+          if (success)
+            setIsRequestDialogOpen(false);
         }}
         isSubmitting={isSubmitting}
       />
@@ -203,7 +261,12 @@ const submitRequest = async (..._args: any[]) => false;
         onOpenChange={setIsAssignDialogOpen}
         sim={selectedSIM}
         devices={availableDevices}
-        onAssign={async (simId, deviceId) => { await assignSIMToDevice(simId, deviceId); setIsAssignDialogOpen(false); }}
+        onAssign={async (simId, deviceId) => {
+          await assignSIMToDevice(
+            simId,
+            deviceId,
+          ); setIsAssignDialogOpen(false);
+        }}
       />
     </DashboardLayout>
   );

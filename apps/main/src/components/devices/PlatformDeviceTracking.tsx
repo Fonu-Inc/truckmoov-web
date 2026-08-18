@@ -1,22 +1,28 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card';
-import { Button } from '@/components/shadcn/button';
-import { Badge } from '@/components/shadcn/badge';
-import { DeviceRealtimeMap } from '@/components/devices/DeviceRealtimeMap';
-import { DeviceTelemetryPanel } from '@/components/devices/DeviceTelemetryPanel';
-import { DeviceList } from '@/components/devices/DeviceList';
-import { DeviceWithTelemetry, DriverBehaviorEvent } from '@/hooks/useDeviceTelemetry';
-import type { GeofenceZone } from '@/components/devices/DeviceRealtimeMap';
-import {AlertTriangle, RefreshCw, Play, Pause, Trash2, Download} from 'lucide-react';
-import { Skeleton } from '@/components/shadcn/skeleton';
+import type { GeofenceZone } from "@/components/devices/DeviceRealtimeMap";
+import type {
+  DeviceWithTelemetry, DriverBehaviorEvent,
+} from "@/hooks/useDeviceTelemetry";
+import {
+  AlertTriangle, Download, Pause, Play, RefreshCw, Trash2,
+} from "lucide-react";
+import { useState } from "react";
+import { DeviceList } from "@/components/devices/DeviceList";
+import { DeviceRealtimeMap } from "@/components/devices/DeviceRealtimeMap";
+import { DeviceTelemetryPanel } from "@/components/devices/DeviceTelemetryPanel";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Skeleton } from "@/components/shadcn/skeleton";
 
-interface TrailPoint {
+type TrailPoint = {
   lat: number;
   lng: number;
   timestamp: string;
-}
+};
 
-interface PlatformDeviceTrackingContentProps {
+type PlatformDeviceTrackingContentProps = {
   devices: DeviceWithTelemetry[];
   recentEvents: DriverBehaviorEvent[];
   loading: boolean;
@@ -28,7 +34,7 @@ interface PlatformDeviceTrackingContentProps {
   trailHistory: Map<string, TrailPoint[]>;
   clearTrailHistory: () => void;
   geofences?: any[];
-}
+};
 
 export function PlatformDeviceTrackingContent({
   devices,
@@ -43,10 +49,22 @@ export function PlatformDeviceTrackingContent({
   clearTrailHistory,
   geofences,
 }: PlatformDeviceTrackingContentProps) {
-  const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [activeView, setActiveView] = useState<'map' | 'list' | 'events'>('map');
+  const [
+    selectedDevice,
+    setSelectedDevice,
+  ] = useState<string | null>(null);
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("all");
+  const [
+    activeView,
+    setActiveView,
+  ] = useState<"map" | "list" | "events">("map");
 
   const selectedDeviceData = devices.find(d => d.id === selectedDevice) || null;
 
@@ -54,8 +72,14 @@ export function PlatformDeviceTrackingContent({
     return (
       <div className="p-6 text-center text-destructive">
         <AlertTriangle className="h-12 w-12 mx-auto mb-4" />
-        <p>Error loading devices: {error}</p>
-        <Button onClick={onRefresh} className="mt-4">
+        <p>
+          Error loading devices:
+          {error}
+        </p>
+        <Button
+          onClick={onRefresh}
+          className="mt-4"
+        >
           Retry
         </Button>
       </div>
@@ -68,23 +92,23 @@ export function PlatformDeviceTrackingContent({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2 min-w-0">
           <Button
-            variant={activeView === 'map' ? 'default' : 'outline'}
+            variant={activeView === "map" ? "default" : "outline"}
             size="sm"
-            onClick={() => setActiveView('map')}
+            onClick={() => setActiveView("map")}
           >
             Live Map
           </Button>
           <Button
-            variant={activeView === 'list' ? 'default' : 'outline'}
+            variant={activeView === "list" ? "default" : "outline"}
             size="sm"
-            onClick={() => setActiveView('list')}
+            onClick={() => setActiveView("list")}
           >
             Device List
           </Button>
           <Button
-            variant={activeView === 'events' ? 'default' : 'outline'}
+            variant={activeView === "events" ? "default" : "outline"}
             size="sm"
-            onClick={() => setActiveView('events')}
+            onClick={() => setActiveView("events")}
           >
             Events
           </Button>
@@ -95,23 +119,33 @@ export function PlatformDeviceTrackingContent({
             size="sm"
             onClick={isSimulating ? stopSimulation : startSimulation}
           >
-            {isSimulating ? (
-              <>
-                <Pause className="h-4 w-4 mr-2" />
-                <span className="truncate">Stop Simulation</span>
-              </>
-            ) : (
-              <>
-                <Play className="h-4 w-4 mr-2" />
-                <span className="truncate">Start Simulation</span>
-              </>
-            )}
+            {isSimulating
+              ? (
+                  <>
+                    <Pause className="h-4 w-4 mr-2" />
+                    <span className="truncate">Stop Simulation</span>
+                  </>
+                )
+              : (
+                  <>
+                    <Play className="h-4 w-4 mr-2" />
+                    <span className="truncate">Start Simulation</span>
+                  </>
+                )}
           </Button>
-          <Button variant="outline" size="sm" onClick={clearTrailHistory} title="Clear trail history">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={clearTrailHistory}
+            title="Clear trail history"
+          >
             <Trash2 className="h-4 w-4 mr-2" />
             <span className="truncate">Clear Trails</span>
           </Button>
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+          >
             <Download className="h-4 w-4 mr-2" />
             <span className="truncate">Export Data</span>
           </Button>
@@ -119,7 +153,7 @@ export function PlatformDeviceTrackingContent({
       </div>
 
       {/* Map View */}
-      {activeView === 'map' && (
+      {activeView === "map" && (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Device List Sidebar */}
           <div className="lg:col-span-1">
@@ -144,18 +178,24 @@ export function PlatformDeviceTrackingContent({
                 selectedDevice={selectedDevice}
                 onSelectDevice={setSelectedDevice}
                 trailHistory={trailHistory}
-                geofences={(geofences || []).map(gf => {
+                geofences={(geofences || []).map((gf) => {
                   // Convert database Geofence to map GeofenceZone
-                  const geometry = gf.geometry as { type: string; coordinates: [number, number] } | null;
-                  const center: [number, number] = geometry?.coordinates || [0, 0];
+                  const geometry = gf.geometry as {
+                    type: string; coordinates: [number, number];
+                  } | null;
+                  const center: [number, number] = geometry?.coordinates || [
+                    0,
+                    0,
+                  ];
                   return {
                     id: gf.id,
                     name: gf.name,
                     center,
                     radius: gf.radius_meters || 500,
-                    color: gf.color || '#3b82f6',
-                    type: (gf.category as GeofenceZone['type']) || 'custom',
-                    isActive: gf.status === 'ACTIVE' };
+                    color: gf.color || "#3b82f6",
+                    type: (gf.category as GeofenceZone["type"]) || "custom",
+                    isActive: gf.status === "ACTIVE",
+                  };
                 })}
               />
             )}
@@ -172,7 +212,7 @@ export function PlatformDeviceTrackingContent({
       )}
 
       {/* List View */}
-      {activeView === 'list' && (
+      {activeView === "list" && (
         <Card>
           <CardHeader>
             <CardTitle>All Devices</CardTitle>
@@ -193,39 +233,58 @@ export function PlatformDeviceTrackingContent({
                   </tr>
                 </thead>
                 <tbody>
-                  {devices.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                        No devices found. Run the simulator to create test devices.
-                      </td>
-                    </tr>
-                  ) : (
-                    devices.map((device) => (
-                      <tr
-                        key={device.id}
-                        className="border-b hover:bg-muted/50 cursor-pointer"
-                        onClick={() => {
-                          setSelectedDevice(device.id);
-                          setActiveView('map');
-                        }}
-                      >
-                        <td className="p-2 font-mono">{device.imei}</td>
-                        <td className="p-2">{device.manufacturer} {device.model}</td>
-                        <td className="p-2">
-                          <Badge variant="outline">{device.status}</Badge>
-                        </td>
-                        <td className="p-2 uppercase text-xs">{device.protocol}</td>
-                        <td className="p-2">{device.signal_strength ?? '-'}%</td>
-                        <td className="p-2">{device.battery_level ?? '-'}%</td>
-                        <td className="p-2">{device.speed?.toFixed(0) ?? '-'} km/h</td>
-                        <td className="p-2 text-sm text-muted-foreground">
-                          {device.last_seen
-                            ? new Date(device.last_seen).toLocaleString()
-                            : 'Never'}
-                        </td>
-                      </tr>
-                    ))
-                  )}
+                  {devices.length === 0
+                    ? (
+                        <tr>
+                          <td
+                            colSpan={8}
+                            className="p-8 text-center text-muted-foreground"
+                          >
+                            No devices found. Run the simulator to create test devices.
+                          </td>
+                        </tr>
+                      )
+                    : (
+                        devices.map(device => (
+                          <tr
+                            key={device.id}
+                            className="border-b hover:bg-muted/50 cursor-pointer"
+                            onClick={() => {
+                              setSelectedDevice(device.id);
+                              setActiveView("map");
+                            }}
+                          >
+                            <td className="p-2 font-mono">{device.imei}</td>
+                            <td className="p-2">
+                              {device.manufacturer}
+                              {" "}
+                              {device.model}
+                            </td>
+                            <td className="p-2">
+                              <Badge variant="outline">{device.status}</Badge>
+                            </td>
+                            <td className="p-2 uppercase text-xs">{device.protocol}</td>
+                            <td className="p-2">
+                              {device.signal_strength ?? "-"}
+                              %
+                            </td>
+                            <td className="p-2">
+                              {device.battery_level ?? "-"}
+                              %
+                            </td>
+                            <td className="p-2">
+                              {device.speed?.toFixed(0) ?? "-"}
+                              {" "}
+                              km/h
+                            </td>
+                            <td className="p-2 text-sm text-muted-foreground">
+                              {device.last_seen
+                                ? new Date(device.last_seen).toLocaleString()
+                                : "Never"}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                 </tbody>
               </table>
             </div>
@@ -234,7 +293,7 @@ export function PlatformDeviceTrackingContent({
       )}
 
       {/* Events View */}
-      {activeView === 'events' && (
+      {activeView === "events" && (
         <Card>
           <CardHeader>
             <CardTitle>Driver Behavior Events</CardTitle>
@@ -256,29 +315,42 @@ export function PlatformDeviceTrackingContent({
                   {recentEvents.map((event) => {
                     const device = devices.find(d => d.id === event.device_id);
                     return (
-                      <tr key={event.id} className="border-b hover:bg-muted/50">
+                      <tr
+                        key={event.id}
+                        className="border-b hover:bg-muted/50"
+                      >
                         <td className="p-2 capitalize">
-                          {event.event_type.replace('_', ' ')}
+                          {event.event_type.replace(
+                            "_",
+                            " ",
+                          )}
                         </td>
                         <td className="p-2">
                           <Badge
                             variant={
-                              event.severity === 'critical' || event.severity === 'high'
-                                ? 'destructive'
-                                : 'outline'
+                              event.severity === "critical" || event.severity === "high"
+                                ? "destructive"
+                                : "outline"
                             }
                           >
                             {event.severity}
                           </Badge>
                         </td>
                         <td className="p-2 font-mono text-sm">
-                          {device?.imei || event.device_id.slice(0, 8)}
+                          {device?.imei || event.device_id.slice(
+                            0,
+                            8,
+                          )}
                         </td>
-                        <td className="p-2">{event.speed?.toFixed(0) ?? '-'} km/h</td>
+                        <td className="p-2">
+                          {event.speed?.toFixed(0) ?? "-"}
+                          {" "}
+                          km/h
+                        </td>
                         <td className="p-2 text-sm text-muted-foreground">
                           {event.latitude && event.longitude
                             ? `${event.latitude.toFixed(4)}, ${event.longitude.toFixed(4)}`
-                            : 'Unknown'}
+                            : "Unknown"}
                         </td>
                         <td className="p-2 text-sm text-muted-foreground">
                           {new Date(event.created_at).toLocaleString()}
@@ -288,7 +360,10 @@ export function PlatformDeviceTrackingContent({
                   })}
                   {recentEvents.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                      <td
+                        colSpan={6}
+                        className="p-8 text-center text-muted-foreground"
+                      >
                         No events recorded
                       </td>
                     </tr>

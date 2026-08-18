@@ -1,18 +1,18 @@
-import { ReactNode } from "react";
-import { DashboardSidebar } from "./DashboardSidebar";
-import { DashboardHeader } from "./DashboardHeader";
-import { TrialBanner } from "@/components/onboarding/TrialBanner";
+import type { ReactNode } from "react";
+import { ErrorBoundary } from "@truckmoov/reusables/components/ErrorBoundary";
 import { OnboardingRouteGate } from "@/components/onboarding/OnboardingRouteGate";
+import { TrialBanner } from "@/components/onboarding/TrialBanner";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/stores/sidebarStore";
-import { ErrorBoundary } from "@truckmoov/reusables/components/ErrorBoundary";
+import { DashboardHeader } from "./DashboardHeader";
+import { DashboardSidebar } from "./DashboardSidebar";
 
-interface DashboardLayoutProps {
+type DashboardLayoutProps = {
   children: ReactNode;
   title: string;
   subtitle?: string;
   fullWidth?: boolean;
-}
+};
 
 export function DashboardLayout({
   children,
@@ -20,21 +20,30 @@ export function DashboardLayout({
   subtitle,
   fullWidth = false,
 }: DashboardLayoutProps) {
-  const collapsed = useSidebarStore((s) => s.collapsed);
+  const collapsed = useSidebarStore(s => s.collapsed);
   return (
     <div className="min-h-screen bg-background">
       <ErrorBoundary><DashboardSidebar /></ErrorBoundary>
       <div
         className={cn(
           "flex min-h-screen flex-col bg-card transition-all duration-300",
-          collapsed ? "ml-20" : "ml-64"
+          collapsed ? "ml-20" : "ml-64",
         )}
       >
-        <ErrorBoundary><DashboardHeader title={title} subtitle={subtitle} /></ErrorBoundary>
+        <ErrorBoundary>
+          <DashboardHeader
+            title={title}
+            subtitle={subtitle}
+          />
+        </ErrorBoundary>
         <div data-trial-banner>
           <TrialBanner />
         </div>
-        <main className={cn("flex-1 p-6", fullWidth && "p-0")}>
+        <main className={cn(
+          "flex-1 p-6",
+          fullWidth && "p-0",
+        )}
+        >
           <ErrorBoundary>
             <OnboardingRouteGate>{children}</OnboardingRouteGate>
           </ErrorBoundary>

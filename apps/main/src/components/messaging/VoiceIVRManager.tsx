@@ -1,56 +1,70 @@
-import { formatDateTime, formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
-import { formatClockDuration } from "@truckmoov/app-core/utils/time-utils";
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
-import { Textarea } from "@/components/shadcn/textarea";
+import {
+  formatClockDuration, formatDateTime, formatDayMonthTime,
+} from "@truckmoov/app-core/utils/time-utils";
+
+import {
+  AlertCircle, CheckCircle, Clock, Delete, Download, Filter, Globe, Headphones, Loader2, MessageSquare, Mic, MicOff, MoreHorizontal, Pause, Pencil, Phone, PhoneCall, PhoneIncoming, PhoneMissed, PhoneOutgoing, Play, Plus, Search, Settings, Trash2, User, UserPlus, Volume2, XCircle,
+} from "lucide-react";
+import {
+  useEffect, useState,
+} from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
-import { Switch } from "@/components/shadcn/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { Progress } from "@/components/shadcn/progress";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter } from "@/components/shadcn/dialog";
+} from "@/components/shadcn/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Progress } from "@/components/shadcn/progress";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from "@/components/shadcn/select";
+  SelectValue,
+} from "@/components/shadcn/select";
+import { Switch } from "@/components/shadcn/switch";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from "@/components/shadcn/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
-import {Phone, PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneMissed, Mic, MicOff, Volume2, Play, Pause, Settings, Plus, Pencil, Trash2, MoreHorizontal, Globe, Clock, User, CheckCircle, XCircle, AlertCircle, Headphones, MessageSquare, Loader2, Delete, UserPlus, Search, Filter, Download} from "lucide-react";
-import { toast } from "sonner";
+  TableRow,
+} from "@/components/shadcn/table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
+import { Textarea } from "@/components/shadcn/textarea";
 
 type Language = "en" | "ha" | "yo" | "ig" | "pcm";
 
-interface IVRPrompt {
+type IVRPrompt = {
   id: string;
   name: string;
   category: "greeting" | "menu" | "confirmation" | "error" | "goodbye";
   translations: Record<Language, string>;
   audioUrls?: Record<Language, string>;
   keyPress?: string;
-}
+};
 
-interface CallLog {
+type CallLog = {
   id: string;
   driverName: string;
   driverPhone: string;
@@ -60,22 +74,44 @@ interface CallLog {
   language: Language;
   timestamp: Date;
   notes?: string;
-}
+};
 
-const LANGUAGES: { code: Language; name: string; nativeName: string }[] = [
-  { code: "en", name: "English", nativeName: "English" },
-  { code: "ha", name: "Hausa", nativeName: "Hausa" },
-  { code: "yo", name: "Yoruba", nativeName: "Yorùbá" },
-  { code: "ig", name: "Igbo", nativeName: "Igbo" },
-  { code: "pcm", name: "Nigerian Pidgin", nativeName: "Naija" },
+const LANGUAGES: {
+  code: Language; name: string; nativeName: string;
+}[] = [
+  {
+    code: "en", name: "English", nativeName: "English",
+  },
+  {
+    code: "ha", name: "Hausa", nativeName: "Hausa",
+  },
+  {
+    code: "yo", name: "Yoruba", nativeName: "Yorùbá",
+  },
+  {
+    code: "ig", name: "Igbo", nativeName: "Igbo",
+  },
+  {
+    code: "pcm", name: "Nigerian Pidgin", nativeName: "Naija",
+  },
 ];
 
 const CATEGORIES = [
-  { value: "greeting", label: "Greeting" },
-  { value: "menu", label: "Menu Options" },
-  { value: "confirmation", label: "Confirmation" },
-  { value: "error", label: "Error Messages" },
-  { value: "goodbye", label: "Goodbye" },
+  {
+    value: "greeting", label: "Greeting",
+  },
+  {
+    value: "menu", label: "Menu Options",
+  },
+  {
+    value: "confirmation", label: "Confirmation",
+  },
+  {
+    value: "error", label: "Error Messages",
+  },
+  {
+    value: "goodbye", label: "Goodbye",
+  },
 ];
 
 // Demo IVR prompts shown by default
@@ -89,8 +125,10 @@ const DEFAULT_PROMPTS: IVRPrompt[] = [
       ha: "Barka da zuwa Fleet Pro tallafin direba. Da fatan za a saurari zaɓuɓɓuka masu zuwa.",
       yo: "Káàbọ̀ sí ìrànlọ́wọ́ awakọ̀ Fleet Pro. Jọ̀wọ́ tẹ́tí sílẹ̀ dáadáa.",
       ig: "Nnọọ na nkwado onye ọkwọ ụgbọala Fleet Pro. Biko gee ntị na nhọrọ ndị a.",
-      pcm: "Welcome to Fleet Pro driver help. Abeg listen well to di options wey dey come." },
-    audioUrls: undefined },
+      pcm: "Welcome to Fleet Pro driver help. Abeg listen well to di options wey dey come.",
+    },
+    audioUrls: undefined,
+  },
   {
     id: "p2",
     name: "Main Menu",
@@ -100,8 +138,10 @@ const DEFAULT_PROMPTS: IVRPrompt[] = [
       ha: "Latsa 1 don sabbin tayin aiki, 2 don tafiya mai gudana, 3 don tallafi, ko 0 don magana da wakili.",
       yo: "Tẹ 1 fún àwọn iṣẹ́ tuntun, 2 fún ìrìnàjò tó ń lọ, 3 fún ìrànlọ́wọ́, tàbí 0 láti bá agbéjọ́rò sọ̀rọ̀.",
       ig: "Pịa 1 maka ọrụ ọhụrụ, 2 maka njem na-aga n'ihu, 3 maka nkwado, ma ọ bụ 0 ka ị kpaa onye nnọchite anya okwu.",
-      pcm: "Press 1 for new work, 2 for trip wey dey go, 3 for help, or 0 to talk to person." },
-    keyPress: "*" },
+      pcm: "Press 1 for new work, 2 for trip wey dey go, 3 for help, or 0 to talk to person.",
+    },
+    keyPress: "*",
+  },
   {
     id: "p3",
     name: "Job Acceptance Confirmation",
@@ -111,8 +151,10 @@ const DEFAULT_PROMPTS: IVRPrompt[] = [
       ha: "Kun karɓi aikin. An aika maka cikakkun bayanan ɗaukar a wayarka.",
       yo: "O ti gba iṣẹ́ náà. A ti rán àwọn àlàyé sí fóònù rẹ.",
       ig: "Ị nakweere ọrụ ahụ. E ziteela gị nkọwa nlele na ekwentị gị.",
-      pcm: "You don accept di work. Pickup details don land your phone for SMS." },
-    keyPress: "1" },
+      pcm: "You don accept di work. Pickup details don land your phone for SMS.",
+    },
+    keyPress: "1",
+  },
   {
     id: "p4",
     name: "Invalid Input Error",
@@ -122,7 +164,9 @@ const DEFAULT_PROMPTS: IVRPrompt[] = [
       ha: "Yi haƙuri, wannan ba zaɓi mai inganci ba ne. Da fatan a sake gwadawa.",
       yo: "Má bínú, ìyẹn kì í ṣe àṣàyàn tó dára. Jọ̀wọ́ tún ún gbìyànjú.",
       ig: "Ndo, nke ahụ abụghị nhọrọ ziri ezi. Biko nwaa ọzọ.",
-      pcm: "Sorry, dat one no correct. Abeg try again." } },
+      pcm: "Sorry, dat one no correct. Abeg try again.",
+    },
+  },
   {
     id: "p5",
     name: "Goodbye Message",
@@ -132,7 +176,9 @@ const DEFAULT_PROMPTS: IVRPrompt[] = [
       ha: "Mun gode da kiranka Fleet Pro. Yi tuƙi cikin aminci, kuma ka yi kyakkyawar rana!",
       yo: "A dúpẹ́ pé o pe Fleet Pro. Wa ọkọ̀ pẹ̀lú àbojútó, kí o sì ní ọjọ́ ayọ̀!",
       ig: "Daalụ maka ịkpọ Fleet Pro. Were nlezianya ịnya ụgbọala, nweekwa ụbọchị ọma!",
-      pcm: "Thank you for calling Fleet Pro. Drive safe and enjoy your day!" } },
+      pcm: "Thank you for calling Fleet Pro. Drive safe and enjoy your day!",
+    },
+  },
 ];
 
 // Demo call logs shown by default
@@ -146,7 +192,8 @@ const DEFAULT_CALL_LOGS: CallLog[] = [
     duration: 184,
     language: "en",
     timestamp: new Date(Date.now() - 1000 * 60 * 12),
-    notes: "Confirmed pickup for job TM-2847" },
+    notes: "Confirmed pickup for job TM-2847",
+  },
   {
     id: "c2",
     driverName: "Adebayo Johnson",
@@ -156,7 +203,8 @@ const DEFAULT_CALL_LOGS: CallLog[] = [
     duration: 312,
     language: "yo",
     timestamp: new Date(Date.now() - 1000 * 60 * 47),
-    notes: "Reported delay due to traffic on Lekki-Epe expressway" },
+    notes: "Reported delay due to traffic on Lekki-Epe expressway",
+  },
   {
     id: "c3",
     driverName: "Ibrahim Musa",
@@ -165,7 +213,8 @@ const DEFAULT_CALL_LOGS: CallLog[] = [
     status: "missed",
     duration: 0,
     language: "ha",
-    timestamp: new Date(Date.now() - 1000 * 60 * 95) },
+    timestamp: new Date(Date.now() - 1000 * 60 * 95),
+  },
   {
     id: "c4",
     driverName: "Oluwaseun Adeleke",
@@ -175,7 +224,8 @@ const DEFAULT_CALL_LOGS: CallLog[] = [
     duration: 96,
     language: "en",
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
-    notes: "Job offer accepted via IVR" },
+    notes: "Job offer accepted via IVR",
+  },
   {
     id: "c5",
     driverName: "Tunde Bakare",
@@ -185,7 +235,8 @@ const DEFAULT_CALL_LOGS: CallLog[] = [
     duration: 0,
     language: "pcm",
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5),
-    notes: "Network failure" },
+    notes: "Network failure",
+  },
   {
     id: "c6",
     driverName: "Aisha Bello",
@@ -195,7 +246,8 @@ const DEFAULT_CALL_LOGS: CallLog[] = [
     duration: 421,
     language: "ig",
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 8),
-    notes: "Provided support for waybill upload" },
+    notes: "Provided support for waybill upload",
+  },
 ];
 
 const categoryColors: Record<string, string> = {
@@ -203,69 +255,138 @@ const categoryColors: Record<string, string> = {
   menu: "bg-success/20 text-success border-success/30",
   confirmation: "bg-warning/20 text-warning border-warning/30",
   error: "bg-destructive/20 text-destructive border-destructive/30",
-  goodbye: "bg-muted text-muted-foreground border-muted" };
+  goodbye: "bg-muted text-muted-foreground border-muted",
+};
 
 const statusColors: Record<string, string> = {
   completed: "bg-success/20 text-success",
   missed: "bg-destructive/20 text-destructive",
   failed: "bg-destructive/20 text-destructive",
-  ongoing: "bg-primary/20 text-primary" };
+  ongoing: "bg-primary/20 text-primary",
+};
 
 const statusIcons: Record<string, React.ReactNode> = {
   completed: <CheckCircle className="h-4 w-4" />,
   missed: <PhoneMissed className="h-4 w-4" />,
   failed: <XCircle className="h-4 w-4" />,
-  ongoing: <PhoneCall className="h-4 w-4 animate-pulse" /> };
+  ongoing: <PhoneCall className="h-4 w-4 animate-pulse" />,
+};
 
 export function VoiceIVRManager() {
-  const [prompts, setPrompts] = useState<IVRPrompt[]>(DEFAULT_PROMPTS);
-  const [callLogs, setCallLogs] = useState<CallLog[]>(DEFAULT_CALL_LOGS);
-  const [isPromptDialogOpen, setIsPromptDialogOpen] = useState(false);
-  const [selectedPrompt, setSelectedPrompt] = useState<IVRPrompt | null>(null);
-  const [activeLanguage, setActiveLanguage] = useState<Language>("en");
-  const [ivrEnabled, setIvrEnabled] = useState(true);
-  const [defaultLanguage, setDefaultLanguage] = useState<Language>("en");
-  const [isCallDialogOpen, setIsCallDialogOpen] = useState(false);
-  const [callPhoneNumber, setCallPhoneNumber] = useState("");
-  const [callMessage, setCallMessage] = useState("");
-  const [selectedCall, setSelectedCall] = useState<CallLog | null>(null);
-  const [callSearch, setCallSearch] = useState("");
-  const [callStatusFilter, setCallStatusFilter] = useState<string>("all");
-  const [callFilters, setCallFilters] = useState<Record<string, any>>({});
+  const [
+    prompts,
+    setPrompts,
+  ] = useState<IVRPrompt[]>(DEFAULT_PROMPTS);
+  const [
+    callLogs,
+    setCallLogs,
+  ] = useState<CallLog[]>(DEFAULT_CALL_LOGS);
+  const [
+    isPromptDialogOpen,
+    setIsPromptDialogOpen,
+  ] = useState(false);
+  const [
+    selectedPrompt,
+    setSelectedPrompt,
+  ] = useState<IVRPrompt | null>(null);
+  const [
+    activeLanguage,
+    setActiveLanguage,
+  ] = useState<Language>("en");
+  const [
+    ivrEnabled,
+    setIvrEnabled,
+  ] = useState(true);
+  const [
+    defaultLanguage,
+    setDefaultLanguage,
+  ] = useState<Language>("en");
+  const [
+    isCallDialogOpen,
+    setIsCallDialogOpen,
+  ] = useState(false);
+  const [
+    callPhoneNumber,
+    setCallPhoneNumber,
+  ] = useState("");
+  const [
+    callMessage,
+    setCallMessage,
+  ] = useState("");
+  const [
+    selectedCall,
+    setSelectedCall,
+  ] = useState<CallLog | null>(null);
+  const [
+    callSearch,
+    setCallSearch,
+  ] = useState("");
+  const [
+    callStatusFilter,
+    setCallStatusFilter,
+  ] = useState<string>("all");
+  const [
+    callFilters,
+    setCallFilters,
+  ] = useState<Record<string, any>>({});
 
   const isCallLoading = false;
   const initiateCall = async (_phone: string, _lang: string): Promise<{ call_id: string } | null> => null;
   const endCall = async (_callId: string): Promise<boolean> => false;
 
   // Active call (any ongoing call)
-  const activeCall = callLogs.find((c) => c.status === "ongoing");
-  const [callMuted, setCallMuted] = useState(false);
+  const activeCall = callLogs.find(c => c.status === "ongoing");
+  const [
+    callMuted,
+    setCallMuted,
+  ] = useState(false);
 
   // Tick the active call duration every second
-  useEffect(() => {
-    if (!activeCall) return;
-    const interval = setInterval(() => {
-      setCallLogs((prev) =>
-        prev.map((c) =>
-          c.status === "ongoing" ? { ...c, duration: c.duration + 1 } : c
-        )
+  useEffect(
+    () => {
+      if (!activeCall)
+        return;
+      const interval = setInterval(
+        () => {
+          setCallLogs(prev =>
+            prev.map(c =>
+              c.status === "ongoing"
+                ? {
+                    ...c, duration: c.duration + 1,
+                  }
+                : c));
+        },
+        1000,
       );
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [activeCall?.id]);
+      return () => clearInterval(interval);
+    },
+    [activeCall?.id],
+  );
 
-  const [formData, setFormData] = useState<Partial<IVRPrompt>>({
+  const [
+    formData,
+    setFormData,
+  ] = useState<Partial<IVRPrompt>>({
     name: "",
     category: "greeting",
-    translations: { en: "", ha: "", yo: "", ig: "", pcm: "" } });
+    translations: {
+      en: "", ha: "", yo: "", ig: "", pcm: "",
+    },
+  });
 
   // Stats
   const totalCalls = callLogs.length;
-  const completedCalls = callLogs.filter((c) => c.status === "completed").length;
-  const missedCalls = callLogs.filter((c) => c.status === "missed").length;
+  const completedCalls = callLogs.filter(c => c.status === "completed").length;
+  const missedCalls = callLogs.filter(c => c.status === "missed").length;
   const avgDuration = Math.round(
-    callLogs.filter((c) => c.duration > 0).reduce((sum, c) => sum + c.duration, 0) /
-      Math.max(1, completedCalls)
+    callLogs.filter(c => c.duration > 0).reduce(
+      (sum, c) => sum + c.duration,
+      0,
+    )
+    / Math.max(
+      1,
+      completedCalls,
+    ),
   );
 
   const handleOpenCreate = () => {
@@ -273,7 +394,10 @@ export function VoiceIVRManager() {
     setFormData({
       name: "",
       category: "greeting",
-      translations: { en: "", ha: "", yo: "", ig: "", pcm: "" } });
+      translations: {
+        en: "", ha: "", yo: "", ig: "", pcm: "",
+      },
+    });
     setActiveLanguage("en");
     setIsPromptDialogOpen(true);
   };
@@ -293,19 +417,27 @@ export function VoiceIVRManager() {
 
     if (selectedPrompt) {
       setPrompts(
-        prompts.map((p) =>
-          p.id === selectedPrompt.id ? { ...p, ...formData } as IVRPrompt : p
-        )
+        prompts.map(p =>
+          p.id === selectedPrompt.id
+            ? {
+                ...p, ...formData,
+              } as IVRPrompt
+            : p),
       );
       toast.success("IVR prompt updated");
-    } else {
+    }
+    else {
       const newPrompt: IVRPrompt = {
         id: `${Date.now()}`,
         name: formData.name!,
         category: formData.category as IVRPrompt["category"],
         translations: formData.translations as Record<Language, string>,
-        keyPress: formData.keyPress };
-      setPrompts([...prompts, newPrompt]);
+        keyPress: formData.keyPress,
+      };
+      setPrompts([
+        ...prompts,
+        newPrompt,
+      ]);
       toast.success("IVR prompt created");
     }
 
@@ -313,18 +445,24 @@ export function VoiceIVRManager() {
   };
 
   const handleDeletePrompt = (id: string) => {
-    setPrompts(prompts.filter((p) => p.id !== id));
+    setPrompts(prompts.filter(p => p.id !== id));
     toast.success("IVR prompt deleted");
   };
 
   const updateTranslation = (lang: Language, text: string) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      translations: { ...prev.translations, [lang]: text } as Record<Language, string> }));
+      translations: {
+        ...prev.translations, [lang]: text,
+      } as Record<Language, string>,
+    }));
   };
 
   const handleInitiateCall = async (phone: string) => {
-    const result = await initiateCall(phone, defaultLanguage);
+    const result = await initiateCall(
+      phone,
+      defaultLanguage,
+    );
     if (result?.call_id) {
       // Add to call logs
       const newLog: CallLog = {
@@ -335,8 +473,12 @@ export function VoiceIVRManager() {
         status: "ongoing",
         duration: 0,
         language: defaultLanguage,
-        timestamp: new Date() };
-      setCallLogs((prev) => [newLog, ...prev]);
+        timestamp: new Date(),
+      };
+      setCallLogs(prev => [
+        newLog,
+        ...prev,
+      ]);
     }
   };
 
@@ -354,11 +496,13 @@ export function VoiceIVRManager() {
   const handleEndCall = async (callId: string) => {
     const success = await endCall(callId);
     if (success) {
-      setCallLogs((prev) =>
-        prev.map((log) =>
-          log.id === callId ? { ...log, status: "completed" as const } : log
-        )
-      );
+      setCallLogs(prev =>
+        prev.map(log =>
+          log.id === callId
+            ? {
+                ...log, status: "completed" as const,
+              }
+            : log));
     }
   };
 
@@ -420,28 +564,45 @@ export function VoiceIVRManager() {
         </Card>
       </div>
 
-      <Tabs defaultValue="call-logs" className="space-y-4">
+      <Tabs
+        defaultValue="call-logs"
+        className="space-y-4"
+      >
         <TabsList>
           <TabsTrigger value="call-logs">Call Logs</TabsTrigger>
           <TabsTrigger value="ivr-prompts">IVR Prompts</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="call-logs" className="space-y-4">
+        <TabsContent
+          value="call-logs"
+          className="space-y-4"
+        >
           {/* Make Call action — top right, above the Recent Calls container */}
           <div className="flex justify-end">
-            <Button onClick={() => setIsCallDialogOpen(true)} disabled={isCallLoading}>
-              {isCallLoading ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Phone className="h-4 w-4 mr-2" />
-              )}
+            <Button
+              onClick={() => setIsCallDialogOpen(true)}
+              disabled={isCallLoading}
+            >
+              {isCallLoading
+                ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  )
+                : (
+                    <Phone className="h-4 w-4 mr-2" />
+                  )}
               Make Call
             </Button>
           </div>
 
           {/* Active Call modal — visible only while a call is in progress */}
-          <Dialog open={!!activeCall} onOpenChange={(open) => { if (!open && activeCall) handleEndCall(activeCall.id); }}>
+          <Dialog
+            open={!!activeCall}
+            onOpenChange={(open) => {
+              if (!open && activeCall)
+                handleEndCall(activeCall.id);
+            }}
+          >
             <DialogContent className="max-w-md border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
@@ -451,11 +612,17 @@ export function VoiceIVRManager() {
                   </Badge>
                   {activeCall && (
                     <>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge
+                        variant="outline"
+                        className="text-xs"
+                      >
                         {activeCall.direction === "inbound" ? "Inbound" : "Outbound"}
                       </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {LANGUAGES.find((l) => l.code === activeCall.language)?.name}
+                      <Badge
+                        variant="outline"
+                        className="text-xs"
+                      >
+                        {LANGUAGES.find(l => l.code === activeCall.language)?.name}
                       </Badge>
                     </>
                   )}
@@ -487,14 +654,16 @@ export function VoiceIVRManager() {
                       variant="outline"
                       size="icon"
                       className="h-12 w-12 rounded-full"
-                      onClick={() => setCallMuted((m) => !m)}
+                      onClick={() => setCallMuted(m => !m)}
                       aria-label={callMuted ? "Unmute" : "Mute"}
                     >
-                      {callMuted ? (
-                        <MicOff className="h-5 w-5 text-destructive" />
-                      ) : (
-                        <Mic className="h-5 w-5" />
-                      )}
+                      {callMuted
+                        ? (
+                            <MicOff className="h-5 w-5 text-destructive" />
+                          )
+                        : (
+                            <Mic className="h-5 w-5" />
+                          )}
                     </Button>
                     <Button
                       variant="destructive"
@@ -537,10 +706,18 @@ export function VoiceIVRManager() {
                 status={callStatusFilter}
                 onStatusChange={setCallStatusFilter}
                 statusOptions={[
-                  { value: "completed", label: "Completed" },
-                  { value: "missed", label: "Missed" },
-                  { value: "failed", label: "Failed" },
-                  { value: "ongoing", label: "Ongoing" },
+                  {
+                    value: "completed", label: "Completed",
+                  },
+                  {
+                    value: "missed", label: "Missed",
+                  },
+                  {
+                    value: "failed", label: "Failed",
+                  },
+                  {
+                    value: "ongoing", label: "Ongoing",
+                  },
                 ]}
                 filterEntity="calls"
                 filterFields={[
@@ -549,17 +726,27 @@ export function VoiceIVRManager() {
                     key: "direction",
                     label: "Direction",
                     options: [
-                      { value: "inbound", label: "Inbound" },
-                      { value: "outbound", label: "Outbound" },
-                    ] },
+                      {
+                        value: "inbound", label: "Inbound",
+                      },
+                      {
+                        value: "outbound", label: "Outbound",
+                      },
+                    ],
+                  },
                   {
                     type: "range",
                     key: "duration",
                     label: "Duration (seconds)",
                     placeholderFrom: "Min",
-                    placeholderTo: "Max" },
-                  { type: "date", key: "timeFrom", label: "Time from" },
-                  { type: "date", key: "timeTo", label: "Time to" },
+                    placeholderTo: "Max",
+                  },
+                  {
+                    type: "date", key: "timeFrom", label: "Time from",
+                  },
+                  {
+                    type: "date", key: "timeTo", label: "Time to",
+                  },
                 ]}
                 filterValues={callFilters}
                 onFiltersApply={setCallFilters}
@@ -569,135 +756,164 @@ export function VoiceIVRManager() {
               {(() => {
                 const filteredCalls = callLogs.filter((c) => {
                   const q = callSearch.trim().toLowerCase();
-                  if (q && !`${c.driverName} ${c.driverPhone}`.toLowerCase().includes(q)) return false;
-                  if (callStatusFilter !== "all" && c.status !== callStatusFilter) return false;
+                  if (q && !`${c.driverName} ${c.driverPhone}`.toLowerCase().includes(q))
+                    return false;
+                  if (callStatusFilter !== "all" && c.status !== callStatusFilter)
+                    return false;
                   const dir = callFilters.direction;
-                  if (dir?.enabled && dir.value && c.direction !== dir.value) return false;
+                  if (dir?.enabled && dir.value && c.direction !== dir.value)
+                    return false;
                   const dur = callFilters.duration;
                   if (dur?.enabled) {
-                    if (dur.from && c.duration < Number(dur.from)) return false;
-                    if (dur.to && c.duration > Number(dur.to)) return false;
+                    if (dur.from && c.duration < Number(dur.from))
+                      return false;
+                    if (dur.to && c.duration > Number(dur.to))
+                      return false;
                   }
                   const tFrom = callFilters.timeFrom;
-                  if (tFrom?.enabled && tFrom.date && c.timestamp < new Date(tFrom.date)) return false;
+                  if (tFrom?.enabled && tFrom.date && c.timestamp < new Date(tFrom.date))
+                    return false;
                   const tTo = callFilters.timeTo;
-                  if (tTo?.enabled && tTo.date && c.timestamp > new Date(tTo.date)) return false;
+                  if (tTo?.enabled && tTo.date && c.timestamp > new Date(tTo.date))
+                    return false;
                   return true;
                 });
-                return filteredCalls.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <Phone className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No call history</h3>
-                  <p className="text-sm text-muted-foreground text-center mb-4 max-w-sm">
-                    Voice calls made to drivers will appear here
-                  </p>
-                  <Button onClick={() => setIsCallDialogOpen(true)} disabled={isCallLoading}>
-                    <Phone className="h-4 w-4 mr-2" />
-                    Make First Call
-                  </Button>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Driver</TableHead>
-                      <TableHead>Direction</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Duration</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Notes</TableHead>
-                      <TableHead className="w-[140px] text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredCalls.map((call) => (
-                      <TableRow key={call.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{call.driverName}</p>
-                            <p className="text-xs text-muted-foreground">{call.driverPhone}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {call.direction === "inbound" ? (
-                            <div className="flex items-center gap-1 text-success">
-                              <PhoneIncoming className="h-4 w-4" />
-                              <span className="text-sm">Inbound</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-primary">
-                              <PhoneOutgoing className="h-4 w-4" />
-                              <span className="text-sm">Outbound</span>
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[call.status]}>
-                            <span className="flex items-center gap-1">
-                              {statusIcons[call.status]}
-                              {call.status}
-                            </span>
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{call.duration ? formatClockDuration(call.duration) : "-"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {formatDayMonthTime(call.timestamp)}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                          {call.notes || "-"}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setSelectedCall(call)}
-                            >
-                              View Details
-                            </Button>
-                            {call.status === "ongoing" ? (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => handleEndCall(call.id)}
-                                disabled={isCallLoading}
-                              >
-                                <XCircle className="h-4 w-4" />
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleInitiateCall(call.driverPhone)}
-                                disabled={isCallLoading}
-                              >
-                                <Phone className="h-4 w-4 text-success" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              );
+                return filteredCalls.length === 0
+                  ? (
+                      <div className="flex flex-col items-center justify-center py-12">
+                        <Phone className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                        <h3 className="text-lg font-medium mb-2">No call history</h3>
+                        <p className="text-sm text-muted-foreground text-center mb-4 max-w-sm">
+                          Voice calls made to drivers will appear here
+                        </p>
+                        <Button
+                          onClick={() => setIsCallDialogOpen(true)}
+                          disabled={isCallLoading}
+                        >
+                          <Phone className="h-4 w-4 mr-2" />
+                          Make First Call
+                        </Button>
+                      </div>
+                    )
+                  : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Driver</TableHead>
+                            <TableHead>Direction</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Duration</TableHead>
+                            <TableHead>Time</TableHead>
+                            <TableHead>Notes</TableHead>
+                            <TableHead className="w-[140px] text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredCalls.map(call => (
+                            <TableRow key={call.id}>
+                              <TableCell>
+                                <div>
+                                  <p className="font-medium">{call.driverName}</p>
+                                  <p className="text-xs text-muted-foreground">{call.driverPhone}</p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {call.direction === "inbound"
+                                  ? (
+                                      <div className="flex items-center gap-1 text-success">
+                                        <PhoneIncoming className="h-4 w-4" />
+                                        <span className="text-sm">Inbound</span>
+                                      </div>
+                                    )
+                                  : (
+                                      <div className="flex items-center gap-1 text-primary">
+                                        <PhoneOutgoing className="h-4 w-4" />
+                                        <span className="text-sm">Outbound</span>
+                                      </div>
+                                    )}
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={statusColors[call.status]}>
+                                  <span className="flex items-center gap-1">
+                                    {statusIcons[call.status]}
+                                    {call.status}
+                                  </span>
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{call.duration ? formatClockDuration(call.duration) : "-"}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {formatDayMonthTime(call.timestamp)}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                                {call.notes || "-"}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedCall(call)}
+                                  >
+                                    View Details
+                                  </Button>
+                                  {call.status === "ongoing"
+                                    ? (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="text-destructive hover:text-destructive"
+                                          onClick={() => handleEndCall(call.id)}
+                                          disabled={isCallLoading}
+                                        >
+                                          <XCircle className="h-4 w-4" />
+                                        </Button>
+                                      )
+                                    : (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => handleInitiateCall(call.driverPhone)}
+                                          disabled={isCallLoading}
+                                        >
+                                          <Phone className="h-4 w-4 text-success" />
+                                        </Button>
+                                      )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    );
               })()}
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* IVR Prompts Tab */}
-        <TabsContent value="ivr-prompts" className="space-y-4">
+        <TabsContent
+          value="ivr-prompts"
+          className="space-y-4"
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="flex items-center gap-1">
+              <Badge
+                variant="outline"
+                className="flex items-center gap-1"
+              >
                 <Globe className="h-3 w-3" />
-                {LANGUAGES.length} Languages
+                {LANGUAGES.length}
+                {" "}
+                Languages
               </Badge>
-              <Badge variant="outline" className="flex items-center gap-1">
+              <Badge
+                variant="outline"
+                className="flex items-center gap-1"
+              >
                 <MessageSquare className="h-3 w-3" />
-                {prompts.length} Prompts
+                {prompts.length}
+                {" "}
+                Prompts
               </Badge>
             </div>
             <Button onClick={handleOpenCreate}>
@@ -706,112 +922,130 @@ export function VoiceIVRManager() {
             </Button>
           </div>
 
-          {prompts.length === 0 ? (
-            <Card className="bg-card/50 border-border/50">
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <Mic className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                <h3 className="text-lg font-medium mb-2">No IVR prompts yet</h3>
-                <p className="text-sm text-muted-foreground text-center mb-4 max-w-sm">
-                  Create voice prompts with multi-language support for your IVR system
-                </p>
-                <Button onClick={handleOpenCreate}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First Prompt
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {CATEGORIES.map((category) => {
-                const categoryPrompts = prompts.filter((p) => p.category === category.value);
-                if (categoryPrompts.length === 0) return null;
+          {prompts.length === 0
+            ? (
+                <Card className="bg-card/50 border-border/50">
+                  <CardContent className="flex flex-col items-center justify-center py-16">
+                    <Mic className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No IVR prompts yet</h3>
+                    <p className="text-sm text-muted-foreground text-center mb-4 max-w-sm">
+                      Create voice prompts with multi-language support for your IVR system
+                    </p>
+                    <Button onClick={handleOpenCreate}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create First Prompt
+                    </Button>
+                  </CardContent>
+                </Card>
+              )
+            : (
+                <div className="grid gap-4">
+                  {CATEGORIES.map((category) => {
+                    const categoryPrompts = prompts.filter(p => p.category === category.value);
+                    if (categoryPrompts.length === 0)
+                      return null;
 
-                return (
-                  <Card key={category.value}>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Badge className={categoryColors[category.value]}>{category.label}</Badge>
-                        <span className="text-muted-foreground font-normal">
-                          ({categoryPrompts.length} prompts)
-                        </span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {categoryPrompts.map((prompt) => (
-                        <div
-                          key={prompt.id}
-                          className="flex items-start justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="font-medium">{prompt.name}</p>
-                              {prompt.keyPress && (
-                                <Badge variant="outline" className="text-xs">
-                                  Press {prompt.keyPress}
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {prompt.translations.en}
-                            </p>
-                            <div className="flex gap-1 mt-2">
-                              {LANGUAGES.map((lang) => (
-                                <Badge
-                                  key={lang.code}
-                                  variant="outline"
-                                  className={`text-xs ${
-                                    prompt.translations[lang.code]
-                                      ? "bg-success/10 text-success border-success/30"
-                                      : "opacity-50"
-                                  }`}
-                                >
-                                  {lang.code.toUpperCase()}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => toast.info("Playing audio preview...")}
+                    return (
+                      <Card key={category.value}>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Badge className={categoryColors[category.value]}>{category.label}</Badge>
+                            <span className="text-muted-foreground font-normal">
+                              (
+                              {categoryPrompts.length}
+                              {" "}
+                              prompts)
+                            </span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {categoryPrompts.map(prompt => (
+                            <div
+                              key={prompt.id}
+                              className="flex items-start justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
                             >
-                              <Play className="h-4 w-4" />
-                            </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleOpenEdit(prompt)}>
-                                  <Pencil className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-destructive"
-                                  onClick={() => handleDeletePrompt(prompt.id)}
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="font-medium">{prompt.name}</p>
+                                  {prompt.keyPress && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      Press
+                                      {" "}
+                                      {prompt.keyPress}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground line-clamp-2">
+                                  {prompt.translations.en}
+                                </p>
+                                <div className="flex gap-1 mt-2">
+                                  {LANGUAGES.map(lang => (
+                                    <Badge
+                                      key={lang.code}
+                                      variant="outline"
+                                      className={`text-xs ${
+                                        prompt.translations[lang.code]
+                                          ? "bg-success/10 text-success border-success/30"
+                                          : "opacity-50"
+                                      }`}
+                                    >
+                                      {lang.code.toUpperCase()}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => toast.info("Playing audio preview...")}
                                 >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
+                                  <Play className="h-4 w-4" />
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleOpenEdit(prompt)}>
+                                      <Pencil className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-destructive"
+                                      onClick={() => handleDeletePrompt(prompt.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
         </TabsContent>
 
         {/* Settings Tab */}
-        <TabsContent value="settings" className="space-y-4">
+        <TabsContent
+          value="settings"
+          className="space-y-4"
+        >
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -828,19 +1062,32 @@ export function VoiceIVRManager() {
                     Activate automated voice response for incoming calls
                   </p>
                 </div>
-                <Switch checked={ivrEnabled} onCheckedChange={setIvrEnabled} />
+                <Switch
+                  checked={ivrEnabled}
+                  onCheckedChange={setIvrEnabled}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label>Default Language</Label>
-                <Select value={defaultLanguage} onValueChange={(v) => setDefaultLanguage(v as Language)}>
+                <Select
+                  value={defaultLanguage}
+                  onValueChange={v => setDefaultLanguage(v as Language)}
+                >
                   <SelectTrigger className="w-[200px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {LANGUAGES.map((lang) => (
-                      <SelectItem key={lang.code} value={lang.code}>
-                        {lang.name} ({lang.nativeName})
+                    {LANGUAGES.map(lang => (
+                      <SelectItem
+                        key={lang.code}
+                        value={lang.code}
+                      >
+                        {lang.name}
+                        {" "}
+                        (
+                        {lang.nativeName}
+                        )
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -910,8 +1157,14 @@ export function VoiceIVRManager() {
               <div className="space-y-2">
                 <Label>Operating Hours</Label>
                 <div className="grid grid-cols-2 gap-4">
-                  <Input type="time" defaultValue="06:00" />
-                  <Input type="time" defaultValue="22:00" />
+                  <Input
+                    type="time"
+                    defaultValue="06:00"
+                  />
+                  <Input
+                    type="time"
+                    defaultValue="22:00"
+                  />
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Outside these hours, calls will be routed to emergency service
@@ -923,7 +1176,10 @@ export function VoiceIVRManager() {
       </Tabs>
 
       {/* Create/Edit Prompt Dialog */}
-      <Dialog open={isPromptDialogOpen} onOpenChange={setIsPromptDialogOpen}>
+      <Dialog
+        open={isPromptDialogOpen}
+        onOpenChange={setIsPromptDialogOpen}
+      >
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -940,7 +1196,9 @@ export function VoiceIVRManager() {
                 <Label>Prompt Name</Label>
                 <Input
                   value={formData.name || ""}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={e => setFormData({
+                    ...formData, name: e.target.value,
+                  })}
                   placeholder="e.g., Welcome Greeting"
                 />
               </div>
@@ -948,14 +1206,19 @@ export function VoiceIVRManager() {
                 <Label>Category</Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(v) => setFormData({ ...formData, category: v as IVRPrompt["category"] })}
+                  onValueChange={v => setFormData({
+                    ...formData, category: v as IVRPrompt["category"],
+                  })}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
+                    {CATEGORIES.map(cat => (
+                      <SelectItem
+                        key={cat.value}
+                        value={cat.value}
+                      >
                         {cat.label}
                       </SelectItem>
                     ))}
@@ -968,7 +1231,9 @@ export function VoiceIVRManager() {
               <Label>Key Press (Optional)</Label>
               <Input
                 value={formData.keyPress || ""}
-                onChange={(e) => setFormData({ ...formData, keyPress: e.target.value })}
+                onChange={e => setFormData({
+                  ...formData, keyPress: e.target.value,
+                })}
                 placeholder="e.g., 1, 2, 0"
                 className="w-24"
               />
@@ -979,10 +1244,17 @@ export function VoiceIVRManager() {
 
             <div className="space-y-3">
               <Label>Voice Prompts</Label>
-              <Tabs value={activeLanguage} onValueChange={(v) => setActiveLanguage(v as Language)}>
+              <Tabs
+                value={activeLanguage}
+                onValueChange={v => setActiveLanguage(v as Language)}
+              >
                 <TabsList className="w-full flex-wrap h-auto gap-1 p-1">
-                  {LANGUAGES.map((lang) => (
-                    <TabsTrigger key={lang.code} value={lang.code} className="flex-1 min-w-[100px]">
+                  {LANGUAGES.map(lang => (
+                    <TabsTrigger
+                      key={lang.code}
+                      value={lang.code}
+                      className="flex-1 min-w-[100px]"
+                    >
                       {lang.name}
                       {formData.translations?.[lang.code] && (
                         <span className="ml-1 h-2 w-2 rounded-full bg-success" />
@@ -990,25 +1262,37 @@ export function VoiceIVRManager() {
                     </TabsTrigger>
                   ))}
                 </TabsList>
-                {LANGUAGES.map((lang) => (
-                  <TabsContent key={lang.code} value={lang.code} className="mt-4">
+                {LANGUAGES.map(lang => (
+                  <TabsContent
+                    key={lang.code}
+                    value={lang.code}
+                    className="mt-4"
+                  >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label>{lang.nativeName}</Label>
-                        <Button variant="outline" size="sm">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                        >
                           <Mic className="h-4 w-4 mr-1" />
                           Record
                         </Button>
                       </div>
                       <Textarea
                         value={formData.translations?.[lang.code] || ""}
-                        onChange={(e) => updateTranslation(lang.code, e.target.value)}
+                        onChange={e => updateTranslation(
+                          lang.code,
+                          e.target.value,
+                        )}
                         placeholder={`Enter ${lang.name} voice prompt...`}
                         rows={4}
                       />
                       {lang.code !== "en" && formData.translations?.en && (
                         <p className="text-xs text-muted-foreground">
-                          Reference (English): {formData.translations.en}
+                          Reference (English):
+                          {" "}
+                          {formData.translations.en}
                         </p>
                       )}
                     </div>
@@ -1019,7 +1303,10 @@ export function VoiceIVRManager() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPromptDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsPromptDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button onClick={handleSavePrompt}>
@@ -1030,7 +1317,10 @@ export function VoiceIVRManager() {
       </Dialog>
 
       {/* Make Call Dialog */}
-      <Dialog open={isCallDialogOpen} onOpenChange={setIsCallDialogOpen}>
+      <Dialog
+        open={isCallDialogOpen}
+        onOpenChange={setIsCallDialogOpen}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Make Voice Call</DialogTitle>
@@ -1046,7 +1336,7 @@ export function VoiceIVRManager() {
                 id="call-phone"
                 placeholder="+234 801 234 5678"
                 value={callPhoneNumber}
-                onChange={(e) => setCallPhoneNumber(e.target.value)}
+                onChange={e => setCallPhoneNumber(e.target.value)}
                 autoFocus
               />
             </div>
@@ -1054,7 +1344,10 @@ export function VoiceIVRManager() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCallDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsCallDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -1062,24 +1355,29 @@ export function VoiceIVRManager() {
               disabled={isCallLoading || !callPhoneNumber}
               className="bg-success hover:bg-success/90 text-success-foreground"
             >
-              {isCallLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Calling...
-                </>
-              ) : (
-                <>
-                  <Phone className="h-4 w-4 mr-2" />
-                  Make Call
-                </>
-              )}
+              {isCallLoading
+                ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Calling...
+                    </>
+                  )
+                : (
+                    <>
+                      <Phone className="h-4 w-4 mr-2" />
+                      Make Call
+                    </>
+                  )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Call Details Dialog */}
-      <Dialog open={!!selectedCall} onOpenChange={(open) => !open && setSelectedCall(null)}>
+      <Dialog
+        open={!!selectedCall}
+        onOpenChange={open => !open && setSelectedCall(null)}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1103,11 +1401,21 @@ export function VoiceIVRManager() {
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Direction</p>
                   <div className="flex items-center gap-1">
-                    {selectedCall.direction === "inbound" ? (
-                      <><PhoneIncoming className="h-4 w-4 text-success" /> Inbound</>
-                    ) : (
-                      <><PhoneOutgoing className="h-4 w-4 text-primary" /> Outbound</>
-                    )}
+                    {selectedCall.direction === "inbound"
+                      ? (
+                          <>
+                            <PhoneIncoming className="h-4 w-4 text-success" />
+                            {" "}
+                            Inbound
+                          </>
+                        )
+                      : (
+                          <>
+                            <PhoneOutgoing className="h-4 w-4 text-primary" />
+                            {" "}
+                            Outbound
+                          </>
+                        )}
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -1139,7 +1447,10 @@ export function VoiceIVRManager() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedCall(null)}>
+            <Button
+              variant="outline"
+              onClick={() => setSelectedCall(null)}
+            >
               Close
             </Button>
             {selectedCall && selectedCall.status !== "ongoing" && (

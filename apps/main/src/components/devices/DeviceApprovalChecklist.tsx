@@ -1,23 +1,25 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Badge } from "@/components/shadcn/badge";
 import {
-  ShieldCheck,
-  ShieldAlert,
   CheckCircle2,
   Cpu,
-  Wifi,
   Package,
+  ShieldAlert,
+  ShieldCheck,
+  Wifi,
 } from "lucide-react";
+import { Badge } from "@/components/shadcn/badge";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import { cn } from "@/lib/utils";
 
-interface DeviceApprovalChecklistProps {
+type DeviceApprovalChecklistProps = {
   kycVerified: boolean;
   kycStatus: string | null;
   manufacturer: string;
   model: string | null;
   quantity: number;
   needsSim: boolean;
-}
+};
 
 /**
  * Pre-approval readiness checklist for device requests.
@@ -57,24 +59,28 @@ export function DeviceApprovalChecklist({
           )}
         >
           <div className="mt-0.5">
-            {kycVerified ? (
-              <ShieldCheck className="h-5 w-5 text-success" />
-            ) : (
-              <ShieldAlert className="h-5 w-5 text-destructive" />
-            )}
+            {kycVerified
+              ? (
+                  <ShieldCheck className="h-5 w-5 text-success" />
+                )
+              : (
+                  <ShieldAlert className="h-5 w-5 text-destructive" />
+                )}
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between">
               <p className="font-medium text-sm">KYB/KYC Verification</p>
-              {kycVerified ? (
-                <Badge className="bg-success/10 text-success border-success/30">
-                  Verified
-                </Badge>
-              ) : (
-                <Badge variant="destructive">
-                  {kycStatus === "rejected" ? "Rejected" : "Not Verified"}
-                </Badge>
-              )}
+              {kycVerified
+                ? (
+                    <Badge className="bg-success/10 text-success border-success/30">
+                      Verified
+                    </Badge>
+                  )
+                : (
+                    <Badge variant="destructive">
+                      {kycStatus === "rejected" ? "Rejected" : "Not Verified"}
+                    </Badge>
+                  )}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {kycVerified
@@ -83,7 +89,10 @@ export function DeviceApprovalChecklist({
             </p>
           </div>
           {!kycVerified && (
-            <Badge variant="destructive" className="shrink-0">
+            <Badge
+              variant="destructive"
+              className="shrink-0"
+            >
               HARD BLOCK
             </Badge>
           )}
@@ -178,7 +187,9 @@ export function DeviceApprovalChecklist({
                     : "bg-success/10 text-success border-success/30",
                 )}
               >
-                {quantity} {quantity === 1 ? "device" : "devices"}
+                {quantity}
+                {" "}
+                {quantity === 1 ? "device" : "devices"}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -193,13 +204,15 @@ export function DeviceApprovalChecklist({
         <div className="pt-2 border-t">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Approval Status:</span>
-            {!kycVerified ? (
-              <Badge variant="destructive">Blocked - KYC Required</Badge>
-            ) : (
-              <Badge className="bg-success/10 text-success border-success/30">
-                Ready to Approve
-              </Badge>
-            )}
+            {!kycVerified
+              ? (
+                  <Badge variant="destructive">Blocked - KYC Required</Badge>
+                )
+              : (
+                  <Badge className="bg-success/10 text-success border-success/30">
+                    Ready to Approve
+                  </Badge>
+                )}
           </div>
         </div>
       </CardContent>

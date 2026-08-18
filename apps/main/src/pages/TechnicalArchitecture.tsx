@@ -1,50 +1,68 @@
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
-import { useState } from "react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { MermaidDiagram } from "@/components/diagrams/MermaidDiagram";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Badge } from "@/components/shadcn/badge";
-import { Separator } from "@/components/shadcn/separator";
-import { Button } from "@/components/shadcn/button";
-import { 
-  FileText, Shield, Database, Users, Server, MessageSquare, 
-  Radio, Cpu, Lock, Layers, Cloud, GitBranch, FileIcon, Presentation, Loader2
+import {
+  Cloud, Cpu, Database, FileIcon, FileText, GitBranch,
+  Layers, Loader2, Lock, MessageSquare, Presentation, Radio, Server, Shield, Users,
 } from "lucide-react";
-import { 
-  highLevelArchitectureDiagram,
-  whatsappMessagingDiagram,
-  messagingSequenceDiagram,
-  jobCreationSequenceDiagram,
-  driverResponseSequenceDiagram,
-  telemetrySequenceDiagram,
-  iotArchitectureDiagram,
-  securityArchitectureDiagram,
-  deploymentDiagram,
-  dataArchitectureDiagram,
-  aiArchitectureDiagram
-} from "@/data/architectureDiagrams";
-import { generateWordDocument, getAllDiagramImages } from "@/utils/wordExport";
-import { generatePowerPoint } from "@/utils/pptxExport";
-import { documentSections } from "@/utils/documentSections";
+import { useState } from "react";
 import { toast } from "sonner";
+import { MermaidDiagram } from "@/components/diagrams/MermaidDiagram";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Separator } from "@/components/shadcn/separator";
+import {
+  aiArchitectureDiagram,
+  dataArchitectureDiagram,
+  deploymentDiagram,
+  driverResponseSequenceDiagram,
+  highLevelArchitectureDiagram,
+  iotArchitectureDiagram,
+  jobCreationSequenceDiagram,
+  messagingSequenceDiagram,
+  securityArchitectureDiagram,
+  telemetrySequenceDiagram,
+  whatsappMessagingDiagram,
+} from "@/data/architectureDiagrams";
+import { documentSections } from "@/utils/documentSections";
+import { generatePowerPoint } from "@/utils/pptxExport";
+import {
+  generateWordDocument, getAllDiagramImages,
+} from "@/utils/wordExport";
 
 export default function TechnicalArchitecture() {
-  const [isExportingWord, setIsExportingWord] = useState(false);
-  const [isExportingPPT, setIsExportingPPT] = useState(false);
+  const [
+    isExportingWord,
+    setIsExportingWord,
+  ] = useState(false);
+  const [
+    isExportingPPT,
+    setIsExportingPPT,
+  ] = useState(false);
 
   const handleExportWord = async () => {
     setIsExportingWord(true);
     toast.info("Generating Word document...");
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(
+        resolve,
+        500,
+      ));
       const diagramImages = await getAllDiagramImages();
-      await generateWordDocument(documentSections, diagramImages);
+      await generateWordDocument(
+        documentSections,
+        diagramImages,
+      );
       toast.success("Word document downloaded!");
-    } catch (error) {
+    }
+    catch (error) {
       console.error(error);
       toast.error("Failed to export Word document.");
-    } finally {
+    }
+    finally {
       setIsExportingWord(false);
     }
   };
@@ -53,20 +71,25 @@ export default function TechnicalArchitecture() {
     setIsExportingPPT(true);
     toast.info("Generating PowerPoint...");
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(
+        resolve,
+        500,
+      ));
       await generatePowerPoint(documentSections);
       toast.success("PowerPoint downloaded!");
-    } catch (error) {
+    }
+    catch (error) {
       console.error(error);
       toast.error("Failed to export PowerPoint.");
-    } finally {
+    }
+    finally {
       setIsExportingPPT(false);
     }
   };
 
   return (
-    <DashboardLayout 
-      title="Technical Architecture Document" 
+    <DashboardLayout
+      title="Technical Architecture Document"
       subtitle="FleetPro Platform - MTN Nigeria IT Division Technical Annex"
     >
       <div className="space-y-8 print:space-y-4">
@@ -81,11 +104,18 @@ export default function TechnicalArchitecture() {
                 </div>
               </div>
               <div className="flex gap-2 print:hidden">
-                <Button onClick={handleExportWord} variant="outline" disabled={isExportingWord}>
+                <Button
+                  onClick={handleExportWord}
+                  variant="outline"
+                  disabled={isExportingWord}
+                >
                   {isExportingWord ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileIcon className="h-4 w-4 mr-2" />}
                   Export Word
                 </Button>
-                <Button onClick={handleExportPPT} disabled={isExportingPPT}>
+                <Button
+                  onClick={handleExportPPT}
+                  disabled={isExportingPPT}
+                >
                   {isExportingPPT ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Presentation className="h-4 w-4 mr-2" />}
                   Export PowerPoint
                 </Button>
@@ -115,23 +145,23 @@ export default function TechnicalArchitecture() {
         </Card>
 
         {/* Section 1: Document Overview */}
-        <DocumentSection 
-          number="1" 
-          title="Document Overview" 
+        <DocumentSection
+          number="1"
+          title="Document Overview"
           icon={<FileText className="h-5 w-5" />}
         >
           <div className="prose prose-sm dark:prose-invert max-w-none">
             <h4>Product: FleetPro</h4>
             <p>
-              FleetPro is an AI-powered fleet management and operations platform designed specifically 
-              for African enterprise markets. This document provides a comprehensive technical architecture 
+              FleetPro is an AI-powered fleet management and operations platform designed specifically
+              for African enterprise markets. This document provides a comprehensive technical architecture
               overview for MTN Nigeria IT Division teams responsible for operating the platform.
             </p>
-            
+
             <h4>Build & Operate Deployment Model</h4>
             <p>
-              Under the Build & Operate model, FleetPro Technologies Ltd builds, maintains, and evolves 
-              the platform while MTN Nigeria IT Division operates it for MTN Enterprise Business (EB) customers. 
+              Under the Build & Operate model, FleetPro Technologies Ltd builds, maintains, and evolves
+              the platform while MTN Nigeria IT Division operates it for MTN Enterprise Business (EB) customers.
               This model ensures:
             </p>
             <ul>
@@ -143,40 +173,40 @@ export default function TechnicalArchitecture() {
 
             <h4>Target Consumers</h4>
             <p>
-              MTN Enterprise Business customers including logistics companies, transport operators, 
+              MTN Enterprise Business customers including logistics companies, transport operators,
               fuel distributors, and any enterprise requiring fleet visibility and driver communication.
             </p>
           </div>
         </DocumentSection>
 
         {/* Section 2: System Objectives */}
-        <DocumentSection 
-          number="2" 
-          title="System Objectives" 
+        <DocumentSection
+          number="2"
+          title="System Objectives"
           icon={<Layers className="h-5 w-5" />}
         >
           <div className="grid md:grid-cols-2 gap-4">
-            <ObjectiveCard 
+            <ObjectiveCard
               title="Enterprise Fleet Visibility"
               description="Real-time tracking of all fleet assets with sub-30-second update latency"
             />
-            <ObjectiveCard 
+            <ObjectiveCard
               title="Reliable Driver Communication"
               description="Multi-channel messaging with 99.5% delivery rate via WhatsApp, SMS, and Voice"
             />
-            <ObjectiveCard 
+            <ObjectiveCard
               title="CPaaS Monetization"
               description="Revenue generation through MTN WhatsApp Business API, A2P SMS, and Voice services"
             />
-            <ObjectiveCard 
+            <ObjectiveCard
               title="IoT SIM Utilization"
               description="Optimized connectivity for GPS devices via MTN IoT SIM infrastructure"
             />
-            <ObjectiveCard 
+            <ObjectiveCard
               title="99.9% Availability"
               description="Enterprise-grade uptime with automatic failover and horizontal scaling"
             />
-            <ObjectiveCard 
+            <ObjectiveCard
               title="Multi-Tenant Scalability"
               description="Support for 1000+ concurrent tenants with complete data isolation"
             />
@@ -184,21 +214,36 @@ export default function TechnicalArchitecture() {
         </DocumentSection>
 
         {/* Section 3: Architecture Principles */}
-        <DocumentSection 
-          number="3" 
-          title="Architecture Principles" 
+        <DocumentSection
+          number="3"
+          title="Architecture Principles"
           icon={<GitBranch className="h-5 w-5" />}
         >
           <div className="grid md:grid-cols-3 gap-4">
             {[
-              { title: "Microservices-Based", desc: "Independently deployable services with bounded contexts" },
-              { title: "Event-Driven", desc: "Asynchronous workflows via message queues and webhooks" },
-              { title: "Multi-Tenant Isolation", desc: "Complete data and process isolation per tenant" },
-              { title: "Cloud-Native", desc: "Containerized workloads with Kubernetes orchestration" },
-              { title: "API-First", desc: "All functionality exposed via versioned REST/GraphQL APIs" },
-              { title: "Telco-Safe", desc: "No exposure to MTN core network or subscriber data" },
+              {
+                title: "Microservices-Based", desc: "Independently deployable services with bounded contexts",
+              },
+              {
+                title: "Event-Driven", desc: "Asynchronous workflows via message queues and webhooks",
+              },
+              {
+                title: "Multi-Tenant Isolation", desc: "Complete data and process isolation per tenant",
+              },
+              {
+                title: "Cloud-Native", desc: "Containerized workloads with Kubernetes orchestration",
+              },
+              {
+                title: "API-First", desc: "All functionality exposed via versioned REST/GraphQL APIs",
+              },
+              {
+                title: "Telco-Safe", desc: "No exposure to MTN core network or subscriber data",
+              },
             ].map((principle, i) => (
-              <Card key={i} className="bg-muted/30">
+              <Card
+                key={i}
+                className="bg-muted/30"
+              >
                 <CardContent className="p-4">
                   <h4 className="font-semibold text-sm">{principle.title}</h4>
                   <p className="text-xs text-muted-foreground mt-1">{principle.desc}</p>
@@ -209,9 +254,9 @@ export default function TechnicalArchitecture() {
         </DocumentSection>
 
         {/* Section 4: High-Level System Architecture */}
-        <DocumentSection 
-          number="4" 
-          title="High-Level System Architecture" 
+        <DocumentSection
+          number="4"
+          title="High-Level System Architecture"
           icon={<Server className="h-5 w-5" />}
         >
           <MermaidDiagram
@@ -222,21 +267,49 @@ export default function TechnicalArchitecture() {
           <div className="mt-4 prose prose-sm dark:prose-invert max-w-none">
             <h4>Component Descriptions</h4>
             <ul>
-              <li><strong>Web Dashboards:</strong> Role-based interfaces for Platform Admin, Fleet Manager, and Supervisor</li>
-              <li><strong>API Gateway / BFF:</strong> Central entry point with authentication, rate limiting, and request routing</li>
-              <li><strong>Core Backend Services:</strong> Microservices handling fleet, dispatch, tracking, and analytics</li>
-              <li><strong>Messaging Orchestration:</strong> Unified layer for WhatsApp, SMS, and Voice with escalation logic</li>
-              <li><strong>Telematics Ingestion:</strong> High-throughput pipeline for GPS device data</li>
-              <li><strong>MTN CPaaS:</strong> Integration with MTN WhatsApp Business API, A2P SMS, and Voice services</li>
-              <li><strong>MTN IoT:</strong> Connectivity layer for GPS devices via MTN IoT SIM cards</li>
+              <li>
+                <strong>Web Dashboards:</strong>
+                {" "}
+                Role-based interfaces for Platform Admin, Fleet Manager, and Supervisor
+              </li>
+              <li>
+                <strong>API Gateway / BFF:</strong>
+                {" "}
+                Central entry point with authentication, rate limiting, and request routing
+              </li>
+              <li>
+                <strong>Core Backend Services:</strong>
+                {" "}
+                Microservices handling fleet, dispatch, tracking, and analytics
+              </li>
+              <li>
+                <strong>Messaging Orchestration:</strong>
+                {" "}
+                Unified layer for WhatsApp, SMS, and Voice with escalation logic
+              </li>
+              <li>
+                <strong>Telematics Ingestion:</strong>
+                {" "}
+                High-throughput pipeline for GPS device data
+              </li>
+              <li>
+                <strong>MTN CPaaS:</strong>
+                {" "}
+                Integration with MTN WhatsApp Business API, A2P SMS, and Voice services
+              </li>
+              <li>
+                <strong>MTN IoT:</strong>
+                {" "}
+                Connectivity layer for GPS devices via MTN IoT SIM cards
+              </li>
             </ul>
           </div>
         </DocumentSection>
 
         {/* Section 5: User Roles & Access Control */}
-        <DocumentSection 
-          number="5" 
-          title="User Roles & Access Control" 
+        <DocumentSection
+          number="5"
+          title="User Roles & Access Control"
           icon={<Users className="h-5 w-5" />}
         >
           <div className="space-y-4">
@@ -282,83 +355,99 @@ export default function TechnicalArchitecture() {
             <div className="prose prose-sm dark:prose-invert max-w-none mt-4">
               <h4>Authentication & Authorization</h4>
               <ul>
-                <li><strong>JWT Tokens:</strong> Short-lived access tokens (15min) with refresh token rotation</li>
-                <li><strong>OAuth 2.0:</strong> Standard authorization framework for API access</li>
-                <li><strong>RBAC:</strong> Role-Based Access Control with granular permissions</li>
-                <li><strong>Tenant Isolation:</strong> All queries automatically scoped to user's tenant</li>
+                <li>
+                  <strong>JWT Tokens:</strong>
+                  {" "}
+                  Short-lived access tokens (15min) with refresh token rotation
+                </li>
+                <li>
+                  <strong>OAuth 2.0:</strong>
+                  {" "}
+                  Standard authorization framework for API access
+                </li>
+                <li>
+                  <strong>RBAC:</strong>
+                  {" "}
+                  Role-Based Access Control with granular permissions
+                </li>
+                <li>
+                  <strong>Tenant Isolation:</strong>
+                  {" "}
+                  All queries automatically scoped to user's tenant
+                </li>
               </ul>
             </div>
           </div>
         </DocumentSection>
 
         {/* Section 6: Core Application Services */}
-        <DocumentSection 
-          number="6" 
-          title="Core Application Services" 
+        <DocumentSection
+          number="6"
+          title="Core Application Services"
           icon={<Cpu className="h-5 w-5" />}
         >
           <div className="grid md:grid-cols-2 gap-4">
-            <ServiceCard 
+            <ServiceCard
               title="Identity & Tenant Management"
               items={[
                 "User registration and authentication",
                 "Multi-tenant provisioning",
                 "Role and permission management",
-                "Session management and audit logging"
+                "Session management and audit logging",
               ]}
             />
-            <ServiceCard 
+            <ServiceCard
               title="Fleet & Asset Management"
               items={[
                 "Vehicle CRUD operations",
                 "Device-vehicle association",
                 "Driver-vehicle assignment",
-                "Maintenance scheduling"
+                "Maintenance scheduling",
               ]}
             />
-            <ServiceCard 
+            <ServiceCard
               title="Dispatch & Operations Engine"
               items={[
                 "Job creation and assignment",
                 "Route optimization",
                 "Status tracking and updates",
-                "Escalation management"
+                "Escalation management",
               ]}
             />
-            <ServiceCard 
+            <ServiceCard
               title="Tracking & Telematics Service"
               items={[
                 "Real-time GPS ingestion",
                 "Geofence management",
                 "Trip history and playback",
-                "Driver behavior monitoring"
+                "Driver behavior monitoring",
               ]}
             />
-            <ServiceCard 
+            <ServiceCard
               title="Messaging Orchestration"
               items={[
                 "Multi-channel delivery (WhatsApp, SMS, Voice)",
                 "Fallback and escalation logic",
                 "Template management",
-                "Delivery status tracking"
+                "Delivery status tracking",
               ]}
             />
-            <ServiceCard 
+            <ServiceCard
               title="Analytics & Reporting Service"
               items={[
                 "Fleet utilization metrics",
                 "Driver performance scoring",
                 "Cost and fuel analytics",
-                "Custom report generation"
+                "Custom report generation",
               ]}
             />
           </div>
         </DocumentSection>
 
         {/* Section 7: WhatsApp-First Messaging Architecture */}
-        <DocumentSection 
-          number="7" 
-          title="WhatsApp-First Messaging Architecture" 
+        <DocumentSection
+          number="7"
+          title="WhatsApp-First Messaging Architecture"
           icon={<MessageSquare className="h-5 w-5" />}
         >
           <div className="space-y-6">
@@ -367,7 +456,7 @@ export default function TechnicalArchitecture() {
               title="Messaging Orchestration Architecture"
               description="Multi-channel messaging system with WhatsApp as primary, SMS and Voice as fallbacks"
             />
-            
+
             <MermaidDiagram
               chart={messagingSequenceDiagram}
               title="Message Escalation Sequence"
@@ -421,9 +510,9 @@ export default function TechnicalArchitecture() {
         </DocumentSection>
 
         {/* Section 8: Job Creation & Driver Assignment Sequence */}
-        <DocumentSection 
-          number="8" 
-          title="API Sequence — Job Creation & Driver Assignment" 
+        <DocumentSection
+          number="8"
+          title="API Sequence — Job Creation & Driver Assignment"
           icon={<Server className="h-5 w-5" />}
         >
           <MermaidDiagram
@@ -435,18 +524,38 @@ export default function TechnicalArchitecture() {
           <div className="mt-4 prose prose-sm dark:prose-invert max-w-none">
             <h4>API Endpoints</h4>
             <div className="bg-muted/50 p-4 rounded-lg font-mono text-xs">
-              <p><strong>POST /api/v1/jobs</strong> - Create new job</p>
-              <p><strong>POST /api/v1/jobs/{'{id}'}/assign</strong> - Assign driver to job</p>
-              <p><strong>POST /webhooks/messaging/status</strong> - Delivery status callback</p>
-              <p><strong>POST /webhooks/messaging/reply</strong> - Driver response callback</p>
+              <p>
+                <strong>POST /api/v1/jobs</strong>
+                {" "}
+                - Create new job
+              </p>
+              <p>
+                <strong>
+                  POST /api/v1/jobs/
+                  {"{id}"}
+                  /assign
+                </strong>
+                {" "}
+                - Assign driver to job
+              </p>
+              <p>
+                <strong>POST /webhooks/messaging/status</strong>
+                {" "}
+                - Delivery status callback
+              </p>
+              <p>
+                <strong>POST /webhooks/messaging/reply</strong>
+                {" "}
+                - Driver response callback
+              </p>
             </div>
           </div>
         </DocumentSection>
 
         {/* Section 9: Driver Response Sequence */}
-        <DocumentSection 
-          number="9" 
-          title="API Sequence — Driver Response via WhatsApp" 
+        <DocumentSection
+          number="9"
+          title="API Sequence — Driver Response via WhatsApp"
           icon={<MessageSquare className="h-5 w-5" />}
         >
           <MermaidDiagram
@@ -458,18 +567,34 @@ export default function TechnicalArchitecture() {
           <div className="mt-4 prose prose-sm dark:prose-invert max-w-none">
             <h4>Idempotency & State Management</h4>
             <ul>
-              <li><strong>Message Deduplication:</strong> External message ID used to prevent duplicate processing</li>
-              <li><strong>State Machine:</strong> Job status transitions validated against allowed state graph</li>
-              <li><strong>Optimistic Locking:</strong> Version field prevents concurrent update conflicts</li>
-              <li><strong>Audit Log:</strong> All state changes recorded with actor, timestamp, and previous state</li>
+              <li>
+                <strong>Message Deduplication:</strong>
+                {" "}
+                External message ID used to prevent duplicate processing
+              </li>
+              <li>
+                <strong>State Machine:</strong>
+                {" "}
+                Job status transitions validated against allowed state graph
+              </li>
+              <li>
+                <strong>Optimistic Locking:</strong>
+                {" "}
+                Version field prevents concurrent update conflicts
+              </li>
+              <li>
+                <strong>Audit Log:</strong>
+                {" "}
+                All state changes recorded with actor, timestamp, and previous state
+              </li>
             </ul>
           </div>
         </DocumentSection>
 
         {/* Section 10: Telemetry Ingestion Sequence */}
-        <DocumentSection 
-          number="10" 
-          title="API Sequence — Telemetry Ingestion & Live Tracking" 
+        <DocumentSection
+          number="10"
+          title="API Sequence — Telemetry Ingestion & Live Tracking"
           icon={<Radio className="h-5 w-5" />}
         >
           <MermaidDiagram
@@ -488,19 +613,31 @@ export default function TechnicalArchitecture() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b"><td className="p-2">Ingestion Latency</td><td className="p-2">&lt; 500ms</td></tr>
-                <tr className="border-b"><td className="p-2">Map Update Latency</td><td className="p-2">&lt; 2 seconds</td></tr>
-                <tr className="border-b"><td className="p-2">Throughput</td><td className="p-2">10,000 events/second</td></tr>
-                <tr className="border-b"><td className="p-2">Data Retention</td><td className="p-2">90 days hot, 2 years cold</td></tr>
+                <tr className="border-b">
+                  <td className="p-2">Ingestion Latency</td>
+                  <td className="p-2">&lt; 500ms</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Map Update Latency</td>
+                  <td className="p-2">&lt; 2 seconds</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Throughput</td>
+                  <td className="p-2">10,000 events/second</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Data Retention</td>
+                  <td className="p-2">90 days hot, 2 years cold</td>
+                </tr>
               </tbody>
             </table>
           </div>
         </DocumentSection>
 
         {/* Section 11: Telematics & IoT Architecture */}
-        <DocumentSection 
-          number="11" 
-          title="Telematics & IoT Architecture" 
+        <DocumentSection
+          number="11"
+          title="Telematics & IoT Architecture"
           icon={<Radio className="h-5 w-5" />}
         >
           <MermaidDiagram
@@ -512,9 +649,21 @@ export default function TechnicalArchitecture() {
           <div className="mt-4 prose prose-sm dark:prose-invert max-w-none">
             <h4>Device Authentication</h4>
             <ul>
-              <li><strong>IMEI Validation:</strong> Device IMEI registered and validated on first connection</li>
-              <li><strong>SIM Binding:</strong> Device-SIM association enforced for security</li>
-              <li><strong>Protocol Support:</strong> Teltonika, Queclink, Concox native protocols</li>
+              <li>
+                <strong>IMEI Validation:</strong>
+                {" "}
+                Device IMEI registered and validated on first connection
+              </li>
+              <li>
+                <strong>SIM Binding:</strong>
+                {" "}
+                Device-SIM association enforced for security
+              </li>
+              <li>
+                <strong>Protocol Support:</strong>
+                {" "}
+                Teltonika, Queclink, Concox native protocols
+              </li>
             </ul>
 
             <h4>Device Health Monitoring</h4>
@@ -528,9 +677,9 @@ export default function TechnicalArchitecture() {
         </DocumentSection>
 
         {/* Section 12: Data Architecture */}
-        <DocumentSection 
-          number="12" 
-          title="Data Architecture" 
+        <DocumentSection
+          number="12"
+          title="Data Architecture"
           icon={<Database className="h-5 w-5" />}
         >
           <MermaidDiagram
@@ -550,19 +699,35 @@ export default function TechnicalArchitecture() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b"><td className="p-2">Relational</td><td className="p-2">PostgreSQL</td><td className="p-2">Tenants, users, fleet, jobs</td></tr>
-                <tr className="border-b"><td className="p-2">Time-Series</td><td className="p-2">TimescaleDB</td><td className="p-2">Telemetry, GPS history</td></tr>
-                <tr className="border-b"><td className="p-2">Cache</td><td className="p-2">Redis</td><td className="p-2">Sessions, live positions</td></tr>
-                <tr className="border-b"><td className="p-2">Object Storage</td><td className="p-2">S3-Compatible</td><td className="p-2">Documents, recordings</td></tr>
+                <tr className="border-b">
+                  <td className="p-2">Relational</td>
+                  <td className="p-2">PostgreSQL</td>
+                  <td className="p-2">Tenants, users, fleet, jobs</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Time-Series</td>
+                  <td className="p-2">TimescaleDB</td>
+                  <td className="p-2">Telemetry, GPS history</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Cache</td>
+                  <td className="p-2">Redis</td>
+                  <td className="p-2">Sessions, live positions</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Object Storage</td>
+                  <td className="p-2">S3-Compatible</td>
+                  <td className="p-2">Documents, recordings</td>
+                </tr>
               </tbody>
             </table>
           </div>
         </DocumentSection>
 
         {/* Section 13: AI & Rules Engine */}
-        <DocumentSection 
-          number="13" 
-          title="AI & Rules Engine" 
+        <DocumentSection
+          number="13"
+          title="AI & Rules Engine"
           icon={<Cpu className="h-5 w-5" />}
         >
           <MermaidDiagram
@@ -605,9 +770,9 @@ export default function TechnicalArchitecture() {
         </DocumentSection>
 
         {/* Section 14: API & Integration Layer */}
-        <DocumentSection 
-          number="14" 
-          title="API & Integration Layer" 
+        <DocumentSection
+          number="14"
+          title="API & Integration Layer"
           icon={<Server className="h-5 w-5" />}
         >
           <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -621,29 +786,69 @@ export default function TechnicalArchitecture() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b"><td className="p-2">Internal APIs</td><td className="p-2">/api/v1/*</td><td className="p-2">JWT Bearer</td></tr>
-                <tr className="border-b"><td className="p-2">External APIs</td><td className="p-2">/external/v1/*</td><td className="p-2">API Key + HMAC</td></tr>
-                <tr className="border-b"><td className="p-2">Webhooks (Inbound)</td><td className="p-2">/webhooks/*</td><td className="p-2">Signature Verification</td></tr>
-                <tr className="border-b"><td className="p-2">MTN CPaaS</td><td className="p-2">Fonu API Gateway</td><td className="p-2">API Key</td></tr>
+                <tr className="border-b">
+                  <td className="p-2">Internal APIs</td>
+                  <td className="p-2">/api/v1/*</td>
+                  <td className="p-2">JWT Bearer</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">External APIs</td>
+                  <td className="p-2">/external/v1/*</td>
+                  <td className="p-2">API Key + HMAC</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Webhooks (Inbound)</td>
+                  <td className="p-2">/webhooks/*</td>
+                  <td className="p-2">Signature Verification</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">MTN CPaaS</td>
+                  <td className="p-2">Fonu API Gateway</td>
+                  <td className="p-2">API Key</td>
+                </tr>
               </tbody>
             </table>
 
             <h4>Enterprise Webhook Events</h4>
             <ul>
-              <li><code>job.created</code> - New job created</li>
-              <li><code>job.assigned</code> - Driver assigned to job</li>
-              <li><code>job.status_changed</code> - Job status updated</li>
-              <li><code>job.completed</code> - Job marked complete</li>
-              <li><code>vehicle.geofence_breach</code> - Vehicle entered/exited geofence</li>
-              <li><code>driver.behavior_alert</code> - Driving behavior event detected</li>
+              <li>
+                <code>job.created</code>
+                {" "}
+                - New job created
+              </li>
+              <li>
+                <code>job.assigned</code>
+                {" "}
+                - Driver assigned to job
+              </li>
+              <li>
+                <code>job.status_changed</code>
+                {" "}
+                - Job status updated
+              </li>
+              <li>
+                <code>job.completed</code>
+                {" "}
+                - Job marked complete
+              </li>
+              <li>
+                <code>vehicle.geofence_breach</code>
+                {" "}
+                - Vehicle entered/exited geofence
+              </li>
+              <li>
+                <code>driver.behavior_alert</code>
+                {" "}
+                - Driving behavior event detected
+              </li>
             </ul>
           </div>
         </DocumentSection>
 
         {/* Section 15: Security Architecture */}
-        <DocumentSection 
-          number="15" 
-          title="Security Architecture" 
+        <DocumentSection
+          number="15"
+          title="Security Architecture"
           icon={<Shield className="h-5 w-5" />}
         >
           <MermaidDiagram
@@ -662,27 +867,47 @@ export default function TechnicalArchitecture() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b"><td className="p-2">Transport Security</td><td className="p-2">TLS 1.3 everywhere, certificate pinning for mobile</td></tr>
-                <tr className="border-b"><td className="p-2">Encryption at Rest</td><td className="p-2">AES-256 for databases, S3 SSE for objects</td></tr>
-                <tr className="border-b"><td className="p-2">Secret Management</td><td className="p-2">Vault-based secrets with auto-rotation</td></tr>
-                <tr className="border-b"><td className="p-2">Audit Logging</td><td className="p-2">All actions logged with correlation IDs</td></tr>
-                <tr className="border-b"><td className="p-2">Tenant Isolation</td><td className="p-2">Row-Level Security (RLS) at database level</td></tr>
-                <tr className="border-b"><td className="p-2">IP Blocking</td><td className="p-2">Automatic blocking after failed auth attempts</td></tr>
+                <tr className="border-b">
+                  <td className="p-2">Transport Security</td>
+                  <td className="p-2">TLS 1.3 everywhere, certificate pinning for mobile</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Encryption at Rest</td>
+                  <td className="p-2">AES-256 for databases, S3 SSE for objects</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Secret Management</td>
+                  <td className="p-2">Vault-based secrets with auto-rotation</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Audit Logging</td>
+                  <td className="p-2">All actions logged with correlation IDs</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Tenant Isolation</td>
+                  <td className="p-2">Row-Level Security (RLS) at database level</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">IP Blocking</td>
+                  <td className="p-2">Automatic blocking after failed auth attempts</td>
+                </tr>
               </tbody>
             </table>
 
             <h4>Security Boundaries</h4>
             <p className="text-sm bg-muted/50 p-3 rounded-lg">
-              <strong>Critical:</strong> FleetPro does NOT have access to MTN core network, subscriber data, 
+              <strong>Critical:</strong>
+              {" "}
+              FleetPro does NOT have access to MTN core network, subscriber data,
               or billing systems. All communication flows through MTN CPaaS APIs only.
             </p>
           </div>
         </DocumentSection>
 
         {/* Section 16: Performance & Scalability */}
-        <DocumentSection 
-          number="16" 
-          title="Performance & Scalability" 
+        <DocumentSection
+          number="16"
+          title="Performance & Scalability"
           icon={<Layers className="h-5 w-5" />}
         >
           <div className="grid md:grid-cols-2 gap-4">
@@ -734,9 +959,9 @@ export default function TechnicalArchitecture() {
         </DocumentSection>
 
         {/* Section 17: DevOps & Operations */}
-        <DocumentSection 
-          number="17" 
-          title="DevOps & Operations" 
+        <DocumentSection
+          number="17"
+          title="DevOps & Operations"
           icon={<GitBranch className="h-5 w-5" />}
         >
           <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -754,12 +979,30 @@ export default function TechnicalArchitecture() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b"><td className="p-2">Containerization</td><td className="p-2">Docker</td></tr>
-                <tr className="border-b"><td className="p-2">Orchestration</td><td className="p-2">Kubernetes</td></tr>
-                <tr className="border-b"><td className="p-2">Service Mesh</td><td className="p-2">Istio</td></tr>
-                <tr className="border-b"><td className="p-2">Monitoring</td><td className="p-2">Prometheus + Grafana</td></tr>
-                <tr className="border-b"><td className="p-2">Logging</td><td className="p-2">ELK Stack</td></tr>
-                <tr className="border-b"><td className="p-2">Alerting</td><td className="p-2">PagerDuty</td></tr>
+                <tr className="border-b">
+                  <td className="p-2">Containerization</td>
+                  <td className="p-2">Docker</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Orchestration</td>
+                  <td className="p-2">Kubernetes</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Service Mesh</td>
+                  <td className="p-2">Istio</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Monitoring</td>
+                  <td className="p-2">Prometheus + Grafana</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Logging</td>
+                  <td className="p-2">ELK Stack</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Alerting</td>
+                  <td className="p-2">PagerDuty</td>
+                </tr>
               </tbody>
             </table>
 
@@ -774,9 +1017,9 @@ export default function TechnicalArchitecture() {
         </DocumentSection>
 
         {/* Section 18: Deployment Model */}
-        <DocumentSection 
-          number="18" 
-          title="Deployment Model (MTN-IT Friendly)" 
+        <DocumentSection
+          number="18"
+          title="Deployment Model (MTN-IT Friendly)"
           icon={<Cloud className="h-5 w-5" />}
         >
           <MermaidDiagram
@@ -796,19 +1039,35 @@ export default function TechnicalArchitecture() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b"><td className="p-2">FleetPro Platform</td><td className="p-2">Cloud Provider</td><td className="p-2">MTN-IT</td></tr>
-                <tr className="border-b"><td className="p-2">MTN CPaaS APIs</td><td className="p-2">MTN Infrastructure</td><td className="p-2">MTN</td></tr>
-                <tr className="border-b"><td className="p-2">MTN IoT SIMs</td><td className="p-2">MTN Network</td><td className="p-2">MTN</td></tr>
-                <tr className="border-b"><td className="p-2">GPS Devices</td><td className="p-2">Customer Premises</td><td className="p-2">Customer/FleetPro</td></tr>
+                <tr className="border-b">
+                  <td className="p-2">FleetPro Platform</td>
+                  <td className="p-2">Cloud Provider</td>
+                  <td className="p-2">MTN-IT</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">MTN CPaaS APIs</td>
+                  <td className="p-2">MTN Infrastructure</td>
+                  <td className="p-2">MTN</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">MTN IoT SIMs</td>
+                  <td className="p-2">MTN Network</td>
+                  <td className="p-2">MTN</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">GPS Devices</td>
+                  <td className="p-2">Customer Premises</td>
+                  <td className="p-2">Customer/FleetPro</td>
+                </tr>
               </tbody>
             </table>
           </div>
         </DocumentSection>
 
         {/* Section 19: Ownership & Responsibility Split */}
-        <DocumentSection 
-          number="19" 
-          title="Ownership & Responsibility Split" 
+        <DocumentSection
+          number="19"
+          title="Ownership & Responsibility Split"
           icon={<Users className="h-5 w-5" />}
         >
           <div className="overflow-x-auto">
@@ -821,25 +1080,65 @@ export default function TechnicalArchitecture() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b"><td className="p-3 font-medium">Platform Development</td><td className="p-3">✅ Full ownership</td><td className="p-3">—</td></tr>
-                <tr className="border-b"><td className="p-3 font-medium">IP & Source Code</td><td className="p-3">✅ Owner</td><td className="p-3">—</td></tr>
-                <tr className="border-b"><td className="p-3 font-medium">Product Roadmap</td><td className="p-3">✅ Defines</td><td className="p-3">📋 Consults</td></tr>
-                <tr className="border-b"><td className="p-3 font-medium">L2/L3 Support</td><td className="p-3">✅ Provides</td><td className="p-3">—</td></tr>
-                <tr className="border-b"><td className="p-3 font-medium">Platform Operations</td><td className="p-3">—</td><td className="p-3">✅ Operates</td></tr>
-                <tr className="border-b"><td className="p-3 font-medium">Security Compliance</td><td className="p-3">📋 Design</td><td className="p-3">✅ Enforce</td></tr>
-                <tr className="border-b"><td className="p-3 font-medium">SLA Management</td><td className="p-3">📋 Define</td><td className="p-3">✅ Deliver</td></tr>
-                <tr className="border-b"><td className="p-3 font-medium">CPaaS Integration</td><td className="p-3">📋 Implement</td><td className="p-3">✅ Provide APIs</td></tr>
-                <tr className="border-b"><td className="p-3 font-medium">Customer Billing</td><td className="p-3">—</td><td className="p-3">✅ Manages</td></tr>
-                <tr className="border-b"><td className="p-3 font-medium">L1 Support</td><td className="p-3">—</td><td className="p-3">✅ Provides</td></tr>
+                <tr className="border-b">
+                  <td className="p-3 font-medium">Platform Development</td>
+                  <td className="p-3">✅ Full ownership</td>
+                  <td className="p-3">—</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-3 font-medium">IP & Source Code</td>
+                  <td className="p-3">✅ Owner</td>
+                  <td className="p-3">—</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-3 font-medium">Product Roadmap</td>
+                  <td className="p-3">✅ Defines</td>
+                  <td className="p-3">📋 Consults</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-3 font-medium">L2/L3 Support</td>
+                  <td className="p-3">✅ Provides</td>
+                  <td className="p-3">—</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-3 font-medium">Platform Operations</td>
+                  <td className="p-3">—</td>
+                  <td className="p-3">✅ Operates</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-3 font-medium">Security Compliance</td>
+                  <td className="p-3">📋 Design</td>
+                  <td className="p-3">✅ Enforce</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-3 font-medium">SLA Management</td>
+                  <td className="p-3">📋 Define</td>
+                  <td className="p-3">✅ Deliver</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-3 font-medium">CPaaS Integration</td>
+                  <td className="p-3">📋 Implement</td>
+                  <td className="p-3">✅ Provide APIs</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-3 font-medium">Customer Billing</td>
+                  <td className="p-3">—</td>
+                  <td className="p-3">✅ Manages</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-3 font-medium">L1 Support</td>
+                  <td className="p-3">—</td>
+                  <td className="p-3">✅ Provides</td>
+                </tr>
               </tbody>
             </table>
           </div>
         </DocumentSection>
 
         {/* Section 20: Implementation Phases */}
-        <DocumentSection 
-          number="20" 
-          title="Implementation Phases" 
+        <DocumentSection
+          number="20"
+          title="Implementation Phases"
           icon={<Layers className="h-5 w-5" />}
         >
           <div className="grid md:grid-cols-3 gap-4">
@@ -860,7 +1159,12 @@ export default function TechnicalArchitecture() {
             </Card>
             <Card className="bg-secondary/10 border-secondary/30">
               <CardHeader className="pb-2">
-                <Badge variant="secondary" className="w-fit mb-2">Phase 2</Badge>
+                <Badge
+                  variant="secondary"
+                  className="w-fit mb-2"
+                >
+                  Phase 2
+                </Badge>
                 <CardTitle className="text-sm">Automation & Scale</CardTitle>
               </CardHeader>
               <CardContent className="text-xs space-y-2">
@@ -875,7 +1179,12 @@ export default function TechnicalArchitecture() {
             </Card>
             <Card className="bg-muted/50">
               <CardHeader className="pb-2">
-                <Badge variant="outline" className="w-fit mb-2">Phase 3</Badge>
+                <Badge
+                  variant="outline"
+                  className="w-fit mb-2"
+                >
+                  Phase 3
+                </Badge>
                 <CardTitle className="text-sm">Enterprise Hardening</CardTitle>
               </CardHeader>
               <CardContent className="text-xs space-y-2">
@@ -892,15 +1201,15 @@ export default function TechnicalArchitecture() {
         </DocumentSection>
 
         {/* Section 21: Conclusion */}
-        <DocumentSection 
-          number="21" 
-          title="Conclusion" 
+        <DocumentSection
+          number="21"
+          title="Conclusion"
           icon={<FileText className="h-5 w-5" />}
         >
           <div className="prose prose-sm dark:prose-invert max-w-none">
             <p>
-              This document outlines a comprehensive technical architecture for FleetPro that is 
-              specifically designed to integrate safely and effectively within MTN Nigeria's IT 
+              This document outlines a comprehensive technical architecture for FleetPro that is
+              specifically designed to integrate safely and effectively within MTN Nigeria's IT
               infrastructure while maximizing CPaaS asset utilization.
             </p>
 
@@ -930,7 +1239,7 @@ export default function TechnicalArchitecture() {
 
             <div className="bg-primary/10 p-4 rounded-lg mt-4 border border-primary/30">
               <p className="text-sm font-medium">
-                This document is suitable for MTN-IT internal circulation and can be attached as a 
+                This document is suitable for MTN-IT internal circulation and can be attached as a
                 technical annex to partnership agreements without modification.
               </p>
             </div>
@@ -942,15 +1251,15 @@ export default function TechnicalArchitecture() {
 }
 
 // Helper Components
-function DocumentSection({ 
-  number, 
-  title, 
-  icon, 
-  children 
-}: { 
-  number: string; 
-  title: string; 
-  icon: React.ReactNode; 
+function DocumentSection({
+  number,
+  title,
+  icon,
+  children,
+}: {
+  number: string;
+  title: string;
+  icon: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -960,7 +1269,10 @@ function DocumentSection({
           {icon}
         </div>
         <h2 className="text-xl font-semibold">
-          <span className="text-muted-foreground mr-2">{number}.</span>
+          <span className="text-muted-foreground mr-2">
+            {number}
+            .
+          </span>
           {title}
         </h2>
       </div>
@@ -973,7 +1285,11 @@ function DocumentSection({
   );
 }
 
-function ObjectiveCard({ title, description }: { title: string; description: string }) {
+function ObjectiveCard({
+  title, description,
+}: {
+  title: string; description: string;
+}) {
   return (
     <Card className="bg-muted/30">
       <CardContent className="p-4">
@@ -984,7 +1300,11 @@ function ObjectiveCard({ title, description }: { title: string; description: str
   );
 }
 
-function ServiceCard({ title, items }: { title: string; items: string[] }) {
+function ServiceCard({
+  title, items,
+}: {
+  title: string; items: string[];
+}) {
   return (
     <Card className="bg-muted/30">
       <CardHeader className="pb-2">
@@ -993,7 +1313,10 @@ function ServiceCard({ title, items }: { title: string; items: string[] }) {
       <CardContent>
         <ul className="text-xs space-y-1">
           {items.map((item, i) => (
-            <li key={i} className="flex items-start gap-2">
+            <li
+              key={i}
+              className="flex items-start gap-2"
+            >
               <span className="text-primary mt-0.5">•</span>
               <span className="text-muted-foreground">{item}</span>
             </li>

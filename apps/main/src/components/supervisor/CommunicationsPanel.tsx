@@ -1,11 +1,13 @@
+import {
+  CheckCheck, Clock, MessageSquare, Phone, PhoneCall, PhoneOff, Send, User,
+} from "lucide-react";
 import { useState } from "react";
-import { MessageSquare, Phone, Send, User, Clock, CheckCheck, PhoneCall, PhoneOff } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
@@ -13,30 +15,34 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
+import { Input } from "@/components/shadcn/input";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
-interface Driver {
+type Driver = {
   id: string;
   name: string;
   phone?: string;
   status: string;
-}
+};
 
-interface Message {
+type Message = {
   id: string;
   driverId: string;
   content: string;
   timestamp: Date;
   direction: "inbound" | "outbound";
   read: boolean;
-}
+};
 
-interface CommunicationsPanelProps {
+type CommunicationsPanelProps = {
   drivers: Driver[];
   selectedDriverId?: string;
   onSelectDriver: (id: string) => void;
-}
+};
 
 const mockMessages: Message[] = [
   {
@@ -78,24 +84,43 @@ export function CommunicationsPanel({
   selectedDriverId,
   onSelectDriver,
 }: CommunicationsPanelProps) {
-  const [messageInput, setMessageInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
-  const [callDialogOpen, setCallDialogOpen] = useState(false);
-  const [callingDriver, setCallingDriver] = useState<Driver | null>(null);
-  const [callStatus, setCallStatus] = useState<"ringing" | "connected" | "ended">("ringing");
+  const [
+    messageInput,
+    setMessageInput,
+  ] = useState("");
+  const [
+    messages,
+    setMessages,
+  ] = useState<Message[]>(mockMessages);
+  const [
+    callDialogOpen,
+    setCallDialogOpen,
+  ] = useState(false);
+  const [
+    callingDriver,
+    setCallingDriver,
+  ] = useState<Driver | null>(null);
+  const [
+    callStatus,
+    setCallStatus,
+  ] = useState<"ringing" | "connected" | "ended">("ringing");
 
-  const selectedDriver = drivers.find((d) => d.id === selectedDriverId);
-  const driverMessages = messages.filter((m) => m.driverId === selectedDriverId);
+  const selectedDriver = drivers.find(d => d.id === selectedDriverId);
+  const driverMessages = messages.filter(m => m.driverId === selectedDriverId);
 
-  const unreadCounts = drivers.reduce((acc, driver) => {
-    acc[driver.id] = messages.filter(
-      (m) => m.driverId === driver.id && m.direction === "inbound" && !m.read
-    ).length;
-    return acc;
-  }, {} as Record<string, number>);
+  const unreadCounts = drivers.reduce(
+    (acc, driver) => {
+      acc[driver.id] = messages.filter(
+        m => m.driverId === driver.id && m.direction === "inbound" && !m.read,
+      ).length;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   const handleSendMessage = () => {
-    if (!messageInput.trim() || !selectedDriverId) return;
+    if (!messageInput.trim() || !selectedDriverId)
+      return;
 
     const newMessage: Message = {
       id: `m${Date.now()}`,
@@ -106,7 +131,10 @@ export function CommunicationsPanel({
       read: true,
     };
 
-    setMessages([...messages, newMessage]);
+    setMessages([
+      ...messages,
+      newMessage,
+    ]);
     setMessageInput("");
     toast.success("Message sent");
   };
@@ -117,17 +145,23 @@ export function CommunicationsPanel({
     setCallDialogOpen(true);
 
     // Simulate call connecting
-    setTimeout(() => {
-      setCallStatus("connected");
-    }, 2000);
+    setTimeout(
+      () => {
+        setCallStatus("connected");
+      },
+      2000,
+    );
   };
 
   const handleEndCall = () => {
     setCallStatus("ended");
-    setTimeout(() => {
-      setCallDialogOpen(false);
-      setCallingDriver(null);
-    }, 500);
+    setTimeout(
+      () => {
+        setCallDialogOpen(false);
+        setCallingDriver(null);
+      },
+      500,
+    );
   };
 
   return (
@@ -140,24 +174,40 @@ export function CommunicationsPanel({
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <Tabs defaultValue="messages" className="h-full">
+          <Tabs
+            defaultValue="messages"
+            className="h-full"
+          >
             <TabsList className="w-full rounded-none border-b">
-              <TabsTrigger value="messages" className="flex-1">Messages</TabsTrigger>
-              <TabsTrigger value="drivers" className="flex-1">Drivers</TabsTrigger>
+              <TabsTrigger
+                value="messages"
+                className="flex-1"
+              >
+                Messages
+              </TabsTrigger>
+              <TabsTrigger
+                value="drivers"
+                className="flex-1"
+              >
+                Drivers
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="messages" className="mt-0">
+            <TabsContent
+              value="messages"
+              className="mt-0"
+            >
               <div className="flex h-[350px]">
                 {/* Driver list */}
                 <div className="w-1/3 border-r border-border">
                   <ScrollArea className="h-full">
-                    {drivers.map((driver) => (
+                    {drivers.map(driver => (
                       <button
                         key={driver.id}
                         onClick={() => onSelectDriver(driver.id)}
                         className={cn(
                           "w-full p-3 text-left border-b border-border hover:bg-muted/50 transition-colors",
-                          selectedDriverId === driver.id && "bg-muted"
+                          selectedDriverId === driver.id && "bg-muted",
                         )}
                       >
                         <div className="flex items-center justify-between">
@@ -170,7 +220,10 @@ export function CommunicationsPanel({
                                 {driver.name.split(" ")[0]}
                               </p>
                               <p className="text-xs text-muted-foreground capitalize">
-                                {driver.status.replace("_", " ")}
+                                {driver.status.replace(
+                                  "_",
+                                  " ",
+                                )}
                               </p>
                             </div>
                           </div>
@@ -214,12 +267,12 @@ export function CommunicationsPanel({
                       {/* Messages */}
                       <ScrollArea className="flex-1 p-3">
                         <div className="space-y-3">
-                          {driverMessages.map((msg) => (
+                          {driverMessages.map(msg => (
                             <div
                               key={msg.id}
                               className={cn(
                                 "flex",
-                                msg.direction === "outbound" ? "justify-end" : "justify-start"
+                                msg.direction === "outbound" ? "justify-end" : "justify-start",
                               )}
                             >
                               <div
@@ -227,16 +280,19 @@ export function CommunicationsPanel({
                                   "max-w-[80%] rounded-lg px-3 py-2",
                                   msg.direction === "outbound"
                                     ? "bg-primary text-primary-foreground"
-                                    : "bg-muted"
+                                    : "bg-muted",
                                 )}
                               >
                                 <p className="text-sm">{msg.content}</p>
                                 <div className="flex items-center gap-1 mt-1">
                                   <span className="text-[10px] opacity-70">
-                                    {msg.timestamp.toLocaleTimeString([], {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
+                                    {msg.timestamp.toLocaleTimeString(
+                                      [],
+                                      {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      },
+                                    )}
                                   </span>
                                   {msg.direction === "outbound" && (
                                     <CheckCheck className="h-3 w-3 opacity-70" />
@@ -254,10 +310,13 @@ export function CommunicationsPanel({
                           <Input
                             placeholder="Type a message..."
                             value={messageInput}
-                            onChange={(e) => setMessageInput(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                            onChange={e => setMessageInput(e.target.value)}
+                            onKeyDown={e => e.key === "Enter" && handleSendMessage()}
                           />
-                          <Button size="icon" onClick={handleSendMessage}>
+                          <Button
+                            size="icon"
+                            onClick={handleSendMessage}
+                          >
                             <Send className="h-4 w-4" />
                           </Button>
                         </div>
@@ -272,10 +331,13 @@ export function CommunicationsPanel({
               </div>
             </TabsContent>
 
-            <TabsContent value="drivers" className="mt-0 p-3">
+            <TabsContent
+              value="drivers"
+              className="mt-0 p-3"
+            >
               <ScrollArea className="h-[350px]">
                 <div className="space-y-2">
-                  {drivers.map((driver) => (
+                  {drivers.map(driver => (
                     <div
                       key={driver.id}
                       className="flex items-center justify-between p-3 rounded-lg border border-border"
@@ -295,7 +357,10 @@ export function CommunicationsPanel({
                         <Badge
                           variant={driver.status === "active" ? "default" : "secondary"}
                         >
-                          {driver.status.replace("_", " ")}
+                          {driver.status.replace(
+                            "_",
+                            " ",
+                          )}
                         </Badge>
                         <Button
                           size="icon"
@@ -324,7 +389,10 @@ export function CommunicationsPanel({
       </Card>
 
       {/* Call Dialog */}
-      <Dialog open={callDialogOpen} onOpenChange={setCallDialogOpen}>
+      <Dialog
+        open={callDialogOpen}
+        onOpenChange={setCallDialogOpen}
+      >
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle className="text-center">
@@ -339,16 +407,22 @@ export function CommunicationsPanel({
             </div>
             <p className="text-lg font-medium">{callingDriver?.name}</p>
             <p className="text-sm text-muted-foreground">{callingDriver?.phone}</p>
-            
+
             <div className="flex items-center gap-2 mt-4">
               {callStatus === "ringing" && (
-                <Badge variant="secondary" className="animate-pulse">
+                <Badge
+                  variant="secondary"
+                  className="animate-pulse"
+                >
                   <PhoneCall className="h-3 w-3 mr-1" />
                   Ringing...
                 </Badge>
               )}
               {callStatus === "connected" && (
-                <Badge variant="default" className="bg-success">
+                <Badge
+                  variant="default"
+                  className="bg-success"
+                >
                   <Phone className="h-3 w-3 mr-1" />
                   Connected
                 </Badge>

@@ -1,9 +1,23 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { Inbox, Mail } from "lucide-react";
+import {
+  Inbox,
+  Mail,
+} from "lucide-react";
 import { EmailInbox } from "@/components/email/EmailInbox";
 import { EmailProviderSettings } from "@/components/email/EmailProviderSettings";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/shadcn/tabs";
 
 export default function PlatformMessagingCenter() {
   return (
@@ -20,13 +34,22 @@ export default function PlatformMessagingCenter() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="inbox" className="space-y-4">
+            <Tabs
+              defaultValue="inbox"
+              className="space-y-4"
+            >
               <TabsList>
-                <TabsTrigger value="inbox" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="inbox"
+                  className="flex items-center gap-2"
+                >
                   <Inbox className="h-4 w-4" />
                   Inbox
                 </TabsTrigger>
-                <TabsTrigger value="settings" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="settings"
+                  className="flex items-center gap-2"
+                >
                   <Mail className="h-4 w-4" />
                   Provider Settings
                 </TabsTrigger>
@@ -44,6 +67,3 @@ export default function PlatformMessagingCenter() {
     </DashboardLayout>
   );
 }
-
-
-

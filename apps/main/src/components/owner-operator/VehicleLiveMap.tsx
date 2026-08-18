@@ -1,19 +1,25 @@
-import { useEffect, useRef } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card';
-import { Badge } from '@/components/shadcn/badge';
-import { Button } from '@/components/shadcn/button';
-import { MapPin, Navigation, RefreshCw } from 'lucide-react';
+import L from "leaflet";
+import {
+  MapPin, Navigation, RefreshCw,
+} from "lucide-react";
+import {
+  useEffect, useRef,
+} from "react";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import "leaflet/dist/leaflet.css";
 
-interface VehicleLiveMapProps {
+type VehicleLiveMapProps = {
   latitude: number;
   longitude: number;
   speed?: number | null;
   heading?: number | null;
   registrationNumber: string;
   lastUpdate: string;
-}
+};
 
 export function VehicleLiveMap({
   latitude,
@@ -27,26 +33,35 @@ export function VehicleLiveMap({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
 
-  useEffect(() => {
-    if (!mapRef.current) return;
+  useEffect(
+    () => {
+      if (!mapRef.current)
+        return;
 
-    if (!mapInstanceRef.current) {
-      mapInstanceRef.current = L.map(mapRef.current, {
-        center: [latitude, longitude],
-        zoom: 15,
-        zoomControl: true,
-        attributionControl: false,
-      });
+      if (!mapInstanceRef.current) {
+        mapInstanceRef.current = L.map(
+          mapRef.current,
+          {
+            center: [
+              latitude,
+              longitude,
+            ],
+            zoom: 15,
+            zoomControl: true,
+            attributionControl: false,
+          },
+        );
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-      }).addTo(mapInstanceRef.current);
-    }
+        L.tileLayer(
+          "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+          { maxZoom: 19 },
+        ).addTo(mapInstanceRef.current);
+      }
 
-    // Update or create marker
-    const truckIcon = L.divIcon({
-      className: 'custom-truck-marker',
-      html: `
+      // Update or create marker
+      const truckIcon = L.divIcon({
+        className: "custom-truck-marker",
+        html: `
         <div style="
           width: 36px; height: 36px;
           background: hsl(var(--primary));
@@ -61,39 +76,72 @@ export function VehicleLiveMap({
           </svg>
         </div>
       `,
-      iconSize: [36, 36],
-      iconAnchor: [18, 18],
-    });
+        iconSize: [
+          36,
+          36,
+        ],
+        iconAnchor: [
+          18,
+          18,
+        ],
+      });
 
-    if (markerRef.current) {
-      markerRef.current.setLatLng([latitude, longitude]);
-      markerRef.current.setIcon(truckIcon);
-    } else {
-      markerRef.current = L.marker([latitude, longitude], { icon: truckIcon })
-        .addTo(mapInstanceRef.current!)
-        .bindPopup(`<b>${registrationNumber}</b><br/>Speed: ${speed ?? 0} km/h`);
-    }
+      if (markerRef.current) {
+        markerRef.current.setLatLng([
+          latitude,
+          longitude,
+        ]);
+        markerRef.current.setIcon(truckIcon);
+      }
+      else {
+        markerRef.current = L.marker(
+          [
+            latitude,
+            longitude,
+          ],
+          { icon: truckIcon },
+        )
+          .addTo(mapInstanceRef.current!)
+          .bindPopup(`<b>${registrationNumber}</b><br/>Speed: ${speed ?? 0} km/h`);
+      }
 
-    mapInstanceRef.current!.setView([latitude, longitude], mapInstanceRef.current!.getZoom());
+      mapInstanceRef.current!.setView(
+        [
+          latitude,
+          longitude,
+        ],
+        mapInstanceRef.current!.getZoom(),
+      );
 
-    return () => {};
-  }, [latitude, longitude, heading, speed, registrationNumber]);
+      return () => {};
+    },
+    [
+      latitude,
+      longitude,
+      heading,
+      speed,
+      registrationNumber,
+    ],
+  );
 
   // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-        markerRef.current = null;
-      }
-    };
-  }, []);
+  useEffect(
+    () => {
+      return () => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.remove();
+          mapInstanceRef.current = null;
+          markerRef.current = null;
+        }
+      };
+    },
+    [],
+  );
 
   const openGoogleMaps = () => {
     window.open(
       `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`,
-      '_blank'
+      "_blank",
     );
   };
 
@@ -106,11 +154,19 @@ export function VehicleLiveMap({
             Live Location
           </CardTitle>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs gap-1">
+            <Badge
+              variant="outline"
+              className="text-xs gap-1"
+            >
               <RefreshCw className="h-3 w-3" />
               Auto-refresh 30s
             </Badge>
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={openGoogleMaps}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={openGoogleMaps}
+            >
               <Navigation className="h-3.5 w-3.5" />
               Navigate
             </Button>
@@ -124,9 +180,14 @@ export function VehicleLiveMap({
         />
         <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
           <span>
-            {latitude.toFixed(5)}, {longitude.toFixed(5)}
+            {latitude.toFixed(5)}
+            ,
+            {longitude.toFixed(5)}
           </span>
-          <span>Last update: {lastUpdate}</span>
+          <span>
+            Last update:
+            {lastUpdate}
+          </span>
         </div>
       </CardContent>
     </Card>

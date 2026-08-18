@@ -1,44 +1,56 @@
-import { daysBetween, formatWithPattern, startOfDay, subDays } from "@truckmoov/app-core/utils/time-utils";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { StatCard } from "@/components/dashboard/StatCard";
-import { EmptyState } from "@/components/dashboard/EmptyState";
-import { TrialBanner } from "@/components/admin/TrialBanner";
-import { useState } from "react";
+import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import {
-  Truck,
-  Users,
-  Package,
-  Gauge,
-  Clock,
-  TrendingUp,
-  MapPin,
+  daysBetween, formatWithPattern, startOfDay, subDays,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
   AlertTriangle,
   Bell,
   ChevronRight,
+  Clock,
+  Gauge,
+  MapPin,
+  Package,
+  TrendingUp,
+  Truck,
+  Users,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import {
-  AreaChart,
+  useMemo, useState,
+} from "react";
+import { useNavigate } from "react-router-dom";
+import {
   Area,
+  AreaChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
-import { useNavigate } from "react-router-dom";
-import { useMemo } from "react";
+import { TrialBanner } from "@/components/admin/TrialBanner";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
 
 export default function TenantAdminDashboard() {
   const navigate = useNavigate();
-  const [activityRange, setActivityRange] = useState<ChartDateRange>("7d");
-  const [vehicleStatusRange, setVehicleStatusRange] = useState<ChartDateRange>("7d");
+  const [
+    activityRange,
+    setActivityRange,
+  ] = useState<ChartDateRange>("7d");
+  const [
+    vehicleStatusRange,
+    setVehicleStatusRange,
+  ] = useState<ChartDateRange>("7d");
   const tenantData: any = null;
   const tenantLoading = false;
   const vehicles: any[] = [];
@@ -55,85 +67,133 @@ export default function TenantAdminDashboard() {
   // Compute real stats
   const totalVehicles = vehicles.length;
   const totalDrivers = drivers.length;
-  const activeDrivers = drivers.filter((d) => d.status === "active" || d.status === "on_trip").length;
-  const pendingJobs = jobs.filter((j) => j.status === "created" || j.status === "assigned").length;
+  const activeDrivers = drivers.filter(d => d.status === "active" || d.status === "on_trip").length;
+  const pendingJobs = jobs.filter(j => j.status === "created" || j.status === "assigned").length;
   const tenantName = tenantData?.name ?? "Fleet Dashboard";
 
   // Vehicle status breakdown for pie chart
-  const vehicleStatusData = useMemo(() => {
-    const statusCounts = vehicles.reduce(
-      (acc, v) => {
-        acc[v.status] = (acc[v.status] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
+  const vehicleStatusData = useMemo(
+    () => {
+      const statusCounts = vehicles.reduce(
+        (acc, v) => {
+          acc[v.status] = (acc[v.status] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
 
-    const statusConfig: Record<string, { name: string; color: string }> = {
-      active: { name: "Active", color: "hsl(var(--success))" },
-      inactive: { name: "Idle", color: "hsl(var(--warning))" },
-      maintenance: { name: "Maintenance", color: "hsl(var(--destructive))" },
-      decommissioned: { name: "Offline", color: "hsl(var(--muted-foreground))" },
-    };
+      const statusConfig: Record<string, {
+        name: string; color: string;
+      }> = {
+        active: {
+          name: "Active", color: "hsl(var(--success))",
+        },
+        inactive: {
+          name: "Idle", color: "hsl(var(--warning))",
+        },
+        maintenance: {
+          name: "Maintenance", color: "hsl(var(--destructive))",
+        },
+        decommissioned: {
+          name: "Offline", color: "hsl(var(--muted-foreground))",
+        },
+      };
 
-    return Object.entries(statusCounts).map(([status, value]) => ({
-      name: statusConfig[status]?.name || status,
-      value,
-      color: statusConfig[status]?.color || "hsl(var(--muted))",
-    }));
-  }, [vehicles]);
+      return Object.entries(statusCounts).map(([
+        status,
+        value,
+      ]) => ({
+        name: statusConfig[status]?.name || status,
+        value,
+        color: statusConfig[status]?.color || "hsl(var(--muted))",
+      }));
+    },
+    [vehicles],
+  );
 
   // Trip data for the last 7 days (based on jobs created)
-  const tripData = useMemo(() => {
-    const today = startOfDay(new Date());
-    const days = Array.from({ length: 7 }, (_, i) => {
-      const date = subDays(today, 6 - i);
-      return {
-        day: formatWithPattern(date, "EEE"),
-        date,
-        trips: 0,
-        completed: 0,
-      };
-    });
+  const tripData = useMemo(
+    () => {
+      const today = startOfDay(new Date());
+      const days = Array.from(
+        { length: 7 },
+        (_, i) => {
+          const date = subDays(
+            today,
+            6 - i,
+          );
+          return {
+            day: formatWithPattern(
+              date,
+              "EEE",
+            ),
+            date,
+            trips: 0,
+            completed: 0,
+          };
+        },
+      );
 
-    jobs.forEach((job) => {
-      const jobDate = startOfDay(job.createdAt);
-      const dayIndex = days.findIndex((d) => daysBetween(d.date, jobDate) === 0);
-      if (dayIndex !== -1) {
-        days[dayIndex].trips += 1;
-        if (job.status === "completed") {
-          days[dayIndex].completed += 1;
+      jobs.forEach((job) => {
+        const jobDate = startOfDay(job.createdAt);
+        const dayIndex = days.findIndex(d => daysBetween(
+          d.date,
+          jobDate,
+        ) === 0);
+        if (dayIndex !== -1) {
+          days[dayIndex].trips += 1;
+          if (job.status === "completed") {
+            days[dayIndex].completed += 1;
+          }
         }
-      }
-    });
+      });
 
-    return days;
-  }, [jobs]);
+      return days;
+    },
+    [jobs],
+  );
 
   // Recent active jobs (non-completed, non-cancelled)
-  const activeJobs = useMemo(() => {
-    return jobs
-      .filter((j) => j.status !== "completed" && j.status !== "cancelled")
-      .slice(0, 5);
-  }, [jobs]);
+  const activeJobs = useMemo(
+    () => {
+      return jobs
+        .filter(j => j.status !== "completed" && j.status !== "cancelled")
+        .slice(
+          0,
+          5,
+        );
+    },
+    [jobs],
+  );
 
   // Recent unacknowledged alerts
-  const recentAlerts = useMemo(() => {
-    return alerts.filter((a) => !a.acknowledged).slice(0, 4);
-  }, [alerts]);
+  const recentAlerts = useMemo(
+    () => {
+      return alerts.filter(a => !a.acknowledged).slice(
+        0,
+        4,
+      );
+    },
+    [alerts],
+  );
 
   // On-time delivery calculation
-  const onTimeRate = useMemo(() => {
-    const completedJobs = jobs.filter((j) => j.status === "completed");
-    if (completedJobs.length === 0) return null;
+  const onTimeRate = useMemo(
+    () => {
+      const completedJobs = jobs.filter(j => j.status === "completed");
+      if (completedJobs.length === 0)
+        return null;
 
-    const onTime = completedJobs.filter((j) => {
-      if (!j.deadline || !j.completedAt) return true;
-      return new Date(j.completedAt) <= new Date(j.deadline);
-    }).length;
+      const onTime = completedJobs.filter((j) => {
+        if (!j.deadline || !j.completedAt)
+          return true;
+        return new Date(j.completedAt) <= new Date(j.deadline);
+      }).length;
 
-    return Math.round((onTime / completedJobs.length) * 100);
-  }, [jobs]);
+      return Math.round((onTime / completedJobs.length) * 100);
+    },
+    [jobs],
+  );
 
   const hasNoData = totalVehicles === 0 && totalDrivers === 0 && jobs.length === 0;
 
@@ -157,11 +217,19 @@ export default function TenantAdminDashboard() {
           <CardContent>
             <div className="flex gap-3 overflow-x-auto pb-2 -mb-2 snap-x snap-mandatory [scrollbar-width:thin]">
               {[
-                { title: "Manage Fleet", desc: "Vehicles, schedules, maintenance and fuel.", icon: Truck, cta: "Open fleet", to: "/admin/fleet" },
-                { title: "Manage Drivers", desc: "Driver roster, status, licenses and ratings.", icon: Users, cta: "Open drivers", to: "/admin/drivers" },
-                { title: "Create Job", desc: "Dispatch a new shipment to your fleet.", icon: Package, cta: "Open jobs", to: "/admin/jobs" },
-                { title: "View Analytics", desc: "Performance, utilization and trends.", icon: TrendingUp, cta: "Open analytics", to: "/admin/fleet?tab=analytics" },
-              ].map((qa) => (
+                {
+                  title: "Manage Fleet", desc: "Vehicles, schedules, maintenance and fuel.", icon: Truck, cta: "Open fleet", to: "/admin/fleet",
+                },
+                {
+                  title: "Manage Drivers", desc: "Driver roster, status, licenses and ratings.", icon: Users, cta: "Open drivers", to: "/admin/drivers",
+                },
+                {
+                  title: "Create Job", desc: "Dispatch a new shipment to your fleet.", icon: Package, cta: "Open jobs", to: "/admin/jobs",
+                },
+                {
+                  title: "View Analytics", desc: "Performance, utilization and trends.", icon: TrendingUp, cta: "Open analytics", to: "/admin/fleet?tab=analytics",
+                },
+              ].map(qa => (
                 <button
                   key={qa.title}
                   onClick={() => navigate(qa.to)}
@@ -175,7 +243,9 @@ export default function TenantAdminDashboard() {
                       <p className="text-sm font-medium">{qa.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{qa.desc}</p>
                       <span className="text-xs text-primary mt-2 inline-flex items-center gap-1 group-hover:underline">
-                        {qa.cta} <ChevronRight className="h-3 w-3" />
+                        {qa.cta}
+                        {" "}
+                        <ChevronRight className="h-3 w-3" />
                       </span>
                     </div>
                   </div>
@@ -226,26 +296,86 @@ export default function TenantAdminDashboard() {
               <CardDescription>Jobs created vs completed across the past week.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={tripChartData}>
-                    <defs>
-                      <linearGradient id="colorTrips" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
-                    <Area type="monotone" dataKey="trips" name="Jobs Created" stroke="hsl(var(--primary))" strokeWidth={2} fillOpacity={1} fill="url(#colorTrips)" />
-                    <Area type="monotone" dataKey="completed" name="Completed" stroke="hsl(var(--success))" strokeWidth={2} fillOpacity={1} fill="url(#colorCompleted)" />
-                  </AreaChart>
-                </ResponsiveContainer>
+              <ResponsiveContainer
+                width="100%"
+                height={300}
+              >
+                <AreaChart data={tripChartData}>
+                  <defs>
+                    <linearGradient
+                      id="colorTrips"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="hsl(var(--primary))"
+                        stopOpacity={0.3}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="hsl(var(--primary))"
+                        stopOpacity={0}
+                      />
+                    </linearGradient>
+                    <linearGradient
+                      id="colorCompleted"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="hsl(var(--success))"
+                        stopOpacity={0.3}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="hsl(var(--success))"
+                        stopOpacity={0}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="day"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <Tooltip contentStyle={{
+                    backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px",
+                  }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="trips"
+                    name="Jobs Created"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorTrips)"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="completed"
+                    name="Completed"
+                    stroke="hsl(var(--success))"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorCompleted)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
 
@@ -257,27 +387,58 @@ export default function TenantAdminDashboard() {
                   <Truck className="h-5 w-5 text-primary" />
                   Vehicle Status
                 </CardTitle>
-                <ChartDateFilter value={vehicleStatusRange} onValueChange={setVehicleStatusRange} />
+                <ChartDateFilter
+                  value={vehicleStatusRange}
+                  onValueChange={setVehicleStatusRange}
+                />
               </div>
               <CardDescription>Live distribution of fleet vehicles by operational state.</CardDescription>
             </CardHeader>
             <CardContent>
               <>
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer
+                  width="100%"
+                  height={200}
+                >
                   <PieChart>
-                    <Pie data={vehicleStatusChartData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value">
+                    <Pie
+                      data={vehicleStatusChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
                       {vehicleStatusChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color}
+                        />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
+                    <Tooltip contentStyle={{
+                      backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px",
+                    }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  {vehicleStatusChartData.map((item) => (
-                    <div key={item.name} className="flex items-center gap-2">
-                      <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="text-sm text-muted-foreground">{item.name}: {item.value}</span>
+                  {vehicleStatusChartData.map(item => (
+                    <div
+                      key={item.name}
+                      className="flex items-center gap-2"
+                    >
+                      <div
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {item.name}
+                        :
+                        {" "}
+                        {item.value}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -298,55 +459,70 @@ export default function TenantAdminDashboard() {
                 </CardTitle>
                 <CardDescription>Currently assigned and in-progress deliveries.</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/admin/jobs")}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/admin/jobs")}
+              >
                 View All
               </Button>
             </CardHeader>
             <CardContent>
-              {activeJobs.length === 0 ? (
-                <EmptyState
-                  icon={Package}
-                  title="No active jobs"
-                  description="All caught up! Create a new job when ready"
-                  actionLabel="Create Job"
-                  onAction={() => navigate("/admin/jobs")}
-                  className="py-8"
-                />
-              ) : (
-                <div className="space-y-4">
-                  {activeJobs.map((job) => (
-                    <div
-                      key={job.id}
-                      className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-secondary/50"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{job.reference}</span>
-                          <Badge
-                            variant={
-                              job.status === "in_progress"
-                                ? "default"
-                                : job.status === "assigned"
-                                ? "secondary"
-                                : "outline"
-                            }
-                          >
-                            {job.status.replace("_", " ")}
-                          </Badge>
+              {activeJobs.length === 0
+                ? (
+                    <EmptyState
+                      icon={Package}
+                      title="No active jobs"
+                      description="All caught up! Create a new job when ready"
+                      actionLabel="Create Job"
+                      onAction={() => navigate("/admin/jobs")}
+                      className="py-8"
+                    />
+                  )
+                : (
+                    <div className="space-y-4">
+                      {activeJobs.map(job => (
+                        <div
+                          key={job.id}
+                          className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-secondary/50"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{job.reference}</span>
+                              <Badge
+                                variant={
+                                  job.status === "in_progress"
+                                    ? "default"
+                                    : job.status === "assigned"
+                                      ? "secondary"
+                                      : "outline"
+                                }
+                              >
+                                {job.status.replace(
+                                  "_",
+                                  " ",
+                                )}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <MapPin className="h-3 w-3" />
+                              {job.pickupAddress.split(",")[0]}
+                              {" "}
+                              →
+                              {job.deliveryAddress.split(",")[0]}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">
+                              ₦
+                              {job.amountNgn.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{job.cargoType || "General"}</p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <MapPin className="h-3 w-3" />
-                          {job.pickupAddress.split(",")[0]} → {job.deliveryAddress.split(",")[0]}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">₦{job.amountNgn.toLocaleString()}</p>
-                        <p className="text-xs text-muted-foreground">{job.cargoType || "General"}</p>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
+                  )}
             </CardContent>
           </Card>
 
@@ -362,49 +538,54 @@ export default function TenantAdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              {recentAlerts.length === 0 ? (
-                <EmptyState
-                  icon={Bell}
-                  title="No alerts"
-                  description="Your fleet is running smoothly with no issues to report"
-                  className="py-8"
-                />
-              ) : (
-                <div className="space-y-3">
-                  {recentAlerts.map((alert) => (
-                    <div
-                      key={alert.id}
-                      className="flex items-start gap-3 rounded-lg border border-border p-3"
-                    >
-                      <div
-                        className={`mt-0.5 rounded-full p-1.5 ${
-                          alert.severity === "critical" || alert.severity === "high"
-                            ? "bg-destructive/10 text-destructive"
-                            : alert.severity === "medium"
-                            ? "bg-warning/10 text-warning"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        <AlertTriangle className="h-3 w-3" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{alert.message}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatWithPattern(alert.createdAt, "MMM d, h:mm a")}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs"
-                        onClick={() => acknowledgeAlert(alert.id)}
-                      >
-                        Dismiss
-                      </Button>
+              {recentAlerts.length === 0
+                ? (
+                    <EmptyState
+                      icon={Bell}
+                      title="No alerts"
+                      description="Your fleet is running smoothly with no issues to report"
+                      className="py-8"
+                    />
+                  )
+                : (
+                    <div className="space-y-3">
+                      {recentAlerts.map(alert => (
+                        <div
+                          key={alert.id}
+                          className="flex items-start gap-3 rounded-lg border border-border p-3"
+                        >
+                          <div
+                            className={`mt-0.5 rounded-full p-1.5 ${
+                              alert.severity === "critical" || alert.severity === "high"
+                                ? "bg-destructive/10 text-destructive"
+                                : alert.severity === "medium"
+                                  ? "bg-warning/10 text-warning"
+                                  : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            <AlertTriangle className="h-3 w-3" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{alert.message}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatWithPattern(
+                                alert.createdAt,
+                                "MMM d, h:mm a",
+                              )}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => acknowledgeAlert(alert.id)}
+                          >
+                            Dismiss
+                          </Button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
+                  )}
             </CardContent>
           </Card>
         </div>

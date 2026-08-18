@@ -1,8 +1,53 @@
+import {
+  AlertTriangle,
+  Archive,
+  BookOpen,
+  Check,
+  Edit,
+  Fuel,
+  Gauge,
+  MoreHorizontal,
+  Plus,
+  RefreshCw,
+  Search,
+  Server,
+  Trash2,
+  Wifi,
+  X,
+} from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
+import { ExportButton } from "@/components/shadcn/export-button";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
   TableBody,
@@ -11,53 +56,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/shadcn/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/shadcn/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/shadcn/dropdown-menu";
-import { Label } from "@/components/shadcn/label";
 import { Textarea } from "@/components/shadcn/textarea";
-import { Checkbox } from "@/components/shadcn/checkbox";
-import {
-  BookOpen,
-  Search,
-  Plus,
-  MoreHorizontal,
-  Wifi,
-  Server,
-  Gauge,
-  Fuel,
-  AlertTriangle,
-  RefreshCw,
-  Check,
-  X,
-  Edit,
-  Trash2,
-  Archive,
-} from "lucide-react";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import { ExportButton } from "@/components/shadcn/export-button";
+
 type ProtocolType = "tcp" | "http" | "mqtt" | "udp";
 type CatalogStatus = "supported" | "deprecated" | "blocked";
-interface DeviceCatalogEntry {
+type DeviceCatalogEntry = {
   id: string;
   manufacturer: string;
   model: string;
@@ -68,7 +71,7 @@ interface DeviceCatalogEntry {
   supports_sos: boolean;
   config_instructions?: string | null;
   status: CatalogStatus;
-}
+};
 type CreateCatalogEntry = Omit<DeviceCatalogEntry, "id">;
 
 export function DeviceCatalogManager() {
@@ -78,16 +81,37 @@ export function DeviceCatalogManager() {
   const createEntry = async (..._args: any[]) => {};
   const updateEntry = async (..._args: any[]) => {};
   const deleteEntry = async (..._args: any[]) => {};
-  
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<DeviceCatalogEntry | null>(null);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [entryToDelete, setEntryToDelete] = useState<DeviceCatalogEntry | null>(null);
+
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState<string>("all");
+  const [
+    dialogOpen,
+    setDialogOpen,
+  ] = useState(false);
+  const [
+    editingEntry,
+    setEditingEntry,
+  ] = useState<DeviceCatalogEntry | null>(null);
+  const [
+    deleteConfirmOpen,
+    setDeleteConfirmOpen,
+  ] = useState(false);
+  const [
+    entryToDelete,
+    setEntryToDelete,
+  ] = useState<DeviceCatalogEntry | null>(null);
 
   // Form state
-  const [formData, setFormData] = useState<CreateCatalogEntry>({
+  const [
+    formData,
+    setFormData,
+  ] = useState<CreateCatalogEntry>({
     manufacturer: "",
     model: "",
     protocol_type: "tcp",
@@ -100,9 +124,9 @@ export function DeviceCatalogManager() {
   });
 
   const filteredCatalog = catalog.filter((entry) => {
-    const matchesSearch =
-      entry.manufacturer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      entry.model.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch
+      = entry.manufacturer.toLowerCase().includes(searchQuery.toLowerCase())
+        || entry.model.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || entry.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -128,7 +152,10 @@ export function DeviceCatalogManager() {
       udp: "bg-amber-100 text-amber-700",
     };
     return (
-      <Badge variant="outline" className={colors[protocol]}>
+      <Badge
+        variant="outline"
+        className={colors[protocol]}
+      >
         {protocol.toUpperCase()}
       </Badge>
     );
@@ -169,12 +196,17 @@ export function DeviceCatalogManager() {
   const handleSubmit = async () => {
     try {
       if (editingEntry) {
-        await updateEntry(editingEntry.id, formData);
-      } else {
+        await updateEntry(
+          editingEntry.id,
+          formData,
+        );
+      }
+      else {
         await createEntry(formData);
       }
       setDialogOpen(false);
-    } catch (err) {
+    }
+    catch (err) {
       // Error handled in hook
     }
   };
@@ -188,7 +220,10 @@ export function DeviceCatalogManager() {
   };
 
   const handleStatusChange = async (entry: DeviceCatalogEntry, newStatus: CatalogStatus) => {
-    await updateEntry(entry.id, { status: newStatus });
+    await updateEntry(
+      entry.id,
+      { status: newStatus },
+    );
   };
 
   if (loading) {
@@ -234,14 +269,30 @@ export function DeviceCatalogManager() {
               label="Export Data"
               rows={filteredCatalog}
               columns={[
-                { header: 'Manufacturer', accessor: (e) => e.manufacturer },
-                { header: 'Model', accessor: (e) => e.model },
-                { header: 'Protocol', accessor: (e) => e.protocol_type },
-                { header: 'Port', accessor: (e) => e.default_port ?? '' },
-                { header: 'OBD', accessor: (e) => (e.supports_obd ? 'Yes' : 'No') },
-                { header: 'Fuel', accessor: (e) => (e.supports_fuel ? 'Yes' : 'No') },
-                { header: 'SOS', accessor: (e) => (e.supports_sos ? 'Yes' : 'No') },
-                { header: 'Status', accessor: (e) => e.status },
+                {
+                  header: "Manufacturer", accessor: e => e.manufacturer,
+                },
+                {
+                  header: "Model", accessor: e => e.model,
+                },
+                {
+                  header: "Protocol", accessor: e => e.protocol_type,
+                },
+                {
+                  header: "Port", accessor: e => e.default_port ?? "",
+                },
+                {
+                  header: "OBD", accessor: e => (e.supports_obd ? "Yes" : "No"),
+                },
+                {
+                  header: "Fuel", accessor: e => (e.supports_fuel ? "Yes" : "No"),
+                },
+                {
+                  header: "SOS", accessor: e => (e.supports_sos ? "Yes" : "No"),
+                },
+                {
+                  header: "Status", accessor: e => e.status,
+                },
               ]}
             />
           </div>
@@ -254,10 +305,13 @@ export function DeviceCatalogManager() {
                 placeholder="Search manufacturer or model..."
                 className="pl-10"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+            >
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
@@ -284,94 +338,115 @@ export function DeviceCatalogManager() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCatalog.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      {catalog.length === 0
-                        ? "No device models in catalog. Add your first model."
-                        : "No models match your search."}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredCatalog.map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell className="font-medium">{entry.manufacturer}</TableCell>
-                      <TableCell>{entry.model}</TableCell>
-                      <TableCell>{getProtocolBadge(entry.protocol_type)}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {entry.default_port || "—"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          {entry.supports_obd && (
-                            <span title="OBD Support">
-                              <Gauge className="h-4 w-4 text-blue-500" />
-                            </span>
-                          )}
-                          {entry.supports_fuel && (
-                            <span title="Fuel Monitoring">
-                              <Fuel className="h-4 w-4 text-amber-500" />
-                            </span>
-                          )}
-                          {entry.supports_sos && (
-                            <span title="SOS Button">
-                              <AlertTriangle className="h-4 w-4 text-red-500" />
-                            </span>
-                          )}
-                          {!entry.supports_obd && !entry.supports_fuel && !entry.supports_sos && (
-                            <span className="text-muted-foreground text-sm">Basic</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(entry.status)}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenEdit(entry)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {entry.status !== "supported" && (
-                              <DropdownMenuItem onClick={() => handleStatusChange(entry, "supported")}>
-                                <Check className="h-4 w-4 mr-2" />
-                                Mark Supported
-                              </DropdownMenuItem>
-                            )}
-                            {entry.status !== "deprecated" && (
-                              <DropdownMenuItem onClick={() => handleStatusChange(entry, "deprecated")}>
-                                <Archive className="h-4 w-4 mr-2" />
-                                Mark Deprecated
-                              </DropdownMenuItem>
-                            )}
-                            {entry.status !== "blocked" && (
-                              <DropdownMenuItem onClick={() => handleStatusChange(entry, "blocked")}>
-                                <X className="h-4 w-4 mr-2" />
-                                Block Model
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => {
-                                setEntryToDelete(entry);
-                                setDeleteConfirmOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                {filteredCatalog.length === 0
+                  ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={7}
+                          className="text-center py-8 text-muted-foreground"
+                        >
+                          {catalog.length === 0
+                            ? "No device models in catalog. Add your first model."
+                            : "No models match your search."}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  : (
+                      filteredCatalog.map(entry => (
+                        <TableRow key={entry.id}>
+                          <TableCell className="font-medium">{entry.manufacturer}</TableCell>
+                          <TableCell>{entry.model}</TableCell>
+                          <TableCell>{getProtocolBadge(entry.protocol_type)}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {entry.default_port || "—"}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              {entry.supports_obd && (
+                                <span title="OBD Support">
+                                  <Gauge className="h-4 w-4 text-blue-500" />
+                                </span>
+                              )}
+                              {entry.supports_fuel && (
+                                <span title="Fuel Monitoring">
+                                  <Fuel className="h-4 w-4 text-amber-500" />
+                                </span>
+                              )}
+                              {entry.supports_sos && (
+                                <span title="SOS Button">
+                                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                                </span>
+                              )}
+                              {!entry.supports_obd && !entry.supports_fuel && !entry.supports_sos && (
+                                <span className="text-muted-foreground text-sm">Basic</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>{getStatusBadge(entry.status)}</TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleOpenEdit(entry)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                {entry.status !== "supported" && (
+                                  <DropdownMenuItem onClick={() => handleStatusChange(
+                                    entry,
+                                    "supported",
+                                  )}
+                                  >
+                                    <Check className="h-4 w-4 mr-2" />
+                                    Mark Supported
+                                  </DropdownMenuItem>
+                                )}
+                                {entry.status !== "deprecated" && (
+                                  <DropdownMenuItem onClick={() => handleStatusChange(
+                                    entry,
+                                    "deprecated",
+                                  )}
+                                  >
+                                    <Archive className="h-4 w-4 mr-2" />
+                                    Mark Deprecated
+                                  </DropdownMenuItem>
+                                )}
+                                {entry.status !== "blocked" && (
+                                  <DropdownMenuItem onClick={() => handleStatusChange(
+                                    entry,
+                                    "blocked",
+                                  )}
+                                  >
+                                    <X className="h-4 w-4 mr-2" />
+                                    Block Model
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => {
+                                    setEntryToDelete(entry);
+                                    setDeleteConfirmOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
               </TableBody>
             </Table>
           </div>
@@ -379,7 +454,10 @@ export function DeviceCatalogManager() {
       </Card>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      >
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle>
@@ -399,7 +477,9 @@ export function DeviceCatalogManager() {
                 <Input
                   id="manufacturer"
                   value={formData.manufacturer}
-                  onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
+                  onChange={e => setFormData({
+                    ...formData, manufacturer: e.target.value,
+                  })}
                   placeholder="e.g., Teltonika"
                 />
               </div>
@@ -408,7 +488,9 @@ export function DeviceCatalogManager() {
                 <Input
                   id="model"
                   value={formData.model}
-                  onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                  onChange={e => setFormData({
+                    ...formData, model: e.target.value,
+                  })}
                   placeholder="e.g., FMC130"
                 />
               </div>
@@ -419,7 +501,9 @@ export function DeviceCatalogManager() {
                 <Label htmlFor="protocol">Protocol Type</Label>
                 <Select
                   value={formData.protocol_type}
-                  onValueChange={(v) => setFormData({ ...formData, protocol_type: v as ProtocolType })}
+                  onValueChange={v => setFormData({
+                    ...formData, protocol_type: v as ProtocolType,
+                  })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select protocol" />
@@ -438,7 +522,9 @@ export function DeviceCatalogManager() {
                   id="port"
                   type="number"
                   value={formData.default_port || ""}
-                  onChange={(e) => setFormData({ ...formData, default_port: e.target.value ? parseInt(e.target.value) : undefined })}
+                  onChange={e => setFormData({
+                    ...formData, default_port: e.target.value ? parseInt(e.target.value) : undefined,
+                  })}
                   placeholder="e.g., 5001"
                 />
               </div>
@@ -451,9 +537,14 @@ export function DeviceCatalogManager() {
                   <Checkbox
                     id="obd"
                     checked={formData.supports_obd}
-                    onCheckedChange={(checked) => setFormData({ ...formData, supports_obd: checked as boolean })}
+                    onCheckedChange={checked => setFormData({
+                      ...formData, supports_obd: checked as boolean,
+                    })}
                   />
-                  <label htmlFor="obd" className="text-sm flex items-center gap-1">
+                  <label
+                    htmlFor="obd"
+                    className="text-sm flex items-center gap-1"
+                  >
                     <Gauge className="h-4 w-4" />
                     OBD-II
                   </label>
@@ -462,9 +553,14 @@ export function DeviceCatalogManager() {
                   <Checkbox
                     id="fuel"
                     checked={formData.supports_fuel}
-                    onCheckedChange={(checked) => setFormData({ ...formData, supports_fuel: checked as boolean })}
+                    onCheckedChange={checked => setFormData({
+                      ...formData, supports_fuel: checked as boolean,
+                    })}
                   />
-                  <label htmlFor="fuel" className="text-sm flex items-center gap-1">
+                  <label
+                    htmlFor="fuel"
+                    className="text-sm flex items-center gap-1"
+                  >
                     <Fuel className="h-4 w-4" />
                     Fuel
                   </label>
@@ -473,9 +569,14 @@ export function DeviceCatalogManager() {
                   <Checkbox
                     id="sos"
                     checked={formData.supports_sos}
-                    onCheckedChange={(checked) => setFormData({ ...formData, supports_sos: checked as boolean })}
+                    onCheckedChange={checked => setFormData({
+                      ...formData, supports_sos: checked as boolean,
+                    })}
                   />
-                  <label htmlFor="sos" className="text-sm flex items-center gap-1">
+                  <label
+                    htmlFor="sos"
+                    className="text-sm flex items-center gap-1"
+                  >
                     <AlertTriangle className="h-4 w-4" />
                     SOS
                   </label>
@@ -487,7 +588,9 @@ export function DeviceCatalogManager() {
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(v) => setFormData({ ...formData, status: v as CatalogStatus })}
+                onValueChange={v => setFormData({
+                  ...formData, status: v as CatalogStatus,
+                })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
@@ -505,7 +608,9 @@ export function DeviceCatalogManager() {
               <Textarea
                 id="instructions"
                 value={formData.config_instructions}
-                onChange={(e) => setFormData({ ...formData, config_instructions: e.target.value })}
+                onChange={e => setFormData({
+                  ...formData, config_instructions: e.target.value,
+                })}
                 placeholder="Markdown-formatted configuration instructions..."
                 rows={4}
               />
@@ -513,10 +618,16 @@ export function DeviceCatalogManager() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={!formData.manufacturer || !formData.model}>
+            <Button
+              onClick={handleSubmit}
+              disabled={!formData.manufacturer || !formData.model}
+            >
               {editingEntry ? "Save Changes" : "Add Model"}
             </Button>
           </DialogFooter>
@@ -524,20 +635,34 @@ export function DeviceCatalogManager() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+      <Dialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+      >
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle>Delete Device Model</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete {entryToDelete?.manufacturer} {entryToDelete?.model}?
+              Are you sure you want to delete
+              {" "}
+              {entryToDelete?.manufacturer}
+              {" "}
+              {entryToDelete?.model}
+              ?
               This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirmOpen(false)}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+            >
               Delete
             </Button>
           </DialogFooter>

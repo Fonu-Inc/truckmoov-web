@@ -1,4 +1,4 @@
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from "@/stores/authStore";
 
 /**
  * Support ticket permissions — org-scoped.
@@ -13,7 +13,7 @@ import { useAuthStore } from '@/stores/authStore';
 export function useSupportPermissions() {
   const { user } = useAuthStore();
   const role = user?.role;
-  const isPlatformAdmin = role === 'platform_admin';
+  const isPlatformAdmin = role === "platform_admin";
 
   const canCreateTicket = isPlatformAdmin;
   const canViewTickets = isPlatformAdmin;

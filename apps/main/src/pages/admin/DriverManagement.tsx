@@ -1,41 +1,69 @@
-import { useEffect, useState } from "react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Button } from "@/components/shadcn/button";
-import { Badge } from "@/components/shadcn/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/shadcn/tabs";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/shadcn/dialog";
-import { Textarea } from "@/components/shadcn/textarea";
-import { Label } from "@/components/shadcn/label";
-import {
-  Users, MessageSquare, Phone, Mail,
-  Send, Loader2, Inbox, Activity, Brain,
+  Activity, Brain, Inbox, Loader2,
+  Mail, MessageSquare, Phone, Send, Users,
 } from "lucide-react";
-import { DriverMessagesInbox } from "@/components/drivers/DriverMessagesInbox";
-import { useFonuCall } from "@/contexts/FonuCallContext";
+import {
+  useEffect, useState,
+} from "react";
 import { toast } from "sonner";
 import { CallInteractionModal } from "@/components/communications/CallInteractionModal";
-
 // Import the tab components
 import { DriverBehaviorTab } from "@/components/drivers/DriverBehaviorTab";
 import { DriverFatigueTab } from "@/components/drivers/DriverFatigueTab";
+import { DriverMessagesInbox } from "@/components/drivers/DriverMessagesInbox";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
+import { Label } from "@/components/shadcn/label";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
+
+import { Textarea } from "@/components/shadcn/textarea";
+import { useFonuCall } from "@/contexts/FonuCallContext";
 
 export default function DriverManagement() {
-  const [showInbox, setShowInbox] = useState(false);
-  const [mainTab, setMainTab] = useState("drivers");
+  const [
+    showInbox,
+    setShowInbox,
+  ] = useState(false);
+  const [
+    mainTab,
+    setMainTab,
+  ] = useState("drivers");
 
   // Communication state
-  const [isCallDialogOpen, setIsCallDialogOpen] = useState(false);
-  const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
-  const [messageType, setMessageType] = useState<"sms" | "whatsapp">("whatsapp");
-  const [messageContent, setMessageContent] = useState("");
-  const [selectedContactName, setSelectedContactName] = useState<string | undefined>();
-  const [selectedContactPhone, setSelectedContactPhone] = useState<string | undefined>();
+  const [
+    isCallDialogOpen,
+    setIsCallDialogOpen,
+  ] = useState(false);
+  const [
+    isMessageDialogOpen,
+    setIsMessageDialogOpen,
+  ] = useState(false);
+  const [
+    messageType,
+    setMessageType,
+  ] = useState<"sms" | "whatsapp">("whatsapp");
+  const [
+    messageContent,
+    setMessageContent,
+  ] = useState("");
+  const [
+    selectedContactName,
+    setSelectedContactName,
+  ] = useState<string | undefined>();
+  const [
+    selectedContactPhone,
+    setSelectedContactPhone,
+  ] = useState<string | undefined>();
 
   // Use real Fonu integration
   const sendSMS = async (...args: any[]) => {};
@@ -43,22 +71,32 @@ export default function DriverManagement() {
   const isSending = false;
 
   // SIP call control (shared across app)
-  const { endCall: sipEndCall, status: sipStatus, durationSeconds } = useFonuCall();
+  const {
+    endCall: sipEndCall, status: sipStatus, durationSeconds,
+  } = useFonuCall();
 
   // Only auto-close dialog when call ends/fails, don't auto-open on mount
-  useEffect(() => {
-    if (sipStatus === "ended" || sipStatus === "failed") {
-      const timer = setTimeout(() => setIsCallDialogOpen(false), 600);
-      return () => clearTimeout(timer);
-    }
-  }, [sipStatus]);
+  useEffect(
+    () => {
+      if (sipStatus === "ended" || sipStatus === "failed") {
+        const timer = setTimeout(
+          setIsCallDialogOpen,
+          600,
+          false,
+        );
+        return () => clearTimeout(timer);
+      }
+    },
+    [sipStatus],
+  );
 
   const handleEndCall = () => {
     sipEndCall();
   };
 
   const handleSendMessage = async () => {
-    if (!selectedContactPhone || !messageContent.trim()) return;
+    if (!selectedContactPhone || !messageContent.trim())
+      return;
 
     try {
       if (messageType === "whatsapp") {
@@ -67,20 +105,22 @@ export default function DriverManagement() {
           selectedContactName,
           selectedContactPhone,
           messageContent,
-          "Fleet Manager"
+          "Fleet Manager",
         );
-      } else {
+      }
+      else {
         await sendSMS(
           selectedContactPhone,
           selectedContactName,
           selectedContactPhone,
           messageContent,
-          "Fleet Manager"
+          "Fleet Manager",
         );
       }
       setIsMessageDialogOpen(false);
       setMessageContent("");
-    } catch (err) {
+    }
+    catch (err) {
       // Error handled by hook
     }
   };
@@ -89,28 +129,47 @@ export default function DriverManagement() {
     <DashboardLayout title="Driver Management">
       <div className="space-y-6">
         {/* Main Tab Navigation */}
-        <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
+        <Tabs
+          value={mainTab}
+          onValueChange={setMainTab}
+          className="w-full"
+        >
           <div className="flex justify-center mb-6">
             <TabsList className="bg-muted/50">
-              <TabsTrigger value="drivers" className="gap-2">
+              <TabsTrigger
+                value="drivers"
+                className="gap-2"
+              >
                 <Users className="h-4 w-4" />
                 Drivers
               </TabsTrigger>
-              <TabsTrigger value="behavior" className="gap-2">
+              <TabsTrigger
+                value="behavior"
+                className="gap-2"
+              >
                 <Activity className="h-4 w-4" />
                 Behavior
               </TabsTrigger>
-              <TabsTrigger value="fatigue" className="gap-2">
+              <TabsTrigger
+                value="fatigue"
+                className="gap-2"
+              >
                 <Brain className="h-4 w-4" />
                 Fatigue AI
               </TabsTrigger>
             </TabsList>
           </div>
 
-          <TabsContent value="drivers" className="mt-0 space-y-6">
+          <TabsContent
+            value="drivers"
+            className="mt-0 space-y-6"
+          >
             {/* Top-right page actions */}
             <div className="flex justify-end gap-2 flex-wrap">
-              <Button variant="outline" onClick={() => setShowInbox(!showInbox)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowInbox(!showInbox)}
+              >
                 <Inbox className="h-4 w-4 mr-2" />
                 {showInbox ? "Hide Inbox" : "Message Inbox"}
               </Button>
@@ -122,91 +181,120 @@ export default function DriverManagement() {
             )}
           </TabsContent>
 
-          <TabsContent value="behavior" className="mt-0">
+          <TabsContent
+            value="behavior"
+            className="mt-0"
+          >
             <DriverBehaviorTab />
           </TabsContent>
 
-          <TabsContent value="fatigue" className="mt-0">
+          <TabsContent
+            value="fatigue"
+            className="mt-0"
+          >
             <DriverFatigueTab />
           </TabsContent>
         </Tabs>
 
-      {/* Call Interaction Modal */}
-      <CallInteractionModal
-        open={isCallDialogOpen}
-        onOpenChange={setIsCallDialogOpen}
-        contactName={selectedContactName}
-        contactPhone={selectedContactPhone}
-        status={sipStatus}
-        durationSeconds={durationSeconds}
-        onEndCall={handleEndCall}
-        recordingEnabled
-        onToggleRecord={(rec) => {
-          console.log('[Call] recording toggled', rec);
-        }}
-        onSaveNote={(note) => {
-          console.log('[Call] note saved', note);
-          return true;
-        }}
-      />
+        {/* Call Interaction Modal */}
+        <CallInteractionModal
+          open={isCallDialogOpen}
+          onOpenChange={setIsCallDialogOpen}
+          contactName={selectedContactName}
+          contactPhone={selectedContactPhone}
+          status={sipStatus}
+          durationSeconds={durationSeconds}
+          onEndCall={handleEndCall}
+          recordingEnabled
+          onToggleRecord={(rec) => {
+            console.log(
+              "[Call] recording toggled",
+              rec,
+            );
+          }}
+          onSaveNote={(note) => {
+            console.log(
+              "[Call] note saved",
+              note,
+            );
+            return true;
+          }}
+        />
 
-      {/* Message Dialog */}
-      <Dialog open={isMessageDialogOpen} onOpenChange={setIsMessageDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {messageType === "whatsapp" ? (
-                <MessageSquare className="h-5 w-5 text-success" />
-              ) : (
-                <Mail className="h-5 w-5 text-primary" />
-              )}
-              Send {messageType === "whatsapp" ? "WhatsApp" : "SMS"} to {selectedContactName}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-white">
-                {selectedContactName?.split(" ").map(n => n[0]).join("")}
+        {/* Message Dialog */}
+        <Dialog
+          open={isMessageDialogOpen}
+          onOpenChange={setIsMessageDialogOpen}
+        >
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {messageType === "whatsapp"
+                  ? (
+                      <MessageSquare className="h-5 w-5 text-success" />
+                    )
+                  : (
+                      <Mail className="h-5 w-5 text-primary" />
+                    )}
+                Send
+                {" "}
+                {messageType === "whatsapp" ? "WhatsApp" : "SMS"}
+                {" "}
+                to
+                {" "}
+                {selectedContactName}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-white">
+                  {selectedContactName?.split(" ").map(n => n[0]).join("")}
+                </div>
+                <div>
+                  <p className="font-medium">{selectedContactName}</p>
+                  <p className="text-sm text-muted-foreground">{selectedContactPhone}</p>
+                </div>
               </div>
-              <div>
-                <p className="font-medium">{selectedContactName}</p>
-                <p className="text-sm text-muted-foreground">{selectedContactPhone}</p>
+              <div className="space-y-2">
+                <Label>Message</Label>
+                <Textarea
+                  placeholder="Type your message here..."
+                  value={messageContent}
+                  onChange={e => setMessageContent(e.target.value)}
+                  rows={4}
+                />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Message</Label>
-              <Textarea
-                placeholder="Type your message here..."
-                value={messageContent}
-                onChange={(e) => setMessageContent(e.target.value)}
-                rows={4}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsMessageDialogOpen(false)} disabled={isSending}>
-              Cancel
-            </Button>
-            <Button
-              variant="gradient"
-              onClick={handleSendMessage}
-              disabled={!messageContent.trim() || isSending}
-            >
-              {isSending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Send Message
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsMessageDialogOpen(false)}
+                disabled={isSending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="gradient"
+                onClick={handleSendMessage}
+                disabled={!messageContent.trim() || isSending}
+              >
+                {isSending
+                  ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    )
+                  : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Send Message
+                      </>
+                    )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

@@ -1,4 +1,12 @@
+import {
+  AlertTriangle, Loader2,
+} from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import {
+  Alert, AlertDescription, AlertTitle,
+} from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
@@ -7,24 +15,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
-import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Textarea } from "@/components/shadcn/textarea";
-import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
-import { AlertTriangle, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 
-interface TenantData {
-  name: string;
-}
+type TenantData = { name: string };
 
-interface Props {
+type Props = {
   tenant: TenantData;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onTerminated?: () => void;
-}
+};
 
 export function TerminateTenantDialog({
   tenant,
@@ -32,15 +34,25 @@ export function TerminateTenantDialog({
   onOpenChange,
   onTerminated,
 }: Props) {
-  const [reason, setReason] = useState("");
-  const [confirmation, setConfirmation] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [
+    reason,
+    setReason,
+  ] = useState("");
+  const [
+    confirmation,
+    setConfirmation,
+  ] = useState("");
+  const [
+    submitting,
+    setSubmitting,
+  ] = useState(false);
 
-  const canSubmit =
-    confirmation === "TERMINATE" && reason.trim().length >= 10 && !submitting;
+  const canSubmit
+    = confirmation === "TERMINATE" && reason.trim().length >= 10 && !submitting;
 
   const handleClose = (next: boolean) => {
-    if (submitting) return;
+    if (submitting)
+      return;
     if (!next) {
       setReason("");
       setConfirmation("");
@@ -49,12 +61,14 @@ export function TerminateTenantDialog({
   };
 
   const handleTerminate = async () => {
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog
+      open={open}
+      onOpenChange={handleClose}
+    >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
@@ -62,12 +76,18 @@ export function TerminateTenantDialog({
             Terminate Tenant
           </DialogTitle>
           <DialogDescription>
-            Permanently terminate <strong>{tenant.name}</strong>. This action
+            Permanently terminate
+            {" "}
+            <strong>{tenant.name}</strong>
+            . This action
             cannot be undone.
           </DialogDescription>
         </DialogHeader>
 
-        <Alert variant="destructive" className="border-destructive/40">
+        <Alert
+          variant="destructive"
+          className="border-destructive/40"
+        >
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>This is irreversible</AlertTitle>
           <AlertDescription className="text-xs space-y-1 mt-2">
@@ -92,7 +112,7 @@ export function TerminateTenantDialog({
               id="reason"
               placeholder="Provide a clear, auditable reason for termination..."
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={e => setReason(e.target.value)}
               rows={3}
               maxLength={1000}
               disabled={submitting}
@@ -104,13 +124,17 @@ export function TerminateTenantDialog({
 
           <div className="space-y-2">
             <Label htmlFor="confirm">
-              Type <span className="font-mono font-bold">TERMINATE</span> to
+              Type
+              {" "}
+              <span className="font-mono font-bold">TERMINATE</span>
+              {" "}
+              to
               confirm
             </Label>
             <Input
               id="confirm"
               value={confirmation}
-              onChange={(e) => setConfirmation(e.target.value)}
+              onChange={e => setConfirmation(e.target.value)}
               placeholder="TERMINATE"
               autoComplete="off"
               disabled={submitting}

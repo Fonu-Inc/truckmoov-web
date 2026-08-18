@@ -1,16 +1,19 @@
-import { useEffect, useRef } from "react";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import {
+  useEffect,
+  useRef,
+} from "react";
 import { cn } from "@/lib/utils";
+import "leaflet/dist/leaflet.css";
 
-export interface RoutePoint {
+export type RoutePoint = {
   lat: number;
   lng: number;
   label: string;
   type: "pickup" | "delivery" | "stop";
-}
+};
 
-interface RoutePreviewMapProps {
+type RoutePreviewMapProps = {
   points: RoutePoint[];
   className?: string;
   heightClassName?: string;
@@ -18,7 +21,7 @@ interface RoutePreviewMapProps {
   showRoute?: boolean;
   /** When true, renders the route in red to signal it's an applied optimized route. */
   isOptimized?: boolean;
-}
+};
 
 const COLORS: Record<RoutePoint["type"], string> = {
   pickup: "#22c55e",
@@ -39,8 +42,14 @@ function createNumberedPin(index: number, type: RoutePoint["type"], optimized: b
         <span style="position:absolute;top:8px;left:0;right:0;text-align:center;color:white;font-weight:700;font-size:13px;font-family:sans-serif;">${index + 1}</span>
       </div>
     `,
-    iconSize: [34, 44],
-    iconAnchor: [17, 44],
+    iconSize: [
+      34,
+      44,
+    ],
+    iconAnchor: [
+      17,
+      44,
+    ],
   });
 }
 
@@ -56,57 +65,119 @@ export function RoutePreviewMap({
   const layerRef = useRef<L.LayerGroup | null>(null);
 
   // Init
-  useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
-    const map = L.map(containerRef.current, {
-      zoomControl: true,
-      attributionControl: false,
-    }).setView([6.5244, 3.3792], 6);
+  useEffect(
+    () => {
+      if (!containerRef.current || mapRef.current)
+        return;
+      const map = L.map(
+        containerRef.current,
+        {
+          zoomControl: true,
+          attributionControl: false,
+        },
+      ).setView(
+        [
+          6.5244,
+          3.3792,
+        ],
+        6,
+      );
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      maxZoom: 19,
-    }).addTo(map);
+      L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        { maxZoom: 19 },
+      ).addTo(map);
 
-    layerRef.current = L.layerGroup().addTo(map);
-    mapRef.current = map;
-    setTimeout(() => map.invalidateSize(), 200);
+      layerRef.current = L.layerGroup().addTo(map);
+      mapRef.current = map;
+      setTimeout(
+        () => map.invalidateSize(),
+        200,
+      );
 
-    return () => {
-      map.remove();
-      mapRef.current = null;
-      layerRef.current = null;
-    };
-  }, []);
+      return () => {
+        map.remove();
+        mapRef.current = null;
+        layerRef.current = null;
+      };
+    },
+    [],
+  );
 
   // Render points
-  useEffect(() => {
-    if (!mapRef.current || !layerRef.current) return;
-    layerRef.current.clearLayers();
+  useEffect(
+    () => {
+      if (!mapRef.current || !layerRef.current)
+        return;
+      layerRef.current.clearLayers();
 
-    const valid = points.filter((p) => p.lat && p.lng);
-    if (valid.length === 0) return;
+      const valid = points.filter(p => p.lat && p.lng);
+      if (valid.length === 0)
+        return;
 
-    valid.forEach((p, i) => {
-      const m = L.marker([p.lat, p.lng], { icon: createNumberedPin(i, p.type, isOptimized) });
-      m.bindPopup(
-        `<div style="font-family:sans-serif;font-size:12px;"><strong>${i + 1}. ${p.type.toUpperCase()}</strong><br/>${p.label}</div>`
+      valid.forEach((p, i) => {
+        const m = L.marker(
+          [
+            p.lat,
+            p.lng,
+          ],
+          {
+            icon: createNumberedPin(
+              i,
+              p.type,
+              isOptimized,
+            ),
+          },
+        );
+        m.bindPopup(
+          `<div style="font-family:sans-serif;font-size:12px;"><strong>${i + 1}. ${p.type.toUpperCase()}</strong><br/>${p.label}</div>`,
+        );
+        layerRef.current!.addLayer(m);
+      });
+
+      if (showRoute && valid.length >= 2) {
+        const line = L.polyline(
+          valid.map(p => [
+            p.lat,
+            p.lng,
+          ] as [number, number]),
+          isOptimized
+            ? {
+                color: "#ef4444",
+                weight: 5,
+                opacity: 0.95,
+              }
+            : {
+                color: "#3b82f6",
+                weight: 4,
+                opacity: 0.85,
+                dashArray: "8 6",
+              },
+        );
+        layerRef.current.addLayer(line);
+      }
+
+      const bounds = L.latLngBounds(valid.map(p => [
+        p.lat,
+        p.lng,
+      ] as [number, number]));
+      mapRef.current.fitBounds(
+        bounds,
+        {
+          padding: [
+            40,
+            40,
+          ],
+          maxZoom: valid.length === 1 ? 13 : 14,
+        },
       );
-      layerRef.current!.addLayer(m);
-    });
-
-    if (showRoute && valid.length >= 2) {
-      const line = L.polyline(
-        valid.map((p) => [p.lat, p.lng] as [number, number]),
-        isOptimized
-          ? { color: "#ef4444", weight: 5, opacity: 0.95 }
-          : { color: "#3b82f6", weight: 4, opacity: 0.85, dashArray: "8 6" }
-      );
-      layerRef.current.addLayer(line);
-    }
-
-    const bounds = L.latLngBounds(valid.map((p) => [p.lat, p.lng] as [number, number]));
-    mapRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: valid.length === 1 ? 13 : 14 });
-  }, [points, showRoute, isOptimized]);
+    },
+    [
+      points,
+      showRoute,
+      isOptimized,
+    ],
+  );
 
   return (
     <div
@@ -114,11 +185,8 @@ export function RoutePreviewMap({
       className={cn(
         "w-full rounded-md overflow-hidden border border-border bg-muted",
         heightClassName,
-        className
+        className,
       )}
     />
   );
 }
-
-
-

@@ -1,18 +1,31 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getSimDataBundlesQueryOptions, getSimCarriersQueryOptions } from "@truckmoov/api/auth";
-import { useForm } from "react-hook-form";
+import type { DeviceMappingRow } from "./DeviceMappingUpload";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getSimCarriersQueryOptions, getSimDataBundlesQueryOptions,
+} from "@truckmoov/api/auth";
+import {
+  HardDrive, Loader2, Wifi,
+} from "lucide-react";
+import {
+  useEffect, useState,
+} from "react";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/shadcn/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/shadcn/form";
-import { Input } from "@/components/shadcn/input";
 import { Button } from "@/components/shadcn/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
-import { Textarea } from "@/components/shadcn/textarea";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "@/components/shadcn/dialog";
+import {
+  Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage,
+} from "@/components/shadcn/form";
+import { Input } from "@/components/shadcn/input";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/shadcn/select";
 import { Switch } from "@/components/shadcn/switch";
-import { Loader2, Wifi, HardDrive } from "lucide-react";
-import { DeviceMappingUpload, DeviceMappingRow } from "./DeviceMappingUpload";
+import { Textarea } from "@/components/shadcn/textarea";
+import { DeviceMappingUpload } from "./DeviceMappingUpload";
 
 // Tenant data-bundle plan (GET /auth/sims/data-bundles → data.items[])
 type BundleItem = {
@@ -29,45 +42,78 @@ type BundleItem = {
 };
 
 const simRequestSchema = z.object({
-  numberOfSims: z.coerce.number().min(1, "At least 1 SIM required").max(100, "Maximum 100 SIMs per request"),
-  bundleCode: z.string().min(1, "Please select a data bundle"),
-  planCycle: z.enum(["monthly", "yearly"]).default("monthly"),
-  preferredOperator: z.string().min(1, "Please select an operator"),
-  useCase: z.string().min(3, "Please describe the use case").max(200, "Use case must be under 200 characters"),
-  notes: z.string().max(500, "Notes must be under 500 characters").optional(),
+  numberOfSims: z.coerce.number().min(
+    1,
+    "At least 1 SIM required",
+  ).max(
+    100,
+    "Maximum 100 SIMs per request",
+  ),
+  bundleCode: z.string().min(
+    1,
+    "Please select a data bundle",
+  ),
+  planCycle: z.enum([
+    "monthly",
+    "yearly",
+  ]).default("monthly"),
+  preferredOperator: z.string().min(
+    1,
+    "Please select an operator",
+  ),
+  useCase: z.string().min(
+    3,
+    "Please describe the use case",
+  ).max(
+    200,
+    "Use case must be under 200 characters",
+  ),
+  notes: z.string().max(
+    500,
+    "Notes must be under 500 characters",
+  ).optional(),
   deviceMappingEnabled: z.boolean().default(false),
 });
 
 type SIMRequestFormData = z.infer<typeof simRequestSchema>;
 
-export interface SIMRequestSubmitData extends SIMRequestFormData {
+export type SIMRequestSubmitData = {
   /** Derived from dataAmount + dataUnit, kept for backward compatibility with submit hook. */
   dataLimitGb: number;
   deviceMappingData?: DeviceMappingRow[];
   deviceMappingFileName?: string;
   deviceMappingFile?: File;
-}
+} & SIMRequestFormData;
 
-interface SIMRequestFormDialogProps {
+type SIMRequestFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: SIMRequestSubmitData) => void;
   isSubmitting?: boolean;
-}
+};
 
 export function SIMRequestFormDialog({
-  open, 
-  onOpenChange, 
-  onSubmit, 
-  isSubmitting = false 
+  open,
+  onOpenChange,
+  onSubmit,
+  isSubmitting = false,
 }: SIMRequestFormDialogProps) {
-  const [deviceMappingData, setDeviceMappingData] = useState<DeviceMappingRow[]>([]);
-  const [deviceMappingFileName, setDeviceMappingFileName] = useState<string | null>(null);
-  const [deviceMappingFile, setDeviceMappingFile] = useState<File | null>(null);
+  const [
+    deviceMappingData,
+    setDeviceMappingData,
+  ] = useState<DeviceMappingRow[]>([]);
+  const [
+    deviceMappingFileName,
+    setDeviceMappingFileName,
+  ] = useState<string | null>(null);
+  const [
+    deviceMappingFile,
+    setDeviceMappingFile,
+  ] = useState<File | null>(null);
 
   const form = useForm<SIMRequestFormData>({
     resolver: zodResolver(simRequestSchema),
-    defaultValues: { 
+    defaultValues: {
       numberOfSims: 1,
       bundleCode: "",
       planCycle: "monthly",
@@ -90,11 +136,21 @@ export function SIMRequestFormDialog({
   const firstCarrierId = carriers[0]?.id;
 
   // Auto-select the first carrier once loaded so the data-bundle query fires eagerly.
-  useEffect(() => {
-    if (open && firstCarrierId && !form.getValues("preferredOperator")) {
-      form.setValue("preferredOperator", firstCarrierId);
-    }
-  }, [open, firstCarrierId, form]);
+  useEffect(
+    () => {
+      if (open && firstCarrierId && !form.getValues("preferredOperator")) {
+        form.setValue(
+          "preferredOperator",
+          firstCarrierId,
+        );
+      }
+    },
+    [
+      open,
+      firstCarrierId,
+      form,
+    ],
+  );
 
   const bundlesQuery = useQuery({
     ...getSimDataBundlesQueryOptions({
@@ -114,7 +170,10 @@ export function SIMRequestFormDialog({
     setDeviceMappingFile(file);
     const validCount = data.filter(r => r.isValid).length;
     if (validCount > 0) {
-      form.setValue("numberOfSims", validCount);
+      form.setValue(
+        "numberOfSims",
+        validCount,
+      );
     }
   };
 
@@ -126,8 +185,8 @@ export function SIMRequestFormDialog({
 
   const handleSubmit = (data: SIMRequestFormData) => {
     // bundleCode holds the bundle id; resolve carrier id → name for the request payload.
-    const bundle = availableBundles.find((b) => b.id === data.bundleCode);
-    const carrierName = carriers.find((c) => c.id === data.preferredOperator)?.name ?? data.preferredOperator;
+    const bundle = availableBundles.find(b => b.id === data.bundleCode);
+    const carrierName = carriers.find(c => c.id === data.preferredOperator)?.name ?? data.preferredOperator;
     const finalData: SIMRequestSubmitData = {
       ...data,
       preferredOperator: carrierName,
@@ -155,7 +214,10 @@ export function SIMRequestFormDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog
+      open={open}
+      onOpenChange={handleClose}
+    >
       <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">
@@ -170,32 +232,35 @@ export function SIMRequestFormDialog({
             </div>
           </div>
         </DialogHeader>
-        
+
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 pt-2">
-            <FormField 
-              control={form.control} 
-              name="numberOfSims" 
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4 pt-2"
+          >
+            <FormField
+              control={form.control}
+              name="numberOfSims"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Number of SIMs *</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="number" 
-                      placeholder="1" 
-                      min={1} 
-                      max={100} 
-                      {...field} 
+                    <Input
+                      type="number"
+                      placeholder="1"
+                      min={1}
+                      max={100}
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
-              )} 
+              )}
             />
 
-            <FormField 
-              control={form.control} 
-              name="preferredOperator" 
+            <FormField
+              control={form.control}
+              name="preferredOperator"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Carrier *</FormLabel>
@@ -211,15 +276,18 @@ export function SIMRequestFormDialog({
                             carriersQuery.isLoading
                               ? "Loading carriers..."
                               : carriers.length === 0
-                              ? "No carriers available"
-                              : "Select carrier"
+                                ? "No carriers available"
+                                : "Select carrier"
                           }
                         />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="bg-popover">
-                      {carriers.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
+                      {carriers.map(c => (
+                        <SelectItem
+                          key={c.id}
+                          value={c.id}
+                        >
                           {c.displayName}
                         </SelectItem>
                       ))}
@@ -227,7 +295,7 @@ export function SIMRequestFormDialog({
                   </Select>
                   <FormMessage />
                 </FormItem>
-              )} 
+              )}
             />
 
             <FormField
@@ -236,7 +304,10 @@ export function SIMRequestFormDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Plan Type *</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value as string}>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value as string}
+                  >
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
                       <SelectItem value="monthly">Monthly</SelectItem>
@@ -244,11 +315,15 @@ export function SIMRequestFormDialog({
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Bundle is renewed every {field.value === "yearly" ? "year" : "month"}.
+                    Bundle is renewed every
+                    {" "}
+                    {field.value === "yearly" ? "year" : "month"}
+                    .
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
-              )} />
+              )}
+            />
 
             <FormField
               control={form.control}
@@ -268,15 +343,18 @@ export function SIMRequestFormDialog({
                             !carrier
                               ? "Select carrier first"
                               : availableBundles.length === 0
-                              ? "No bundles available for this carrier/plan"
-                              : "Select bundle"
+                                ? "No bundles available for this carrier/plan"
+                                : "Select bundle"
                           }
                         />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="bg-popover">
-                      {availableBundles.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>
+                      {availableBundles.map(b => (
+                        <SelectItem
+                          key={b.id}
+                          value={b.id}
+                        >
                           {b.name}
                         </SelectItem>
                       ))}
@@ -343,44 +421,49 @@ export function SIMRequestFormDialog({
                 fileName={deviceMappingFileName}
               />
             )}
-            
-            <FormField 
-              control={form.control} 
-              name="notes" 
+
+            <FormField
+              control={form.control}
+              name="notes"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Additional Notes</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Any additional requirements or notes..." 
+                    <Textarea
+                      placeholder="Any additional requirements or notes..."
                       className="resize-none"
                       rows={3}
-                      {...field} 
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
-              )} 
+              )}
             />
-            
+
             <div className="flex justify-end gap-3 pt-2">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => handleClose(false)}
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  "Submit Request"
-                )}
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+              >
+                {isSubmitting
+                  ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Submitting...
+                      </>
+                    )
+                  : (
+                      "Submit Request"
+                    )}
               </Button>
             </div>
           </form>

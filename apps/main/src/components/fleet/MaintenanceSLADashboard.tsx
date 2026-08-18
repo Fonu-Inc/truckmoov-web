@@ -1,19 +1,21 @@
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
-import { Badge } from '@/components/shadcn/badge';
-import { Button } from '@/components/shadcn/button';
-import { Progress } from '@/components/shadcn/progress';
-import { useCurrency } from '@/contexts/CurrencyContext';
-import { 
-  RefreshCw, 
-  TrendingUp, 
-  TrendingDown, 
-  AlertTriangle, 
+import {
+  AlertTriangle,
   CheckCircle,
   Clock,
+  DollarSign,
+  RefreshCw,
+  TrendingDown,
+  TrendingUp,
   Wrench,
-  DollarSign
-} from 'lucide-react';
+} from "lucide-react";
+import React from "react";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Progress } from "@/components/shadcn/progress";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 export function MaintenanceSLADashboard() {
   const slaMetrics: any = null;
@@ -21,7 +23,7 @@ export function MaintenanceSLADashboard() {
   const isRefreshing = false;
   const refreshSLAMetrics = async (..._args: any[]) => {};
   const getCostTrendIndicator = () => null as any;
-  const getOverdueStatus = () => 'healthy' as string;
+  const getOverdueStatus = () => "healthy" as string;
   const { format: formatCurrency } = useCurrency();
 
   const costTrend = getCostTrendIndicator();
@@ -29,11 +31,11 @@ export function MaintenanceSLADashboard() {
 
   const getOverdueStatusColor = () => {
     switch (overdueStatus) {
-      case 'critical': return 'text-red-600 bg-red-100';
-      case 'warning': return 'text-orange-600 bg-orange-100';
-      case 'attention': return 'text-yellow-600 bg-yellow-100';
-      case 'healthy': return 'text-green-600 bg-green-100';
-      default: return 'text-muted-foreground bg-muted';
+      case "critical": return "text-red-600 bg-red-100";
+      case "warning": return "text-orange-600 bg-orange-100";
+      case "attention": return "text-yellow-600 bg-yellow-100";
+      case "healthy": return "text-green-600 bg-green-100";
+      default: return "text-muted-foreground bg-muted";
     }
   };
 
@@ -65,13 +67,13 @@ export function MaintenanceSLADashboard() {
             Fleet-level maintenance performance metrics
           </CardDescription>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={refreshSLAMetrics}
           disabled={isRefreshing}
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
           Refresh
         </Button>
       </CardHeader>
@@ -82,7 +84,7 @@ export function MaintenanceSLADashboard() {
             <div className="text-sm text-muted-foreground">Total Vehicles</div>
             <div className="text-2xl font-bold">{slaMetrics?.total_vehicles || 0}</div>
           </div>
-          
+
           <div className="p-4 rounded-lg bg-muted/50">
             <div className="text-sm text-muted-foreground">Overdue</div>
             <div className="flex items-center gap-2">
@@ -90,23 +92,25 @@ export function MaintenanceSLADashboard() {
                 {slaMetrics?.vehicles_with_overdue || 0}
               </span>
               <Badge className={getOverdueStatusColor()}>
-                {(slaMetrics?.overdue_percentage || 0).toFixed(1)}%
+                {(slaMetrics?.overdue_percentage || 0).toFixed(1)}
+                %
               </Badge>
             </div>
           </div>
-          
+
           <div className="p-4 rounded-lg bg-muted/50">
             <div className="text-sm text-muted-foreground">Due Soon</div>
             <div className="text-2xl font-bold text-yellow-600">
               {slaMetrics?.vehicles_with_due_soon || 0}
             </div>
           </div>
-          
+
           <div className="p-4 rounded-lg bg-muted/50">
             <div className="text-sm text-muted-foreground">On-Time Rate</div>
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold text-green-600">
-                {(slaMetrics?.on_time_completion_rate || 0).toFixed(1)}%
+                {(slaMetrics?.on_time_completion_rate || 0).toFixed(1)}
+                %
               </span>
               <CheckCircle className="h-5 w-5 text-green-600" />
             </div>
@@ -119,12 +123,12 @@ export function MaintenanceSLADashboard() {
           <div className="p-4 rounded-lg border">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">Overdue Rate</span>
-              <Badge variant={overdueStatus === 'healthy' ? 'default' : 'destructive'}>
+              <Badge variant={overdueStatus === "healthy" ? "default" : "destructive"}>
                 {overdueStatus}
               </Badge>
             </div>
-            <Progress 
-              value={100 - (slaMetrics?.overdue_percentage || 0)} 
+            <Progress
+              value={100 - (slaMetrics?.overdue_percentage || 0)}
               className="h-2"
             />
             <div className="mt-2 text-xs text-muted-foreground">
@@ -139,7 +143,9 @@ export function MaintenanceSLADashboard() {
               <span className="text-sm font-medium">Average Service Delay</span>
             </div>
             <div className="text-2xl font-bold">
-              {(slaMetrics?.avg_delay_days || 0).toFixed(1)} days
+              {(slaMetrics?.avg_delay_days || 0).toFixed(1)}
+              {" "}
+              days
             </div>
             <div className="mt-2 text-xs text-muted-foreground">
               Average days past due when serviced
@@ -156,20 +162,28 @@ export function MaintenanceSLADashboard() {
             </div>
             {costTrend && (
               <div className={`flex items-center gap-1 text-sm ${
-                costTrend.severity === 'bad' ? 'text-red-600' : 
-                costTrend.severity === 'good' ? 'text-green-600' : 
-                'text-muted-foreground'
-              }`}>
-                {costTrend.direction === 'up' ? (
-                  <TrendingUp className="h-4 w-4" />
-                ) : costTrend.direction === 'down' ? (
-                  <TrendingDown className="h-4 w-4" />
-                ) : null}
-                {costTrend.value.toFixed(1)}% vs previous
+                costTrend.severity === "bad"
+                  ? "text-red-600"
+                  : costTrend.severity === "good"
+                    ? "text-green-600"
+                    : "text-muted-foreground"
+              }`}
+              >
+                {costTrend.direction === "up"
+                  ? (
+                      <TrendingUp className="h-4 w-4" />
+                    )
+                  : costTrend.direction === "down"
+                    ? (
+                        <TrendingDown className="h-4 w-4" />
+                      )
+                    : null}
+                {costTrend.value.toFixed(1)}
+                % vs previous
               </div>
             )}
           </div>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <div className="text-sm text-muted-foreground">Total Cost</div>
@@ -195,7 +209,9 @@ export function MaintenanceSLADashboard() {
         {/* Last Updated */}
         {slaMetrics?.computed_at && (
           <div className="text-xs text-muted-foreground text-center">
-            Last computed: {new Date(slaMetrics.computed_at).toLocaleString()}
+            Last computed:
+            {" "}
+            {new Date(slaMetrics.computed_at).toLocaleString()}
           </div>
         )}
       </CardContent>

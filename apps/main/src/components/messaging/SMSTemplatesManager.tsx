@@ -1,21 +1,44 @@
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
+import {
+  Copy,
+  Eye,
+  SlidersHorizontal as Filter,
+  Loader2,
+  MessageSquare,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Search,
+  Send,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
-import { Textarea } from "@/components/shadcn/textarea";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/shadcn/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
+import { ExportButton } from "@/components/shadcn/export-button";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/shadcn/popover";
 import {
   Select,
   SelectContent,
@@ -23,25 +46,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/shadcn/dropdown-menu";
-import {
-  Plus,
-  MessageSquare,
-  Pencil,
-  Trash2,
-  Copy,
-  MoreHorizontal,
-  Send,
-  Eye,
-  Loader2,
-  Search,
-  SlidersHorizontal as Filter,
-} from "lucide-react";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import { Textarea } from "@/components/shadcn/textarea";
+
 type SMSTemplate = {
   id: string;
   tenant_id: string;
@@ -54,15 +61,23 @@ type SMSTemplate = {
   created_at: string;
   updated_at: string;
 };
-import { Skeleton } from "@/components/shadcn/skeleton";
-import { ExportButton } from "@/components/shadcn/export-button";
 
 const CATEGORIES = [
-  { value: "job", label: "Job Notifications" },
-  { value: "delivery", label: "Delivery Updates" },
-  { value: "safety", label: "Safety Alerts" },
-  { value: "payment", label: "Payment Notifications" },
-  { value: "general", label: "General" },
+  {
+    value: "job", label: "Job Notifications",
+  },
+  {
+    value: "delivery", label: "Delivery Updates",
+  },
+  {
+    value: "safety", label: "Safety Alerts",
+  },
+  {
+    value: "payment", label: "Payment Notifications",
+  },
+  {
+    value: "general", label: "General",
+  },
 ];
 
 const categoryColors: Record<string, string> = {
@@ -73,11 +88,11 @@ const categoryColors: Record<string, string> = {
   general: "bg-muted text-muted-foreground border-muted",
 };
 
-interface FormData {
+type FormData = {
   name: string;
   category: string;
   content: string;
-}
+};
 
 const emptyForm: FormData = {
   name: "",
@@ -92,7 +107,12 @@ const DUMMY_TEMPLATES: SMSTemplate[] = [
     name: "Job Assignment",
     category: "job",
     content: "Hi {{driver_name}}, you've been assigned job {{job_id}}. Pickup: {{pickup_location}}. ETA: {{eta}}.",
-    variables: ["driver_name", "job_id", "pickup_location", "eta"],
+    variables: [
+      "driver_name",
+      "job_id",
+      "pickup_location",
+      "eta",
+    ],
     is_active: true,
     created_by: null,
     created_at: new Date().toISOString(),
@@ -104,7 +124,11 @@ const DUMMY_TEMPLATES: SMSTemplate[] = [
     name: "Delivery Confirmation",
     category: "delivery",
     content: "Delivery for job {{job_id}} confirmed at {{delivery_location}}. Thank you {{driver_name}}!",
-    variables: ["job_id", "delivery_location", "driver_name"],
+    variables: [
+      "job_id",
+      "delivery_location",
+      "driver_name",
+    ],
     is_active: true,
     created_by: null,
     created_at: new Date().toISOString(),
@@ -128,7 +152,11 @@ const DUMMY_TEMPLATES: SMSTemplate[] = [
     name: "Payment Released",
     category: "payment",
     content: "Hi {{driver_name}}, payment of ₦{{amount}} for job {{job_id}} has been released to your wallet.",
-    variables: ["driver_name", "amount", "job_id"],
+    variables: [
+      "driver_name",
+      "amount",
+      "job_id",
+    ],
     is_active: true,
     created_by: null,
     created_at: new Date().toISOString(),
@@ -140,7 +168,11 @@ const DUMMY_TEMPLATES: SMSTemplate[] = [
     name: "Pickup Reminder",
     category: "job",
     content: "Reminder: pickup for job {{job_id}} at {{pickup_location}} is scheduled. ETA: {{eta}}.",
-    variables: ["job_id", "pickup_location", "eta"],
+    variables: [
+      "job_id",
+      "pickup_location",
+      "eta",
+    ],
     is_active: true,
     created_by: null,
     created_at: new Date().toISOString(),
@@ -169,17 +201,50 @@ export function SMSTemplatesManager() {
   const deleteTemplate = (_id: string): void => {};
   const duplicateTemplate = (_template: SMSTemplate): void => {};
   const templates = dbTemplates.length > 0 ? dbTemplates : DUMMY_TEMPLATES;
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<SMSTemplate | null>(null);
-  const [formData, setFormData] = useState<FormData>(emptyForm);
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState<string>("all");
-  const [draftCategory, setDraftCategory] = useState("all");
-  const [draftActive, setDraftActive] = useState<string>("all");
-  const [enableCategoryFilter, setEnableCategoryFilter] = useState(false);
-  const [enableActiveFilter, setEnableActiveFilter] = useState(false);
+  const [
+    isDialogOpen,
+    setIsDialogOpen,
+  ] = useState(false);
+  const [
+    isPreviewOpen,
+    setIsPreviewOpen,
+  ] = useState(false);
+  const [
+    selectedTemplate,
+    setSelectedTemplate,
+  ] = useState<SMSTemplate | null>(null);
+  const [
+    formData,
+    setFormData,
+  ] = useState<FormData>(emptyForm);
+  const [
+    categoryFilter,
+    setCategoryFilter,
+  ] = useState("all");
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    activeFilter,
+    setActiveFilter,
+  ] = useState<string>("all");
+  const [
+    draftCategory,
+    setDraftCategory,
+  ] = useState("all");
+  const [
+    draftActive,
+    setDraftActive,
+  ] = useState<string>("all");
+  const [
+    enableCategoryFilter,
+    setEnableCategoryFilter,
+  ] = useState(false);
+  const [
+    enableActiveFilter,
+    setEnableActiveFilter,
+  ] = useState(false);
 
   const handleOpenCreate = () => {
     setSelectedTemplate(null);
@@ -213,13 +278,14 @@ export function SMSTemplatesManager() {
         selectedTemplate.id,
         formData.name,
         formData.category,
-        formData.content
+        formData.content,
       );
-    } else {
+    }
+    else {
       success = await createTemplate(
         formData.name,
         formData.category,
-        formData.content
+        formData.content,
       );
     }
 
@@ -239,18 +305,18 @@ export function SMSTemplatesManager() {
 
   const filteredTemplates = templates.filter((t) => {
     const matchesCategory = categoryFilter === "all" || t.category === categoryFilter;
-    const matchesSearch =
-      !searchQuery ||
-      t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.content.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesActive =
-      activeFilter === "all" ||
-      (activeFilter === "active" ? t.is_active : !t.is_active);
+    const matchesSearch
+      = !searchQuery
+        || t.name.toLowerCase().includes(searchQuery.toLowerCase())
+        || t.content.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesActive
+      = activeFilter === "all"
+        || (activeFilter === "active" ? t.is_active : !t.is_active);
     return matchesCategory && matchesSearch && matchesActive;
   });
 
-  const filterCount =
-    (categoryFilter !== "all" ? 1 : 0) + (activeFilter !== "all" ? 1 : 0);
+  const filterCount
+    = (categoryFilter !== "all" ? 1 : 0) + (activeFilter !== "all" ? 1 : 0);
 
   const openFilterPopover = () => {
     setDraftCategory(categoryFilter);
@@ -279,7 +345,10 @@ export function SMSTemplatesManager() {
   // Extract variables from content
   const extractVariables = (content: string): string[] => {
     const matches = content.match(/\{\{(\w+)\}\}/g) || [];
-    return matches.map((v) => v.replace(/\{\{|\}\}/g, ""));
+    return matches.map(v => v.replace(
+      /\{\{|\}\}/g,
+      "",
+    ));
   };
 
   if (isLoading) {
@@ -290,8 +359,11 @@ export function SMSTemplatesManager() {
           <Skeleton className="h-10 w-32" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-48 w-full" />
+          {[...Array.from({ length: 3 })].map((_, i) => (
+            <Skeleton
+              key={i}
+              className="h-48 w-full"
+            />
           ))}
         </div>
       </div>
@@ -323,10 +395,18 @@ export function SMSTemplatesManager() {
               filename="sms-templates"
               rows={filteredTemplates}
               columns={[
-                { header: "Name", accessor: (t) => t.name },
-                { header: "Category", accessor: (t) => t.category },
-                { header: "Content", accessor: (t) => t.content },
-                { header: "Updated", accessor: (t) => formatDate(t.updated_at) },
+                {
+                  header: "Name", accessor: t => t.name,
+                },
+                {
+                  header: "Category", accessor: t => t.category,
+                },
+                {
+                  header: "Content", accessor: t => t.content,
+                },
+                {
+                  header: "Updated", accessor: t => formatDate(t.updated_at),
+                },
               ]}
             />
           </div>
@@ -336,18 +416,24 @@ export function SMSTemplatesManager() {
               <Input
                 placeholder="Search templates..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="pl-10 bg-card/50 border-border/50"
               />
             </div>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <Select
+              value={categoryFilter}
+              onValueChange={setCategoryFilter}
+            >
               <SelectTrigger className="w-full md:w-[180px] bg-card/50 border-border/50">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
+                {CATEGORIES.map(cat => (
+                  <SelectItem
+                    key={cat.value}
+                    value={cat.value}
+                  >
                     {cat.label}
                   </SelectItem>
                 ))}
@@ -356,104 +442,135 @@ export function SMSTemplatesManager() {
           </div>
         </CardHeader>
         <CardContent>
-          {filteredTemplates.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <MessageSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-medium mb-2">No templates found</h3>
-              <p className="text-sm text-muted-foreground text-center mb-4 max-w-sm">
-                Try adjusting your search or filters, or create a new template.
-              </p>
-              <Button onClick={handleOpenCreate}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Template
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredTemplates.map((template) => {
-                const variables = extractVariables(template.content);
-                return (
-                  <Card
-                    key={template.id}
-                    className="bg-card/50 border-border/50 hover:border-primary/30 transition-all"
-                  >
-                    <div className="p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h4 className="font-medium text-base">{template.name}</h4>
-                          <Badge className={`mt-2 ${categoryColors[template.category] || categoryColors.general}`}>
-                            {CATEGORIES.find((c) => c.value === template.category)?.label || template.category}
-                          </Badge>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenPreview(template)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              Preview
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleOpenEdit(template)}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDuplicate(template)}>
-                              <Copy className="h-4 w-4 mr-2" />
-                              Duplicate
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => handleDelete(template.id)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+          {filteredTemplates.length === 0
+            ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <MessageSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No templates found</h3>
+                  <p className="text-sm text-muted-foreground text-center mb-4 max-w-sm">
+                    Try adjusting your search or filters, or create a new template.
+                  </p>
+                  <Button onClick={handleOpenCreate}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Template
+                  </Button>
+                </div>
+              )
+            : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredTemplates.map((template) => {
+                    const variables = extractVariables(template.content);
+                    return (
+                      <Card
+                        key={template.id}
+                        className="bg-card/50 border-border/50 hover:border-primary/30 transition-all"
+                      >
+                        <div className="p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h4 className="font-medium text-base">{template.name}</h4>
+                              <Badge className={`mt-2 ${categoryColors[template.category] || categoryColors.general}`}>
+                                {CATEGORIES.find(c => c.value === template.category)?.label || template.category}
+                              </Badge>
+                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleOpenPreview(template)}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Preview
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleOpenEdit(template)}>
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDuplicate(template)}>
+                                  <Copy className="h-4 w-4 mr-2" />
+                                  Duplicate
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => handleDelete(template.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
 
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                        {template.content}
-                      </p>
+                          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                            {template.content}
+                          </p>
 
-                      {variables.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {variables.slice(0, 3).map((v) => (
-                            <Badge key={v} variant="outline" className="text-xs font-mono">
-                              {`{{${v}}}`}
-                            </Badge>
-                          ))}
-                          {variables.length > 3 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{variables.length - 3} more
-                            </Badge>
+                          {variables.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              {variables.slice(
+                                0,
+                                3,
+                              ).map(v => (
+                                <Badge
+                                  key={v}
+                                  variant="outline"
+                                  className="text-xs font-mono"
+                                >
+                                  {`{{${v}}}`}
+                                </Badge>
+                              ))}
+                              {variables.length > 3 && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs"
+                                >
+                                  +
+                                  {variables.length - 3}
+                                  {" "}
+                                  more
+                                </Badge>
+                              )}
+                            </div>
                           )}
-                        </div>
-                      )}
 
-                      <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                        <span className="text-xs text-muted-foreground">
-                          {getCharCount(template.content)} chars / {getSMSCount(template.content)} SMS
-                        </span>
-                        <Button variant="outline" size="sm" onClick={() => handleOpenPreview(template)}>
-                          <Send className="h-3 w-3 mr-1" />
-                          Use
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
+                          <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                            <span className="text-xs text-muted-foreground">
+                              {getCharCount(template.content)}
+                              {" "}
+                              chars /
+                              {getSMSCount(template.content)}
+                              {" "}
+                              SMS
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenPreview(template)}
+                            >
+                              <Send className="h-3 w-3 mr-1" />
+                              Use
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
         </CardContent>
       </Card>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+      >
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>
@@ -470,7 +587,9 @@ export function SMSTemplatesManager() {
                 <Label>Template Name</Label>
                 <Input
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={e => setFormData({
+                    ...formData, name: e.target.value,
+                  })}
                   placeholder="e.g., Job Assignment"
                 />
               </div>
@@ -478,14 +597,19 @@ export function SMSTemplatesManager() {
                 <Label>Category</Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) => setFormData({ ...formData, category: value })}
+                  onValueChange={value => setFormData({
+                    ...formData, category: value,
+                  })}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
+                    {CATEGORIES.map(cat => (
+                      <SelectItem
+                        key={cat.value}
+                        value={cat.value}
+                      >
                         {cat.label}
                       </SelectItem>
                     ))}
@@ -498,12 +622,19 @@ export function SMSTemplatesManager() {
               <div className="flex items-center justify-between">
                 <Label>Message Content</Label>
                 <div className="text-xs text-muted-foreground">
-                  {getCharCount(formData.content)} chars / {getSMSCount(formData.content)} SMS
+                  {getCharCount(formData.content)}
+                  {" "}
+                  chars /
+                  {getSMSCount(formData.content)}
+                  {" "}
+                  SMS
                 </div>
               </div>
               <Textarea
                 value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                onChange={e => setFormData({
+                  ...formData, content: e.target.value,
+                })}
                 placeholder="Enter SMS message..."
                 rows={4}
               />
@@ -526,7 +657,7 @@ export function SMSTemplatesManager() {
                     "delivery_location",
                     "amount",
                     "eta",
-                  ].map((v) => (
+                  ].map(v => (
                     <Badge
                       key={v}
                       variant="outline"
@@ -547,10 +678,16 @@ export function SMSTemplatesManager() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={isSaving || !formData.name || !formData.content}>
+            <Button
+              onClick={handleSave}
+              disabled={isSaving || !formData.name || !formData.content}
+            >
               {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {selectedTemplate ? "Update Template" : "Create Template"}
             </Button>
@@ -559,7 +696,10 @@ export function SMSTemplatesManager() {
       </Dialog>
 
       {/* Preview Dialog */}
-      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+      <Dialog
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -580,8 +720,12 @@ export function SMSTemplatesManager() {
               <div>
                 <Label className="text-sm">Variables used:</Label>
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {extractVariables(selectedTemplate.content).map((v) => (
-                    <Badge key={v} variant="outline" className="font-mono text-xs">
+                  {extractVariables(selectedTemplate.content).map(v => (
+                    <Badge
+                      key={v}
+                      variant="outline"
+                      className="font-mono text-xs"
+                    >
                       {`{{${v}}}`}
                     </Badge>
                   ))}
@@ -591,13 +735,18 @@ export function SMSTemplatesManager() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsPreviewOpen(false)}
+            >
               Close
             </Button>
             <Button onClick={() => {
               setIsPreviewOpen(false);
-              if (selectedTemplate) handleOpenEdit(selectedTemplate);
-            }}>
+              if (selectedTemplate)
+                handleOpenEdit(selectedTemplate);
+            }}
+            >
               <Pencil className="h-4 w-4 mr-2" />
               Edit Template
             </Button>

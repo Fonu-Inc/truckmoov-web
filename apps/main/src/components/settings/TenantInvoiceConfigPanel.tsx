@@ -1,14 +1,16 @@
+import { Save } from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { toast } from "sonner";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Switch } from "@/components/shadcn/switch";
-import { Button } from "@/components/shadcn/button";
-import { Save } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
-import { toast } from "sonner";
 
-interface InvoiceConfig {
+type InvoiceConfig = {
   payment_terms_days: number | null;
   ncc_levy_enabled: boolean | null;
   ncc_levy_percent: number | null;
@@ -16,12 +18,15 @@ interface InvoiceConfig {
   tax_enabled: boolean | null;
   tax_rate_percent: number | null;
   tax_label: string | null;
-}
+};
 
 export function TenantInvoiceConfigPanel() {
   const { user } = useAuthStore();
   const tenantId = user?.tenantId;
-  const [cfg, setCfg] = useState<InvoiceConfig>({
+  const [
+    cfg,
+    setCfg,
+  ] = useState<InvoiceConfig>({
     payment_terms_days: 15,
     ncc_levy_enabled: false,
     ncc_levy_percent: 2.5,
@@ -30,11 +35,13 @@ export function TenantInvoiceConfigPanel() {
     tax_rate_percent: 7.5,
     tax_label: "VAT",
   });
-  const [saving, setSaving] = useState(false);
+  const [
+    saving,
+    setSaving,
+  ] = useState(false);
 
   const save = async () => {
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
   return (
@@ -50,9 +57,16 @@ export function TenantInvoiceConfigPanel() {
             type="number"
             min={0}
             value={cfg.payment_terms_days ?? 15}
-            onChange={(e) => setCfg({ ...cfg, payment_terms_days: Number(e.target.value) })}
+            onChange={e => setCfg({
+              ...cfg, payment_terms_days: Number(e.target.value),
+            })}
           />
-          <p className="text-xs text-muted-foreground">Default Net 15 — invoices fall due {cfg.payment_terms_days ?? 15} days after issue.</p>
+          <p className="text-xs text-muted-foreground">
+            Default Net 15 — invoices fall due
+            {cfg.payment_terms_days ?? 15}
+            {" "}
+            days after issue.
+          </p>
         </div>
 
         <div className="space-y-3 border-t border-border/50 pt-4">
@@ -63,18 +77,32 @@ export function TenantInvoiceConfigPanel() {
             </div>
             <Switch
               checked={!!cfg.tax_enabled}
-              onCheckedChange={(v) => setCfg({ ...cfg, tax_enabled: v })}
+              onCheckedChange={v => setCfg({
+                ...cfg, tax_enabled: v,
+              })}
             />
           </div>
           {cfg.tax_enabled && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Label</Label>
-                <Input value={cfg.tax_label ?? "VAT"} onChange={(e) => setCfg({ ...cfg, tax_label: e.target.value })} />
+                <Input
+                  value={cfg.tax_label ?? "VAT"}
+                  onChange={e => setCfg({
+                    ...cfg, tax_label: e.target.value,
+                  })}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Rate %</Label>
-                <Input type="number" step="0.1" value={cfg.tax_rate_percent ?? 7.5} onChange={(e) => setCfg({ ...cfg, tax_rate_percent: Number(e.target.value) })} />
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={cfg.tax_rate_percent ?? 7.5}
+                  onChange={e => setCfg({
+                    ...cfg, tax_rate_percent: Number(e.target.value),
+                  })}
+                />
               </div>
             </div>
           )}
@@ -88,25 +116,43 @@ export function TenantInvoiceConfigPanel() {
             </div>
             <Switch
               checked={!!cfg.ncc_levy_enabled}
-              onCheckedChange={(v) => setCfg({ ...cfg, ncc_levy_enabled: v })}
+              onCheckedChange={v => setCfg({
+                ...cfg, ncc_levy_enabled: v,
+              })}
             />
           </div>
           {cfg.ncc_levy_enabled && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Label</Label>
-                <Input value={cfg.ncc_levy_label ?? "NCC Levy"} onChange={(e) => setCfg({ ...cfg, ncc_levy_label: e.target.value })} />
+                <Input
+                  value={cfg.ncc_levy_label ?? "NCC Levy"}
+                  onChange={e => setCfg({
+                    ...cfg, ncc_levy_label: e.target.value,
+                  })}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Rate %</Label>
-                <Input type="number" step="0.1" value={cfg.ncc_levy_percent ?? 2.5} onChange={(e) => setCfg({ ...cfg, ncc_levy_percent: Number(e.target.value) })} />
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={cfg.ncc_levy_percent ?? 2.5}
+                  onChange={e => setCfg({
+                    ...cfg, ncc_levy_percent: Number(e.target.value),
+                  })}
+                />
               </div>
             </div>
           )}
         </div>
 
         <div className="flex justify-end">
-          <Button variant="gradient" onClick={save} disabled={saving}>
+          <Button
+            variant="gradient"
+            onClick={save}
+            disabled={saving}
+          >
             <Save className="h-4 w-4 mr-2" />
             {saving ? "Saving..." : "Save Invoice Settings"}
           </Button>

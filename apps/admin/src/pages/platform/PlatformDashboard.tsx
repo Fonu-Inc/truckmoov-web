@@ -1,113 +1,298 @@
-import { formatCompactRelative } from "@truckmoov/app-core/utils/time-utils";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { StatCard } from "@/components/dashboard/StatCard";
-import {
-  Building2,
-  Truck,
-  Users,
-  CreditCard,
-  Activity,
-  TrendingUp,
-  Server,
-  Wifi,
-  Cpu,
-  Smartphone,
-  ShieldCheck,
-  ChevronRight,
-  Clock,
-  Database,
-  Radio,
-  MapPin,
-  Eye,
-} from "lucide-react";
-import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Badge } from "@/components/shadcn/badge";
-import { Progress } from "@/components/shadcn/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import {
   getSystemActivityLogQueryOptions,
   getSystemDashboardQueryOptions,
   getSystemHealthQueryOptions,
 } from "@truckmoov/api/auth";
+import { formatCompactRelative } from "@truckmoov/app-core/utils/time-utils";
+import {
+  Activity,
+  Building2,
+  ChevronRight,
+  Clock,
+  Cpu,
+  CreditCard,
+  Database,
+  Eye,
+  MapPin,
+  Radio,
+  Server,
+  ShieldCheck,
+  Smartphone,
+  TrendingUp,
+  Truck,
+  Users,
+  Wifi,
+} from "lucide-react";
 import { Link } from "react-router-dom";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StakeholderOverviewTab } from "@/components/platform/StakeholderOverviewTab";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
+import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
+import { Progress } from "@/components/shadcn/progress";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/shadcn/tabs";
 
 const revenueDataNGN = [
-  { month: "Jan", revenueNGN: 193750000, tenants: 45 },
-  { month: "Feb", revenueNGN: 220100000, tenants: 52 },
-  { month: "Mar", revenueNGN: 244900000, tenants: 61 },
-  { month: "Apr", revenueNGN: 271250000, tenants: 68 },
-  { month: "May", revenueNGN: 292950000, tenants: 74 },
-  { month: "Jun", revenueNGN: 333250000, tenants: 82 },
-  { month: "Jul", revenueNGN: 353400000, tenants: 89 },
-  { month: "Aug", revenueNGN: 379750000, tenants: 95 },
-  { month: "Sep", revenueNGN: 415400000, tenants: 103 },
-  { month: "Oct", revenueNGN: 441750000, tenants: 112 },
-  { month: "Nov", revenueNGN: 468100000, tenants: 118 },
-  { month: "Dec", revenueNGN: 503750000, tenants: 125 },
+  {
+    month: "Jan",
+    revenueNGN: 193750000,
+    tenants: 45,
+  },
+  {
+    month: "Feb",
+    revenueNGN: 220100000,
+    tenants: 52,
+  },
+  {
+    month: "Mar",
+    revenueNGN: 244900000,
+    tenants: 61,
+  },
+  {
+    month: "Apr",
+    revenueNGN: 271250000,
+    tenants: 68,
+  },
+  {
+    month: "May",
+    revenueNGN: 292950000,
+    tenants: 74,
+  },
+  {
+    month: "Jun",
+    revenueNGN: 333250000,
+    tenants: 82,
+  },
+  {
+    month: "Jul",
+    revenueNGN: 353400000,
+    tenants: 89,
+  },
+  {
+    month: "Aug",
+    revenueNGN: 379750000,
+    tenants: 95,
+  },
+  {
+    month: "Sep",
+    revenueNGN: 415400000,
+    tenants: 103,
+  },
+  {
+    month: "Oct",
+    revenueNGN: 441750000,
+    tenants: 112,
+  },
+  {
+    month: "Nov",
+    revenueNGN: 468100000,
+    tenants: 118,
+  },
+  {
+    month: "Dec",
+    revenueNGN: 503750000,
+    tenants: 125,
+  },
 ];
 
 const deviceStats = [
-  { manufacturer: "Teltonika", count: 3420 },
-  { manufacturer: "Queclink", count: 2180 },
-  { manufacturer: "Meitrack", count: 1560 },
-  { manufacturer: "CalAmp", count: 890 },
-  { manufacturer: "Others", count: 650 },
+  {
+    manufacturer: "Teltonika",
+    count: 3420,
+  },
+  {
+    manufacturer: "Queclink",
+    count: 2180,
+  },
+  {
+    manufacturer: "Meitrack",
+    count: 1560,
+  },
+  {
+    manufacturer: "CalAmp",
+    count: 890,
+  },
+  {
+    manufacturer: "Others",
+    count: 650,
+  },
 ];
 
 const simCarrierData = [
-  { name: "MTN", value: 4500, color: "#FFCC00" },
-  { name: "Airtel", value: 2800, color: "#ED1C24" },
-  { name: "Glo", value: 1900, color: "#00A651" },
-  { name: "9mobile", value: 800, color: "#006B3F" },
+  {
+    name: "MTN",
+    value: 4500,
+    color: "#FFCC00",
+  },
+  {
+    name: "Airtel",
+    value: 2800,
+    color: "#ED1C24",
+  },
+  {
+    name: "Glo",
+    value: 1900,
+    color: "#00A651",
+  },
+  {
+    name: "9mobile",
+    value: 800,
+    color: "#006B3F",
+  },
 ];
 
 const dataUsageTrend = [
-  { day: "Mon", usage: 245 },
-  { day: "Tue", usage: 312 },
-  { day: "Wed", usage: 289 },
-  { day: "Thu", usage: 356 },
-  { day: "Fri", usage: 398 },
-  { day: "Sat", usage: 178 },
-  { day: "Sun", usage: 156 },
+  {
+    day: "Mon",
+    usage: 245,
+  },
+  {
+    day: "Tue",
+    usage: 312,
+  },
+  {
+    day: "Wed",
+    usage: 289,
+  },
+  {
+    day: "Thu",
+    usage: 356,
+  },
+  {
+    day: "Fri",
+    usage: 398,
+  },
+  {
+    day: "Sat",
+    usage: 178,
+  },
+  {
+    day: "Sun",
+    usage: 156,
+  },
 ];
 
 const topTenants = [
-  { id: "lagos-speed", name: "Lagos Speed Logistics", plan: "enterprise", vehicleCount: 420, driverCount: 385, status: "active" },
-  { id: "xyz-transport", name: "XYZ Transport", plan: "professional", vehicleCount: 318, driverCount: 302, status: "active" },
-  { id: "abuja-freight", name: "Abuja Freight", plan: "enterprise", vehicleCount: 286, driverCount: 260, status: "active" },
-  { id: "northline-haulage", name: "Northline Haulage", plan: "professional", vehicleCount: 214, driverCount: 199, status: "pending" },
-  { id: "delta-movers", name: "Delta Movers", plan: "starter", vehicleCount: 156, driverCount: 148, status: "suspended" },
+  {
+    id: "lagos-speed",
+    name: "Lagos Speed Logistics",
+    plan: "enterprise",
+    vehicleCount: 420,
+    driverCount: 385,
+    status: "active",
+  },
+  {
+    id: "xyz-transport",
+    name: "XYZ Transport",
+    plan: "professional",
+    vehicleCount: 318,
+    driverCount: 302,
+    status: "active",
+  },
+  {
+    id: "abuja-freight",
+    name: "Abuja Freight",
+    plan: "enterprise",
+    vehicleCount: 286,
+    driverCount: 260,
+    status: "active",
+  },
+  {
+    id: "northline-haulage",
+    name: "Northline Haulage",
+    plan: "professional",
+    vehicleCount: 214,
+    driverCount: 199,
+    status: "pending",
+  },
+  {
+    id: "delta-movers",
+    name: "Delta Movers",
+    plan: "starter",
+    vehicleCount: 156,
+    driverCount: 148,
+    status: "suspended",
+  },
 ];
 
 const quickActions = [
-  { title: "Manage Tenants", desc: "Onboard, edit and review tenant organisations.", icon: Building2, cta: "Open tenants", to: "/tenants" },
-  { title: "IoT Devices", desc: "Track inventory, lifecycle and connectivity.", icon: Cpu, cta: "Open devices", to: "/devices" },
-  { title: "SIM Management", desc: "Approve, activate and assign SIMs.", icon: Smartphone, cta: "Open SIMs", to: "/sims" },
-  { title: "Security", desc: "Review alerts, audit trail and access events.", icon: ShieldCheck, cta: "Open security", to: "/security" },
+  {
+    title: "Manage Tenants",
+    desc: "Onboard, edit and review tenant organisations.",
+    icon: Building2,
+    cta: "Open tenants",
+    to: "/tenants",
+  },
+  {
+    title: "IoT Devices",
+    desc: "Track inventory, lifecycle and connectivity.",
+    icon: Cpu,
+    cta: "Open devices",
+    to: "/devices",
+  },
+  {
+    title: "SIM Management",
+    desc: "Approve, activate and assign SIMs.",
+    icon: Smartphone,
+    cta: "Open SIMs",
+    to: "/sims",
+  },
+  {
+    title: "Security",
+    desc: "Review alerts, audit trail and access events.",
+    icon: ShieldCheck,
+    cta: "Open security",
+    to: "/security",
+  },
 ];
 
 const plans = [
-  { plan: "Enterprise", count: 12, revenue: "NGN 92.9M/mo", color: "bg-success" },
-  { plan: "Professional", count: 45, revenue: "NGN 104.5M/mo", color: "bg-primary" },
-  { plan: "Starter", count: 68, revenue: "NGN 52.6M/mo", color: "bg-muted-foreground" },
+  {
+    plan: "Enterprise",
+    count: 12,
+    revenue: "NGN 92.9M/mo",
+    color: "bg-success",
+  },
+  {
+    plan: "Professional",
+    count: 45,
+    revenue: "NGN 104.5M/mo",
+    color: "bg-primary",
+  },
+  {
+    plan: "Starter",
+    count: 68,
+    revenue: "NGN 52.6M/mo",
+    color: "bg-muted-foreground",
+  },
 ];
 
 const ACTIVITY_LOG_LIMIT = 5;
@@ -140,7 +325,7 @@ function formatStatusLabel(value?: string) {
   return value
     .split(/[-_\s]+/)
     .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join(" ");
 }
 
@@ -153,7 +338,10 @@ function formatUptime(value?: number) {
     return "...";
   }
 
-  return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}%`;
+  return `${value.toLocaleString(
+    undefined,
+    { maximumFractionDigits: 2 },
+  )}%`;
 }
 
 function getHealthStatusClass(status?: string) {
@@ -198,13 +386,19 @@ export default function PlatformDashboard() {
     ...getSystemHealthQueryOptions(),
     refetchInterval: 30000,
   });
-  const { data: systemActivityLogResponse, isLoading: activityLogLoading } = useQuery(
-    getSystemActivityLogQueryOptions({ params: { limit: ACTIVITY_LOG_LIMIT } })
+  const {
+    data: systemActivityLogResponse,
+    isLoading: activityLogLoading,
+  } = useQuery(
+    getSystemActivityLogQueryOptions({ params: { limit: ACTIVITY_LOG_LIMIT } }),
   );
   const systemDashboard = systemDashboardResponse?.data;
   const systemHealth = systemHealthResponse?.data;
   const systemHealthServices = systemHealth?.services ?? [];
-  const recentActivities = (systemActivityLogResponse?.data ?? []).slice(0, ACTIVITY_LOG_LIMIT);
+  const recentActivities = (systemActivityLogResponse?.data ?? []).slice(
+    0,
+    ACTIVITY_LOG_LIMIT,
+  );
 
   return (
     <DashboardLayout
@@ -219,7 +413,7 @@ export default function PlatformDashboard() {
           </CardHeader>
           <CardContent>
             <div className="flex gap-3 overflow-x-auto pb-2 -mb-2 snap-x snap-mandatory [scrollbar-width:thin]">
-              {quickActions.map((qa) => (
+              {quickActions.map(qa => (
                 <Link
                   key={qa.title}
                   to={qa.to}
@@ -233,7 +427,9 @@ export default function PlatformDashboard() {
                       <p className="text-sm font-medium">{qa.title}</p>
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{qa.desc}</p>
                       <span className="text-xs text-primary mt-2 inline-flex items-center gap-1 group-hover:underline">
-                        {qa.cta} <ChevronRight className="h-3 w-3" />
+                        {qa.cta}
+                        {" "}
+                        <ChevronRight className="h-3 w-3" />
                       </span>
                     </div>
                   </div>
@@ -290,7 +486,10 @@ export default function PlatformDashboard() {
           />
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-4">
+        <Tabs
+          defaultValue="overview"
+          className="space-y-4"
+        >
           <div className="flex justify-center">
             <TabsList>
               <TabsTrigger value="overview">System Overview</TabsTrigger>
@@ -300,7 +499,10 @@ export default function PlatformDashboard() {
             </TabsList>
           </div>
 
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent
+            value="overview"
+            className="space-y-6"
+          >
             <div className="grid gap-6 lg:grid-cols-2">
               <Card>
                 <CardHeader>
@@ -312,24 +514,51 @@ export default function PlatformDashboard() {
                       </CardTitle>
                       <CardDescription>Monthly platform revenue and tenant acquisition (NGN)</CardDescription>
                     </div>
-                    <ChartDateFilter value="30d" onValueChange={() => undefined} />
+                    <ChartDateFilter
+                      value="30d"
+                      onValueChange={() => undefined}
+                    />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer
+                    width="100%"
+                    height={300}
+                  >
                     <AreaChart data={revenueDataNGN}>
                       <defs>
-                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                        <linearGradient
+                          id="colorRevenue"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="hsl(var(--primary))"
+                            stopOpacity={0.3}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="hsl(var(--primary))"
+                            stopOpacity={0}
+                          />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="hsl(var(--border))"
+                      />
+                      <XAxis
+                        dataKey="month"
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                      />
                       <YAxis
                         stroke="hsl(var(--muted-foreground))"
                         fontSize={12}
-                        tickFormatter={(value) => `NGN ${(Number(value) / 1000000).toFixed(0)}M`}
+                        tickFormatter={value => `NGN ${(Number(value) / 1000000).toFixed(0)}M`}
                       />
                       <Tooltip
                         contentStyle={{
@@ -337,7 +566,10 @@ export default function PlatformDashboard() {
                           border: "1px solid hsl(var(--border))",
                           borderRadius: "8px",
                         }}
-                        formatter={(value: number) => [`NGN ${value.toLocaleString()}`, "Revenue"]}
+                        formatter={(value: number) => [
+                          `NGN ${value.toLocaleString()}`,
+                          "Revenue",
+                        ]}
                       />
                       <Area
                         type="monotone"
@@ -390,7 +622,7 @@ export default function PlatformDashboard() {
                     </div>
                   )}
 
-                  {systemHealthServices.map((service) => (
+                  {systemHealthServices.map(service => (
                     <div
                       key={service.name}
                       className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-muted/30 transition-colors"
@@ -402,7 +634,12 @@ export default function PlatformDashboard() {
                       <div className="flex items-center gap-4 text-sm">
                         <span className="text-muted-foreground">{formatLatency(service.latencyMs)}</span>
                         <span className="text-muted-foreground hidden md:inline">{formatStatusLabel(service.status)}</span>
-                        <Badge variant="outline" className="text-xs">{formatUptime(service.uptime)}</Badge>
+                        <Badge
+                          variant="outline"
+                          className="text-xs"
+                        >
+                          {formatUptime(service.uptime)}
+                        </Badge>
                       </div>
                     </div>
                   ))}
@@ -432,8 +669,11 @@ export default function PlatformDashboard() {
                     </div>
                   )}
 
-                  {recentActivities.map((activity) => (
-                    <div key={activity.id} className="flex items-center justify-between gap-4 p-3 rounded-lg border hover:bg-muted/30 transition-colors">
+                  {recentActivities.map(activity => (
+                    <div
+                      key={activity.id}
+                      className="flex items-center justify-between gap-4 p-3 rounded-lg border hover:bg-muted/30 transition-colors"
+                    >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-primary/10">
                           <Clock className="h-4 w-4 text-primary" />
@@ -452,11 +692,17 @@ export default function PlatformDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="stakeholders" className="space-y-6">
+          <TabsContent
+            value="stakeholders"
+            className="space-y-6"
+          >
             <StakeholderOverviewTab />
           </TabsContent>
 
-          <TabsContent value="tenants" className="space-y-6">
+          <TabsContent
+            value="tenants"
+            className="space-y-6"
+          >
             <div className="grid gap-6 lg:grid-cols-3">
               <Card className="lg:col-span-2">
                 <CardHeader>
@@ -468,7 +714,10 @@ export default function PlatformDashboard() {
                       </CardTitle>
                       <CardDescription>Largest tenants ranked by number of vehicles under management</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                    >
                       <Eye className="h-4 w-4 mr-2" />
                       View All
                     </Button>
@@ -483,11 +732,16 @@ export default function PlatformDashboard() {
                       >
                         <div className="flex items-center gap-4">
                           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
-                            #{index + 1}
+                            #
+                            {index + 1}
                           </div>
                           <div>
                             <p className="font-medium">{tenant.name}</p>
-                            <p className="text-sm text-muted-foreground capitalize">{tenant.plan} Plan</p>
+                            <p className="text-sm text-muted-foreground capitalize">
+                              {tenant.plan}
+                              {" "}
+                              Plan
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-6 text-sm">
@@ -526,13 +780,23 @@ export default function PlatformDashboard() {
                   <CardDescription>Subscription mix and recurring revenue contribution per plan tier</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {plans.map((item) => (
-                    <div key={item.plan} className="space-y-2">
+                  {plans.map(item => (
+                    <div
+                      key={item.plan}
+                      className="space-y-2"
+                    >
                       <div className="flex justify-between text-sm">
                         <span className="font-medium">{item.plan}</span>
-                        <span className="text-muted-foreground">{item.count} tenants</span>
+                        <span className="text-muted-foreground">
+                          {item.count}
+                          {" "}
+                          tenants
+                        </span>
                       </div>
-                      <Progress value={(item.count / 125) * 100} className={`h-2 ${item.color}`} />
+                      <Progress
+                        value={(item.count / 125) * 100}
+                        className={`h-2 ${item.color}`}
+                      />
                       <p className="text-xs text-muted-foreground">
                         {item.revenue}
                       </p>
@@ -543,7 +807,10 @@ export default function PlatformDashboard() {
             </div>
           </TabsContent>
 
-          <TabsContent value="iot" className="space-y-6">
+          <TabsContent
+            value="iot"
+            className="space-y-6"
+          >
             <div className="grid gap-6 lg:grid-cols-2">
               <Card>
                 <CardHeader>
@@ -556,8 +823,14 @@ export default function PlatformDashboard() {
                       <CardDescription>Breakdown of provisioned IoT devices grouped by hardware vendor</CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
-                      <ChartDateFilter value="30d" onValueChange={() => undefined} />
-                      <Button variant="outline" size="sm">
+                      <ChartDateFilter
+                        value="30d"
+                        onValueChange={() => undefined}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                      >
                         <Eye className="h-4 w-4 mr-2" />
                         Manage
                       </Button>
@@ -565,11 +838,30 @@ export default function PlatformDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={deviceStats} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                      <YAxis dataKey="manufacturer" type="category" stroke="hsl(var(--muted-foreground))" fontSize={12} width={80} />
+                  <ResponsiveContainer
+                    width="100%"
+                    height={300}
+                  >
+                    <BarChart
+                      data={deviceStats}
+                      layout="vertical"
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="hsl(var(--border))"
+                      />
+                      <XAxis
+                        type="number"
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                      />
+                      <YAxis
+                        dataKey="manufacturer"
+                        type="category"
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        width={80}
+                      />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: "hsl(var(--card))",
@@ -577,7 +869,16 @@ export default function PlatformDashboard() {
                           borderRadius: "8px",
                         }}
                       />
-                      <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                      <Bar
+                        dataKey="count"
+                        fill="hsl(var(--primary))"
+                        radius={[
+                          0,
+                          4,
+                          4,
+                          0,
+                        ]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -594,8 +895,14 @@ export default function PlatformDashboard() {
                       <CardDescription>Active SIM inventory split across mobile network operators</CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
-                      <ChartDateFilter value="30d" onValueChange={() => undefined} />
-                      <Button variant="outline" size="sm">
+                      <ChartDateFilter
+                        value="30d"
+                        onValueChange={() => undefined}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                      >
                         <Eye className="h-4 w-4 mr-2" />
                         Manage
                       </Button>
@@ -604,7 +911,10 @@ export default function PlatformDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-8">
-                    <ResponsiveContainer width="50%" height={200}>
+                    <ResponsiveContainer
+                      width="50%"
+                      height={200}
+                    >
                       <PieChart>
                         <Pie
                           data={simCarrierData}
@@ -616,7 +926,10 @@ export default function PlatformDashboard() {
                           dataKey="value"
                         >
                           {simCarrierData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={entry.color}
+                            />
                           ))}
                         </Pie>
                         <Tooltip
@@ -629,10 +942,16 @@ export default function PlatformDashboard() {
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="flex-1 space-y-3">
-                      {simCarrierData.map((carrier) => (
-                        <div key={carrier.name} className="flex items-center justify-between">
+                      {simCarrierData.map(carrier => (
+                        <div
+                          key={carrier.name}
+                          className="flex items-center justify-between"
+                        >
                           <div className="flex items-center gap-2">
-                            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: carrier.color }} />
+                            <div
+                              className="h-3 w-3 rounded-full"
+                              style={{ backgroundColor: carrier.color }}
+                            />
                             <span className="text-sm font-medium">{carrier.name}</span>
                           </div>
                           <span className="text-sm text-muted-foreground">{carrier.value.toLocaleString()}</span>
@@ -657,24 +976,54 @@ export default function PlatformDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer
+                  width="100%"
+                  height={200}
+                >
                   <AreaChart data={dataUsageTrend}>
                     <defs>
-                      <linearGradient id="colorData" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0} />
+                      <linearGradient
+                        id="colorData"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="hsl(var(--success))"
+                          stopOpacity={0.3}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="hsl(var(--success))"
+                          stopOpacity={0}
+                        />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                    />
+                    <XAxis
+                      dataKey="day"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
                         borderRadius: "8px",
                       }}
-                      formatter={(value: number) => [`${value} GB`, "Data Usage"]}
+                      formatter={(value: number) => [
+                        `${value} GB`,
+                        "Data Usage",
+                      ]}
                     />
                     <Area
                       type="monotone"

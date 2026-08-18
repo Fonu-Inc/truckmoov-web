@@ -1,7 +1,11 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import {
+  Database, Lock, Shield, Users,
+} from "lucide-react";
 import { MermaidDiagram } from "@/components/diagrams/MermaidDiagram";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
-import { Shield, Database, Users, Lock } from "lucide-react";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
 
 const securityArchitectureDiagram = `graph TD
     A[User] --> B[Frontend App]
@@ -101,31 +105,49 @@ const tenantIsolationDiagram = `graph TD
 
 export default function Architecture() {
   return (
-    <DashboardLayout 
-      title="System Architecture" 
+    <DashboardLayout
+      title="System Architecture"
       subtitle="Technical diagrams and documentation for pitch decks"
     >
-      <Tabs defaultValue="security" className="space-y-6">
+      <Tabs
+        defaultValue="security"
+        className="space-y-6"
+      >
         <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="security" className="gap-2">
+          <TabsTrigger
+            value="security"
+            className="gap-2"
+          >
             <Shield className="h-4 w-4" />
             <span className="hidden sm:inline">Security</span>
           </TabsTrigger>
-          <TabsTrigger value="rbac" className="gap-2">
+          <TabsTrigger
+            value="rbac"
+            className="gap-2"
+          >
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">RBAC</span>
           </TabsTrigger>
-          <TabsTrigger value="data-flow" className="gap-2">
+          <TabsTrigger
+            value="data-flow"
+            className="gap-2"
+          >
             <Database className="h-4 w-4" />
             <span className="hidden sm:inline">Data Flow</span>
           </TabsTrigger>
-          <TabsTrigger value="multi-tenant" className="gap-2">
+          <TabsTrigger
+            value="multi-tenant"
+            className="gap-2"
+          >
             <Lock className="h-4 w-4" />
             <span className="hidden sm:inline">Multi-Tenant</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="security" className="space-y-4">
+        <TabsContent
+          value="security"
+          className="space-y-4"
+        >
           <MermaidDiagram
             chart={securityArchitectureDiagram}
             title="Security Architecture Overview"
@@ -133,7 +155,10 @@ export default function Architecture() {
           />
         </TabsContent>
 
-        <TabsContent value="rbac" className="space-y-4">
+        <TabsContent
+          value="rbac"
+          className="space-y-4"
+        >
           <MermaidDiagram
             chart={rbacDiagram}
             title="Role-Based Access Control (RBAC)"
@@ -141,7 +166,10 @@ export default function Architecture() {
           />
         </TabsContent>
 
-        <TabsContent value="data-flow" className="space-y-4">
+        <TabsContent
+          value="data-flow"
+          className="space-y-4"
+        >
           <MermaidDiagram
             chart={dataFlowDiagram}
             title="Data Flow Architecture"
@@ -149,7 +177,10 @@ export default function Architecture() {
           />
         </TabsContent>
 
-        <TabsContent value="multi-tenant" className="space-y-4">
+        <TabsContent
+          value="multi-tenant"
+          className="space-y-4"
+        >
           <MermaidDiagram
             chart={tenantIsolationDiagram}
             title="Multi-Tenant Isolation"

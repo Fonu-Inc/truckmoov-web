@@ -1,5 +1,11 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  CheckCircle, Cpu,
+} from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
 import {
   Table,
   TableBody,
@@ -8,8 +14,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { Cpu, CheckCircle } from "lucide-react";
 
 // Local type alias (hook deleted)
 type DeviceMappingRow = {
@@ -19,17 +23,22 @@ type DeviceMappingRow = {
   notes?: string;
 };
 
-interface DeviceMappingPreviewProps {
+type DeviceMappingPreviewProps = {
   data: DeviceMappingRow[];
   maxDisplay?: number;
-}
+};
 
-export function DeviceMappingPreview({ data, maxDisplay = 10 }: DeviceMappingPreviewProps) {
+export function DeviceMappingPreview({
+  data, maxDisplay = 10,
+}: DeviceMappingPreviewProps) {
   if (!data || data.length === 0) {
     return null;
   }
 
-  const displayData = data.slice(0, maxDisplay);
+  const displayData = data.slice(
+    0,
+    maxDisplay,
+  );
   const remaining = data.length - maxDisplay;
 
   return (
@@ -38,8 +47,13 @@ export function DeviceMappingPreview({ data, maxDisplay = 10 }: DeviceMappingPre
         <CardTitle className="text-sm flex items-center gap-2">
           <Cpu className="h-4 w-4 text-primary" />
           Device Mapping Preview
-          <Badge variant="secondary" className="ml-auto">
-            {data.length} devices
+          <Badge
+            variant="secondary"
+            className="ml-auto"
+          >
+            {data.length}
+            {" "}
+            devices
           </Badge>
         </CardTitle>
       </CardHeader>
@@ -76,7 +90,11 @@ export function DeviceMappingPreview({ data, maxDisplay = 10 }: DeviceMappingPre
         </ScrollArea>
         {remaining > 0 && (
           <div className="px-4 py-2 bg-muted/50 text-xs text-muted-foreground text-center border-t">
-            + {remaining} more devices
+            +
+            {" "}
+            {remaining}
+            {" "}
+            more devices
           </div>
         )}
         <div className="px-4 py-2 bg-success/10 text-xs text-success flex items-center gap-1 border-t">

@@ -1,14 +1,27 @@
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from "@/stores/authStore";
 
 export function useAIConfigPermissions() {
   const { user } = useAuthStore();
-  const isPlatformAdmin = user?.role === 'platform_admin';
+  const isPlatformAdmin = user?.role === "platform_admin";
 
   const hasRole = (_keys: string[]) => false;
 
-  const canConfigureTenantAI = isPlatformAdmin || hasRole(['ADMIN', 'OPERATIONS_MANAGER']);
-  const canRunAIMatching = isPlatformAdmin || hasRole(['ADMIN', 'OPERATIONS_MANAGER', 'DISPATCHER']);
-  const canViewAIResults = isPlatformAdmin || hasRole(['ADMIN', 'OPERATIONS_MANAGER', 'DISPATCHER', 'FINANCE', 'VIEWER']);
+  const canConfigureTenantAI = isPlatformAdmin || hasRole([
+    "ADMIN",
+    "OPERATIONS_MANAGER",
+  ]);
+  const canRunAIMatching = isPlatformAdmin || hasRole([
+    "ADMIN",
+    "OPERATIONS_MANAGER",
+    "DISPATCHER",
+  ]);
+  const canViewAIResults = isPlatformAdmin || hasRole([
+    "ADMIN",
+    "OPERATIONS_MANAGER",
+    "DISPATCHER",
+    "FINANCE",
+    "VIEWER",
+  ]);
   const canConfigurePlatformAI = isPlatformAdmin;
 
   return {
@@ -20,6 +33,3 @@ export function useAIConfigPermissions() {
     role: user?.role,
   };
 }
-
-
-

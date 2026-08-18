@@ -1,35 +1,43 @@
+import {
+  useMutation, useQuery, useQueryClient,
+} from "@tanstack/react-query";
 import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Building2,
+  CalendarClock,
+  CheckCircle2,
+  Clock,
+  MapPin,
+  Package,
+  Wallet,
+  Weight,
+  XCircle,
+} from "lucide-react";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCurrency } from "@/contexts/CurrencyContext";
-import { Card, CardContent } from "@/components/shadcn/card";
-import { Alert, AlertDescription } from "@/components/shadcn/alert";
+import { toast } from "sonner";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import {
+  Alert, AlertDescription,
+} from "@/components/shadcn/alert";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import { Textarea } from "@/components/shadcn/textarea";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/shadcn/tabs";
-import { EmptyState } from "@/components/dashboard/EmptyState";
+import {
+  Card, CardContent,
+} from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/shadcn/dialog";
 import {
-  Package,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  MapPin,
-  Building2,
-  ArrowRight,
-  AlertTriangle,
-  Weight,
-  CalendarClock,
-  Wallet,
-} from "lucide-react";
-import { toast } from "sonner";
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
+import { Textarea } from "@/components/shadcn/textarea";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { DUMMY_JOB_OFFERS } from "@/lib/ownerOperatorDummyData";
 
 export function JobOffersInbox() {
@@ -41,12 +49,26 @@ export function JobOffersInbox() {
   const reason = "";
   const { format: formatCurrency } = useCurrency();
   const queryClient = useQueryClient();
-  const [respondingOffer, setRespondingOffer] = useState<any | null>(null);
-  const [responseAction, setResponseAction] = useState<"ACCEPTED" | "DECLINED" | null>(null);
-  const [responseNote, setResponseNote] = useState("");
+  const [
+    respondingOffer,
+    setRespondingOffer,
+  ] = useState<any | null>(null);
+  const [
+    responseAction,
+    setResponseAction,
+  ] = useState<"ACCEPTED" | "DECLINED" | null>(null);
+  const [
+    responseNote,
+    setResponseNote,
+  ] = useState("");
 
-  const { data: offers = [], isLoading } = useQuery({
-    queryKey: ["job-offers-inbox", orgIds],
+  const {
+    data: offers = [], isLoading,
+  } = useQuery({
+    queryKey: [
+      "job-offers-inbox",
+      orgIds,
+    ],
     queryFn: async () => {
       return [];
     },
@@ -54,9 +76,12 @@ export function JobOffersInbox() {
   });
 
   const respondMutation = useMutation({
-    mutationFn: async ({ offerId, status, note }: { offerId: string; status: string; note: string }) => {
-      toast.info('Coming soon');
-      return;
+    mutationFn: async ({
+      offerId, status, note,
+    }: {
+      offerId: string; status: string; note: string;
+    }) => {
+      toast.info("Coming soon");
     },
     onSuccess: () => {
       toast.success(responseAction === "ACCEPTED" ? "Offer accepted" : "Offer declined");
@@ -67,7 +92,7 @@ export function JobOffersInbox() {
       setResponseNote("");
     },
     onError: (err: any) => {
-      toast.error("Failed to respond: " + err.message);
+      toast.error(`Failed to respond: ${err.message}`);
     },
   });
 
@@ -100,8 +125,14 @@ export function JobOffersInbox() {
       cancelled: "bg-destructive/15 text-destructive border-destructive/30",
     };
     return (
-      <Badge variant="outline" className={map[s] || map.pending}>
-        {s.replace(/_/g, " ")}
+      <Badge
+        variant="outline"
+        className={map[s] || map.pending}
+      >
+        {s.replace(
+          /_/g,
+          " ",
+        )}
       </Badge>
     );
   };
@@ -127,14 +158,23 @@ export function JobOffersInbox() {
               </div>
             </div>
             <div className="flex flex-col items-end gap-1 shrink-0">
-              {showActions ? (
-                isExpired
-                  ? <Badge variant="secondary">Expired</Badge>
-                  : <Badge className="bg-accent/20 text-accent-foreground border-accent/30"><Clock className="h-3 w-3 mr-1" />Pending</Badge>
-              ) : getOfferStatusBadge(offer.status)}
+              {showActions
+                ? (
+                    isExpired
+                      ? <Badge variant="secondary">Expired</Badge>
+                      : (
+                          <Badge className="bg-accent/20 text-accent-foreground border-accent/30">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Pending
+                          </Badge>
+                        )
+                  )
+                : getOfferStatusBadge(offer.status)}
               {job?.status && (
                 <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                  Job: {getJobStatusBadge(job.status)}
+                  Job:
+                  {" "}
+                  {getJobStatusBadge(job.status)}
                 </span>
               )}
             </div>
@@ -164,19 +204,25 @@ export function JobOffersInbox() {
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="rounded-md border border-border p-2">
               <div className="flex items-center gap-1 text-muted-foreground text-[10px] uppercase">
-                <Package className="h-3 w-3" /> Cargo
+                <Package className="h-3 w-3" />
+                {" "}
+                Cargo
               </div>
               <p className="font-medium truncate mt-0.5">{job?.cargo_type || "—"}</p>
             </div>
             <div className="rounded-md border border-border p-2">
               <div className="flex items-center gap-1 text-muted-foreground text-[10px] uppercase">
-                <Weight className="h-3 w-3" /> Weight
+                <Weight className="h-3 w-3" />
+                {" "}
+                Weight
               </div>
               <p className="font-medium truncate mt-0.5">{job?.cargo_weight ? `${job.cargo_weight} kg` : "—"}</p>
             </div>
             <div className="rounded-md border border-border p-2">
               <div className="flex items-center gap-1 text-muted-foreground text-[10px] uppercase">
-                <Wallet className="h-3 w-3" /> Offer
+                <Wallet className="h-3 w-3" />
+                {" "}
+                Offer
               </div>
               <p className="font-semibold truncate mt-0.5">
                 {offer.offered_rate_ngn ? formatCurrency(offer.offered_rate_ngn) : "TBD"}
@@ -184,7 +230,9 @@ export function JobOffersInbox() {
             </div>
             <div className="rounded-md border border-border p-2">
               <div className="flex items-center gap-1 text-muted-foreground text-[10px] uppercase">
-                <CalendarClock className="h-3 w-3" /> Deadline
+                <CalendarClock className="h-3 w-3" />
+                {" "}
+                Deadline
               </div>
               <p className="font-medium truncate mt-0.5">
                 {job?.deadline ? formatDayMonthTime(job.deadline) : "—"}
@@ -195,7 +243,9 @@ export function JobOffersInbox() {
           {/* Expires */}
           {offer.expires_at && showActions && (
             <p className="text-[10px] text-muted-foreground">
-              Offer expires {formatDayMonthTime(offer.expires_at)}
+              Offer expires
+              {" "}
+              {formatDayMonthTime(offer.expires_at)}
             </p>
           )}
 
@@ -209,11 +259,27 @@ export function JobOffersInbox() {
           {/* Actions */}
           {showActions && !isExpired && (
             <div className="flex gap-2 pt-1 mt-auto">
-              <Button size="sm" className="flex-1" onClick={() => openRespond(offer, "ACCEPTED")} disabled={isOwnerOperator && !eligible}>
+              <Button
+                size="sm"
+                className="flex-1"
+                onClick={() => openRespond(
+                  offer,
+                  "ACCEPTED",
+                )}
+                disabled={isOwnerOperator && !eligible}
+              >
                 <CheckCircle2 className="h-4 w-4 mr-1.5" />
                 Accept
               </Button>
-              <Button size="sm" variant="outline" className="flex-1" onClick={() => openRespond(offer, "DECLINED")}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                onClick={() => openRespond(
+                  offer,
+                  "DECLINED",
+                )}
+              >
                 <XCircle className="h-4 w-4 mr-1.5" />
                 Decline
               </Button>
@@ -239,62 +305,119 @@ export function JobOffersInbox() {
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Active jobs: {activeJobs}/{maxActiveJobs}. You can accept {maxActiveJobs - activeJobs} more offer(s).
+            Active jobs:
+            {" "}
+            {activeJobs}
+            /
+            {maxActiveJobs}
+            . You can accept
+            {" "}
+            {maxActiveJobs - activeJobs}
+            {" "}
+            more offer(s).
           </AlertDescription>
         </Alert>
       )}
 
-      <Tabs defaultValue="incoming" className="w-full">
+      <Tabs
+        defaultValue="incoming"
+        className="w-full"
+      >
         <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="incoming" className="gap-2">
+          <TabsTrigger
+            value="incoming"
+            className="gap-2"
+          >
             <Package className="h-4 w-4" />
             Incoming
             {pendingOffers.length > 0 && (
-              <Badge variant="secondary" className="ml-1">{pendingOffers.length}</Badge>
+              <Badge
+                variant="secondary"
+                className="ml-1"
+              >
+                {pendingOffers.length}
+              </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="past" className="gap-2">
+          <TabsTrigger
+            value="past"
+            className="gap-2"
+          >
             <Clock className="h-4 w-4" />
             Past Offers
             {respondedOffers.length > 0 && (
-              <Badge variant="secondary" className="ml-1">{respondedOffers.length}</Badge>
+              <Badge
+                variant="secondary"
+                className="ml-1"
+              >
+                {respondedOffers.length}
+              </Badge>
             )}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="incoming" className="mt-4 space-y-3">
+        <TabsContent
+          value="incoming"
+          className="mt-4 space-y-3"
+        >
           <div className="space-y-1">
             <h2 className="text-base font-semibold">Incoming Offers</h2>
             <p className="text-sm text-muted-foreground">New job offers awaiting your acceptance or decline.</p>
           </div>
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading offers...</p>
-          ) : pendingOffers.length === 0 ? (
-            <EmptyState icon={Package} title="No pending offers" description="Job offers from enterprises will appear here." />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {pendingOffers.map((offer) => renderOfferCard(offer, true))}
-            </div>
-          )}
+          {isLoading
+            ? (
+                <p className="text-sm text-muted-foreground">Loading offers...</p>
+              )
+            : pendingOffers.length === 0
+              ? (
+                  <EmptyState
+                    icon={Package}
+                    title="No pending offers"
+                    description="Job offers from enterprises will appear here."
+                  />
+                )
+              : (
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {pendingOffers.map(offer => renderOfferCard(
+                      offer,
+                      true,
+                    ))}
+                  </div>
+                )}
         </TabsContent>
 
-        <TabsContent value="past" className="mt-4 space-y-3">
+        <TabsContent
+          value="past"
+          className="mt-4 space-y-3"
+        >
           <div className="space-y-1">
             <h2 className="text-base font-semibold">Past Offers</h2>
             <p className="text-sm text-muted-foreground">Offers you've previously accepted, declined, or that have expired.</p>
           </div>
-          {respondedOffers.length === 0 ? (
-            <EmptyState icon={Clock} title="No past offers" description="Offers you've accepted, declined, or that have expired will appear here." />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {respondedOffers.map((offer) => renderOfferCard(offer, false))}
-            </div>
-          )}
+          {respondedOffers.length === 0
+            ? (
+                <EmptyState
+                  icon={Clock}
+                  title="No past offers"
+                  description="Offers you've accepted, declined, or that have expired will appear here."
+                />
+              )
+            : (
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {respondedOffers.map(offer => renderOfferCard(
+                    offer,
+                    false,
+                  ))}
+                </div>
+              )}
         </TabsContent>
       </Tabs>
 
       {/* Response Dialog */}
-      <Dialog open={!!respondingOffer} onOpenChange={() => { setRespondingOffer(null); setResponseAction(null); }}>
+      <Dialog
+        open={!!respondingOffer}
+        onOpenChange={() => { setRespondingOffer(null); setResponseAction(null); }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
@@ -310,12 +433,15 @@ export function JobOffersInbox() {
             <Textarea
               placeholder="Add a note (optional)..."
               value={responseNote}
-              onChange={(e) => setResponseNote(e.target.value)}
+              onChange={e => setResponseNote(e.target.value)}
               rows={3}
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setRespondingOffer(null); setResponseAction(null); }}>
+            <Button
+              variant="outline"
+              onClick={() => { setRespondingOffer(null); setResponseAction(null); }}
+            >
               Cancel
             </Button>
             <Button

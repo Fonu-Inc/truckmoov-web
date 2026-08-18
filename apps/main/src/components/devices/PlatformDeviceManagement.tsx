@@ -1,171 +1,264 @@
-import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
-import { formatCompactRelative } from "@truckmoov/app-core/utils/time-utils";
-import { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
+import type { FilterDraft } from "@/components/shadcn/platform-filter-popover";
+
+import type { DeviceWithTelemetry } from "@/hooks/useDeviceTelemetry";
+import {
+  formatCompactRelative, formatRelative,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  Activity, AlertTriangle,
+  ArrowUpDown,
+  Battery,
+  Building2,
+  CheckCircle,
+  Clock,
+  Cpu,
+  Download,
+  Eye,
+  FileText,
+  SlidersHorizontal as Filter,
+  Fuel,
+  Gauge,
+  MoreHorizontal,
+  Navigation,
+  Pencil,
+  RefreshCw,
+  Search,
+  Signal,
+  SignalLow,
+  SignalZero,
+  Trash2,
+  XCircle,
+} from "lucide-react";
+import {
+  useMemo, useState,
+} from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import {
+  Dialog as Sheet,
+  DialogContent as SheetContent,
+  DialogDescription as SheetDescription,
+  DialogHeader as SheetHeader,
+  DialogTitle as SheetTitle,
+} from "@/components/shadcn/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
+import { Input } from "@/components/shadcn/input";
+import {
+  buildEmptyDraft,
+
+  PlatformFilterPopover,
+} from "@/components/shadcn/platform-filter-popover";
+import { Progress } from "@/components/shadcn/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from "@/components/shadcn/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue } from "@/components/shadcn/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator } from "@/components/shadcn/dropdown-menu";
-import {
-  Dialog as Sheet,
-  DialogContent as SheetContent,
-  DialogHeader as SheetHeader,
-  DialogTitle as SheetTitle,
-  DialogDescription as SheetDescription } from "@/components/shadcn/dialog";
-import {Download, Cpu,
-  Search,
-  MoreHorizontal,
-  Signal,
-  SignalLow,
-  SignalZero,
-  Building2,
-  RefreshCw,
-  SlidersHorizontal as Filter,
-  Eye,
-  Pencil,
-  Trash2,
-  XCircle,
-  CheckCircle,
-  ArrowUpDown,
-  FileText,
-  AlertTriangle,
-  Activity,
-  Clock,
-  Navigation,
-  Fuel,
-  Battery,
-  Gauge } from "lucide-react";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import { Progress } from "@/components/shadcn/progress";
-import { DeviceWithTelemetry, DriverBehaviorEvent } from "@/hooks/useDeviceTelemetry";
+  TableRow,
+} from "@/components/shadcn/table";
+import { DriverBehaviorEvent } from "@/hooks/useDeviceTelemetry";
 import { DeviceLifecycleBadge } from "./DeviceLifecycleBadge";
 
 type DeviceLifecycleStatus = string;
-import {
-  PlatformFilterPopover,
-  buildEmptyDraft,
-  type FilterDraft } from "@/components/shadcn/platform-filter-popover";
-import { toast } from "sonner";
 
-interface PlatformDeviceManagementProps {
+type PlatformDeviceManagementProps = {
   devices: DeviceWithTelemetry[];
   loading: boolean;
   onRefresh: () => void;
   tenantNameMap?: Record<string, string>;
-}
+};
 
 // All lifecycle statuses for filtering
 const lifecycleStatuses = [
-  { value: "all", label: "All Statuses" },
-  { value: "registered", label: "Registered" },
-  { value: "config_pending", label: "Config Pending" },
-  { value: "configured", label: "Configured" },
-  { value: "verified_online", label: "Verified Online" },
-  { value: "assignable", label: "Assignable" },
-  { value: "assigned", label: "Assigned" },
-  { value: "faulty", label: "Faulty" },
-  { value: "decommissioned", label: "Decommissioned" },
+  {
+    value: "all", label: "All Statuses",
+  },
+  {
+    value: "registered", label: "Registered",
+  },
+  {
+    value: "config_pending", label: "Config Pending",
+  },
+  {
+    value: "configured", label: "Configured",
+  },
+  {
+    value: "verified_online", label: "Verified Online",
+  },
+  {
+    value: "assignable", label: "Assignable",
+  },
+  {
+    value: "assigned", label: "Assigned",
+  },
+  {
+    value: "faulty", label: "Faulty",
+  },
+  {
+    value: "decommissioned", label: "Decommissioned",
+  },
   // Legacy statuses
-  { value: "active", label: "Active (Legacy)" },
-  { value: "inactive", label: "Inactive (Legacy)" },
+  {
+    value: "active", label: "Active (Legacy)",
+  },
+  {
+    value: "inactive", label: "Inactive (Legacy)",
+  },
 ];
 
-export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNameMap: externalTenantMap }: PlatformDeviceManagementProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [filterDraft, setFilterDraft] = useState<FilterDraft>({
+export function PlatformDeviceManagement({
+  devices, loading, onRefresh, tenantNameMap: externalTenantMap,
+}: PlatformDeviceManagementProps) {
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("all");
+  const [
+    filterDraft,
+    setFilterDraft,
+  ] = useState<FilterDraft>({
     lastSeen: { enabled: false },
     tenant: { enabled: false },
-    manufacturer: { enabled: false } });
+    manufacturer: { enabled: false },
+  });
   const [internalTenantNames] = useState<Record<string, string>>({});
-  const [selectedDevice, setSelectedDevice] = useState<DeviceWithTelemetry | null>(null);
-  const [showDetailsSheet, setShowDetailsSheet] = useState(false);
-  const [showTelemetrySheet, setShowTelemetrySheet] = useState(false);
-  const [assignDevice, setAssignDevice] = useState<DeviceWithTelemetry | null>(null);
-  const [assignTenantId, setAssignTenantId] = useState<string>("");
+  const [
+    selectedDevice,
+    setSelectedDevice,
+  ] = useState<DeviceWithTelemetry | null>(null);
+  const [
+    showDetailsSheet,
+    setShowDetailsSheet,
+  ] = useState(false);
+  const [
+    showTelemetrySheet,
+    setShowTelemetrySheet,
+  ] = useState(false);
+  const [
+    assignDevice,
+    setAssignDevice,
+  ] = useState<DeviceWithTelemetry | null>(null);
+  const [
+    assignTenantId,
+    setAssignTenantId,
+  ] = useState<string>("");
 
   // Use external tenant map if provided, otherwise use internal state
   const tenantNames = externalTenantMap && Object.keys(externalTenantMap).length > 0
     ? externalTenantMap
     : internalTenantNames;
 
-  const resolveTenantName = useMemo(() => {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const demoTenantName =
-      tenantNames["lagos-express-logistics"] ||
-      tenantNames["f7f5af88-fd76-4439-aae3-0461be52f63f"]; // demo tenant fallback
+  const resolveTenantName = useMemo(
+    () => {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const demoTenantName
+        = tenantNames["lagos-express-logistics"]
+          || tenantNames["f7f5af88-fd76-4439-aae3-0461be52f63f"]; // demo tenant fallback
 
-    // Collect unique slug->name entries from the tenantNames map
-    const slugEntries = new Map<string, string>();
-    for (const [key, name] of Object.entries(tenantNames)) {
-      if (!key) continue;
-      if (uuidRegex.test(key)) continue; // ignore UUID keys
-      slugEntries.set(key, name);
-    }
-
-    return (tenantId: string | null | undefined) => {
-      const raw = tenantId ?? "";
-
-      if (!raw) {
-        return { name: "Unknown tenant", resolved: false, raw } as const;
+      // Collect unique slug->name entries from the tenantNames map
+      const slugEntries = new Map<string, string>();
+      for (const [
+        key,
+        name,
+      ] of Object.entries(tenantNames)) {
+        if (!key)
+          continue;
+        if (uuidRegex.test(key))
+          continue; // ignore UUID keys
+        slugEntries.set(
+          key,
+          name,
+        );
       }
 
-      // 1) Exact match by tenant UUID or slug
-      const exact = tenantNames[raw];
-      if (exact) return { name: exact, resolved: true, raw } as const;
+      return (tenantId: string | null | undefined) => {
+        const raw = tenantId ?? "";
 
-      // 2) Best-effort match by slug prefix (e.g. "lagos-express" => "lagos-express-logistics")
-      if (!uuidRegex.test(raw)) {
-        const matches: string[] = [];
-        for (const [slug, name] of slugEntries.entries()) {
-          if (slug === raw || slug.startsWith(raw) || raw.startsWith(slug)) {
-            matches.push(name);
+        if (!raw) {
+          return {
+            name: "Unknown tenant", resolved: false, raw,
+          } as const;
+        }
+
+        // 1) Exact match by tenant UUID or slug
+        const exact = tenantNames[raw];
+        if (exact) {
+          return {
+            name: exact, resolved: true, raw,
+          } as const;
+        }
+
+        // 2) Best-effort match by slug prefix (e.g. "lagos-express" => "lagos-express-logistics")
+        if (!uuidRegex.test(raw)) {
+          const matches: string[] = [];
+          for (const [
+            slug,
+            name,
+          ] of slugEntries.entries()) {
+            if (slug === raw || slug.startsWith(raw) || raw.startsWith(slug)) {
+              matches.push(name);
+            }
+          }
+
+          const uniqueNames = Array.from(new Set(matches));
+          if (uniqueNames.length === 1) {
+            return {
+              name: uniqueNames[0], resolved: true, raw,
+            } as const;
           }
         }
 
-        const uniqueNames = Array.from(new Set(matches));
-        if (uniqueNames.length === 1) {
-          return { name: uniqueNames[0], resolved: true, raw } as const;
+        // 3) Legacy demo placeholders (only if we can resolve a real demo tenant name)
+        if (demoTenantName && (raw === "simulator-test" || /^tenant-\d+$/i.test(raw))) {
+          return {
+            name: demoTenantName, resolved: true, raw,
+          } as const;
         }
-      }
 
-      // 3) Legacy demo placeholders (only if we can resolve a real demo tenant name)
-      if (demoTenantName && (raw === "simulator-test" || /^tenant-\d+$/i.test(raw))) {
-        return { name: demoTenantName, resolved: true, raw } as const;
-      }
-
-      return { name: "Unknown tenant", resolved: false, raw } as const;
-    };
-  }, [tenantNames]);
+        return {
+          name: "Unknown tenant", resolved: false, raw,
+        } as const;
+      };
+    },
+    [tenantNames],
+  );
 
   // Get unique manufacturers from devices
-  const manufacturers = ["all", ...new Set(devices.map(d => d.manufacturer))];
+  const manufacturers = [
+    "all",
+    ...new Set(devices.map(d => d.manufacturer)),
+  ];
 
   const filteredDevices = devices.filter((device) => {
     const tenantName = resolveTenantName(device.tenant_id).name;
-    const matchesSearch =
-      device.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      device.imei.includes(searchQuery) ||
-      tenantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      device.tenant_id?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch
+      = device.id.toLowerCase().includes(searchQuery.toLowerCase())
+        || device.imei.includes(searchQuery)
+        || tenantName.toLowerCase().includes(searchQuery.toLowerCase())
+        || device.tenant_id?.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Get lifecycle status for filtering
     const lifecycleStatus = (device as any).lifecycle_status || device.status;
@@ -174,37 +267,42 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
     let matchesStatus = false;
     if (statusFilter === "all") {
       matchesStatus = true;
-    } else if (statusFilter === "active") {
+    }
+    else if (statusFilter === "active") {
       // "Active" means operationally running (status = 'active')
       matchesStatus = device.status === "active";
-    } else if (statusFilter === "assigned") {
+    }
+    else if (statusFilter === "assigned") {
       // "Assigned" means lifecycle assigned but NOT operationally active
       matchesStatus = lifecycleStatus === "assigned" && device.status !== "active";
-    } else {
+    }
+    else {
       matchesStatus = lifecycleStatus === statusFilter;
     }
 
     // Manufacturer filter (from popover)
     const mfgFilter = filterDraft.manufacturer;
-    const matchesManufacturer =
-      !mfgFilter?.enabled || !mfgFilter.value || device.manufacturer === mfgFilter.value;
+    const matchesManufacturer
+      = !mfgFilter?.enabled || !mfgFilter.value || device.manufacturer === mfgFilter.value;
 
     // Tenant filter (from popover)
     const tenantFilterDraft = filterDraft.tenant;
-    const matchesTenantFilter =
-      !tenantFilterDraft?.enabled ||
-      !tenantFilterDraft.value ||
-      tenantName === tenantFilterDraft.value;
+    const matchesTenantFilter
+      = !tenantFilterDraft?.enabled
+        || !tenantFilterDraft.value
+        || tenantName === tenantFilterDraft.value;
 
     // Last Seen filter (from popover)
     const lastSeenFilter = filterDraft.lastSeen;
     let matchesLastSeen = true;
     if (lastSeenFilter?.enabled && lastSeenFilter.value && device.last_seen) {
       const lastSeenMs = new Date(device.last_seen).getTime();
-      const days =
-        lastSeenFilter.value === "7d" ? 7 : lastSeenFilter.value === "30d" ? 30 : lastSeenFilter.value === "90d" ? 90 : 0;
-      if (days > 0) matchesLastSeen = Date.now() - lastSeenMs <= days * 86400000;
-    } else if (lastSeenFilter?.enabled && lastSeenFilter.value && !device.last_seen) {
+      const days
+        = lastSeenFilter.value === "7d" ? 7 : lastSeenFilter.value === "30d" ? 30 : lastSeenFilter.value === "90d" ? 90 : 0;
+      if (days > 0)
+        matchesLastSeen = Date.now() - lastSeenMs <= days * 86400000;
+    }
+    else if (lastSeenFilter?.enabled && lastSeenFilter.value && !device.last_seen) {
       matchesLastSeen = false;
     }
 
@@ -213,11 +311,18 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
 
   const getSignalIcon = (strength: number | null, status: string) => {
     // Only show signal for active/online devices
-    if (!["active", "assigned", "verified_online", "assignable"].includes(status) || !strength) {
+    if (![
+      "active",
+      "assigned",
+      "verified_online",
+      "assignable",
+    ].includes(status) || !strength) {
       return <SignalZero className="h-4 w-4 text-muted-foreground" />;
     }
-    if (strength >= 70) return <Signal className="h-4 w-4 text-success" />;
-    if (strength >= 30) return <SignalLow className="h-4 w-4 text-warning" />;
+    if (strength >= 70)
+      return <Signal className="h-4 w-4 text-success" />;
+    if (strength >= 30)
+      return <SignalLow className="h-4 w-4 text-warning" />;
     return <SignalZero className="h-4 w-4 text-destructive" />;
   };
 
@@ -242,7 +347,8 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
     assigned: devices.filter(d => getLifecycleStatus(d) === "assigned" && d.status !== "active").length,
     // Active: devices with operational status 'active' (assigned devices that are running)
     active: devices.filter(d => d.status === "active").length,
-    faulty: devices.filter(d => getLifecycleStatus(d) === "faulty").length };
+    faulty: devices.filter(d => getLifecycleStatus(d) === "faulty").length,
+  };
 
   if (loading) {
     return (
@@ -274,7 +380,10 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+            >
               <Download className="h-4 w-4 mr-2" />
               Export Data
             </Button>
@@ -321,16 +430,22 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
               placeholder="Search by ID, IMEI, or tenant..."
               className="pl-10"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={statusFilter}
+            onValueChange={setStatusFilter}
+          >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
-              {lifecycleStatuses.map((s) => (
-                <SelectItem key={s.value} value={s.value}>
+              {lifecycleStatuses.map(s => (
+                <SelectItem
+                  key={s.value}
+                  value={s.value}
+                >
                   {s.label}
                 </SelectItem>
               ))}
@@ -344,26 +459,39 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                 label: "Last Seen",
                 type: "select",
                 options: [
-                  { value: "7d", label: "Last 7 days" },
-                  { value: "30d", label: "Last 30 days" },
-                  { value: "90d", label: "Last 90 days" },
-                ] },
+                  {
+                    value: "7d", label: "Last 7 days",
+                  },
+                  {
+                    value: "30d", label: "Last 30 days",
+                  },
+                  {
+                    value: "90d", label: "Last 90 days",
+                  },
+                ],
+              },
               {
                 key: "tenant",
                 label: "Tenant",
                 type: "select",
                 options: Array.from(
-                  new Set(devices.map((d) => resolveTenantName(d.tenant_id).name)),
+                  new Set(devices.map(d => resolveTenantName(d.tenant_id).name)),
                 )
-                  .filter((n) => n && n !== "Unknown tenant")
-                  .map((n) => ({ value: n, label: n })) },
+                  .filter(n => n && n !== "Unknown tenant")
+                  .map(n => ({
+                    value: n, label: n,
+                  })),
+              },
               {
                 key: "manufacturer",
                 label: "Manufacturer",
                 type: "select",
                 options: manufacturers
-                  .filter((m) => m !== "all")
-                  .map((m) => ({ value: m, label: m })) },
+                  .filter(m => m !== "all")
+                  .map(m => ({
+                    value: m, label: m,
+                  })),
+              },
             ]}
             value={filterDraft}
             onApply={setFilterDraft}
@@ -385,140 +513,174 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredDevices.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    {devices.length === 0
-                      ? "No devices registered across tenants."
-                      : "No devices match your filters."
-                    }
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredDevices.map((device) => {
-                  const lifecycleStatus = (device as any).lifecycle_status || device.status;
-                  const tenantResolved = resolveTenantName(device.tenant_id);
-                  const showOperationalFirst = statusFilter === "active";
-                  const primaryStatus = showOperationalFirst ? device.status : lifecycleStatus;
-                  const secondaryStatus = showOperationalFirst
-                    ? lifecycleStatus
-                    : (device.status && device.status !== lifecycleStatus ? device.status : null);
-
-                  return (
-                    <TableRow key={device.id}>
-                      <TableCell className="font-mono text-sm">{device.imei}</TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{device.manufacturer}</p>
-                          {device.model && (
-                            <p className="text-xs text-muted-foreground">{device.model}</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-muted-foreground" />
-                          {device.tenant_id ? (
-                            <span
-                              className="text-sm truncate max-w-[150px]"
-                              title={tenantResolved.resolved ? tenantResolved.name : tenantResolved.raw}
-                            >
-                              {tenantResolved.name}
-                            </span>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">Unassigned</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <DeviceLifecycleBadge status={primaryStatus as DeviceLifecycleStatus} />
-                          {secondaryStatus && (
-                            <DeviceLifecycleBadge status={secondaryStatus as DeviceLifecycleStatus} size="sm" />
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getSignalIcon(device.signal_strength, lifecycleStatus)}
-                          {device.signal_strength !== null && (
-                            <span className="text-sm">{device.signal_strength}%</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatCompactRelative(device.last_seen, "Never")}
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewDetails(device)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleViewDetails(device)}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Edit Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => { setAssignDevice(device); setAssignTenantId(""); }}>
-                              <ArrowUpDown className="h-4 w-4 mr-2" />
-                              {device.tenant_id ? "Reassign" : "Assign to Tenant"}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {device.tenant_id ? (
-                              device.status === "suspended" || lifecycleStatus === "suspended" ? (
-                                <DropdownMenuItem
-                                  className="text-success"
-                                  onClick={() => {
-                                    toast.info('Coming soon');
-                                  }}
-                                >
-                                  <CheckCircle className="h-4 w-4 mr-2" />
-                                  Reactivate
-                                </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem
-                                  className="text-warning"
-                                  onClick={() => {
-                                    toast.info('Coming soon');
-                                  }}
-                                >
-                                  <XCircle className="h-4 w-4 mr-2" />
-                                  Suspend
-                                </DropdownMenuItem>
-                              )
-                            ) : (
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => {
-                                  toast.info('Coming soon');
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            )}
-                            {lifecycleStatus === "faulty" && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-warning" onClick={() => handleViewDetails(device)}>
-                                  <AlertTriangle className="h-4 w-4 mr-2" />
-                                  View Fault Details
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+              {filteredDevices.length === 0
+                ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="text-center py-8 text-muted-foreground"
+                      >
+                        {devices.length === 0
+                          ? "No devices registered across tenants."
+                          : "No devices match your filters."}
                       </TableCell>
                     </TableRow>
-                  );
-                })
-              )}
+                  )
+                : (
+                    filteredDevices.map((device) => {
+                      const lifecycleStatus = (device as any).lifecycle_status || device.status;
+                      const tenantResolved = resolveTenantName(device.tenant_id);
+                      const showOperationalFirst = statusFilter === "active";
+                      const primaryStatus = showOperationalFirst ? device.status : lifecycleStatus;
+                      const secondaryStatus = showOperationalFirst
+                        ? lifecycleStatus
+                        : (device.status && device.status !== lifecycleStatus ? device.status : null);
+
+                      return (
+                        <TableRow key={device.id}>
+                          <TableCell className="font-mono text-sm">{device.imei}</TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{device.manufacturer}</p>
+                              {device.model && (
+                                <p className="text-xs text-muted-foreground">{device.model}</p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                              {device.tenant_id
+                                ? (
+                                    <span
+                                      className="text-sm truncate max-w-[150px]"
+                                      title={tenantResolved.resolved ? tenantResolved.name : tenantResolved.raw}
+                                    >
+                                      {tenantResolved.name}
+                                    </span>
+                                  )
+                                : (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      Unassigned
+                                    </Badge>
+                                  )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <DeviceLifecycleBadge status={primaryStatus as DeviceLifecycleStatus} />
+                              {secondaryStatus && (
+                                <DeviceLifecycleBadge
+                                  status={secondaryStatus as DeviceLifecycleStatus}
+                                  size="sm"
+                                />
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {getSignalIcon(
+                                device.signal_strength,
+                                lifecycleStatus,
+                              )}
+                              {device.signal_strength !== null && (
+                                <span className="text-sm">
+                                  {device.signal_strength}
+                                  %
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatCompactRelative(
+                              device.last_seen,
+                              "Never",
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleViewDetails(device)}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleViewDetails(device)}>
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Edit Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => { setAssignDevice(device); setAssignTenantId(""); }}>
+                                  <ArrowUpDown className="h-4 w-4 mr-2" />
+                                  {device.tenant_id ? "Reassign" : "Assign to Tenant"}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                {device.tenant_id
+                                  ? (
+                                      device.status === "suspended" || lifecycleStatus === "suspended"
+                                        ? (
+                                            <DropdownMenuItem
+                                              className="text-success"
+                                              onClick={() => {
+                                                toast.info("Coming soon");
+                                              }}
+                                            >
+                                              <CheckCircle className="h-4 w-4 mr-2" />
+                                              Reactivate
+                                            </DropdownMenuItem>
+                                          )
+                                        : (
+                                            <DropdownMenuItem
+                                              className="text-warning"
+                                              onClick={() => {
+                                                toast.info("Coming soon");
+                                              }}
+                                            >
+                                              <XCircle className="h-4 w-4 mr-2" />
+                                              Suspend
+                                            </DropdownMenuItem>
+                                          )
+                                    )
+                                  : (
+                                      <DropdownMenuItem
+                                        className="text-destructive"
+                                        onClick={() => {
+                                          toast.info("Coming soon");
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    )}
+                                {lifecycleStatus === "faulty" && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-warning"
+                                      onClick={() => handleViewDetails(device)}
+                                    >
+                                      <AlertTriangle className="h-4 w-4 mr-2" />
+                                      View Fault Details
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
             </TableBody>
           </Table>
         </div>
@@ -526,7 +688,9 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
         {/* Platform Admin Note */}
         <div className="mt-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-3">
           <p className="text-xs text-muted-foreground">
-            <strong>Platform Admin View:</strong> This is a read-only overview.
+            <strong>Platform Admin View:</strong>
+            {" "}
+            This is a read-only overview.
             Device registration, configuration, and vehicle assignment are managed by tenant administrators.
             Use the Device Catalog tab to manage supported manufacturers and models.
           </p>
@@ -534,7 +698,10 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
       </CardContent>
 
       {/* Device Details Sheet */}
-      <Sheet open={showDetailsSheet} onOpenChange={setShowDetailsSheet}>
+      <Sheet
+        open={showDetailsSheet}
+        onOpenChange={setShowDetailsSheet}
+      >
         <SheetContent className="w-full max-w-2xl max-h-[85vh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-3">
@@ -542,9 +709,15 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                 <Cpu className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <span className="block">{selectedDevice?.manufacturer} {selectedDevice?.model}</span>
+                <span className="block">
+                  {selectedDevice?.manufacturer}
+                  {" "}
+                  {selectedDevice?.model}
+                </span>
                 <span className="text-sm font-normal text-muted-foreground font-mono">
-                  IMEI: {selectedDevice?.imei}
+                  IMEI:
+                  {" "}
+                  {selectedDevice?.imei}
                 </span>
               </div>
             </SheetTitle>
@@ -567,7 +740,12 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                           return (
                             <>
                               <DeviceLifecycleBadge status={lifecycle} />
-                              {secondary && <DeviceLifecycleBadge status={secondary} size="sm" />}
+                              {secondary && (
+                                <DeviceLifecycleBadge
+                                  status={secondary}
+                                  size="sm"
+                                />
+                              )}
                             </>
                           );
                         })()}
@@ -582,7 +760,10 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                     <div>
                       <p className="text-sm text-muted-foreground">Tenant</p>
                       <p className="text-sm font-medium mt-1">
-                        {tenantNames[selectedDevice.tenant_id] || selectedDevice.tenant_id.slice(0, 8) + "..."}
+                        {tenantNames[selectedDevice.tenant_id] || `${selectedDevice.tenant_id.slice(
+                          0,
+                          8,
+                        )}...`}
                       </p>
                     </div>
                     <div>
@@ -608,10 +789,14 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                         <span>Signal Strength</span>
                       </div>
                       <span className="font-medium">
-                        {selectedDevice.signal_strength ?? 0}%
+                        {selectedDevice.signal_strength ?? 0}
+                        %
                       </span>
                     </div>
-                    <Progress value={selectedDevice.signal_strength ?? 0} className="h-2" />
+                    <Progress
+                      value={selectedDevice.signal_strength ?? 0}
+                      className="h-2"
+                    />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
@@ -620,10 +805,14 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                         <span>Battery Level</span>
                       </div>
                       <span className="font-medium">
-                        {selectedDevice.battery_level ?? 0}%
+                        {selectedDevice.battery_level ?? 0}
+                        %
                       </span>
                     </div>
-                    <Progress value={selectedDevice.battery_level ?? 0} className="h-2" />
+                    <Progress
+                      value={selectedDevice.battery_level ?? 0}
+                      className="h-2"
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -639,11 +828,17 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                   </CardHeader>
                   <CardContent>
                     <div className="font-mono text-sm">
-                      {selectedDevice.latitude.toFixed(6)}, {selectedDevice.longitude.toFixed(6)}
+                      {selectedDevice.latitude.toFixed(6)}
+                      ,
+                      {selectedDevice.longitude.toFixed(6)}
                     </div>
                     {selectedDevice.speed !== undefined && (
                       <div className="mt-2 text-sm text-muted-foreground">
-                        Speed: {selectedDevice.speed?.toFixed(0) || 0} km/h
+                        Speed:
+                        {" "}
+                        {selectedDevice.speed?.toFixed(0) || 0}
+                        {" "}
+                        km/h
                       </div>
                     )}
                   </CardContent>
@@ -676,7 +871,10 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
       </Sheet>
 
       {/* Telemetry Log Sheet */}
-      <Sheet open={showTelemetrySheet} onOpenChange={setShowTelemetrySheet}>
+      <Sheet
+        open={showTelemetrySheet}
+        onOpenChange={setShowTelemetrySheet}
+      >
         <SheetContent className="w-full max-w-2xl max-h-[85vh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-3">
@@ -710,7 +908,9 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                       <span className="text-sm">Speed</span>
                     </div>
                     <span className="font-mono text-lg">
-                      {selectedDevice.speed?.toFixed(0) || '0'} <span className="text-sm text-muted-foreground">km/h</span>
+                      {selectedDevice.speed?.toFixed(0) || "0"}
+                      {" "}
+                      <span className="text-sm text-muted-foreground">km/h</span>
                     </span>
                   </div>
 
@@ -720,7 +920,8 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                       <span className="text-sm">Heading</span>
                     </div>
                     <span className="font-mono text-lg">
-                      {selectedDevice.heading || 0}°
+                      {selectedDevice.heading || 0}
+                      °
                     </span>
                   </div>
 
@@ -730,9 +931,15 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                         <Fuel className="h-4 w-4 text-warning" />
                         <span className="text-sm">Fuel Level</span>
                       </div>
-                      <span className="font-mono">{selectedDevice.fuel_level?.toFixed(0) || 0}%</span>
+                      <span className="font-mono">
+                        {selectedDevice.fuel_level?.toFixed(0) || 0}
+                        %
+                      </span>
                     </div>
-                    <Progress value={selectedDevice.fuel_level || 0} className="h-2" />
+                    <Progress
+                      value={selectedDevice.fuel_level || 0}
+                      className="h-2"
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -741,9 +948,15 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                         <Battery className="h-4 w-4 text-success" />
                         <span className="text-sm">Device Battery</span>
                       </div>
-                      <span className="font-mono">{selectedDevice.battery_level || 0}%</span>
+                      <span className="font-mono">
+                        {selectedDevice.battery_level || 0}
+                        %
+                      </span>
                     </div>
-                    <Progress value={selectedDevice.battery_level || 0} className="h-2" />
+                    <Progress
+                      value={selectedDevice.battery_level || 0}
+                      className="h-2"
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -752,9 +965,15 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                         <Signal className="h-4 w-4 text-primary" />
                         <span className="text-sm">Signal Strength</span>
                       </div>
-                      <span className="font-mono">{selectedDevice.signal_strength || 0}%</span>
+                      <span className="font-mono">
+                        {selectedDevice.signal_strength || 0}
+                        %
+                      </span>
                     </div>
-                    <Progress value={selectedDevice.signal_strength || 0} className="h-2" />
+                    <Progress
+                      value={selectedDevice.signal_strength || 0}
+                      className="h-2"
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -777,13 +996,21 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                     {(selectedDevice as any).altitude && (
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Altitude</span>
-                        <span className="font-mono">{(selectedDevice as any).altitude.toFixed(1)} m</span>
+                        <span className="font-mono">
+                          {(selectedDevice as any).altitude.toFixed(1)}
+                          {" "}
+                          m
+                        </span>
                       </div>
                     )}
                     {(selectedDevice as any).accuracy && (
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Accuracy</span>
-                        <span className="font-mono">{(selectedDevice as any).accuracy.toFixed(1)} m</span>
+                        <span className="font-mono">
+                          {(selectedDevice as any).accuracy.toFixed(1)}
+                          {" "}
+                          m
+                        </span>
                       </div>
                     )}
                   </CardContent>
@@ -795,7 +1022,9 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock className="h-4 w-4" />
-                    Last telemetry received {selectedDevice.last_seen ? formatRelative(selectedDevice.last_seen) : "never"}
+                    Last telemetry received
+                    {" "}
+                    {selectedDevice.last_seen ? formatRelative(selectedDevice.last_seen) : "never"}
                   </div>
                 </CardContent>
               </Card>
@@ -805,36 +1034,64 @@ export function PlatformDeviceManagement({ devices, loading, onRefresh, tenantNa
       </Sheet>
 
       {/* Assign Device to Tenant Dialog */}
-      <Sheet open={!!assignDevice} onOpenChange={(o) => !o && setAssignDevice(null)}>
+      <Sheet
+        open={!!assignDevice}
+        onOpenChange={o => !o && setAssignDevice(null)}
+      >
         <SheetContent className="w-full max-w-md">
           <SheetHeader>
             <SheetTitle>Assign Device to Tenant</SheetTitle>
             <SheetDescription>
-              Allocate {assignDevice?.manufacturer} {assignDevice?.model} (IMEI {assignDevice?.imei}) to a tenant.
+              Allocate
+              {" "}
+              {assignDevice?.manufacturer}
+              {" "}
+              {assignDevice?.model}
+              {" "}
+              (IMEI
+              {" "}
+              {assignDevice?.imei}
+              ) to a tenant.
             </SheetDescription>
           </SheetHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Tenant</label>
-              <Select value={assignTenantId} onValueChange={setAssignTenantId}>
+              <Select
+                value={assignTenantId}
+                onValueChange={setAssignTenantId}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select tenant" />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(tenantNames)
                     .filter(([k]) => /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(k))
-                    .map(([id, name]) => (
-                      <SelectItem key={id} value={id}>{name}</SelectItem>
+                    .map(([
+                      id,
+                      name,
+                    ]) => (
+                      <SelectItem
+                        key={id}
+                        value={id}
+                      >
+                        {name}
+                      </SelectItem>
                     ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setAssignDevice(null)}>Cancel</Button>
+              <Button
+                variant="outline"
+                onClick={() => setAssignDevice(null)}
+              >
+                Cancel
+              </Button>
               <Button
                 disabled={!assignTenantId}
                 onClick={() => {
-                  toast.info('Coming soon');
+                  toast.info("Coming soon");
                 }}
               >
                 Assign

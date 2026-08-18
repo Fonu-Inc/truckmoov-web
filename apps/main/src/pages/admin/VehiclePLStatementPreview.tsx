@@ -1,9 +1,11 @@
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
-import { useEffect, useState } from "react";
-import { Button } from "@/components/shadcn/button";
 import { Printer } from "lucide-react";
+import {
+  useEffect, useState,
+} from "react";
+import { Button } from "@/components/shadcn/button";
 
-interface PreviewRow {
+type PreviewRow = {
   vehicle_id: string;
   vehicle_name: string;
   revenue: number;
@@ -19,9 +21,9 @@ interface PreviewRow {
   depreciation: number;
   jobs: number;
   km: number;
-}
+};
 
-interface PreviewPayload {
+type PreviewPayload = {
   options: {
     title: string;
     companyName: string;
@@ -34,7 +36,7 @@ interface PreviewPayload {
     accent: "blue" | "green" | "amber" | "slate";
   };
   rows: PreviewRow[];
-}
+};
 
 const ACCENT_BG: Record<string, string> = {
   blue: "bg-blue-600",
@@ -49,36 +51,47 @@ const ACCENT_TEXT: Record<string, string> = {
   slate: "text-slate-700",
 };
 
-const fmt = (n: number) =>
-  `₦${(n || 0).toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
+function fmt(n: number) {
+  return `₦${(n || 0).toLocaleString(
+    "en-NG",
+    { maximumFractionDigits: 0 },
+  )}`;
+}
 
 const TIER_COLOR: Record<string, string> = {
-  excellent: "bg-green-100 text-green-800",
-  good: "bg-blue-100 text-blue-800",
-  marginal: "bg-yellow-100 text-yellow-800",
+  "excellent": "bg-green-100 text-green-800",
+  "good": "bg-blue-100 text-blue-800",
+  "marginal": "bg-yellow-100 text-yellow-800",
   "loss-making": "bg-red-100 text-red-800",
 };
 
 const TIER_LABEL: Record<string, string> = {
-  excellent: "Excellent",
-  good: "Good",
-  marginal: "Marginal",
+  "excellent": "Excellent",
+  "good": "Good",
+  "marginal": "Marginal",
   "loss-making": "Loss-Making",
 };
 
 export default function VehiclePLStatementPreview() {
-  const [payload, setPayload] = useState<PreviewPayload | null>(null);
+  const [
+    payload,
+    setPayload,
+  ] = useState<PreviewPayload | null>(null);
 
-  useEffect(() => {
-    const raw = sessionStorage.getItem("vpl_statement_preview");
-    if (raw) {
-      try {
-        setPayload(JSON.parse(raw));
-      } catch {
-        setPayload(null);
+  useEffect(
+    () => {
+      const raw = sessionStorage.getItem("vpl_statement_preview");
+      if (raw) {
+        try {
+          setPayload(JSON.parse(raw));
+        }
+        catch {
+          setPayload(null);
+        }
       }
-    }
-  }, []);
+    },
+    [],
+  );
 
   if (!payload) {
     return (
@@ -90,7 +103,9 @@ export default function VehiclePLStatementPreview() {
     );
   }
 
-  const { options, rows } = payload;
+  const {
+    options, rows,
+  } = payload;
   const totals = rows.reduce(
     (acc, r) => ({
       revenue: acc.revenue + r.revenue,
@@ -99,7 +114,9 @@ export default function VehiclePLStatementPreview() {
       jobs: acc.jobs + r.jobs,
       km: acc.km + r.km,
     }),
-    { revenue: 0, costs: 0, profit: 0, jobs: 0, km: 0 }
+    {
+      revenue: 0, costs: 0, profit: 0, jobs: 0, km: 0,
+    },
   );
   const margin = totals.revenue > 0 ? (totals.profit / totals.revenue) * 100 : 0;
   const accentBg = ACCENT_BG[options.accent];
@@ -110,7 +127,9 @@ export default function VehiclePLStatementPreview() {
       {/* Print toolbar */}
       <div className="max-w-4xl mx-auto mb-4 flex justify-end print:hidden">
         <Button onClick={() => window.print()}>
-          <Printer className="h-4 w-4 mr-2" /> Print / Save as PDF
+          <Printer className="h-4 w-4 mr-2" />
+          {" "}
+          Print / Save as PDF
         </Button>
       </div>
 
@@ -121,9 +140,20 @@ export default function VehiclePLStatementPreview() {
             <h1 className="text-4xl font-bold mb-2">{options.title}</h1>
             {options.companyName && <p className="text-xl opacity-90">{options.companyName}</p>}
             <div className="mt-8 text-sm opacity-90 space-y-1">
-              <p>Reporting Period: {options.periodLabel}</p>
-              <p>Generated: {formatDate(new Date())}</p>
-              {options.preparedBy && <p>Prepared by: {options.preparedBy}</p>}
+              <p>
+                Reporting Period:
+                {options.periodLabel}
+              </p>
+              <p>
+                Generated:
+                {formatDate(new Date())}
+              </p>
+              {options.preparedBy && (
+                <p>
+                  Prepared by:
+                  {options.preparedBy}
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -134,13 +164,35 @@ export default function VehiclePLStatementPreview() {
             <section>
               <h2 className={`text-2xl font-bold mb-4 ${accentText}`}>Fleet Summary</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <SummaryStat label="Total Revenue" value={fmt(totals.revenue)} />
-                <SummaryStat label="Total Costs" value={fmt(totals.costs)} />
-                <SummaryStat label="Net Profit" value={fmt(totals.profit)} highlight />
-                <SummaryStat label="Profit Margin" value={`${margin.toFixed(1)}%`} />
-                <SummaryStat label="Jobs Completed" value={String(totals.jobs)} />
-                <SummaryStat label="Total Distance" value={`${totals.km.toFixed(0)} km`} />
-                <SummaryStat label="Vehicles" value={String(rows.length)} />
+                <SummaryStat
+                  label="Total Revenue"
+                  value={fmt(totals.revenue)}
+                />
+                <SummaryStat
+                  label="Total Costs"
+                  value={fmt(totals.costs)}
+                />
+                <SummaryStat
+                  label="Net Profit"
+                  value={fmt(totals.profit)}
+                  highlight
+                />
+                <SummaryStat
+                  label="Profit Margin"
+                  value={`${margin.toFixed(1)}%`}
+                />
+                <SummaryStat
+                  label="Jobs Completed"
+                  value={String(totals.jobs)}
+                />
+                <SummaryStat
+                  label="Total Distance"
+                  value={`${totals.km.toFixed(0)} km`}
+                />
+                <SummaryStat
+                  label="Vehicles"
+                  value={String(rows.length)}
+                />
               </div>
             </section>
           )}
@@ -163,14 +215,20 @@ export default function VehiclePLStatementPreview() {
                 </thead>
                 <tbody>
                   {rows.map((r, i) => (
-                    <tr key={r.vehicle_id} className={i % 2 === 0 ? "bg-muted/30" : ""}>
+                    <tr
+                      key={r.vehicle_id}
+                      className={i % 2 === 0 ? "bg-muted/30" : ""}
+                    >
                       <td className="p-2 font-medium">{r.vehicle_name}</td>
                       <td className="text-right p-2 text-green-700">{fmt(r.revenue)}</td>
                       <td className="text-right p-2 text-red-700">{fmt(r.costs)}</td>
                       <td className={`text-right p-2 font-semibold ${r.net_profit >= 0 ? "text-green-700" : "text-red-700"}`}>
                         {fmt(r.net_profit)}
                       </td>
-                      <td className="text-right p-2">{r.margin.toFixed(1)}%</td>
+                      <td className="text-right p-2">
+                        {r.margin.toFixed(1)}
+                        %
+                      </td>
                       <td className="p-2">
                         <span className={`px-2 py-0.5 rounded text-xs ${TIER_COLOR[r.tier] || ""}`}>
                           {TIER_LABEL[r.tier] || r.tier}
@@ -188,7 +246,10 @@ export default function VehiclePLStatementPreview() {
                     <td className={`text-right p-2 ${totals.profit >= 0 ? "text-green-700" : "text-red-700"}`}>
                       {fmt(totals.profit)}
                     </td>
-                    <td className="text-right p-2">{margin.toFixed(1)}%</td>
+                    <td className="text-right p-2">
+                      {margin.toFixed(1)}
+                      %
+                    </td>
                     <td colSpan={2}></td>
                   </tr>
                 </tfoot>
@@ -213,7 +274,10 @@ export default function VehiclePLStatementPreview() {
                 </thead>
                 <tbody>
                   {rows.map((r, i) => (
-                    <tr key={r.vehicle_id} className={i % 2 === 0 ? "bg-muted/30" : ""}>
+                    <tr
+                      key={r.vehicle_id}
+                      className={i % 2 === 0 ? "bg-muted/30" : ""}
+                    >
                       <td className="p-2 font-medium">{r.vehicle_name}</td>
                       <td className="text-right p-2">{fmt(r.fuel)}</td>
                       <td className="text-right p-2">{fmt(r.maintenance)}</td>
@@ -235,22 +299,30 @@ export default function VehiclePLStatementPreview() {
           )}
 
           <div className="text-center text-xs text-muted-foreground pt-8 border-t">
-            Generated by Fleet Pro · {new Date().toLocaleString()}
+            Generated by Fleet Pro ·
+            {" "}
+            {new Date().toLocaleString()}
           </div>
         </div>
       </div>
 
-      <style>{`
+      <style>
+        {`
         @media print {
           @page { size: A4; margin: 0.5in; }
           body { background: white; }
         }
-      `}</style>
+      `}
+      </style>
     </div>
   );
 }
 
-function SummaryStat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function SummaryStat({
+  label, value, highlight,
+}: {
+  label: string; value: string; highlight?: boolean;
+}) {
   return (
     <div className="border rounded-lg p-3">
       <div className="text-xs text-muted-foreground">{label}</div>

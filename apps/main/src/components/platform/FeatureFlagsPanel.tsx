@@ -1,41 +1,45 @@
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
-import { Badge } from '@/components/shadcn/badge';
-import { Button } from '@/components/shadcn/button';
-import { Switch } from '@/components/shadcn/switch';
-import { Label } from '@/components/shadcn/label';
-import { Separator } from '@/components/shadcn/separator';
-import { useAIConfigPermissions } from '@/hooks/useAIConfigPermissions';
-import { 
-  Settings2, 
-  Beaker, 
-  Wrench, 
-  Fuel, 
-  Brain,
+import {
   AlertCircle,
-  Building2
-} from 'lucide-react';
+  Beaker,
+  Brain,
+  Building2,
+  Fuel,
+  Settings2,
+  Wrench,
+} from "lucide-react";
+import React from "react";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Label } from "@/components/shadcn/label";
+import { Separator } from "@/components/shadcn/separator";
+import { Switch } from "@/components/shadcn/switch";
+import { useAIConfigPermissions } from "@/hooks/useAIConfigPermissions";
 
 export function FeatureFlagsPanel() {
   const featureFlags: any[] = [];
   const isLoading = false;
-  const toggleFeatureFlag = { mutate: (..._args: any[]) => {}, isPending: false };
+  const toggleFeatureFlag = {
+    mutate: (..._args: any[]) => {}, isPending: false,
+  };
   const getPhase3Features = (): any[] => [];
   const getFeaturesByCategory = (_cat: string): any[] => [];
   const { isPlatformAdmin } = useAIConfigPermissions();
 
   const phase3Features = getPhase3Features();
-  const maintenanceFeatures = getFeaturesByCategory('maintenance');
-  const fuelFeatures = getFeaturesByCategory('fuel');
-  const optimizationFeatures = getFeaturesByCategory('optimization');
-  const architectureFeatures = getFeaturesByCategory('architecture');
+  const maintenanceFeatures = getFeaturesByCategory("maintenance");
+  const fuelFeatures = getFeaturesByCategory("fuel");
+  const optimizationFeatures = getFeaturesByCategory("optimization");
+  const architectureFeatures = getFeaturesByCategory("architecture");
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'maintenance': return <Wrench className="h-4 w-4" />;
-      case 'fuel': return <Fuel className="h-4 w-4" />;
-      case 'optimization': return <Brain className="h-4 w-4" />;
-      case 'architecture': return <Building2 className="h-4 w-4" />;
+      case "maintenance": return <Wrench className="h-4 w-4" />;
+      case "fuel": return <Fuel className="h-4 w-4" />;
+      case "optimization": return <Brain className="h-4 w-4" />;
+      case "architecture": return <Building2 className="h-4 w-4" />;
       default: return <Settings2 className="h-4 w-4" />;
     }
   };
@@ -48,8 +52,15 @@ export function FeatureFlagsPanel() {
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-12 bg-muted rounded" />
+            {[
+              1,
+              2,
+              3,
+            ].map(i => (
+              <div
+                key={i}
+                className="h-12 bg-muted rounded"
+              />
             ))}
           </div>
         </CardContent>
@@ -77,7 +88,8 @@ export function FeatureFlagsPanel() {
   }
 
   const renderFeatureGroup = (features: typeof featureFlags, title: string, icon: React.ReactNode) => {
-    if (!features || features.length === 0) return null;
+    if (!features || features.length === 0)
+      return null;
 
     return (
       <div className="space-y-3">
@@ -86,16 +98,22 @@ export function FeatureFlagsPanel() {
           {title}
         </div>
         {features.map(flag => (
-          <div 
-            key={flag.id} 
+          <div
+            key={flag.id}
             className="flex items-center justify-between p-3 rounded-lg border"
           >
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="font-medium">{flag.feature_name}</span>
                 {flag.phase && (
-                  <Badge variant="outline" className="text-xs">
-                    {flag.phase.replace('_', ' ').toUpperCase()}
+                  <Badge
+                    variant="outline"
+                    className="text-xs"
+                  >
+                    {flag.phase.replace(
+                      "_",
+                      " ",
+                    ).toUpperCase()}
                   </Badge>
                 )}
               </div>
@@ -107,9 +125,10 @@ export function FeatureFlagsPanel() {
             </div>
             <Switch
               checked={flag.is_enabled}
-              onCheckedChange={(checked) => 
-                toggleFeatureFlag.mutate({ id: flag.id, isEnabled: checked })
-              }
+              onCheckedChange={checked =>
+                toggleFeatureFlag.mutate({
+                  id: flag.id, isEnabled: checked,
+                })}
               disabled={toggleFeatureFlag.isPending}
             />
           </div>
@@ -140,7 +159,12 @@ export function FeatureFlagsPanel() {
               </div>
             </div>
             <Badge variant="outline">
-              {phase3Features.filter(f => f.is_enabled).length} / {phase3Features.length} enabled
+              {phase3Features.filter(f => f.is_enabled).length}
+              {" "}
+              /
+              {phase3Features.length}
+              {" "}
+              enabled
             </Badge>
           </div>
         </div>
@@ -149,8 +173,8 @@ export function FeatureFlagsPanel() {
 
         {renderFeatureGroup(
           architectureFeatures,
-          'Architecture',
-          <Building2 className="h-4 w-4" />
+          "Architecture",
+          <Building2 className="h-4 w-4" />,
         )}
 
         {architectureFeatures && architectureFeatures.length > 0 && maintenanceFeatures && maintenanceFeatures.length > 0 && (
@@ -158,9 +182,9 @@ export function FeatureFlagsPanel() {
         )}
 
         {renderFeatureGroup(
-          maintenanceFeatures, 
-          'Maintenance Features', 
-          <Wrench className="h-4 w-4" />
+          maintenanceFeatures,
+          "Maintenance Features",
+          <Wrench className="h-4 w-4" />,
         )}
 
         {maintenanceFeatures && maintenanceFeatures.length > 0 && fuelFeatures && fuelFeatures.length > 0 && (
@@ -168,9 +192,9 @@ export function FeatureFlagsPanel() {
         )}
 
         {renderFeatureGroup(
-          fuelFeatures, 
-          'Fuel Intelligence', 
-          <Fuel className="h-4 w-4" />
+          fuelFeatures,
+          "Fuel Intelligence",
+          <Fuel className="h-4 w-4" />,
         )}
 
         {fuelFeatures && fuelFeatures.length > 0 && optimizationFeatures && optimizationFeatures.length > 0 && (
@@ -178,9 +202,9 @@ export function FeatureFlagsPanel() {
         )}
 
         {renderFeatureGroup(
-          optimizationFeatures, 
-          'Fleet Optimization', 
-          <Brain className="h-4 w-4" />
+          optimizationFeatures,
+          "Fleet Optimization",
+          <Brain className="h-4 w-4" />,
         )}
 
         {/* Warning Note */}

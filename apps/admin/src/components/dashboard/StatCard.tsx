@@ -1,7 +1,7 @@
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LucideIcon } from "lucide-react";
 
-interface StatCardProps {
+type StatCardProps = {
   title: string;
   value: string | number;
   change?: number;
@@ -9,7 +9,7 @@ interface StatCardProps {
   icon: LucideIcon;
   variant?: "default" | "success" | "warning" | "danger";
   className?: string;
-}
+};
 
 export function StatCard({
   title,
@@ -39,11 +39,15 @@ export function StatCard({
       className={cn(
         "relative overflow-hidden rounded-lg border bg-card p-5 transition-all duration-200 shadow-enterprise hover:shadow-enterprise-md",
         variantStyles[variant],
-        className
+        className,
       )}
     >
       <div className="flex items-start gap-4">
-        <div className={cn("rounded-lg p-2.5 shrink-0", iconBgStyles[variant])}>
+        <div className={cn(
+          "rounded-lg p-2.5 shrink-0",
+          iconBgStyles[variant],
+        )}
+        >
           <Icon className="h-5 w-5" />
         </div>
         <div className="space-y-1.5 min-w-0 flex-1">
@@ -54,13 +58,14 @@ export function StatCard({
               <span
                 className={cn(
                   "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold",
-                  change >= 0 
-                    ? "bg-success/10 text-success" 
-                    : "bg-destructive/10 text-destructive"
+                  change >= 0
+                    ? "bg-success/10 text-success"
+                    : "bg-destructive/10 text-destructive",
                 )}
               >
                 {change >= 0 ? "+" : ""}
-                {change}%
+                {change}
+                %
               </span>
               {changeLabel && (
                 <span className="text-xs text-muted-foreground">{changeLabel}</span>
@@ -72,5 +77,3 @@ export function StatCard({
     </div>
   );
 }
-
-

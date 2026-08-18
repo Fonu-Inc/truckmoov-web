@@ -1,23 +1,33 @@
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
+import {
+  ArrowUpRight,
+  Building2,
+  Loader2,
+  Wifi,
+  Wrench,
+} from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { AdminTicketSheet } from "./AdminTicketSheet";
 // Local type aliases (hook deleted)
 type EscalationType = "fleetpro_internal" | "fonu_connectivity" | "vendor_installer";
 type SupportTicket = any;
-import { AdminTicketSheet } from "./AdminTicketSheet";
-import { 
-  ArrowUpRight, 
-  Loader2,
-  Building2,
-  Wifi,
-  Wrench
-} from "lucide-react";
 
-const escalationConfig: Record<EscalationType, { label: string; icon: React.ElementType; color: string }> = {
-  fleetpro_internal: { label: "FleetPro Internal", icon: Building2, color: "text-primary" },
-  fonu_connectivity: { label: "Fonu Connectivity", icon: Wifi, color: "text-chart-3" },
-  vendor_installer: { label: "Vendor / Installer", icon: Wrench, color: "text-chart-5" },
+const escalationConfig: Record<EscalationType, {
+  label: string; icon: React.ElementType; color: string;
+}> = {
+  fleetpro_internal: {
+    label: "FleetPro Internal", icon: Building2, color: "text-primary",
+  },
+  fonu_connectivity: {
+    label: "Fonu Connectivity", icon: Wifi, color: "text-chart-3",
+  },
+  vendor_installer: {
+    label: "Vendor / Installer", icon: Wrench, color: "text-chart-5",
+  },
 };
 
 // Demo escalated tickets — used when there are no real escalations so the screen always reflects platform-level activity
@@ -112,18 +122,25 @@ const DEMO_ESCALATED: SupportTicket[] = [
 export function EscalatedTickets() {
   const tickets: any[] = [];
   const isLoading = false;
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [
+    selectedTicket,
+    setSelectedTicket,
+  ] = useState<SupportTicket | null>(null);
 
-  const realEscalated = tickets.filter((t) => t.status === "escalated" || t.escalatedTo);
+  const realEscalated = tickets.filter(t => t.status === "escalated" || t.escalatedTo);
   const escalatedTickets = realEscalated.length > 0 ? realEscalated : DEMO_ESCALATED;
 
   // Group by escalation target
-  const byTarget = escalatedTickets.reduce((acc, t) => {
-    const target = t.escalatedTo || "unknown";
-    if (!acc[target]) acc[target] = [];
-    acc[target].push(t);
-    return acc;
-  }, {} as Record<string, SupportTicket[]>);
+  const byTarget = escalatedTickets.reduce(
+    (acc, t) => {
+      const target = t.escalatedTo || "unknown";
+      if (!acc[target])
+        acc[target] = [];
+      acc[target].push(t);
+      return acc;
+    },
+    {} as Record<string, SupportTicket[]>,
+  );
 
   if (isLoading) {
     return (
@@ -155,7 +172,10 @@ export function EscalatedTickets() {
     "demo-tenant-kano": "Kano Northern Haulage",
     "demo-tenant-ibadan": "Ibadan Swift Transit",
   };
-  const tenantLabel = (id: string) => TENANT_NAMES[id] || `Tenant #${id.slice(0, 8)}`;
+  const tenantLabel = (id: string) => TENANT_NAMES[id] || `Tenant #${id.slice(
+    0,
+    8,
+  )}`;
 
   const priorityStyles: Record<string, string> = {
     low: "bg-muted text-muted-foreground",
@@ -168,7 +188,10 @@ export function EscalatedTickets() {
     <div className="space-y-6">
       {/* Summary */}
       <div className="grid gap-4 md:grid-cols-3">
-        {Object.entries(escalationConfig).map(([key, config]) => {
+        {Object.entries(escalationConfig).map(([
+          key,
+          config,
+        ]) => {
           const count = byTarget[key]?.length || 0;
           const Icon = config.icon;
           return (
@@ -191,7 +214,10 @@ export function EscalatedTickets() {
       </div>
 
       {/* Grouped Lists */}
-      {Object.entries(byTarget).map(([target, targetTickets]) => {
+      {Object.entries(byTarget).map(([
+        target,
+        targetTickets,
+      ]) => {
         const config = escalationConfig[target as EscalationType] || {
           label: target,
           icon: ArrowUpRight,
@@ -207,12 +233,17 @@ export function EscalatedTickets() {
                 {config.label}
               </CardTitle>
               <CardDescription>
-                {targetTickets.length} escalated ticket{targetTickets.length > 1 ? "s" : ""} awaiting action from this party
+                {targetTickets.length}
+                {" "}
+                escalated ticket
+                {targetTickets.length > 1 ? "s" : ""}
+                {" "}
+                awaiting action from this party
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {targetTickets.map((ticket) => (
+                {targetTickets.map(ticket => (
                   <button
                     key={ticket.id}
                     type="button"
@@ -231,18 +262,38 @@ export function EscalatedTickets() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                        <span className="font-mono text-muted-foreground">#{ticket.id.slice(0, 8)}</span>
+                        <span className="font-mono text-muted-foreground">
+                          #
+                          {ticket.id.slice(
+                            0,
+                            8,
+                          )}
+                        </span>
                         <span className="text-muted-foreground">•</span>
                         <span className="text-foreground">{tenantLabel(ticket.tenantId)}</span>
-                        <Badge variant="outline" className={priorityStyles[ticket.priority] ?? ""}>
+                        <Badge
+                          variant="outline"
+                          className={priorityStyles[ticket.priority] ?? ""}
+                        >
                           {ticket.priority}
                         </Badge>
-                        <Badge variant="outline" className="capitalize">
-                          {ticket.category.replace(/_/g, " ")}
+                        <Badge
+                          variant="outline"
+                          className="capitalize"
+                        >
+                          {ticket.category.replace(
+                            /_/g,
+                            " ",
+                          )}
                         </Badge>
                         {ticket.escalatedReferenceId && (
-                          <Badge variant="outline" className="font-mono">
-                            Ref: {ticket.escalatedReferenceId}
+                          <Badge
+                            variant="outline"
+                            className="font-mono"
+                          >
+                            Ref:
+                            {" "}
+                            {ticket.escalatedReferenceId}
                           </Badge>
                         )}
                       </div>
@@ -256,7 +307,12 @@ export function EscalatedTickets() {
 
                     {/* Right meta */}
                     <div className="flex flex-col items-end gap-1 shrink-0 text-right">
-                      <Badge variant="destructive" className="text-[10px]">Escalated</Badge>
+                      <Badge
+                        variant="destructive"
+                        className="text-[10px]"
+                      >
+                        Escalated
+                      </Badge>
                       <span className="text-[11px] text-muted-foreground">
                         {ticket.escalatedAt
                           ? formatRelative(ticket.escalatedAt)

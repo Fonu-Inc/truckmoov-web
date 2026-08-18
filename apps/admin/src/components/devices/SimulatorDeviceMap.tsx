@@ -1,38 +1,47 @@
-import React, { useEffect, useRef } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
-import { Badge } from '@/components/shadcn/badge';
-import { Locate } from 'lucide-react';
-import type { SimulatedDevice } from '@/hooks/useMQTTSimulator';
+import type { SimulatedDevice } from "@/hooks/useMQTTSimulator";
+import L from "leaflet";
+import { Locate } from "lucide-react";
+import React, {
+  useEffect,
+  useRef,
+} from "react";
+import { Badge } from "@/components/shadcn/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
+import "leaflet/dist/leaflet.css";
 
-interface SimulatorDeviceMapProps {
+type SimulatorDeviceMapProps = {
   devices: SimulatedDevice[];
   selectedDeviceId?: string | null;
   onSelectDevice?: (deviceId: string) => void;
-}
-
-const statusColors: Record<SimulatedDevice['status'], string> = {
-  disconnected: '#6b7280',
-  connecting: '#f59e0b',
-  connected: '#22c55e',
-  error: '#ef4444',
 };
 
-const createDeviceIcon = (device: SimulatedDevice, isSelected: boolean) => {
+const statusColors: Record<SimulatedDevice["status"], string> = {
+  disconnected: "#6b7280",
+  connecting: "#f59e0b",
+  connected: "#22c55e",
+  error: "#ef4444",
+};
+
+function createDeviceIcon(device: SimulatedDevice, isSelected: boolean) {
   const color = statusColors[device.status];
   const size = isSelected ? 36 : 28;
   const rotation = device.heading || 0;
 
   return L.divIcon({
-    className: 'custom-sim-device-marker',
+    className: "custom-sim-device-marker",
     html: `
       <div style="
         width: ${size}px;
         height: ${size}px;
         background: ${color};
         border-radius: 50%;
-        border: 3px solid ${isSelected ? '#fff' : 'rgba(255,255,255,0.7)'};
+        border: 3px solid ${isSelected ? "#fff" : "rgba(255,255,255,0.7)"};
         box-shadow: 0 2px 8px rgba(0,0,0,0.35);
         display: flex;
         align-items: center;
@@ -45,13 +54,23 @@ const createDeviceIcon = (device: SimulatedDevice, isSelected: boolean) => {
         </svg>
       </div>
     `,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-    popupAnchor: [0, -size / 2],
+    iconSize: [
+      size,
+      size,
+    ],
+    iconAnchor: [
+      size / 2,
+      size / 2,
+    ],
+    popupAnchor: [
+      0,
+      -size / 2,
+    ],
   });
-};
+}
 
-const getPopupContent = (device: SimulatedDevice) => `
+function getPopupContent(device: SimulatedDevice) {
+  return `
   <div style="min-width: 180px; padding: 6px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
       <span style="font-weight: 600; font-size: 12px;">${device.imei}</span>
@@ -70,6 +89,7 @@ const getPopupContent = (device: SimulatedDevice) => `
     </div>
   </div>
 `;
+}
 
 export const SimulatorDeviceMap: React.FC<SimulatorDeviceMapProps> = ({
   devices,
@@ -80,79 +100,128 @@ export const SimulatorDeviceMap: React.FC<SimulatorDeviceMapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
 
-  const connectedCount = devices.filter((d) => d.status === 'connected').length;
-  const defaultCenter: [number, number] =
-    devices.length > 0
-      ? [devices[0].latitude, devices[0].longitude]
-      : [6.5244, 3.3792];
+  const connectedCount = devices.filter(d => d.status === "connected").length;
+  const defaultCenter: [number, number]
+    = devices.length > 0
+      ? [
+          devices[0].latitude,
+          devices[0].longitude,
+        ]
+      : [
+          6.5244,
+          3.3792,
+        ];
 
   // Initialize map
-  useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
+  useEffect(
+    () => {
+      if (!mapContainerRef.current || mapRef.current)
+        return;
 
-    const map = L.map(mapContainerRef.current).setView(defaultCenter, 12);
+      const map = L.map(mapContainerRef.current).setView(
+        defaultCenter,
+        12,
+      );
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
+      L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+          attribution:
+        "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>",
+        },
+      ).addTo(map);
 
-    mapRef.current = map;
+      mapRef.current = map;
 
-    return () => {
-      map.remove();
-      mapRef.current = null;
-      markersRef.current.clear();
-    };
-  }, []);
+      return () => {
+        map.remove();
+        mapRef.current = null;
+        markersRef.current.clear();
+      };
+    },
+    [],
+  );
 
   // Sync markers with devices
-  useEffect(() => {
-    if (!mapRef.current) return;
+  useEffect(
+    () => {
+      if (!mapRef.current)
+        return;
 
-    const map = mapRef.current;
-    const existingIds = new Set(markersRef.current.keys());
-    const currentIds = new Set(devices.map((d) => d.id));
+      const map = mapRef.current;
+      const existingIds = new Set(markersRef.current.keys());
+      const currentIds = new Set(devices.map(d => d.id));
 
-    // Remove old markers
-    existingIds.forEach((id) => {
-      if (!currentIds.has(id)) {
-        markersRef.current.get(id)?.remove();
-        markersRef.current.delete(id);
+      // Remove old markers
+      existingIds.forEach((id) => {
+        if (!currentIds.has(id)) {
+          markersRef.current.get(id)?.remove();
+          markersRef.current.delete(id);
+        }
+      });
+
+      // Upsert markers
+      devices.forEach((device) => {
+        const isSelected = device.id === selectedDeviceId;
+        const icon = createDeviceIcon(
+          device,
+          isSelected,
+        );
+        const existingMarker = markersRef.current.get(device.id);
+
+        if (existingMarker) {
+          existingMarker.setLatLng([
+            device.latitude,
+            device.longitude,
+          ]);
+          existingMarker.setIcon(icon);
+          existingMarker.getPopup()?.setContent(getPopupContent(device));
+        }
+        else {
+          const marker = L.marker(
+            [
+              device.latitude,
+              device.longitude,
+            ],
+            { icon },
+          )
+            .addTo(map)
+            .bindPopup(getPopupContent(device));
+
+          marker.on(
+            "click",
+            () => {
+              onSelectDevice?.(device.id);
+            },
+          );
+
+          markersRef.current.set(
+            device.id,
+            marker,
+          );
+        }
+      });
+
+      // Fit bounds when devices exist
+      if (devices.length > 0) {
+        const bounds = L.latLngBounds(
+          devices.map(d => [
+            d.latitude,
+            d.longitude,
+          ] as [number, number]),
+        );
+        map.fitBounds(
+          bounds.pad(0.2),
+          { maxZoom: 14 },
+        );
       }
-    });
-
-    // Upsert markers
-    devices.forEach((device) => {
-      const isSelected = device.id === selectedDeviceId;
-      const icon = createDeviceIcon(device, isSelected);
-      const existingMarker = markersRef.current.get(device.id);
-
-      if (existingMarker) {
-        existingMarker.setLatLng([device.latitude, device.longitude]);
-        existingMarker.setIcon(icon);
-        existingMarker.getPopup()?.setContent(getPopupContent(device));
-      } else {
-        const marker = L.marker([device.latitude, device.longitude], { icon })
-          .addTo(map)
-          .bindPopup(getPopupContent(device));
-
-        marker.on('click', () => {
-          onSelectDevice?.(device.id);
-        });
-
-        markersRef.current.set(device.id, marker);
-      }
-    });
-
-    // Fit bounds when devices exist
-    if (devices.length > 0) {
-      const bounds = L.latLngBounds(
-        devices.map((d) => [d.latitude, d.longitude] as [number, number])
-      );
-      map.fitBounds(bounds.pad(0.2), { maxZoom: 14 });
-    }
-  }, [devices, selectedDeviceId, onSelectDevice]);
+    },
+    [
+      devices,
+      selectedDeviceId,
+      onSelectDevice,
+    ],
+  );
 
   return (
     <Card className="h-full">
@@ -162,15 +231,25 @@ export const SimulatorDeviceMap: React.FC<SimulatorDeviceMapProps> = ({
             <Locate className="h-4 w-4 text-primary" />
             Live Device Map
           </CardTitle>
-          <Badge variant="outline" className="text-xs">
-            {connectedCount}/{devices.length} online
+          <Badge
+            variant="outline"
+            className="text-xs"
+          >
+            {connectedCount}
+            /
+            {devices.length}
+            {" "}
+            online
           </Badge>
         </div>
         <CardDescription className="text-xs">Real-time location of every simulated device on the MQTT bridge</CardDescription>
       </CardHeader>
       <CardContent className="pt-0">
         <div className="relative h-[320px] rounded-md overflow-hidden border">
-          <div ref={mapContainerRef} className="w-full h-full" />
+          <div
+            ref={mapContainerRef}
+            className="w-full h-full"
+          />
           {devices.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center bg-muted/50 text-muted-foreground text-sm">
               Add devices to see them on the map
@@ -181,6 +260,3 @@ export const SimulatorDeviceMap: React.FC<SimulatorDeviceMapProps> = ({
     </Card>
   );
 };
-
-
-

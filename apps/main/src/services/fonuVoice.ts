@@ -2,15 +2,13 @@
 // Sequence: fetch credentials -> map them -> start socket + SIP UA -> place calls.
 // Env vars required (set in .env): VITE_FONU_COMPANY_UUID, VITE_FONU_API_KEY.
 
+import { fetchUserCredentials } from "fonu-sdk";
 import {
-  fetchUserCredentials,
-} from 'fonu-sdk';
-import {
-  mapCredentials,
+  getFonuState,
   initSipConnection,
   makeCall,
-  getFonuState,
-} from '@/services/fonuSipCore';
+  mapCredentials,
+} from "@/services/fonuSipCore";
 
 type SipEventHandlers = {
   onConnecting?: () => void;
@@ -30,7 +28,7 @@ let initialized = false;
 
 function ensureEnv() {
   if (!COMPANY_UUID || !API_KEY) {
-    throw new Error('Fonu voice: missing VITE_FONU_COMPANY_UUID or VITE_FONU_API_KEY.');
+    throw new Error("Fonu voice: missing VITE_FONU_COMPANY_UUID or VITE_FONU_API_KEY.");
   }
 }
 
@@ -42,33 +40,48 @@ export async function setupFonuVoice(events: SipEventHandlers = {}) {
 
   let creds: any;
   try {
-    creds = await fetchUserCredentials(COMPANY_UUID, API_KEY);
-  } catch (err) {
-    console.error('[FonuClickToCallSDK] fetchUserCredentials failed', err);
+    creds = await fetchUserCredentials(
+      COMPANY_UUID,
+      API_KEY,
+    );
+  }
+  catch (err) {
+    console.error(
+      "[FonuClickToCallSDK] fetchUserCredentials failed",
+      err,
+    );
     throw err;
   }
 
-  if (!creds) throw new Error('Fonu voice: could not fetch user credentials.');
+  if (!creds)
+    throw new Error("Fonu voice: could not fetch user credentials.");
 
   mapCredentials(creds);
-  console.log('[FonuClickToCallSDK] call prerequisites', {
-    companyUuid: COMPANY_UUID,
-    apiKeyPresent: !!API_KEY,
-    clickToCall: {
-      enabled: creds?.clickToCall?.enabled,
-      extension: creds?.clickToCall?.extension,
-      domain: creds?.clickToCall?.domain,
-      wss_url: creds?.clickToCall?.wss_url,
-      destination: creds?.clickToCall?.destination,
-      origin: creds?.clickToCall?.origin,
-      originUuid: creds?.clickToCall?.originUuid,
-      originNumber: creds?.clickToCall?.origin?.number,
+  console.log(
+    "[FonuClickToCallSDK] call prerequisites",
+    {
+      companyUuid: COMPANY_UUID,
+      apiKeyPresent: !!API_KEY,
+      clickToCall: {
+        enabled: creds?.clickToCall?.enabled,
+        extension: creds?.clickToCall?.extension,
+        domain: creds?.clickToCall?.domain,
+        wss_url: creds?.clickToCall?.wss_url,
+        destination: creds?.clickToCall?.destination,
+        origin: creds?.clickToCall?.origin,
+        originUuid: creds?.clickToCall?.originUuid,
+        originNumber: creds?.clickToCall?.origin?.number,
+      },
     },
-  });
+  );
   try {
     initSipConnection(events);
-  } catch (err) {
-    console.error('[FonuClickToCallSDK] initSipConnection failed', err);
+  }
+  catch (err) {
+    console.error(
+      "[FonuClickToCallSDK] initSipConnection failed",
+      err,
+    );
     throw err;
   }
   initialized = true;
@@ -79,9 +92,13 @@ export async function setupFonuVoice(events: SipEventHandlers = {}) {
  */
 export function placeFonuCall(displayName: string, number?: string, extraHeaders?: string[]) {
   if (!initialized) {
-    throw new Error('Fonu voice: call setupFonuVoice() before placing calls.');
+    throw new Error("Fonu voice: call setupFonuVoice() before placing calls.");
   }
-  makeCall(displayName, number, extraHeaders);
+  makeCall(
+    displayName,
+    number,
+    extraHeaders,
+  );
 }
 
 export function fonuCallState() {

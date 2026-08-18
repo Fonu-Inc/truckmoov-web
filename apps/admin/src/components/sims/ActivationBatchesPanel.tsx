@@ -1,7 +1,23 @@
+import type {
+  SystemSimBatch,
+  SystemSimBatchesQuery,
+} from "@truckmoov/api/auth";
+
+import type { FilterDraft } from "@/components/shadcn/platform-filter-popover";
+import {
+  useQuery,
+  useQueryClient,
+
+} from "@tanstack/react-query";
+import {
+  getSystemSimBatchQueryOptions,
+  getSystemSimsBatchesExportQueryOptions,
+  getSystemSimsBatchesQueryOptions,
+  getSystemSimsBatchesSummaryQueryOptions,
+
+  useRetrySimBatch,
+} from "@truckmoov/api/auth";
 import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
-import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CheckCircle,
@@ -14,19 +30,21 @@ import {
   Zap,
 } from "lucide-react";
 import {
-  getSystemSimsBatchesQueryOptions,
-  getSystemSimsBatchesSummaryQueryOptions,
-  getSystemSimBatchQueryOptions,
-  getSystemSimsBatchesExportQueryOptions,
-  useRetrySimBatch,
-  type SystemSimBatch,
-  type SystemSimBatchesQuery,
-} from "@truckmoov/api/auth";
-import { toast } from "sonner";
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
@@ -36,7 +54,7 @@ import {
   DialogTitle,
 } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
-import { PlatformFilterPopover, type FilterDraft } from "@/components/shadcn/platform-filter-popover";
+import { PlatformFilterPopover } from "@/components/shadcn/platform-filter-popover";
 import { Progress } from "@/components/shadcn/progress";
 import {
   Table,
@@ -50,31 +68,52 @@ import {
 const emptyValue = "-";
 
 const statusOptions = [
-  { value: "pending", label: "Pending" },
-  { value: "activation_in_progress", label: "In Progress" },
-  { value: "completed", label: "Completed" },
-  { value: "partially_completed", label: "Partial" },
-  { value: "failed", label: "Failed" },
+  {
+    value: "pending",
+    label: "Pending",
+  },
+  {
+    value: "activation_in_progress",
+    label: "In Progress",
+  },
+  {
+    value: "completed",
+    label: "Completed",
+  },
+  {
+    value: "partially_completed",
+    label: "Partial",
+  },
+  {
+    value: "failed",
+    label: "Failed",
+  },
 ];
 
-const titleCase = (value: string) =>
-  value
+function titleCase(value: string) {
+  return value
     .split(/[_\s-]+/)
     .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
 
-const formatDataLimit = (valueGb: number) => {
-  if (!Number.isFinite(valueGb) || valueGb <= 0) return emptyValue;
+function formatDataLimit(valueGb: number) {
+  if (!Number.isFinite(valueGb) || valueGb <= 0)
+    return emptyValue;
   return `${Number.isInteger(valueGb) ? valueGb : valueGb.toFixed(1)} GB`;
-};
+}
 
-const getProgressPercentage = (batch: SystemSimBatch) => {
-  if (batch.quantity <= 0) return 0;
-  return Math.min(((batch.simsActivated + batch.simsFailed) / batch.quantity) * 100, 100);
-};
+function getProgressPercentage(batch: SystemSimBatch) {
+  if (batch.quantity <= 0)
+    return 0;
+  return Math.min(
+    ((batch.simsActivated + batch.simsFailed) / batch.quantity) * 100,
+    100,
+  );
+}
 
-const getStatusBadge = (status: string) => {
+function getStatusBadge(status: string) {
   switch (status) {
     case "pending":
       return (
@@ -114,20 +153,35 @@ const getStatusBadge = (status: string) => {
     default:
       return <Badge variant="outline">{status || emptyValue}</Badge>;
   }
-};
+}
 
-const canRetryBatch = (status: string) =>
-  status === "pending" || status === "failed" || status === "partially_completed";
+function canRetryBatch(status: string) {
+  return status === "pending" || status === "failed" || status === "partially_completed";
+}
 
-const getBatchReference = (batch: SystemSimBatch) =>
-  (batch as SystemSimBatch & { fonuBatchId?: string }).fonuBatchId ?? batch.requestId ?? emptyValue;
+function getBatchReference(batch: SystemSimBatch) {
+  return (batch as SystemSimBatch & { fonuBatchId?: string }).fonuBatchId ?? batch.requestId ?? emptyValue;
+}
 
 function useDebouncedValue<T>(value: T, delayMs: number) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = window.setTimeout(() => setDebounced(value), delayMs);
-    return () => window.clearTimeout(t);
-  }, [value, delayMs]);
+  const [
+    debounced,
+    setDebounced,
+  ] = useState(value);
+  useEffect(
+    () => {
+      const t = window.setTimeout(
+        setDebounced,
+        delayMs,
+        value,
+      );
+      return () => window.clearTimeout(t);
+    },
+    [
+      value,
+      delayMs,
+    ],
+  );
   return debounced;
 }
 
@@ -142,23 +196,46 @@ function downloadBlob(blob: Blob, filename: string) {
 
 export function ActivationBatchesPanel() {
   const queryClient = useQueryClient();
-  const [searchQuery, setSearchQuery] = useState("");
-  const debouncedSearch = useDebouncedValue(searchQuery.trim(), 400);
-  const [filterDraft, setFilterDraft] = useState<FilterDraft>({
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const debouncedSearch = useDebouncedValue(
+    searchQuery.trim(),
+    400,
+  );
+  const [
+    filterDraft,
+    setFilterDraft,
+  ] = useState<FilterDraft>({
     operator: { enabled: false },
     mode: { enabled: false },
     status: { enabled: false },
   });
-  const [detailBatchId, setDetailBatchId] = useState<string | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
+  const [
+    detailBatchId,
+    setDetailBatchId,
+  ] = useState<string | null>(null);
+  const [
+    isExporting,
+    setIsExporting,
+  ] = useState(false);
 
-  const queryPayload = useMemo<SystemSimBatchesQuery | undefined>(() => {
-    const params: SystemSimBatchesQuery["params"] = {};
-    if (debouncedSearch) params.search = debouncedSearch;
-    const status = filterDraft.status;
-    if (status?.enabled && status.value) params.status = status.value;
-    return Object.keys(params).length ? { params } : undefined;
-  }, [debouncedSearch, filterDraft]);
+  const queryPayload = useMemo<SystemSimBatchesQuery | undefined>(
+    () => {
+      const params: SystemSimBatchesQuery["params"] = {};
+      if (debouncedSearch)
+        params.search = debouncedSearch;
+      const status = filterDraft.status;
+      if (status?.enabled && status.value)
+        params.status = status.value;
+      return Object.keys(params).length ? { params } : undefined;
+    },
+    [
+      debouncedSearch,
+      filterDraft,
+    ],
+  );
 
   const batchesQuery = useQuery(getSystemSimsBatchesQueryOptions(queryPayload));
   const summaryQuery = useQuery(getSystemSimsBatchesSummaryQueryOptions());
@@ -172,36 +249,54 @@ export function ActivationBatchesPanel() {
   const summary = summaryQuery.data?.data;
   const selectedBatch = batchDetailQuery.data?.data ?? null;
 
-  const operatorOptions = useMemo(() => {
-    return Array.from(new Set(batches.map((batch) => batch.operator).filter(Boolean)))
-      .map((operator) => ({ value: operator, label: operator }));
-  }, [batches]);
+  const operatorOptions = useMemo(
+    () => {
+      return Array.from(new Set(batches.map(batch => batch.operator).filter(Boolean)))
+        .map(operator => ({
+          value: operator,
+          label: operator,
+        }));
+    },
+    [batches],
+  );
 
-  const modeOptions = useMemo(() => {
-    return Array.from(new Set(batches.map((batch) => batch.activationMode).filter(Boolean)))
-      .map((mode) => ({ value: mode, label: titleCase(mode) }));
-  }, [batches]);
+  const modeOptions = useMemo(
+    () => {
+      return Array.from(new Set(batches.map(batch => batch.activationMode).filter(Boolean)))
+        .map(mode => ({
+          value: mode,
+          label: titleCase(mode),
+        }));
+    },
+    [batches],
+  );
 
-  const filteredBatches = useMemo(() => {
-    return batches.filter((batch) => {
-      const operatorFilter = filterDraft.operator;
-      if (operatorFilter?.enabled && operatorFilter.value && batch.operator !== operatorFilter.value) {
-        return false;
-      }
-      const modeFilter = filterDraft.mode;
-      if (modeFilter?.enabled && modeFilter.value && batch.activationMode !== modeFilter.value) {
-        return false;
-      }
-      return true;
-    });
-  }, [batches, filterDraft]);
+  const filteredBatches = useMemo(
+    () => {
+      return batches.filter((batch) => {
+        const operatorFilter = filterDraft.operator;
+        if (operatorFilter?.enabled && operatorFilter.value && batch.operator !== operatorFilter.value) {
+          return false;
+        }
+        const modeFilter = filterDraft.mode;
+        if (modeFilter?.enabled && modeFilter.value && batch.activationMode !== modeFilter.value) {
+          return false;
+        }
+        return true;
+      });
+    },
+    [
+      batches,
+      filterDraft,
+    ],
+  );
 
   const handleRetry = (batch: SystemSimBatch) => {
     retryBatch.mutate(
       { id: batch.id },
       {
         onSuccess: () => toast.success("Activation retry started"),
-        onError: (error) => toast.error(error.message),
+        onError: error => toast.error(error.message),
       },
     );
   };
@@ -210,11 +305,16 @@ export function ActivationBatchesPanel() {
     setIsExporting(true);
     try {
       const blob = await queryClient.fetchQuery(getSystemSimsBatchesExportQueryOptions(queryPayload));
-      downloadBlob(blob as Blob, "activation-batches.csv");
+      downloadBlob(
+        blob as Blob,
+        "activation-batches.csv",
+      );
       toast.success("Activation batches exported");
-    } catch {
+    }
+    catch {
       toast.error("Export failed");
-    } finally {
+    }
+    finally {
       setIsExporting(false);
     }
   };
@@ -283,11 +383,13 @@ export function ActivationBatchesPanel() {
               disabled={batchesQuery.isLoading || isExporting}
               className="bg-transparent border-input"
             >
-              {isExporting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="mr-2 h-4 w-4" />
-              )}
+              {isExporting
+                ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )
+                : (
+                    <Download className="mr-2 h-4 w-4" />
+                  )}
               Export Data
             </Button>
           </div>
@@ -298,16 +400,31 @@ export function ActivationBatchesPanel() {
               <Input
                 placeholder="Search batches..."
                 value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
+                onChange={event => setSearchQuery(event.target.value)}
                 className="h-9 pl-9"
               />
             </div>
             <PlatformFilterPopover
               entity="batches"
               fields={[
-                { key: "status", label: "Status", type: "select", options: statusOptions },
-                { key: "operator", label: "Operator", type: "select", options: operatorOptions },
-                { key: "mode", label: "Mode", type: "select", options: modeOptions },
+                {
+                  key: "status",
+                  label: "Status",
+                  type: "select",
+                  options: statusOptions,
+                },
+                {
+                  key: "operator",
+                  label: "Operator",
+                  type: "select",
+                  options: operatorOptions,
+                },
+                {
+                  key: "mode",
+                  label: "Mode",
+                  type: "select",
+                  options: modeOptions,
+                },
               ]}
               value={filterDraft}
               onApply={setFilterDraft}
@@ -316,8 +433,7 @@ export function ActivationBatchesPanel() {
                   operator: { enabled: false },
                   mode: { enabled: false },
                   status: { enabled: false },
-                })
-              }
+                })}
             />
           </div>
         </CardHeader>
@@ -338,65 +454,90 @@ export function ActivationBatchesPanel() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {batchesQuery.isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={8}>
-                      <div className="py-12 text-center text-muted-foreground">Loading activation batches...</div>
-                    </TableCell>
-                  </TableRow>
-                ) : filteredBatches.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8}>
-                      <div className="py-12 text-center text-muted-foreground">
-                        <Zap className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                        <p>No activation batches match your filters</p>
-                        <p className="text-sm">Adjust the search, status, or filter options above</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredBatches.map((batch) => (
-                    <TableRow key={batch.id}>
-                      <TableCell className="font-semibold">{batch.tenantName || batch.tenantId}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{titleCase(batch.activationMode)}</Badge>
-                      </TableCell>
-                      <TableCell className="font-semibold">{batch.quantity}</TableCell>
-                      <TableCell className="font-medium">{batch.operator || emptyValue}</TableCell>
-                      <TableCell>
-                        <div className="w-28 space-y-1">
-                          <Progress value={getProgressPercentage(batch)} variant="warning" className="h-2" />
-                          <p className="text-xs text-muted-foreground">
-                            {batch.simsActivated} / {batch.quantity}
-                            {batch.simsFailed > 0 && (
-                              <span className="ml-1 text-destructive">({batch.simsFailed} failed)</span>
-                            )}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(batch.status)}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{formatDayMonthTime(batch.createdAt, emptyValue)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {canRetryBatch(batch.status) && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleRetry(batch)}
-                              disabled={retryBatch.isPending}
-                            >
-                              <RotateCcw className="mr-1 h-4 w-4" />
-                              Retry
-                            </Button>
-                          )}
-                          <Button size="sm" variant="ghost" onClick={() => setDetailBatchId(batch.id)}>
-                            Details
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                {batchesQuery.isLoading
+                  ? (
+                      <TableRow>
+                        <TableCell colSpan={8}>
+                          <div className="py-12 text-center text-muted-foreground">Loading activation batches...</div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  : filteredBatches.length === 0
+                    ? (
+                        <TableRow>
+                          <TableCell colSpan={8}>
+                            <div className="py-12 text-center text-muted-foreground">
+                              <Zap className="mx-auto mb-4 h-12 w-12 opacity-50" />
+                              <p>No activation batches match your filters</p>
+                              <p className="text-sm">Adjust the search, status, or filter options above</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    : (
+                        filteredBatches.map(batch => (
+                          <TableRow key={batch.id}>
+                            <TableCell className="font-semibold">{batch.tenantName || batch.tenantId}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{titleCase(batch.activationMode)}</Badge>
+                            </TableCell>
+                            <TableCell className="font-semibold">{batch.quantity}</TableCell>
+                            <TableCell className="font-medium">{batch.operator || emptyValue}</TableCell>
+                            <TableCell>
+                              <div className="w-28 space-y-1">
+                                <Progress
+                                  value={getProgressPercentage(batch)}
+                                  variant="warning"
+                                  className="h-2"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                  {batch.simsActivated}
+                                  {" "}
+                                  /
+                                  {batch.quantity}
+                                  {batch.simsFailed > 0 && (
+                                    <span className="ml-1 text-destructive">
+                                      (
+                                      {batch.simsFailed}
+                                      {" "}
+                                      failed)
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+                            </TableCell>
+                            <TableCell>{getStatusBadge(batch.status)}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {formatDayMonthTime(
+                                batch.createdAt,
+                                emptyValue,
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                {canRetryBatch(batch.status) && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleRetry(batch)}
+                                    disabled={retryBatch.isPending}
+                                  >
+                                    <RotateCcw className="mr-1 h-4 w-4" />
+                                    Retry
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setDetailBatchId(batch.id)}
+                                >
+                                  Details
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
               </TableBody>
             </Table>
           </div>
@@ -404,7 +545,10 @@ export function ActivationBatchesPanel() {
       </Card>
 
       {/* Batch detail dialog */}
-      <Dialog open={!!detailBatchId} onOpenChange={(open) => !open && setDetailBatchId(null)}>
+      <Dialog
+        open={!!detailBatchId}
+        onOpenChange={open => !open && setDetailBatchId(null)}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Activation Batch Details</DialogTitle>
@@ -415,79 +559,113 @@ export function ActivationBatchesPanel() {
             </DialogDescription>
           </DialogHeader>
 
-          {batchDetailQuery.isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : selectedBatch ? (
-            <div className="space-y-5">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  <div className="mt-1">{getStatusBadge(selectedBatch.status)}</div>
+          {batchDetailQuery.isLoading
+            ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Mode</p>
-                  <p className="font-semibold">{titleCase(selectedBatch.activationMode)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Quantity</p>
-                  <p className="font-semibold">{selectedBatch.quantity} SIM(s)</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Operator</p>
-                  <p className="font-semibold">{selectedBatch.operator || emptyValue}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Plan</p>
-                  <p className="font-semibold">{selectedBatch.requestedPlan || emptyValue}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Data Limit</p>
-                  <p className="font-semibold">{formatDataLimit(selectedBatch.dataLimitGb)}</p>
-                </div>
-              </div>
+              )
+            : selectedBatch
+              ? (
+                  <div className="space-y-5">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Status</p>
+                        <div className="mt-1">{getStatusBadge(selectedBatch.status)}</div>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Mode</p>
+                        <p className="font-semibold">{titleCase(selectedBatch.activationMode)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Quantity</p>
+                        <p className="font-semibold">
+                          {selectedBatch.quantity}
+                          {" "}
+                          SIM(s)
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Operator</p>
+                        <p className="font-semibold">{selectedBatch.operator || emptyValue}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Plan</p>
+                        <p className="font-semibold">{selectedBatch.requestedPlan || emptyValue}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Data Limit</p>
+                        <p className="font-semibold">{formatDataLimit(selectedBatch.dataLimitGb)}</p>
+                      </div>
+                    </div>
 
-              <div className="rounded-md bg-muted/50 p-3">
-                <p className="mb-1 text-xs text-muted-foreground">Batch Reference</p>
-                <p className="font-mono text-xs">{getBatchReference(selectedBatch)}</p>
-              </div>
+                    <div className="rounded-md bg-muted/50 p-3">
+                      <p className="mb-1 text-xs text-muted-foreground">Batch Reference</p>
+                      <p className="font-mono text-xs">{getBatchReference(selectedBatch)}</p>
+                    </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm font-medium">
-                  <span>Progress</span>
-                  <span>
-                    {selectedBatch.simsActivated} activated, {selectedBatch.simsFailed} failed
-                  </span>
-                </div>
-                <Progress value={getProgressPercentage(selectedBatch)} variant="warning" />
-              </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm font-medium">
+                        <span>Progress</span>
+                        <span>
+                          {selectedBatch.simsActivated}
+                          {" "}
+                          activated,
+                          {selectedBatch.simsFailed}
+                          {" "}
+                          failed
+                        </span>
+                      </div>
+                      <Progress
+                        value={getProgressPercentage(selectedBatch)}
+                        variant="warning"
+                      />
+                    </div>
 
-              {selectedBatch.errorMessage && (
-                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                  {selectedBatch.errorMessage}
-                </div>
-              )}
+                    {selectedBatch.errorMessage && (
+                      <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                        {selectedBatch.errorMessage}
+                      </div>
+                    )}
 
-              <div className="grid gap-4 text-sm sm:grid-cols-3">
-                <div>
-                  <p className="text-muted-foreground">Created</p>
-                  <p className="font-medium">{formatDayMonthTime(selectedBatch.createdAt, emptyValue)}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Started</p>
-                  <p className="font-medium">{formatDayMonthTime(selectedBatch.startedAt, emptyValue)}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Completed</p>
-                  <p className="font-medium">{formatDayMonthTime(selectedBatch.completedAt, emptyValue)}</p>
-                </div>
-              </div>
-            </div>
-          ) : null}
+                    <div className="grid gap-4 text-sm sm:grid-cols-3">
+                      <div>
+                        <p className="text-muted-foreground">Created</p>
+                        <p className="font-medium">
+                          {formatDayMonthTime(
+                            selectedBatch.createdAt,
+                            emptyValue,
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Started</p>
+                        <p className="font-medium">
+                          {formatDayMonthTime(
+                            selectedBatch.startedAt,
+                            emptyValue,
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Completed</p>
+                        <p className="font-medium">
+                          {formatDayMonthTime(
+                            selectedBatch.completedAt,
+                            emptyValue,
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              : null}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDetailBatchId(null)}>
+            <Button
+              variant="outline"
+              onClick={() => setDetailBatchId(null)}
+            >
               Close
             </Button>
           </DialogFooter>

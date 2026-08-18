@@ -1,15 +1,27 @@
 import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
-import { useState, useEffect, useMemo } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
-import { Badge } from '@/components/shadcn/badge';
-import { Button } from '@/components/shadcn/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/shadcn/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/shadcn/table';
-import { Phone, PhoneCall, PhoneOff, PhoneMissed, Check, X, Clock, RefreshCw, TrendingUp, Users, Activity } from 'lucide-react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import {
+  Activity, Check, Clock, Phone, PhoneCall, PhoneMissed, PhoneOff, RefreshCw, TrendingUp, Users, X,
+} from "lucide-react";
+import {
+  useEffect, useMemo, useState,
+} from "react";
+import {
+  Bar, BarChart, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from "recharts";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/shadcn/select";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/shadcn/table";
 
-interface IVRCall {
+type IVRCall = {
   id: string;
   tenant_id: string;
   driver_phone: string;
@@ -24,12 +36,21 @@ interface IVRCall {
   response_received_at: string | null;
   job_details: Record<string, unknown>;
   created_at: string;
-}
+};
 
 export default function DriverIVRDashboard() {
-  const [calls, setCalls] = useState<IVRCall[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [dateRange, setDateRange] = useState('7');
+  const [
+    calls,
+    setCalls,
+  ] = useState<IVRCall[]>([]);
+  const [
+    isLoading,
+    setIsLoading,
+  ] = useState(true);
+  const [
+    dateRange,
+    setDateRange,
+  ] = useState("7");
 
   const fetchCalls = async () => {
     setIsLoading(true);
@@ -37,88 +58,152 @@ export default function DriverIVRDashboard() {
     setIsLoading(false);
   };
 
-  useEffect(() => {
-    fetchCalls();
-  }, [dateRange]);
+  useEffect(
+    () => {
+      fetchCalls();
+    },
+    [dateRange],
+  );
 
-  const stats = useMemo(() => {
-    const total = calls.length;
-    const answered = calls.filter(c => c.call_status === 'answered').length;
-    const noAnswer = calls.filter(c => c.call_status === 'no_answer').length;
-    const accepted = calls.filter(c => c.driver_response === 'accepted').length;
-    const rejected = calls.filter(c => c.driver_response === 'rejected').length;
-    
-    return {
-      total,
-      answered,
-      noAnswer,
-      accepted,
-      rejected,
-      answerRate: total > 0 ? ((answered / total) * 100).toFixed(1) : '0',
-      acceptanceRate: answered > 0 ? ((accepted / answered) * 100).toFixed(1) : '0',
-    };
-  }, [calls]);
+  const stats = useMemo(
+    () => {
+      const total = calls.length;
+      const answered = calls.filter(c => c.call_status === "answered").length;
+      const noAnswer = calls.filter(c => c.call_status === "no_answer").length;
+      const accepted = calls.filter(c => c.driver_response === "accepted").length;
+      const rejected = calls.filter(c => c.driver_response === "rejected").length;
 
-  const responseData = useMemo(() => [
-    { name: 'Accepted', value: stats.accepted, color: 'hsl(var(--chart-1))' },
-    { name: 'Rejected', value: stats.rejected, color: 'hsl(var(--chart-2))' },
-    { name: 'No Response', value: stats.answered - stats.accepted - stats.rejected, color: 'hsl(var(--chart-3))' },
-  ].filter(d => d.value > 0), [stats]);
+      return {
+        total,
+        answered,
+        noAnswer,
+        accepted,
+        rejected,
+        answerRate: total > 0 ? ((answered / total) * 100).toFixed(1) : "0",
+        acceptanceRate: answered > 0 ? ((accepted / answered) * 100).toFixed(1) : "0",
+      };
+    },
+    [calls],
+  );
 
-  const callStatusData = useMemo(() => [
-    { name: 'Answered', value: stats.answered, color: 'hsl(var(--chart-1))' },
-    { name: 'No Answer', value: stats.noAnswer, color: 'hsl(var(--chart-4))' },
-    { name: 'Other', value: stats.total - stats.answered - stats.noAnswer, color: 'hsl(var(--chart-5))' },
-  ].filter(d => d.value > 0), [stats]);
+  const responseData = useMemo(
+    () => [
+      {
+        name: "Accepted", value: stats.accepted, color: "hsl(var(--chart-1))",
+      },
+      {
+        name: "Rejected", value: stats.rejected, color: "hsl(var(--chart-2))",
+      },
+      {
+        name: "No Response", value: stats.answered - stats.accepted - stats.rejected, color: "hsl(var(--chart-3))",
+      },
+    ].filter(d => d.value > 0),
+    [stats],
+  );
 
-  const callsByType = useMemo(() => {
-    const types: Record<string, number> = {};
-    calls.forEach(c => {
-      types[c.call_type] = (types[c.call_type] || 0) + 1;
-    });
-    return Object.entries(types).map(([name, value]) => ({ name, value }));
-  }, [calls]);
+  const callStatusData = useMemo(
+    () => [
+      {
+        name: "Answered", value: stats.answered, color: "hsl(var(--chart-1))",
+      },
+      {
+        name: "No Answer", value: stats.noAnswer, color: "hsl(var(--chart-4))",
+      },
+      {
+        name: "Other", value: stats.total - stats.answered - stats.noAnswer, color: "hsl(var(--chart-5))",
+      },
+    ].filter(d => d.value > 0),
+    [stats],
+  );
+
+  const callsByType = useMemo(
+    () => {
+      const types: Record<string, number> = {};
+      calls.forEach((c) => {
+        types[c.call_type] = (types[c.call_type] || 0) + 1;
+      });
+      return Object.entries(types).map(([
+        name,
+        value,
+      ]) => ({
+        name, value,
+      }));
+    },
+    [calls],
+  );
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
-      answered: { variant: 'default', icon: <PhoneCall className="h-3 w-3" /> },
-      no_answer: { variant: 'secondary', icon: <PhoneMissed className="h-3 w-3" /> },
-      busy: { variant: 'outline', icon: <PhoneOff className="h-3 w-3" /> },
-      failed: { variant: 'destructive', icon: <X className="h-3 w-3" /> },
-      initiated: { variant: 'outline', icon: <Phone className="h-3 w-3" /> },
-      ringing: { variant: 'outline', icon: <Phone className="h-3 w-3" /> },
+    const variants: Record<string, {
+      variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode;
+    }> = {
+      answered: {
+        variant: "default", icon: <PhoneCall className="h-3 w-3" />,
+      },
+      no_answer: {
+        variant: "secondary", icon: <PhoneMissed className="h-3 w-3" />,
+      },
+      busy: {
+        variant: "outline", icon: <PhoneOff className="h-3 w-3" />,
+      },
+      failed: {
+        variant: "destructive", icon: <X className="h-3 w-3" />,
+      },
+      initiated: {
+        variant: "outline", icon: <Phone className="h-3 w-3" />,
+      },
+      ringing: {
+        variant: "outline", icon: <Phone className="h-3 w-3" />,
+      },
     };
-    const config = variants[status] || { variant: 'outline' as const, icon: <Clock className="h-3 w-3" /> };
+    const config = variants[status] || {
+      variant: "outline" as const, icon: <Clock className="h-3 w-3" />,
+    };
     return (
-      <Badge variant={config.variant} className="gap-1">
+      <Badge
+        variant={config.variant}
+        className="gap-1"
+      >
         {config.icon}
-        {status.replace('_', ' ')}
+        {status.replace(
+          "_",
+          " ",
+        )}
       </Badge>
     );
   };
 
   const getResponseBadge = (response: string | null) => {
-    if (!response) return <Badge variant="outline">Pending</Badge>;
-    const variants: Record<string, 'default' | 'destructive' | 'secondary'> = {
-      accepted: 'default',
-      rejected: 'destructive',
-      pending: 'secondary',
+    if (!response)
+      return <Badge variant="outline">Pending</Badge>;
+    const variants: Record<string, "default" | "destructive" | "secondary"> = {
+      accepted: "default",
+      rejected: "destructive",
+      pending: "secondary",
     };
     return (
-      <Badge variant={variants[response] || 'outline'} className="gap-1">
-        {response === 'accepted' ? <Check className="h-3 w-3" /> : response === 'rejected' ? <X className="h-3 w-3" /> : null}
+      <Badge
+        variant={variants[response] || "outline"}
+        className="gap-1"
+      >
+        {response === "accepted" ? <Check className="h-3 w-3" /> : response === "rejected" ? <X className="h-3 w-3" /> : null}
         {response}
       </Badge>
     );
   };
 
   return (
-    <DashboardLayout title="Driver IVR Dashboard" subtitle="Monitor IVR call outcomes and job acceptance rates">
+    <DashboardLayout
+      title="Driver IVR Dashboard"
+      subtitle="Monitor IVR call outcomes and job acceptance rates"
+    >
       <div className="space-y-6">
         {/* Header Actions */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Select value={dateRange} onValueChange={setDateRange}>
+            <Select
+              value={dateRange}
+              onValueChange={setDateRange}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select range" />
               </SelectTrigger>
@@ -130,8 +215,12 @@ export default function DriverIVRDashboard() {
               </SelectContent>
             </Select>
           </div>
-          <Button variant="outline" onClick={fetchCalls} disabled={isLoading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          <Button
+            variant="outline"
+            onClick={fetchCalls}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         </div>
@@ -155,8 +244,19 @@ export default function DriverIVRDashboard() {
               <PhoneCall className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.answerRate}%</div>
-              <p className="text-xs text-muted-foreground">{stats.answered} of {stats.total} answered</p>
+              <div className="text-2xl font-bold">
+                {stats.answerRate}
+                %
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {stats.answered}
+                {" "}
+                of
+                {" "}
+                {stats.total}
+                {" "}
+                answered
+              </p>
             </CardContent>
           </Card>
 
@@ -166,8 +266,15 @@ export default function DriverIVRDashboard() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.acceptanceRate}%</div>
-              <p className="text-xs text-muted-foreground">{stats.accepted} jobs accepted</p>
+              <div className="text-2xl font-bold">
+                {stats.acceptanceRate}
+                %
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {stats.accepted}
+                {" "}
+                jobs accepted
+              </p>
             </CardContent>
           </Card>
 
@@ -191,7 +298,10 @@ export default function DriverIVRDashboard() {
               <CardDescription>Share of IVR calls by outcome — answered, missed, failed.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer
+                width="100%"
+                height={200}
+              >
                 <PieChart>
                   <Pie
                     data={callStatusData}
@@ -201,11 +311,16 @@ export default function DriverIVRDashboard() {
                     outerRadius={70}
                     paddingAngle={2}
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({
+                      name, percent,
+                    }) => `${name} ${(percent * 100).toFixed(0)}%`}
                     labelLine={false}
                   >
                     {callStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.color}
+                      />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -220,7 +335,10 @@ export default function DriverIVRDashboard() {
               <CardDescription>How drivers responded to IVR prompts (accept, reject, no input).</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer
+                width="100%"
+                height={200}
+              >
                 <PieChart>
                   <Pie
                     data={responseData}
@@ -230,11 +348,16 @@ export default function DriverIVRDashboard() {
                     outerRadius={70}
                     paddingAngle={2}
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({
+                      name, percent,
+                    }) => `${name} ${(percent * 100).toFixed(0)}%`}
                     labelLine={false}
                   >
                     {responseData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.color}
+                      />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -249,12 +372,27 @@ export default function DriverIVRDashboard() {
               <CardDescription>Volume of IVR calls grouped by purpose (job offers, alerts, follow-ups).</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer
+                width="100%"
+                height={200}
+              >
                 <BarChart data={callsByType}>
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 12 }}
+                  />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip />
-                  <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  <Bar
+                    dataKey="value"
+                    fill="hsl(var(--primary))"
+                    radius={[
+                      4,
+                      4,
+                      0,
+                      0,
+                    ]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -281,24 +419,32 @@ export default function DriverIVRDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {calls.slice(0, 20).map((call) => (
+                {calls.slice(
+                  0,
+                  20,
+                ).map(call => (
                   <TableRow key={call.id}>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{call.driver_name || 'Unknown'}</div>
+                        <div className="font-medium">{call.driver_name || "Unknown"}</div>
                         <div className="text-sm text-muted-foreground">{call.driver_phone}</div>
                       </div>
                     </TableCell>
                     <TableCell className="font-mono text-sm">
-                      {call.job_id || '-'}
+                      {call.job_id || "-"}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{call.call_type.replace('_', ' ')}</Badge>
+                      <Badge variant="outline">
+                        {call.call_type.replace(
+                          "_",
+                          " ",
+                        )}
+                      </Badge>
                     </TableCell>
                     <TableCell>{getStatusBadge(call.call_status)}</TableCell>
                     <TableCell>{getResponseBadge(call.driver_response)}</TableCell>
                     <TableCell>
-                      {call.call_duration_seconds ? `${call.call_duration_seconds}s` : '-'}
+                      {call.call_duration_seconds ? `${call.call_duration_seconds}s` : "-"}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDayMonthTime(call.created_at)}
@@ -307,7 +453,10 @@ export default function DriverIVRDashboard() {
                 ))}
                 {calls.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={7}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       No IVR calls found for this period
                     </TableCell>
                   </TableRow>

@@ -1,22 +1,56 @@
+import type {
+  GeofenceAlert,
+  MessageLog,
+  SimulatedDevice,
+} from "@/hooks/useMQTTSimulator";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
-import React, { useState } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
-import { Button } from '@/components/shadcn/button';
-import { Badge } from '@/components/shadcn/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
-import { ScrollArea } from '@/components/shadcn/scroll-area';
-import { Progress } from '@/components/shadcn/progress';
-import { Separator } from '@/components/shadcn/separator';
-import { Input } from '@/components/shadcn/input';
-import { Label } from '@/components/shadcn/label';
+import {
+  AlertTriangle,
+  ArrowUpDown,
+  Bell,
+  Gauge,
+  LogIn,
+  LogOut,
+  MapPin,
+  Pause,
+  Play,
+  Plus,
+  Radio,
+  RefreshCw,
+  Send,
+  Server,
+  Terminal,
+  Trash2,
+  Wifi,
+  WifiOff,
+  Zap,
+} from "lucide-react";
+import React, { useState } from "react";
+import { SimulatorDeviceMap } from "@/components/devices/SimulatorDeviceMap";
+import { SimulatorGeofenceMap } from "@/components/devices/SimulatorGeofenceMap";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
+import { ExportButton } from "@/components/shadcn/export-button";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Progress } from "@/components/shadcn/progress";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/shadcn/select';
+} from "@/components/shadcn/select";
+import { Separator } from "@/components/shadcn/separator";
 import {
   Table,
   TableBody,
@@ -24,46 +58,40 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/shadcn/table';
+} from "@/components/shadcn/table";
 import {
-  Play,
-  Pause,
-  Plus,
-  Trash2,
-  Wifi,
-  WifiOff,
-  Activity,
-  Zap,
-  Send,
-  RefreshCw,
-  Server,
-  ArrowUpDown,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  Radio,
-  Gauge,
-  Terminal,
-  MapPin,
-  Bell,
-  LogIn,
-  LogOut,
-} from 'lucide-react';
-import { useMQTTSimulator, SimulatedDevice, MessageLog, GeofenceAlert } from '@/hooks/useMQTTSimulator';
-import { SimulatorGeofenceMap } from '@/components/devices/SimulatorGeofenceMap';
-import { SimulatorDeviceMap } from '@/components/devices/SimulatorDeviceMap';
-import { ExportButton } from '@/components/shadcn/export-button';
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/shadcn/tabs";
+import { useMQTTSimulator } from "@/hooks/useMQTTSimulator";
 
-function DeviceStatusBadge({ status }: { status: SimulatedDevice['status'] }) {
-  const variants: Record<SimulatedDevice['status'], { color: string; icon: React.ReactNode }> = {
-    disconnected: { color: 'bg-gray-500', icon: <WifiOff className="h-3 w-3" /> },
-    connecting: { color: 'bg-amber-500 animate-pulse', icon: <Radio className="h-3 w-3" /> },
-    connected: { color: 'bg-green-500', icon: <Wifi className="h-3 w-3" /> },
-    error: { color: 'bg-red-500', icon: <AlertTriangle className="h-3 w-3" /> },
+function DeviceStatusBadge({ status }: { status: SimulatedDevice["status"] }) {
+  const variants: Record<SimulatedDevice["status"], {
+    color: string;
+    icon: React.ReactNode;
+  }> = {
+    disconnected: {
+      color: "bg-gray-500",
+      icon: <WifiOff className="h-3 w-3" />,
+    },
+    connecting: {
+      color: "bg-amber-500 animate-pulse",
+      icon: <Radio className="h-3 w-3" />,
+    },
+    connected: {
+      color: "bg-green-500",
+      icon: <Wifi className="h-3 w-3" />,
+    },
+    error: {
+      color: "bg-red-500",
+      icon: <AlertTriangle className="h-3 w-3" />,
+    },
   };
-  
+
   const variant = variants[status];
-  
+
   return (
     <Badge className={`${variant.color} text-white gap-1`}>
       {variant.icon}
@@ -72,17 +100,17 @@ function DeviceStatusBadge({ status }: { status: SimulatedDevice['status'] }) {
   );
 }
 
-function StatCard({ 
-  title, 
-  value, 
-  icon: Icon, 
+function StatCard({
+  title,
+  value,
+  icon: Icon,
   trend,
   suffix,
-}: { 
-  title: string; 
-  value: number | string; 
+}: {
+  title: string;
+  value: number | string;
   icon: React.ElementType;
-  trend?: 'up' | 'down' | 'neutral';
+  trend?: "up" | "down" | "neutral";
   suffix?: string;
 }) {
   return (
@@ -95,7 +123,7 @@ function StatCard({
           <div className="min-w-0 flex-1">
             <p className="text-sm text-muted-foreground">{title}</p>
             <p className="text-2xl font-bold">
-              {typeof value === 'number' ? value.toLocaleString() : value}
+              {typeof value === "number" ? value.toLocaleString() : value}
               {suffix && <span className="text-sm text-muted-foreground ml-1">{suffix}</span>}
             </p>
           </div>
@@ -106,34 +134,48 @@ function StatCard({
 }
 
 function GeofenceAlertItem({ alert }: { alert: GeofenceAlert }) {
-  const isEntry = alert.alertType === 'entry';
-  const isRestricted = alert.geofenceType === 'restricted';
-  
+  const isEntry = alert.alertType === "entry";
+  const isRestricted = alert.geofenceType === "restricted";
+
   return (
     <div className={`p-3 rounded-lg border ${
-      isRestricted && isEntry 
-        ? 'bg-destructive/10 border-destructive/30' 
+      isRestricted && isEntry
+        ? "bg-destructive/10 border-destructive/30"
         : isEntry
-          ? 'bg-amber-500/10 border-amber-500/30'
-          : 'bg-blue-500/10 border-blue-500/30'
-    }`}>
+          ? "bg-amber-500/10 border-amber-500/30"
+          : "bg-blue-500/10 border-blue-500/30"
+    }`}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className={`p-1.5 rounded-full ${
-            isRestricted && isEntry ? 'bg-destructive/20' : isEntry ? 'bg-amber-500/20' : 'bg-blue-500/20'
-          }`}>
-            {isEntry ? (
-              <LogIn className={`h-3 w-3 ${isRestricted ? 'text-destructive' : 'text-amber-500'}`} />
-            ) : (
-              <LogOut className="h-3 w-3 text-blue-500" />
-            )}
+            isRestricted && isEntry ? "bg-destructive/20" : isEntry ? "bg-amber-500/20" : "bg-blue-500/20"
+          }`}
+          >
+            {isEntry
+              ? (
+                  <LogIn className={`h-3 w-3 ${isRestricted ? "text-destructive" : "text-amber-500"}`} />
+                )
+              : (
+                  <LogOut className="h-3 w-3 text-blue-500" />
+                )}
           </div>
           <div>
             <p className="font-medium text-sm">
-              {alert.deviceName} {isEntry ? 'entered' : 'exited'} <span className="text-primary">{alert.geofenceName}</span>
+              {alert.deviceName}
+              {" "}
+              {isEntry ? "entered" : "exited"}
+              {" "}
+              <span className="text-primary">{alert.geofenceName}</span>
             </p>
             <p className="text-xs text-muted-foreground">
-              IMEI: {alert.deviceImei} • Type: {alert.geofenceType}
+              IMEI:
+              {" "}
+              {alert.deviceImei}
+              {" "}
+              • Type:
+              {" "}
+              {alert.geofenceType}
             </p>
           </div>
         </div>
@@ -142,7 +184,12 @@ function GeofenceAlertItem({ alert }: { alert: GeofenceAlert }) {
         </span>
       </div>
       <div className="mt-2 text-xs font-mono text-muted-foreground">
-        📍 {alert.latitude.toFixed(5)}, {alert.longitude.toFixed(5)}
+        📍
+        {" "}
+        {alert.latitude.toFixed(5)}
+        ,
+        {" "}
+        {alert.longitude.toFixed(5)}
       </div>
     </div>
   );
@@ -169,67 +216,89 @@ export default function DeviceSimulator() {
     clearGeofenceAlerts,
   } = useMQTTSimulator();
 
-  const [deviceCount, setDeviceCount] = useState(1);
-  const [telemetryInterval, setTelemetryInterval] = useState('2000');
-  const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
+  const [
+    deviceCount,
+    setDeviceCount,
+  ] = useState(1);
+  const [
+    telemetryInterval,
+    setTelemetryInterval,
+  ] = useState("2000");
+  const [
+    selectedDevice,
+    setSelectedDevice,
+  ] = useState<string | null>(null);
 
   // Demo fallbacks when simulator is idle
-  const demoMessageLogs: MessageLog[] = React.useMemo(() => {
-    if (messageLogs.length > 0) return messageLogs;
-    const topics = [
-      'devices/IMEI-862798051234567/telemetry',
-      'devices/IMEI-862798051234568/telemetry',
-      'devices/IMEI-862798051234569/heartbeat',
-      'devices/IMEI-862798051234570/event/geofence',
-      'devices/IMEI-862798051234571/telemetry',
-    ];
-    const now = Date.now();
-    return Array.from({ length: 24 }).map((_, i) => {
-      const sent = i % 2 === 0;
-      return {
-        id: `demo-log-${i}`,
-        timestamp: new Date(now - i * 4500),
-        direction: sent ? 'sent' : 'received',
-        topic: topics[i % topics.length],
-        payload: sent
-          ? {
-              imei: `86279805123456${(i % 9) + 1}`,
-              lat: 6.4541 + (i % 7) * 0.002,
-              lng: 3.3947 + (i % 5) * 0.0015,
-              speed: 28 + (i * 3) % 60,
-              heading: (i * 17) % 360,
-              fuel: 62 - (i % 20),
-              ignition: true,
-              ts: Date.now() - i * 4500,
-            }
-          : { ack: true, msgId: `srv-${1000 + i}`, status: 'ok' },
-      } as MessageLog;
-    });
-  }, [messageLogs]);
+  const demoMessageLogs: MessageLog[] = React.useMemo(
+    () => {
+      if (messageLogs.length > 0)
+        return messageLogs;
+      const topics = [
+        "devices/IMEI-862798051234567/telemetry",
+        "devices/IMEI-862798051234568/telemetry",
+        "devices/IMEI-862798051234569/heartbeat",
+        "devices/IMEI-862798051234570/event/geofence",
+        "devices/IMEI-862798051234571/telemetry",
+      ];
+      const now = Date.now();
+      return Array.from({ length: 24 }).map((_, i) => {
+        const sent = i % 2 === 0;
+        return {
+          id: `demo-log-${i}`,
+          timestamp: new Date(now - i * 4500),
+          direction: sent ? "sent" : "received",
+          topic: topics[i % topics.length],
+          payload: sent
+            ? {
+                imei: `86279805123456${(i % 9) + 1}`,
+                lat: 6.4541 + (i % 7) * 0.002,
+                lng: 3.3947 + (i % 5) * 0.0015,
+                speed: 28 + (i * 3) % 60,
+                heading: (i * 17) % 360,
+                fuel: 62 - (i % 20),
+                ignition: true,
+                ts: Date.now() - i * 4500,
+              }
+            : {
+                ack: true,
+                msgId: `srv-${1000 + i}`,
+                status: "ok",
+              },
+        } as MessageLog;
+      });
+    },
+    [messageLogs],
+  );
 
   const demoConnected = 8;
   const demoTotal = 12;
-  const demoErrors = devices.length > 0 ? devices.filter(d => d.status === 'error').length : 1;
-  const effectiveStats = stats.messagesSent > 0 ? stats : {
-    ...stats,
-    messagesSent: 1842,
-    messagesReceived: 1798,
-    messagesPerSecond: 4.7,
-    bytesTransferred: 268_540,
-    totalConnections: 14,
-    errorsCount: 1,
-  };
+  const demoErrors = devices.length > 0 ? devices.filter(d => d.status === "error").length : 1;
+  const effectiveStats = stats.messagesSent > 0
+    ? stats
+    : {
+        ...stats,
+        messagesSent: 1842,
+        messagesReceived: 1798,
+        messagesPerSecond: 4.7,
+        bytesTransferred: 268_540,
+        totalConnections: 14,
+        errorsCount: 1,
+      };
 
   const connectedCount = devices.length > 0
-    ? devices.filter(d => d.status === 'connected').length
+    ? devices.filter(d => d.status === "connected").length
     : demoConnected;
   const errorCount = devices.length > 0
-    ? devices.filter(d => d.status === 'error').length
+    ? devices.filter(d => d.status === "error").length
     : demoErrors;
-  const restrictedAlerts = geofenceAlerts.filter(a => a.geofenceType === 'restricted' && a.alertType === 'entry').length;
+  const restrictedAlerts = geofenceAlerts.filter(a => a.geofenceType === "restricted" && a.alertType === "entry").length;
 
   return (
-    <DashboardLayout title="Device Simulator" subtitle="Test MQTT WebSocket bridge">
+    <DashboardLayout
+      title="Device Simulator"
+      subtitle="Test MQTT WebSocket bridge"
+    >
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -240,17 +309,22 @@ export default function DeviceSimulator() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {isSimulating ? (
-              <Button variant="destructive" onClick={stopSimulation}>
-                <Pause className="h-4 w-4 mr-2" />
-                Stop Simulation
-              </Button>
-            ) : (
-              <Button onClick={() => startSimulation(parseInt(telemetryInterval))}>
-                <Play className="h-4 w-4 mr-2" />
-                Start Simulation
-              </Button>
-            )}
+            {isSimulating
+              ? (
+                  <Button
+                    variant="destructive"
+                    onClick={stopSimulation}
+                  >
+                    <Pause className="h-4 w-4 mr-2" />
+                    Stop Simulation
+                  </Button>
+                )
+              : (
+                  <Button onClick={() => startSimulation(parseInt(telemetryInterval))}>
+                    <Play className="h-4 w-4 mr-2" />
+                    Start Simulation
+                  </Button>
+                )}
           </div>
         </div>
 
@@ -291,22 +365,35 @@ export default function DeviceSimulator() {
         {/* Controls moved below tabs (inside Devices tab) for top-down flow: Map → Controls → Devices */}
 
         {/* Main Content */}
-        <Tabs defaultValue="devices" className="space-y-4">
+        <Tabs
+          defaultValue="devices"
+          className="space-y-4"
+        >
           <div className="flex justify-center">
             <TabsList>
               <TabsTrigger value="devices">
-                Devices ({devices.length})
+                Devices (
+                {devices.length}
+                )
               </TabsTrigger>
-              <TabsTrigger value="geofences" className="relative">
+              <TabsTrigger
+                value="geofences"
+                className="relative"
+              >
                 Geofence Alerts
                 {geofenceAlerts.length > 0 && (
-                  <Badge variant={restrictedAlerts > 0 ? "destructive" : "secondary"} className="ml-2 h-5 min-w-5 px-1">
+                  <Badge
+                    variant={restrictedAlerts > 0 ? "destructive" : "secondary"}
+                    className="ml-2 h-5 min-w-5 px-1"
+                  >
                     {geofenceAlerts.length}
                   </Badge>
                 )}
               </TabsTrigger>
               <TabsTrigger value="logs">
-                Message Logs ({demoMessageLogs.length})
+                Message Logs (
+                {demoMessageLogs.length}
+                )
               </TabsTrigger>
               <TabsTrigger value="monitor">
                 Live Monitor
@@ -314,7 +401,10 @@ export default function DeviceSimulator() {
             </TabsList>
           </div>
 
-          <TabsContent value="devices" className="space-y-4">
+          <TabsContent
+            value="devices"
+            className="space-y-4"
+          >
             {/* 1. Live Detection Map */}
             <SimulatorDeviceMap
               devices={devices}
@@ -341,7 +431,7 @@ export default function DeviceSimulator() {
                         min={1}
                         max={50}
                         value={deviceCount}
-                        onChange={(e) => setDeviceCount(parseInt(e.target.value) || 1)}
+                        onChange={e => setDeviceCount(parseInt(e.target.value) || 1)}
                         className="w-20"
                       />
                       <Button onClick={() => addDevices(deviceCount)}>
@@ -353,7 +443,10 @@ export default function DeviceSimulator() {
 
                   <div className="space-y-2">
                     <Label>Telemetry Interval</Label>
-                    <Select value={telemetryInterval} onValueChange={setTelemetryInterval}>
+                    <Select
+                      value={telemetryInterval}
+                      onValueChange={setTelemetryInterval}
+                    >
                       <SelectTrigger className="w-32">
                         <SelectValue />
                       </SelectTrigger>
@@ -367,17 +460,31 @@ export default function DeviceSimulator() {
                     </Select>
                   </div>
 
-                  <Separator orientation="vertical" className="h-10" />
+                  <Separator
+                    orientation="vertical"
+                    className="h-10"
+                  />
 
-                  <Button variant="outline" onClick={connectAll} disabled={devices.length === 0}>
+                  <Button
+                    variant="outline"
+                    onClick={connectAll}
+                    disabled={devices.length === 0}
+                  >
                     <Wifi className="h-4 w-4 mr-2" />
                     Connect All
                   </Button>
-                  <Button variant="outline" onClick={disconnectAll} disabled={connectedCount === 0}>
+                  <Button
+                    variant="outline"
+                    onClick={disconnectAll}
+                    disabled={connectedCount === 0}
+                  >
                     <WifiOff className="h-4 w-4 mr-2" />
                     Disconnect All
                   </Button>
-                  <Button variant="ghost" onClick={clearLogs}>
+                  <Button
+                    variant="ghost"
+                    onClick={clearLogs}
+                  >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Clear Logs
                   </Button>
@@ -403,130 +510,170 @@ export default function DeviceSimulator() {
                       filename="simulated-devices"
                       rows={devices}
                       columns={[
-                        { header: 'IMEI', accessor: (d) => d.imei },
-                        { header: 'Manufacturer', accessor: (d) => d.manufacturer },
-                        { header: 'Model', accessor: (d) => d.model },
-                        { header: 'Status', accessor: (d) => d.status },
-                        { header: 'Latitude', accessor: (d) => d.latitude },
-                        { header: 'Longitude', accessor: (d) => d.longitude },
-                        { header: 'Speed', accessor: (d) => d.speed },
-                        { header: 'Messages', accessor: (d) => d.messageCount },
-                        { header: 'Errors', accessor: (d) => d.errorCount },
+                        {
+                          header: "IMEI",
+                          accessor: d => d.imei,
+                        },
+                        {
+                          header: "Manufacturer",
+                          accessor: d => d.manufacturer,
+                        },
+                        {
+                          header: "Model",
+                          accessor: d => d.model,
+                        },
+                        {
+                          header: "Status",
+                          accessor: d => d.status,
+                        },
+                        {
+                          header: "Latitude",
+                          accessor: d => d.latitude,
+                        },
+                        {
+                          header: "Longitude",
+                          accessor: d => d.longitude,
+                        },
+                        {
+                          header: "Speed",
+                          accessor: d => d.speed,
+                        },
+                        {
+                          header: "Messages",
+                          accessor: d => d.messageCount,
+                        },
+                        {
+                          header: "Errors",
+                          accessor: d => d.errorCount,
+                        },
                       ]}
                     />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {devices.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Server className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No devices added yet</p>
-                      <p className="text-sm">Click "Add" to create simulated devices</p>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>IMEI</TableHead>
-                            <TableHead>Device</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Position</TableHead>
-                            <TableHead>Speed</TableHead>
-                            <TableHead>Messages</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {devices.map((device) => (
-                            <TableRow
-                              key={device.id}
-                              className={selectedDevice === device.id ? 'bg-muted/50' : ''}
-                              onClick={() => setSelectedDevice(device.id)}
-                            >
-                              <TableCell className="font-mono text-xs">
-                                {device.imei}
-                              </TableCell>
-                              <TableCell>
-                                <div>
-                                  <p className="font-medium text-sm">{device.manufacturer}</p>
-                                  <p className="text-xs text-muted-foreground">{device.model}</p>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <DeviceStatusBadge status={device.status} />
-                              </TableCell>
-                              <TableCell className="text-xs font-mono">
-                                {device.latitude.toFixed(4)}, {device.longitude.toFixed(4)}
-                              </TableCell>
-                              <TableCell>
-                                {device.speed.toFixed(0)} km/h
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-green-600">{device.messageCount}</span>
-                                  {device.errorCount > 0 && (
-                                    <span className="text-red-500">({device.errorCount} err)</span>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1">
-                                  {device.status === 'connected' ? (
-                                    <>
+                  {devices.length === 0
+                    ? (
+                        <div className="text-center py-12 text-muted-foreground">
+                          <Server className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>No devices added yet</p>
+                          <p className="text-sm">Click "Add" to create simulated devices</p>
+                        </div>
+                      )
+                    : (
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>IMEI</TableHead>
+                                <TableHead>Device</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Position</TableHead>
+                                <TableHead>Speed</TableHead>
+                                <TableHead>Messages</TableHead>
+                                <TableHead>Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {devices.map(device => (
+                                <TableRow
+                                  key={device.id}
+                                  className={selectedDevice === device.id ? "bg-muted/50" : ""}
+                                  onClick={() => setSelectedDevice(device.id)}
+                                >
+                                  <TableCell className="font-mono text-xs">
+                                    {device.imei}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div>
+                                      <p className="font-medium text-sm">{device.manufacturer}</p>
+                                      <p className="text-xs text-muted-foreground">{device.model}</p>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <DeviceStatusBadge status={device.status} />
+                                  </TableCell>
+                                  <TableCell className="text-xs font-mono">
+                                    {device.latitude.toFixed(4)}
+                                    ,
+                                    {device.longitude.toFixed(4)}
+                                  </TableCell>
+                                  <TableCell>
+                                    {device.speed.toFixed(0)}
+                                    {" "}
+                                    km/h
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-green-600">{device.messageCount}</span>
+                                      {device.errorCount > 0 && (
+                                        <span className="text-red-500">
+                                          (
+                                          {device.errorCount}
+                                          {" "}
+                                          err)
+                                        </span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-1">
+                                      {device.status === "connected"
+                                        ? (
+                                            <>
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  sendTelemetry(device.id);
+                                                }}
+                                              >
+                                                <Send className="h-3 w-3" />
+                                              </Button>
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  disconnectDevice(device.id);
+                                                }}
+                                              >
+                                                <WifiOff className="h-3 w-3" />
+                                              </Button>
+                                            </>
+                                          )
+                                        : (
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                connectDevice(device.id);
+                                              }}
+                                              disabled={device.status === "connecting"}
+                                            >
+                                              <Wifi className="h-3 w-3" />
+                                            </Button>
+                                          )}
                                       <Button
                                         size="sm"
                                         variant="ghost"
+                                        className="text-destructive"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          sendTelemetry(device.id);
+                                          removeDevice(device.id);
                                         }}
                                       >
-                                        <Send className="h-3 w-3" />
+                                        <Trash2 className="h-3 w-3" />
                                       </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          disconnectDevice(device.id);
-                                        }}
-                                      >
-                                        <WifiOff className="h-3 w-3" />
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        connectDevice(device.id);
-                                      }}
-                                      disabled={device.status === 'connecting'}
-                                    >
-                                      <Wifi className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-destructive"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      removeDevice(device.id);
-                                    }}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
                 </CardContent>
               </Card>
             </div>
@@ -535,7 +682,10 @@ export default function DeviceSimulator() {
           <TabsContent value="geofences">
             <div className="space-y-4">
               {/* Map visualization */}
-              <SimulatorGeofenceMap zones={geofenceZones} alerts={geofenceAlerts} />
+              <SimulatorGeofenceMap
+                zones={geofenceZones}
+                alerts={geofenceAlerts}
+              />
 
               {/* Geofence Alerts (above zones) */}
               <Card>
@@ -546,7 +696,11 @@ export default function DeviceSimulator() {
                         <Bell className="h-5 w-5 text-primary" />
                         Geofence Alerts
                         {restrictedAlerts > 0 && (
-                          <Badge variant="destructive">{restrictedAlerts} restricted</Badge>
+                          <Badge variant="destructive">
+                            {restrictedAlerts}
+                            {" "}
+                            restricted
+                          </Badge>
                         )}
                       </CardTitle>
                       <CardDescription>
@@ -554,7 +708,11 @@ export default function DeviceSimulator() {
                       </CardDescription>
                     </div>
                     {geofenceAlerts.length > 0 && (
-                      <Button variant="ghost" size="sm" onClick={clearGeofenceAlerts}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearGeofenceAlerts}
+                      >
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Clear
                       </Button>
@@ -563,19 +721,24 @@ export default function DeviceSimulator() {
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-[400px]">
-                    {geofenceAlerts.length === 0 ? (
-                      <div className="text-center py-12 text-muted-foreground">
-                        <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>No geofence alerts yet</p>
-                        <p className="text-sm">Alerts appear when devices enter or exit zones</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {geofenceAlerts.map((alert) => (
-                          <GeofenceAlertItem key={alert.id} alert={alert} />
-                        ))}
-                      </div>
-                    )}
+                    {geofenceAlerts.length === 0
+                      ? (
+                          <div className="text-center py-12 text-muted-foreground">
+                            <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p>No geofence alerts yet</p>
+                            <p className="text-sm">Alerts appear when devices enter or exit zones</p>
+                          </div>
+                        )
+                      : (
+                          <div className="space-y-2">
+                            {geofenceAlerts.map(alert => (
+                              <GeofenceAlertItem
+                                key={alert.id}
+                                alert={alert}
+                              />
+                            ))}
+                          </div>
+                        )}
                   </ScrollArea>
                 </CardContent>
               </Card>
@@ -593,19 +756,32 @@ export default function DeviceSimulator() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {geofenceZones.map((zone) => (
+                    {geofenceZones.map(zone => (
                       <div
                         key={zone.id}
                         className="p-3 rounded-lg border flex items-center justify-between"
-                        style={{ borderLeftColor: zone.color, borderLeftWidth: 4 }}
+                        style={{
+                          borderLeftColor: zone.color,
+                          borderLeftWidth: 4,
+                        }}
                       >
                         <div>
                           <p className="font-medium text-sm">{zone.name}</p>
                           <p className="text-xs text-muted-foreground">
-                            {zone.type} • {zone.radius}m radius
+                            {zone.type}
+                            {" "}
+                            •
+                            {zone.radius}
+                            m radius
                           </p>
                         </div>
-                        <Badge variant="outline" style={{ color: zone.color, borderColor: zone.color }}>
+                        <Badge
+                          variant="outline"
+                          style={{
+                            color: zone.color,
+                            borderColor: zone.color,
+                          }}
+                        >
                           {zone.type}
                         </Badge>
                       </div>
@@ -630,19 +806,22 @@ export default function DeviceSimulator() {
               <CardContent>
                 <ScrollArea className="h-[500px]">
                   <div className="space-y-2">
-                    {demoMessageLogs.map((log) => (
+                    {demoMessageLogs.map(log => (
                       <div
                         key={log.id}
                         className={`p-3 rounded-lg border text-sm font-mono ${
-                          log.direction === 'sent'
-                            ? 'bg-blue-500/10 border-blue-500/20'
-                            : 'bg-green-500/10 border-green-500/20'
+                          log.direction === "sent"
+                            ? "bg-blue-500/10 border-blue-500/20"
+                            : "bg-green-500/10 border-green-500/20"
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs">
-                              {log.direction === 'sent' ? '↑ SENT' : '↓ RECV'}
+                            <Badge
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              {log.direction === "sent" ? "↑ SENT" : "↓ RECV"}
                             </Badge>
                             <span className="text-muted-foreground">{log.topic}</span>
                           </div>
@@ -651,7 +830,11 @@ export default function DeviceSimulator() {
                           </span>
                         </div>
                         <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
-                          {JSON.stringify(log.payload, null, 2)}
+                          {JSON.stringify(
+                            log.payload,
+                            null,
+                            2,
+                          )}
                         </pre>
                       </div>
                     ))}
@@ -672,15 +855,21 @@ export default function DeviceSimulator() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Connected Devices</span>
-                      <span>{connectedCount} / {devices.length || demoTotal}</span>
+                      <span>
+                        {connectedCount}
+                        {" "}
+                        /
+                        {" "}
+                        {devices.length || demoTotal}
+                      </span>
                     </div>
-                    <Progress 
-                      value={(connectedCount / (devices.length || demoTotal)) * 100} 
+                    <Progress
+                      value={(connectedCount / (devices.length || demoTotal)) * 100}
                     />
                   </div>
-                  
+
                   <Separator />
-                  
+
                   <div className="grid grid-cols-2 gap-4 text-center">
                     <div className="p-4 rounded-lg bg-muted">
                       <p className="text-3xl font-bold text-green-500">{connectedCount}</p>
@@ -712,9 +901,9 @@ export default function DeviceSimulator() {
                       <p className="text-sm text-muted-foreground">KB transferred</p>
                     </div>
                   </div>
-                  
+
                   <Separator />
-                  
+
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Total Messages Sent</span>
@@ -738,6 +927,3 @@ export default function DeviceSimulator() {
     </DashboardLayout>
   );
 }
-
-
-

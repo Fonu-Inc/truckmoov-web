@@ -1,4 +1,13 @@
-import { formatRelative, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
+import {
+  formatRelative, formatWithPattern,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  ArrowUpRight,
+  FileText,
+  Image as ImageIcon,
+  Paperclip,
+} from "lucide-react";
+import { Badge } from "@/components/shadcn/badge";
 import {
   Dialog,
   DialogContent,
@@ -6,39 +15,57 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
-import { Badge } from "@/components/shadcn/badge";
 import { Label } from "@/components/shadcn/label";
 import { Separator } from "@/components/shadcn/separator";
+import { TicketCsatPanel } from "./TicketCsatPanel";
+
 type SupportTicket = any;
 type TicketStatus = any;
 type TicketPriority = any;
-import {
-  ArrowUpRight,
-  FileText,
-  Image as ImageIcon,
-  Paperclip,
-} from "lucide-react";
-import { TicketCsatPanel } from "./TicketCsatPanel";
 
-interface TicketDetailSheetProps {
+type TicketDetailSheetProps = {
   ticket: SupportTicket | null;
   onClose: () => void;
-}
-
-const statusConfig: Record<TicketStatus, { label: string; className: string }> = {
-  open: { label: "Open", className: "bg-primary/10 text-primary" },
-  in_progress: { label: "In Progress", className: "bg-chart-5/10 text-chart-5" },
-  waiting_on_tenant: { label: "Awaiting Response", className: "bg-muted text-muted-foreground" },
-  escalated: { label: "Escalated", className: "bg-destructive/10 text-destructive" },
-  resolved: { label: "Resolved", className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
-  closed: { label: "Closed", className: "bg-muted text-muted-foreground" },
 };
 
-const priorityStyles: Record<TicketPriority, { label: string; className: string }> = {
-  low: { label: "Low", className: "bg-muted text-muted-foreground" },
-  medium: { label: "Medium", className: "bg-primary/10 text-primary" },
-  high: { label: "High", className: "bg-chart-5/10 text-chart-5" },
-  critical: { label: "Critical", className: "bg-destructive/10 text-destructive" },
+const statusConfig: Record<TicketStatus, {
+  label: string; className: string;
+}> = {
+  open: {
+    label: "Open", className: "bg-primary/10 text-primary",
+  },
+  in_progress: {
+    label: "In Progress", className: "bg-chart-5/10 text-chart-5",
+  },
+  waiting_on_tenant: {
+    label: "Awaiting Response", className: "bg-muted text-muted-foreground",
+  },
+  escalated: {
+    label: "Escalated", className: "bg-destructive/10 text-destructive",
+  },
+  resolved: {
+    label: "Resolved", className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+  },
+  closed: {
+    label: "Closed", className: "bg-muted text-muted-foreground",
+  },
+};
+
+const priorityStyles: Record<TicketPriority, {
+  label: string; className: string;
+}> = {
+  low: {
+    label: "Low", className: "bg-muted text-muted-foreground",
+  },
+  medium: {
+    label: "Medium", className: "bg-primary/10 text-primary",
+  },
+  high: {
+    label: "High", className: "bg-chart-5/10 text-chart-5",
+  },
+  critical: {
+    label: "Critical", className: "bg-destructive/10 text-destructive",
+  },
 };
 
 const REPORTER_NAMES: Record<string, string> = {
@@ -61,40 +88,61 @@ type Attachment = {
   url?: string;
 };
 
-const isImageAttachment = (att: Attachment) =>
-  (att.type && att.type.startsWith("image/")) ||
-  /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(att.name || "");
+function isImageAttachment(att: Attachment) {
+  return (att.type && att.type.startsWith("image/"))
+    || /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(att.name || "");
+}
 
-export function TicketDetailSheet({ ticket, onClose }: TicketDetailSheetProps) {
-  if (!ticket) return null;
+export function TicketDetailSheet({
+  ticket, onClose,
+}: TicketDetailSheetProps) {
+  if (!ticket)
+    return null;
 
   const status = statusConfig[ticket.status];
-  const priority = priorityStyles[ticket.priority] ?? { label: ticket.priority, className: "" };
+  const priority = priorityStyles[ticket.priority] ?? {
+    label: ticket.priority, className: "",
+  };
   const ctx = (ticket.contextSnapshot ?? {}) as Record<string, unknown>;
   const realAttachments: Attachment[] = Array.isArray(ctx.attachments)
     ? (ctx.attachments as Attachment[])
     : [];
   const demoAttachments: Attachment[] = [
-    { name: "screenshot-error.png", type: "image/png", size: 248 * 1024 },
-    { name: "device-log.txt", type: "text/plain", size: 12 * 1024 },
+    {
+      name: "screenshot-error.png", type: "image/png", size: 248 * 1024,
+    },
+    {
+      name: "device-log.txt", type: "text/plain", size: 12 * 1024,
+    },
   ];
   const display = realAttachments.length > 0 ? realAttachments : demoAttachments;
 
-  const reporterDisplay =
-    (ticket as SupportTicket & { reporterName?: string }).reporterName ||
-    (ticket.createdBy ? REPORTER_NAMES[ticket.createdBy] || `User #${ticket.createdBy.slice(0, 8)}` : "—");
-  const reporterInitials =
-    reporterDisplay
+  const reporterDisplay
+    = (ticket as SupportTicket & { reporterName?: string }).reporterName
+      || (ticket.createdBy
+        ? REPORTER_NAMES[ticket.createdBy] || `User #${ticket.createdBy.slice(
+          0,
+          8,
+        )}`
+        : "—");
+  const reporterInitials
+    = reporterDisplay
       .split(" ")
       .filter(Boolean)
-      .slice(0, 2)
-      .map((p) => p[0]?.toUpperCase() || "")
+      .slice(
+        0,
+        2,
+      )
+      .map(p => p[0]?.toUpperCase() || "")
       .join("") || "?";
 
   const channelLabel = (ctx.channel_label as string | undefined) ?? ticket.contextType;
 
   return (
-    <Dialog open={!!ticket} onOpenChange={(open) => !open && onClose()}>
+    <Dialog
+      open={!!ticket}
+      onOpenChange={open => !open && onClose()}
+    >
       <DialogContent className="max-w-xl p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="text-lg leading-tight">View Ticket</DialogTitle>
@@ -116,26 +164,45 @@ export function TicketDetailSheet({ ticket, onClose }: TicketDetailSheetProps) {
               <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
                 Ticket ID
               </Label>
-              <p className="text-sm font-medium font-mono">#{ticket.id.slice(0, 8)}</p>
+              <p className="text-sm font-medium font-mono">
+                #
+                {ticket.id.slice(
+                  0,
+                  8,
+                )}
+              </p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             <div className="space-y-1">
               <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Category</Label>
-              <p className="text-sm font-medium capitalize">{ticket.category.replace(/_/g, " ")}</p>
+              <p className="text-sm font-medium capitalize">
+                {ticket.category.replace(
+                  /_/g,
+                  " ",
+                )}
+              </p>
             </div>
             <div className="space-y-1">
               <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Priority</Label>
               <div>
-                <Badge variant="outline" className={priority.className}>
+                <Badge
+                  variant="outline"
+                  className={priority.className}
+                >
                   {priority.label}
                 </Badge>
               </div>
             </div>
             <div className="space-y-1">
               <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Channel</Label>
-              <p className="text-sm font-medium capitalize">{String(channelLabel || "—").replace(/_/g, " ")}</p>
+              <p className="text-sm font-medium capitalize">
+                {String(channelLabel || "—").replace(
+                  /_/g,
+                  " ",
+                )}
+              </p>
             </div>
             <div className="space-y-1">
               <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Reporter</Label>
@@ -149,9 +216,15 @@ export function TicketDetailSheet({ ticket, onClose }: TicketDetailSheetProps) {
             <div className="space-y-1 col-span-2">
               <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Created</Label>
               <p className="text-sm">
-                {formatWithPattern(ticket.createdAt, "PPp")}{" "}
+                {formatWithPattern(
+                  ticket.createdAt,
+                  "PPp",
+                )}
+                {" "}
                 <span className="text-muted-foreground">
-                  ({formatRelative(ticket.createdAt)})
+                  (
+                  {formatRelative(ticket.createdAt)}
+                  )
                 </span>
               </p>
             </div>
@@ -172,7 +245,9 @@ export function TicketDetailSheet({ ticket, onClose }: TicketDetailSheetProps) {
           <div className="space-y-2">
             <Label className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
               <Paperclip className="h-3 w-3" />
-              Attachments ({display.length})
+              Attachments (
+              {display.length}
+              )
             </Label>
 
             {display.some(isImageAttachment) && (
@@ -185,17 +260,19 @@ export function TicketDetailSheet({ ticket, onClose }: TicketDetailSheetProps) {
                     rel="noopener noreferrer"
                     className="group relative block aspect-video overflow-hidden rounded-md border bg-muted"
                   >
-                    {att.url ? (
-                      <img
-                        src={att.url}
-                        alt={att.name}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center">
-                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                    )}
+                    {att.url
+                      ? (
+                          <img
+                            src={att.url}
+                            alt={att.name}
+                            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                          />
+                        )
+                      : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                        )}
                     <div className="absolute inset-x-0 bottom-0 truncate bg-background/80 px-2 py-1 text-[10px]">
                       {att.name}
                     </div>
@@ -204,10 +281,10 @@ export function TicketDetailSheet({ ticket, onClose }: TicketDetailSheetProps) {
               </div>
             )}
 
-            {display.some((a) => !isImageAttachment(a)) && (
+            {display.some(a => !isImageAttachment(a)) && (
               <div className="grid grid-cols-2 gap-2">
                 {display
-                  .filter((a) => !isImageAttachment(a))
+                  .filter(a => !isImageAttachment(a))
                   .map((att, i) => (
                     <div
                       key={`file-${i}`}
@@ -220,7 +297,9 @@ export function TicketDetailSheet({ ticket, onClose }: TicketDetailSheetProps) {
                         <p className="text-xs font-medium truncate">{att.name}</p>
                         {att.size != null && (
                           <p className="text-[10px] text-muted-foreground">
-                            {(att.size / 1024).toFixed(0)} KB
+                            {(att.size / 1024).toFixed(0)}
+                            {" "}
+                            KB
                           </p>
                         )}
                       </div>
@@ -240,7 +319,10 @@ export function TicketDetailSheet({ ticket, onClose }: TicketDetailSheetProps) {
                 Only the platform support team can change ticket status.
               </p>
             </div>
-            <Badge variant="outline" className={status.className}>
+            <Badge
+              variant="outline"
+              className={status.className}
+            >
               {status.label}
             </Badge>
           </div>
@@ -251,7 +333,12 @@ export function TicketDetailSheet({ ticket, onClose }: TicketDetailSheetProps) {
               <div className="flex items-center gap-2 text-sm text-destructive">
                 <ArrowUpRight className="h-4 w-4" />
                 <span className="font-medium">
-                  Escalated to {ticket.escalatedTo.replace(/_/g, " ")}
+                  Escalated to
+                  {" "}
+                  {ticket.escalatedTo.replace(
+                    /_/g,
+                    " ",
+                  )}
                 </span>
               </div>
               {ticket.escalatedReferenceId && (
@@ -265,14 +352,19 @@ export function TicketDetailSheet({ ticket, onClose }: TicketDetailSheetProps) {
               )}
               {ticket.escalatedAt && (
                 <p className="text-xs text-muted-foreground">
-                  Escalated {formatRelative(ticket.escalatedAt)}
+                  Escalated
+                  {" "}
+                  {formatRelative(ticket.escalatedAt)}
                 </p>
               )}
             </div>
           )}
 
           {/* CSAT — only renders when ticket is resolved/closed */}
-          <TicketCsatPanel ticketId={ticket.id} ticketStatus={ticket.status} />
+          <TicketCsatPanel
+            ticketId={ticket.id}
+            ticketStatus={ticket.status}
+          />
         </div>
       </DialogContent>
     </Dialog>

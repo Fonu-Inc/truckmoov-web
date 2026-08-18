@@ -23,12 +23,11 @@ const NEW_USER_KEY = "fleetpro_new_user";
 
 export function isFreshActivation(): boolean {
   try {
-    if (typeof window === "undefined") return false;
+    if (typeof window === "undefined")
+      return false;
     return window.localStorage.getItem(NEW_USER_KEY) === "1";
-  } catch {
+  }
+  catch {
     return false;
   }
 }
-
-
-

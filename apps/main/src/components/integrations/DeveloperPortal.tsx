@@ -1,15 +1,21 @@
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
-import { Button } from '@/components/shadcn/button';
-import { Badge } from '@/components/shadcn/badge';
-import { ScrollArea } from '@/components/shadcn/scroll-area';
-import { Key, Webhook, BookOpen, Activity, BarChart3 } from 'lucide-react';
-import { ApiKeyManagement } from './ApiKeyManagement';
-import { WebhookManagementPanel } from './WebhookManagementPanel';
-import { ApiUsageAnalytics } from './ApiUsageAnalytics';
-import { ApiDocumentation } from './ApiDocumentation';
+import {
+  Activity, BarChart3, BookOpen, Key, Webhook,
+} from "lucide-react";
+import { useState } from "react";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
+import { ApiDocumentation } from "./ApiDocumentation";
+import { ApiKeyManagement } from "./ApiKeyManagement";
+import { ApiUsageAnalytics } from "./ApiUsageAnalytics";
+import { WebhookManagementPanel } from "./WebhookManagementPanel";
 
 export function DeveloperPortal() {
   const apiKeys: any[] = [];
@@ -17,7 +23,7 @@ export function DeveloperPortal() {
   const auditLogs: any[] = [];
   const auditLoading = false;
 
-  const activeKeysCount = apiKeys.filter(k => k.status === 'active').length;
+  const activeKeysCount = apiKeys.filter(k => k.status === "active").length;
   const enabledWebhooksCount = subscriptions.filter(w => w.is_enabled).length;
 
   return (
@@ -66,46 +72,76 @@ export function DeveloperPortal() {
       <Tabs defaultValue="api-keys">
         <div className="overflow-x-auto pb-2">
           <TabsList className="inline-flex h-auto flex-wrap gap-1 p-1 lg:flex-nowrap">
-            <TabsTrigger value="api-keys" className="shrink-0">
+            <TabsTrigger
+              value="api-keys"
+              className="shrink-0"
+            >
               <Key className="h-4 w-4 mr-2" />
               API Keys
             </TabsTrigger>
-            <TabsTrigger value="webhooks" className="shrink-0">
+            <TabsTrigger
+              value="webhooks"
+              className="shrink-0"
+            >
               <Webhook className="h-4 w-4 mr-2" />
               Webhooks
             </TabsTrigger>
-            <TabsTrigger value="usage" className="shrink-0">
+            <TabsTrigger
+              value="usage"
+              className="shrink-0"
+            >
               <BarChart3 className="h-4 w-4 mr-2" />
               Usage Analytics
             </TabsTrigger>
-            <TabsTrigger value="docs" className="shrink-0">
+            <TabsTrigger
+              value="docs"
+              className="shrink-0"
+            >
               <BookOpen className="h-4 w-4 mr-2" />
               API Reference
             </TabsTrigger>
-            <TabsTrigger value="activity" className="shrink-0">
+            <TabsTrigger
+              value="activity"
+              className="shrink-0"
+            >
               <Activity className="h-4 w-4 mr-2" />
               Audit Log
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="api-keys" className="mt-6">
+        <TabsContent
+          value="api-keys"
+          className="mt-6"
+        >
           <ApiKeyManagement />
         </TabsContent>
 
-        <TabsContent value="webhooks" className="mt-6">
+        <TabsContent
+          value="webhooks"
+          className="mt-6"
+        >
           <WebhookManagementPanel />
         </TabsContent>
 
-        <TabsContent value="usage" className="mt-6">
+        <TabsContent
+          value="usage"
+          className="mt-6"
+        >
           <ApiUsageAnalytics />
         </TabsContent>
 
-        <TabsContent value="docs" className="mt-6">
+        <TabsContent
+          value="docs"
+          className="mt-6"
+        >
           <ApiDocumentation />
         </TabsContent>
 
-        <TabsContent value="activity" className="mt-6">
+        <TabsContent
+          value="activity"
+          className="mt-6"
+        >
           <Card>
             <CardHeader>
               <CardTitle>Integration Audit Log</CardTitle>
@@ -114,36 +150,56 @@ export function DeveloperPortal() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {auditLoading ? (
-                <p className="text-muted-foreground">Loading...</p>
-              ) : auditLogs.length === 0 ? (
-                <p className="text-muted-foreground">No audit events recorded</p>
-              ) : (
-                <ScrollArea className="h-96">
-                  <div className="space-y-3">
-                    {auditLogs.map((log) => (
-                      <div key={log.id} className="flex items-start gap-3 p-3 border rounded-lg">
-                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                          {log.resource_type === 'api_key' ? (
-                            <Key className="h-4 w-4" />
-                          ) : (
-                            <Webhook className="h-4 w-4" />
-                          )}
+              {auditLoading
+                ? (
+                    <p className="text-muted-foreground">Loading...</p>
+                  )
+                : auditLogs.length === 0
+                  ? (
+                      <p className="text-muted-foreground">No audit events recorded</p>
+                    )
+                  : (
+                      <ScrollArea className="h-96">
+                        <div className="space-y-3">
+                          {auditLogs.map(log => (
+                            <div
+                              key={log.id}
+                              className="flex items-start gap-3 p-3 border rounded-lg"
+                            >
+                              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                                {log.resource_type === "api_key"
+                                  ? (
+                                      <Key className="h-4 w-4" />
+                                    )
+                                  : (
+                                      <Webhook className="h-4 w-4" />
+                                    )}
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-sm">{log.actor_name || "System"}</span>
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs"
+                                  >
+                                    {log.action}
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {log.resource_type}
+                                  {" "}
+                                  •
+                                  {formatWithPattern(
+                                    log.created_at,
+                                    "MMM d, yyyy HH:mm:ss",
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">{log.actor_name || 'System'}</span>
-                            <Badge variant="outline" className="text-xs">{log.action}</Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {log.resource_type} • {formatWithPattern(log.created_at, 'MMM d, yyyy HH:mm:ss')}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              )}
+                      </ScrollArea>
+                    )}
             </CardContent>
           </Card>
         </TabsContent>

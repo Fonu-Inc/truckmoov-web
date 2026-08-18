@@ -1,15 +1,19 @@
+import type { Vehicle } from "@/types";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
+import {
+  Clock, Fuel, Gauge, Navigation, Truck,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Vehicle } from "@/types";
-import { Truck, Navigation, Gauge, Fuel, Clock } from "lucide-react";
 
-interface VehicleMarkerProps {
+type VehicleMarkerProps = {
   vehicle: Vehicle;
   selected?: boolean;
   onClick?: () => void;
-}
+};
 
-export function VehicleMarker({ vehicle, selected, onClick }: VehicleMarkerProps) {
+export function VehicleMarker({
+  vehicle, selected, onClick,
+}: VehicleMarkerProps) {
   const statusColors = {
     active: "bg-success",
     inactive: "bg-muted-foreground",
@@ -24,7 +28,7 @@ export function VehicleMarker({ vehicle, selected, onClick }: VehicleMarkerProps
       onClick={onClick}
       className={cn(
         "relative cursor-pointer transition-all duration-200",
-        selected && "scale-110 z-10"
+        selected && "scale-110 z-10",
       )}
     >
       {/* Main marker */}
@@ -32,7 +36,7 @@ export function VehicleMarker({ vehicle, selected, onClick }: VehicleMarkerProps
         className={cn(
           "relative flex h-10 w-10 items-center justify-center rounded-full border-2 border-background shadow-lg",
           statusColors[vehicle.status],
-          isMoving && "vehicle-active"
+          isMoving && "vehicle-active",
         )}
       >
         <Truck className="h-5 w-5 text-success-foreground" />
@@ -52,7 +56,7 @@ export function VehicleMarker({ vehicle, selected, onClick }: VehicleMarkerProps
         <div
           className={cn(
             "absolute inset-0 rounded-full animate-ping opacity-20",
-            statusColors[vehicle.status]
+            statusColors[vehicle.status],
           )}
         />
       )}
@@ -60,18 +64,20 @@ export function VehicleMarker({ vehicle, selected, onClick }: VehicleMarkerProps
   );
 }
 
-interface VehicleInfoCardProps {
+type VehicleInfoCardProps = {
   vehicle: Vehicle;
   driverName?: string;
   className?: string;
-}
+};
 
-export function VehicleInfoCard({ vehicle, driverName, className }: VehicleInfoCardProps) {
+export function VehicleInfoCard({
+  vehicle, driverName, className,
+}: VehicleInfoCardProps) {
   return (
     <div
       className={cn(
         "rounded-lg border border-border bg-card p-4 shadow-xl animate-fade-in",
-        className
+        className,
       )}
     >
       <div className="flex items-center justify-between mb-3">
@@ -79,7 +85,7 @@ export function VehicleInfoCard({ vehicle, driverName, className }: VehicleInfoC
           <div
             className={cn(
               "h-3 w-3 rounded-full",
-              vehicle.status === "active" ? "bg-success" : "bg-muted-foreground"
+              vehicle.status === "active" ? "bg-success" : "bg-muted-foreground",
             )}
           />
           <span className="font-semibold">{vehicle.registrationNumber}</span>
@@ -91,7 +97,13 @@ export function VehicleInfoCard({ vehicle, driverName, className }: VehicleInfoC
         <div className="flex items-center gap-2 text-muted-foreground">
           <Truck className="h-4 w-4" />
           <span>
-            {vehicle.make} {vehicle.model} ({vehicle.year})
+            {vehicle.make}
+            {" "}
+            {vehicle.model}
+            {" "}
+            (
+            {vehicle.year}
+            )
           </span>
         </div>
 
@@ -108,7 +120,11 @@ export function VehicleInfoCard({ vehicle, driverName, className }: VehicleInfoC
           <>
             <div className="flex items-center gap-2 text-muted-foreground">
               <Gauge className="h-4 w-4" />
-              <span>{vehicle.location.speed} km/h</span>
+              <span>
+                {vehicle.location.speed}
+                {" "}
+                km/h
+              </span>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <Clock className="h-4 w-4" />
@@ -130,14 +146,17 @@ export function VehicleInfoCard({ vehicle, driverName, className }: VehicleInfoC
                     vehicle.fuelLevel > 50
                       ? "bg-success"
                       : vehicle.fuelLevel > 25
-                      ? "bg-warning"
-                      : "bg-destructive"
+                        ? "bg-warning"
+                        : "bg-destructive",
                   )}
                   style={{ width: `${vehicle.fuelLevel}%` }}
                 />
               </div>
             </div>
-            <span className="text-xs text-muted-foreground">{vehicle.fuelLevel}%</span>
+            <span className="text-xs text-muted-foreground">
+              {vehicle.fuelLevel}
+              %
+            </span>
           </div>
         )}
       </div>

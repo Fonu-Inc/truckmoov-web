@@ -1,20 +1,25 @@
-import { useState } from "react";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
-import { Badge } from "@/components/shadcn/badge";
-import { OnboardingPlanStep } from "./OnboardingPlanStep";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Progress } from "@/components/shadcn/progress";
-import { Switch } from "@/components/shadcn/switch";
-import { Separator } from "@/components/shadcn/separator";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/shadcn/dialog";
+  AlertTriangle,
+  Building2,
+  Check,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Cpu,
+  CreditCard,
+  Loader2,
+  Mail,
+  MapPin,
+  Phone,
+  Send,
+  Settings,
+  Smartphone,
+  Sparkles,
+  Truck,
+  Truck as TruckIcon, User,
+} from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +30,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Progress } from "@/components/shadcn/progress";
 import {
   Select,
   SelectContent,
@@ -32,41 +52,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { Separator } from "@/components/shadcn/separator";
 import { Slider } from "@/components/shadcn/slider";
-import {
-  Building2,
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  CreditCard,
-  Cpu,
-  Smartphone,
-  Check,
-  ChevronRight,
-  ChevronLeft,
-  Loader2,
-  Truck,
-  Settings,
-  Sparkles,
-  AlertTriangle,
-  CheckCircle2,
-  Send,
-} from "lucide-react";
-import { toast } from "sonner";
+import { Switch } from "@/components/shadcn/switch";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { Truck as TruckIcon } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
+import { OnboardingPlanStep } from "./OnboardingPlanStep";
 
-interface TenantOnboardingWizardProps {
+type TenantOnboardingWizardProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onComplete: (tenantData: TenantFormData) => void;
-}
+};
 
 type OrgType = "FLEET_PROVIDER" | "ENTERPRISE" | "AGGREGATOR" | "OWNER_OPERATOR";
 
-interface TenantFormData {
+type TenantFormData = {
   // Step 1: Company Details
   companyName: string;
   primaryContactName: string;
@@ -110,7 +111,7 @@ interface TenantFormData {
     analytics: boolean;
     apiAccess: boolean;
   };
-}
+};
 
 const initialFormData: TenantFormData = {
   companyName: "",
@@ -152,17 +153,33 @@ const initialFormData: TenantFormData = {
   },
 };
 
-const orgTypeOptions: { value: OrgType; label: string; description: string; icon: string }[] = [
-  { value: "FLEET_PROVIDER", label: "Fleet Provider", description: "Operates vehicles & drivers, executes transport jobs", icon: "🚛" },
-  { value: "ENTERPRISE", label: "Enterprise (Cargo Owner)", description: "Creates jobs, contracts providers, monitors SLAs", icon: "🏢" },
-  { value: "AGGREGATOR", label: "Aggregator", description: "Coordinates owner-operators, brokers work across fleets", icon: "🔗" },
-  { value: "OWNER_OPERATOR", label: "Owner-Operator", description: "Independent operator with own vehicle(s)", icon: "👤" },
+const orgTypeOptions: {
+  value: OrgType; label: string; description: string; icon: string;
+}[] = [
+  {
+    value: "FLEET_PROVIDER", label: "Fleet Provider", description: "Operates vehicles & drivers, executes transport jobs", icon: "🚛",
+  },
+  {
+    value: "ENTERPRISE", label: "Enterprise (Cargo Owner)", description: "Creates jobs, contracts providers, monitors SLAs", icon: "🏢",
+  },
+  {
+    value: "AGGREGATOR", label: "Aggregator", description: "Coordinates owner-operators, brokers work across fleets", icon: "🔗",
+  },
+  {
+    value: "OWNER_OPERATOR", label: "Owner-Operator", description: "Independent operator with own vehicle(s)", icon: "👤",
+  },
 ];
 
 const steps = [
-  { id: 1, title: "Organization & Details", icon: Building2 },
-  { id: 2, title: "Review", icon: Check },
-  { id: 3, title: "Confirmation", icon: CheckCircle2 },
+  {
+    id: 1, title: "Organization & Details", icon: Building2,
+  },
+  {
+    id: 2, title: "Review", icon: Check,
+  },
+  {
+    id: 3, title: "Confirmation", icon: CheckCircle2,
+  },
 ];
 
 /** Label for the primary "name" field, per stakeholder. */
@@ -180,15 +197,19 @@ type MvpPlan = {
   tier: string;
   billingMode: "PREPAID" | "POSTPAID";
   monthlyPrice: number; // 0 = custom/negotiated
-  yearlyPrice: number;  // 0 = custom/negotiated
+  yearlyPrice: number; // 0 = custom/negotiated
   isCustomPriced: boolean;
   maxVehicles: number | null; // null = custom/unlimited
   maxDrivers: number | null;
   maxJobs: number | null;
   maxUsers: number | null;
   features: string[];
-  bundle?: { messages?: number; voiceMins?: number };
-  rates?: { whatsapp?: number; sms?: number; voicePerMin?: number };
+  bundle?: {
+    messages?: number; voiceMins?: number;
+  };
+  rates?: {
+    whatsapp?: number; sms?: number; voicePerMin?: number;
+  };
   applicableOrgTypes: OrgType[];
   isPopular?: boolean;
 };
@@ -213,7 +234,12 @@ const MVP_PLANS: MvpPlan[] = [
       "WhatsApp messaging",
       "Standard support",
     ],
-    applicableOrgTypes: ["FLEET_PROVIDER", "ENTERPRISE", "AGGREGATOR", "OWNER_OPERATOR"],
+    applicableOrgTypes: [
+      "FLEET_PROVIDER",
+      "ENTERPRISE",
+      "AGGREGATOR",
+      "OWNER_OPERATOR",
+    ],
   },
   {
     id: "prepaid-professional",
@@ -234,7 +260,12 @@ const MVP_PLANS: MvpPlan[] = [
       "Priority support",
       "API access",
     ],
-    applicableOrgTypes: ["FLEET_PROVIDER", "ENTERPRISE", "AGGREGATOR", "OWNER_OPERATOR"],
+    applicableOrgTypes: [
+      "FLEET_PROVIDER",
+      "ENTERPRISE",
+      "AGGREGATOR",
+      "OWNER_OPERATOR",
+    ],
     isPopular: true,
   },
   {
@@ -256,7 +287,12 @@ const MVP_PLANS: MvpPlan[] = [
       "Dedicated account manager",
       "SLA guarantees",
     ],
-    applicableOrgTypes: ["FLEET_PROVIDER", "ENTERPRISE", "AGGREGATOR", "OWNER_OPERATOR"],
+    applicableOrgTypes: [
+      "FLEET_PROVIDER",
+      "ENTERPRISE",
+      "AGGREGATOR",
+      "OWNER_OPERATOR",
+    ],
   },
   // POSTPAID
   {
@@ -271,15 +307,24 @@ const MVP_PLANS: MvpPlan[] = [
     maxDrivers: 60,
     maxJobs: 1_000,
     maxUsers: 5,
-    bundle: { messages: 5_000, voiceMins: 500 },
-    rates: { whatsapp: 18, sms: 5, voicePerMin: 60 },
+    bundle: {
+      messages: 5_000, voiceMins: 500,
+    },
+    rates: {
+      whatsapp: 18, sms: 5, voicePerMin: 60,
+    },
     features: [
       "5,000 messages bundle",
       "500 voice mins bundle",
       "WhatsApp ₦18/msg · SMS ₦5/msg",
       "Voice ₦60/min",
     ],
-    applicableOrgTypes: ["FLEET_PROVIDER", "ENTERPRISE", "AGGREGATOR", "OWNER_OPERATOR"],
+    applicableOrgTypes: [
+      "FLEET_PROVIDER",
+      "ENTERPRISE",
+      "AGGREGATOR",
+      "OWNER_OPERATOR",
+    ],
   },
   {
     id: "postpaid-corporate",
@@ -293,15 +338,24 @@ const MVP_PLANS: MvpPlan[] = [
     maxDrivers: 240,
     maxJobs: 4_000,
     maxUsers: 20,
-    bundle: { messages: 20_000, voiceMins: 2_000 },
-    rates: { whatsapp: 16, sms: 4.5, voicePerMin: 55 },
+    bundle: {
+      messages: 20_000, voiceMins: 2_000,
+    },
+    rates: {
+      whatsapp: 16, sms: 4.5, voicePerMin: 55,
+    },
     features: [
       "20,000 messages bundle",
       "2,000 voice mins bundle",
       "WhatsApp ₦16/msg · SMS ₦4.50/msg",
       "Voice ₦55/min",
     ],
-    applicableOrgTypes: ["FLEET_PROVIDER", "ENTERPRISE", "AGGREGATOR", "OWNER_OPERATOR"],
+    applicableOrgTypes: [
+      "FLEET_PROVIDER",
+      "ENTERPRISE",
+      "AGGREGATOR",
+      "OWNER_OPERATOR",
+    ],
     isPopular: true,
   },
   {
@@ -321,39 +375,84 @@ const MVP_PLANS: MvpPlan[] = [
       "Custom bundle",
       "Negotiated rates based on volume",
     ],
-    applicableOrgTypes: ["FLEET_PROVIDER", "ENTERPRISE", "AGGREGATOR", "OWNER_OPERATOR"],
+    applicableOrgTypes: [
+      "FLEET_PROVIDER",
+      "ENTERPRISE",
+      "AGGREGATOR",
+      "OWNER_OPERATOR",
+    ],
   },
 ];
 
 // Vehicle scale per stakeholder (from MVP doc)
-const VEHICLE_SCALE: Record<OrgType, { min: number; max: number; default: number }> = {
-  ENTERPRISE: { min: 100, max: 10_000, default: 100 },
-  FLEET_PROVIDER: { min: 20, max: 500, default: 25 },
-  AGGREGATOR: { min: 20, max: 500, default: 25 },
-  OWNER_OPERATOR: { min: 1, max: 7, default: 5 },
+const VEHICLE_SCALE: Record<OrgType, {
+  min: number; max: number; default: number;
+}> = {
+  ENTERPRISE: {
+    min: 100, max: 10_000, default: 100,
+  },
+  FLEET_PROVIDER: {
+    min: 20, max: 500, default: 25,
+  },
+  AGGREGATOR: {
+    min: 20, max: 500, default: 25,
+  },
+  OWNER_OPERATOR: {
+    min: 1, max: 7, default: 5,
+  },
 };
 
 // Operational quotas (drivers, devices, sims) scale per stakeholder.
 // Drivers track ~1.2× vehicles; devices & sims roughly 1:1 with vehicles.
-const DRIVER_SCALE: Record<OrgType, { min: number; max: number; default: number }> = {
-  ENTERPRISE: { min: 100, max: 12_000, default: 120 },
-  FLEET_PROVIDER: { min: 20, max: 600, default: 30 },
-  AGGREGATOR: { min: 20, max: 600, default: 30 },
-  OWNER_OPERATOR: { min: 1, max: 10, default: 5 },
+const DRIVER_SCALE: Record<OrgType, {
+  min: number; max: number; default: number;
+}> = {
+  ENTERPRISE: {
+    min: 100, max: 12_000, default: 120,
+  },
+  FLEET_PROVIDER: {
+    min: 20, max: 600, default: 30,
+  },
+  AGGREGATOR: {
+    min: 20, max: 600, default: 30,
+  },
+  OWNER_OPERATOR: {
+    min: 1, max: 10, default: 5,
+  },
 };
 
-const DEVICE_SCALE: Record<OrgType, { min: number; max: number; default: number }> = {
-  ENTERPRISE: { min: 100, max: 10_000, default: 100 },
-  FLEET_PROVIDER: { min: 20, max: 500, default: 25 },
-  AGGREGATOR: { min: 20, max: 500, default: 25 },
-  OWNER_OPERATOR: { min: 1, max: 10, default: 5 },
+const DEVICE_SCALE: Record<OrgType, {
+  min: number; max: number; default: number;
+}> = {
+  ENTERPRISE: {
+    min: 100, max: 10_000, default: 100,
+  },
+  FLEET_PROVIDER: {
+    min: 20, max: 500, default: 25,
+  },
+  AGGREGATOR: {
+    min: 20, max: 500, default: 25,
+  },
+  OWNER_OPERATOR: {
+    min: 1, max: 10, default: 5,
+  },
 };
 
-const SIM_SCALE: Record<OrgType, { min: number; max: number; default: number }> = {
-  ENTERPRISE: { min: 100, max: 10_000, default: 100 },
-  FLEET_PROVIDER: { min: 20, max: 500, default: 25 },
-  AGGREGATOR: { min: 20, max: 500, default: 25 },
-  OWNER_OPERATOR: { min: 1, max: 10, default: 5 },
+const SIM_SCALE: Record<OrgType, {
+  min: number; max: number; default: number;
+}> = {
+  ENTERPRISE: {
+    min: 100, max: 10_000, default: 100,
+  },
+  FLEET_PROVIDER: {
+    min: 20, max: 500, default: 25,
+  },
+  AGGREGATOR: {
+    min: 20, max: 500, default: 25,
+  },
+  OWNER_OPERATOR: {
+    min: 1, max: 10, default: 5,
+  },
 };
 
 const QUOTA_SCALES = {
@@ -363,45 +462,76 @@ const QUOTA_SCALES = {
   simQuota: SIM_SCALE,
 } as const;
 
-export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: TenantOnboardingWizardProps) {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState<TenantFormData>(initialFormData);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [duplicateInfo, setDuplicateInfo] = useState<{ count: number; names: string[] } | null>(null);
-  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
-  const { format, currency } = useCurrency();
+export function TenantOnboardingWizard({
+  open, onOpenChange, onComplete,
+}: TenantOnboardingWizardProps) {
+  const [
+    currentStep,
+    setCurrentStep,
+  ] = useState(1);
+  const [
+    formData,
+    setFormData,
+  ] = useState<TenantFormData>(initialFormData);
+  const [
+    isSubmitting,
+    setIsSubmitting,
+  ] = useState(false);
+  const [
+    duplicateInfo,
+    setDuplicateInfo,
+  ] = useState<{
+    count: number; names: string[];
+  } | null>(null);
+  const [
+    isCheckingDuplicate,
+    setIsCheckingDuplicate,
+  ] = useState(false);
+  const {
+    format, currency,
+  } = useCurrency();
   const { user } = useAuthStore();
   const plansLoading = false;
 
   const progress = (currentStep / steps.length) * 100;
 
   // Plans applicable to the chosen organization type
-  const availablePlans = MVP_PLANS.filter((p) =>
-    p.applicableOrgTypes.includes(formData.organizationType)
-  );
+  const availablePlans = MVP_PLANS.filter(p =>
+    p.applicableOrgTypes.includes(formData.organizationType));
 
   const updateFormData = (updates: Partial<TenantFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
+    setFormData(prev => ({
+      ...prev, ...updates,
+    }));
   };
 
   const updateFeatures = (updates: Partial<TenantFormData["features"]>) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      features: { ...prev.features, ...updates },
+      features: {
+        ...prev.features, ...updates,
+      },
     }));
   };
 
   const handlePlanSelect = (planId: string) => {
-    const plan = availablePlans.find((p) => p.id === planId);
-    if (!plan) return;
+    const plan = availablePlans.find(p => p.id === planId);
+    if (!plan)
+      return;
     const scale = VEHICLE_SCALE[formData.organizationType];
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       plan: planId,
       billingMode: plan.billingMode,
       vehicleQuota: prev.quotaOverride
         ? prev.vehicleQuota
-        : Math.min(scale.max, Math.max(scale.min, plan.maxVehicles ?? scale.default)),
+        : Math.min(
+            scale.max,
+            Math.max(
+              scale.min,
+              plan.maxVehicles ?? scale.default,
+            ),
+          ),
       driverQuota: prev.quotaOverride ? prev.driverQuota : (plan.maxDrivers ?? prev.driverQuota),
       jobQuota: prev.quotaOverride ? prev.jobQuota : (plan.maxJobs ?? prev.jobQuota),
     }));
@@ -423,11 +553,11 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
           toast.error("Please fill in the primary contact name");
           return false;
         }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        if (!/^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(formData.email)) {
           toast.error("Please enter a valid business email address");
           return false;
         }
-        if (formData.billingEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.billingEmail)) {
+        if (formData.billingEmail && !/^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(formData.billingEmail)) {
           toast.error("Please enter a valid billing email address");
           return false;
         }
@@ -455,13 +585,18 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
   };
 
   /** Look up existing organizations of the same type with a matching name (case-insensitive). */
-  const checkForDuplicateOrgName = async (): Promise<{ count: number; names: string[] }> => {
-    return { count: 0, names: [] };
+  const checkForDuplicateOrgName = async (): Promise<{
+    count: number; names: string[];
+  }> => {
+    return {
+      count: 0, names: [],
+    };
   };
 
   /** Entry point from the Complete Setup button — runs duplicate check first. */
   const handleAttemptSubmit = async () => {
-    if (!validateStep()) return;
+    if (!validateStep())
+      return;
     setIsCheckingDuplicate(true);
     try {
       const dup = await checkForDuplicateOrgName();
@@ -470,20 +605,22 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
         return; // wait for user confirmation in the AlertDialog
       }
       await performSubmit();
-    } finally {
+    }
+    finally {
       setIsCheckingDuplicate(false);
     }
   };
 
   /** Actual tenant creation + audit log — runs after any required confirmation. */
   const performSubmit = async () => {
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -497,7 +634,10 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
 
         {/* Progress Bar */}
         <div className="space-y-2">
-          <Progress value={progress} className="h-2" />
+          <Progress
+            value={progress}
+            className="h-2"
+          />
           <div className="flex justify-between">
             {steps.map((step) => {
               const Icon = step.icon;
@@ -537,7 +677,7 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
                   Choose the role for this tenant. The form below adapts to the role you pick.
                 </p>
                 <div className="grid grid-cols-2 gap-3">
-                  {orgTypeOptions.map((opt) => (
+                  {orgTypeOptions.map(opt => (
                     <Card
                       key={opt.value}
                       className={`cursor-pointer transition-all hover:border-primary/50 ${
@@ -563,14 +703,18 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="companyName">{NAME_LABEL[formData.organizationType]} *</Label>
+                  <Label htmlFor="companyName">
+                    {NAME_LABEL[formData.organizationType]}
+                    {" "}
+                    *
+                  </Label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="companyName"
                       className="pl-10"
                       value={formData.companyName}
-                      onChange={(e) => updateFormData({ companyName: e.target.value })}
+                      onChange={e => updateFormData({ companyName: e.target.value })}
                       placeholder=""
                     />
                   </div>
@@ -585,7 +729,7 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
                         id="primaryContactName"
                         className="pl-10"
                         value={formData.primaryContactName}
-                        onChange={(e) => updateFormData({ primaryContactName: e.target.value })}
+                        onChange={e => updateFormData({ primaryContactName: e.target.value })}
                         placeholder=""
                       />
                     </div>
@@ -602,7 +746,7 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
                         type="email"
                         className="pl-10"
                         value={formData.email}
-                        onChange={(e) => updateFormData({ email: e.target.value })}
+                        onChange={e => updateFormData({ email: e.target.value })}
                         placeholder=""
                       />
                     </div>
@@ -616,7 +760,7 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
                         type="email"
                         className="pl-10"
                         value={formData.billingEmail}
-                        onChange={(e) => updateFormData({ billingEmail: e.target.value })}
+                        onChange={e => updateFormData({ billingEmail: e.target.value })}
                         placeholder=""
                       />
                     </div>
@@ -631,7 +775,7 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
                       id="phone"
                       className="pl-10"
                       value={formData.phone}
-                      onChange={(e) => updateFormData({ phone: e.target.value })}
+                      onChange={e => updateFormData({ phone: e.target.value })}
                       placeholder=""
                     />
                   </div>
@@ -639,7 +783,6 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
               </div>
             </div>
           )}
-
 
           {/* Step 2 (Quotas & Billing) removed — defaults are submitted as-is */}
           {false && (
@@ -662,9 +805,13 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
                     <Label className="text-sm font-medium">Billing Model *</Label>
                     <div className="grid grid-cols-2 gap-3">
                       {([
-                        { value: "SUBSCRIPTION", title: "Subscription", desc: "Paid plan, billed on the chosen cycle" },
-                        { value: "TRIAL", title: "Trial", desc: "Free access for evaluation period" },
-                      ] as const).map((opt) => (
+                        {
+                          value: "SUBSCRIPTION", title: "Subscription", desc: "Paid plan, billed on the chosen cycle",
+                        },
+                        {
+                          value: "TRIAL", title: "Trial", desc: "Free access for evaluation period",
+                        },
+                      ] as const).map(opt => (
                         <Card
                           key={opt.value}
                           className={`cursor-pointer transition-all hover:border-primary/50 ${
@@ -694,43 +841,119 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
                         </p>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
-                            <Label htmlFor="trialDays" className="text-xs">Trial Duration (days)</Label>
+                            <Label
+                              htmlFor="trialDays"
+                              className="text-xs"
+                            >
+                              Trial Duration (days)
+                            </Label>
                             <Input
-                              id="trialDays" type="number" min={1} max={365}
+                              id="trialDays"
+                              type="number"
+                              min={1}
+                              max={365}
                               value={formData.trialDays}
-                              onChange={(e) => updateFormData({ trialDays: Math.max(1, parseInt(e.target.value, 10) || 30) })}
+                              onChange={e => updateFormData({
+                                trialDays: Math.max(
+                                  1,
+                                  parseInt(
+                                    e.target.value,
+                                    10,
+                                  ) || 30,
+                                ),
+                              })}
                             />
                           </div>
                           <div className="space-y-1.5">
-                            <Label htmlFor="trialVehicleCap" className="text-xs">Vehicle Cap</Label>
+                            <Label
+                              htmlFor="trialVehicleCap"
+                              className="text-xs"
+                            >
+                              Vehicle Cap
+                            </Label>
                             <Input
-                              id="trialVehicleCap" type="number" min={1}
+                              id="trialVehicleCap"
+                              type="number"
+                              min={1}
                               value={formData.trialVehicleCap}
-                              onChange={(e) => updateFormData({ trialVehicleCap: Math.max(1, parseInt(e.target.value, 10) || 5) })}
+                              onChange={e => updateFormData({
+                                trialVehicleCap: Math.max(
+                                  1,
+                                  parseInt(
+                                    e.target.value,
+                                    10,
+                                  ) || 5,
+                                ),
+                              })}
                             />
                           </div>
                           <div className="space-y-1.5">
-                            <Label htmlFor="trialSimCap" className="text-xs">SIM Cap</Label>
+                            <Label
+                              htmlFor="trialSimCap"
+                              className="text-xs"
+                            >
+                              SIM Cap
+                            </Label>
                             <Input
-                              id="trialSimCap" type="number" min={1}
+                              id="trialSimCap"
+                              type="number"
+                              min={1}
                               value={formData.trialSimCap}
-                              onChange={(e) => updateFormData({ trialSimCap: Math.max(1, parseInt(e.target.value, 10) || 5) })}
+                              onChange={e => updateFormData({
+                                trialSimCap: Math.max(
+                                  1,
+                                  parseInt(
+                                    e.target.value,
+                                    10,
+                                  ) || 5,
+                                ),
+                              })}
                             />
                           </div>
                           <div className="space-y-1.5">
-                            <Label htmlFor="trialWhatsappDailyCap" className="text-xs">WhatsApp / day</Label>
+                            <Label
+                              htmlFor="trialWhatsappDailyCap"
+                              className="text-xs"
+                            >
+                              WhatsApp / day
+                            </Label>
                             <Input
-                              id="trialWhatsappDailyCap" type="number" min={1}
+                              id="trialWhatsappDailyCap"
+                              type="number"
+                              min={1}
                               value={formData.trialWhatsappDailyCap}
-                              onChange={(e) => updateFormData({ trialWhatsappDailyCap: Math.max(1, parseInt(e.target.value, 10) || 100) })}
+                              onChange={e => updateFormData({
+                                trialWhatsappDailyCap: Math.max(
+                                  1,
+                                  parseInt(
+                                    e.target.value,
+                                    10,
+                                  ) || 100,
+                                ),
+                              })}
                             />
                           </div>
                           <div className="space-y-1.5 col-span-2">
-                            <Label htmlFor="trialSmsDailyCap" className="text-xs">SMS / day</Label>
+                            <Label
+                              htmlFor="trialSmsDailyCap"
+                              className="text-xs"
+                            >
+                              SMS / day
+                            </Label>
                             <Input
-                              id="trialSmsDailyCap" type="number" min={1}
+                              id="trialSmsDailyCap"
+                              type="number"
+                              min={1}
                               value={formData.trialSmsDailyCap}
-                              onChange={(e) => updateFormData({ trialSmsDailyCap: Math.max(1, parseInt(e.target.value, 10) || 50) })}
+                              onChange={e => updateFormData({
+                                trialSmsDailyCap: Math.max(
+                                  1,
+                                  parseInt(
+                                    e.target.value,
+                                    10,
+                                  ) || 50,
+                                ),
+                              })}
                             />
                           </div>
                         </div>
@@ -745,24 +968,54 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
                     <div>
                       <Label className="text-sm font-medium">Operational Quotas</Label>
                       <p className="text-xs text-muted-foreground">
-                        Maximum number of each resource for {formData.organizationType.replace("_", " ").toLowerCase()}. Drag the slider or type an exact value. These limits are enforced platform-wide.
+                        Maximum number of each resource for
+                        {" "}
+                        {formData.organizationType.replace(
+                          "_",
+                          " ",
+                        ).toLowerCase()}
+                        . Drag the slider or type an exact value. These limits are enforced platform-wide.
                       </p>
                     </div>
 
                     {([
-                      { key: "vehicleQuota" as const, label: "Vehicles", icon: TruckIcon },
-                      { key: "driverQuota" as const, label: "Drivers", icon: User },
-                      { key: "deviceQuota" as const, label: "Devices", icon: Cpu },
-                      { key: "simQuota" as const, label: "SIMs", icon: Smartphone },
-                    ]).map(({ key, label, icon: Icon }) => {
+                      {
+                        key: "vehicleQuota" as const, label: "Vehicles", icon: TruckIcon,
+                      },
+                      {
+                        key: "driverQuota" as const, label: "Drivers", icon: User,
+                      },
+                      {
+                        key: "deviceQuota" as const, label: "Devices", icon: Cpu,
+                      },
+                      {
+                        key: "simQuota" as const, label: "SIMs", icon: Smartphone,
+                      },
+                    ]).map(({
+                      key, label, icon: Icon,
+                    }) => {
                       const scale = QUOTA_SCALES[key][formData.organizationType];
                       const value = formData[key];
-                      const sliderValue = Math.min(scale.max, Math.max(scale.min, value || scale.min));
+                      const sliderValue = Math.min(
+                        scale.max,
+                        Math.max(
+                          scale.min,
+                          value || scale.min,
+                        ),
+                      );
                       return (
-                        <div key={key} className="rounded-lg border p-4 space-y-3">
+                        <div
+                          key={key}
+                          className="rounded-lg border p-4 space-y-3"
+                        >
                           <div className="flex items-center justify-between gap-3">
-                            <Label htmlFor={`${key}Input`} className="text-xs flex items-center gap-1.5">
-                              <Icon className="h-3.5 w-3.5 text-muted-foreground" /> {label}
+                            <Label
+                              htmlFor={`${key}Input`}
+                              className="text-xs flex items-center gap-1.5"
+                            >
+                              <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                              {" "}
+                              {label}
                             </Label>
                             <Input
                               id={`${key}Input`}
@@ -771,14 +1024,26 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
                               max={scale.max}
                               value={value}
                               onChange={(e) => {
-                                const v = parseInt(e.target.value, 10);
+                                const v = parseInt(
+                                  e.target.value,
+                                  10,
+                                );
                                 updateFormData({ [key]: isNaN(v) ? 0 : v } as Partial<TenantFormData>);
                               }}
                               onBlur={(e) => {
-                                const v = parseInt(e.target.value, 10);
+                                const v = parseInt(
+                                  e.target.value,
+                                  10,
+                                );
                                 const clamped = isNaN(v)
                                   ? scale.default
-                                  : Math.min(scale.max, Math.max(scale.min, v));
+                                  : Math.min(
+                                      scale.max,
+                                      Math.max(
+                                        scale.min,
+                                        v,
+                                      ),
+                                    );
                                 updateFormData({ [key]: clamped } as Partial<TenantFormData>);
                               }}
                               className="h-8 w-28 text-right text-sm font-semibold tabular-nums"
@@ -822,7 +1087,10 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
                     <div>
                       <p className="text-muted-foreground">Organization Type</p>
                       <p className="font-medium">
-                        {orgTypeOptions.find((o) => o.value === formData.organizationType)?.label || formData.organizationType.replace("_", " ")}
+                        {orgTypeOptions.find(o => o.value === formData.organizationType)?.label || formData.organizationType.replace(
+                          "_",
+                          " ",
+                        )}
                       </p>
                     </div>
                     {formData.organizationType !== "OWNER_OPERATOR" && (
@@ -858,8 +1126,10 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
               <div className="text-center space-y-2">
                 <h3 className="text-lg font-semibold">Tenant Created Successfully</h3>
                 <p className="text-sm text-muted-foreground max-w-md">
-                  An invitation email with the setup link has been sent to{" "}
-                  <span className="font-medium text-foreground">{formData.email}</span>. The
+                  An invitation email with the setup link has been sent to
+                  {" "}
+                  <span className="font-medium text-foreground">{formData.email}</span>
+                  . The
                   recipient should check their inbox to complete the account setup.
                 </p>
               </div>
@@ -879,7 +1149,10 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
                     <Send className="h-4 w-4 text-muted-foreground" />
                     <span className="text-muted-foreground">Type</span>
                     <span className="font-medium ml-auto capitalize">
-                      {formData.organizationType.replace("_", " ").toLowerCase()}
+                      {formData.organizationType.replace(
+                        "_",
+                        " ",
+                      ).toLowerCase()}
                     </span>
                   </div>
                 </CardContent>
@@ -900,38 +1173,47 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
             <ChevronLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          {currentStep === 3 ? (
-            <Button
-              onClick={() => {
-                onComplete(formData);
-                onOpenChange(false);
-                setCurrentStep(1);
-                setFormData(initialFormData);
-              }}
-            >
-              <Check className="h-4 w-4 mr-2" />
-              Done
-            </Button>
-          ) : currentStep < steps.length ? (
-            <Button onClick={handleNext}>
-              Next
-              <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
-          ) : (
-            <Button onClick={handleAttemptSubmit} disabled={isSubmitting || isCheckingDuplicate}>
-              {isSubmitting || isCheckingDuplicate ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {isCheckingDuplicate ? "Checking..." : "Creating Tenant..."}
-                </>
-              ) : (
-                <>
+          {currentStep === 3
+            ? (
+                <Button
+                  onClick={() => {
+                    onComplete(formData);
+                    onOpenChange(false);
+                    setCurrentStep(1);
+                    setFormData(initialFormData);
+                  }}
+                >
                   <Check className="h-4 w-4 mr-2" />
-                  Complete Setup
-                </>
-              )}
-            </Button>
-          )}
+                  Done
+                </Button>
+              )
+            : currentStep < steps.length
+              ? (
+                  <Button onClick={handleNext}>
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                )
+              : (
+                  <Button
+                    onClick={handleAttemptSubmit}
+                    disabled={isSubmitting || isCheckingDuplicate}
+                  >
+                    {isSubmitting || isCheckingDuplicate
+                      ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            {isCheckingDuplicate ? "Checking..." : "Creating Tenant..."}
+                          </>
+                        )
+                      : (
+                          <>
+                            <Check className="h-4 w-4 mr-2" />
+                            Complete Setup
+                          </>
+                        )}
+                  </Button>
+                )}
         </div>
       </DialogContent>
 
@@ -939,7 +1221,8 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
       <AlertDialog
         open={!!duplicateInfo}
         onOpenChange={(o) => {
-          if (!o) setDuplicateInfo(null);
+          if (!o)
+            setDuplicateInfo(null);
         }}
       >
         <AlertDialogContent>
@@ -949,24 +1232,43 @@ export function TenantOnboardingWizard({ open, onOpenChange, onComplete }: Tenan
               Duplicate organization name
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {duplicateInfo?.count === 1 ? (
-                <>
-                  An organization named{" "}
-                  <span className="font-semibold text-foreground">"{duplicateInfo?.names[0]}"</span>{" "}
-                  already exists under the{" "}
-                  <span className="font-semibold text-foreground">{formData.organizationType}</span>{" "}
-                  tenant type. Do you still want to create another one?
-                </>
-              ) : (
-                <>
-                  <span className="font-semibold text-foreground">{duplicateInfo?.count}</span>{" "}
-                  organizations named{" "}
-                  <span className="font-semibold text-foreground">"{formData.companyName}"</span>{" "}
-                  already exist under the{" "}
-                  <span className="font-semibold text-foreground">{formData.organizationType}</span>{" "}
-                  tenant type. Do you still want to create another one?
-                </>
-              )}
+              {duplicateInfo?.count === 1
+                ? (
+                    <>
+                      An organization named
+                      {" "}
+                      <span className="font-semibold text-foreground">
+                        "
+                        {duplicateInfo?.names[0]}
+                        "
+                      </span>
+                      {" "}
+                      already exists under the
+                      {" "}
+                      <span className="font-semibold text-foreground">{formData.organizationType}</span>
+                      {" "}
+                      tenant type. Do you still want to create another one?
+                    </>
+                  )
+                : (
+                    <>
+                      <span className="font-semibold text-foreground">{duplicateInfo?.count}</span>
+                      {" "}
+                      organizations named
+                      {" "}
+                      <span className="font-semibold text-foreground">
+                        "
+                        {formData.companyName}
+                        "
+                      </span>
+                      {" "}
+                      already exist under the
+                      {" "}
+                      <span className="font-semibold text-foreground">{formData.organizationType}</span>
+                      {" "}
+                      tenant type. Do you still want to create another one?
+                    </>
+                  )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

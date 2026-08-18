@@ -1,38 +1,66 @@
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
+import {
+  CheckCircle2, Clock, Loader2, MessageSquare, Phone, Plus, XCircle,
+} from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
 import { Badge } from "@/components/shadcn/badge";
-import { Plus, MessageSquare, Phone, Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-type SenderIdStatus = string;
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import { SenderIdRequestDialog } from "./SenderIdRequestDialog";
 
-const statusConfig: Record<SenderIdStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
-  pending: { label: "Pending Review", variant: "secondary", icon: <Clock className="h-3 w-3" /> },
-  whitelisting: { label: "Whitelisting", variant: "outline", icon: <Loader2 className="h-3 w-3 animate-spin" /> },
-  approved: { label: "Approved", variant: "default", icon: <CheckCircle2 className="h-3 w-3" /> },
-  rejected: { label: "Rejected", variant: "destructive", icon: <XCircle className="h-3 w-3" /> },
+type SenderIdStatus = string;
+
+const statusConfig: Record<SenderIdStatus, {
+  label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode;
+}> = {
+  pending: {
+    label: "Pending Review", variant: "secondary", icon: <Clock className="h-3 w-3" />,
+  },
+  whitelisting: {
+    label: "Whitelisting", variant: "outline", icon: <Loader2 className="h-3 w-3 animate-spin" />,
+  },
+  approved: {
+    label: "Approved", variant: "default", icon: <CheckCircle2 className="h-3 w-3" />,
+  },
+  rejected: {
+    label: "Rejected", variant: "destructive", icon: <XCircle className="h-3 w-3" />,
+  },
 };
 
 const DEMO_SENDER_IDS: Array<{
   id: string;
   sender_id: string;
-  sender_type: 'sms' | 'voice' | 'both';
+  sender_type: "sms" | "voice" | "both";
   status: SenderIdStatus;
   requested_at: string;
   rejection_reason?: string | null;
 }> = [
-  { id: 'demo-s-1', sender_id: 'FleetPro', sender_type: 'sms', status: 'approved', requested_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString() },
-  { id: 'demo-s-2', sender_id: 'LagosExp', sender_type: 'sms', status: 'approved', requested_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString() },
-  { id: 'demo-s-3', sender_id: 'FleetPro Voice', sender_type: 'voice', status: 'approved', requested_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18).toISOString() },
-  { id: 'demo-s-4', sender_id: 'MTNFleet', sender_type: 'both', status: 'whitelisting', requested_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString() },
-  { id: 'demo-s-5', sender_id: 'TruckOps', sender_type: 'sms', status: 'pending', requested_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString() },
+  {
+    id: "demo-s-1", sender_id: "FleetPro", sender_type: "sms", status: "approved", requested_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
+  },
+  {
+    id: "demo-s-2", sender_id: "LagosExp", sender_type: "sms", status: "approved", requested_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+  },
+  {
+    id: "demo-s-3", sender_id: "FleetPro Voice", sender_type: "voice", status: "approved", requested_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18).toISOString(),
+  },
+  {
+    id: "demo-s-4", sender_id: "MTNFleet", sender_type: "both", status: "whitelisting", requested_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+  },
+  {
+    id: "demo-s-5", sender_id: "TruckOps", sender_type: "sms", status: "pending", requested_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
+  },
 ];
 
 export function SenderIdManagement() {
   const senderIds: any[] = [];
   const loading = false;
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [
+    dialogOpen,
+    setDialogOpen,
+  ] = useState(false);
 
   const isDemo = !loading && senderIds.length === 0;
   const displayedSenderIds = isDemo ? DEMO_SENDER_IDS : senderIds;
@@ -65,8 +93,19 @@ export function SenderIdManagement() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              {isDemo && <Badge variant="outline" className="text-xs">Demo data</Badge>}
-              <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-2">
+              {isDemo && (
+                <Badge
+                  variant="outline"
+                  className="text-xs"
+                >
+                  Demo data
+                </Badge>
+              )}
+              <Button
+                onClick={() => setDialogOpen(true)}
+                size="sm"
+                className="gap-2"
+              >
                 <Plus className="h-4 w-4" />
                 Request Sender ID
               </Button>
@@ -83,22 +122,29 @@ export function SenderIdManagement() {
                   className="flex items-center justify-between p-3 rounded-lg border bg-card"
                 >
                   <div className="flex items-center gap-3">
-                    {item.sender_type === 'voice' ? (
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                    )}
+                    {item.sender_type === "voice"
+                      ? (
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                        )
+                      : (
+                          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                        )}
                     <div>
                       <p className="font-mono font-medium">{item.sender_id}</p>
                       <p className="text-xs text-muted-foreground capitalize">
-                        {item.sender_type === 'both' ? 'SMS & Voice' : item.sender_type}
-                        {' • '}
-                        Requested {formatRelative(item.requested_at)}
+                        {item.sender_type === "both" ? "SMS & Voice" : item.sender_type}
+                        {" • "}
+                        Requested
+                        {" "}
+                        {formatRelative(item.requested_at)}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={config.variant} className="gap-1">
+                    <Badge
+                      variant={config.variant}
+                      className="gap-1"
+                    >
                       {config.icon}
                       {config.label}
                     </Badge>
@@ -108,14 +154,22 @@ export function SenderIdManagement() {
             })}
           </div>
 
-          {displayedSenderIds.some(s => s.status === 'rejected') && (
+          {displayedSenderIds.some(s => s.status === "rejected") && (
             <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
               <p className="text-sm text-destructive font-medium">Rejected Requests</p>
               {displayedSenderIds
-                .filter(s => s.status === 'rejected')
+                .filter(s => s.status === "rejected")
                 .map(s => (
-                  <p key={s.id} className="text-xs text-muted-foreground mt-1">
-                    <strong>{s.sender_id}:</strong> {s.rejection_reason || 'No reason provided'}
+                  <p
+                    key={s.id}
+                    className="text-xs text-muted-foreground mt-1"
+                  >
+                    <strong>
+                      {s.sender_id}
+                      :
+                    </strong>
+                    {" "}
+                    {s.rejection_reason || "No reason provided"}
                   </p>
                 ))}
             </div>
@@ -123,7 +177,10 @@ export function SenderIdManagement() {
         </CardContent>
       </Card>
 
-      <SenderIdRequestDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <SenderIdRequestDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </>
   );
 }

@@ -1,15 +1,21 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/shadcn/dialog";
+import {
+  Calendar, CheckCircle2, FileText, Mail,
+} from "lucide-react";
+import {
+  useEffect, useState,
+} from "react";
 import { Button } from "@/components/shadcn/button";
-import { CheckCircle2, FileText, Calendar, Mail } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "@/components/shadcn/dialog";
 
-interface PostpaidActivationModalProps {
+type PostpaidActivationModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   planName: string;
   monthlyFeeLabel: string;
   onConfirmed: () => void;
-}
+};
 
 export function PostpaidActivationModal({
   open,
@@ -18,22 +24,35 @@ export function PostpaidActivationModal({
   monthlyFeeLabel,
   onConfirmed,
 }: PostpaidActivationModalProps) {
-  const [acknowledged, setAcknowledged] = useState(false);
+  const [
+    acknowledged,
+    setAcknowledged,
+  ] = useState(false);
 
-  useEffect(() => {
-    if (open) setAcknowledged(false);
-  }, [open]);
+  useEffect(
+    () => {
+      if (open)
+        setAcknowledged(false);
+    },
+    [open],
+  );
 
   const handleContinue = () => {
     setAcknowledged(true);
-    setTimeout(() => {
-      onOpenChange(false);
-      onConfirmed();
-    }, 600);
+    setTimeout(
+      () => {
+        onOpenChange(false);
+        onConfirmed();
+      },
+      600,
+    );
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="sm:max-w-md">
         <div className="flex flex-col items-center text-center">
           <div className="rounded-full bg-success/10 p-3 mb-3">
@@ -43,8 +62,14 @@ export function PostpaidActivationModal({
             <DialogTitle>You're on postpaid billing</DialogTitle>
             <DialogDescription>
               No payment required today. You'll be invoiced at the end of your
-              billing cycle for the <span className="font-medium text-foreground">{planName}</span> plan
-              ({monthlyFeeLabel}/month) plus any usage.
+              billing cycle for the
+              {" "}
+              <span className="font-medium text-foreground">{planName}</span>
+              {" "}
+              plan
+              (
+              {monthlyFeeLabel}
+              /month) plus any usage.
             </DialogDescription>
           </DialogHeader>
 
@@ -71,7 +96,12 @@ export function PostpaidActivationModal({
             </div>
           </div>
 
-          <Button onClick={handleContinue} disabled={acknowledged} className="mt-5 w-full" size="lg">
+          <Button
+            onClick={handleContinue}
+            disabled={acknowledged}
+            className="mt-5 w-full"
+            size="lg"
+          >
             Got it — continue
           </Button>
         </div>

@@ -1,3 +1,6 @@
+import {
+  Database, Smartphone,
+} from "lucide-react";
 import { useMemo } from "react";
 import { Label } from "@/components/shadcn/label";
 import {
@@ -8,25 +11,24 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
-import { Smartphone, Database } from "lucide-react";
 
 export type DataUnit = "KB" | "MB" | "GB";
 export type BillingCycle = "monthly" | "yearly";
 
-export interface SimBundleValue {
+export type SimBundleValue = {
   amount: number;
   unit: DataUnit;
   cycle: BillingCycle;
-}
+};
 
-interface Props {
+type Props = {
   value: SimBundleValue;
   onChange: (next: SimBundleValue) => void;
   carrier: string;
   onCarrierChange: (v: string) => void;
   iccid: string;
   onIccidChange: (v: string) => void;
-}
+};
 
 export function formatSimBundle(v: SimBundleValue): string {
   return `${v.amount}${v.unit} / ${v.cycle}`;
@@ -44,24 +46,31 @@ export function SimBundlePicker({
   const availableBundles = useMemo(
     () =>
       catalog.filter(
-        (b) =>
-          b.is_active &&
-          (!carrier || b.carrier?.toLowerCase() === carrier.toLowerCase()) &&
-          b.billing_cycle === value.cycle,
+        b =>
+          b.is_active
+          && (!carrier || b.carrier?.toLowerCase() === carrier.toLowerCase())
+          && b.billing_cycle === value.cycle,
       ),
-    [catalog, carrier, value.cycle],
+    [
+      catalog,
+      carrier,
+      value.cycle,
+    ],
   );
-  const currentMb =
-    value.unit === "GB" ? value.amount * 1024 : value.unit === "KB" ? value.amount / 1024 : value.amount;
-  const selectedCode =
-    availableBundles.find((b) => b.data_mb === currentMb)?.code ?? "";
+  const currentMb
+    = value.unit === "GB" ? value.amount * 1024 : value.unit === "KB" ? value.amount / 1024 : value.amount;
+  const selectedCode
+    = availableBundles.find(b => b.data_mb === currentMb)?.code ?? "";
 
   return (
     <div className="space-y-4 rounded-md border border-border/60 bg-muted/20 p-4">
       <div className="space-y-3">
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">SIM Carrier</Label>
-          <Select value={carrier} onValueChange={onCarrierChange}>
+          <Select
+            value={carrier}
+            onValueChange={onCarrierChange}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select carrier" />
             </SelectTrigger>
@@ -78,7 +87,9 @@ export function SimBundlePicker({
           <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">Plan Type</Label>
           <Select
             value={value.cycle}
-            onValueChange={(c) => onChange({ ...value, cycle: c as BillingCycle })}
+            onValueChange={c => onChange({
+              ...value, cycle: c as BillingCycle,
+            })}
           >
             <SelectTrigger>
               <SelectValue />
@@ -95,8 +106,9 @@ export function SimBundlePicker({
           <Select
             value={selectedCode}
             onValueChange={(code) => {
-              const b = availableBundles.find((x) => x.code === code);
-              if (!b) return;
+              const b = availableBundles.find(x => x.code === code);
+              if (!b)
+                return;
               const isGB = b.data_mb >= 1024 && b.data_mb % 1024 === 0;
               onChange({
                 ...value,
@@ -113,14 +125,17 @@ export function SimBundlePicker({
                   !carrier
                     ? "Select a carrier first"
                     : availableBundles.length === 0
-                    ? "No bundles available"
-                    : "Select a bundle"
+                      ? "No bundles available"
+                      : "Select a bundle"
                 }
               />
             </SelectTrigger>
             <SelectContent>
-              {availableBundles.map((b) => (
-                <SelectItem key={b.id} value={b.code}>
+              {availableBundles.map(b => (
+                <SelectItem
+                  key={b.id}
+                  value={b.code}
+                >
                   {b.name}
                 </SelectItem>
               ))}

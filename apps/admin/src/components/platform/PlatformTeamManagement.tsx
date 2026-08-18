@@ -1,9 +1,8 @@
-import { formatDate } from "@truckmoov/app-core/utils/time-utils";
-import { useState } from "react";
+import type { AdminInvite } from "@truckmoov/api/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import {
-  type AdminInvite,
+
   getSystemAdminInvitesQueryOptions,
   getSystemAdminsQueryOptions,
   useCreateSystemAdminInvite,
@@ -12,28 +11,41 @@ import {
   useResendSystemAdminInvite,
   useUpdateSystemAdminStatus,
 } from "@truckmoov/api/auth";
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
+import {
+  Clock,
+  Mail,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Shield,
+  SlidersHorizontal,
+  Users,
+} from "lucide-react";
 
-interface AdminUser {
-  userId: string;
-  email: string;
-  role: string;
-  accountStatus: "enabled" | "disabled" | string;
-  status: "active" | "inactive" | string;
-  profile?: {
-    fullName?: string;
-    phoneNumber?: string;
-    address?: string;
-    profilePictureUrl?: string | null;
-  };
-}
-
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/shadcn/alert-dialog";
 import { Badge } from "@/components/shadcn/badge";
-import { Skeleton } from "@/components/shadcn/skeleton";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
@@ -57,6 +69,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/shadcn/form";
+import { Input } from "@/components/shadcn/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/shadcn/popover";
 import {
   Select,
   SelectContent,
@@ -64,6 +82,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
   TableBody,
@@ -72,24 +91,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/shadcn/alert-dialog";
-import { Users, Plus, Mail, Shield, Clock, Search, SlidersHorizontal, MoreHorizontal } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { useAuthStore } from "@/stores/authStore";
-import { toast } from "sonner";
 
-const inviteSchema = z.object({
-  email: z.string().trim().email("Enter a valid email address."),
-});
+type AdminUser = {
+  userId: string;
+  email: string;
+  role: string;
+  accountStatus: "enabled" | "disabled" | string;
+  status: "active" | "inactive" | string;
+  profile?: {
+    fullName?: string;
+    phoneNumber?: string;
+    address?: string;
+    profilePictureUrl?: string | null;
+  };
+};
+
+const inviteSchema = z.object({ email: z.string().trim().email("Enter a valid email address.") });
 type InviteFormValues = z.infer<typeof inviteSchema>;
 
 function getAdminDisplayName(admin: AdminUser): string {
@@ -100,7 +118,7 @@ export function PlatformTeamManagement() {
   const { user } = useAuthStore();
 
   const adminsQuery = useQuery(getSystemAdminsQueryOptions());
-  const rawAdmins = (adminsQuery.data?.data as { users?: AdminUser[] } | undefined);
+  const rawAdmins = adminsQuery.data?.data as { users?: AdminUser[] } | undefined;
   const admins: AdminUser[] = rawAdmins?.users ?? [];
 
   const invitesQuery = useQuery(getSystemAdminInvitesQueryOptions());
@@ -112,11 +130,26 @@ export function PlatformTeamManagement() {
   const resendInvite = useResendSystemAdminInvite();
   const updateStatus = useUpdateSystemAdminStatus();
 
-  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
-  const [userToRemove, setUserToRemove] = useState<AdminUser | null>(null);
-  const [invitationToCancel, setInvitationToCancel] = useState<AdminInvite | null>(null);
-  const [teamSearch, setTeamSearch] = useState("");
-  const [teamRoleFilter, setTeamRoleFilter] = useState<string[]>([]);
+  const [
+    isInviteDialogOpen,
+    setIsInviteDialogOpen,
+  ] = useState(false);
+  const [
+    userToRemove,
+    setUserToRemove,
+  ] = useState<AdminUser | null>(null);
+  const [
+    invitationToCancel,
+    setInvitationToCancel,
+  ] = useState<AdminInvite | null>(null);
+  const [
+    teamSearch,
+    setTeamSearch,
+  ] = useState("");
+  const [
+    teamRoleFilter,
+    setTeamRoleFilter,
+  ] = useState<string[]>([]);
 
   const inviteForm = useForm<InviteFormValues>({
     resolver: zodResolver(inviteSchema),
@@ -126,8 +159,10 @@ export function PlatformTeamManagement() {
   const filteredAdmins = admins.filter((admin) => {
     const q = teamSearch.trim().toLowerCase();
     const name = getAdminDisplayName(admin).toLowerCase();
-    if (q && !(name.includes(q) || admin.email.toLowerCase().includes(q))) return false;
-    if (teamRoleFilter.length > 0 && !teamRoleFilter.includes(admin.role)) return false;
+    if (q && !(name.includes(q) || admin.email.toLowerCase().includes(q)))
+      return false;
+    if (teamRoleFilter.length > 0 && !teamRoleFilter.includes(admin.role))
+      return false;
     return true;
   });
 
@@ -140,7 +175,7 @@ export function PlatformTeamManagement() {
           inviteForm.reset();
           setIsInviteDialogOpen(false);
         },
-        onError: (e) => toast.error(e.message),
+        onError: e => toast.error(e.message),
       },
     );
   };
@@ -148,10 +183,13 @@ export function PlatformTeamManagement() {
   const handleToggleStatus = (admin: AdminUser) => {
     const nextStatus = admin.accountStatus === "enabled" ? "disabled" : "enabled";
     updateStatus.mutate(
-      { id: admin.userId, data: { accountStatus: nextStatus } },
+      {
+        id: admin.userId,
+        data: { accountStatus: nextStatus },
+      },
       {
         onSuccess: () => toast.success("Admin status updated"),
-        onError: (e) => toast.error(e.message),
+        onError: e => toast.error(e.message),
       },
     );
   };
@@ -164,7 +202,7 @@ export function PlatformTeamManagement() {
           toast.success(res.message || "Admin deleted");
           setUserToRemove(null);
         },
-        onError: (e) => toast.error(e.message),
+        onError: e => toast.error(e.message),
       },
     );
   };
@@ -177,7 +215,7 @@ export function PlatformTeamManagement() {
           toast.success("Invitation cancelled");
           setInvitationToCancel(null);
         },
-        onError: (e) => toast.error(e.message),
+        onError: e => toast.error(e.message),
       },
     );
   };
@@ -187,7 +225,7 @@ export function PlatformTeamManagement() {
       { id: invite.id },
       {
         onSuccess: () => toast.success("Invitation resent"),
-        onError: (e) => toast.error(e.message),
+        onError: e => toast.error(e.message),
       },
     );
   };
@@ -212,7 +250,8 @@ export function PlatformTeamManagement() {
               open={isInviteDialogOpen}
               onOpenChange={(open) => {
                 setIsInviteDialogOpen(open);
-                if (!open) inviteForm.reset();
+                if (!open)
+                  inviteForm.reset();
               }}
             >
               <DialogTrigger asChild>
@@ -240,7 +279,11 @@ export function PlatformTeamManagement() {
                         <FormItem>
                           <FormLabel>Email Address</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="admin@company.com" {...field} />
+                            <Input
+                              type="email"
+                              placeholder="admin@company.com"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -248,7 +291,10 @@ export function PlatformTeamManagement() {
                     />
                     <div className="space-y-2">
                       <FormLabel>Role</FormLabel>
-                      <Select value="platform_admin" disabled>
+                      <Select
+                        value="platform_admin"
+                        disabled
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -269,7 +315,11 @@ export function PlatformTeamManagement() {
                       >
                         Cancel
                       </Button>
-                      <Button type="submit" variant="gradient" disabled={createInvite.isPending}>
+                      <Button
+                        type="submit"
+                        variant="gradient"
+                        disabled={createInvite.isPending}
+                      >
                         {createInvite.isPending ? "Sending..." : "Send Invitation"}
                       </Button>
                     </div>
@@ -288,36 +338,52 @@ export function PlatformTeamManagement() {
                   placeholder="Search team by name or email..."
                   className="pl-10"
                   value={teamSearch}
-                  onChange={(e) => setTeamSearch(e.target.value)}
+                  onChange={e => setTeamSearch(e.target.value)}
                 />
               </div>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
                     <SlidersHorizontal className="h-4 w-4" />
                     Filter
                     {teamRoleFilter.length > 0 && (
-                      <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                      <Badge
+                        variant="secondary"
+                        className="ml-1 h-5 px-1.5 text-xs"
+                      >
                         {teamRoleFilter.length}
                       </Badge>
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent align="end" className="w-72 space-y-4">
+                <PopoverContent
+                  align="end"
+                  className="w-72 space-y-4"
+                >
                   <div>
                     <p className="text-xs font-medium mb-2">Only show team members by...</p>
                     <p className="text-xs text-muted-foreground mb-1">Role</p>
                     <div className="space-y-1">
-                      {["platform_admin"].map((r) => (
-                        <label key={r} className="flex items-center gap-2 text-sm cursor-pointer">
+                      {["platform_admin"].map(r => (
+                        <label
+                          key={r}
+                          className="flex items-center gap-2 text-sm cursor-pointer"
+                        >
                           <input
                             type="checkbox"
                             checked={teamRoleFilter.includes(r)}
-                            onChange={(e) =>
-                              setTeamRoleFilter((prev) =>
-                                e.target.checked ? [...prev, r] : prev.filter((x) => x !== r),
-                              )
-                            }
+                            onChange={e =>
+                              setTeamRoleFilter(prev =>
+                                e.target.checked
+                                  ? [
+                                      ...prev,
+                                      r,
+                                    ]
+                                  : prev.filter(x => x !== r))}
                           />
                           Platform Admin
                         </label>
@@ -338,104 +404,128 @@ export function PlatformTeamManagement() {
             </div>
           )}
 
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <Skeleton className="h-10 w-10 rounded-full" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-1/3" />
-                    <Skeleton className="h-3 w-1/4" />
-                  </div>
+          {isLoading
+            ? (
+                <div className="space-y-3">
+                  {[
+                    1,
+                    2,
+                    3,
+                  ].map(i => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-4"
+                    >
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-1/3" />
+                        <Skeleton className="h-3 w-1/4" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : adminsQuery.isError ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p className="text-sm text-destructive">Failed to load platform admins.</p>
-            </div>
-          ) : admins.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Shield className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>No platform administrators found</p>
-              <p className="text-sm">Invite your first admin to get started</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAdmins.map((admin) => {
-                  const displayName = getAdminDisplayName(admin);
-                  const initials = displayName
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .toUpperCase()
-                    .slice(0, 2);
-                  const isSelf = admin.userId === user?.id;
+              )
+            : adminsQuery.isError
+              ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p className="text-sm text-destructive">Failed to load platform admins.</p>
+                  </div>
+                )
+              : admins.length === 0
+                ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Shield className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>No platform administrators found</p>
+                      <p className="text-sm">Invite your first admin to get started</p>
+                    </div>
+                  )
+                : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>User</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredAdmins.map((admin) => {
+                          const displayName = getAdminDisplayName(admin);
+                          const initials = displayName
+                            .split(" ")
+                            .map(n => n[0])
+                            .join("")
+                            .toUpperCase()
+                            .slice(
+                              0,
+                              2,
+                            );
+                          const isSelf = admin.userId === user?.id;
 
-                  return (
-                    <TableRow key={admin.userId}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-primary-foreground">
-                            {initials}
-                          </div>
-                          <div>
-                            <p className="font-medium">{displayName}</p>
-                            <p className="text-sm text-muted-foreground">{admin.email}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="border-primary/30 text-primary">
-                          <Shield className="h-3 w-3 mr-1" />
-                          Platform Admin
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={admin.accountStatus === "enabled" ? "default" : "secondary"}>
-                          {admin.accountStatus === "enabled" ? "Enabled" : "Disabled"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {isSelf ? (
-                          <span className="text-xs text-muted-foreground">You</span>
-                        ) : (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleToggleStatus(admin)}>
-                                {admin.accountStatus === "enabled" ? "Disable Admin" : "Enable Admin"}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => setUserToRemove(admin)}
-                              >
-                                Delete Admin
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
+                          return (
+                            <TableRow key={admin.userId}>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-primary-foreground">
+                                    {initials}
+                                  </div>
+                                  <div>
+                                    <p className="font-medium">{displayName}</p>
+                                    <p className="text-sm text-muted-foreground">{admin.email}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className="border-primary/30 text-primary"
+                                >
+                                  <Shield className="h-3 w-3 mr-1" />
+                                  Platform Admin
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={admin.accountStatus === "enabled" ? "default" : "secondary"}>
+                                  {admin.accountStatus === "enabled" ? "Enabled" : "Disabled"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {isSelf
+                                  ? (
+                                      <span className="text-xs text-muted-foreground">You</span>
+                                    )
+                                  : (
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                          >
+                                            <MoreHorizontal className="h-4 w-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem onClick={() => handleToggleStatus(admin)}>
+                                            {admin.accountStatus === "enabled" ? "Disable Admin" : "Enable Admin"}
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem
+                                            className="text-destructive"
+                                            onClick={() => setUserToRemove(admin)}
+                                          >
+                                            Delete Admin
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  )}
         </CardContent>
       </Card>
 
@@ -449,74 +539,92 @@ export function PlatformTeamManagement() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {invitesQuery.isLoading ? (
-              <div className="space-y-3">
-                {[1, 2].map((i) => (
-                  <Skeleton key={i} className="h-10 w-full" />
-                ))}
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Expires</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invites.map((invite) => (
-                    <TableRow key={invite.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          <span>{invite.email}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {invite.expiresAt
-                            ? formatDate(invite.expiresAt)
-                            : "—"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleResendInvite(invite)}>
-                              Resend Invite
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => setInvitationToCancel(invite)}
-                            >
-                              Cancel Invite
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+            {invitesQuery.isLoading
+              ? (
+                  <div className="space-y-3">
+                    {[
+                      1,
+                      2,
+                    ].map(i => (
+                      <Skeleton
+                        key={i}
+                        className="h-10 w-full"
+                      />
+                    ))}
+                  </div>
+                )
+              : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Expires</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {invites.map(invite => (
+                        <TableRow key={invite.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-4 w-4 text-muted-foreground" />
+                              <span>{invite.email}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground">
+                              {invite.expiresAt
+                                ? formatDate(invite.expiresAt)
+                                : "—"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleResendInvite(invite)}>
+                                  Resend Invite
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => setInvitationToCancel(invite)}
+                                >
+                                  Cancel Invite
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
           </CardContent>
         </Card>
       )}
 
       {/* Remove Admin Confirmation */}
-      <AlertDialog open={!!userToRemove} onOpenChange={() => setUserToRemove(null)}>
+      <AlertDialog
+        open={!!userToRemove}
+        onOpenChange={() => setUserToRemove(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Platform Admin?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove <strong>{userToRemove ? getAdminDisplayName(userToRemove) : ""}</strong> from the platform admin team. They will lose all platform-level access.
+              This will remove
+              {" "}
+              <strong>{userToRemove ? getAdminDisplayName(userToRemove) : ""}</strong>
+              {" "}
+              from the platform admin team. They will lose all platform-level access.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -533,13 +641,18 @@ export function PlatformTeamManagement() {
       </AlertDialog>
 
       {/* Cancel Invitation Confirmation */}
-      <AlertDialog open={!!invitationToCancel} onOpenChange={() => setInvitationToCancel(null)}>
+      <AlertDialog
+        open={!!invitationToCancel}
+        onOpenChange={() => setInvitationToCancel(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel Invitation?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will cancel the invitation sent to{" "}
-              <strong>{invitationToCancel?.email}</strong>. They will no longer be able to join using that link.
+              This will cancel the invitation sent to
+              {" "}
+              <strong>{invitationToCancel?.email}</strong>
+              . They will no longer be able to join using that link.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

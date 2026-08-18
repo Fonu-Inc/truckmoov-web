@@ -1,36 +1,43 @@
 import { formatClockDuration } from "@truckmoov/app-core/utils/time-utils";
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Badge } from "@/components/shadcn/badge";
-import { Input } from "@/components/shadcn/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import {
-  MessageSquare,
-  Phone,
-  Send,
-  CheckCheck,
   Check,
+  CheckCheck,
   Clock,
   MapPin,
+  MessageSquare,
+  Mic,
+  Phone,
   PhoneCall,
   PhoneOff,
-  Mic,
+  Send,
   Volume2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
 import { toast } from "sonner";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Input } from "@/components/shadcn/input";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
+import { cn } from "@/lib/utils";
 
-interface Message {
+type Message = {
   id: number;
   type: "incoming" | "outgoing";
   content: string;
   time: string;
   status?: "sent" | "delivered" | "read";
-}
+};
 
 export default function DriverInterface() {
-  const [messages, setMessages] = useState<Message[]>([
+  const [
+    messages,
+    setMessages,
+  ] = useState<Message[]>([
     {
       id: 1,
       type: "incoming",
@@ -49,33 +56,52 @@ Reply *2* to Reject`,
     },
   ]);
 
-  const [inputValue, setInputValue] = useState("");
-  const [activeCall, setActiveCall] = useState(false);
-  const [callDuration, setCallDuration] = useState(0);
+  const [
+    inputValue,
+    setInputValue,
+  ] = useState("");
+  const [
+    activeCall,
+    setActiveCall,
+  ] = useState(false);
+  const [
+    callDuration,
+    setCallDuration,
+  ] = useState(0);
 
   const handleSend = () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim())
+      return;
 
     const newMessage: Message = {
       id: messages.length + 1,
       type: "outgoing",
       content: inputValue,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      time: new Date().toLocaleTimeString(
+        [],
+        {
+          hour: "2-digit", minute: "2-digit",
+        },
+      ),
       status: "delivered",
     };
 
-    setMessages([...messages, newMessage]);
+    setMessages([
+      ...messages,
+      newMessage,
+    ]);
     setInputValue("");
 
     // Simulate bot response
-    setTimeout(() => {
-      let response: Message;
+    setTimeout(
+      () => {
+        let response: Message;
 
-      if (inputValue === "1") {
-        response = {
-          id: messages.length + 2,
-          type: "incoming",
-          content: `✅ *Job Accepted!*
+        if (inputValue === "1") {
+          response = {
+            id: messages.length + 2,
+            type: "incoming",
+            content: `✅ *Job Accepted!*
 
 You've accepted Job #TM-2847
 
@@ -85,38 +111,56 @@ https://maps.google.com/?q=6.4398,3.3598
 ⏱️ Expected arrival: 45 minutes
 
 Reply *ARRIVED* when you reach the pickup location.`,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          status: "read",
-        };
-        toast.success("Job accepted!");
-      } else if (inputValue === "2") {
-        response = {
-          id: messages.length + 2,
-          type: "incoming",
-          content: `❌ Job #TM-2847 has been declined.
+            time: new Date().toLocaleTimeString(
+              [],
+              {
+                hour: "2-digit", minute: "2-digit",
+              },
+            ),
+            status: "read",
+          };
+          toast.success("Job accepted!");
+        }
+        else if (inputValue === "2") {
+          response = {
+            id: messages.length + 2,
+            type: "incoming",
+            content: `❌ Job #TM-2847 has been declined.
 
 We'll notify you when new jobs are available in your area.`,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          status: "read",
-        };
-        toast.info("Job declined");
-      } else if (inputValue.toLowerCase() === "arrived") {
-        response = {
-          id: messages.length + 2,
-          type: "incoming",
-          content: `📦 *Arrival Confirmed!*
+            time: new Date().toLocaleTimeString(
+              [],
+              {
+                hour: "2-digit", minute: "2-digit",
+              },
+            ),
+            status: "read",
+          };
+          toast.info("Job declined");
+        }
+        else if (inputValue.toLowerCase() === "arrived") {
+          response = {
+            id: messages.length + 2,
+            type: "incoming",
+            content: `📦 *Arrival Confirmed!*
 
 Please load the cargo and confirm when ready.
 
 Reply *LOADED* when cargo is secured and you're ready to depart.`,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          status: "read",
-        };
-      } else if (inputValue.toLowerCase() === "loaded") {
-        response = {
-          id: messages.length + 2,
-          type: "incoming",
-          content: `🚛 *Cargo Loaded - En Route!*
+            time: new Date().toLocaleTimeString(
+              [],
+              {
+                hour: "2-digit", minute: "2-digit",
+              },
+            ),
+            status: "read",
+          };
+        }
+        else if (inputValue.toLowerCase() === "loaded") {
+          response = {
+            id: messages.length + 2,
+            type: "incoming",
+            content: `🚛 *Cargo Loaded - En Route!*
 
 📍 *Navigate to Delivery:*
 https://maps.google.com/?q=6.6018,3.3515
@@ -125,14 +169,20 @@ https://maps.google.com/?q=6.6018,3.3515
 📞 *Customer Contact:* +234 801 234 5678
 
 Reply *DELIVERED* when cargo is delivered.`,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          status: "read",
-        };
-      } else if (inputValue.toLowerCase() === "delivered") {
-        response = {
-          id: messages.length + 2,
-          type: "incoming",
-          content: `🎉 *Delivery Complete!*
+            time: new Date().toLocaleTimeString(
+              [],
+              {
+                hour: "2-digit", minute: "2-digit",
+              },
+            ),
+            status: "read",
+          };
+        }
+        else if (inputValue.toLowerCase() === "delivered") {
+          response = {
+            id: messages.length + 2,
+            type: "incoming",
+            content: `🎉 *Delivery Complete!*
 
 Job #TM-2847 successfully completed.
 
@@ -141,15 +191,21 @@ Job #TM-2847 successfully completed.
 
 Thank you for your excellent service!
 New jobs will be sent when available.`,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          status: "read",
-        };
-        toast.success("Job completed! Earnings: ₦185,000");
-      } else if (inputValue.toLowerCase() === "help") {
-        response = {
-          id: messages.length + 2,
-          type: "incoming",
-          content: `📋 *Available Commands:*
+            time: new Date().toLocaleTimeString(
+              [],
+              {
+                hour: "2-digit", minute: "2-digit",
+              },
+            ),
+            status: "read",
+          };
+          toast.success("Job completed! Earnings: ₦185,000");
+        }
+        else if (inputValue.toLowerCase() === "help") {
+          response = {
+            id: messages.length + 2,
+            type: "incoming",
+            content: `📋 *Available Commands:*
 
 • *1* - Accept job
 • *2* - Reject job
@@ -159,51 +215,79 @@ New jobs will be sent when available.`,
 • *STATUS* - Check current job status
 • *SUPPORT* - Contact dispatch support
 • *EARNINGS* - View today's earnings`,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          status: "read",
-        };
-      } else if (inputValue.toLowerCase() === "status") {
-        response = {
-          id: messages.length + 2,
-          type: "incoming",
-          content: `📊 *Current Status:*
+            time: new Date().toLocaleTimeString(
+              [],
+              {
+                hour: "2-digit", minute: "2-digit",
+              },
+            ),
+            status: "read",
+          };
+        }
+        else if (inputValue.toLowerCase() === "status") {
+          response = {
+            id: messages.length + 2,
+            type: "incoming",
+            content: `📊 *Current Status:*
 
 🚛 Active Job: #TM-2847
 📍 Status: En route to delivery
 ⏱️ ETA: 35 minutes
 💰 Pending Payment: ₦185,000`,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          status: "read",
-        };
-      } else {
-        response = {
-          id: messages.length + 2,
-          type: "incoming",
-          content: `I didn't understand that command.
+            time: new Date().toLocaleTimeString(
+              [],
+              {
+                hour: "2-digit", minute: "2-digit",
+              },
+            ),
+            status: "read",
+          };
+        }
+        else {
+          response = {
+            id: messages.length + 2,
+            type: "incoming",
+            content: `I didn't understand that command.
 
 Reply *HELP* for available commands.`,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          status: "read",
-        };
-      }
+            time: new Date().toLocaleTimeString(
+              [],
+              {
+                hour: "2-digit", minute: "2-digit",
+              },
+            ),
+            status: "read",
+          };
+        }
 
-      setMessages((prev) => [...prev, response]);
-    }, 1000);
+        setMessages(prev => [
+          ...prev,
+          response,
+        ]);
+      },
+      1000,
+    );
   };
 
   const handleCall = () => {
     setActiveCall(true);
     toast.info("Connecting to dispatch...");
-    
+
     // Simulate call duration
-    const interval = setInterval(() => {
-      setCallDuration((prev) => prev + 1);
-    }, 1000);
+    const interval = setInterval(
+      () => {
+        setCallDuration(prev => prev + 1);
+      },
+      1000,
+    );
 
     // Auto end after demo
-    setTimeout(() => {
-      clearInterval(interval);
-    }, 60000);
+    setTimeout(
+      () => {
+        clearInterval(interval);
+      },
+      60000,
+    );
   };
 
   const handleEndCall = () => {
@@ -223,17 +307,29 @@ Reply *HELP* for available commands.`,
           </p>
         </div>
 
-        <Tabs defaultValue="whatsapp" className="space-y-4">
+        <Tabs
+          defaultValue="whatsapp"
+          className="space-y-4"
+        >
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="whatsapp" className="gap-2">
+            <TabsTrigger
+              value="whatsapp"
+              className="gap-2"
+            >
               <MessageSquare className="h-4 w-4" />
               WhatsApp
             </TabsTrigger>
-            <TabsTrigger value="sms" className="gap-2">
+            <TabsTrigger
+              value="sms"
+              className="gap-2"
+            >
               <Phone className="h-4 w-4" />
               SMS
             </TabsTrigger>
-            <TabsTrigger value="voice" className="gap-2">
+            <TabsTrigger
+              value="voice"
+              className="gap-2"
+            >
               <PhoneCall className="h-4 w-4" />
               Voice/IVR
             </TabsTrigger>
@@ -268,17 +364,20 @@ Reply *HELP* for available commands.`,
               <CardContent className="p-0">
                 {/* Messages */}
                 <div className="h-[500px] bg-[#ECE5DD] dark:bg-secondary/30 p-4 space-y-3 overflow-y-auto">
-                  {messages.map((msg) => (
+                  {messages.map(msg => (
                     <div
                       key={msg.id}
-                      className={cn("flex", msg.type === "outgoing" && "justify-end")}
+                      className={cn(
+                        "flex",
+                        msg.type === "outgoing" && "justify-end",
+                      )}
                     >
                       <div
                         className={cn(
                           "max-w-[85%] rounded-lg p-3 shadow-sm",
                           msg.type === "incoming"
                             ? "bg-white dark:bg-card rounded-tl-none"
-                            : "bg-[#DCF8C6] dark:bg-success/20 rounded-tr-none"
+                            : "bg-[#DCF8C6] dark:bg-success/20 rounded-tr-none",
                         )}
                       >
                         <p className="text-sm whitespace-pre-line">{msg.content}</p>
@@ -299,8 +398,8 @@ Reply *HELP* for available commands.`,
                     className="flex-1 rounded-full"
                     placeholder="Type a message..."
                     value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                    onChange={e => setInputValue(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleSend()}
                   />
                   <Button
                     size="icon"
@@ -319,7 +418,15 @@ Reply *HELP* for available commands.`,
                   <strong>Try these commands:</strong>
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {["1", "2", "ARRIVED", "LOADED", "DELIVERED", "STATUS", "HELP"].map((cmd) => (
+                  {[
+                    "1",
+                    "2",
+                    "ARRIVED",
+                    "LOADED",
+                    "DELIVERED",
+                    "STATUS",
+                    "HELP",
+                  ].map(cmd => (
                     <Badge
                       key={cmd}
                       variant="outline"
@@ -401,46 +508,59 @@ Reply *HELP* for available commands.`,
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {activeCall ? (
-                    <div className="text-center py-8">
-                      <div className="h-20 w-20 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-4 animate-pulse">
-                        <PhoneCall className="h-10 w-10 text-success" />
-                      </div>
-                      <p className="font-semibold text-lg mb-1">Connected to Dispatch</p>
-                      <p className="text-2xl font-mono text-primary mb-4">
-                        {formatClockDuration(callDuration)}
-                      </p>
-                      <div className="flex justify-center gap-4">
-                        <Button variant="outline" size="icon" className="rounded-full h-12 w-12">
-                          <Mic className="h-5 w-5" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="rounded-full h-12 w-12"
-                          onClick={handleEndCall}
-                        >
-                          <PhoneOff className="h-5 w-5" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="rounded-full h-12 w-12">
-                          <Volume2 className="h-5 w-5" />
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                        <Phone className="h-10 w-10 text-muted-foreground" />
-                      </div>
-                      <p className="text-muted-foreground mb-4">
-                        Call dispatch for urgent assistance or job inquiries
-                      </p>
-                      <Button className="gap-2" onClick={handleCall}>
-                        <PhoneCall className="h-4 w-4" />
-                        Call Dispatch
-                      </Button>
-                    </div>
-                  )}
+                  {activeCall
+                    ? (
+                        <div className="text-center py-8">
+                          <div className="h-20 w-20 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-4 animate-pulse">
+                            <PhoneCall className="h-10 w-10 text-success" />
+                          </div>
+                          <p className="font-semibold text-lg mb-1">Connected to Dispatch</p>
+                          <p className="text-2xl font-mono text-primary mb-4">
+                            {formatClockDuration(callDuration)}
+                          </p>
+                          <div className="flex justify-center gap-4">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="rounded-full h-12 w-12"
+                            >
+                              <Mic className="h-5 w-5" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              className="rounded-full h-12 w-12"
+                              onClick={handleEndCall}
+                            >
+                              <PhoneOff className="h-5 w-5" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="rounded-full h-12 w-12"
+                            >
+                              <Volume2 className="h-5 w-5" />
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    : (
+                        <div className="text-center py-8">
+                          <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                            <Phone className="h-10 w-10 text-muted-foreground" />
+                          </div>
+                          <p className="text-muted-foreground mb-4">
+                            Call dispatch for urgent assistance or job inquiries
+                          </p>
+                          <Button
+                            className="gap-2"
+                            onClick={handleCall}
+                          >
+                            <PhoneCall className="h-4 w-4" />
+                            Call Dispatch
+                          </Button>
+                        </div>
+                      )}
                 </CardContent>
               </Card>
 
@@ -470,14 +590,29 @@ Reply *HELP* for available commands.`,
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, "*", 0, "#"].map((key) => (
+                    {[
+                      1,
+                      2,
+                      3,
+                      4,
+                      5,
+                      6,
+                      7,
+                      8,
+                      9,
+                      "*",
+                      0,
+                      "#",
+                    ].map(key => (
                       <Button
                         key={key}
                         variant="outline"
                         className="h-12 text-lg font-semibold"
                         onClick={() => {
-                          if (key === 1) toast.success("Job accepted via IVR");
-                          if (key === 2) toast.info("Job rejected via IVR");
+                          if (key === 1)
+                            toast.success("Job accepted via IVR");
+                          if (key === 2)
+                            toast.info("Job rejected via IVR");
                           if (key === 0) {
                             toast.info("Connecting to dispatch...");
                             handleCall();
@@ -509,8 +644,8 @@ Reply *HELP* for available commands.`,
               <div>
                 <p className="font-medium">No App Required</p>
                 <p className="text-sm text-muted-foreground">
-                  Drivers receive job notifications via WhatsApp (primary) or SMS (fallback). 
-                  Navigation links open directly in Google Maps or Waze. Voice/IVR available 
+                  Drivers receive job notifications via WhatsApp (primary) or SMS (fallback).
+                  Navigation links open directly in Google Maps or Waze. Voice/IVR available
                   for areas with limited data connectivity.
                 </p>
               </div>

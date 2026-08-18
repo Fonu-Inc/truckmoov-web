@@ -1,21 +1,16 @@
 {
   "compilerOptions": {
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
+    "target": "ES2020",
     "jsx": "react-jsx",
     "lib": [
       "ES2020",
       "DOM",
       "DOM.Iterable"
     ],
-    "module": "ESNext",
     "moduleDetection": "force",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
     "moduleResolution": "bundler",
-    "noEmit": true,
-    "noFallthroughCasesInSwitch": false,
-    "noImplicitAny": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
     "paths": {
       "@/components/shadcn/*": [
         "../../packages/reusables/src/components/shadcn/*"
@@ -54,13 +49,18 @@
         "../../packages/api/src/tracking/index.ts"
       ]
     },
-    "skipLibCheck": true,
-    "strict": false,
-    "target": "ES2020",
     "types": [
       "vitest/globals"
     ],
-    "useDefineForClassFields": true
+    "allowImportingTsExtensions": true,
+    "strict": false,
+    "noFallthroughCasesInSwitch": false,
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noEmit": true,
+    "isolatedModules": true,
+    "skipLibCheck": true
   },
   "include": [
     "src"

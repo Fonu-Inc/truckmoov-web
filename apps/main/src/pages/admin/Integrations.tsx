@@ -1,15 +1,20 @@
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { DeveloperPortal } from '@/components/integrations/DeveloperPortal';
-import { ERPWMSIntegrationPanel } from '@/components/integrations/ERPWMSIntegrationPanel';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
-import { useSearchParams } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
+import { useSearchParams } from "react-router-dom";
+import { DeveloperPortal } from "@/components/integrations/DeveloperPortal";
+import { ERPWMSIntegrationPanel } from "@/components/integrations/ERPWMSIntegrationPanel";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
+import { useAuthStore } from "@/stores/authStore";
 
 export default function IntegrationsPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'developer-portal';
+  const [
+    searchParams,
+    setSearchParams,
+  ] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "developer-portal";
   const { user } = useAuthStore();
-  const tenantId = user?.tenantId || '';
+  const tenantId = user?.tenantId || "";
 
   return (
     <DashboardLayout title="Integrations">
@@ -20,7 +25,10 @@ export default function IntegrationsPage() {
             Manage API keys, webhooks, ERP/WMS connections, and external integrations
           </p>
         </div>
-        <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })}>
+        <Tabs
+          value={activeTab}
+          onValueChange={v => setSearchParams({ tab: v })}
+        >
           <div className="flex justify-center">
             <TabsList>
               <TabsTrigger value="developer-portal">Developer Portal</TabsTrigger>

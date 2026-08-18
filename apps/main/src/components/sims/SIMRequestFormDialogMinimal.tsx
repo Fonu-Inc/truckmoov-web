@@ -1,15 +1,20 @@
+import type {
+  BillingCycle, DataUnit,
+} from "@/lib/simBundleUtils";
+import {
+  AlertTriangle, Loader2, Wifi,
+} from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/shadcn/dialog";
-import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Textarea } from "@/components/shadcn/textarea";
 import {
   Select,
   SelectContent,
@@ -18,8 +23,8 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Switch } from "@/components/shadcn/switch";
-import { Wifi, Loader2, AlertTriangle } from "lucide-react";
-import { toMb, type DataUnit, type BillingCycle } from "@/lib/simBundleUtils";
+import { Textarea } from "@/components/shadcn/textarea";
+import { toMb } from "@/lib/simBundleUtils";
 
 type BundleCatalogItem = any;
 const bundleCatalogData: BundleCatalogItem[] = [];
@@ -42,7 +47,7 @@ const formatBundleSize = (..._args: any[]) => "";
  * ICCID is intentionally NOT collected — it is assigned post-allocation.
  */
 
-export interface MinimalSIMRequestData {
+export type MinimalSIMRequestData = {
   numberOfSims: number;
   dataLimitGb: number;
   dataAmount: number;
@@ -52,9 +57,9 @@ export interface MinimalSIMRequestData {
   useCase: string;
   notes?: string;
   deviceMappingEnabled?: boolean;
-}
+};
 
-interface Props {
+type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: MinimalSIMRequestData) => Promise<unknown>;
@@ -62,30 +67,64 @@ interface Props {
   quotaRemaining?: number;
   /** Plan label shown in the warning message. */
   quotaLabel?: string;
-}
+};
 
 const carriers = [
-  { value: "MTN", label: "MTN" },
-  { value: "AIRTEL", label: "AIRTEL" },
-  { value: "GLO", label: "GLO" },
-  { value: "FONO", label: "FONO" },
+  {
+    value: "MTN", label: "MTN",
+  },
+  {
+    value: "AIRTEL", label: "AIRTEL",
+  },
+  {
+    value: "GLO", label: "GLO",
+  },
+  {
+    value: "FONO", label: "FONO",
+  },
 ];
 
-export function SIMRequestFormDialogMinimal({ open, onOpenChange, onSubmit, quotaRemaining, quotaLabel }: Props) {
-  const [numberOfSims, setNumberOfSims] = useState<number>(1);
-  const [planCycle, setPlanCycle] = useState<BillingCycle>("monthly");
-  const [carrier, setCarrier] = useState<string>("MTN");
-  const [bundleCode, setBundleCode] = useState<string>("");
-  const [useCase, setUseCase] = useState("");
-  const [notes, setNotes] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [deviceMappingEnabled, setDeviceMappingEnabled] = useState(false);
+export function SIMRequestFormDialogMinimal({
+  open, onOpenChange, onSubmit, quotaRemaining, quotaLabel,
+}: Props) {
+  const [
+    numberOfSims,
+    setNumberOfSims,
+  ] = useState<number>(1);
+  const [
+    planCycle,
+    setPlanCycle,
+  ] = useState<BillingCycle>("monthly");
+  const [
+    carrier,
+    setCarrier,
+  ] = useState<string>("MTN");
+  const [
+    bundleCode,
+    setBundleCode,
+  ] = useState<string>("");
+  const [
+    useCase,
+    setUseCase,
+  ] = useState("");
+  const [
+    notes,
+    setNotes,
+  ] = useState("");
+  const [
+    submitting,
+    setSubmitting,
+  ] = useState(false);
+  const [
+    deviceMappingEnabled,
+    setDeviceMappingEnabled,
+  ] = useState(false);
 
   const { data: bundleCatalog = [] } = useBundleCatalog();
   const availableBundles = bundleCatalog.filter(
-    (b) => b.is_active && b.carrier?.toUpperCase() === carrier?.toUpperCase() && b.billing_cycle === planCycle
+    b => b.is_active && b.carrier?.toUpperCase() === carrier?.toUpperCase() && b.billing_cycle === planCycle,
   );
-  const selectedBundle = availableBundles.find((b) => b.code === bundleCode);
+  const selectedBundle = availableBundles.find(b => b.code === bundleCode);
 
   const reset = () => {
     setNumberOfSims(1);
@@ -101,7 +140,8 @@ export function SIMRequestFormDialogMinimal({ open, onOpenChange, onSubmit, quot
   const isValid = numberOfSims >= 1 && !!carrier && !!bundleCode && !!useCase.trim() && !overQuota;
 
   const handleSubmit = async () => {
-    if (!isValid || !selectedBundle) return;
+    if (!isValid || !selectedBundle)
+      return;
     setSubmitting(true);
     const dataMb = selectedBundle.data_mb;
     const useGb = dataMb >= 1024;
@@ -124,7 +164,10 @@ export function SIMRequestFormDialogMinimal({ open, onOpenChange, onSubmit, quot
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">
@@ -147,31 +190,63 @@ export function SIMRequestFormDialogMinimal({ open, onOpenChange, onSubmit, quot
               type="number"
               min={1}
               value={numberOfSims}
-              onChange={(e) => setNumberOfSims(Math.max(1, Number(e.target.value) || 1))}
+              onChange={e => setNumberOfSims(Math.max(
+                1,
+                Number(e.target.value) || 1,
+              ))}
             />
             {typeof quotaRemaining === "number" && (
               <p className={`text-xs ${overQuota ? "text-destructive" : "text-muted-foreground"}`}>
-                {overQuota ? (
-                  <span className="inline-flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    Exceeds your {quotaLabel ?? "current"} plan quota. You can request up to {quotaRemaining} more SIM{quotaRemaining === 1 ? "" : "s"}.
-                  </span>
-                ) : (
-                  <>You can request up to {quotaRemaining} more SIM{quotaRemaining === 1 ? "" : "s"} on your {quotaLabel ?? "current"} plan.</>
-                )}
+                {overQuota
+                  ? (
+                      <span className="inline-flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        Exceeds your
+                        {" "}
+                        {quotaLabel ?? "current"}
+                        {" "}
+                        plan quota. You can request up to
+                        {" "}
+                        {quotaRemaining}
+                        {" "}
+                        more SIM
+                        {quotaRemaining === 1 ? "" : "s"}
+                        .
+                      </span>
+                    )
+                  : (
+                      <>
+                        You can request up to
+                        {quotaRemaining}
+                        {" "}
+                        more SIM
+                        {quotaRemaining === 1 ? "" : "s"}
+                        {" "}
+                        on your
+                        {quotaLabel ?? "current"}
+                        {" "}
+                        plan.
+                      </>
+                    )}
               </p>
             )}
           </div>
 
           <div className="space-y-1.5">
             <Label>Carrier *</Label>
-            <Select value={carrier} onValueChange={(v) => { setCarrier(v); setBundleCode(""); }}>
+            <Select
+              value={carrier}
+              onValueChange={(v) => { setCarrier(v); setBundleCode(""); }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select carrier" />
               </SelectTrigger>
               <SelectContent>
-                {carriers.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>
+                {carriers.map(c => (
+                  <SelectItem
+                    key={c.value}
+                    value={c.value}
+                  >
                     {c.label}
                   </SelectItem>
                 ))}
@@ -181,7 +256,10 @@ export function SIMRequestFormDialogMinimal({ open, onOpenChange, onSubmit, quot
 
           <div className="space-y-1.5">
             <Label>Plan Type *</Label>
-            <Select value={planCycle} onValueChange={(v) => { setPlanCycle(v as BillingCycle); setBundleCode(""); }}>
+            <Select
+              value={planCycle}
+              onValueChange={(v) => { setPlanCycle(v as BillingCycle); setBundleCode(""); }}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="monthly">Monthly</SelectItem>
@@ -203,14 +281,17 @@ export function SIMRequestFormDialogMinimal({ open, onOpenChange, onSubmit, quot
                     !carrier
                       ? "Select carrier first"
                       : availableBundles.length === 0
-                      ? "No bundles available"
-                      : "Select bundle"
+                        ? "No bundles available"
+                        : "Select bundle"
                   }
                 />
               </SelectTrigger>
               <SelectContent>
-                {availableBundles.map((b) => (
-                  <SelectItem key={b.id} value={b.code}>
+                {availableBundles.map(b => (
+                  <SelectItem
+                    key={b.id}
+                    value={b.code}
+                  >
                     {b.name}
                   </SelectItem>
                 ))}
@@ -223,18 +304,17 @@ export function SIMRequestFormDialogMinimal({ open, onOpenChange, onSubmit, quot
             <Label>Use Case *</Label>
             <Textarea
               value={useCase}
-              onChange={(e) => setUseCase(e.target.value)}
+              onChange={e => setUseCase(e.target.value)}
               placeholder="Describe how you intend to use these SIMs"
               rows={3}
             />
           </div>
 
-
           <div className="space-y-1.5">
             <Label>Additional Notes</Label>
             <Textarea
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={e => setNotes(e.target.value)}
               placeholder="Anything else our team should know (optional)"
               rows={2}
             />
@@ -242,18 +322,27 @@ export function SIMRequestFormDialogMinimal({ open, onOpenChange, onSubmit, quot
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting || !isValid}>
-            {submitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              "Submit Request"
-            )}
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting || !isValid}
+          >
+            {submitting
+              ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                )
+              : (
+                  "Submit Request"
+                )}
           </Button>
         </div>
       </DialogContent>

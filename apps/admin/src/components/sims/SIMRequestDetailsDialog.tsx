@@ -1,4 +1,25 @@
-import { formatDateTime, formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
+import type { ProvisioningStep } from "@/lib/provisioningEngineSim";
+
+import {
+  formatDateTime,
+  formatWithPattern,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  Building2,
+  Calendar,
+  CheckCircle,
+  Clock,
+  Cpu,
+  Database,
+  FileText,
+  Mail,
+  Signal,
+  Smartphone,
+  XCircle,
+} from "lucide-react";
+import { ProvisioningChecklistView } from "@/components/provisioning/ProvisioningChecklistView";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
 
 import {
   Dialog,
@@ -8,29 +29,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
-import { Button } from "@/components/shadcn/button";
-import { Badge } from "@/components/shadcn/badge";
 import { Separator } from "@/components/shadcn/separator";
-import {
-  Clock,
-  CheckCircle,
-  XCircle,
-  Calendar,
-  Smartphone,
-  Signal,
-  Database,
-  Building2,
-  Mail,
-  FileText,
-  Cpu,
-} from "lucide-react";
+
 type SIMProvisioningRequest = any;
 type DeviceMappingRow = any;
 
-import { ProvisioningChecklistView } from "@/components/provisioning/ProvisioningChecklistView";
-import type { ProvisioningStep } from "@/lib/provisioningEngineSim";
-
-interface SIMRequestDetailsDialogProps {
+type SIMRequestDetailsDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   request: SIMProvisioningRequest | null;
@@ -42,7 +46,7 @@ interface SIMRequestDetailsDialogProps {
   onRequestKYC: () => void;
   onInitiateActivation?: (batchId: string) => void;
   activationBatchId?: string | null;
-}
+};
 
 export function SIMRequestDetailsDialog({
   open,
@@ -59,8 +63,8 @@ export function SIMRequestDetailsDialog({
 }: SIMRequestDetailsDialogProps) {
   const overrideJustification: string | undefined = undefined;
 
-
-  if (!request) return null;
+  if (!request)
+    return null;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -115,7 +119,10 @@ export function SIMRequestDetailsDialog({
   const deviceMappingData = request.device_mapping_data as DeviceMappingRow[] | null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -123,8 +130,18 @@ export function SIMRequestDetailsDialog({
             SIM Request Details
           </DialogTitle>
           <DialogDescription>
-            Request #{request.id.slice(0, 8)} • Submitted{" "}
-            {formatWithPattern(request.created_at, "MMM d, yyyy 'at' HH:mm")}
+            Request #
+            {request.id.slice(
+              0,
+              8,
+            )}
+            {" "}
+            • Submitted
+            {" "}
+            {formatWithPattern(
+              request.created_at,
+              "MMM d, yyyy 'at' HH:mm",
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -136,10 +153,10 @@ export function SIMRequestDetailsDialog({
           </div>
 
           {/* Provisioning Engine progress — shown from pending review onwards (same component the device modal uses) */}
-          {(request.status === "pending" ||
-            request.status === "in_progress" ||
-            request.status === "approved" ||
-            request.status === "approved_pending_activation") && (
+          {(request.status === "pending"
+            || request.status === "in_progress"
+            || request.status === "approved"
+            || request.status === "approved_pending_activation") && (
             <ProvisioningChecklistView
               type="sim"
               checklist={(request as unknown as { provisioning_checklist?: ProvisioningStep[] | null }).provisioning_checklist ?? null}
@@ -205,7 +222,10 @@ export function SIMRequestDetailsDialog({
                 Use Case
               </p>
               <p className="font-medium capitalize">
-                {request.use_case?.replace(/_/g, " ") || "Not specified"}
+                {request.use_case?.replace(
+                  /_/g,
+                  " ",
+                ) || "Not specified"}
               </p>
             </div>
             <div className="space-y-1">
@@ -256,18 +276,27 @@ export function SIMRequestDetailsDialog({
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             Close
           </Button>
           {request.status === "pending" && (
             <>
               {!kycVerified && (
-                <Button variant="secondary" onClick={onRequestKYC}>
+                <Button
+                  variant="secondary"
+                  onClick={onRequestKYC}
+                >
                   <Building2 className="h-4 w-4 mr-2" />
                   Request KYB/KYC
                 </Button>
               )}
-              <Button variant="destructive" onClick={onReject}>
+              <Button
+                variant="destructive"
+                onClick={onReject}
+              >
                 Reject
               </Button>
               <Button
@@ -288,6 +317,3 @@ export function SIMRequestDetailsDialog({
     </Dialog>
   );
 }
-
-
-

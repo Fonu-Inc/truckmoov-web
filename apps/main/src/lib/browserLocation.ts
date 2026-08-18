@@ -1,7 +1,7 @@
-export interface BrowserCoordinates {
+export type BrowserCoordinates = {
   lat: number;
   lng: number;
-}
+};
 
 let browserCoordinatesPromise: Promise<BrowserCoordinates | null> | null = null;
 let activeWatchId: number | null = null;
@@ -28,7 +28,8 @@ function finishActiveRequest(coordinates: BrowserCoordinates | null) {
 }
 
 export function getBrowserCoordinates() {
-  if (browserCoordinatesPromise) return browserCoordinatesPromise;
+  if (browserCoordinatesPromise)
+    return browserCoordinatesPromise;
 
   browserCoordinatesPromise = new Promise((resolve) => {
     if (!navigator.geolocation) {
@@ -38,7 +39,7 @@ export function getBrowserCoordinates() {
 
     resolveActiveRequest = resolve;
     activeWatchId = navigator.geolocation.watchPosition(
-      (position) =>
+      position =>
         finishActiveRequest({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
@@ -48,10 +49,14 @@ export function getBrowserCoordinates() {
         enableHighAccuracy: false,
         maximumAge: 10 * 60 * 1000,
         timeout: 5000,
-      }
+      },
     );
 
-    activeTimeoutId = window.setTimeout(() => finishActiveRequest(null), 5500);
+    activeTimeoutId = window.setTimeout(
+      finishActiveRequest,
+      5500,
+      null,
+    );
   });
 
   return browserCoordinatesPromise;

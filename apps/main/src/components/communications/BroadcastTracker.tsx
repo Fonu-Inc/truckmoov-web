@@ -1,21 +1,35 @@
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
-import { useState } from "react";
+import {
+  ArrowLeft,
+  Check,
+  CheckCheck,
+  Clock,
+  Eye,
+  Loader2,
+  Megaphone,
+  MessageCircle,
+  Send,
+  X,
+} from "lucide-react";
 
-import { mockDrivers } from "@/data/mockData";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
+import { useState } from "react";
 import { Badge } from "@/components/shadcn/badge";
-import { Textarea } from "@/components/shadcn/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
-import { Label } from "@/components/shadcn/label";
-import { Progress } from "@/components/shadcn/progress";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
+import { Label } from "@/components/shadcn/label";
+import { Progress } from "@/components/shadcn/progress";
+import {
+  RadioGroup, RadioGroupItem,
+} from "@/components/shadcn/radio-group";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
 import {
   Table,
   TableBody,
@@ -24,33 +38,51 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import {
-  Send,
-  Megaphone,
-  Loader2,
-  Check,
-  CheckCheck,
-  MessageCircle,
-  X,
-  Clock,
-  Eye,
-  ArrowLeft,
-} from "lucide-react";
+import { Textarea } from "@/components/shadcn/textarea";
+import { mockDrivers } from "@/data/mockData";
 
-const statusConfig: Record<string, { icon: React.ElementType; color: string; label: string }> = {
-  pending: { icon: Clock, color: "text-muted-foreground", label: "Pending" },
-  sent: { icon: Check, color: "text-blue-500", label: "Sent" },
-  delivered: { icon: CheckCheck, color: "text-green-500", label: "Delivered" },
-  read: { icon: Eye, color: "text-primary", label: "Read" },
-  replied: { icon: MessageCircle, color: "text-success", label: "Replied" },
-  failed: { icon: X, color: "text-destructive", label: "Failed" },
+const statusConfig: Record<string, {
+  icon: React.ElementType; color: string; label: string;
+}> = {
+  pending: {
+    icon: Clock, color: "text-muted-foreground", label: "Pending",
+  },
+  sent: {
+    icon: Check, color: "text-blue-500", label: "Sent",
+  },
+  delivered: {
+    icon: CheckCheck, color: "text-green-500", label: "Delivered",
+  },
+  read: {
+    icon: Eye, color: "text-primary", label: "Read",
+  },
+  replied: {
+    icon: MessageCircle, color: "text-success", label: "Replied",
+  },
+  failed: {
+    icon: X, color: "text-destructive", label: "Failed",
+  },
 };
 
 export function BroadcastTracker() {
-  const [broadcastMessage, setBroadcastMessage] = useState("");
-  const [broadcastChannel, setBroadcastChannel] = useState<"whatsapp" | "sms">("whatsapp");
-  const [showReplyDialog, setShowReplyDialog] = useState(false);
-  const [selectedReply, setSelectedReply] = useState<{ name: string; content: string } | null>(null);
+  const [
+    broadcastMessage,
+    setBroadcastMessage,
+  ] = useState("");
+  const [
+    broadcastChannel,
+    setBroadcastChannel,
+  ] = useState<"whatsapp" | "sms">("whatsapp");
+  const [
+    showReplyDialog,
+    setShowReplyDialog,
+  ] = useState(false);
+  const [
+    selectedReply,
+    setSelectedReply,
+  ] = useState<{
+    name: string; content: string;
+  } | null>(null);
 
   const broadcasts: any[] = [];
   const selectedBroadcast: any = null;
@@ -62,28 +94,37 @@ export function BroadcastTracker() {
   const clearSelection = () => {};
 
   const handleSendBroadcast = async () => {
-    if (!broadcastMessage.trim()) return;
-    
+    if (!broadcastMessage.trim())
+      return;
+
     const drivers = mockDrivers.map(d => ({
       id: d.id,
       name: d.name,
       phone: d.phone,
       status: d.status,
     }));
-    
-    const result = await sendBroadcast(drivers, broadcastMessage, broadcastChannel, "Supervisor");
+
+    const result = await sendBroadcast(
+      drivers,
+      broadcastMessage,
+      broadcastChannel,
+      "Supervisor",
+    );
     if (result.success) {
       setBroadcastMessage("");
     }
   };
 
-  const activeDriverCount = mockDrivers.filter(d => d.status !== 'offline').length;
+  const activeDriverCount = mockDrivers.filter(d => d.status !== "offline").length;
 
   const getStatusBadge = (status: string) => {
     const config = statusConfig[status] || statusConfig.pending;
     const Icon = config.icon;
     return (
-      <Badge variant="outline" className={`gap-1 ${config.color}`}>
+      <Badge
+        variant="outline"
+        className={`gap-1 ${config.color}`}
+      >
         <Icon className="h-3 w-3" />
         {config.label}
       </Badge>
@@ -91,24 +132,31 @@ export function BroadcastTracker() {
   };
 
   if (selectedBroadcast) {
-    const deliveryRate = selectedBroadcast.total_recipients > 0 
-      ? (selectedBroadcast.delivered_count / selectedBroadcast.total_recipients) * 100 
+    const deliveryRate = selectedBroadcast.total_recipients > 0
+      ? (selectedBroadcast.delivered_count / selectedBroadcast.total_recipients) * 100
       : 0;
-    const readRate = selectedBroadcast.total_recipients > 0 
-      ? (selectedBroadcast.read_count / selectedBroadcast.total_recipients) * 100 
+    const readRate = selectedBroadcast.total_recipients > 0
+      ? (selectedBroadcast.read_count / selectedBroadcast.total_recipients) * 100
       : 0;
 
     return (
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={clearSelection}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={clearSelection}
+            >
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="flex-1">
               <CardTitle className="text-lg">Broadcast Details</CardTitle>
               <p className="text-sm text-muted-foreground">
-                {formatWithPattern(selectedBroadcast.created_at, "PPp")}
+                {formatWithPattern(
+                  selectedBroadcast.created_at,
+                  "PPp",
+                )}
               </p>
             </div>
             <Badge variant="secondary">{selectedBroadcast.channel.toUpperCase()}</Badge>
@@ -145,22 +193,38 @@ export function BroadcastTracker() {
             <div className="space-y-1">
               <div className="flex justify-between text-sm">
                 <span>Delivery Rate</span>
-                <span>{deliveryRate.toFixed(0)}%</span>
+                <span>
+                  {deliveryRate.toFixed(0)}
+                  %
+                </span>
               </div>
-              <Progress value={deliveryRate} className="h-2" />
+              <Progress
+                value={deliveryRate}
+                className="h-2"
+              />
             </div>
             <div className="space-y-1">
               <div className="flex justify-between text-sm">
                 <span>Read Rate</span>
-                <span>{readRate.toFixed(0)}%</span>
+                <span>
+                  {readRate.toFixed(0)}
+                  %
+                </span>
               </div>
-              <Progress value={readRate} className="h-2" />
+              <Progress
+                value={readRate}
+                className="h-2"
+              />
             </div>
           </div>
 
           {/* Recipients Table */}
           <div>
-            <h4 className="font-medium mb-3">Recipients ({recipients.length})</h4>
+            <h4 className="font-medium mb-3">
+              Recipients (
+              {recipients.length}
+              )
+            </h4>
             <ScrollArea className="h-[300px] rounded-md border">
               <Table>
                 <TableHeader>
@@ -172,30 +236,32 @@ export function BroadcastTracker() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recipients.map((recipient) => (
+                  {recipients.map(recipient => (
                     <TableRow key={recipient.id}>
                       <TableCell className="font-medium">{recipient.driver_name}</TableCell>
                       <TableCell className="text-muted-foreground">{recipient.driver_phone}</TableCell>
                       <TableCell>{getStatusBadge(recipient.status)}</TableCell>
                       <TableCell>
-                        {recipient.reply_content ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedReply({
-                                name: recipient.driver_name || "Driver",
-                                content: recipient.reply_content || "",
-                              });
-                              setShowReplyDialog(true);
-                            }}
-                          >
-                            <MessageCircle className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">—</span>
-                        )}
+                        {recipient.reply_content
+                          ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedReply({
+                                    name: recipient.driver_name || "Driver",
+                                    content: recipient.reply_content || "",
+                                  });
+                                  setShowReplyDialog(true);
+                                }}
+                              >
+                                <MessageCircle className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                            )
+                          : (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -206,10 +272,16 @@ export function BroadcastTracker() {
         </CardContent>
 
         {/* Reply Dialog */}
-        <Dialog open={showReplyDialog} onOpenChange={setShowReplyDialog}>
+        <Dialog
+          open={showReplyDialog}
+          onOpenChange={setShowReplyDialog}
+        >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Reply from {selectedReply?.name}</DialogTitle>
+              <DialogTitle>
+                Reply from
+                {selectedReply?.name}
+              </DialogTitle>
             </DialogHeader>
             <div className="rounded-lg bg-muted p-4">
               <p className="text-sm">{selectedReply?.content}</p>
@@ -232,38 +304,59 @@ export function BroadcastTracker() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Send a message to all active drivers ({activeDriverCount} active)
+            Send a message to all active drivers (
+            {activeDriverCount}
+            {" "}
+            active)
           </p>
           <RadioGroup
             value={broadcastChannel}
-            onValueChange={(v) => setBroadcastChannel(v as "whatsapp" | "sms")}
+            onValueChange={v => setBroadcastChannel(v as "whatsapp" | "sms")}
             className="flex gap-4"
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="whatsapp" id="bc-whatsapp" />
-              <Label htmlFor="bc-whatsapp" className="text-sm">WhatsApp</Label>
+              <RadioGroupItem
+                value="whatsapp"
+                id="bc-whatsapp"
+              />
+              <Label
+                htmlFor="bc-whatsapp"
+                className="text-sm"
+              >
+                WhatsApp
+              </Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="sms" id="bc-sms" />
-              <Label htmlFor="bc-sms" className="text-sm">SMS</Label>
+              <RadioGroupItem
+                value="sms"
+                id="bc-sms"
+              />
+              <Label
+                htmlFor="bc-sms"
+                className="text-sm"
+              >
+                SMS
+              </Label>
             </div>
           </RadioGroup>
           <Textarea
             placeholder="Type your broadcast message..."
             value={broadcastMessage}
-            onChange={(e) => setBroadcastMessage(e.target.value)}
+            onChange={e => setBroadcastMessage(e.target.value)}
             rows={3}
           />
-          <Button 
-            className="w-full gap-2" 
+          <Button
+            className="w-full gap-2"
             onClick={handleSendBroadcast}
             disabled={isSending || !broadcastMessage.trim()}
           >
-            {isSending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
+            {isSending
+              ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                )
+              : (
+                  <Send className="h-4 w-4" />
+                )}
             {isSending ? "Sending..." : "Send Broadcast"}
           </Button>
         </CardContent>
@@ -275,51 +368,70 @@ export function BroadcastTracker() {
           <CardTitle>Broadcast History</CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : broadcasts.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Megaphone className="h-10 w-10 mx-auto mb-2 opacity-50" />
-              <p>No broadcasts sent yet</p>
-            </div>
-          ) : (
-            <ScrollArea className="h-[400px]">
-              <div className="space-y-3">
-                {broadcasts.map((broadcast) => (
-                  <div
-                    key={broadcast.id}
-                    className="p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => selectBroadcast(broadcast)}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">{broadcast.channel.toUpperCase()}</Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {formatWithPattern(broadcast.created_at, "PPp")}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="text-blue-500">{broadcast.delivered_count} sent</span>
-                        <span className="text-muted-foreground">•</span>
-                        <span className="text-primary">{broadcast.read_count} read</span>
-                        <span className="text-muted-foreground">•</span>
-                        <span className="text-success">{broadcast.replied_count} replied</span>
-                      </div>
-                    </div>
-                    <p className="text-sm line-clamp-2">{broadcast.message}</p>
-                    <div className="mt-2">
-                      <Progress 
-                        value={(broadcast.delivered_count / broadcast.total_recipients) * 100} 
-                        className="h-1"
-                      />
-                    </div>
+          {isLoading
+            ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              )
+            : broadcasts.length === 0
+              ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Megaphone className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                    <p>No broadcasts sent yet</p>
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
-          )}
+                )
+              : (
+                  <ScrollArea className="h-[400px]">
+                    <div className="space-y-3">
+                      {broadcasts.map(broadcast => (
+                        <div
+                          key={broadcast.id}
+                          className="p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+                          onClick={() => selectBroadcast(broadcast)}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">{broadcast.channel.toUpperCase()}</Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {formatWithPattern(
+                                  broadcast.created_at,
+                                  "PPp",
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="text-blue-500">
+                                {broadcast.delivered_count}
+                                {" "}
+                                sent
+                              </span>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="text-primary">
+                                {broadcast.read_count}
+                                {" "}
+                                read
+                              </span>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="text-success">
+                                {broadcast.replied_count}
+                                {" "}
+                                replied
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-sm line-clamp-2">{broadcast.message}</p>
+                          <div className="mt-2">
+                            <Progress
+                              value={(broadcast.delivered_count / broadcast.total_recipients) * 100}
+                              className="h-1"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
         </CardContent>
       </Card>
     </div>

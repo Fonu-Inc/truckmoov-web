@@ -1,25 +1,46 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { addDays, addMonths, daysUntil, formatDate, toDateParam } from "@truckmoov/app-core/utils/time-utils";
+import type {
+  MaintenanceProfile, MaintenanceProfileIntervalType, MaintenanceProfileLifecycleStatus, MaintenanceProfilesQuery,
+} from "@truckmoov/api/fleet";
+import type { ReactNode } from "react";
 import {
-  Wrench,
-  Plus,
-  Search,
+  exportMaintenanceProfiles,
+
+  useCompleteMaintenanceProfile,
+  useCreateMaintenanceProfile,
+  useDeleteMaintenanceProfile,
+  useMaintenanceProfiles,
+  useMaintenanceProfilesSummary,
+  useMaintenanceServiceCategories,
+  useVehicles,
+} from "@truckmoov/api/fleet";
+import {
+  addDays, addMonths, daysUntil, formatDate, toDateParam,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
   AlertTriangle,
+  Archive,
+  Calendar,
   CheckCircle,
   Clock,
-  Calendar,
-  Truck,
-  Archive,
-  SlidersHorizontal,
   Download,
   Loader2,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Truck,
+  Wrench,
 } from "lucide-react";
-import { toast } from "sonner";
+import {
+  useEffect, useMemo, useState,
+} from "react";
 
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { Calendar as CalendarPicker } from "@/components/shadcn/calendar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   Dialog,
@@ -31,8 +52,12 @@ import {
 } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
-import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/shadcn/popover";
+import {
+  RadioGroup, RadioGroupItem,
+} from "@/components/shadcn/radio-group";
 import {
   Select,
   SelectContent,
@@ -42,20 +67,6 @@ import {
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { cn } from "@/lib/utils";
-import {
-  exportMaintenanceProfiles,
-  useCompleteMaintenanceProfile,
-  useCreateMaintenanceProfile,
-  useDeleteMaintenanceProfile,
-  useMaintenanceProfiles,
-  useMaintenanceProfilesSummary,
-  useMaintenanceServiceCategories,
-  useVehicles,
-  type MaintenanceProfile,
-  type MaintenanceProfileLifecycleStatus,
-  type MaintenanceProfilesQuery,
-  type MaintenanceProfileIntervalType,
-} from "@truckmoov/api/fleet";
 
 type NewProfileState = {
   vehicleId: string;
@@ -100,7 +111,12 @@ function buildDefaultProfile(): NewProfileState {
 }
 
 function downloadBlob(data: unknown, filename: string) {
-  const blob = data instanceof Blob ? data : new Blob([data as BlobPart], { type: "text/csv;charset=utf-8;" });
+  const blob = data instanceof Blob
+    ? data
+    : new Blob(
+        [data as BlobPart],
+        { type: "text/csv;charset=utf-8;" },
+      );
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -112,29 +128,83 @@ function downloadBlob(data: unknown, filename: string) {
 }
 
 function formatServiceLabel(value: string) {
-  return value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return value.replace(
+    /_/g,
+    " ",
+  ).replace(
+    /\b\w/g,
+    letter => letter.toUpperCase(),
+  );
 }
 
 export function MaintenanceProfilesTab() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [dueDateFrom, setDueDateFrom] = useState<Date | undefined>(undefined);
-  const [dueDateTo, setDueDateTo] = useState<Date | undefined>(undefined);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [draftDueFrom, setDraftDueFrom] = useState<Date | undefined>(undefined);
-  const [draftDueTo, setDraftDueTo] = useState<Date | undefined>(undefined);
-  const [draftEnableDueDate, setDraftEnableDueDate] = useState(false);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
-  const [selectedProfile, setSelectedProfile] = useState<MaintenanceProfile | null>(null);
-  const [newProfile, setNewProfile] = useState<NewProfileState>(() => buildDefaultProfile());
-  const [isExporting, setIsExporting] = useState(false);
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    debouncedSearch,
+    setDebouncedSearch,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState<string>("all");
+  const [
+    dueDateFrom,
+    setDueDateFrom,
+  ] = useState<Date | undefined>(undefined);
+  const [
+    dueDateTo,
+    setDueDateTo,
+  ] = useState<Date | undefined>(undefined);
+  const [
+    filterOpen,
+    setFilterOpen,
+  ] = useState(false);
+  const [
+    draftDueFrom,
+    setDraftDueFrom,
+  ] = useState<Date | undefined>(undefined);
+  const [
+    draftDueTo,
+    setDraftDueTo,
+  ] = useState<Date | undefined>(undefined);
+  const [
+    draftEnableDueDate,
+    setDraftEnableDueDate,
+  ] = useState(false);
+  const [
+    isAddDialogOpen,
+    setIsAddDialogOpen,
+  ] = useState(false);
+  const [
+    isCompleteDialogOpen,
+    setIsCompleteDialogOpen,
+  ] = useState(false);
+  const [
+    selectedProfile,
+    setSelectedProfile,
+  ] = useState<MaintenanceProfile | null>(null);
+  const [
+    newProfile,
+    setNewProfile,
+  ] = useState<NewProfileState>(() => buildDefaultProfile());
+  const [
+    isExporting,
+    setIsExporting,
+  ] = useState(false);
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
-    return () => window.clearTimeout(timer);
-  }, [searchQuery]);
+  useEffect(
+    () => {
+      const timer = window.setTimeout(
+        () => setDebouncedSearch(searchQuery.trim()),
+        300,
+      );
+      return () => window.clearTimeout(timer);
+    },
+    [searchQuery],
+  );
 
   const profileQueryParams = useMemo<MaintenanceProfilesQuery>(
     () => ({
@@ -146,7 +216,12 @@ export function MaintenanceProfilesTab() {
         nextDueDateTo: dueDateTo ? toDateParam(dueDateTo) : undefined,
       },
     }),
-    [debouncedSearch, dueDateFrom, dueDateTo, statusFilter],
+    [
+      debouncedSearch,
+      dueDateFrom,
+      dueDateTo,
+      statusFilter,
+    ],
   );
 
   const profilesQuery = useMaintenanceProfiles(profileQueryParams);
@@ -157,9 +232,18 @@ export function MaintenanceProfilesTab() {
   const completeProfileMutation = useCompleteMaintenanceProfile();
   const deleteProfileMutation = useDeleteMaintenanceProfile();
 
-  const profiles = useMemo(() => profilesQuery.data?.data ?? [], [profilesQuery.data?.data]);
-  const vehicles = useMemo(() => vehiclesQuery.data?.data ?? [], [vehiclesQuery.data?.data]);
-  const serviceCategories = useMemo(() => categoriesQuery.data?.data ?? [], [categoriesQuery.data?.data]);
+  const profiles = useMemo(
+    () => profilesQuery.data?.data ?? [],
+    [profilesQuery.data?.data],
+  );
+  const vehicles = useMemo(
+    () => vehiclesQuery.data?.data ?? [],
+    [vehiclesQuery.data?.data],
+  );
+  const serviceCategories = useMemo(
+    () => categoriesQuery.data?.data ?? [],
+    [categoriesQuery.data?.data],
+  );
   const stats = summaryQuery.data?.data ?? {
     overdue: 0,
     due: 0,
@@ -168,17 +252,20 @@ export function MaintenanceProfilesTab() {
     total: 0,
   };
 
-  const vehicleLabelById = useMemo(() => {
-    return new Map(
-      vehicles.map((vehicle) => [
-        vehicle.id,
-        vehicle.registrationNumber ||
-          vehicle.plateNumber ||
-          `${vehicle.make ?? ""} ${vehicle.model ?? ""}`.trim() ||
+  const vehicleLabelById = useMemo(
+    () => {
+      return new Map(
+        vehicles.map(vehicle => [
           vehicle.id,
-      ]),
-    );
-  }, [vehicles]);
+          vehicle.registrationNumber
+          || vehicle.plateNumber
+          || `${vehicle.make ?? ""} ${vehicle.model ?? ""}`.trim()
+          || vehicle.id,
+        ]),
+      );
+    },
+    [vehicles],
+  );
 
   const getVehicleLabel = (vehicleId: string) => vehicleLabelById.get(vehicleId) ?? vehicleId;
 
@@ -227,9 +314,16 @@ export function MaintenanceProfilesTab() {
     if (newProfile.intervalType !== "mileage") {
       const baseDate = newProfile.lastServiceDate ? new Date(newProfile.lastServiceDate) : new Date();
       if (newProfile.intervalDays) {
-        nextDueDate = addDays(baseDate, Number(newProfile.intervalDays))!.toISOString();
-      } else if (newProfile.intervalMonths) {
-        nextDueDate = addMonths(baseDate, Number(newProfile.intervalMonths))!.toISOString();
+        nextDueDate = addDays(
+          baseDate,
+          Number(newProfile.intervalDays),
+        )!.toISOString();
+      }
+      else if (newProfile.intervalMonths) {
+        nextDueDate = addMonths(
+          baseDate,
+          Number(newProfile.intervalMonths),
+        )!.toISOString();
       }
     }
 
@@ -239,8 +333,8 @@ export function MaintenanceProfilesTab() {
       nextDueMileage = baseMileage + Number(newProfile.intervalKm);
     }
 
-    const serviceType =
-      newProfile.serviceType === "custom" ? newProfile.customLabel.trim() : newProfile.serviceType;
+    const serviceType
+      = newProfile.serviceType === "custom" ? newProfile.customLabel.trim() : newProfile.serviceType;
 
     try {
       await createProfileMutation.mutateAsync({
@@ -262,20 +356,23 @@ export function MaintenanceProfilesTab() {
       toast.success("Maintenance profile created");
       setIsAddDialogOpen(false);
       resetNewProfile();
-    } catch (error) {
+    }
+    catch (error) {
       toast.error(error.message || "Failed to create maintenance profile");
     }
   };
 
   const handleComplete = async () => {
-    if (!selectedProfile) return;
+    if (!selectedProfile)
+      return;
 
     try {
       await completeProfileMutation.mutateAsync({ id: selectedProfile.id });
       toast.success("Maintenance profile completed");
       setIsCompleteDialogOpen(false);
       setSelectedProfile(null);
-    } catch (error) {
+    }
+    catch (error) {
       toast.error(error.message || "Failed to complete maintenance profile");
     }
   };
@@ -284,7 +381,8 @@ export function MaintenanceProfilesTab() {
     try {
       await deleteProfileMutation.mutateAsync({ id: profile.id });
       toast.success("Maintenance profile deleted");
-    } catch (error) {
+    }
+    catch (error) {
       toast.error(error.message || "Failed to delete maintenance profile");
     }
   };
@@ -293,17 +391,23 @@ export function MaintenanceProfilesTab() {
     setIsExporting(true);
     try {
       const data = await exportMaintenanceProfiles();
-      downloadBlob(data, "maintenance_profiles.csv");
+      downloadBlob(
+        data,
+        "maintenance_profiles.csv",
+      );
       toast.success("Maintenance profiles export downloaded");
-    } catch (error) {
+    }
+    catch (error) {
       toast.error(error.message || "Maintenance profiles export failed");
-    } finally {
+    }
+    finally {
       setIsExporting(false);
     }
   };
 
   const getKmUntilDue = (profile: MaintenanceProfile): number | null => {
-    if (!profile.nextDueMileage || !profile.currentMileage) return null;
+    if (!profile.nextDueMileage || !profile.currentMileage)
+      return null;
     return profile.nextDueMileage - profile.currentMileage;
   };
 
@@ -313,8 +417,11 @@ export function MaintenanceProfilesTab() {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i} className="bg-card/50 border-border/50">
+          {[...Array.from({ length: 4 })].map((_, i) => (
+            <Card
+              key={i}
+              className="bg-card/50 border-border/50"
+            >
               <CardContent className="p-4">
                 <Skeleton className="h-12 w-full" />
               </CardContent>
@@ -336,7 +443,11 @@ export function MaintenanceProfilesTab() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className={cn("bg-card/50 border-border/50", stats.overdue > 0 && "border-destructive/50")}>
+        <Card className={cn(
+          "bg-card/50 border-border/50",
+          stats.overdue > 0 && "border-destructive/50",
+        )}
+        >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-destructive/20">
@@ -349,7 +460,11 @@ export function MaintenanceProfilesTab() {
             </div>
           </CardContent>
         </Card>
-        <Card className={cn("bg-card/50 border-border/50", stats.due > 0 && "border-warning/50")}>
+        <Card className={cn(
+          "bg-card/50 border-border/50",
+          stats.due > 0 && "border-warning/50",
+        )}
+        >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-warning/20">
@@ -396,7 +511,9 @@ export function MaintenanceProfilesTab() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Wrench className="h-5 w-5 text-primary" />
-                Maintenance Profiles ({profiles.length})
+                Maintenance Profiles (
+                {profiles.length}
+                )
               </CardTitle>
               <CardDescription className="mt-1">
                 Per-vehicle maintenance schedules, service intervals, next-due dates, and SLA targets.
@@ -419,14 +536,17 @@ export function MaintenanceProfilesTab() {
               <Input
                 placeholder="Search by vehicle, service category..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="pl-10 pr-10 bg-card/50 border-border/50"
               />
               {profilesQuery.isFetching && !profilesQuery.isPending && (
                 <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
               )}
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+            >
               <SelectTrigger className="w-full sm:w-[170px] bg-card/50 border-border/50">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
@@ -438,19 +558,31 @@ export function MaintenanceProfilesTab() {
                 <SelectItem value="completed">Completed</SelectItem>
               </SelectContent>
             </Select>
-            <Popover open={filterOpen} onOpenChange={handleFilterOpenChange}>
+            <Popover
+              open={filterOpen}
+              onOpenChange={handleFilterOpenChange}
+            >
               <PopoverTrigger asChild>
-                <Button variant="outline" className="bg-card/50 border-border/50 relative">
+                <Button
+                  variant="outline"
+                  className="bg-card/50 border-border/50 relative"
+                >
                   <SlidersHorizontal className="h-4 w-4 mr-2" />
                   Filter
                   {activeFilterCount > 0 && (
-                    <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-[10px]">
+                    <Badge
+                      variant="secondary"
+                      className="ml-2 h-5 px-1.5 text-[10px]"
+                    >
                       {activeFilterCount}
                     </Badge>
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-80 space-y-4">
+              <PopoverContent
+                align="end"
+                className="w-80 space-y-4"
+              >
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold">Show Maintenance Profiles</Label>
                 </div>
@@ -460,25 +592,38 @@ export function MaintenanceProfilesTab() {
                     <Checkbox
                       id="flt-due"
                       checked={draftEnableDueDate}
-                      onCheckedChange={(checked) => setDraftEnableDueDate(checked === true)}
+                      onCheckedChange={checked => setDraftEnableDueDate(checked === true)}
                     />
-                    <Label htmlFor="flt-due" className="text-xs cursor-pointer">
+                    <Label
+                      htmlFor="flt-due"
+                      className="text-xs cursor-pointer"
+                    >
                       Next Due Date
                     </Label>
                   </div>
-                  <div className={cn("grid grid-cols-2 gap-2", !draftEnableDueDate && "opacity-50 pointer-events-none")}>
+                  <div className={cn(
+                    "grid grid-cols-2 gap-2",
+                    !draftEnableDueDate && "opacity-50 pointer-events-none",
+                  )}
+                  >
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
                           disabled={!draftEnableDueDate}
-                          className={cn("h-9 justify-start text-left font-normal text-xs", !draftDueFrom && "text-muted-foreground")}
+                          className={cn(
+                            "h-9 justify-start text-left font-normal text-xs",
+                            !draftDueFrom && "text-muted-foreground",
+                          )}
                         >
                           <Calendar className="h-3 w-3 mr-1" />
                           {draftDueFrom ? formatDate(draftDueFrom) : "From"}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent
+                        className="w-auto p-0"
+                        align="start"
+                      >
                         <CalendarPicker
                           mode="single"
                           selected={draftDueFrom}
@@ -493,13 +638,19 @@ export function MaintenanceProfilesTab() {
                         <Button
                           variant="outline"
                           disabled={!draftEnableDueDate}
-                          className={cn("h-9 justify-start text-left font-normal text-xs", !draftDueTo && "text-muted-foreground")}
+                          className={cn(
+                            "h-9 justify-start text-left font-normal text-xs",
+                            !draftDueTo && "text-muted-foreground",
+                          )}
                         >
                           <Calendar className="h-3 w-3 mr-1" />
                           {draftDueTo ? formatDate(draftDueTo) : "To"}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent
+                        className="w-auto p-0"
+                        align="start"
+                      >
                         <CalendarPicker
                           mode="single"
                           selected={draftDueTo}
@@ -513,10 +664,17 @@ export function MaintenanceProfilesTab() {
                 </div>
 
                 <div className="flex items-center gap-2 pt-2 border-t border-border">
-                  <Button className="flex-1" onClick={applyDraftFilters}>
+                  <Button
+                    className="flex-1"
+                    onClick={applyDraftFilters}
+                  >
                     Apply
                   </Button>
-                  <Button variant="outline" className="flex-1" onClick={resetFilters}>
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={resetFilters}
+                  >
                     Show All
                   </Button>
                 </div>
@@ -525,163 +683,193 @@ export function MaintenanceProfilesTab() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {profilesQuery.isError ? (
-            <div className="p-12 text-center">
-              <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">Unable to load maintenance profiles</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                {profilesQuery.error?.message || "Try refreshing the page."}
-              </p>
-              <Button variant="outline" onClick={() => profilesQuery.refetch()}>
-                Retry
-              </Button>
-            </div>
-          ) : profiles.length === 0 ? (
-            <div className="p-12 text-center">
-              <Wrench className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">No Maintenance Profiles</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Create maintenance profiles to track scheduled services for your vehicles.
-              </p>
-              <Button onClick={() => setIsAddDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add First Profile
-              </Button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                    <th className="px-4 py-3 font-medium">Vehicle</th>
-                    <th className="px-4 py-3 font-medium">Service Category</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Next Due Date</th>
-                    <th className="px-4 py-3 font-medium">Next Due Mileage</th>
-                    <th className="px-4 py-3 font-medium">Current Mileage</th>
-                    <th className="px-4 py-3 font-medium">Interval</th>
-                    <th className="px-4 py-3 font-medium text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {profiles.map((profile) => {
-                    const daysUntilDue = daysUntil(profile.nextDueDate);
-                    const kmUntil = getKmUntilDue(profile);
-                    const intervalLabel =
-                      profile.intervalType === "mileage"
-                        ? `${profile.intervalKm?.toLocaleString() ?? "-"} km`
-                        : profile.intervalMonths
-                          ? `${profile.intervalMonths} months`
-                          : profile.intervalDays
-                            ? `${profile.intervalDays} days`
-                            : profile.intervalKm
-                              ? `${profile.intervalKm.toLocaleString()} km`
-                              : "-";
+          {profilesQuery.isError
+            ? (
+                <div className="p-12 text-center">
+                  <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+                  <h3 className="font-semibold mb-2">Unable to load maintenance profiles</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {profilesQuery.error?.message || "Try refreshing the page."}
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => profilesQuery.refetch()}
+                  >
+                    Retry
+                  </Button>
+                </div>
+              )
+            : profiles.length === 0
+              ? (
+                  <div className="p-12 text-center">
+                    <Wrench className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="font-semibold mb-2">No Maintenance Profiles</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Create maintenance profiles to track scheduled services for your vehicles.
+                    </p>
+                    <Button onClick={() => setIsAddDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add First Profile
+                    </Button>
+                  </div>
+                )
+              : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                          <th className="px-4 py-3 font-medium">Vehicle</th>
+                          <th className="px-4 py-3 font-medium">Service Category</th>
+                          <th className="px-4 py-3 font-medium">Status</th>
+                          <th className="px-4 py-3 font-medium">Next Due Date</th>
+                          <th className="px-4 py-3 font-medium">Next Due Mileage</th>
+                          <th className="px-4 py-3 font-medium">Current Mileage</th>
+                          <th className="px-4 py-3 font-medium">Interval</th>
+                          <th className="px-4 py-3 font-medium text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {profiles.map((profile) => {
+                          const daysUntilDue = daysUntil(profile.nextDueDate);
+                          const kmUntil = getKmUntilDue(profile);
+                          const intervalLabel
+                            = profile.intervalType === "mileage"
+                              ? `${profile.intervalKm?.toLocaleString() ?? "-"} km`
+                              : profile.intervalMonths
+                                ? `${profile.intervalMonths} months`
+                                : profile.intervalDays
+                                  ? `${profile.intervalDays} days`
+                                  : profile.intervalKm
+                                    ? `${profile.intervalKm.toLocaleString()} km`
+                                    : "-";
 
-                    return (
-                      <tr key={profile.id} className="group transition-colors hover:bg-secondary/30">
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-2">
-                            <Truck className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{getVehicleLabel(profile.vehicleId)}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 capitalize">
-                          {profile.serviceLabel || formatServiceLabel(profile.serviceType)}
-                        </td>
-                        <td className="px-4 py-4">
-                          <Badge className={statusColors[profile.lifecycleStatus]}>
-                            {statusIcons[profile.lifecycleStatus]}
-                            <span className="ml-1 capitalize">{profile.lifecycleStatus}</span>
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-4">
-                          {profile.nextDueDate ? (
-                            <div>
-                              <p
-                                className={cn(
-                                  "font-medium",
-                                  daysUntilDue !== null && daysUntilDue < 0 && "text-destructive",
-                                  daysUntilDue !== null && daysUntilDue >= 0 && daysUntilDue <= 7 && "text-warning",
-                                )}
-                              >
-                                {formatDate(profile.nextDueDate)}
-                              </p>
-                              {daysUntilDue !== null && (
-                                <p className="text-[10px] text-muted-foreground">
-                                  {daysUntilDue < 0 ? `${Math.abs(daysUntilDue)}d overdue` : `${daysUntilDue}d left`}
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-4">
-                          {profile.nextDueMileage ? (
-                            <div>
-                              <p className={cn("font-medium", kmUntil !== null && kmUntil < 0 && "text-destructive")}>
-                                {profile.nextDueMileage.toLocaleString()} km
-                              </p>
-                              {kmUntil !== null && (
-                                <p className="text-[10px] text-muted-foreground">
-                                  {kmUntil < 0 ? `${Math.abs(kmUntil)} km over` : `${kmUntil} km left`}
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-4 font-mono text-xs">
-                          {profile.currentMileage ? (
-                            <div className="flex items-center gap-1">
-                              {profile.currentMileage.toLocaleString()} km
-                              <Badge variant="outline" className="text-[10px] px-1">
-                                {profile.mileageSource === "telemetry" ? "GPS" : "Manual"}
-                              </Badge>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-4 capitalize">{intervalLabel}</td>
-                        <td className="px-4 py-4">
-                          <div className="flex justify-end gap-2">
-                            {profile.lifecycleStatus !== "upcoming" && profile.lifecycleStatus !== "completed" && (
-                              <Button
-                                size="sm"
-                                loading={completeProfileMutation.isPending && selectedProfile?.id === profile.id}
-                                onClick={() => {
-                                  setSelectedProfile(profile);
-                                  setIsCompleteDialogOpen(true);
-                                }}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Complete
-                              </Button>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              loading={deleteProfileMutation.isPending}
-                              onClick={() => handleArchive(profile)}
+                          return (
+                            <tr
+                              key={profile.id}
+                              className="group transition-colors hover:bg-secondary/30"
                             >
-                              <Archive className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+                              <td className="px-4 py-4">
+                                <div className="flex items-center gap-2">
+                                  <Truck className="h-4 w-4 text-muted-foreground" />
+                                  <span className="font-medium">{getVehicleLabel(profile.vehicleId)}</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-4 capitalize">
+                                {profile.serviceLabel || formatServiceLabel(profile.serviceType)}
+                              </td>
+                              <td className="px-4 py-4">
+                                <Badge className={statusColors[profile.lifecycleStatus]}>
+                                  {statusIcons[profile.lifecycleStatus]}
+                                  <span className="ml-1 capitalize">{profile.lifecycleStatus}</span>
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-4">
+                                {profile.nextDueDate
+                                  ? (
+                                      <div>
+                                        <p
+                                          className={cn(
+                                            "font-medium",
+                                            daysUntilDue !== null && daysUntilDue < 0 && "text-destructive",
+                                            daysUntilDue !== null && daysUntilDue >= 0 && daysUntilDue <= 7 && "text-warning",
+                                          )}
+                                        >
+                                          {formatDate(profile.nextDueDate)}
+                                        </p>
+                                        {daysUntilDue !== null && (
+                                          <p className="text-[10px] text-muted-foreground">
+                                            {daysUntilDue < 0 ? `${Math.abs(daysUntilDue)}d overdue` : `${daysUntilDue}d left`}
+                                          </p>
+                                        )}
+                                      </div>
+                                    )
+                                  : (
+                                      <span className="text-muted-foreground">-</span>
+                                    )}
+                              </td>
+                              <td className="px-4 py-4">
+                                {profile.nextDueMileage
+                                  ? (
+                                      <div>
+                                        <p className={cn(
+                                          "font-medium",
+                                          kmUntil !== null && kmUntil < 0 && "text-destructive",
+                                        )}
+                                        >
+                                          {profile.nextDueMileage.toLocaleString()}
+                                          {" "}
+                                          km
+                                        </p>
+                                        {kmUntil !== null && (
+                                          <p className="text-[10px] text-muted-foreground">
+                                            {kmUntil < 0 ? `${Math.abs(kmUntil)} km over` : `${kmUntil} km left`}
+                                          </p>
+                                        )}
+                                      </div>
+                                    )
+                                  : (
+                                      <span className="text-muted-foreground">-</span>
+                                    )}
+                              </td>
+                              <td className="px-4 py-4 font-mono text-xs">
+                                {profile.currentMileage
+                                  ? (
+                                      <div className="flex items-center gap-1">
+                                        {profile.currentMileage.toLocaleString()}
+                                        {" "}
+                                        km
+                                        <Badge
+                                          variant="outline"
+                                          className="text-[10px] px-1"
+                                        >
+                                          {profile.mileageSource === "telemetry" ? "GPS" : "Manual"}
+                                        </Badge>
+                                      </div>
+                                    )
+                                  : (
+                                      <span className="text-muted-foreground">-</span>
+                                    )}
+                              </td>
+                              <td className="px-4 py-4 capitalize">{intervalLabel}</td>
+                              <td className="px-4 py-4">
+                                <div className="flex justify-end gap-2">
+                                  {profile.lifecycleStatus !== "upcoming" && profile.lifecycleStatus !== "completed" && (
+                                    <Button
+                                      size="sm"
+                                      loading={completeProfileMutation.isPending && selectedProfile?.id === profile.id}
+                                      onClick={() => {
+                                        setSelectedProfile(profile);
+                                        setIsCompleteDialogOpen(true);
+                                      }}
+                                    >
+                                      <CheckCircle className="h-4 w-4 mr-1" />
+                                      Complete
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    loading={deleteProfileMutation.isPending}
+                                    onClick={() => handleArchive(profile)}
+                                  >
+                                    <Archive className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
         </CardContent>
       </Card>
 
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      <Dialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+      >
         <DialogContent className="bg-card border-border max-w-lg">
           <DialogHeader>
             <DialogTitle>Add Maintenance Profile</DialogTitle>
@@ -692,14 +880,19 @@ export function MaintenanceProfilesTab() {
               <Label>Vehicle *</Label>
               <Select
                 value={newProfile.vehicleId}
-                onValueChange={(value) => setNewProfile({ ...newProfile, vehicleId: value })}
+                onValueChange={value => setNewProfile({
+                  ...newProfile, vehicleId: value,
+                })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={vehiclesQuery.isPending ? "Loading vehicles..." : "Select vehicle"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {vehicles.map((vehicle) => (
-                    <SelectItem key={vehicle.id} value={vehicle.id}>
+                  {vehicles.map(vehicle => (
+                    <SelectItem
+                      key={vehicle.id}
+                      value={vehicle.id}
+                    >
                       {getVehicleLabel(vehicle.id)}
                     </SelectItem>
                   ))}
@@ -711,14 +904,19 @@ export function MaintenanceProfilesTab() {
               <Label>Service Category *</Label>
               <Select
                 value={newProfile.serviceType}
-                onValueChange={(value) => setNewProfile({ ...newProfile, serviceType: value })}
+                onValueChange={value => setNewProfile({
+                  ...newProfile, serviceType: value,
+                })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={categoriesQuery.isPending ? "Loading categories..." : "Select service category"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {serviceCategories.map((category) => (
-                    <SelectItem key={category} value={category}>
+                  {serviceCategories.map(category => (
+                    <SelectItem
+                      key={category}
+                      value={category}
+                    >
                       {formatServiceLabel(category)}
                     </SelectItem>
                   ))}
@@ -733,7 +931,9 @@ export function MaintenanceProfilesTab() {
                 <Input
                   placeholder="e.g., Suspension Check"
                   value={newProfile.customLabel}
-                  onChange={(e) => setNewProfile({ ...newProfile, customLabel: e.target.value })}
+                  onChange={e => setNewProfile({
+                    ...newProfile, customLabel: e.target.value,
+                  })}
                 />
               </div>
             )}
@@ -742,9 +942,10 @@ export function MaintenanceProfilesTab() {
               <Label>Schedule Based On *</Label>
               <Select
                 value={newProfile.intervalType}
-                onValueChange={(value) =>
-                  setNewProfile({ ...newProfile, intervalType: value as MaintenanceProfileIntervalType })
-                }
+                onValueChange={value =>
+                  setNewProfile({
+                    ...newProfile, intervalType: value as MaintenanceProfileIntervalType,
+                  })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -762,20 +963,25 @@ export function MaintenanceProfilesTab() {
                 <Label className="text-xs text-muted-foreground">Choose time unit</Label>
                 <RadioGroup
                   value={newProfile.timeUnit}
-                  onValueChange={(value) =>
+                  onValueChange={value =>
                     setNewProfile({
                       ...newProfile,
                       timeUnit: value as "days" | "months",
                       intervalDays: value === "days" ? newProfile.intervalDays : "",
                       intervalMonths: value === "months" ? newProfile.intervalMonths : "",
-                    })
-                  }
+                    })}
                   className="grid grid-cols-2 gap-4"
                 >
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <RadioGroupItem value="days" id="unit-days" />
-                      <Label htmlFor="unit-days" className="cursor-pointer">
+                      <RadioGroupItem
+                        value="days"
+                        id="unit-days"
+                      />
+                      <Label
+                        htmlFor="unit-days"
+                        className="cursor-pointer"
+                      >
                         By Day
                       </Label>
                     </div>
@@ -784,13 +990,21 @@ export function MaintenanceProfilesTab() {
                       placeholder="e.g., 90"
                       value={newProfile.intervalDays}
                       disabled={newProfile.timeUnit !== "days"}
-                      onChange={(e) => setNewProfile({ ...newProfile, intervalDays: e.target.value })}
+                      onChange={e => setNewProfile({
+                        ...newProfile, intervalDays: e.target.value,
+                      })}
                     />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <RadioGroupItem value="months" id="unit-months" />
-                      <Label htmlFor="unit-months" className="cursor-pointer">
+                      <RadioGroupItem
+                        value="months"
+                        id="unit-months"
+                      />
+                      <Label
+                        htmlFor="unit-months"
+                        className="cursor-pointer"
+                      >
                         By Month
                       </Label>
                     </div>
@@ -799,7 +1013,9 @@ export function MaintenanceProfilesTab() {
                       placeholder="e.g., 3"
                       value={newProfile.intervalMonths}
                       disabled={newProfile.timeUnit !== "months"}
-                      onChange={(e) => setNewProfile({ ...newProfile, intervalMonths: e.target.value })}
+                      onChange={e => setNewProfile({
+                        ...newProfile, intervalMonths: e.target.value,
+                      })}
                     />
                   </div>
                 </RadioGroup>
@@ -813,7 +1029,9 @@ export function MaintenanceProfilesTab() {
                   type="number"
                   placeholder="e.g., 5000"
                   value={newProfile.intervalKm}
-                  onChange={(e) => setNewProfile({ ...newProfile, intervalKm: e.target.value })}
+                  onChange={e => setNewProfile({
+                    ...newProfile, intervalKm: e.target.value,
+                  })}
                 />
               </div>
             )}
@@ -824,7 +1042,9 @@ export function MaintenanceProfilesTab() {
                 <Input
                   type="date"
                   value={newProfile.lastServiceDate}
-                  onChange={(e) => setNewProfile({ ...newProfile, lastServiceDate: e.target.value })}
+                  onChange={e => setNewProfile({
+                    ...newProfile, lastServiceDate: e.target.value,
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -833,23 +1053,34 @@ export function MaintenanceProfilesTab() {
                   type="number"
                   placeholder="e.g., 45000"
                   value={newProfile.lastServiceMileage}
-                  onChange={(e) => setNewProfile({ ...newProfile, lastServiceMileage: e.target.value })}
+                  onChange={e => setNewProfile({
+                    ...newProfile, lastServiceMileage: e.target.value,
+                  })}
                 />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleAddProfile} loading={createProfileMutation.isPending}>
+            <Button
+              onClick={handleAddProfile}
+              loading={createProfileMutation.isPending}
+            >
               Create Profile
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
+      <Dialog
+        open={isCompleteDialogOpen}
+        onOpenChange={setIsCompleteDialogOpen}
+      >
         <DialogContent className="bg-card border-border max-w-md">
           <DialogHeader>
             <DialogTitle>Complete Maintenance</DialogTitle>
@@ -866,10 +1097,16 @@ export function MaintenanceProfilesTab() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCompleteDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsCompleteDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleComplete} loading={completeProfileMutation.isPending}>
+            <Button
+              onClick={handleComplete}
+              loading={completeProfileMutation.isPending}
+            >
               <CheckCircle className="h-4 w-4 mr-2" />
               Mark Complete
             </Button>

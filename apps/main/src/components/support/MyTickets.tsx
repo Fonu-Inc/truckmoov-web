@@ -1,9 +1,38 @@
+import type { ExportColumn } from "@/lib/exportTable";
+import {
+  AlertCircle,
+  ArrowUpRight,
+  CheckCircle2,
+  CircleDot,
+  Eye,
+  Loader2,
+  MessageSquare,
+  MoreHorizontal,
+  Pencil,
+  Search,
+  SlidersHorizontal,
+  Ticket as TicketIcon,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
+import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/shadcn/select";
 import {
   Table,
   TableBody,
@@ -12,57 +41,55 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
+import { TicketDetailSheet } from "./TicketDetailSheet";
 // Local type aliases (hook deleted)
 type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
 type TicketPriority = "low" | "medium" | "high" | "critical";
 type TicketCategory = "device_tracking" | "sim_connectivity" | "messaging" | "billing" | "account_access" | "billing_subscription" | "other";
 type ContextType = "device" | "sim" | "vehicle" | "whatsapp" | "billing" | "none";
 type SupportTicket = any;
-import { TicketDetailSheet } from "./TicketDetailSheet";
-import { ExportButton } from "@/components/shadcn/export-button";
-import type { ExportColumn } from "@/lib/exportTable";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/shadcn/dropdown-menu";
-import { toast } from "sonner";
-import {
-  Search,
-  AlertCircle,
-  CheckCircle2,
-  Loader2,
-  MessageSquare,
-  ArrowUpRight,
-  Ticket as TicketIcon,
-  CircleDot,
-  Eye,
-  Pencil,
-  Trash2,
-  MoreHorizontal,
-  SlidersHorizontal,
-} from "lucide-react";
 
-
-const statusConfig: Record<TicketStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  open: { label: "Open", variant: "default" },
-  in_progress: { label: "In Progress", variant: "secondary" },
-  waiting_on_tenant: { label: "Awaiting Response", variant: "outline" },
-  escalated: { label: "Escalated", variant: "destructive" },
-  resolved: { label: "Resolved", variant: "secondary" },
-  closed: { label: "Closed", variant: "outline" },
+const statusConfig: Record<TicketStatus, {
+  label: string; variant: "default" | "secondary" | "destructive" | "outline";
+}> = {
+  open: {
+    label: "Open", variant: "default",
+  },
+  in_progress: {
+    label: "In Progress", variant: "secondary",
+  },
+  waiting_on_tenant: {
+    label: "Awaiting Response", variant: "outline",
+  },
+  escalated: {
+    label: "Escalated", variant: "destructive",
+  },
+  resolved: {
+    label: "Resolved", variant: "secondary",
+  },
+  closed: {
+    label: "Closed", variant: "outline",
+  },
 };
 
-const priorityConfig: Record<TicketPriority, { label: string; className: string }> = {
-  low: { label: "Low", className: "bg-muted text-muted-foreground" },
-  medium: { label: "Medium", className: "bg-primary/10 text-primary" },
-  high: { label: "High", className: "bg-chart-5/10 text-chart-5" },
-  critical: { label: "Critical", className: "bg-destructive/10 text-destructive" },
+const priorityConfig: Record<TicketPriority, {
+  label: string; className: string;
+}> = {
+  low: {
+    label: "Low", className: "bg-muted text-muted-foreground",
+  },
+  medium: {
+    label: "Medium", className: "bg-primary/10 text-primary",
+  },
+  high: {
+    label: "High", className: "bg-chart-5/10 text-chart-5",
+  },
+  critical: {
+    label: "Critical", className: "bg-destructive/10 text-destructive",
+  },
 };
 
-const channelFromContext = (c: ContextType): string => {
+function channelFromContext(c: ContextType): string {
   switch (c) {
     case "device": return "Device";
     case "sim": return "SIM";
@@ -71,12 +98,26 @@ const channelFromContext = (c: ContextType): string => {
     case "billing": return "Billing";
     default: return "Web";
   }
-};
+}
 
-const formatCategory = (c: TicketCategory) =>
-  c.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+function formatCategory(c: TicketCategory) {
+  return c.replace(
+    /_/g,
+    " ",
+  ).replace(
+    /\b\w/g,
+    l => l.toUpperCase(),
+  );
+}
 
-const shortId = (id?: string) => (id ? id.slice(0, 8) : "—");
+function shortId(id?: string) {
+  return id
+    ? id.slice(
+        0,
+        8,
+      )
+    : "—";
+}
 
 type DemoTicket = SupportTicket & { reporterName?: string };
 
@@ -93,43 +134,85 @@ const REPORTER_NAMES: Record<string, string> = {
   "usr-12340987": "Blessing Akpan",
 };
 
-const reporterName = (ticket: SupportTicket & { reporterName?: string }) =>
-  ticket.reporterName || REPORTER_NAMES[ticket.createdBy] || shortId(ticket.createdBy);
+function reporterName(ticket: SupportTicket & { reporterName?: string }) {
+  return ticket.reporterName || REPORTER_NAMES[ticket.createdBy] || shortId(ticket.createdBy);
+}
 
 const DEMO_TICKETS: DemoTicket[] = [
-  { id: "tkt-10000001-aaaa", tenantId: "demo", category: "device_tracking", subject: "GPS tracker offline on TRK-204", description: "Device stopped reporting since 06:42. Last known position Apapa.", status: "open", priority: "high", contextType: "device", createdBy: "usr-21f4a8c0", assignedTo: "usr-7c12d9a1", createdAt: new Date(Date.now() - 1000 * 60 * 35).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000002-bbbb", tenantId: "demo", category: "sim_connectivity", subject: "SIM not activating after swap", description: "ICCID 8923440100… stuck in 'pending activation' for 4h.", status: "in_progress", priority: "medium", contextType: "sim", createdBy: "usr-9a3b1c44", assignedTo: "usr-44ee01b2", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000003-cccc", tenantId: "demo", category: "billing", subject: "Wallet top-up not reflecting", description: "₦250,000 top-up via MoMo not credited to wallet.", status: "escalated", priority: "critical", contextType: "billing", createdBy: "usr-55cd0091", assignedTo: "usr-bd771122", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000004-dddd", tenantId: "demo", category: "messaging", subject: "WhatsApp template rejected", description: "Template 'oo_job_offer_v3' rejected by Meta with policy violation.", status: "waiting_on_tenant", priority: "medium", contextType: "whatsapp", createdBy: "usr-ab991122", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000005-eeee", tenantId: "demo", category: "account_access", subject: "Cannot invite supervisor", description: "Invite emails bouncing for new supervisor accounts.", status: "open", priority: "low", contextType: "none", createdBy: "usr-31aa55b9", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000006-ffff", tenantId: "demo", category: "device_tracking", subject: "Excessive harsh-braking alerts", description: "Driver DRV-118 generating false harsh-braking events.", status: "in_progress", priority: "medium", contextType: "vehicle", createdBy: "usr-7711eecc", assignedTo: "usr-7c12d9a1", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000007-0000", tenantId: "demo", category: "billing", subject: "Invoice PDF won't download", description: "INV-2026-0421 returns 500 when generating PDF.", status: "resolved", priority: "low", contextType: "billing", createdBy: "usr-cc220011", assignedTo: "usr-bd771122", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000008-1111", tenantId: "demo", category: "sim_connectivity", subject: "High data usage anomaly", description: "SIM consumed 12GB in 24h — possible misuse on TRK-077.", status: "open", priority: "high", contextType: "sim", createdBy: "usr-66aa00ee", assignedTo: "usr-44ee01b2", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 50).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000009-2222", tenantId: "demo", category: "other", subject: "Request: bulk vehicle import template", description: "Need updated CSV template with new compliance columns.", status: "closed", priority: "low", contextType: "none", createdBy: "usr-aa11bbcc", assignedTo: "usr-99ff8822", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 96).toISOString(), updatedAt: new Date().toISOString() },
-  { id: "tkt-10000010-3333", tenantId: "demo", category: "messaging", subject: "SMS sender ID pending approval", description: "Sender ID 'LAGEXP' awaiting MTN approval for 5 days.", status: "waiting_on_tenant", priority: "medium", contextType: "whatsapp", createdBy: "usr-12340987", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 120).toISOString(), updatedAt: new Date().toISOString() },
+  {
+    id: "tkt-10000001-aaaa", tenantId: "demo", category: "device_tracking", subject: "GPS tracker offline on TRK-204", description: "Device stopped reporting since 06:42. Last known position Apapa.", status: "open", priority: "high", contextType: "device", createdBy: "usr-21f4a8c0", assignedTo: "usr-7c12d9a1", createdAt: new Date(Date.now() - 1000 * 60 * 35).toISOString(), updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-10000002-bbbb", tenantId: "demo", category: "sim_connectivity", subject: "SIM not activating after swap", description: "ICCID 8923440100… stuck in 'pending activation' for 4h.", status: "in_progress", priority: "medium", contextType: "sim", createdBy: "usr-9a3b1c44", assignedTo: "usr-44ee01b2", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-10000003-cccc", tenantId: "demo", category: "billing", subject: "Wallet top-up not reflecting", description: "₦250,000 top-up via MoMo not credited to wallet.", status: "escalated", priority: "critical", contextType: "billing", createdBy: "usr-55cd0091", assignedTo: "usr-bd771122", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-10000004-dddd", tenantId: "demo", category: "messaging", subject: "WhatsApp template rejected", description: "Template 'oo_job_offer_v3' rejected by Meta with policy violation.", status: "waiting_on_tenant", priority: "medium", contextType: "whatsapp", createdBy: "usr-ab991122", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-10000005-eeee", tenantId: "demo", category: "account_access", subject: "Cannot invite supervisor", description: "Invite emails bouncing for new supervisor accounts.", status: "open", priority: "low", contextType: "none", createdBy: "usr-31aa55b9", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(), updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-10000006-ffff", tenantId: "demo", category: "device_tracking", subject: "Excessive harsh-braking alerts", description: "Driver DRV-118 generating false harsh-braking events.", status: "in_progress", priority: "medium", contextType: "vehicle", createdBy: "usr-7711eecc", assignedTo: "usr-7c12d9a1", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(), updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-10000007-0000", tenantId: "demo", category: "billing", subject: "Invoice PDF won't download", description: "INV-2026-0421 returns 500 when generating PDF.", status: "resolved", priority: "low", contextType: "billing", createdBy: "usr-cc220011", assignedTo: "usr-bd771122", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-10000008-1111", tenantId: "demo", category: "sim_connectivity", subject: "High data usage anomaly", description: "SIM consumed 12GB in 24h — possible misuse on TRK-077.", status: "open", priority: "high", contextType: "sim", createdBy: "usr-66aa00ee", assignedTo: "usr-44ee01b2", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 50).toISOString(), updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-10000009-2222", tenantId: "demo", category: "other", subject: "Request: bulk vehicle import template", description: "Need updated CSV template with new compliance columns.", status: "closed", priority: "low", contextType: "none", createdBy: "usr-aa11bbcc", assignedTo: "usr-99ff8822", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 96).toISOString(), updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "tkt-10000010-3333", tenantId: "demo", category: "messaging", subject: "SMS sender ID pending approval", description: "Sender ID 'LAGEXP' awaiting MTN approval for 5 days.", status: "waiting_on_tenant", priority: "medium", contextType: "whatsapp", createdBy: "usr-12340987", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 120).toISOString(), updatedAt: new Date().toISOString(),
+  },
 ];
 
 export function MyTickets() {
   const realTickets: any[] = [];
   const isLoading = false;
   const tickets = realTickets.length > 0 ? realTickets : DEMO_TICKETS;
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState<string>("all");
+  const [
+    priorityFilter,
+    setPriorityFilter,
+  ] = useState<string>("all");
+  const [
+    categoryFilter,
+    setCategoryFilter,
+  ] = useState<string>("all");
+  const [
+    selectedTicket,
+    setSelectedTicket,
+  ] = useState<SupportTicket | null>(null);
 
   const filteredTickets = tickets.filter((ticket) => {
-    const matchesSearch =
-      ticket.subject.toLowerCase().includes(search.toLowerCase()) ||
-      ticket.description.toLowerCase().includes(search.toLowerCase()) ||
-      ticket.id.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch
+      = ticket.subject.toLowerCase().includes(search.toLowerCase())
+        || ticket.description.toLowerCase().includes(search.toLowerCase())
+        || ticket.id.toLowerCase().includes(search.toLowerCase());
 
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "open" && !["resolved", "closed"].includes(ticket.status)) ||
-      (statusFilter === "closed" && ["resolved", "closed"].includes(ticket.status)) ||
-      ticket.status === statusFilter;
+    const matchesStatus
+      = statusFilter === "all"
+        || (statusFilter === "open" && ![
+          "resolved",
+          "closed",
+        ].includes(ticket.status))
+        || (statusFilter === "closed" && [
+          "resolved",
+          "closed",
+        ].includes(ticket.status))
+        || ticket.status === statusFilter;
 
     const matchesPriority = priorityFilter === "all" || ticket.priority === priorityFilter;
     const matchesCategory = categoryFilter === "all" || ticket.category === categoryFilter;
@@ -146,29 +229,63 @@ export function MyTickets() {
   }
 
   const totalCount = tickets.length;
-  const openCount = tickets.filter((t) => !["resolved", "closed"].includes(t.status)).length;
-  const inProgressCount = tickets.filter((t) => t.status === "in_progress").length;
-  const closedCount = tickets.filter((t) => ["resolved", "closed"].includes(t.status)).length;
-  const escalatedCount = tickets.filter((t) => t.status === "escalated").length;
+  const openCount = tickets.filter(t => ![
+    "resolved",
+    "closed",
+  ].includes(t.status)).length;
+  const inProgressCount = tickets.filter(t => t.status === "in_progress").length;
+  const closedCount = tickets.filter(t => [
+    "resolved",
+    "closed",
+  ].includes(t.status)).length;
+  const escalatedCount = tickets.filter(t => t.status === "escalated").length;
 
   const kpis = [
-    { label: "Total Tickets", value: totalCount, icon: TicketIcon, accent: "text-foreground" },
-    { label: "Open", value: openCount, icon: CircleDot, accent: "text-chart-5" },
-    { label: "In Progress", value: inProgressCount, icon: Loader2, accent: "text-primary" },
-    { label: "Escalated", value: escalatedCount, icon: ArrowUpRight, accent: "text-destructive" },
-    { label: "Closed", value: closedCount, icon: CheckCircle2, accent: "text-muted-foreground" },
+    {
+      label: "Total Tickets", value: totalCount, icon: TicketIcon, accent: "text-foreground",
+    },
+    {
+      label: "Open", value: openCount, icon: CircleDot, accent: "text-chart-5",
+    },
+    {
+      label: "In Progress", value: inProgressCount, icon: Loader2, accent: "text-primary",
+    },
+    {
+      label: "Escalated", value: escalatedCount, icon: ArrowUpRight, accent: "text-destructive",
+    },
+    {
+      label: "Closed", value: closedCount, icon: CheckCircle2, accent: "text-muted-foreground",
+    },
   ];
 
   const exportColumns: ExportColumn<DemoTicket>[] = [
-    { header: "Ticket ID", accessor: (t) => t.id },
-    { header: "Title", accessor: (t) => t.subject },
-    { header: "Description", accessor: (t) => t.description },
-    { header: "Reporter", accessor: (t) => reporterName(t) },
-    { header: "Channel", accessor: (t) => channelFromContext(t.contextType) },
-    { header: "Category", accessor: (t) => formatCategory(t.category) },
-    { header: "Status", accessor: (t) => statusConfig[t.status].label },
-    { header: "Priority", accessor: (t) => priorityConfig[t.priority].label },
-    { header: "Created", accessor: (t) => new Date(t.createdAt).toISOString() },
+    {
+      header: "Ticket ID", accessor: t => t.id,
+    },
+    {
+      header: "Title", accessor: t => t.subject,
+    },
+    {
+      header: "Description", accessor: t => t.description,
+    },
+    {
+      header: "Reporter", accessor: t => reporterName(t),
+    },
+    {
+      header: "Channel", accessor: t => channelFromContext(t.contextType),
+    },
+    {
+      header: "Category", accessor: t => formatCategory(t.category),
+    },
+    {
+      header: "Status", accessor: t => statusConfig[t.status].label,
+    },
+    {
+      header: "Priority", accessor: t => priorityConfig[t.priority].label,
+    },
+    {
+      header: "Created", accessor: t => new Date(t.createdAt).toISOString(),
+    },
   ];
 
   return (
@@ -217,12 +334,15 @@ export function MyTickets() {
                 <Input
                   placeholder="Search by ID, title, or description..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={e => setSearch(e.target.value)}
                   className="pl-9 h-9 border-border bg-transparent font-semibold placeholder:font-normal hover:bg-secondary"
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select
+                  value={statusFilter}
+                  onValueChange={setStatusFilter}
+                >
                   <SelectTrigger className="h-9 w-[160px] border-border bg-transparent font-semibold hover:bg-secondary">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
@@ -236,7 +356,11 @@ export function MyTickets() {
                     <SelectItem value="closed">Closed</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="sm" className="h-9 font-semibold">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 font-semibold"
+                >
                   <SlidersHorizontal className="h-4 w-4 mr-2" />
                   Filter
                 </Button>
@@ -244,92 +368,103 @@ export function MyTickets() {
             </div>
           </CardHeader>
           <CardContent>
-            {filteredTickets.length === 0 ? (
-              <div className="py-12 text-center">
-                <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">No tickets found</h3>
-                <p className="text-sm text-muted-foreground">
-                  {search ? "Try adjusting your search or filters" : "No support tickets have been logged yet"}
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Ticket ID</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Message</TableHead>
-                      <TableHead>Reporter</TableHead>
-                      <TableHead>Channel</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Priority</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTickets.map((ticket) => {
-                      const status = statusConfig[ticket.status];
-                      const priority = priorityConfig[ticket.priority];
-                      const reporter = reporterName(ticket as DemoTicket);
-                      const initials = reporter
-                        .split(" ")
-                        .map((p) => p[0])
-                        .filter(Boolean)
-                        .slice(0, 2)
-                        .join("")
-                        .toUpperCase();
-                      return (
-                        <TableRow
-                          key={ticket.id}
-                          className="cursor-pointer"
-                          onClick={() => setSelectedTicket(ticket)}
-                        >
-                          <TableCell className="font-mono text-xs">#{shortId(ticket.id)}</TableCell>
-                          <TableCell className="font-medium max-w-[200px] truncate">{ticket.subject}</TableCell>
-                          <TableCell className="text-sm max-w-[260px] truncate text-muted-foreground">
-                            {ticket.description}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2 min-w-0">
-                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
-                                {initials || "?"}
-                              </div>
-                              <span className="text-sm truncate">{reporter}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm">{channelFromContext(ticket.contextType)}</TableCell>
-                          <TableCell className="text-sm">{formatCategory(ticket.category)}</TableCell>
-                          <TableCell>
-                            <Badge variant={status.variant}>{status.label}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={priority.className}>
-                              {priority.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedTicket(ticket);
-                              }}
-                            >
-                              <Eye className="h-4 w-4 mr-1.5" />
-                              View
-                            </Button>
-                          </TableCell>
+            {filteredTickets.length === 0
+              ? (
+                  <div className="py-12 text-center">
+                    <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No tickets found</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {search ? "Try adjusting your search or filters" : "No support tickets have been logged yet"}
+                    </p>
+                  </div>
+                )
+              : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Ticket ID</TableHead>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Message</TableHead>
+                          <TableHead>Reporter</TableHead>
+                          <TableHead>Channel</TableHead>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Priority</TableHead>
+                          <TableHead className="text-right">Action</TableHead>
                         </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+                      </TableHeader>
+                      <TableBody>
+                        {filteredTickets.map((ticket) => {
+                          const status = statusConfig[ticket.status];
+                          const priority = priorityConfig[ticket.priority];
+                          const reporter = reporterName(ticket as DemoTicket);
+                          const initials = reporter
+                            .split(" ")
+                            .map(p => p[0])
+                            .filter(Boolean)
+                            .slice(
+                              0,
+                              2,
+                            )
+                            .join("")
+                            .toUpperCase();
+                          return (
+                            <TableRow
+                              key={ticket.id}
+                              className="cursor-pointer"
+                              onClick={() => setSelectedTicket(ticket)}
+                            >
+                              <TableCell className="font-mono text-xs">
+                                #
+                                {shortId(ticket.id)}
+                              </TableCell>
+                              <TableCell className="font-medium max-w-[200px] truncate">{ticket.subject}</TableCell>
+                              <TableCell className="text-sm max-w-[260px] truncate text-muted-foreground">
+                                {ticket.description}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
+                                    {initials || "?"}
+                                  </div>
+                                  <span className="text-sm truncate">{reporter}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm">{channelFromContext(ticket.contextType)}</TableCell>
+                              <TableCell className="text-sm">{formatCategory(ticket.category)}</TableCell>
+                              <TableCell>
+                                <Badge variant={status.variant}>{status.label}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className={priority.className}
+                                >
+                                  {priority.label}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedTicket(ticket);
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4 mr-1.5" />
+                                  View
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
           </CardContent>
         </Card>
       </div>

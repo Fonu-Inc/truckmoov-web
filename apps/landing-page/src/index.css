@@ -5,17 +5,17 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #FFFFFF;
-  --foreground: #1E1E1E;
-  --foreground-100: #F8F9F833;
-  --primary: #FFC105;
-  --primary-100: #E2AC07;
-  --primary-200: #FFC10533;
+  --background: #ffffff;
+  --foreground: #1e1e1e;
+  --foreground-100: #f8f9f833;
+  --primary: #ffc105;
+  --primary-100: #e2ac07;
+  --primary-200: #ffc10533;
   --primary-300: #343330;
-  --primary-400: #FFCC01;
-  --primary-500: #FFC10533;
-  --border: #DBDBDB;
-  --border-100: #E9E9E9;
+  --primary-400: #ffcc01;
+  --primary-500: #ffc10533;
+  --border: #dbdbdb;
+  --border-100: #e9e9e9;
 
   --radius: 0.625rem;
   --card: oklch(1 0 0);
@@ -96,7 +96,6 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 }
-
 
 .dark {
   --background: oklch(0.145 0 0);

@@ -1,30 +1,35 @@
-import { formatDateTime, formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
+import {
+  formatDateTime, formatDayMonthTime,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Droplets,
+  Fuel,
+  MapPin,
+  TrendingDown,
+} from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
 import { Badge } from "@/components/shadcn/badge";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import { Input } from "@/components/shadcn/input";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/shadcn/dialog";
+import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { Textarea } from "@/components/shadcn/textarea";
-import {
-  AlertTriangle,
-  Droplets,
-  CheckCircle,
-  MapPin,
-  Clock,
-  Fuel,
-  TrendingDown,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
+
 type FuelAnomaly = any;
 type FuelAnomalyType = string;
 type FuelAnomalySeverity = string;
@@ -52,22 +57,38 @@ const severityColors: Record<FuelAnomalySeverity, string> = {
 
 export function FuelAnomaliesPanel() {
   const anomalies: FuelAnomaly[] = [];
-  const stats = { critical: 0, unacknowledged: 0 };
+  const stats = {
+    critical: 0, unacknowledged: 0,
+  };
   const isLoading = false;
   const acknowledgeAnomaly = async (_id: string, _notes?: string) => {};
-  const [selectedAnomaly, setSelectedAnomaly] = useState<FuelAnomaly | null>(null);
-  const [isAcknowledgeDialogOpen, setIsAcknowledgeDialogOpen] = useState(false);
-  const [acknowledgeNotes, setAcknowledgeNotes] = useState("");
+  const [
+    selectedAnomaly,
+    setSelectedAnomaly,
+  ] = useState<FuelAnomaly | null>(null);
+  const [
+    isAcknowledgeDialogOpen,
+    setIsAcknowledgeDialogOpen,
+  ] = useState(false);
+  const [
+    acknowledgeNotes,
+    setAcknowledgeNotes,
+  ] = useState("");
 
   const handleAcknowledge = async () => {
-    if (!selectedAnomaly) return;
-    
+    if (!selectedAnomaly)
+      return;
+
     try {
-      await acknowledgeAnomaly(selectedAnomaly.id, acknowledgeNotes);
+      await acknowledgeAnomaly(
+        selectedAnomaly.id,
+        acknowledgeNotes,
+      );
       setIsAcknowledgeDialogOpen(false);
       setSelectedAnomaly(null);
       setAcknowledgeNotes("");
-    } catch (err) {
+    }
+    catch (err) {
       // Error handled by hook
     }
   };
@@ -80,8 +101,15 @@ export function FuelAnomaliesPanel() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-20 w-full" />
+            {[
+              1,
+              2,
+              3,
+            ].map(i => (
+              <Skeleton
+                key={i}
+                className="h-20 w-full"
+              />
             ))}
           </div>
         </CardContent>
@@ -116,15 +144,21 @@ export function FuelAnomaliesPanel() {
     <>
       <Card className={cn(
         "bg-card/50 border-border/50",
-        stats.critical > 0 && "border-destructive/50"
-      )}>
+        stats.critical > 0 && "border-destructive/50",
+      )}
+      >
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Droplets className="h-5 w-5 text-primary" />
             Fuel Anomalies
             {stats.unacknowledged > 0 && (
-              <Badge variant="destructive" className="ml-2">
-                {stats.unacknowledged} unacknowledged
+              <Badge
+                variant="destructive"
+                className="ml-2"
+              >
+                {stats.unacknowledged}
+                {" "}
+                unacknowledged
               </Badge>
             )}
           </CardTitle>
@@ -134,14 +168,17 @@ export function FuelAnomaliesPanel() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {unacknowledgedAnomalies.slice(0, 5).map((anomaly) => (
+            {unacknowledgedAnomalies.slice(
+              0,
+              5,
+            ).map(anomaly => (
               <div
                 key={anomaly.id}
                 className={cn(
                   "p-4 rounded-lg border transition-all cursor-pointer hover:border-primary/50",
-                  anomaly.severity === 'critical' && "border-destructive/50 bg-destructive/5",
-                  anomaly.severity === 'high' && "border-destructive/30 bg-destructive/5",
-                  anomaly.severity === 'medium' && "border-warning/30 bg-warning/5"
+                  anomaly.severity === "critical" && "border-destructive/50 bg-destructive/5",
+                  anomaly.severity === "high" && "border-destructive/30 bg-destructive/5",
+                  anomaly.severity === "medium" && "border-warning/30 bg-warning/5",
                 )}
                 onClick={() => {
                   setSelectedAnomaly(anomaly);
@@ -152,8 +189,9 @@ export function FuelAnomaliesPanel() {
                   <div className="flex items-start gap-3">
                     <div className={cn(
                       "p-2 rounded-lg",
-                      anomaly.severity === 'critical' ? "bg-destructive/20" : "bg-muted"
-                    )}>
+                      anomaly.severity === "critical" ? "bg-destructive/20" : "bg-muted",
+                    )}
+                    >
                       {anomalyTypeIcons[anomaly.anomaly_type]}
                     </div>
                     <div>
@@ -161,11 +199,17 @@ export function FuelAnomaliesPanel() {
                         {anomalyTypeLabels[anomaly.anomaly_type]}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Vehicle: {anomaly.vehicle_registration || anomaly.vehicle_id.slice(0, 8)}
+                        Vehicle:
+                        {" "}
+                        {anomaly.vehicle_registration || anomaly.vehicle_id.slice(
+                          0,
+                          8,
+                        )}
                       </p>
                       {anomaly.fuel_drop_percent && (
                         <p className="text-sm text-destructive font-medium mt-1">
-                          {anomaly.fuel_drop_percent.toFixed(1)}% fuel drop detected
+                          {anomaly.fuel_drop_percent.toFixed(1)}
+                          % fuel drop detected
                         </p>
                       )}
                     </div>
@@ -179,7 +223,10 @@ export function FuelAnomaliesPanel() {
                     </p>
                     {anomaly.confidence_score && (
                       <p className="text-xs text-muted-foreground">
-                        Confidence: {(anomaly.confidence_score * 100).toFixed(0)}%
+                        Confidence:
+                        {" "}
+                        {(anomaly.confidence_score * 100).toFixed(0)}
+                        %
                       </p>
                     )}
                   </div>
@@ -189,7 +236,11 @@ export function FuelAnomaliesPanel() {
 
             {unacknowledgedAnomalies.length > 5 && (
               <p className="text-sm text-center text-muted-foreground">
-                + {unacknowledgedAnomalies.length - 5} more anomalies
+                +
+                {" "}
+                {unacknowledgedAnomalies.length - 5}
+                {" "}
+                more anomalies
               </p>
             )}
           </div>
@@ -197,7 +248,10 @@ export function FuelAnomaliesPanel() {
       </Card>
 
       {/* Acknowledge Dialog */}
-      <Dialog open={isAcknowledgeDialogOpen} onOpenChange={setIsAcknowledgeDialogOpen}>
+      <Dialog
+        open={isAcknowledgeDialogOpen}
+        onOpenChange={setIsAcknowledgeDialogOpen}
+      >
         <DialogContent className="bg-card border-border max-w-md">
           <DialogHeader>
             <DialogTitle>Acknowledge Anomaly</DialogTitle>
@@ -205,7 +259,7 @@ export function FuelAnomaliesPanel() {
               Review and acknowledge this fuel anomaly alert.
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedAnomaly && (
             <div className="space-y-4">
               <div className="p-4 rounded-lg bg-muted/50 space-y-2">
@@ -219,7 +273,8 @@ export function FuelAnomaliesPanel() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Fuel Drop</span>
                     <span className="font-medium text-destructive">
-                      {selectedAnomaly.fuel_drop_percent.toFixed(1)}%
+                      {selectedAnomaly.fuel_drop_percent.toFixed(1)}
+                      %
                     </span>
                   </div>
                 )}
@@ -233,7 +288,9 @@ export function FuelAnomaliesPanel() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Location</span>
                     <span className="font-mono text-xs">
-                      {selectedAnomaly.location_lat.toFixed(4)}, {selectedAnomaly.location_lng.toFixed(4)}
+                      {selectedAnomaly.location_lat.toFixed(4)}
+                      ,
+                      {selectedAnomaly.location_lng.toFixed(4)}
                     </span>
                   </div>
                 )}
@@ -244,7 +301,7 @@ export function FuelAnomaliesPanel() {
                 <Textarea
                   placeholder="Add investigation notes..."
                   value={acknowledgeNotes}
-                  onChange={(e) => setAcknowledgeNotes(e.target.value)}
+                  onChange={e => setAcknowledgeNotes(e.target.value)}
                   rows={3}
                 />
               </div>
@@ -252,7 +309,10 @@ export function FuelAnomaliesPanel() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAcknowledgeDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsAcknowledgeDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button onClick={handleAcknowledge}>

@@ -1,11 +1,13 @@
-import { useState } from "react";
 import { useDownloadSimRequestDeviceMappingTemplate } from "@truckmoov/api/auth";
-import { Button } from "@/components/shadcn/button";
-import {Upload, FileText, AlertCircle, CheckCircle, X, HardDrive, Download} from "lucide-react";
-import { cn } from "@/lib/utils";
+import {
+  AlertCircle, CheckCircle, Download, FileText, HardDrive, Upload, X,
+} from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/shadcn/button";
+import { cn } from "@/lib/utils";
 
-export interface DeviceMappingRow {
+export type DeviceMappingRow = {
   device_name: string;
   device_type: string;
   imei: string;
@@ -13,33 +15,45 @@ export interface DeviceMappingRow {
   notes: string;
   isValid: boolean;
   errors: string[];
-}
+};
 
-interface DeviceMappingUploadProps {
+type DeviceMappingUploadProps = {
   onDataParsed: (data: DeviceMappingRow[], fileName: string, file: File) => void;
   onClear: () => void;
   parsedData: DeviceMappingRow[];
   fileName: string | null;
-}
+};
 
-export function DeviceMappingUpload({ 
-  onDataParsed, 
-  onClear, 
-  parsedData, 
-  fileName 
+export function DeviceMappingUpload({
+  onDataParsed,
+  onClear,
+  parsedData,
+  fileName,
 }: DeviceMappingUploadProps) {
-  const [isDragging, setIsDragging] = useState(false);
+  const [
+    isDragging,
+    setIsDragging,
+  ] = useState(false);
   const downloadTemplateMutation = useDownloadSimRequestDeviceMappingTemplate();
 
   const validateRow = (row: string[]): DeviceMappingRow => {
     const errors: string[] = [];
-    const [device_name, device_type, imei, vehicle_id, notes] = row.map((s) => s?.trim() || "");
+    const [
+      device_name,
+      device_type,
+      imei,
+      vehicle_id,
+      notes,
+    ] = row.map(s => s?.trim() || "");
 
-    if (!device_name) errors.push("Device name required");
-    if (!device_type) errors.push("Device type required");
+    if (!device_name)
+      errors.push("Device name required");
+    if (!device_type)
+      errors.push("Device type required");
     if (!imei) {
       errors.push("IMEI/Serial required");
-    } else if (imei.length < 10) {
+    }
+    else if (imei.length < 10) {
       errors.push("IMEI too short");
     }
 
@@ -50,14 +64,15 @@ export function DeviceMappingUpload({
       vehicle_id: vehicle_id || "",
       notes: notes || "",
       isValid: errors.length === 0,
-      errors };
+      errors,
+    };
   };
 
   const parseCSV = (content: string): DeviceMappingRow[] => {
-    const lines = content.split("\n").filter((line) => line.trim());
+    const lines = content.split("\n").filter(line => line.trim());
     // Skip header row
     const dataRows = lines.slice(1);
-    return dataRows.map((line) => validateRow(line.split(",")));
+    return dataRows.map(line => validateRow(line.split(",")));
   };
 
   const handleFile = async (selectedFile: File) => {
@@ -65,7 +80,7 @@ export function DeviceMappingUpload({
       toast.error("Please upload a CSV or XLSX file");
       return;
     }
-    
+
     // For now, only CSV is supported
     if (selectedFile.name.endsWith(".xlsx")) {
       toast.error("XLSX support coming soon. Please use CSV format.");
@@ -74,14 +89,19 @@ export function DeviceMappingUpload({
 
     const content = await selectedFile.text();
     const parsed = parseCSV(content);
-    onDataParsed(parsed, selectedFile.name, selectedFile);
+    onDataParsed(
+      parsed,
+      selectedFile.name,
+      selectedFile,
+    );
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile) handleFile(droppedFile);
+    if (droppedFile)
+      handleFile(droppedFile);
   };
 
   const downloadTemplate = async () => {
@@ -93,7 +113,8 @@ export function DeviceMappingUpload({
       link.download = "device_mapping_template.csv";
       link.click();
       URL.revokeObjectURL(url);
-    } catch (error) {
+    }
+    catch (error) {
       const message = error && typeof error === "object" && "message" in error
         ? String(error.message)
         : "Unable to download the device mapping template";
@@ -101,8 +122,8 @@ export function DeviceMappingUpload({
     }
   };
 
-  const validCount = parsedData.filter((r) => r.isValid).length;
-  const invalidCount = parsedData.filter((r) => !r.isValid).length;
+  const validCount = parsedData.filter(r => r.isValid).length;
+  const invalidCount = parsedData.filter(r => !r.isValid).length;
 
   if (fileName && parsedData.length > 0) {
     return (
@@ -112,10 +133,19 @@ export function DeviceMappingUpload({
             <FileText className="h-6 w-6 text-primary" />
             <div>
               <p className="font-medium text-sm">{fileName}</p>
-              <p className="text-xs text-muted-foreground">{parsedData.length} devices parsed</p>
+              <p className="text-xs text-muted-foreground">
+                {parsedData.length}
+                {" "}
+                devices parsed
+              </p>
             </div>
           </div>
-          <Button type="button" variant="ghost" size="icon-sm" onClick={onClear}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onClear}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -124,14 +154,22 @@ export function DeviceMappingUpload({
           <div className="flex items-center gap-2 rounded-md border border-success/30 bg-success/10 p-2">
             <CheckCircle className="h-4 w-4 text-success" />
             <div>
-              <p className="text-xs font-medium">{validCount} Valid</p>
+              <p className="text-xs font-medium">
+                {validCount}
+                {" "}
+                Valid
+              </p>
             </div>
           </div>
           {invalidCount > 0 && (
             <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-2">
               <AlertCircle className="h-4 w-4 text-destructive" />
               <div>
-                <p className="text-xs font-medium">{invalidCount} Invalid</p>
+                <p className="text-xs font-medium">
+                  {invalidCount}
+                  {" "}
+                  Invalid
+                </p>
               </div>
             </div>
           )}
@@ -149,14 +187,22 @@ export function DeviceMappingUpload({
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {parsedData.slice(0, 5).map((row, idx) => (
-                <tr key={idx} className={cn(!row.isValid && "bg-destructive/5")}>
+              {parsedData.slice(
+                0,
+                5,
+              ).map((row, idx) => (
+                <tr
+                  key={idx}
+                  className={cn(!row.isValid && "bg-destructive/5")}
+                >
                   <td className="p-1.5">
-                    {row.isValid ? (
-                      <CheckCircle className="h-3 w-3 text-success" />
-                    ) : (
-                      <AlertCircle className="h-3 w-3 text-destructive" />
-                    )}
+                    {row.isValid
+                      ? (
+                          <CheckCircle className="h-3 w-3 text-success" />
+                        )
+                      : (
+                          <AlertCircle className="h-3 w-3 text-destructive" />
+                        )}
                   </td>
                   <td className="p-1.5">{row.device_name || "—"}</td>
                   <td className="p-1.5 font-mono">{row.imei || "—"}</td>
@@ -165,8 +211,14 @@ export function DeviceMappingUpload({
               ))}
               {parsedData.length > 5 && (
                 <tr>
-                  <td colSpan={4} className="p-1.5 text-center text-muted-foreground">
-                    +{parsedData.length - 5} more devices...
+                  <td
+                    colSpan={4}
+                    className="p-1.5 text-center text-muted-foreground"
+                  >
+                    +
+                    {parsedData.length - 5}
+                    {" "}
+                    more devices...
                   </td>
                 </tr>
               )}
@@ -187,7 +239,13 @@ export function DeviceMappingUpload({
             <p className="text-xs text-muted-foreground">CSV with device details</p>
           </div>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={downloadTemplate} disabled={downloadTemplateMutation.isPending}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={downloadTemplate}
+          disabled={downloadTemplateMutation.isPending}
+        >
           <Download className="mr-1 h-3 w-3" />
           {downloadTemplateMutation.isPending ? "Downloading..." : "Template"}
         </Button>
@@ -199,7 +257,7 @@ export function DeviceMappingUpload({
         onDrop={handleDrop}
         className={cn(
           "relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-4 transition-colors cursor-pointer",
-          isDragging ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground"
+          isDragging ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground",
         )}
       >
         <Upload className="h-6 w-6 text-muted-foreground mb-2" />
@@ -207,7 +265,7 @@ export function DeviceMappingUpload({
         <input
           type="file"
           accept=".csv,.xlsx"
-          onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+          onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
           className="absolute inset-0 cursor-pointer opacity-0"
         />
       </div>

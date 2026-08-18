@@ -1,26 +1,31 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  AlertCircle, CheckCircle2, Languages, MessageSquare, Phone,
+  PhoneCall, Save,
+} from "lucide-react";
+import {
+  useEffect, useState,
+} from "react";
+import { toast } from "sonner";
+import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Switch } from "@/components/shadcn/switch";
-import { Badge } from "@/components/shadcn/badge";
-import { Separator } from "@/components/shadcn/separator";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from "@/components/shadcn/select";
-import { 
-  Phone, MessageSquare, Save, AlertCircle, CheckCircle2, 
-  Languages, PhoneCall
-} from "lucide-react";
-import { toast } from "sonner";
+  SelectValue,
+} from "@/components/shadcn/select";
+import { Separator } from "@/components/shadcn/separator";
+import { Switch } from "@/components/shadcn/switch";
 import { useAuthStore } from "@/stores/authStore";
 import { SenderIdManagement } from "./SenderIdManagement";
 
-interface CommunicationConfig {
+type CommunicationConfig = {
   id?: string;
   sms_sender_id: string | null;
   voice_caller_id: string | null;
@@ -29,16 +34,16 @@ interface CommunicationConfig {
   enable_delivery_notifications: boolean;
   enable_read_receipts: boolean;
   default_message_language: string;
-}
+};
 
-interface AssignedPhoneNumber {
+type AssignedPhoneNumber = {
   id: string;
   phone_number: string;
-  phone_number_type: 'local' | 'mobile' | 'toll_free';
+  phone_number_type: "local" | "mobile" | "toll_free";
   capabilities: string[];
   status: string;
   monthly_cost_ngn: number | null;
-}
+};
 
 const DEFAULT_CONFIG: CommunicationConfig = {
   sms_sender_id: null,
@@ -47,66 +52,109 @@ const DEFAULT_CONFIG: CommunicationConfig = {
   sms_fallback_timeout_seconds: 300,
   enable_delivery_notifications: true,
   enable_read_receipts: true,
-  default_message_language: 'en' };
+  default_message_language: "en",
+};
 
 export function TenantCommunicationSettings() {
   const { user } = useAuthStore();
   const approvedSmsIds: any[] = [];
   const approvedVoiceIds: any[] = [];
   const senderIdsLoading = false;
-  const [config, setConfig] = useState<CommunicationConfig>(DEFAULT_CONFIG);
-  const [assignedNumbers, setAssignedNumbers] = useState<AssignedPhoneNumber[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
+  const [
+    config,
+    setConfig,
+  ] = useState<CommunicationConfig>(DEFAULT_CONFIG);
+  const [
+    assignedNumbers,
+    setAssignedNumbers,
+  ] = useState<AssignedPhoneNumber[]>([]);
+  const [
+    isLoading,
+    setIsLoading,
+  ] = useState(true);
+  const [
+    isSaving,
+    setIsSaving,
+  ] = useState(false);
+  const [
+    hasChanges,
+    setHasChanges,
+  ] = useState(false);
 
-  useEffect(() => {
-    setIsLoading(false);
-  }, [user?.tenantId]);
+  useEffect(
+    () => {
+      setIsLoading(false);
+    },
+    [user?.tenantId],
+  );
 
   const handleChange = (key: keyof CommunicationConfig, value: any) => {
-    setConfig(prev => ({ ...prev, [key]: value }));
+    setConfig(prev => ({
+      ...prev, [key]: value,
+    }));
     setHasChanges(true);
   };
 
   const handleSave = async () => {
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
   // Demo fallback when tenant has no assigned numbers yet
   const DEMO_NUMBERS: AssignedPhoneNumber[] = [
-    { id: 'demo-num-1', phone_number: '+234 801 234 5678', phone_number_type: 'mobile', capabilities: ['sms', 'voice'], status: 'assigned', monthly_cost_ngn: 2500 },
-    { id: 'demo-num-2', phone_number: '+234 700 555 0199', phone_number_type: 'toll_free', capabilities: ['voice'], status: 'assigned', monthly_cost_ngn: 8000 },
-    { id: 'demo-num-3', phone_number: '+234 904 882 1100', phone_number_type: 'local', capabilities: ['sms'], status: 'assigned', monthly_cost_ngn: 1500 },
+    {
+      id: "demo-num-1", phone_number: "+234 801 234 5678", phone_number_type: "mobile", capabilities: [
+        "sms",
+        "voice",
+      ], status: "assigned", monthly_cost_ngn: 2500,
+    },
+    {
+      id: "demo-num-2", phone_number: "+234 700 555 0199", phone_number_type: "toll_free", capabilities: ["voice"], status: "assigned", monthly_cost_ngn: 8000,
+    },
+    {
+      id: "demo-num-3", phone_number: "+234 904 882 1100", phone_number_type: "local", capabilities: ["sms"], status: "assigned", monthly_cost_ngn: 1500,
+    },
   ];
   const displayedNumbers = assignedNumbers.length > 0 ? assignedNumbers : DEMO_NUMBERS;
   const isDemoNumbers = assignedNumbers.length === 0;
 
   // Combine platform-assigned numbers with approved sender IDs
-  const smsCapableNumbers = displayedNumbers.filter(n => n.capabilities.includes('sms'));
-  const voiceCapableNumbers = displayedNumbers.filter(n => n.capabilities.includes('voice'));
+  const smsCapableNumbers = displayedNumbers.filter(n => n.capabilities.includes("sms"));
+  const voiceCapableNumbers = displayedNumbers.filter(n => n.capabilities.includes("voice"));
 
   // Demo approved sender IDs when tenant has none
   const DEMO_SMS_SENDERS = [
-    { id: 'demo-sms-1', sender_id: 'FleetPro' },
-    { id: 'demo-sms-2', sender_id: 'LagosExp' },
+    {
+      id: "demo-sms-1", sender_id: "FleetPro",
+    },
+    {
+      id: "demo-sms-2", sender_id: "LagosExp",
+    },
   ];
   const DEMO_VOICE_SENDERS = [
-    { id: 'demo-voice-1', sender_id: 'FleetPro Voice' },
+    {
+      id: "demo-voice-1", sender_id: "FleetPro Voice",
+    },
   ];
   const effectiveSmsIds = approvedSmsIds.length > 0 ? approvedSmsIds : DEMO_SMS_SENDERS;
   const effectiveVoiceIds = approvedVoiceIds.length > 0 ? approvedVoiceIds : DEMO_VOICE_SENDERS;
 
   // All available SMS options: assigned numbers + approved sender IDs
   const allSmsOptions = [
-    ...smsCapableNumbers.map(n => ({ id: n.id, value: n.phone_number, label: n.phone_number, source: 'assigned' as const })),
-    ...effectiveSmsIds.map(s => ({ id: s.id, value: s.sender_id, label: s.sender_id, source: 'approved' as const })),
+    ...smsCapableNumbers.map(n => ({
+      id: n.id, value: n.phone_number, label: n.phone_number, source: "assigned" as const,
+    })),
+    ...effectiveSmsIds.map(s => ({
+      id: s.id, value: s.sender_id, label: s.sender_id, source: "approved" as const,
+    })),
   ];
 
   const allVoiceOptions = [
-    ...voiceCapableNumbers.map(n => ({ id: n.id, value: n.phone_number, label: n.phone_number, source: 'assigned' as const })),
-    ...effectiveVoiceIds.map(s => ({ id: s.id, value: s.sender_id, label: s.sender_id, source: 'approved' as const })),
+    ...voiceCapableNumbers.map(n => ({
+      id: n.id, value: n.phone_number, label: n.phone_number, source: "assigned" as const,
+    })),
+    ...effectiveVoiceIds.map(s => ({
+      id: s.id, value: s.sender_id, label: s.sender_id, source: "approved" as const,
+    })),
   ];
 
   if (isLoading) {
@@ -139,13 +187,18 @@ export function TenantCommunicationSettings() {
               </CardDescription>
             </div>
             {isDemoNumbers && (
-              <Badge variant="outline" className="text-xs shrink-0">Demo data</Badge>
+              <Badge
+                variant="outline"
+                className="text-xs shrink-0"
+              >
+                Demo data
+              </Badge>
             )}
           </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {displayedNumbers.map((number) => (
+            {displayedNumbers.map(number => (
               <div
                 key={number.id}
                 className="flex items-center justify-between p-3 rounded-lg border bg-card"
@@ -155,24 +208,36 @@ export function TenantCommunicationSettings() {
                   <div>
                     <p className="font-mono font-medium">{number.phone_number}</p>
                     <p className="text-xs text-muted-foreground capitalize">
-                      {number.phone_number_type.replace('_', ' ')}
+                      {number.phone_number_type.replace(
+                        "_",
+                        " ",
+                      )}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {number.capabilities.includes('sms') && (
-                    <Badge variant="outline" className="text-xs">
+                  {number.capabilities.includes("sms") && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs"
+                    >
                       <MessageSquare className="h-3 w-3 mr-1" />
                       SMS
                     </Badge>
                   )}
-                  {number.capabilities.includes('voice') && (
-                    <Badge variant="outline" className="text-xs">
+                  {number.capabilities.includes("voice") && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs"
+                    >
                       <PhoneCall className="h-3 w-3 mr-1" />
                       Voice
                     </Badge>
                   )}
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge
+                    variant="secondary"
+                    className="text-xs"
+                  >
                     <CheckCircle2 className="h-3 w-3 mr-1" />
                     Active
                   </Badge>
@@ -201,31 +266,39 @@ export function TenantCommunicationSettings() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="sms_sender_id">SMS Sender ID</Label>
-              {allSmsOptions.length > 0 ? (
-                <Select
-                  value={config.sms_sender_id || ""}
-                  onValueChange={(value) => handleChange('sms_sender_id', value)}
-                >
-                  <SelectTrigger id="sms_sender_id">
-                    <SelectValue placeholder="Select a sender ID..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allSmsOptions.map((opt) => (
-                      <SelectItem key={opt.id} value={opt.value}>
-                        {opt.label}
-                        {opt.source === 'assigned' && ' (Assigned)'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-muted-foreground">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <p className="text-sm">
-                    No SMS sender IDs available. Request one above or contact your platform administrator.
-                  </p>
-                </div>
-              )}
+              {allSmsOptions.length > 0
+                ? (
+                    <Select
+                      value={config.sms_sender_id || ""}
+                      onValueChange={value => handleChange(
+                        "sms_sender_id",
+                        value,
+                      )}
+                    >
+                      <SelectTrigger id="sms_sender_id">
+                        <SelectValue placeholder="Select a sender ID..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allSmsOptions.map(opt => (
+                          <SelectItem
+                            key={opt.id}
+                            value={opt.value}
+                          >
+                            {opt.label}
+                            {opt.source === "assigned" && " (Assigned)"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )
+                : (
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-muted-foreground">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <p className="text-sm">
+                        No SMS sender IDs available. Request one above or contact your platform administrator.
+                      </p>
+                    </div>
+                  )}
               <p className="text-xs text-muted-foreground">
                 Only approved sender IDs and assigned numbers can be used
               </p>
@@ -233,31 +306,39 @@ export function TenantCommunicationSettings() {
 
             <div className="space-y-2">
               <Label htmlFor="voice_caller_id">Voice Caller ID</Label>
-              {allVoiceOptions.length > 0 ? (
-                <Select
-                  value={config.voice_caller_id || ""}
-                  onValueChange={(value) => handleChange('voice_caller_id', value)}
-                >
-                  <SelectTrigger id="voice_caller_id">
-                    <SelectValue placeholder="Select a caller ID..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allVoiceOptions.map((opt) => (
-                      <SelectItem key={opt.id} value={opt.value}>
-                        {opt.label}
-                        {opt.source === 'assigned' && ' (Assigned)'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-muted-foreground">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <p className="text-sm">
-                    No voice caller IDs available. Request one above or contact your platform administrator.
-                  </p>
-                </div>
-              )}
+              {allVoiceOptions.length > 0
+                ? (
+                    <Select
+                      value={config.voice_caller_id || ""}
+                      onValueChange={value => handleChange(
+                        "voice_caller_id",
+                        value,
+                      )}
+                    >
+                      <SelectTrigger id="voice_caller_id">
+                        <SelectValue placeholder="Select a caller ID..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allVoiceOptions.map(opt => (
+                          <SelectItem
+                            key={opt.id}
+                            value={opt.value}
+                          >
+                            {opt.label}
+                            {opt.source === "assigned" && " (Assigned)"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )
+                : (
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-muted-foreground">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <p className="text-sm">
+                        No voice caller IDs available. Request one above or contact your platform administrator.
+                      </p>
+                    </div>
+                  )}
               <p className="text-xs text-muted-foreground">
                 Only approved caller IDs and assigned numbers can be used
               </p>
@@ -288,7 +369,10 @@ export function TenantCommunicationSettings() {
             <Switch
               id="fallback_sms"
               checked={config.whatsapp_fallback_to_sms}
-              onCheckedChange={(checked) => handleChange('whatsapp_fallback_to_sms', checked)}
+              onCheckedChange={checked => handleChange(
+                "whatsapp_fallback_to_sms",
+                checked,
+              )}
             />
           </div>
 
@@ -297,7 +381,10 @@ export function TenantCommunicationSettings() {
               <Label htmlFor="fallback_timeout">Fallback Timeout</Label>
               <Select
                 value={config.sms_fallback_timeout_seconds.toString()}
-                onValueChange={(value) => handleChange('sms_fallback_timeout_seconds', parseInt(value))}
+                onValueChange={value => handleChange(
+                  "sms_fallback_timeout_seconds",
+                  parseInt(value),
+                )}
               >
                 <SelectTrigger id="fallback_timeout">
                   <SelectValue />
@@ -328,7 +415,10 @@ export function TenantCommunicationSettings() {
             <Switch
               id="delivery_notifications"
               checked={config.enable_delivery_notifications}
-              onCheckedChange={(checked) => handleChange('enable_delivery_notifications', checked)}
+              onCheckedChange={checked => handleChange(
+                "enable_delivery_notifications",
+                checked,
+              )}
             />
           </div>
 
@@ -342,7 +432,10 @@ export function TenantCommunicationSettings() {
             <Switch
               id="read_receipts"
               checked={config.enable_read_receipts}
-              onCheckedChange={(checked) => handleChange('enable_read_receipts', checked)}
+              onCheckedChange={checked => handleChange(
+                "enable_read_receipts",
+                checked,
+              )}
             />
           </div>
         </CardContent>
@@ -364,9 +457,15 @@ export function TenantCommunicationSettings() {
             <Label htmlFor="default_language">Default Message Language</Label>
             <Select
               value={config.default_message_language}
-              onValueChange={(value) => handleChange('default_message_language', value)}
+              onValueChange={value => handleChange(
+                "default_message_language",
+                value,
+              )}
             >
-              <SelectTrigger id="default_language" className="w-full md:w-64">
+              <SelectTrigger
+                id="default_language"
+                className="w-full md:w-64"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -383,8 +482,8 @@ export function TenantCommunicationSettings() {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button 
-          onClick={handleSave} 
+        <Button
+          onClick={handleSave}
           disabled={!hasChanges || isSaving}
           className="gap-2"
         >

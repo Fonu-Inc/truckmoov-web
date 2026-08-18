@@ -1,20 +1,34 @@
-import { formatDate, formatDateTime } from "@truckmoov/app-core/utils/time-utils";
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/shadcn/card';
-import { Button } from '@/components/shadcn/button';
-import { Badge } from '@/components/shadcn/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/shadcn/dialog';
-import { Input } from '@/components/shadcn/input';
-import { Label } from '@/components/shadcn/label';
-import { Checkbox } from '@/components/shadcn/checkbox';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/shadcn/alert-dialog';
-import { ScrollArea } from '@/components/shadcn/scroll-area';
-import { Separator } from '@/components/shadcn/separator';
-import { Key, Plus, Copy, Eye, EyeOff, Trash2, Clock, Check, AlertTriangle } from 'lucide-react';
-import { toast } from 'sonner';
+import {
+  formatDate, formatDateTime,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  AlertTriangle, Check, Clock, Copy, Eye, EyeOff, Key, Plus, Trash2,
+} from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/shadcn/alert-dialog";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/shadcn/dialog";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Separator } from "@/components/shadcn/separator";
 
-const API_SCOPES: { value: string; label: string; description: string }[] = [];
-type CreateApiKeyInput = { name: string; scopes: string[]; expires_at?: string };
+const API_SCOPES: {
+  value: string; label: string; description: string;
+}[] = [];
+type CreateApiKeyInput = {
+  name: string; scopes: string[]; expires_at?: string;
+};
 
 export function ApiKeyManagement() {
   const apiKeys: any[] = [];
@@ -23,21 +37,42 @@ export function ApiKeyManagement() {
   const createApiKey = async (_input: CreateApiKeyInput): Promise<any> => null;
   const revokeApiKey = async (..._args: any[]) => {};
   const clearNewlyCreatedKey = () => {};
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newKeyName, setNewKeyName] = useState('');
-  const [selectedScopes, setSelectedScopes] = useState<string[]>([]);
-  const [expiresInDays, setExpiresInDays] = useState<number | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
-  const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
+  const [
+    isCreateDialogOpen,
+    setIsCreateDialogOpen,
+  ] = useState(false);
+  const [
+    newKeyName,
+    setNewKeyName,
+  ] = useState("");
+  const [
+    selectedScopes,
+    setSelectedScopes,
+  ] = useState<string[]>([]);
+  const [
+    expiresInDays,
+    setExpiresInDays,
+  ] = useState<number | null>(null);
+  const [
+    isCreating,
+    setIsCreating,
+  ] = useState(false);
+  const [
+    showSecrets,
+    setShowSecrets,
+  ] = useState<Record<string, boolean>>({});
+  const [
+    copiedKeyId,
+    setCopiedKeyId,
+  ] = useState<string | null>(null);
 
   const handleCreateKey = async () => {
     if (!newKeyName.trim()) {
-      toast.error('Please enter a name for the API key');
+      toast.error("Please enter a name for the API key");
       return;
     }
     if (selectedScopes.length === 0) {
-      toast.error('Please select at least one scope');
+      toast.error("Please select at least one scope");
       return;
     }
 
@@ -53,7 +88,7 @@ export function ApiKeyManagement() {
 
     if (key) {
       setIsCreateDialogOpen(false);
-      setNewKeyName('');
+      setNewKeyName("");
       setSelectedScopes([]);
       setExpiresInDays(null);
     }
@@ -62,20 +97,26 @@ export function ApiKeyManagement() {
   const handleCopyKey = (key: string) => {
     navigator.clipboard.writeText(key);
     setCopiedKeyId(key);
-    toast.success('API key copied to clipboard');
-    setTimeout(() => setCopiedKeyId(null), 2000);
+    toast.success("API key copied to clipboard");
+    setTimeout(
+      setCopiedKeyId,
+      2000,
+      null,
+    );
   };
 
   const toggleScope = (scope: string) => {
     setSelectedScopes(prev =>
       prev.includes(scope)
         ? prev.filter(s => s !== scope)
-        : [...prev, scope]
-    );
+        : [
+            ...prev,
+            scope,
+          ]);
   };
 
-  const activeKeys = apiKeys.filter(k => k.status === 'active');
-  const revokedKeys = apiKeys.filter(k => k.status !== 'active');
+  const activeKeys = apiKeys.filter(k => k.status === "active");
+  const revokedKeys = apiKeys.filter(k => k.status !== "active");
 
   return (
     <div className="space-y-6">
@@ -124,7 +165,10 @@ export function ApiKeyManagement() {
             Manage API keys for external integrations
           </p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <Dialog
+          open={isCreateDialogOpen}
+          onOpenChange={setIsCreateDialogOpen}
+        >
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -144,22 +188,28 @@ export function ApiKeyManagement() {
                 <Input
                   placeholder="e.g., ERP Integration"
                   value={newKeyName}
-                  onChange={(e) => setNewKeyName(e.target.value)}
+                  onChange={e => setNewKeyName(e.target.value)}
                 />
               </div>
               <div>
                 <Label>Scopes</Label>
                 <ScrollArea className="h-48 border rounded-md p-3 mt-1">
                   <div className="space-y-3">
-                    {API_SCOPES.map((scope) => (
-                      <div key={scope.value} className="flex items-start gap-2">
+                    {API_SCOPES.map(scope => (
+                      <div
+                        key={scope.value}
+                        className="flex items-start gap-2"
+                      >
                         <Checkbox
                           id={scope.value}
                           checked={selectedScopes.includes(scope.value)}
                           onCheckedChange={() => toggleScope(scope.value)}
                         />
                         <div className="grid gap-0.5">
-                          <label htmlFor={scope.value} className="text-sm font-medium cursor-pointer">
+                          <label
+                            htmlFor={scope.value}
+                            className="text-sm font-medium cursor-pointer"
+                          >
                             {scope.label}
                           </label>
                           <span className="text-xs text-muted-foreground">
@@ -175,28 +225,28 @@ export function ApiKeyManagement() {
                 <Label>Expiration (optional)</Label>
                 <div className="flex gap-2 mt-1">
                   <Button
-                    variant={expiresInDays === null ? 'default' : 'outline'}
+                    variant={expiresInDays === null ? "default" : "outline"}
                     size="sm"
                     onClick={() => setExpiresInDays(null)}
                   >
                     Never
                   </Button>
                   <Button
-                    variant={expiresInDays === 30 ? 'default' : 'outline'}
+                    variant={expiresInDays === 30 ? "default" : "outline"}
                     size="sm"
                     onClick={() => setExpiresInDays(30)}
                   >
                     30 days
                   </Button>
                   <Button
-                    variant={expiresInDays === 90 ? 'default' : 'outline'}
+                    variant={expiresInDays === 90 ? "default" : "outline"}
                     size="sm"
                     onClick={() => setExpiresInDays(90)}
                   >
                     90 days
                   </Button>
                   <Button
-                    variant={expiresInDays === 365 ? 'default' : 'outline'}
+                    variant={expiresInDays === 365 ? "default" : "outline"}
                     size="sm"
                     onClick={() => setExpiresInDays(365)}
                   >
@@ -206,11 +256,17 @@ export function ApiKeyManagement() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsCreateDialogOpen(false)}
+              >
                 Cancel
               </Button>
-              <Button onClick={handleCreateKey} disabled={isCreating}>
-                {isCreating ? 'Creating...' : 'Create Key'}
+              <Button
+                onClick={handleCreateKey}
+                disabled={isCreating}
+              >
+                {isCreating ? "Creating..." : "Create Key"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -220,74 +276,109 @@ export function ApiKeyManagement() {
       {/* Active Keys */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Active Keys ({activeKeys.length})</CardTitle>
+          <CardTitle className="text-base">
+            Active Keys (
+            {activeKeys.length}
+            )
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <p className="text-muted-foreground">Loading...</p>
-          ) : activeKeys.length === 0 ? (
-            <p className="text-muted-foreground">No active API keys</p>
-          ) : (
-            <div className="space-y-4">
-              {activeKeys.map((key) => (
-                <div key={key.id} className="flex items-start justify-between p-4 border rounded-lg">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Key className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{key.name}</span>
-                      <Badge variant="outline" className="text-green-600">Active</Badge>
-                    </div>
-                    <code className="text-sm text-muted-foreground">
-                      {key.key_prefix}...
-                    </code>
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {key.scopes.map((scope) => (
-                        <Badge key={scope} variant="secondary" className="text-xs">
-                          {scope}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
-                      <span>Created: {formatDate(key.created_at)}</span>
-                      {key.last_used_at && (
-                        <span>Last used: {formatDateTime(key.last_used_at)}</span>
-                      )}
-                      {key.expires_at && (
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Expires: {formatDate(key.expires_at)}
-                        </span>
-                      )}
-                    </div>
+          {isLoading
+            ? (
+                <p className="text-muted-foreground">Loading...</p>
+              )
+            : activeKeys.length === 0
+              ? (
+                  <p className="text-muted-foreground">No active API keys</p>
+                )
+              : (
+                  <div className="space-y-4">
+                    {activeKeys.map(key => (
+                      <div
+                        key={key.id}
+                        className="flex items-start justify-between p-4 border rounded-lg"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Key className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{key.name}</span>
+                            <Badge
+                              variant="outline"
+                              className="text-green-600"
+                            >
+                              Active
+                            </Badge>
+                          </div>
+                          <code className="text-sm text-muted-foreground">
+                            {key.key_prefix}
+                            ...
+                          </code>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {key.scopes.map(scope => (
+                              <Badge
+                                key={scope}
+                                variant="secondary"
+                                className="text-xs"
+                              >
+                                {scope}
+                              </Badge>
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
+                            <span>
+                              Created:
+                              {formatDate(key.created_at)}
+                            </span>
+                            {key.last_used_at && (
+                              <span>
+                                Last used:
+                                {formatDateTime(key.last_used_at)}
+                              </span>
+                            )}
+                            {key.expires_at && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                Expires:
+                                {" "}
+                                {formatDate(key.expires_at)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Revoke API Key?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will immediately revoke the key "
+                                {key.name}
+                                ". Any integrations using this key will stop working.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground"
+                                onClick={() => revokeApiKey(key.id)}
+                              >
+                                Revoke Key
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    ))}
                   </div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Revoke API Key?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will immediately revoke the key "{key.name}". Any integrations using this key will stop working.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          className="bg-destructive text-destructive-foreground"
-                          onClick={() => revokeApiKey(key.id)}
-                        >
-                          Revoke Key
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              ))}
-            </div>
-          )}
+                )}
         </CardContent>
       </Card>
 
@@ -295,16 +386,28 @@ export function ApiKeyManagement() {
       {revokedKeys.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base text-muted-foreground">Revoked Keys ({revokedKeys.length})</CardTitle>
+            <CardTitle className="text-base text-muted-foreground">
+              Revoked Keys (
+              {revokedKeys.length}
+              )
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {revokedKeys.map((key) => (
-                <div key={key.id} className="flex items-center justify-between p-3 border rounded-lg opacity-60">
+              {revokedKeys.map(key => (
+                <div
+                  key={key.id}
+                  className="flex items-center justify-between p-3 border rounded-lg opacity-60"
+                >
                   <div className="flex items-center gap-2">
                     <Key className="h-4 w-4 text-muted-foreground" />
                     <span className="line-through">{key.name}</span>
-                    <Badge variant="outline" className="text-destructive">Revoked</Badge>
+                    <Badge
+                      variant="outline"
+                      className="text-destructive"
+                    >
+                      Revoked
+                    </Badge>
                   </div>
                   <span className="text-xs text-muted-foreground">
                     {formatDate(key.created_at)}

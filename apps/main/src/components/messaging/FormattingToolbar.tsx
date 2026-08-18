@@ -1,26 +1,49 @@
+import {
+  Bold, Code, Image, Italic, Link2, Strikethrough,
+} from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/shadcn/tooltip";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/shadcn/popover";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/shadcn/tooltip";
 import { EmojiPicker } from "./EmojiPicker";
-import { Bold, Italic, Link2, Image, Strikethrough, Code } from "lucide-react";
 
-interface FormattingToolbarProps {
+type FormattingToolbarProps = {
   onFormat: (type: string, value?: string) => void;
   onEmojiSelect: (emoji: string) => void;
   activeFormats?: string[];
-}
+};
 
-export function FormattingToolbar({ onFormat, onEmojiSelect, activeFormats = [] }: FormattingToolbarProps) {
-  const [linkUrl, setLinkUrl] = useState("");
-  const [linkOpen, setLinkOpen] = useState(false);
-  const [imageUrl, setImageUrl] = useState("");
-  const [imageOpen, setImageOpen] = useState(false);
+export function FormattingToolbar({
+  onFormat, onEmojiSelect, activeFormats = [],
+}: FormattingToolbarProps) {
+  const [
+    linkUrl,
+    setLinkUrl,
+  ] = useState("");
+  const [
+    linkOpen,
+    setLinkOpen,
+  ] = useState(false);
+  const [
+    imageUrl,
+    setImageUrl,
+  ] = useState("");
+  const [
+    imageOpen,
+    setImageOpen,
+  ] = useState(false);
 
   const handleInsertLink = () => {
     if (linkUrl) {
-      onFormat("link", linkUrl);
+      onFormat(
+        "link",
+        linkUrl,
+      );
       setLinkUrl("");
       setLinkOpen(false);
     }
@@ -28,23 +51,36 @@ export function FormattingToolbar({ onFormat, onEmojiSelect, activeFormats = [] 
 
   const handleInsertImage = () => {
     if (imageUrl) {
-      onFormat("image", imageUrl);
+      onFormat(
+        "image",
+        imageUrl,
+      );
       setImageUrl("");
       setImageOpen(false);
     }
   };
 
   const formatButtons = [
-    { type: "bold", icon: Bold, label: "Bold (*text*)", shortcut: "Ctrl+B" },
-    { type: "italic", icon: Italic, label: "Italic (_text_)", shortcut: "Ctrl+I" },
-    { type: "strikethrough", icon: Strikethrough, label: "Strikethrough (~text~)", shortcut: "" },
-    { type: "code", icon: Code, label: "Code (`text`)", shortcut: "" },
+    {
+      type: "bold", icon: Bold, label: "Bold (*text*)", shortcut: "Ctrl+B",
+    },
+    {
+      type: "italic", icon: Italic, label: "Italic (_text_)", shortcut: "Ctrl+I",
+    },
+    {
+      type: "strikethrough", icon: Strikethrough, label: "Strikethrough (~text~)", shortcut: "",
+    },
+    {
+      type: "code", icon: Code, label: "Code (`text`)", shortcut: "",
+    },
   ];
 
   return (
     <TooltipProvider>
       <div className="flex items-center gap-1 flex-wrap">
-        {formatButtons.map(({ type, icon: Icon, label, shortcut }) => (
+        {formatButtons.map(({
+          type, icon: Icon, label, shortcut,
+        }) => (
           <Tooltip key={type}>
             <TooltipTrigger asChild>
               <Button
@@ -64,11 +100,19 @@ export function FormattingToolbar({ onFormat, onEmojiSelect, activeFormats = [] 
           </Tooltip>
         ))}
 
-        <Popover open={linkOpen} onOpenChange={setLinkOpen}>
+        <Popover
+          open={linkOpen}
+          onOpenChange={setLinkOpen}
+        >
           <Tooltip>
             <TooltipTrigger asChild>
               <PopoverTrigger asChild>
-                <Button type="button" variant="outline" size="icon" className="h-8 w-8">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                >
                   <Link2 className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
@@ -77,27 +121,42 @@ export function FormattingToolbar({ onFormat, onEmojiSelect, activeFormats = [] 
               <p className="text-xs">Insert link</p>
             </TooltipContent>
           </Tooltip>
-          <PopoverContent className="w-72 p-3" align="start">
+          <PopoverContent
+            className="w-72 p-3"
+            align="start"
+          >
             <div className="space-y-2">
               <p className="text-sm font-medium">Insert Link</p>
               <Input
                 placeholder="https://example.com"
                 value={linkUrl}
-                onChange={(e) => setLinkUrl(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleInsertLink()}
+                onChange={e => setLinkUrl(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleInsertLink()}
               />
-              <Button size="sm" className="w-full" onClick={handleInsertLink}>
+              <Button
+                size="sm"
+                className="w-full"
+                onClick={handleInsertLink}
+              >
                 Insert
               </Button>
             </div>
           </PopoverContent>
         </Popover>
 
-        <Popover open={imageOpen} onOpenChange={setImageOpen}>
+        <Popover
+          open={imageOpen}
+          onOpenChange={setImageOpen}
+        >
           <Tooltip>
             <TooltipTrigger asChild>
               <PopoverTrigger asChild>
-                <Button type="button" variant="outline" size="icon" className="h-8 w-8">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                >
                   <Image className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
@@ -106,17 +165,24 @@ export function FormattingToolbar({ onFormat, onEmojiSelect, activeFormats = [] 
               <p className="text-xs">Insert image (WhatsApp/Email only)</p>
             </TooltipContent>
           </Tooltip>
-          <PopoverContent className="w-72 p-3" align="start">
+          <PopoverContent
+            className="w-72 p-3"
+            align="start"
+          >
             <div className="space-y-2">
               <p className="text-sm font-medium">Insert Image URL</p>
               <Input
                 placeholder="https://example.com/image.jpg"
                 value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleInsertImage()}
+                onChange={e => setImageUrl(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleInsertImage()}
               />
               <p className="text-xs text-muted-foreground">Note: Images work on WhatsApp and Email only</p>
-              <Button size="sm" className="w-full" onClick={handleInsertImage}>
+              <Button
+                size="sm"
+                className="w-full"
+                onClick={handleInsertImage}
+              >
                 Insert
               </Button>
             </div>

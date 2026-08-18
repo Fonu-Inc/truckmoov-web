@@ -1,9 +1,21 @@
-import { formatDate } from "@truckmoov/app-core/utils/time-utils";
-import { useEffect, useMemo, useState } from "react";
+import type {
+  SystemSimRequest,
+  SystemSimRequestsQuery,
+} from "@truckmoov/api/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
+import {
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  getSystemSimsRequestsExportQueryOptions,
+  getSystemSimsRequestsQueryOptions,
+  getSystemSimsRequestsSummaryQueryOptions,
+
+  useApproveSIMRequest,
+  useRejectSIMRequest,
+} from "@truckmoov/api/auth";
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
   CheckCircle,
   ClipboardCheck,
@@ -15,19 +27,23 @@ import {
   XCircle,
 } from "lucide-react";
 import {
-  getSystemSimsRequestsExportQueryOptions,
-  getSystemSimsRequestsQueryOptions,
-  getSystemSimsRequestsSummaryQueryOptions,
-  type SystemSimRequest,
-  type SystemSimRequestsQuery,
-  useApproveSIMRequest,
-  useRejectSIMRequest,
-} from "@truckmoov/api/auth";
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import * as z from "zod";
 
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
@@ -68,18 +84,34 @@ const emptyValue = "-";
 const REJECT_SIM_REQUEST_FORM_ID = "reject-sim-request-form";
 
 const rejectRequestSchema = z.object({
-  reason: z.string().trim().min(1, "Rejection reason is required."),
+  reason: z.string().trim().min(
+    1,
+    "Rejection reason is required.",
+  ),
 });
 
 type RejectRequestFormValues = z.infer<typeof rejectRequestSchema>;
 
 function useDebouncedValue<T>(value: T, delayMs: number) {
-  const [debounced, setDebounced] = useState(value);
+  const [
+    debounced,
+    setDebounced,
+  ] = useState(value);
 
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setDebounced(value), delayMs);
-    return () => window.clearTimeout(timeout);
-  }, [delayMs, value]);
+  useEffect(
+    () => {
+      const timeout = window.setTimeout(
+        setDebounced,
+        delayMs,
+        value,
+      );
+      return () => window.clearTimeout(timeout);
+    },
+    [
+      delayMs,
+      value,
+    ],
+  );
 
   return debounced;
 }
@@ -95,27 +127,29 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-const formatDataLimit = (valueMb: number) => {
-  if (!Number.isFinite(valueMb) || valueMb <= 0) return emptyValue;
+function formatDataLimit(valueMb: number) {
+  if (!Number.isFinite(valueMb) || valueMb <= 0)
+    return emptyValue;
   if (valueMb >= 1024) {
     const gb = valueMb / 1024;
     return `${Number.isInteger(gb) ? gb : gb.toFixed(1)} GB`;
   }
   return `${valueMb} MB`;
-};
+}
 
-const titleCase = (value: string | null | undefined) =>
-  value
+function titleCase(value: string | null | undefined) {
+  return value
     ? value
         .split(/[_\s-]+/)
         .filter(Boolean)
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
         .join(" ")
     : emptyValue;
+}
 
 const isPendingRequest = (request: SystemSimRequest) => request.status.toLowerCase() === "pending";
 
-const getStatusBadge = (status: string) => {
+function getStatusBadge(status: string) {
   switch (status.toLowerCase()) {
     case "pending":
       return (
@@ -141,52 +175,93 @@ const getStatusBadge = (status: string) => {
     default:
       return <Badge variant="outline">{status || emptyValue}</Badge>;
   }
-};
+}
 
 export function SIMApprovalQueue() {
   const queryClient = useQueryClient();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [organisationFilter, setOrganisationFilter] = useState("");
-  const [carrierFilter, setCarrierFilter] = useState("");
-  const [useCaseFilter, setUseCaseFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [isExporting, setIsExporting] = useState(false);
-  const [approvingRequestId, setApprovingRequestId] = useState<string | null>(null);
-  const [selectedRejectRequest, setSelectedRejectRequest] = useState<SystemSimRequest | null>(null);
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    organisationFilter,
+    setOrganisationFilter,
+  ] = useState("");
+  const [
+    carrierFilter,
+    setCarrierFilter,
+  ] = useState("");
+  const [
+    useCaseFilter,
+    setUseCaseFilter,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("all");
+  const [
+    isExporting,
+    setIsExporting,
+  ] = useState(false);
+  const [
+    approvingRequestId,
+    setApprovingRequestId,
+  ] = useState<string | null>(null);
+  const [
+    selectedRejectRequest,
+    setSelectedRejectRequest,
+  ] = useState<SystemSimRequest | null>(null);
 
-  const debouncedSearchQuery = useDebouncedValue(searchQuery.trim(), 350);
-  const debouncedOrganisationFilter = useDebouncedValue(organisationFilter.trim(), 350);
-  const debouncedCarrierFilter = useDebouncedValue(carrierFilter.trim(), 350);
-  const debouncedUseCaseFilter = useDebouncedValue(useCaseFilter.trim(), 350);
+  const debouncedSearchQuery = useDebouncedValue(
+    searchQuery.trim(),
+    350,
+  );
+  const debouncedOrganisationFilter = useDebouncedValue(
+    organisationFilter.trim(),
+    350,
+  );
+  const debouncedCarrierFilter = useDebouncedValue(
+    carrierFilter.trim(),
+    350,
+  );
+  const debouncedUseCaseFilter = useDebouncedValue(
+    useCaseFilter.trim(),
+    350,
+  );
 
   const approveRequest = useApproveSIMRequest();
   const rejectRequest = useRejectSIMRequest();
   const rejectForm = useForm<RejectRequestFormValues>({
     resolver: zodResolver(rejectRequestSchema),
-    defaultValues: {
-      reason: "",
-    },
+    defaultValues: { reason: "" },
   });
 
-  const queryPayload = useMemo<SystemSimRequestsQuery | undefined>(() => {
-    const params: NonNullable<SystemSimRequestsQuery["params"]> = {};
+  const queryPayload = useMemo<SystemSimRequestsQuery | undefined>(
+    () => {
+      const params: NonNullable<SystemSimRequestsQuery["params"]> = {};
 
-    if (statusFilter !== "all") {
-      params.status = statusFilter as "pending" | "approved" | "rejected";
-    }
-    if (debouncedSearchQuery) params.search = debouncedSearchQuery;
-    if (debouncedOrganisationFilter) params.organisation = debouncedOrganisationFilter;
-    if (debouncedCarrierFilter) params.carrier = debouncedCarrierFilter;
-    if (debouncedUseCaseFilter) params.useCase = debouncedUseCaseFilter;
+      if (statusFilter !== "all") {
+        params.status = statusFilter as "pending" | "approved" | "rejected";
+      }
+      if (debouncedSearchQuery)
+        params.search = debouncedSearchQuery;
+      if (debouncedOrganisationFilter)
+        params.organisation = debouncedOrganisationFilter;
+      if (debouncedCarrierFilter)
+        params.carrier = debouncedCarrierFilter;
+      if (debouncedUseCaseFilter)
+        params.useCase = debouncedUseCaseFilter;
 
-    return Object.keys(params).length > 0 ? { params } : undefined;
-  }, [
-    debouncedCarrierFilter,
-    debouncedOrganisationFilter,
-    debouncedSearchQuery,
-    debouncedUseCaseFilter,
-    statusFilter,
-  ]);
+      return Object.keys(params).length > 0 ? { params } : undefined;
+    },
+    [
+      debouncedCarrierFilter,
+      debouncedOrganisationFilter,
+      debouncedSearchQuery,
+      debouncedUseCaseFilter,
+      statusFilter,
+    ],
+  );
 
   const requestsQuery = useQuery(getSystemSimsRequestsQueryOptions(queryPayload));
   const summaryQuery = useQuery(getSystemSimsRequestsSummaryQueryOptions());
@@ -212,14 +287,15 @@ export function SIMApprovalQueue() {
       { id: request.id },
       {
         onSuccess: () => toast.success("SIM request approved"),
-        onError: (error) => toast.error(error.message),
+        onError: error => toast.error(error.message),
         onSettled: () => setApprovingRequestId(null),
       },
     );
   };
 
   const handleRejectSubmit = (values: RejectRequestFormValues) => {
-    if (!selectedRejectRequest) return;
+    if (!selectedRejectRequest)
+      return;
 
     rejectRequest.mutate(
       {
@@ -231,7 +307,7 @@ export function SIMApprovalQueue() {
           toast.success("SIM request rejected");
           closeRejectDialog();
         },
-        onError: (error) => toast.error(error.message),
+        onError: error => toast.error(error.message),
       },
     );
   };
@@ -240,11 +316,16 @@ export function SIMApprovalQueue() {
     setIsExporting(true);
     try {
       const blob = await queryClient.fetchQuery(getSystemSimsRequestsExportQueryOptions(queryPayload));
-      downloadBlob(blob as Blob, "sim-requests.csv");
+      downloadBlob(
+        blob as Blob,
+        "sim-requests.csv",
+      );
       toast.success("SIM requests exported");
-    } catch {
+    }
+    catch {
       toast.error("Export failed");
-    } finally {
+    }
+    finally {
       setIsExporting(false);
     }
   };
@@ -271,11 +352,13 @@ export function SIMApprovalQueue() {
               onClick={handleExport}
               disabled={requestsQuery.isLoading || isExporting}
             >
-              {isExporting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="mr-2 h-4 w-4" />
-              )}
+              {isExporting
+                ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )
+                : (
+                    <Download className="mr-2 h-4 w-4" />
+                  )}
               Export Data
             </Button>
           </div>
@@ -287,25 +370,28 @@ export function SIMApprovalQueue() {
                 placeholder="Search requests..."
                 className="pl-10"
                 value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
+                onChange={event => setSearchQuery(event.target.value)}
               />
             </div>
             <Input
               placeholder="Organisation"
               value={organisationFilter}
-              onChange={(event) => setOrganisationFilter(event.target.value)}
+              onChange={event => setOrganisationFilter(event.target.value)}
             />
             <Input
               placeholder="Carrier"
               value={carrierFilter}
-              onChange={(event) => setCarrierFilter(event.target.value)}
+              onChange={event => setCarrierFilter(event.target.value)}
             />
             <Input
               placeholder="Use case"
               value={useCaseFilter}
-              onChange={(event) => setUseCaseFilter(event.target.value)}
+              onChange={event => setUseCaseFilter(event.target.value)}
             />
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -335,76 +421,87 @@ export function SIMApprovalQueue() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {requestsQuery.isLoading || requestsQuery.isFetching ? (
-                  <TableRow>
-                    <TableCell colSpan={8}>
-                      <div className="py-12 text-center text-muted-foreground">
-                        <Loader2 className="mx-auto mb-3 h-10 w-10 animate-spin" />
-                        Loading SIM requests...
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : requests.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8}>
-                      <div className="py-12 text-center text-muted-foreground">
-                        <Wifi className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                        <p>No provisioning requests found</p>
-                        <p className="text-sm">Adjust filters or wait for tenants to request SIM activations</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  requests.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell className="px-6 font-semibold">{request.tenantName || emptyValue}</TableCell>
-                      <TableCell className="px-6 font-medium">{request.preferredOperator || emptyValue}</TableCell>
-                      <TableCell className="px-6">
-                        <div className="space-y-1">
-                          <p className="font-semibold">{request.requestedPlan || emptyValue}</p>
-                          <p className="text-sm text-muted-foreground">{titleCase(request.useCase)}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-6 font-semibold">
-                        {formatDataLimit(request.requestedDataLimitMb)}
-                      </TableCell>
-                      <TableCell className="px-6 font-semibold">
-                        <span className="inline-flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3 text-muted-foreground" />
-                          {request.numberOfSims}
-                        </span>
-                      </TableCell>
-                      <TableCell className="px-6">{getStatusBadge(request.status)}</TableCell>
-                      <TableCell className="px-6 text-muted-foreground">{formatDate(request.createdAt, emptyValue)}</TableCell>
-                      <TableCell className="px-6">
-                        <div className="flex items-center justify-end gap-2">
-                          {isPendingRequest(request) ? (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setSelectedRejectRequest(request)}
-                                disabled={approveRequest.isPending || rejectRequest.isPending}
-                              >
-                                Reject
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => handleApprove(request)}
-                                loading={approvingRequestId === request.id}
-                                disabled={rejectRequest.isPending}
-                              >
-                                Approve
-                              </Button>
-                            </>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">Processed</span>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                {requestsQuery.isLoading || requestsQuery.isFetching
+                  ? (
+                      <TableRow>
+                        <TableCell colSpan={8}>
+                          <div className="py-12 text-center text-muted-foreground">
+                            <Loader2 className="mx-auto mb-3 h-10 w-10 animate-spin" />
+                            Loading SIM requests...
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  : requests.length === 0
+                    ? (
+                        <TableRow>
+                          <TableCell colSpan={8}>
+                            <div className="py-12 text-center text-muted-foreground">
+                              <Wifi className="mx-auto mb-4 h-12 w-12 opacity-50" />
+                              <p>No provisioning requests found</p>
+                              <p className="text-sm">Adjust filters or wait for tenants to request SIM activations</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    : (
+                        requests.map(request => (
+                          <TableRow key={request.id}>
+                            <TableCell className="px-6 font-semibold">{request.tenantName || emptyValue}</TableCell>
+                            <TableCell className="px-6 font-medium">{request.preferredOperator || emptyValue}</TableCell>
+                            <TableCell className="px-6">
+                              <div className="space-y-1">
+                                <p className="font-semibold">{request.requestedPlan || emptyValue}</p>
+                                <p className="text-sm text-muted-foreground">{titleCase(request.useCase)}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell className="px-6 font-semibold">
+                              {formatDataLimit(request.requestedDataLimitMb)}
+                            </TableCell>
+                            <TableCell className="px-6 font-semibold">
+                              <span className="inline-flex items-center gap-1">
+                                <CheckCircle className="h-3 w-3 text-muted-foreground" />
+                                {request.numberOfSims}
+                              </span>
+                            </TableCell>
+                            <TableCell className="px-6">{getStatusBadge(request.status)}</TableCell>
+                            <TableCell className="px-6 text-muted-foreground">
+                              {formatDate(
+                                request.createdAt,
+                                emptyValue,
+                              )}
+                            </TableCell>
+                            <TableCell className="px-6">
+                              <div className="flex items-center justify-end gap-2">
+                                {isPendingRequest(request)
+                                  ? (
+                                      <>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => setSelectedRejectRequest(request)}
+                                          disabled={approveRequest.isPending || rejectRequest.isPending}
+                                        >
+                                          Reject
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleApprove(request)}
+                                          loading={approvingRequestId === request.id}
+                                          disabled={rejectRequest.isPending}
+                                        >
+                                          Approve
+                                        </Button>
+                                      </>
+                                    )
+                                  : (
+                                      <span className="text-sm text-muted-foreground">Processed</span>
+                                    )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
               </TableBody>
             </Table>
           </div>
@@ -414,7 +511,8 @@ export function SIMApprovalQueue() {
       <Dialog
         open={Boolean(selectedRejectRequest)}
         onOpenChange={(open) => {
-          if (!open && !rejectRequest.isPending) closeRejectDialog();
+          if (!open && !rejectRequest.isPending)
+            closeRejectDialog();
         }}
       >
         <DialogContent className="max-w-md">
@@ -453,7 +551,11 @@ export function SIMApprovalQueue() {
           </Form>
 
           <DialogFooter>
-            <Button variant="outline" onClick={closeRejectDialog} disabled={rejectRequest.isPending}>
+            <Button
+              variant="outline"
+              onClick={closeRejectDialog}
+              disabled={rejectRequest.isPending}
+            >
               Cancel
             </Button>
             <Button

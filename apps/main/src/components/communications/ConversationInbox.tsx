@@ -1,46 +1,57 @@
-import { formatDistance, formatTime } from "@truckmoov/app-core/utils/time-utils";
-import { useState, useEffect, useRef } from "react";
-import { WhatsAppIcon, SMSIcon, VoiceCallIcon } from "./ChannelIcons";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Badge } from "@/components/shadcn/badge";
-import { Textarea } from "@/components/shadcn/textarea";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
 import {
-  MessageSquare,
-  Phone,
+  formatDistance, formatTime,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  ArrowLeft,
+  Check,
+  CheckCheck,
+  Clock,
   Mail,
+  MessageSquare,
+  MoreVertical,
+  Paperclip,
+  Phone,
+  PhoneCall,
+  RefreshCw,
   Search,
   Send,
-  Paperclip,
-  MoreVertical,
-  ArrowLeft,
-  Clock,
-  CheckCheck,
-  Check,
-  XCircle,
-  RefreshCw,
-  PhoneCall,
   Video,
+  XCircle,
 } from "lucide-react";
-type DriverMessage = any;
-import { cn } from "@/lib/utils";
+import {
+  useEffect, useRef, useState,
+} from "react";
 import { toast } from "sonner";
+import {
+  Avatar, AvatarFallback,
+} from "@/components/shadcn/avatar";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
+import { Input } from "@/components/shadcn/input";
+import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import { Textarea } from "@/components/shadcn/textarea";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
+import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
-import { MessageActions } from "./MessageActions";
 import { CallRecordingPlayer } from "./CallRecordingPlayer";
+import {
+  SMSIcon, VoiceCallIcon, WhatsAppIcon,
+} from "./ChannelIcons";
+import { MessageActions } from "./MessageActions";
 
-interface Conversation {
+type DriverMessage = any;
+
+type Conversation = {
   driverId: string;
   driverName: string;
   driverPhone: string;
@@ -48,12 +59,12 @@ interface Conversation {
   lastMessageTime: Date;
   unreadCount: number;
   status: "online" | "offline" | "away";
-}
+};
 
 export function ConversationInbox() {
   const { user } = useAuthStore();
-  const tenantId = user?.tenantId || '';
-  
+  const tenantId = user?.tenantId || "";
+
   const messages: any[] = [];
   const isLoading = false;
   const sendSMS = async (...args: any[]) => {};
@@ -62,54 +73,74 @@ export function ConversationInbox() {
   const isSending = false;
   const isCalling = false;
   const refetch = async (...args: any[]) => {};
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [newMessage, setNewMessage] = useState("");
-  const [messageType, setMessageType] = useState<"whatsapp" | "sms">("whatsapp");
-  const [channelFilter, setChannelFilter] = useState<"all" | "whatsapp" | "sms" | "voice">("all");
+  const [
+    selectedConversation,
+    setSelectedConversation,
+  ] = useState<Conversation | null>(null);
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    newMessage,
+    setNewMessage,
+  ] = useState("");
+  const [
+    messageType,
+    setMessageType,
+  ] = useState<"whatsapp" | "sms">("whatsapp");
+  const [
+    channelFilter,
+    setChannelFilter,
+  ] = useState<"all" | "whatsapp" | "sms" | "voice">("all");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Group messages by driver to create conversations
-  const conversations: Conversation[] = messages.reduce((acc, msg) => {
-    const existing = acc.find(c => c.driverId === msg.driver_id);
-    if (existing) {
-      if (new Date(msg.created_at) > existing.lastMessageTime) {
-        existing.lastMessage = msg.content;
-        existing.lastMessageTime = new Date(msg.created_at);
+  const conversations: Conversation[] = messages.reduce(
+    (acc, msg) => {
+      const existing = acc.find(c => c.driverId === msg.driver_id);
+      if (existing) {
+        if (new Date(msg.created_at) > existing.lastMessageTime) {
+          existing.lastMessage = msg.content;
+          existing.lastMessageTime = new Date(msg.created_at);
+        }
+        if (msg.direction === "inbound" && msg.status !== "read") {
+          existing.unreadCount++;
+        }
       }
-      if (msg.direction === "inbound" && msg.status !== "read") {
-        existing.unreadCount++;
+      else {
+        acc.push({
+          driverId: msg.driver_id,
+          driverName: msg.driver_name || "Unknown Driver",
+          driverPhone: msg.driver_phone,
+          lastMessage: msg.content,
+          lastMessageTime: new Date(msg.created_at),
+          unreadCount: msg.direction === "inbound" && msg.status !== "read" ? 1 : 0,
+          status: "online", // Would be determined by actual driver status
+        });
       }
-    } else {
-      acc.push({
-        driverId: msg.driver_id,
-        driverName: msg.driver_name || "Unknown Driver",
-        driverPhone: msg.driver_phone,
-        lastMessage: msg.content,
-        lastMessageTime: new Date(msg.created_at),
-        unreadCount: msg.direction === "inbound" && msg.status !== "read" ? 1 : 0,
-        status: "online", // Would be determined by actual driver status
-      });
-    }
-    return acc;
-  }, [] as Conversation[]);
+      return acc;
+    },
+    [] as Conversation[],
+  );
 
   // Sort by most recent
   conversations.sort((a, b) => b.lastMessageTime.getTime() - a.lastMessageTime.getTime());
 
   // Filter conversations
   const filteredConversations = conversations.filter(c =>
-    c.driverName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.driverPhone.includes(searchQuery)
-  );
+    c.driverName.toLowerCase().includes(searchQuery.toLowerCase())
+    || c.driverPhone.includes(searchQuery));
 
   // Get messages for selected conversation, filtered by channel
   const conversationMessages = selectedConversation
     ? messages
         .filter(m => m.driver_id === selectedConversation.driverId)
-        .filter(m => {
-          if (channelFilter === "all") return true;
-          if (channelFilter === "voice") return m.message_type === "call" || m.message_type === "voice";
+        .filter((m) => {
+          if (channelFilter === "all")
+            return true;
+          if (channelFilter === "voice")
+            return m.message_type === "call" || m.message_type === "voice";
           return m.message_type === channelFilter;
         })
         .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
@@ -119,12 +150,16 @@ export function ConversationInbox() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [conversationMessages]);
+  useEffect(
+    () => {
+      scrollToBottom();
+    },
+    [conversationMessages],
+  );
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation) return;
+    if (!newMessage.trim() || !selectedConversation)
+      return;
 
     try {
       if (messageType === "whatsapp") {
@@ -133,40 +168,45 @@ export function ConversationInbox() {
           selectedConversation.driverName,
           selectedConversation.driverPhone,
           newMessage,
-          "Fleet Manager"
+          "Fleet Manager",
         );
-      } else {
+      }
+      else {
         await sendSMS(
           selectedConversation.driverId,
           selectedConversation.driverName,
           selectedConversation.driverPhone,
           newMessage,
-          "Fleet Manager"
+          "Fleet Manager",
         );
       }
       setNewMessage("");
-    } catch (error) {
+    }
+    catch (error) {
       // Error already handled by hook
     }
   };
 
   const handleCall = async () => {
-    if (!selectedConversation) return;
+    if (!selectedConversation)
+      return;
     try {
       await initiateCall(
         selectedConversation.driverId,
         selectedConversation.driverName,
         selectedConversation.driverPhone,
-        "Fleet Manager"
+        "Fleet Manager",
       );
-    } catch (error) {
+    }
+    catch (error) {
       // Error handled by hook
     }
   };
 
   const getStatusIcon = (status: string, direction: string) => {
-    if (direction === "inbound") return null;
-    
+    if (direction === "inbound")
+      return null;
+
     switch (status) {
       case "pending":
       case "queued":
@@ -213,8 +253,11 @@ export function ConversationInbox() {
       <Card className="h-[600px]">
         <CardContent className="p-6">
           <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full" />
+            {[...Array.from({ length: 5 })].map((_, i) => (
+              <Skeleton
+                key={i}
+                className="h-16 w-full"
+              />
             ))}
           </div>
         </CardContent>
@@ -227,13 +270,18 @@ export function ConversationInbox() {
       {/* Conversation List */}
       <div className={cn(
         "w-full md:w-80 border-r border-border/50 flex flex-col",
-        selectedConversation && "hidden md:flex"
-      )}>
+        selectedConversation && "hidden md:flex",
+      )}
+      >
         <div className="p-4 border-b border-border/50">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold">Messages</h3>
             <TooltipWrapper content="Refresh messages">
-              <Button variant="ghost" size="icon" onClick={() => refetch()}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => refetch()}
+              >
                 <RefreshCw className="h-4 w-4" />
               </Button>
             </TooltipWrapper>
@@ -243,7 +291,7 @@ export function ConversationInbox() {
             <Input
               placeholder="Search conversations..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="pl-9"
             />
           </div>
@@ -251,56 +299,63 @@ export function ConversationInbox() {
 
         <ScrollArea className="flex-1">
           <div className="divide-y divide-border/30">
-            {filteredConversations.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">
-                <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No conversations yet</p>
-              </div>
-            ) : (
-              filteredConversations.map((conv) => (
-                <div
-                  key={conv.driverId}
-                  onClick={() => setSelectedConversation(conv)}
-                  className={cn(
-                    "p-4 cursor-pointer hover:bg-muted/50 transition-colors",
-                    selectedConversation?.driverId === conv.driverId && "bg-muted/50"
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="relative">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm">
-                          {conv.driverName.split(" ").map(n => n[0]).join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className={cn(
-                        "absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background",
-                        conv.status === "online" ? "bg-success" :
-                        conv.status === "away" ? "bg-warning" : "bg-muted-foreground"
-                      )} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <p className="font-medium text-sm truncate">{conv.driverName}</p>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistance(conv.lastMessageTime)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs text-muted-foreground truncate flex-1">
-                          {conv.lastMessage}
-                        </p>
-                        {conv.unreadCount > 0 && (
-                          <Badge variant="default" className="h-5 px-1.5 text-[10px] bg-primary">
-                            {conv.unreadCount}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
+            {filteredConversations.length === 0
+              ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No conversations yet</p>
                   </div>
-                </div>
-              ))
-            )}
+                )
+              : (
+                  filteredConversations.map(conv => (
+                    <div
+                      key={conv.driverId}
+                      onClick={() => setSelectedConversation(conv)}
+                      className={cn(
+                        "p-4 cursor-pointer hover:bg-muted/50 transition-colors",
+                        selectedConversation?.driverId === conv.driverId && "bg-muted/50",
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="relative">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm">
+                              {conv.driverName.split(" ").map(n => n[0]).join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className={cn(
+                            "absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background",
+                            conv.status === "online"
+                              ? "bg-success"
+                              : conv.status === "away" ? "bg-warning" : "bg-muted-foreground",
+                          )}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <p className="font-medium text-sm truncate">{conv.driverName}</p>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistance(conv.lastMessageTime)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs text-muted-foreground truncate flex-1">
+                              {conv.lastMessage}
+                            </p>
+                            {conv.unreadCount > 0 && (
+                              <Badge
+                                variant="default"
+                                className="h-5 px-1.5 text-[10px] bg-primary"
+                              >
+                                {conv.unreadCount}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
           </div>
         </ScrollArea>
       </div>
@@ -308,17 +363,18 @@ export function ConversationInbox() {
       {/* Message Thread */}
       <div className={cn(
         "flex-1 flex flex-col",
-        !selectedConversation && "hidden md:flex"
-      )}>
+        !selectedConversation && "hidden md:flex",
+      )}
+      >
         {selectedConversation ? (
           <>
             {/* Header */}
             <div className="p-4 border-b border-border/50 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <TooltipWrapper content="Back to conversations">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="md:hidden"
                     onClick={() => setSelectedConversation(null)}
                   >
@@ -337,8 +393,8 @@ export function ConversationInbox() {
               </div>
               <div className="flex items-center gap-2">
                 <TooltipWrapper content="Call driver">
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="icon"
                     onClick={handleCall}
                     disabled={isCalling}
@@ -349,7 +405,10 @@ export function ConversationInbox() {
                 <DropdownMenu>
                   <TooltipWrapper content="More options">
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                      >
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -366,16 +425,42 @@ export function ConversationInbox() {
             {/* Channel filter tabs */}
             <div className="px-4 py-2 border-b border-border/50 flex items-center gap-1">
               {([
-                { key: "all", label: "All", icon: null },
-                { key: "whatsapp", label: "WhatsApp", icon: <WhatsAppIcon size={12} className="text-emerald-500" /> },
-                { key: "sms", label: "SMS", icon: <SMSIcon size={12} className="text-blue-500" /> },
-                { key: "voice", label: "Voice", icon: <VoiceCallIcon size={12} className="text-orange-500" /> },
-              ] as const).map((tab) => (
+                {
+                  key: "all", label: "All", icon: null,
+                },
+                {
+                  key: "whatsapp", label: "WhatsApp", icon: (
+                    <WhatsAppIcon
+                      size={12}
+                      className="text-emerald-500"
+                    />
+                  ),
+                },
+                {
+                  key: "sms", label: "SMS", icon: (
+                    <SMSIcon
+                      size={12}
+                      className="text-blue-500"
+                    />
+                  ),
+                },
+                {
+                  key: "voice", label: "Voice", icon: (
+                    <VoiceCallIcon
+                      size={12}
+                      className="text-orange-500"
+                    />
+                  ),
+                },
+              ] as const).map(tab => (
                 <Button
                   key={tab.key}
                   variant={channelFilter === tab.key ? "secondary" : "ghost"}
                   size="sm"
-                  className={cn("h-7 gap-1 text-xs", channelFilter === tab.key && "font-semibold")}
+                  className={cn(
+                    "h-7 gap-1 text-xs",
+                    channelFilter === tab.key && "font-semibold",
+                  )}
                   onClick={() => setChannelFilter(tab.key)}
                 >
                   {tab.icon}
@@ -428,10 +513,14 @@ export function ConversationInbox() {
                       key={msg.id}
                       className={cn(
                         "flex",
-                        isOutbound ? "justify-end" : "justify-start"
+                        isOutbound ? "justify-end" : "justify-start",
                       )}
                     >
-                      <div className={cn("max-w-[70%] rounded-2xl px-4 py-2", bubbleClass)}>
+                      <div className={cn(
+                        "max-w-[70%] rounded-2xl px-4 py-2",
+                        bubbleClass,
+                      )}
+                      >
                         {isCall && (
                           <div className="flex items-center gap-1.5 mb-1">
                             <VoiceCallIcon size={14} />
@@ -441,7 +530,11 @@ export function ConversationInbox() {
                           </div>
                         )}
                         <p className="text-sm">{msg.content}</p>
-                        <div className={cn("flex items-center justify-end gap-1 mt-1", metaClass)}>
+                        <div className={cn(
+                          "flex items-center justify-end gap-1 mt-1",
+                          metaClass,
+                        )}
+                        >
                           <span className="text-[10px]">
                             {formatTime(msg.created_at)}
                           </span>
@@ -449,13 +542,16 @@ export function ConversationInbox() {
                             variant="outline"
                             className={cn(
                               "h-4 px-1.5 text-[9px] font-medium gap-0.5",
-                              isOutbound ? channelBadgeClass : inboundBadgeClass
+                              isOutbound ? channelBadgeClass : inboundBadgeClass,
                             )}
                           >
                             {channelIcon}
                             {channelLabel}
                           </Badge>
-                          {getStatusIcon(msg.status, msg.direction)}
+                          {getStatusIcon(
+                            msg.status,
+                            msg.direction,
+                          )}
                           {isOutbound && msg.status === "failed" && !isCall && (
                             <TooltipWrapper content="Resend message">
                               <Button
@@ -464,9 +560,20 @@ export function ConversationInbox() {
                                 className="h-5 w-5 ml-1"
                                 onClick={() => {
                                   if (isWhatsApp) {
-                                    sendWhatsApp(msg.driver_id, msg.driver_name || '', msg.driver_phone, msg.content);
-                                  } else {
-                                    sendSMS(msg.driver_id, msg.driver_name || '', msg.driver_phone, msg.content);
+                                    sendWhatsApp(
+                                      msg.driver_id,
+                                      msg.driver_name || "",
+                                      msg.driver_phone,
+                                      msg.content,
+                                    );
+                                  }
+                                  else {
+                                    sendSMS(
+                                      msg.driver_id,
+                                      msg.driver_name || "",
+                                      msg.driver_phone,
+                                      msg.content,
+                                    );
                                   }
                                 }}
                               >
@@ -509,7 +616,7 @@ export function ConversationInbox() {
                 <Textarea
                   placeholder={`Type a ${messageType === "whatsapp" ? "WhatsApp" : "SMS"} message...`}
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
+                  onChange={e => setNewMessage(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -520,7 +627,7 @@ export function ConversationInbox() {
                   rows={1}
                 />
                 <TooltipWrapper content="Send message">
-                  <Button 
+                  <Button
                     onClick={handleSendMessage}
                     disabled={!newMessage.trim() || isSending}
                     size="icon"

@@ -1,37 +1,42 @@
-import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
 import {
   getOnboardingSubscriptionCapsQueryOptions,
-  useProvisionDevices,
-  useRegisterSims,
-  useImportSimsFromCsv,
-  useProvisionSims,
-  useUpdateOnboardingFeatures,
   useCompleteOnboarding,
+  useImportSimsFromCsv,
+  useProvisionDevices,
+  useProvisionSims,
+  useRegisterSims,
+  useUpdateOnboardingFeatures,
 } from "@truckmoov/api/auth";
-import { toast } from "sonner";
 import {
-  Cpu,
-  Smartphone,
-  Plus,
-  Upload,
-  Send,
-  Check,
-  Truck,
-  Settings as SettingsIcon,
   AlertTriangle,
   ArrowRight,
+  Check,
+  Cpu,
   Info,
+  Plus,
+  Send,
+  Settings as SettingsIcon,
+  Smartphone,
+  Truck,
+  Upload,
 } from "lucide-react";
+import {
+  useMemo, useState,
+} from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
-import { OnboardingLayout } from "./OnboardingLayout";
-import { Button } from "@/components/shadcn/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Label } from "@/components/shadcn/label";
-import { Input } from "@/components/shadcn/input";
-import { Switch } from "@/components/shadcn/switch";
+import { DeviceFormDialog } from "@/components/devices/DeviceFormDialog";
+import { DeviceSetupRequestDialogMinimal } from "@/components/devices/DeviceSetupRequestDialogMinimal";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Progress } from "@/components/shadcn/progress";
 import {
   Select,
   SelectContent,
@@ -39,14 +44,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { Progress } from "@/components/shadcn/progress";
-import { cn } from "@/lib/utils";
+import { Switch } from "@/components/shadcn/switch";
 
-import { DeviceFormDialog } from "@/components/devices/DeviceFormDialog";
 import { SIMFormDialog } from "@/components/sims/SIMFormDialog";
-import { DeviceSetupRequestDialogMinimal } from "@/components/devices/DeviceSetupRequestDialogMinimal";
 import { SIMRequestFormDialogMinimal } from "@/components/sims/SIMRequestFormDialogMinimal";
+import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
+import { OnboardingLayout } from "./OnboardingLayout";
 
 /**
  * Onboarding Step 3 — "Activate Your System"
@@ -65,14 +69,21 @@ import { useAuthStore } from "@/stores/authStore";
  */
 
 // --- Dropzone --------------------------------------------------------------
-interface DropZoneProps {
+type DropZoneProps = {
   accept: string;
   helperText: string;
-  files: { name: string; size: number; rows: number; valid: number; invalid: number }[];
+  files: {
+    name: string; size: number; rows: number; valid: number; invalid: number;
+  }[];
   onFiles: (files: FileList) => void;
-}
-function DropZone({ accept, helperText, files, onFiles }: DropZoneProps) {
-  const [dragOver, setDragOver] = useState(false);
+};
+function DropZone({
+  accept, helperText, files, onFiles,
+}: DropZoneProps) {
+  const [
+    dragOver,
+    setDragOver,
+  ] = useState(false);
   return (
     <div className="space-y-2">
       <div
@@ -84,11 +95,12 @@ function DropZone({ accept, helperText, files, onFiles }: DropZoneProps) {
         onDrop={(e) => {
           e.preventDefault();
           setDragOver(false);
-          if (e.dataTransfer.files?.length) onFiles(e.dataTransfer.files);
+          if (e.dataTransfer.files?.length)
+            onFiles(e.dataTransfer.files);
         }}
         className={cn(
           "relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 text-center transition-colors cursor-pointer",
-          dragOver ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/60"
+          dragOver ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/60",
         )}
       >
         <Upload className="mb-2 h-7 w-7 text-muted-foreground" />
@@ -98,13 +110,13 @@ function DropZone({ accept, helperText, files, onFiles }: DropZoneProps) {
           type="file"
           accept={accept}
           multiple
-          onChange={(e) => e.target.files && onFiles(e.target.files)}
+          onChange={e => e.target.files && onFiles(e.target.files)}
           className="absolute inset-0 cursor-pointer opacity-0"
         />
       </div>
       {files.length > 0 && (
         <div className="space-y-1.5">
-          {files.map((f) => (
+          {files.map(f => (
             <div
               key={f.name}
               className="flex items-center justify-between rounded-md border border-border bg-secondary/30 px-3 py-2 text-xs"
@@ -112,15 +124,30 @@ function DropZone({ accept, helperText, files, onFiles }: DropZoneProps) {
               <div className="flex items-center gap-2">
                 <Check className="h-3.5 w-3.5 text-success" />
                 <span className="font-medium">{f.name}</span>
-                <span className="text-muted-foreground">({(f.size / 1024).toFixed(1)} KB)</span>
+                <span className="text-muted-foreground">
+                  (
+                  {(f.size / 1024).toFixed(1)}
+                  {" "}
+                  KB)
+                </span>
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-[10px]">
-                  {f.valid} valid
+                <Badge
+                  variant="outline"
+                  className="text-[10px]"
+                >
+                  {f.valid}
+                  {" "}
+                  valid
                 </Badge>
                 {f.invalid > 0 && (
-                  <Badge variant="destructive" className="text-[10px]">
-                    {f.invalid} errors
+                  <Badge
+                    variant="destructive"
+                    className="text-[10px]"
+                  >
+                    {f.invalid}
+                    {" "}
+                    errors
                   </Badge>
                 )}
               </div>
@@ -133,18 +160,23 @@ function DropZone({ accept, helperText, files, onFiles }: DropZoneProps) {
 }
 
 // --- Helpers ---------------------------------------------------------------
-function parseCsvCount(text: string): { rows: number; valid: number; invalid: number } {
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+function parseCsvCount(text: string): {
+  rows: number; valid: number; invalid: number;
+} {
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
   const dataLines = lines.length > 1 ? lines.slice(1) : []; // skip header if present
   let valid = 0;
   let invalid = 0;
   for (const line of dataLines) {
-    const cells = line.split(",").map((c) => c.trim());
+    const cells = line.split(",").map(c => c.trim());
     // Loose validation: at least 2 non-empty columns
-    if (cells.filter(Boolean).length >= 2) valid += 1;
+    if (cells.filter(Boolean).length >= 2)
+      valid += 1;
     else invalid += 1;
   }
-  return { rows: dataLines.length, valid, invalid };
+  return {
+    rows: dataLines.length, valid, invalid,
+  };
 }
 
 // =========================================================================
@@ -169,25 +201,74 @@ export default function ActivationOnboarding() {
   };
 
   // --- Devices state -------------------------------------------------------
-  const [deviceDialogOpen, setDeviceDialogOpen] = useState(false);
-  const [deviceRequestDialogOpen, setDeviceRequestDialogOpen] = useState(false);
-  const [addedDevices, setAddedDevices] = useState<{ imei: string; manufacturer: string; model: string }[]>([]);
-  const [deviceFiles, setDeviceFiles] = useState<DropZoneProps["files"]>([]);
-  const [deviceRequests, setDeviceRequests] = useState<
-    { manufacturer: string; model?: string; quantity: number }[]
-  >([{ manufacturer: "Teltonika", model: "FMC130", quantity: 10 }]);
+  const [
+    deviceDialogOpen,
+    setDeviceDialogOpen,
+  ] = useState(false);
+  const [
+    deviceRequestDialogOpen,
+    setDeviceRequestDialogOpen,
+  ] = useState(false);
+  const [
+    addedDevices,
+    setAddedDevices,
+  ] = useState<{
+    imei: string; manufacturer: string; model: string;
+  }[]>([]);
+  const [
+    deviceFiles,
+    setDeviceFiles,
+  ] = useState<DropZoneProps["files"]>([]);
+  const [
+    deviceRequests,
+    setDeviceRequests,
+  ] = useState<
+    {
+      manufacturer: string; model?: string; quantity: number;
+    }[]
+  >([
+    {
+      manufacturer: "Teltonika", model: "FMC130", quantity: 10,
+    },
+  ]);
 
   // --- SIMs state ----------------------------------------------------------
-  const [simDialogOpen, setSimDialogOpen] = useState(false);
-  const [simRequestDialogOpen, setSimRequestDialogOpen] = useState(false);
-  const [addedSims, setAddedSims] = useState<{ iccid: string; mobileNumber: string; networkOperator: string }[]>([]);
-  const [simFiles, setSimFiles] = useState<DropZoneProps["files"]>([]);
-  const [simRequests, setSimRequests] = useState<
-    { carrier: string; quantity: number }[]
-  >([{ carrier: "MTN", quantity: 10 }]);
+  const [
+    simDialogOpen,
+    setSimDialogOpen,
+  ] = useState(false);
+  const [
+    simRequestDialogOpen,
+    setSimRequestDialogOpen,
+  ] = useState(false);
+  const [
+    addedSims,
+    setAddedSims,
+  ] = useState<{
+    iccid: string; mobileNumber: string; networkOperator: string;
+  }[]>([]);
+  const [
+    simFiles,
+    setSimFiles,
+  ] = useState<DropZoneProps["files"]>([]);
+  const [
+    simRequests,
+    setSimRequests,
+  ] = useState<
+    {
+      carrier: string; quantity: number;
+    }[]
+  >([
+    {
+      carrier: "MTN", quantity: 10,
+    },
+  ]);
 
   // --- Features state (defaults mirror the wizard) -------------------------
-  const [features, setFeatures] = useState({
+  const [
+    features,
+    setFeatures,
+  ] = useState({
     liveTracking: true,
     geofencing: false,
     routeOptimization: false,
@@ -198,23 +279,49 @@ export default function ActivationOnboarding() {
 
   // --- Counters / cap enforcement ------------------------------------------
   const deviceRequestedQty = useMemo(
-    () => deviceRequests.reduce((acc, r) => acc + r.quantity, 0),
+    () => deviceRequests.reduce(
+      (acc, r) => acc + r.quantity,
+      0,
+    ),
     [deviceRequests],
   );
   const simRequestedQty = useMemo(
-    () => simRequests.reduce((acc, r) => acc + r.quantity, 0),
+    () => simRequests.reduce(
+      (acc, r) => acc + r.quantity,
+      0,
+    ),
     [simRequests],
   );
 
-  const totalDevices = useMemo(() => {
-    const fromUploads = deviceFiles.reduce((acc, f) => acc + f.valid, 0);
-    return addedDevices.length + fromUploads + deviceRequestedQty;
-  }, [addedDevices, deviceFiles, deviceRequestedQty]);
+  const totalDevices = useMemo(
+    () => {
+      const fromUploads = deviceFiles.reduce(
+        (acc, f) => acc + f.valid,
+        0,
+      );
+      return addedDevices.length + fromUploads + deviceRequestedQty;
+    },
+    [
+      addedDevices,
+      deviceFiles,
+      deviceRequestedQty,
+    ],
+  );
 
-  const totalSims = useMemo(() => {
-    const fromUploads = simFiles.reduce((acc, f) => acc + f.valid, 0);
-    return addedSims.length + fromUploads + simRequestedQty;
-  }, [addedSims, simFiles, simRequestedQty]);
+  const totalSims = useMemo(
+    () => {
+      const fromUploads = simFiles.reduce(
+        (acc, f) => acc + f.valid,
+        0,
+      );
+      return addedSims.length + fromUploads + simRequestedQty;
+    },
+    [
+      addedSims,
+      simFiles,
+      simRequestedQty,
+    ],
+  );
 
   const deviceOver = caps.devices !== null && totalDevices > caps.devices;
   const simOver = caps.sims !== null && totalSims > caps.sims;
@@ -225,7 +332,12 @@ export default function ActivationOnboarding() {
       toast.error(`Your ${caps.label} plan allows ${caps.devices} devices. Upgrade to add more.`);
       return;
     }
-    setAddedDevices((prev) => [...prev, { imei: data.imei, manufacturer: data.manufacturer, model: data.model }]);
+    setAddedDevices(prev => [
+      ...prev,
+      {
+        imei: data.imei, manufacturer: data.manufacturer, model: data.model,
+      },
+    ]);
     setDeviceDialogOpen(false);
     toast.success(`Device ${data.imei} added`);
   };
@@ -237,15 +349,24 @@ export default function ActivationOnboarding() {
     }
     try {
       await registerSimsMutation.mutateAsync({
-        data: { sims: [{ iccid: data.iccid, mobileNumber: data.mobileNumber, networkOperator: data.networkOperator }] },
+        data: {
+          sims: [
+            {
+              iccid: data.iccid, mobileNumber: data.mobileNumber, networkOperator: data.networkOperator,
+            },
+          ],
+        },
       });
-      setAddedSims((prev) => [
+      setAddedSims(prev => [
         ...prev,
-        { iccid: data.iccid, mobileNumber: data.mobileNumber, networkOperator: data.networkOperator },
+        {
+          iccid: data.iccid, mobileNumber: data.mobileNumber, networkOperator: data.networkOperator,
+        },
       ]);
       setSimDialogOpen(false);
       toast.success(`SIM ${data.iccid} added`);
-    } catch {
+    }
+    catch {
       toast.error("Failed to register SIM. Please try again.");
     }
   };
@@ -259,7 +380,9 @@ export default function ActivationOnboarding() {
       }
       const text = await file.text();
       const counts = parseCsvCount(text);
-      next.push({ name: file.name, size: file.size, ...counts });
+      next.push({
+        name: file.name, size: file.size, ...counts,
+      });
     }
     setDeviceFiles(next);
     toast.success("File parsed — review row counts before continuing");
@@ -276,8 +399,11 @@ export default function ActivationOnboarding() {
       const counts = parseCsvCount(text);
       try {
         await importSimsFromCsvMutation.mutateAsync(file);
-        next.push({ name: file.name, size: file.size, ...counts });
-      } catch {
+        next.push({
+          name: file.name, size: file.size, ...counts,
+        });
+      }
+      catch {
         toast.error(`${file.name}: upload failed. Please try again.`);
       }
     }
@@ -294,7 +420,8 @@ export default function ActivationOnboarding() {
   const handleSkip = async () => {
     try {
       await completeOnboardingMutation.mutateAsync();
-    } catch {
+    }
+    catch {
       // silently ignore — user is skipping
     }
     toast.info("Activation skipped — you can configure devices, SIMs and features later from Settings.");
@@ -305,7 +432,8 @@ export default function ActivationOnboarding() {
     try {
       await updateFeaturesMutation.mutateAsync({ data: features });
       toast.success("Features saved.");
-    } catch {
+    }
+    catch {
       toast.error("Failed to save features. Please try again.");
     }
   };
@@ -319,7 +447,8 @@ export default function ActivationOnboarding() {
       await completeOnboardingMutation.mutateAsync();
       toast.success("System activated — almost there.");
       goToQuickAccess();
-    } catch {
+    }
+    catch {
       toast.error("Something went wrong. Please try again.");
     }
   };
@@ -338,15 +467,31 @@ export default function ActivationOnboarding() {
           <div className="flex items-center gap-3">
             <SettingsIcon className="h-4 w-4 text-primary" />
             <div className="text-sm">
-              <p className="font-medium">{caps.label} plan limits</p>
+              <p className="font-medium">
+                {caps.label}
+                {" "}
+                plan limits
+              </p>
               <p className="text-xs text-muted-foreground">
-                Up to <span className="font-semibold text-foreground">{caps.devices ?? "Unlimited"}</span> devices and{" "}
-                <span className="font-semibold text-foreground">{caps.sims ?? "Unlimited"}</span> SIMs included.
+                Up to
+                {" "}
+                <span className="font-semibold text-foreground">{caps.devices ?? "Unlimited"}</span>
+                {" "}
+                devices and
+                {" "}
+                <span className="font-semibold text-foreground">{caps.sims ?? "Unlimited"}</span>
+                {" "}
+                SIMs included.
               </p>
             </div>
           </div>
-          <Badge variant="outline" className="hidden sm:inline-flex">
-            Plan: {caps.label}
+          <Badge
+            variant="outline"
+            className="hidden sm:inline-flex"
+          >
+            Plan:
+            {" "}
+            {caps.label}
           </Badge>
         </div>
 
@@ -363,21 +508,40 @@ export default function ActivationOnboarding() {
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">Selected</p>
-                <p className={cn("text-sm font-semibold", deviceOver && "text-destructive")}>
-                  {totalDevices} / {caps.devices ?? "Unlimited"}
+                <p className={cn(
+                  "text-sm font-semibold",
+                  deviceOver && "text-destructive",
+                )}
+                >
+                  {totalDevices}
+                  {" "}
+                  /
+                  {caps.devices ?? "Unlimited"}
                 </p>
               </div>
             </div>
             <Progress
-              value={caps.devices === null ? 0 : Math.min(100, (totalDevices / caps.devices) * 100)}
-              className={cn("mt-3 h-1.5", deviceOver && "[&>div]:bg-destructive")}
+              value={caps.devices === null
+                ? 0
+                : Math.min(
+                    100,
+                    (totalDevices / caps.devices) * 100,
+                  )}
+              className={cn(
+                "mt-3 h-1.5",
+                deviceOver && "[&>div]:bg-destructive",
+              )}
             />
           </CardHeader>
           <CardContent className="space-y-4">
             {deviceOver && (
               <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                You're over your plan cap. Reduce by {totalDevices - (caps.devices ?? totalDevices)} or upgrade your plan.
+                You're over your plan cap. Reduce by
+                {" "}
+                {totalDevices - (caps.devices ?? totalDevices)}
+                {" "}
+                or upgrade your plan.
               </div>
             )}
 
@@ -399,7 +563,12 @@ export default function ActivationOnboarding() {
                 </Button>
                 {addedDevices.length > 0 && (
                   <p className="mt-2 text-[11px] text-muted-foreground">
-                    {addedDevices.length} device{addedDevices.length === 1 ? "" : "s"} added
+                    {addedDevices.length}
+                    {" "}
+                    device
+                    {addedDevices.length === 1 ? "" : "s"}
+                    {" "}
+                    added
                   </p>
                 )}
               </div>
@@ -438,7 +607,17 @@ export default function ActivationOnboarding() {
                 {deviceRequests.length > 0 && (
                   <div className="mt-2 space-y-1">
                     <p className="text-[11px] text-muted-foreground">
-                      {deviceRequests.length} request{deviceRequests.length === 1 ? "" : "s"} submitted ({deviceRequestedQty} device{deviceRequestedQty === 1 ? "" : "s"})
+                      {deviceRequests.length}
+                      {" "}
+                      request
+                      {deviceRequests.length === 1 ? "" : "s"}
+                      {" "}
+                      submitted (
+                      {deviceRequestedQty}
+                      {" "}
+                      device
+                      {deviceRequestedQty === 1 ? "" : "s"}
+                      )
                     </p>
                     {deviceRequests.map((r, i) => (
                       <div
@@ -447,9 +626,20 @@ export default function ActivationOnboarding() {
                       >
                         <span className="truncate">
                           <span className="font-medium text-foreground">{r.manufacturer}</span>
-                          {r.model ? <span className="text-muted-foreground"> · {r.model}</span> : null}
+                          {r.model
+                            ? (
+                                <span className="text-muted-foreground">
+                                  {" "}
+                                  ·
+                                  {r.model}
+                                </span>
+                              )
+                            : null}
                         </span>
-                        <span className="text-muted-foreground">×{r.quantity}</span>
+                        <span className="text-muted-foreground">
+                          ×
+                          {r.quantity}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -472,21 +662,40 @@ export default function ActivationOnboarding() {
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">Selected</p>
-                <p className={cn("text-sm font-semibold", simOver && "text-destructive")}>
-                  {totalSims} / {caps.sims ?? "Unlimited"}
+                <p className={cn(
+                  "text-sm font-semibold",
+                  simOver && "text-destructive",
+                )}
+                >
+                  {totalSims}
+                  {" "}
+                  /
+                  {caps.sims ?? "Unlimited"}
                 </p>
               </div>
             </div>
             <Progress
-              value={caps.sims === null ? 0 : Math.min(100, (totalSims / caps.sims) * 100)}
-              className={cn("mt-3 h-1.5", simOver && "[&>div]:bg-destructive")}
+              value={caps.sims === null
+                ? 0
+                : Math.min(
+                    100,
+                    (totalSims / caps.sims) * 100,
+                  )}
+              className={cn(
+                "mt-3 h-1.5",
+                simOver && "[&>div]:bg-destructive",
+              )}
             />
           </CardHeader>
           <CardContent className="space-y-4">
             {simOver && (
               <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                You're over your plan cap. Reduce by {totalSims - (caps.sims ?? totalSims)} or upgrade your plan.
+                You're over your plan cap. Reduce by
+                {" "}
+                {totalSims - (caps.sims ?? totalSims)}
+                {" "}
+                or upgrade your plan.
               </div>
             )}
 
@@ -508,7 +717,12 @@ export default function ActivationOnboarding() {
                 </Button>
                 {addedSims.length > 0 && (
                   <p className="mt-2 text-[11px] text-muted-foreground">
-                    {addedSims.length} SIM{addedSims.length === 1 ? "" : "s"} added
+                    {addedSims.length}
+                    {" "}
+                    SIM
+                    {addedSims.length === 1 ? "" : "s"}
+                    {" "}
+                    added
                   </p>
                 )}
               </div>
@@ -547,7 +761,17 @@ export default function ActivationOnboarding() {
                 {simRequests.length > 0 && (
                   <div className="mt-2 space-y-1">
                     <p className="text-[11px] text-muted-foreground">
-                      {simRequests.length} request{simRequests.length === 1 ? "" : "s"} submitted ({simRequestedQty} SIM{simRequestedQty === 1 ? "" : "s"})
+                      {simRequests.length}
+                      {" "}
+                      request
+                      {simRequests.length === 1 ? "" : "s"}
+                      {" "}
+                      submitted (
+                      {simRequestedQty}
+                      {" "}
+                      SIM
+                      {simRequestedQty === 1 ? "" : "s"}
+                      )
                     </p>
                     {simRequests.map((r, i) => (
                       <div
@@ -555,7 +779,10 @@ export default function ActivationOnboarding() {
                         className="flex items-center justify-between rounded border border-border/60 bg-secondary/30 px-2 py-1 text-[11px]"
                       >
                         <span className="font-medium text-foreground truncate">{r.carrier}</span>
-                        <span className="text-muted-foreground">×{r.quantity}</span>
+                        <span className="text-muted-foreground">
+                          ×
+                          {r.quantity}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -588,13 +815,25 @@ export default function ActivationOnboarding() {
           <CardContent>
             <div className="grid gap-3 sm:grid-cols-2">
               {[
-                { key: "liveTracking", label: "Live Tracking", desc: "Real-time GPS tracking" },
-                { key: "geofencing", label: "Geofencing", desc: "Zone alerts & monitoring" },
-                { key: "routeOptimization", label: "Route Optimization", desc: "AI-powered route planning" },
-                { key: "messaging", label: "Messaging", desc: "WhatsApp & SMS integration" },
-                { key: "analytics", label: "Advanced Analytics", desc: "Reports & insights" },
-                { key: "apiAccess", label: "API Access", desc: "REST API integration" },
-              ].map((feature) => (
+                {
+                  key: "liveTracking", label: "Live Tracking", desc: "Real-time GPS tracking",
+                },
+                {
+                  key: "geofencing", label: "Geofencing", desc: "Zone alerts & monitoring",
+                },
+                {
+                  key: "routeOptimization", label: "Route Optimization", desc: "AI-powered route planning",
+                },
+                {
+                  key: "messaging", label: "Messaging", desc: "WhatsApp & SMS integration",
+                },
+                {
+                  key: "analytics", label: "Advanced Analytics", desc: "Reports & insights",
+                },
+                {
+                  key: "apiAccess", label: "API Access", desc: "REST API integration",
+                },
+              ].map(feature => (
                 <div
                   key={feature.key}
                   className="flex items-center justify-between rounded-lg border border-border bg-background/40 p-3"
@@ -605,9 +844,10 @@ export default function ActivationOnboarding() {
                   </div>
                   <Switch
                     checked={features[feature.key as keyof typeof features]}
-                    onCheckedChange={(checked) =>
-                      setFeatures((prev) => ({ ...prev, [feature.key]: checked }))
-                    }
+                    onCheckedChange={checked =>
+                      setFeatures(prev => ({
+                        ...prev, [feature.key]: checked,
+                      }))}
                     disabled={updateFeaturesMutation.isPending}
                   />
                 </div>
@@ -633,10 +873,10 @@ export default function ActivationOnboarding() {
             <Button
               onClick={handleContinue}
               disabled={
-                deviceOver ||
-                simOver ||
-                updateFeaturesMutation.isPending ||
-                completeOnboardingMutation.isPending
+                deviceOver
+                || simOver
+                || updateFeaturesMutation.isPending
+                || completeOnboardingMutation.isPending
               }
             >
               Continue
@@ -661,7 +901,12 @@ export default function ActivationOnboarding() {
       <DeviceSetupRequestDialogMinimal
         open={deviceRequestDialogOpen}
         onOpenChange={setDeviceRequestDialogOpen}
-        quotaRemaining={caps.devices === null ? undefined : Math.max(0, caps.devices - totalDevices)}
+        quotaRemaining={caps.devices === null
+          ? undefined
+          : Math.max(
+              0,
+              caps.devices - totalDevices,
+            )}
         quotaLabel={caps.label}
         onSubmit={async (data) => {
           const res = await provisionDevicesMutation.mutateAsync({
@@ -674,9 +919,11 @@ export default function ActivationOnboarding() {
             },
           });
           if (res) {
-            setDeviceRequests((prev) => [
+            setDeviceRequests(prev => [
               ...prev,
-              { manufacturer: data.manufacturer, model: data.model, quantity: data.quantity },
+              {
+                manufacturer: data.manufacturer, model: data.model, quantity: data.quantity,
+              },
             ]);
             setDeviceRequestDialogOpen(false);
           }
@@ -686,7 +933,12 @@ export default function ActivationOnboarding() {
       <SIMRequestFormDialogMinimal
         open={simRequestDialogOpen}
         onOpenChange={setSimRequestDialogOpen}
-        quotaRemaining={caps.sims === null ? undefined : Math.max(0, caps.sims - totalSims)}
+        quotaRemaining={caps.sims === null
+          ? undefined
+          : Math.max(
+              0,
+              caps.sims - totalSims,
+            )}
         quotaLabel={caps.label}
         onSubmit={async (data) => {
           const res = await provisionSimsMutation.mutateAsync({
@@ -700,9 +952,11 @@ export default function ActivationOnboarding() {
             },
           });
           if (res) {
-            setSimRequests((prev) => [
+            setSimRequests(prev => [
               ...prev,
-              { carrier: data.carrier || "MTN", quantity: data.numberOfSims },
+              {
+                carrier: data.carrier || "MTN", quantity: data.numberOfSims,
+              },
             ]);
             setSimRequestDialogOpen(false);
           }

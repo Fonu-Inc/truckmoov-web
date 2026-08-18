@@ -9,7 +9,8 @@ export function GlobalSupportChat() {
   const { pathname } = useLocation();
 
   // AuthPage renders its own controlled SupportChatWidget tied to the help dialog.
-  if (pathname === "/" || pathname.startsWith("/auth")) return null;
+  if (pathname === "/" || pathname.startsWith("/auth"))
+    return null;
 
   return <SupportChatWidget />;
 }

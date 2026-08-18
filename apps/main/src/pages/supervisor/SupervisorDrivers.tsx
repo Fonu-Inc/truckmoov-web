@@ -1,13 +1,48 @@
-import { formatDayMonthTime, formatTime } from "@truckmoov/app-core/utils/time-utils";
-import { useState, useEffect } from "react";
+import {
+  formatDayMonthTime, formatTime,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  ExternalLink,
+  Loader2,
+  Mail,
+  MessageCircle,
+  MessageSquare,
+  Phone,
+  PhoneCall,
+  PhoneOff,
+  RefreshCw,
+  RotateCcw,
+  Send,
+  Sparkles,
+  Star,
+  Timer,
+  TrendingUp,
+  Users,
+  UserX,
+  XCircle,
+} from "lucide-react";
+import {
+  useEffect, useState,
+} from "react";
+import { toast } from "sonner";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
-import { Textarea } from "@/components/shadcn/textarea";
 import { Label } from "@/components/shadcn/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import {
   Select,
@@ -17,38 +52,11 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/shadcn/dialog";
-import {
-  Users,
-  Phone,
-  MessageSquare,
-  Mail,
-  Star,
-  Sparkles,
-  UserX,
-  Clock,
-  PhoneCall,
-  PhoneOff,
-  Send,
-  Loader2,
-  MessageCircle,
-  TrendingUp,
-  CheckCircle,
-  XCircle,
-  RefreshCw,
-  ExternalLink,
-  AlertCircle,
-  RotateCcw,
-  Timer,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
+import { Textarea } from "@/components/shadcn/textarea";
 import { useFonuCall } from "@/contexts/FonuCallContext";
+import { cn } from "@/lib/utils";
 
 const statusColors: Record<string, string> = {
   available: "bg-success/20 text-success border-success/30",
@@ -58,45 +66,85 @@ const statusColors: Record<string, string> = {
 };
 
 export default function SupervisorDrivers() {
-  const [activeTab, setActiveTab] = useState("messages");
+  const [
+    activeTab,
+    setActiveTab,
+  ] = useState("messages");
 
   // Communication state
-  const [isCallDialogOpen, setIsCallDialogOpen] = useState(false);
-  const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
-  const [isFallbackDialogOpen, setIsFallbackDialogOpen] = useState(false);
-  const [callStatus, setCallStatus] = useState<"idle" | "ringing" | "connected" | "ended">("idle");
-  const [messageType, setMessageType] = useState<"sms" | "whatsapp">("whatsapp");
-  const [messageContent, setMessageContent] = useState("");
-  const [pendingMessage, setPendingMessage] = useState<string>("");
-  const [selectedContactName, setSelectedContactName] = useState<string | undefined>();
-  const [selectedContactPhone, setSelectedContactPhone] = useState<string | undefined>();
+  const [
+    isCallDialogOpen,
+    setIsCallDialogOpen,
+  ] = useState(false);
+  const [
+    isMessageDialogOpen,
+    setIsMessageDialogOpen,
+  ] = useState(false);
+  const [
+    isFallbackDialogOpen,
+    setIsFallbackDialogOpen,
+  ] = useState(false);
+  const [
+    callStatus,
+    setCallStatus,
+  ] = useState<"idle" | "ringing" | "connected" | "ended">("idle");
+  const [
+    messageType,
+    setMessageType,
+  ] = useState<"sms" | "whatsapp">("whatsapp");
+  const [
+    messageContent,
+    setMessageContent,
+  ] = useState("");
+  const [
+    pendingMessage,
+    setPendingMessage,
+  ] = useState<string>("");
+  const [
+    selectedContactName,
+    setSelectedContactName,
+  ] = useState<string | undefined>();
+  const [
+    selectedContactPhone,
+    setSelectedContactPhone,
+  ] = useState<string | undefined>();
 
   // Use real Fonu integration
   const messages: any[] = [];
   const callLogs: any[] = [];
   const sendSMS = async (...args: any[]) => {};
-  const sendWhatsApp = async (...args: any[]) => ({ success: false, queued: false });
+  const sendWhatsApp = async (...args: any[]) => ({
+    success: false, queued: false,
+  });
   const openWhatsAppWeb = (...args: any[]) => {};
   const isSending = false;
   const isLoading = false;
   const refetch = async (...args: any[]) => {};
-  const getStats = () => ({ todayMessages: 0, todayCalls: 0, totalMessages: 0, totalCalls: 0, sentMessages: 0, failedMessages: 0, completedCalls: 0, missedCalls: 0 });
+  const getStats = () => ({
+    todayMessages: 0, todayCalls: 0, totalMessages: 0, totalCalls: 0, sentMessages: 0, failedMessages: 0, completedCalls: 0, missedCalls: 0,
+  });
 
-  const { startCall, endCall: sipEndCall, status: sipStatus, durationSeconds } = useFonuCall();
+  const {
+    startCall, endCall: sipEndCall, status: sipStatus, durationSeconds,
+  } = useFonuCall();
 
   const stats = getStats();
 
   const handleEndCall = async () => {
     setCallStatus("ended");
     sipEndCall();
-    setTimeout(() => {
-      setIsCallDialogOpen(false);
-      setCallStatus("idle");
-    }, 500);
+    setTimeout(
+      () => {
+        setIsCallDialogOpen(false);
+        setCallStatus("idle");
+      },
+      500,
+    );
   };
 
   const handleSendMessage = async () => {
-    if (!selectedContactPhone || !messageContent.trim()) return;
+    if (!selectedContactPhone || !messageContent.trim())
+      return;
 
     if (messageType === "whatsapp") {
       const result = await sendWhatsApp(
@@ -104,7 +152,7 @@ export default function SupervisorDrivers() {
         selectedContactName,
         selectedContactPhone,
         messageContent,
-        "Supervisor"
+        "Supervisor",
       );
 
       // Check if API is unavailable and offer fallback
@@ -122,17 +170,19 @@ export default function SupervisorDrivers() {
         setIsFallbackDialogOpen(true);
         return;
       }
-    } else {
+    }
+    else {
       try {
         await sendSMS(
           selectedContactPhone,
           selectedContactName,
           selectedContactPhone,
           messageContent,
-          "Supervisor"
+          "Supervisor",
         );
-      } catch (err) {
-        toast.error('Failed to send SMS');
+      }
+      catch (err) {
+        toast.error("Failed to send SMS");
         return;
       }
     }
@@ -143,37 +193,58 @@ export default function SupervisorDrivers() {
 
   const handleUseFallback = () => {
     if (selectedContactPhone && pendingMessage) {
-      openWhatsAppWeb(selectedContactPhone, selectedContactName, pendingMessage);
+      openWhatsAppWeb(
+        selectedContactPhone,
+        selectedContactName,
+        pendingMessage,
+      );
     }
     setIsFallbackDialogOpen(false);
     setPendingMessage("");
   };
 
   // Sync modal status with SIP state
-  const [lastSipStatus, setLastSipStatus] = useState<typeof sipStatus>("idle");
-  useEffect(() => {
-    if (sipStatus === lastSipStatus) return;
-    setLastSipStatus(sipStatus);
-    if (sipStatus === "ringing" || sipStatus === "connecting") setCallStatus("ringing");
-    if (sipStatus === "connected") setCallStatus("connected");
-    if (sipStatus === "ended" || sipStatus === "failed") {
-      setCallStatus("ended");
-      setTimeout(() => {
-        setIsCallDialogOpen(false);
-        setCallStatus("idle");
-      }, 500);
-    }
-  }, [sipStatus, lastSipStatus]);
+  const [
+    lastSipStatus,
+    setLastSipStatus,
+  ] = useState<typeof sipStatus>("idle");
+  useEffect(
+    () => {
+      if (sipStatus === lastSipStatus)
+        return;
+      setLastSipStatus(sipStatus);
+      if (sipStatus === "ringing" || sipStatus === "connecting")
+        setCallStatus("ringing");
+      if (sipStatus === "connected")
+        setCallStatus("connected");
+      if (sipStatus === "ended" || sipStatus === "failed") {
+        setCallStatus("ended");
+        setTimeout(
+          () => {
+            setIsCallDialogOpen(false);
+            setCallStatus("idle");
+          },
+          500,
+        );
+      }
+    },
+    [
+      sipStatus,
+      lastSipStatus,
+    ],
+  );
 
   // Manual retry functionality
-  const [isRetrying, setIsRetrying] = useState(false);
+  const [
+    isRetrying,
+    setIsRetrying,
+  ] = useState(false);
 
   const handleManualRetry = async () => {
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
-  const pendingMessages = messages.filter(m => m.status === 'pending');
+  const pendingMessages = messages.filter(m => m.status === "pending");
   const pendingCount = pendingMessages.length;
 
   const getRetryInfo = (msg: any) => {
@@ -186,22 +257,22 @@ export default function SupervisorDrivers() {
 
   const getMessageStatusColor = (status: string) => {
     switch (status) {
-      case 'sent': return 'text-success';
-      case 'delivered': return 'text-primary';
-      case 'failed': return 'text-destructive';
-      case 'pending': return 'text-warning';
-      default: return 'text-muted-foreground';
+      case "sent": return "text-success";
+      case "delivered": return "text-primary";
+      case "failed": return "text-destructive";
+      case "pending": return "text-warning";
+      default: return "text-muted-foreground";
     }
   };
 
   const getCallStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'text-success';
-      case 'in_progress': return 'text-primary';
-      case 'failed':
-      case 'no_answer':
-      case 'busy': return 'text-destructive';
-      default: return 'text-muted-foreground';
+      case "completed": return "text-success";
+      case "in_progress": return "text-primary";
+      case "failed":
+      case "no_answer":
+      case "busy": return "text-destructive";
+      default: return "text-muted-foreground";
     }
   };
 
@@ -216,29 +287,53 @@ export default function SupervisorDrivers() {
           <CardHeader className="pb-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <CardTitle>Driver Communications</CardTitle>
-              <Button variant="outline" size="sm" onClick={() => refetch()}>
-                <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+              >
+                <RefreshCw className={cn(
+                  "h-4 w-4 mr-2",
+                  isLoading && "animate-spin",
+                )}
+                />
                 Refresh
               </Button>
             </div>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="space-y-6"
+            >
               <TabsList className="grid w-full grid-cols-2 max-w-sm">
-                <TabsTrigger value="messages" className="gap-2">
+                <TabsTrigger
+                  value="messages"
+                  className="gap-2"
+                >
                   <MessageCircle className="h-4 w-4" />
                   Messages
                   {stats.todayMessages > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1">
+                    <Badge
+                      variant="secondary"
+                      className="ml-1 h-5 min-w-5 px-1"
+                    >
                       {stats.todayMessages}
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="calls" className="gap-2">
+                <TabsTrigger
+                  value="calls"
+                  className="gap-2"
+                >
                   <Phone className="h-4 w-4" />
                   Calls
                   {stats.todayCalls > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1">
+                    <Badge
+                      variant="secondary"
+                      className="ml-1 h-5 min-w-5 px-1"
+                    >
                       {stats.todayCalls}
                     </Badge>
                   )}
@@ -246,7 +341,10 @@ export default function SupervisorDrivers() {
               </TabsList>
 
               {/* Messages Tab */}
-              <TabsContent value="messages" className="space-y-4">
+              <TabsContent
+                value="messages"
+                className="space-y-4"
+              >
                 {/* Pending Messages Alert & Retry Button */}
                 {pendingCount > 0 && (
                   <div className="flex items-center justify-between p-4 rounded-lg bg-warning/10 border border-warning/30">
@@ -255,7 +353,14 @@ export default function SupervisorDrivers() {
                         <Timer className="h-5 w-5 text-warning" />
                       </div>
                       <div>
-                        <p className="font-medium text-warning">{pendingCount} message{pendingCount > 1 ? 's' : ''} pending</p>
+                        <p className="font-medium text-warning">
+                          {pendingCount}
+                          {" "}
+                          message
+                          {pendingCount > 1 ? "s" : ""}
+                          {" "}
+                          pending
+                        </p>
                         <p className="text-sm text-muted-foreground">These messages will be retried automatically every 5 minutes</p>
                       </div>
                     </div>
@@ -266,17 +371,19 @@ export default function SupervisorDrivers() {
                       disabled={isRetrying}
                       className="gap-2 border-warning/50 text-warning hover:bg-warning/10"
                     >
-                      {isRetrying ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Retrying...
-                        </>
-                      ) : (
-                        <>
-                          <RotateCcw className="h-4 w-4" />
-                          Retry Now
-                        </>
-                      )}
+                      {isRetrying
+                        ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Retrying...
+                            </>
+                          )
+                        : (
+                            <>
+                              <RotateCcw className="h-4 w-4" />
+                              Retry Now
+                            </>
+                          )}
                     </Button>
                   </div>
                 )}
@@ -306,98 +413,117 @@ export default function SupervisorDrivers() {
                 </div>
 
                 <ScrollArea className="h-[500px]">
-                  {isLoading ? (
-                    <div className="flex items-center justify-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                  ) : messages.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <MessageCircle className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                      <p className="text-lg font-medium">No messages yet</p>
-                      <p className="text-sm mt-1">Send a message to a driver to get started</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {messages.map((msg) => {
-                        const retryInfo = getRetryInfo(msg);
-                        const isPending = msg.status === 'pending';
-
-                        return (
-                          <div
-                            key={msg.id}
-                            className={cn(
-                              "p-4 rounded-lg border transition-colors hover:bg-muted/30",
-                              msg.direction === 'inbound' ? "bg-primary/5 border-primary/20" : "bg-muted/20",
-                              isPending && "border-warning/50 bg-warning/5"
-                            )}
-                          >
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex items-center gap-3">
-                                <div className={cn(
-                                  "flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium text-white",
-                                  "bg-gradient-to-br from-primary to-accent"
-                                )}>
-                                  {msg.driver_name?.split(" ").map((n: string) => n[0]).join("") || "?"}
-                                </div>
-                                <div>
-                                  <p className="font-medium">{msg.driver_name || 'Unknown'}</p>
-                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <Badge variant="outline" className="text-xs px-1.5 py-0">
-                                      {msg.message_type === 'whatsapp' ? (
-                                        <MessageSquare className="h-3 w-3 mr-1 text-[#25D366]" />
-                                      ) : (
-                                        <Mail className="h-3 w-3 mr-1 text-primary" />
-                                      )}
-                                      {msg.message_type}
-                                    </Badge>
-                                    <span>{msg.direction === 'inbound' ? '← Received' : '→ Sent'}</span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className={cn("flex items-center gap-1 text-sm", getMessageStatusColor(msg.status))}>
-                                  {msg.status === 'sent' && <CheckCircle className="h-3.5 w-3.5" />}
-                                  {msg.status === 'failed' && <XCircle className="h-3.5 w-3.5" />}
-                                  {isPending && <Timer className="h-3.5 w-3.5" />}
-                                  <span className="capitalize">{msg.status}</span>
-                                </div>
-                                {isPending && retryInfo.retryCount > 0 && (
-                                  <p className="text-xs text-warning mt-0.5">
-                                    Retry {retryInfo.retryCount}/3
-                                  </p>
-                                )}
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  {formatDayMonthTime(msg.created_at)}
-                                </p>
-                              </div>
-                            </div>
-                            <p className="mt-3 text-sm text-foreground/80 line-clamp-2">{msg.content}</p>
-                            {isPending && (
-                              <div className="mt-2 pt-2 border-t border-warning/20 flex items-center justify-between">
-                                <span className="text-xs text-warning flex items-center gap-1">
-                                  <RotateCcw className="h-3 w-3" />
-                                  {retryInfo.lastRetry
-                                    ? `Last retry: ${formatTime(retryInfo.lastRetry)}`
-                                    : 'Waiting for retry...'
-                                  }
-                                </span>
-                                {msg.error_message && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {msg.error_message}
-                                  </span>
-                                )}
-                              </div>
-                            )}
+                  {isLoading
+                    ? (
+                        <div className="flex items-center justify-center py-12">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                      )
+                    : messages.length === 0
+                      ? (
+                          <div className="text-center py-12 text-muted-foreground">
+                            <MessageCircle className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                            <p className="text-lg font-medium">No messages yet</p>
+                            <p className="text-sm mt-1">Send a message to a driver to get started</p>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                        )
+                      : (
+                          <div className="space-y-3">
+                            {messages.map((msg) => {
+                              const retryInfo = getRetryInfo(msg);
+                              const isPending = msg.status === "pending";
+
+                              return (
+                                <div
+                                  key={msg.id}
+                                  className={cn(
+                                    "p-4 rounded-lg border transition-colors hover:bg-muted/30",
+                                    msg.direction === "inbound" ? "bg-primary/5 border-primary/20" : "bg-muted/20",
+                                    isPending && "border-warning/50 bg-warning/5",
+                                  )}
+                                >
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div className="flex items-center gap-3">
+                                      <div className={cn(
+                                        "flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium text-white",
+                                        "bg-gradient-to-br from-primary to-accent",
+                                      )}
+                                      >
+                                        {msg.driver_name?.split(" ").map((n: string) => n[0]).join("") || "?"}
+                                      </div>
+                                      <div>
+                                        <p className="font-medium">{msg.driver_name || "Unknown"}</p>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                          <Badge
+                                            variant="outline"
+                                            className="text-xs px-1.5 py-0"
+                                          >
+                                            {msg.message_type === "whatsapp"
+                                              ? (
+                                                  <MessageSquare className="h-3 w-3 mr-1 text-[#25D366]" />
+                                                )
+                                              : (
+                                                  <Mail className="h-3 w-3 mr-1 text-primary" />
+                                                )}
+                                            {msg.message_type}
+                                          </Badge>
+                                          <span>{msg.direction === "inbound" ? "← Received" : "→ Sent"}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className={cn(
+                                        "flex items-center gap-1 text-sm",
+                                        getMessageStatusColor(msg.status),
+                                      )}
+                                      >
+                                        {msg.status === "sent" && <CheckCircle className="h-3.5 w-3.5" />}
+                                        {msg.status === "failed" && <XCircle className="h-3.5 w-3.5" />}
+                                        {isPending && <Timer className="h-3.5 w-3.5" />}
+                                        <span className="capitalize">{msg.status}</span>
+                                      </div>
+                                      {isPending && retryInfo.retryCount > 0 && (
+                                        <p className="text-xs text-warning mt-0.5">
+                                          Retry
+                                          {" "}
+                                          {retryInfo.retryCount}
+                                          /3
+                                        </p>
+                                      )}
+                                      <p className="text-xs text-muted-foreground mt-0.5">
+                                        {formatDayMonthTime(msg.created_at)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <p className="mt-3 text-sm text-foreground/80 line-clamp-2">{msg.content}</p>
+                                  {isPending && (
+                                    <div className="mt-2 pt-2 border-t border-warning/20 flex items-center justify-between">
+                                      <span className="text-xs text-warning flex items-center gap-1">
+                                        <RotateCcw className="h-3 w-3" />
+                                        {retryInfo.lastRetry
+                                          ? `Last retry: ${formatTime(retryInfo.lastRetry)}`
+                                          : "Waiting for retry..."}
+                                      </span>
+                                      {msg.error_message && (
+                                        <span className="text-xs text-muted-foreground">
+                                          {msg.error_message}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                 </ScrollArea>
               </TabsContent>
 
               {/* Calls Tab */}
-              <TabsContent value="calls" className="space-y-4">
+              <TabsContent
+                value="calls"
+                className="space-y-4"
+              >
                 {/* Quick Stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                   <div className="p-4 rounded-lg bg-muted/50">
@@ -419,64 +545,90 @@ export default function SupervisorDrivers() {
                 </div>
 
                 <ScrollArea className="h-[500px]">
-                  {isLoading ? (
-                    <div className="flex items-center justify-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                  ) : callLogs.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Phone className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                      <p className="text-lg font-medium">No call history</p>
-                      <p className="text-sm mt-1">Call a driver to see the history here</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {callLogs.map((call) => (
-                        <div
-                          key={call.id}
-                          className="p-4 rounded-lg border bg-muted/20 hover:bg-muted/30 transition-colors"
-                        >
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex items-center gap-3">
-                              <div className={cn(
-                                "flex h-10 w-10 items-center justify-center rounded-full",
-                                call.status === 'completed' ? "bg-success/10" : "bg-destructive/10"
-                              )}>
-                                {call.call_type === 'inbound' ? (
-                                  <PhoneCall className={cn(
-                                    "h-5 w-5",
-                                    call.status === 'completed' ? "text-success" : "text-destructive"
-                                  )} />
-                                ) : (
-                                  <Phone className={cn(
-                                    "h-5 w-5",
-                                    call.status === 'completed' ? "text-success" : "text-destructive"
-                                  )} />
-                                )}
-                              </div>
-                              <div>
-                                <p className="font-medium">{call.driver_name || 'Unknown'}</p>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  <span>{call.call_type === 'inbound' ? '← Incoming' : '→ Outgoing'}</span>
-                                  {call.duration_seconds && (
-                                    <span>• {Math.floor(call.duration_seconds / 60)}:{(call.duration_seconds % 60).toString().padStart(2, '0')}</span>
-                                  )}
+                  {isLoading
+                    ? (
+                        <div className="flex items-center justify-center py-12">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                      )
+                    : callLogs.length === 0
+                      ? (
+                          <div className="text-center py-12 text-muted-foreground">
+                            <Phone className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                            <p className="text-lg font-medium">No call history</p>
+                            <p className="text-sm mt-1">Call a driver to see the history here</p>
+                          </div>
+                        )
+                      : (
+                          <div className="space-y-3">
+                            {callLogs.map(call => (
+                              <div
+                                key={call.id}
+                                className="p-4 rounded-lg border bg-muted/20 hover:bg-muted/30 transition-colors"
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className={cn(
+                                      "flex h-10 w-10 items-center justify-center rounded-full",
+                                      call.status === "completed" ? "bg-success/10" : "bg-destructive/10",
+                                    )}
+                                    >
+                                      {call.call_type === "inbound"
+                                        ? (
+                                            <PhoneCall className={cn(
+                                              "h-5 w-5",
+                                              call.status === "completed" ? "text-success" : "text-destructive",
+                                            )}
+                                            />
+                                          )
+                                        : (
+                                            <Phone className={cn(
+                                              "h-5 w-5",
+                                              call.status === "completed" ? "text-success" : "text-destructive",
+                                            )}
+                                            />
+                                          )}
+                                    </div>
+                                    <div>
+                                      <p className="font-medium">{call.driver_name || "Unknown"}</p>
+                                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <span>{call.call_type === "inbound" ? "← Incoming" : "→ Outgoing"}</span>
+                                        {call.duration_seconds && (
+                                          <span>
+                                            •
+                                            {Math.floor(call.duration_seconds / 60)}
+                                            :
+                                            {(call.duration_seconds % 60).toString().padStart(
+                                              2,
+                                              "0",
+                                            )}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className={cn(
+                                      "flex items-center gap-1 text-sm",
+                                      getCallStatusColor(call.status),
+                                    )}
+                                    >
+                                      <span className="capitalize">
+                                        {call.status.replace(
+                                          "_",
+                                          " ",
+                                        )}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                      {formatDayMonthTime(call.started_at)}
+                                    </p>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="text-right">
-                              <div className={cn("flex items-center gap-1 text-sm", getCallStatusColor(call.status))}>
-                                <span className="capitalize">{call.status.replace('_', ' ')}</span>
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                {formatDayMonthTime(call.started_at)}
-                              </p>
-                            </div>
+                            ))}
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        )}
                 </ScrollArea>
               </TabsContent>
             </Tabs>
@@ -485,7 +637,10 @@ export default function SupervisorDrivers() {
       </div>
 
       {/* Call Dialog */}
-      <Dialog open={isCallDialogOpen} onOpenChange={setIsCallDialogOpen}>
+      <Dialog
+        open={isCallDialogOpen}
+        onOpenChange={setIsCallDialogOpen}
+      >
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle className="text-center">
@@ -498,8 +653,9 @@ export default function SupervisorDrivers() {
             <div className={cn(
               "flex h-24 w-24 items-center justify-center rounded-full text-3xl font-bold text-white mb-6",
               "bg-gradient-to-br from-primary to-accent shadow-xl",
-              callStatus === "ringing" && "animate-pulse"
-            )}>
+              callStatus === "ringing" && "animate-pulse",
+            )}
+            >
               {selectedContactName?.split(" ").map(n => n[0]).join("")}
             </div>
             <p className="text-xl font-semibold">{selectedContactName}</p>
@@ -507,7 +663,10 @@ export default function SupervisorDrivers() {
 
             <div className="flex items-center gap-2 mt-6">
               {callStatus === "ringing" && (
-                <Badge variant="secondary" className="animate-pulse gap-1 px-4 py-1.5">
+                <Badge
+                  variant="secondary"
+                  className="animate-pulse gap-1 px-4 py-1.5"
+                >
                   <PhoneCall className="h-4 w-4" />
                   Ringing...
                 </Badge>
@@ -519,7 +678,10 @@ export default function SupervisorDrivers() {
                 </Badge>
               )}
               {callStatus === "ended" && (
-                <Badge variant="outline" className="gap-1 px-4 py-1.5">
+                <Badge
+                  variant="outline"
+                  className="gap-1 px-4 py-1.5"
+                >
                   Call Ended
                 </Badge>
               )}
@@ -538,20 +700,27 @@ export default function SupervisorDrivers() {
       </Dialog>
 
       {/* Message Dialog */}
-      <Dialog open={isMessageDialogOpen} onOpenChange={setIsMessageDialogOpen}>
+      <Dialog
+        open={isMessageDialogOpen}
+        onOpenChange={setIsMessageDialogOpen}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {messageType === "whatsapp" ? (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#25D366]/10">
-                  <MessageSquare className="h-4 w-4 text-[#25D366]" />
-                </div>
-              ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                  <Mail className="h-4 w-4 text-primary" />
-                </div>
-              )}
-              Send {messageType === "whatsapp" ? "WhatsApp" : "SMS"}
+              {messageType === "whatsapp"
+                ? (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#25D366]/10">
+                      <MessageSquare className="h-4 w-4 text-[#25D366]" />
+                    </div>
+                  )
+                : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <Mail className="h-4 w-4 text-primary" />
+                    </div>
+                  )}
+              Send
+              {" "}
+              {messageType === "whatsapp" ? "WhatsApp" : "SMS"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -569,17 +738,22 @@ export default function SupervisorDrivers() {
               <Textarea
                 placeholder="Type your message here..."
                 value={messageContent}
-                onChange={(e) => setMessageContent(e.target.value)}
+                onChange={e => setMessageContent(e.target.value)}
                 rows={5}
                 className="resize-none"
               />
               <p className="text-xs text-muted-foreground text-right">
-                {messageContent.length}/160 characters
+                {messageContent.length}
+                /160 characters
               </p>
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setIsMessageDialogOpen(false)} disabled={isSending}>
+            <Button
+              variant="outline"
+              onClick={() => setIsMessageDialogOpen(false)}
+              disabled={isSending}
+            >
               Cancel
             </Button>
             <Button
@@ -588,24 +762,29 @@ export default function SupervisorDrivers() {
               disabled={!messageContent.trim() || isSending}
               className="gap-2"
             >
-              {isSending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4" />
-                  Send Message
-                </>
-              )}
+              {isSending
+                ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  )
+                : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      Send Message
+                    </>
+                  )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* WhatsApp Fallback Dialog */}
-      <Dialog open={isFallbackDialogOpen} onOpenChange={setIsFallbackDialogOpen}>
+      <Dialog
+        open={isFallbackDialogOpen}
+        onOpenChange={setIsFallbackDialogOpen}
+      >
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">

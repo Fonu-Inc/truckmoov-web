@@ -1,14 +1,18 @@
-import { useState } from "react";
 import type { ChangeEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, Car, ChevronDown, Eye, EyeOff, Factory, Headphones, Lock, Mail, Network, Settings, Sparkles, Truck, Users, Wrench } from "lucide-react";
+import { useLogin } from "@truckmoov/api/auth";
+import { AuthBrandingPanel } from "@truckmoov/reusables/components/layouts/AuthBrandingPanel";
+import {
+  ArrowRight, Car, ChevronDown, Eye, EyeOff, Factory, Headphones, Lock, Mail, Network, Settings, Sparkles, Truck, Users, Wrench,
+} from "lucide-react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import {
+  Link, useNavigate,
+} from "react-router-dom";
+
 import { toast } from "sonner";
 import * as z from "zod";
-
-import { useLogin } from "@truckmoov/api/auth";
-import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/shadcn/button";
 import {
   Form,
@@ -19,12 +23,15 @@ import {
   FormMessage,
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
-import { AuthBrandingPanel } from "@truckmoov/reusables/components/layouts/AuthBrandingPanel";
 import { getPostLoginRedirectPath } from "@/lib/authRedirect";
+import { useAuthStore } from "@/stores/authStore";
 
 const signInSchema = z.object({
   email: z.string().trim().email("Enter a valid email address."),
-  password: z.string().min(1, "Password is required."),
+  password: z.string().min(
+    1,
+    "Password is required.",
+  ),
 });
 
 type SignInFormValues = z.infer<typeof signInSchema>;
@@ -60,7 +67,10 @@ function PasswordFieldControl({
   placeholder: string;
   inputRef?: (instance: HTMLInputElement | null) => void;
 }) {
-  const [showPassword, setShowPassword] = useState(false);
+  const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
 
   return (
     <div className="relative">
@@ -80,7 +90,7 @@ function PasswordFieldControl({
       </FormControl>
       <button
         type="button"
-        onClick={() => setShowPassword((current) => !current)}
+        onClick={() => setShowPassword(current => !current)}
         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
         tabIndex={-1}
         aria-label={showPassword ? "Hide password" : "Show password"}
@@ -108,14 +118,17 @@ export default function AuthPage() {
       {
         data: {
           email: values.email,
-          password: values.password
-        }
+          password: values.password,
+        },
       },
       {
         onSuccess: (res) => {
           useAuthStore.getState().syncFromSession();
           toast.success("Login request completed.");
-          navigate(getPostLoginRedirectPath(res.data.user.role), { replace: true });
+          navigate(
+            getPostLoginRedirectPath(res.data.user.role),
+            { replace: true },
+          );
         },
         onError: (error) => {
           toast.error(error.message);
@@ -135,7 +148,11 @@ export default function AuthPage() {
         </div>
 
         <Form {...form}>
-          <form id={SIGN_IN_FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            id={SIGN_IN_FORM_ID}
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="email"
@@ -145,7 +162,13 @@ export default function AuthPage() {
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <FormControl>
-                      <Input type="email" placeholder="you@company.com" className="pl-10" autoComplete="email" {...field} />
+                      <Input
+                        type="email"
+                        placeholder="you@company.com"
+                        className="pl-10"
+                        autoComplete="email"
+                        {...field}
+                      />
                     </FormControl>
                   </div>
                   <FormMessage />
@@ -160,7 +183,10 @@ export default function AuthPage() {
                 <FormItem>
                   <div className="flex items-center justify-between gap-3">
                     <FormLabel>Password</FormLabel>
-                    <Link to="/auth/forgot-password" className="text-xs font-medium text-primary hover:underline">
+                    <Link
+                      to="/auth/forgot-password"
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
                       Forgot password?
                     </Link>
                   </div>
@@ -177,7 +203,13 @@ export default function AuthPage() {
               )}
             />
 
-            <Button type="submit" form={SIGN_IN_FORM_ID} className="w-full" size="lg" loading={login.isPending}>
+            <Button
+              type="submit"
+              form={SIGN_IN_FORM_ID}
+              className="w-full"
+              size="lg"
+              loading={login.isPending}
+            >
               <span className="flex items-center gap-2">
                 Sign In
                 <ArrowRight className="h-4 w-4" />
@@ -187,8 +219,12 @@ export default function AuthPage() {
         </Form>
 
         <p className="text-center text-sm text-muted-foreground">
-          New to FleetPro?{" "}
-          <Link to="/auth/signup" className="font-medium text-primary hover:underline">
+          New to FleetPro?
+          {" "}
+          <Link
+            to="/auth/signup"
+            className="font-medium text-primary hover:underline"
+          >
             Create an account
           </Link>
         </p>

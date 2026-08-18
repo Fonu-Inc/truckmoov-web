@@ -1,21 +1,25 @@
+import {
+  AlertTriangle, Database, ShieldAlert, TrendingUp,
+} from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
-import { AlertTriangle, ShieldAlert, TrendingUp, Database } from "lucide-react";
 
 type SIMProvisioningRequest = any;
 
-interface RiskFlag {
+type RiskFlag = {
   type: "high" | "medium" | "low";
   label: string;
   description: string;
   icon: React.ReactNode;
-}
+};
 
-interface SIMRequestRiskFlagsProps {
+type SIMRequestRiskFlagsProps = {
   request: SIMProvisioningRequest;
   kycStatus: string | null;
-}
+};
 
-export function SIMRequestRiskFlags({ request, kycStatus }: SIMRequestRiskFlagsProps) {
+export function SIMRequestRiskFlags({
+  request, kycStatus,
+}: SIMRequestRiskFlagsProps) {
   const riskFlags: RiskFlag[] = [];
 
   // Large volume flag (>50 SIMs)
@@ -26,7 +30,8 @@ export function SIMRequestRiskFlags({ request, kycStatus }: SIMRequestRiskFlagsP
       description: `${request.number_of_sims} SIMs requested - requires additional verification`,
       icon: <TrendingUp className="h-3 w-3" />,
     });
-  } else if (request.number_of_sims && request.number_of_sims > 20) {
+  }
+  else if (request.number_of_sims && request.number_of_sims > 20) {
     riskFlags.push({
       type: "medium",
       label: "Moderate Volume",
@@ -40,8 +45,8 @@ export function SIMRequestRiskFlags({ request, kycStatus }: SIMRequestRiskFlagsP
     riskFlags.push({
       type: "high",
       label: "KYC Not Verified",
-      description: kycStatus === "pending" || kycStatus === "under_review" 
-        ? "KYC verification in progress" 
+      description: kycStatus === "pending" || kycStatus === "under_review"
+        ? "KYC verification in progress"
         : "Tenant has not completed KYC verification",
       icon: <ShieldAlert className="h-3 w-3" />,
     });
@@ -98,7 +103,7 @@ export function SIMRequestRiskFlags({ request, kycStatus }: SIMRequestRiskFlagsP
           </Badge>
         ))}
       </div>
-      {riskFlags.some((f) => f.type === "high") && (
+      {riskFlags.some(f => f.type === "high") && (
         <p className="text-xs text-destructive mt-1">
           ⚠️ High-risk flags require additional review before approval
         </p>

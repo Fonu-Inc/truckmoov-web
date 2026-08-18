@@ -1,5 +1,5 @@
-import { DocumentSection } from "./wordExport";
-import { SlideSection } from "./pptxExport";
+import type { SlideSection } from "./pptxExport";
+import type { DocumentSection } from "./wordExport";
 
 // Document sections data for export
 export const documentSections: (DocumentSection & SlideSection)[] = [
@@ -20,9 +20,7 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "2",
     title: "System Objectives",
-    content: [
-      "The FleetPro platform is designed to meet the following key objectives for MTN Enterprise Business customers:",
-    ],
+    content: ["The FleetPro platform is designed to meet the following key objectives for MTN Enterprise Business customers:"],
     bullets: [
       "Enterprise Fleet Visibility: Real-time tracking of all fleet assets with sub-30-second update latency",
       "Reliable Driver Communication: Multi-channel messaging with 99.5% delivery rate via WhatsApp, SMS, and Voice",
@@ -35,9 +33,7 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "3",
     title: "Architecture Principles",
-    content: [
-      "The FleetPro platform architecture is built on the following core principles:",
-    ],
+    content: ["The FleetPro platform architecture is built on the following core principles:"],
     bullets: [
       "Microservices-Based: Independently deployable services with bounded contexts",
       "Event-Driven: Asynchronous workflows via message queues and webhooks",
@@ -50,9 +46,7 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "4",
     title: "High-Level System Architecture",
-    content: [
-      "The FleetPro platform consists of multiple interconnected layers: Client Layer (Web Dashboards, Mobile Apps), Gateway Layer (API Gateway, Auth Service), Core Services (Fleet, Dispatch, Tracking, Analytics, Tenant), Messaging Layer (Orchestrator, Queue), MTN CPaaS Integration, IoT Layer, and Data Layer.",
-    ],
+    content: ["The FleetPro platform consists of multiple interconnected layers: Client Layer (Web Dashboards, Mobile Apps), Gateway Layer (API Gateway, Auth Service), Core Services (Fleet, Dispatch, Tracking, Analytics, Tenant), Messaging Layer (Orchestrator, Queue), MTN CPaaS Integration, IoT Layer, and Data Layer."],
     bullets: [
       "Web Dashboards: Role-based interfaces for Platform Admin, Fleet Manager, and Supervisor",
       "API Gateway / BFF: Central entry point with authentication, rate limiting, and request routing",
@@ -66,17 +60,40 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "5",
     title: "User Roles & Access Control",
-    content: [
-      "The platform implements a comprehensive Role-Based Access Control (RBAC) system with JWT authentication and tenant isolation at the database level.",
-    ],
+    content: ["The platform implements a comprehensive Role-Based Access Control (RBAC) system with JWT authentication and tenant isolation at the database level."],
     tables: [
       {
-        headers: ["Role", "Access Level", "Channels", "Key Permissions"],
+        headers: [
+          "Role",
+          "Access Level",
+          "Channels",
+          "Key Permissions",
+        ],
         rows: [
-          ["Platform Admin", "Full System", "Web Dashboard", "Tenant management, billing, system config"],
-          ["Fleet Manager", "Tenant-Scoped", "Web Dashboard", "Fleet CRUD, driver management, analytics"],
-          ["Supervisor", "Operational", "Web Dashboard", "Dispatch, live tracking, messaging"],
-          ["Driver", "Personal Only", "WhatsApp/SMS/Voice", "View assigned jobs, respond to dispatch"],
+          [
+            "Platform Admin",
+            "Full System",
+            "Web Dashboard",
+            "Tenant management, billing, system config",
+          ],
+          [
+            "Fleet Manager",
+            "Tenant-Scoped",
+            "Web Dashboard",
+            "Fleet CRUD, driver management, analytics",
+          ],
+          [
+            "Supervisor",
+            "Operational",
+            "Web Dashboard",
+            "Dispatch, live tracking, messaging",
+          ],
+          [
+            "Driver",
+            "Personal Only",
+            "WhatsApp/SMS/Voice",
+            "View assigned jobs, respond to dispatch",
+          ],
         ],
       },
     ],
@@ -90,9 +107,7 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "6",
     title: "Core Application Services",
-    content: [
-      "The platform is composed of six core microservices, each with well-defined responsibilities:",
-    ],
+    content: ["The platform is composed of six core microservices, each with well-defined responsibilities:"],
     bullets: [
       "Identity & Tenant Management: User registration, authentication, multi-tenant provisioning, session management",
       "Fleet & Asset Management: Vehicle CRUD, device-vehicle association, driver-vehicle assignment, maintenance scheduling",
@@ -105,16 +120,34 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "7",
     title: "WhatsApp-First Messaging Architecture",
-    content: [
-      "The messaging system implements a WhatsApp-first approach with SMS and Voice fallback channels. Messages are routed through a central orchestrator that handles retries, escalations, and audit logging.",
-    ],
+    content: ["The messaging system implements a WhatsApp-first approach with SMS and Voice fallback channels. Messages are routed through a central orchestrator that handles retries, escalations, and audit logging."],
     tables: [
       {
-        headers: ["Channel", "Timeout", "Retry Attempts", "Next Action"],
+        headers: [
+          "Channel",
+          "Timeout",
+          "Retry Attempts",
+          "Next Action",
+        ],
         rows: [
-          ["WhatsApp", "5 minutes", "2", "Escalate to SMS"],
-          ["SMS", "3 minutes", "2", "Escalate to Voice"],
-          ["Voice (IVR)", "N/A", "3", "Alert Supervisor"],
+          [
+            "WhatsApp",
+            "5 minutes",
+            "2",
+            "Escalate to SMS",
+          ],
+          [
+            "SMS",
+            "3 minutes",
+            "2",
+            "Escalate to Voice",
+          ],
+          [
+            "Voice (IVR)",
+            "N/A",
+            "3",
+            "Alert Supervisor",
+          ],
         ],
       },
     ],
@@ -123,9 +156,7 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "8",
     title: "API Sequence — Job Creation & Driver Assignment",
-    content: [
-      "The job creation and driver assignment flow involves the following sequence: Supervisor creates job via API, Dispatch service selects and assigns the best available driver, Messaging service sends WhatsApp notification, MTN WhatsApp API delivers message and returns confirmation.",
-    ],
+    content: ["The job creation and driver assignment flow involves the following sequence: Supervisor creates job via API, Dispatch service selects and assigns the best available driver, Messaging service sends WhatsApp notification, MTN WhatsApp API delivers message and returns confirmation."],
     bullets: [
       "POST /api/v1/jobs - Create new job",
       "POST /api/v1/jobs/{id}/assign - Assign driver to job",
@@ -137,9 +168,7 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "9",
     title: "API Sequence — Driver Response via WhatsApp",
-    content: [
-      "When a driver responds via WhatsApp, the platform processes the reply through webhook handlers with proper idempotency and state management.",
-    ],
+    content: ["When a driver responds via WhatsApp, the platform processes the reply through webhook handlers with proper idempotency and state management."],
     bullets: [
       "Message Deduplication: External message ID used to prevent duplicate processing",
       "State Machine: Job status transitions validated against allowed state graph",
@@ -151,17 +180,30 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "10",
     title: "API Sequence — Telemetry Ingestion & Live Tracking",
-    content: [
-      "GPS device data flows through the MTN IoT network to the FleetPro ingestion service, where it is normalized, stored, and broadcast to supervisors in real-time.",
-    ],
+    content: ["GPS device data flows through the MTN IoT network to the FleetPro ingestion service, where it is normalized, stored, and broadcast to supervisors in real-time."],
     tables: [
       {
-        headers: ["Metric", "Target"],
+        headers: [
+          "Metric",
+          "Target",
+        ],
         rows: [
-          ["Ingestion Latency", "< 500ms"],
-          ["Map Update Latency", "< 2 seconds"],
-          ["Throughput", "10,000 events/second"],
-          ["Data Retention", "90 days hot, 2 years cold"],
+          [
+            "Ingestion Latency",
+            "< 500ms",
+          ],
+          [
+            "Map Update Latency",
+            "< 2 seconds",
+          ],
+          [
+            "Throughput",
+            "10,000 events/second",
+          ],
+          [
+            "Data Retention",
+            "90 days hot, 2 years cold",
+          ],
         ],
       },
     ],
@@ -170,9 +212,7 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "11",
     title: "Telematics & IoT Architecture",
-    content: [
-      "The IoT architecture connects GPS devices via MTN IoT SIMs to a scalable ingestion pipeline with protocol normalization and device health monitoring.",
-    ],
+    content: ["The IoT architecture connects GPS devices via MTN IoT SIMs to a scalable ingestion pipeline with protocol normalization and device health monitoring."],
     bullets: [
       "IMEI Validation: Device IMEI registered and validated on first connection",
       "SIM Binding: Device-SIM association enforced for security",
@@ -184,17 +224,35 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "12",
     title: "Data Architecture",
-    content: [
-      "The data layer uses a polyglot persistence approach with PostgreSQL for relational data, TimescaleDB for time-series telemetry, Redis for caching, and S3-compatible storage for files.",
-    ],
+    content: ["The data layer uses a polyglot persistence approach with PostgreSQL for relational data, TimescaleDB for time-series telemetry, Redis for caching, and S3-compatible storage for files."],
     tables: [
       {
-        headers: ["Store", "Technology", "Use Case"],
+        headers: [
+          "Store",
+          "Technology",
+          "Use Case",
+        ],
         rows: [
-          ["Relational", "PostgreSQL", "Tenants, users, fleet, jobs"],
-          ["Time-Series", "TimescaleDB", "Telemetry, GPS history"],
-          ["Cache", "Redis", "Sessions, live positions"],
-          ["Object Storage", "S3-Compatible", "Documents, recordings"],
+          [
+            "Relational",
+            "PostgreSQL",
+            "Tenants, users, fleet, jobs",
+          ],
+          [
+            "Time-Series",
+            "TimescaleDB",
+            "Telemetry, GPS history",
+          ],
+          [
+            "Cache",
+            "Redis",
+            "Sessions, live positions",
+          ],
+          [
+            "Object Storage",
+            "S3-Compatible",
+            "Documents, recordings",
+          ],
         ],
       },
     ],
@@ -203,9 +261,7 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "13",
     title: "AI & Rules Engine",
-    content: [
-      "The platform implements a phased approach to automation, starting with rules-based dispatch and escalation (Phase 1), and evolving to AI-assisted routing and prediction (Phase 2).",
-    ],
+    content: ["The platform implements a phased approach to automation, starting with rules-based dispatch and escalation (Phase 1), and evolving to AI-assisted routing and prediction (Phase 2)."],
     bullets: [
       "Phase 1 (Rules-Based): Configurable dispatch rules, geofence-triggered alerts, time-based escalations, driver behavior thresholds",
       "Phase 2 (AI-Assisted): Predictive ETA calculation, route optimization, driver fatigue detection, demand forecasting",
@@ -215,17 +271,35 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "14",
     title: "API & Integration Layer",
-    content: [
-      "The platform exposes internal and external APIs with proper authentication, as well as webhook endpoints for enterprise integrations.",
-    ],
+    content: ["The platform exposes internal and external APIs with proper authentication, as well as webhook endpoints for enterprise integrations."],
     tables: [
       {
-        headers: ["Category", "Endpoints", "Authentication"],
+        headers: [
+          "Category",
+          "Endpoints",
+          "Authentication",
+        ],
         rows: [
-          ["Internal APIs", "/api/v1/*", "JWT Bearer"],
-          ["External APIs", "/external/v1/*", "API Key + HMAC"],
-          ["Webhooks (Inbound)", "/webhooks/*", "Signature Verification"],
-          ["MTN CPaaS", "Fonu API Gateway", "API Key"],
+          [
+            "Internal APIs",
+            "/api/v1/*",
+            "JWT Bearer",
+          ],
+          [
+            "External APIs",
+            "/external/v1/*",
+            "API Key + HMAC",
+          ],
+          [
+            "Webhooks (Inbound)",
+            "/webhooks/*",
+            "Signature Verification",
+          ],
+          [
+            "MTN CPaaS",
+            "Fonu API Gateway",
+            "API Key",
+          ],
         ],
       },
     ],
@@ -241,19 +315,38 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "15",
     title: "Security Architecture",
-    content: [
-      "The platform implements defense-in-depth security with TLS everywhere, encryption at rest, secret management, comprehensive audit logging, and tenant data isolation via Row-Level Security.",
-    ],
+    content: ["The platform implements defense-in-depth security with TLS everywhere, encryption at rest, secret management, comprehensive audit logging, and tenant data isolation via Row-Level Security."],
     tables: [
       {
-        headers: ["Control", "Implementation"],
+        headers: [
+          "Control",
+          "Implementation",
+        ],
         rows: [
-          ["Transport Security", "TLS 1.3 everywhere, certificate pinning for mobile"],
-          ["Encryption at Rest", "AES-256 for databases, S3 SSE for objects"],
-          ["Secret Management", "Vault-based secrets with auto-rotation"],
-          ["Audit Logging", "All actions logged with correlation IDs"],
-          ["Tenant Isolation", "Row-Level Security (RLS) at database level"],
-          ["IP Blocking", "Automatic blocking after failed auth attempts"],
+          [
+            "Transport Security",
+            "TLS 1.3 everywhere, certificate pinning for mobile",
+          ],
+          [
+            "Encryption at Rest",
+            "AES-256 for databases, S3 SSE for objects",
+          ],
+          [
+            "Secret Management",
+            "Vault-based secrets with auto-rotation",
+          ],
+          [
+            "Audit Logging",
+            "All actions logged with correlation IDs",
+          ],
+          [
+            "Tenant Isolation",
+            "Row-Level Security (RLS) at database level",
+          ],
+          [
+            "IP Blocking",
+            "Automatic blocking after failed auth attempts",
+          ],
         ],
       },
     ],
@@ -262,9 +355,7 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "16",
     title: "Performance & Scalability",
-    content: [
-      "The platform is designed for horizontal scaling with stateless services, read replicas, and graceful degradation under load.",
-    ],
+    content: ["The platform is designed for horizontal scaling with stateless services, read replicas, and graceful degradation under load."],
     bullets: [
       "Horizontal Scaling: Stateless services scale via Kubernetes HPA",
       "API Response: p95 < 200ms",
@@ -277,19 +368,38 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "17",
     title: "DevOps & Operations",
-    content: [
-      "The platform uses modern DevOps practices with CI/CD, containerization, and comprehensive monitoring.",
-    ],
+    content: ["The platform uses modern DevOps practices with CI/CD, containerization, and comprehensive monitoring."],
     tables: [
       {
-        headers: ["Component", "Technology"],
+        headers: [
+          "Component",
+          "Technology",
+        ],
         rows: [
-          ["Containerization", "Docker"],
-          ["Orchestration", "Kubernetes"],
-          ["Service Mesh", "Istio"],
-          ["Monitoring", "Prometheus + Grafana"],
-          ["Logging", "ELK Stack"],
-          ["Alerting", "PagerDuty"],
+          [
+            "Containerization",
+            "Docker",
+          ],
+          [
+            "Orchestration",
+            "Kubernetes",
+          ],
+          [
+            "Service Mesh",
+            "Istio",
+          ],
+          [
+            "Monitoring",
+            "Prometheus + Grafana",
+          ],
+          [
+            "Logging",
+            "ELK Stack",
+          ],
+          [
+            "Alerting",
+            "PagerDuty",
+          ],
         ],
       },
     ],
@@ -303,17 +413,35 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "18",
     title: "Deployment Model (MTN-IT Friendly)",
-    content: [
-      "The platform is hosted on cloud infrastructure and operated by MTN-IT, with clear separation of concerns for each party.",
-    ],
+    content: ["The platform is hosted on cloud infrastructure and operated by MTN-IT, with clear separation of concerns for each party."],
     tables: [
       {
-        headers: ["Component", "Hosted By", "Operated By"],
+        headers: [
+          "Component",
+          "Hosted By",
+          "Operated By",
+        ],
         rows: [
-          ["FleetPro Platform", "Cloud Provider", "MTN-IT"],
-          ["MTN CPaaS APIs", "MTN Infrastructure", "MTN"],
-          ["MTN IoT SIMs", "MTN Network", "MTN"],
-          ["GPS Devices", "Customer Premises", "Customer/FleetPro"],
+          [
+            "FleetPro Platform",
+            "Cloud Provider",
+            "MTN-IT",
+          ],
+          [
+            "MTN CPaaS APIs",
+            "MTN Infrastructure",
+            "MTN",
+          ],
+          [
+            "MTN IoT SIMs",
+            "MTN Network",
+            "MTN",
+          ],
+          [
+            "GPS Devices",
+            "Customer Premises",
+            "Customer/FleetPro",
+          ],
         ],
       },
     ],
@@ -322,23 +450,65 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "19",
     title: "Ownership & Responsibility Split",
-    content: [
-      "Clear delineation of responsibilities between FleetPro and MTN-IT ensures no overlap and regulatory safety.",
-    ],
+    content: ["Clear delineation of responsibilities between FleetPro and MTN-IT ensures no overlap and regulatory safety."],
     tables: [
       {
-        headers: ["Area", "FleetPro", "MTN-IT"],
+        headers: [
+          "Area",
+          "FleetPro",
+          "MTN-IT",
+        ],
         rows: [
-          ["Platform Development", "✅ Full ownership", "—"],
-          ["IP & Source Code", "✅ Owner", "—"],
-          ["Product Roadmap", "✅ Defines", "📋 Consults"],
-          ["L2/L3 Support", "✅ Provides", "—"],
-          ["Platform Operations", "—", "✅ Operates"],
-          ["Security Compliance", "📋 Design", "✅ Enforce"],
-          ["SLA Management", "📋 Define", "✅ Deliver"],
-          ["CPaaS Integration", "📋 Implement", "✅ Provide APIs"],
-          ["Customer Billing", "—", "✅ Manages"],
-          ["L1 Support", "—", "✅ Provides"],
+          [
+            "Platform Development",
+            "✅ Full ownership",
+            "—",
+          ],
+          [
+            "IP & Source Code",
+            "✅ Owner",
+            "—",
+          ],
+          [
+            "Product Roadmap",
+            "✅ Defines",
+            "📋 Consults",
+          ],
+          [
+            "L2/L3 Support",
+            "✅ Provides",
+            "—",
+          ],
+          [
+            "Platform Operations",
+            "—",
+            "✅ Operates",
+          ],
+          [
+            "Security Compliance",
+            "📋 Design",
+            "✅ Enforce",
+          ],
+          [
+            "SLA Management",
+            "📋 Define",
+            "✅ Deliver",
+          ],
+          [
+            "CPaaS Integration",
+            "📋 Implement",
+            "✅ Provide APIs",
+          ],
+          [
+            "Customer Billing",
+            "—",
+            "✅ Manages",
+          ],
+          [
+            "L1 Support",
+            "—",
+            "✅ Provides",
+          ],
         ],
       },
     ],
@@ -346,9 +516,7 @@ export const documentSections: (DocumentSection & SlideSection)[] = [
   {
     number: "20",
     title: "Implementation Phases",
-    content: [
-      "The implementation is divided into three phases over 12 months:",
-    ],
+    content: ["The implementation is divided into three phases over 12 months:"],
     bullets: [
       "Phase 1 (3 months): Core platform & pilot - Fleet management, real-time tracking, WhatsApp messaging, 5 pilot customers",
       "Phase 2 (4 months): Automation & scale - AI-assisted dispatch, route optimization, full CPaaS integration, 50 customers",

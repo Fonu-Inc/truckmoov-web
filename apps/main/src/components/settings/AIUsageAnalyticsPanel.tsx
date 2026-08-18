@@ -1,7 +1,26 @@
-import { formatDayMonth, formatDayMonthTime, formatWithPattern, subDays, toDate, toDateParam } from "@truckmoov/app-core/utils/time-utils";
-import { useMemo, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import type { TimeRange } from "@/components/charts/TimeRangeSelect";
+import type {
+  FilterField, FilterValues,
+} from "@/components/shadcn/table-toolbar";
+import {
+  formatDayMonth, formatDayMonthTime, formatWithPattern, subDays, toDate, toDateParam,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  Activity, AlertTriangle, Brain, Clock, TrendingUp, Zap,
+} from "lucide-react";
+import {
+  useMemo, useState,
+} from "react";
+import {
+  Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer,
+  Tooltip, XAxis, YAxis,
+} from "recharts";
+import { TimeRangeSelect } from "@/components/charts/TimeRangeSelect";
 import { Badge } from "@/components/shadcn/badge";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { ExportButton } from "@/components/shadcn/export-button";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
@@ -11,15 +30,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
-} from "recharts";
-import { Activity, Brain, Zap, Clock, TrendingUp, AlertTriangle } from "lucide-react";
+import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import { useAuthStore } from "@/stores/authStore";
-import { TimeRangeSelect, type TimeRange } from "@/components/charts/TimeRangeSelect";
-import { TableToolbar, type FilterField, type FilterValues } from "@/components/shadcn/table-toolbar";
-import { ExportButton } from "@/components/shadcn/export-button";
 
 const CHART_COLORS = [
   "hsl(var(--primary))",
@@ -48,24 +60,41 @@ function rangeDays(r: TimeRange) {
 }
 
 const DEMO_FEATURES = [
-  { key: "load_matching", base: 145, tokensPerReq: 820 },
-  { key: "route_optimization", base: 92, tokensPerReq: 1240 },
-  { key: "waybill_extraction", base: 64, tokensPerReq: 540 },
-  { key: "job_matching", base: 38, tokensPerReq: 720 },
-  { key: "fatigue_detection", base: 21, tokensPerReq: 410 },
+  {
+    key: "load_matching", base: 145, tokensPerReq: 820,
+  },
+  {
+    key: "route_optimization", base: 92, tokensPerReq: 1240,
+  },
+  {
+    key: "waybill_extraction", base: 64, tokensPerReq: 540,
+  },
+  {
+    key: "job_matching", base: 38, tokensPerReq: 720,
+  },
+  {
+    key: "fatigue_detection", base: 21, tokensPerReq: 410,
+  },
 ];
 
 function buildDemoDaily(days: number) {
-  const data: { date: string; label: string; requests: number; tokens: number }[] = [];
+  const data: {
+    date: string; label: string; requests: number; tokens: number;
+  }[] = [];
   for (let i = days - 1; i >= 0; i--) {
-    const date = subDays(new Date(), i);
+    const date = subDays(
+      new Date(),
+      i,
+    );
     const dayKey = toDateParam(date);
     const weekday = date.getDay();
     const weekendFactor = weekday === 0 || weekday === 6 ? 0.55 : 1;
     const noise = 0.7 + seededRandom(i + 13) * 0.7;
     const requests = Math.round(28 * weekendFactor * noise);
     const tokens = Math.round(requests * (700 + seededRandom(i + 41) * 600));
-    data.push({ date: dayKey, label: formatDayMonth(date), requests, tokens });
+    data.push({
+      date: dayKey, label: formatDayMonth(date), requests, tokens,
+    });
   }
   return data;
 }
@@ -88,74 +117,139 @@ export function AIUsageAnalyticsPanel() {
   const logs: any[] = [];
   const stats: null = null;
   const isLoading = false;
-  const [dailyRange, setDailyRange] = useState<TimeRange>("30d");
-  const [featureRange, setFeatureRange] = useState<TimeRange>("30d");
-  const [featureSearch, setFeatureSearch] = useState("");
-  const [featureFilters, setFeatureFilters] = useState<FilterValues>({});
-  const [failureSearch, setFailureSearch] = useState("");
-  const [failureFilters, setFailureFilters] = useState<FilterValues>({});
+  const [
+    dailyRange,
+    setDailyRange,
+  ] = useState<TimeRange>("30d");
+  const [
+    featureRange,
+    setFeatureRange,
+  ] = useState<TimeRange>("30d");
+  const [
+    featureSearch,
+    setFeatureSearch,
+  ] = useState("");
+  const [
+    featureFilters,
+    setFeatureFilters,
+  ] = useState<FilterValues>({});
+  const [
+    failureSearch,
+    setFailureSearch,
+  ] = useState("");
+  const [
+    failureFilters,
+    setFailureFilters,
+  ] = useState<FilterValues>({});
 
   const hasReal = (stats?.totalRequests ?? 0) > 0;
 
   // Daily usage aggregation for chart
-  const dailyData = useMemo(() => {
-    const days = rangeDays(dailyRange);
-    if (!hasReal) return buildDemoDaily(days);
+  const dailyData = useMemo(
+    () => {
+      const days = rangeDays(dailyRange);
+      if (!hasReal)
+        return buildDemoDaily(days);
 
-    const map = new Map<string, { date: string; requests: number; tokens: number }>();
-    for (let i = days - 1; i >= 0; i--) {
-      const date = toDateParam(subDays(new Date(), i));
-      map.set(date, { date, requests: 0, tokens: 0 });
-    }
-    logs.forEach((log) => {
-      const date = toDateParam(log.created_at);
-      const entry = map.get(date);
-      if (entry) {
-        entry.requests += 1;
-        entry.tokens += log.tokens_used || 0;
+      const map = new Map<string, {
+        date: string; requests: number; tokens: number;
+      }>();
+      for (let i = days - 1; i >= 0; i--) {
+        const date = toDateParam(subDays(
+          new Date(),
+          i,
+        ));
+        map.set(
+          date,
+          {
+            date, requests: 0, tokens: 0,
+          },
+        );
       }
-    });
-    return Array.from(map.values()).map((d) => ({
-      ...d,
-      label: formatDayMonth(d.date),
-    }));
-  }, [logs, hasReal, dailyRange]);
+      logs.forEach((log) => {
+        const date = toDateParam(log.created_at);
+        const entry = map.get(date);
+        if (entry) {
+          entry.requests += 1;
+          entry.tokens += log.tokens_used || 0;
+        }
+      });
+      return Array.from(map.values()).map(d => ({
+        ...d,
+        label: formatDayMonth(d.date),
+      }));
+    },
+    [
+      logs,
+      hasReal,
+      dailyRange,
+    ],
+  );
 
   // Usage by feature type
-  const featureBreakdown = useMemo(() => {
-    const days = rangeDays(featureRange);
-    if (!hasReal) return buildDemoFeatureBreakdown(days);
+  const featureBreakdown = useMemo(
+    () => {
+      const days = rangeDays(featureRange);
+      if (!hasReal)
+        return buildDemoFeatureBreakdown(days);
 
-    const cutoff = subDays(new Date(), days);
-    const map = new Map<string, { name: string; requests: number; tokens: number }>();
-    logs
-      .filter((l) => toDate(l.created_at) >= cutoff)
-      .forEach((log) => {
-        const key = log.request_type || "other";
-        const entry = map.get(key) || {
-          name: REQUEST_TYPE_LABELS[key] || key,
-          requests: 0,
-          tokens: 0,
-        };
-        entry.requests += 1;
-        entry.tokens += log.tokens_used || 0;
-        map.set(key, entry);
-      });
-    return Array.from(map.values()).sort((a, b) => b.requests - a.requests);
-  }, [logs, hasReal, featureRange]);
+      const cutoff = subDays(
+        new Date(),
+        days,
+      );
+      const map = new Map<string, {
+        name: string; requests: number; tokens: number;
+      }>();
+      logs
+        .filter(l => toDate(l.created_at) >= cutoff)
+        .forEach((log) => {
+          const key = log.request_type || "other";
+          const entry = map.get(key) || {
+            name: REQUEST_TYPE_LABELS[key] || key,
+            requests: 0,
+            tokens: 0,
+          };
+          entry.requests += 1;
+          entry.tokens += log.tokens_used || 0;
+          map.set(
+            key,
+            entry,
+          );
+        });
+      return Array.from(map.values()).sort((a, b) => b.requests - a.requests);
+    },
+    [
+      logs,
+      hasReal,
+      featureRange,
+    ],
+  );
 
   // Demo summary derived from demo daily when no real data
-  const demoSummary = useMemo(() => {
-    if (hasReal) return null;
-    const totalRequests = dailyData.reduce((s, d) => s + d.requests, 0);
-    const totalTokens = dailyData.reduce((s, d) => s + d.tokens, 0);
-    return {
-      totalRequests,
-      totalTokens,
-      successRate: 98.4,
-      avgLatency: 742,
-    };
-  }, [hasReal, dailyData]);
+  const demoSummary = useMemo(
+    () => {
+      if (hasReal)
+        return null;
+      const totalRequests = dailyData.reduce(
+        (s, d) => s + d.requests,
+        0,
+      );
+      const totalTokens = dailyData.reduce(
+        (s, d) => s + d.tokens,
+        0,
+      );
+      return {
+        totalRequests,
+        totalTokens,
+        successRate: 98.4,
+        avgLatency: 742,
+      };
+    },
+    [
+      hasReal,
+      dailyData,
+    ],
+  );
 
   const summary = hasReal
     ? {
@@ -168,8 +262,11 @@ export function AIUsageAnalyticsPanel() {
 
   // Recent failures (real only — keep authentic, hide when empty)
   const recentFailures = useMemo(
-    () => logs.filter((l) => !l.success).slice(0, 5),
-    [logs]
+    () => logs.filter(l => !l.success).slice(
+      0,
+      5,
+    ),
+    [logs],
   );
 
   if (isLoading) {
@@ -192,7 +289,12 @@ export function AIUsageAnalyticsPanel() {
           </p>
         </div>
         {!hasReal && (
-          <Badge variant="outline" className="text-xs">Demo data</Badge>
+          <Badge
+            variant="outline"
+            className="text-xs"
+          >
+            Demo data
+          </Badge>
         )}
       </div>
 
@@ -234,7 +336,10 @@ export function AIUsageAnalyticsPanel() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Success Rate</p>
-                <p className="text-2xl font-bold">{summary.successRate.toFixed(1)}%</p>
+                <p className="text-2xl font-bold">
+                  {summary.successRate.toFixed(1)}
+                  %
+                </p>
               </div>
             </div>
           </CardContent>
@@ -265,29 +370,55 @@ export function AIUsageAnalyticsPanel() {
             <CardTitle className="text-base">Daily AI Requests</CardTitle>
           </CardHeader>
           <CardContent>
-            {dailyData.some((d) => d.requests > 0) ? (
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={dailyData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: 8,
-                    }}
-                  />
-                  <Bar dataKey="requests" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Requests" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-[260px] text-muted-foreground">
-                <Zap className="h-10 w-10 mb-2 opacity-30" />
-                <p className="text-sm">No AI usage data yet</p>
-                <p className="text-xs">Use AI features like Load Matching or Route Optimization to see data here</p>
-              </div>
-            )}
+            {dailyData.some(d => d.requests > 0)
+              ? (
+                  <ResponsiveContainer
+                    width="100%"
+                    height={260}
+                  >
+                    <BarChart data={dailyData}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        className="stroke-border/30"
+                      />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 11 }}
+                        className="fill-muted-foreground"
+                      />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fontSize: 11 }}
+                        className="fill-muted-foreground"
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: 8,
+                        }}
+                      />
+                      <Bar
+                        dataKey="requests"
+                        fill="hsl(var(--primary))"
+                        radius={[
+                          4,
+                          4,
+                          0,
+                          0,
+                        ]}
+                        name="Requests"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )
+              : (
+                  <div className="flex flex-col items-center justify-center h-[260px] text-muted-foreground">
+                    <Zap className="h-10 w-10 mb-2 opacity-30" />
+                    <p className="text-sm">No AI usage data yet</p>
+                    <p className="text-xs">Use AI features like Load Matching or Route Optimization to see data here</p>
+                  </div>
+                )}
           </CardContent>
         </Card>
 
@@ -295,37 +426,49 @@ export function AIUsageAnalyticsPanel() {
         <Card className="bg-card/50 border-border/50">
           <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
             <CardTitle className="text-base">By Feature</CardTitle>
-            <TimeRangeSelect value={featureRange} onChange={setFeatureRange} />
+            <TimeRangeSelect
+              value={featureRange}
+              onChange={setFeatureRange}
+            />
           </CardHeader>
           <CardContent>
-            {featureBreakdown.length > 0 ? (
-              <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Pie
-                    data={featureBreakdown}
-                    dataKey="requests"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label={({ name, percent }) =>
-                      `${name} ${(percent * 100).toFixed(0)}%`
-                    }
-                    labelLine={false}
+            {featureBreakdown.length > 0
+              ? (
+                  <ResponsiveContainer
+                    width="100%"
+                    height={260}
                   >
-                    {featureBreakdown.map((_, i) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-[260px] text-muted-foreground">
-                <Brain className="h-10 w-10 mb-2 opacity-30" />
-                <p className="text-sm">No feature data</p>
-              </div>
-            )}
+                    <PieChart>
+                      <Pie
+                        data={featureBreakdown}
+                        dataKey="requests"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        label={({
+                          name, percent,
+                        }) =>
+                          `${name} ${(percent * 100).toFixed(0)}%`}
+                        labelLine={false}
+                      >
+                        {featureBreakdown.map((_, i) => (
+                          <Cell
+                            key={i}
+                            fill={CHART_COLORS[i % CHART_COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )
+              : (
+                  <div className="flex flex-col items-center justify-center h-[260px] text-muted-foreground">
+                    <Brain className="h-10 w-10 mb-2 opacity-30" />
+                    <p className="text-sm">No feature data</p>
+                  </div>
+                )}
           </CardContent>
         </Card>
       </div>
@@ -353,11 +496,17 @@ export function AIUsageAnalyticsPanel() {
   );
 }
 
-interface FeatureRow { name: string; requests: number; tokens: number }
+type FeatureRow = {
+  name: string; requests: number; tokens: number;
+};
 
 const FEATURE_FILTER_FIELDS: FilterField[] = [
-  { type: "range", key: "requests", label: "Requests", placeholderFrom: "Min", placeholderTo: "Max" },
-  { type: "range", key: "tokens", label: "Tokens used", placeholderFrom: "Min", placeholderTo: "Max" },
+  {
+    type: "range", key: "requests", label: "Requests", placeholderFrom: "Min", placeholderTo: "Max",
+  },
+  {
+    type: "range", key: "tokens", label: "Tokens used", placeholderFrom: "Min", placeholderTo: "Max",
+  },
 ];
 
 function FeatureBreakdownTable({
@@ -373,25 +522,35 @@ function FeatureBreakdownTable({
   filters: FilterValues;
   onFiltersApply: (v: FilterValues) => void;
 }) {
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const reqF = filters.requests;
-    const tokF = filters.tokens;
-    return rows.filter((r) => {
-      if (q && !r.name.toLowerCase().includes(q)) return false;
-      if (reqF?.enabled) {
-        const from = reqF.from ? Number(reqF.from) : -Infinity;
-        const to = reqF.to ? Number(reqF.to) : Infinity;
-        if (r.requests < from || r.requests > to) return false;
-      }
-      if (tokF?.enabled) {
-        const from = tokF.from ? Number(tokF.from) : -Infinity;
-        const to = tokF.to ? Number(tokF.to) : Infinity;
-        if (r.tokens < from || r.tokens > to) return false;
-      }
-      return true;
-    });
-  }, [rows, search, filters]);
+  const filtered = useMemo(
+    () => {
+      const q = search.trim().toLowerCase();
+      const reqF = filters.requests;
+      const tokF = filters.tokens;
+      return rows.filter((r) => {
+        if (q && !r.name.toLowerCase().includes(q))
+          return false;
+        if (reqF?.enabled) {
+          const from = reqF.from ? Number(reqF.from) : -Infinity;
+          const to = reqF.to ? Number(reqF.to) : Infinity;
+          if (r.requests < from || r.requests > to)
+            return false;
+        }
+        if (tokF?.enabled) {
+          const from = tokF.from ? Number(tokF.from) : -Infinity;
+          const to = tokF.to ? Number(tokF.to) : Infinity;
+          if (r.tokens < from || r.tokens > to)
+            return false;
+        }
+        return true;
+      });
+    },
+    [
+      rows,
+      search,
+      filters,
+    ],
+  );
 
   return (
     <Card className="bg-card/50 border-border/50">
@@ -405,10 +564,18 @@ function FeatureBreakdownTable({
             rows={filtered}
             filename="ai_feature_breakdown"
             columns={[
-              { header: "Feature", accessor: "name" },
-              { header: "Requests", accessor: "requests" },
-              { header: "Tokens Used", accessor: "tokens" },
-              { header: "Avg Tokens/Request", accessor: (r) => (r.requests > 0 ? Math.round(r.tokens / r.requests) : 0) },
+              {
+                header: "Feature", accessor: "name",
+              },
+              {
+                header: "Requests", accessor: "requests",
+              },
+              {
+                header: "Tokens Used", accessor: "tokens",
+              },
+              {
+                header: "Avg Tokens/Request", accessor: r => (r.requests > 0 ? Math.round(r.tokens / r.requests) : 0),
+              },
             ]}
           />
         </div>
@@ -423,48 +590,50 @@ function FeatureBreakdownTable({
           filterValues={filters}
           onFiltersApply={onFiltersApply}
         />
-        {filtered.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Feature</TableHead>
-                <TableHead className="text-right">Requests</TableHead>
-                <TableHead className="text-right">Tokens Used</TableHead>
-                <TableHead className="text-right">Avg Tokens/Request</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((feature) => (
-                <TableRow key={feature.name}>
-                  <TableCell className="font-medium">{feature.name}</TableCell>
-                  <TableCell className="text-right">{feature.requests.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">{feature.tokens.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">
-                    {feature.requests > 0
-                      ? Math.round(feature.tokens / feature.requests).toLocaleString()
-                      : "—"}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <p className="text-sm text-muted-foreground text-center py-6">
-            {rows.length === 0 ? "No AI usage recorded yet." : "No features match your filters."}
-          </p>
-        )}
+        {filtered.length > 0
+          ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Feature</TableHead>
+                    <TableHead className="text-right">Requests</TableHead>
+                    <TableHead className="text-right">Tokens Used</TableHead>
+                    <TableHead className="text-right">Avg Tokens/Request</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map(feature => (
+                    <TableRow key={feature.name}>
+                      <TableCell className="font-medium">{feature.name}</TableCell>
+                      <TableCell className="text-right">{feature.requests.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">{feature.tokens.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">
+                        {feature.requests > 0
+                          ? Math.round(feature.tokens / feature.requests).toLocaleString()
+                          : "—"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )
+          : (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                {rows.length === 0 ? "No AI usage recorded yet." : "No features match your filters."}
+              </p>
+            )}
       </CardContent>
     </Card>
   );
 }
 
-interface FailureRow {
+type FailureRow = {
   id: string;
   created_at: string;
   request_type: string;
   provider: string;
   error_message?: string | null;
-}
+};
 
 function RecentFailuresTable({
   rows,
@@ -479,38 +648,58 @@ function RecentFailuresTable({
   filters: FilterValues;
   onFiltersApply: (v: FilterValues) => void;
 }) {
-  const providerOptions = useMemo(() => {
-    const set = new Set<string>();
-    rows.forEach((r) => r.provider && set.add(r.provider));
-    return Array.from(set).map((p) => ({ value: p, label: p }));
-  }, [rows]);
+  const providerOptions = useMemo(
+    () => {
+      const set = new Set<string>();
+      rows.forEach(r => r.provider && set.add(r.provider));
+      return Array.from(set).map(p => ({
+        value: p, label: p,
+      }));
+    },
+    [rows],
+  );
 
   const filterFields: FilterField[] = useMemo(
     () => [
-      { type: "daterange", key: "time", label: "Time", placeholderFrom: "From", placeholderTo: "To" },
-      { type: "select", key: "provider", label: "Provider", options: providerOptions },
+      {
+        type: "daterange", key: "time", label: "Time", placeholderFrom: "From", placeholderTo: "To",
+      },
+      {
+        type: "select", key: "provider", label: "Provider", options: providerOptions,
+      },
     ],
-    [providerOptions]
+    [providerOptions],
   );
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const tF = filters.time;
-    const pF = filters.provider;
-    return rows.filter((r) => {
-      if (q) {
-        const hay = `${r.provider} ${r.error_message ?? ""} ${REQUEST_TYPE_LABELS[r.request_type] || r.request_type}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      if (tF?.enabled) {
-        const ts = new Date(r.created_at).getTime();
-        if (tF.dateFrom && ts < new Date(tF.dateFrom).getTime()) return false;
-        if (tF.dateTo && ts > new Date(tF.dateTo).getTime() + 86400000) return false;
-      }
-      if (pF?.enabled && pF.value && r.provider !== pF.value) return false;
-      return true;
-    });
-  }, [rows, search, filters]);
+  const filtered = useMemo(
+    () => {
+      const q = search.trim().toLowerCase();
+      const tF = filters.time;
+      const pF = filters.provider;
+      return rows.filter((r) => {
+        if (q) {
+          const hay = `${r.provider} ${r.error_message ?? ""} ${REQUEST_TYPE_LABELS[r.request_type] || r.request_type}`.toLowerCase();
+          if (!hay.includes(q))
+            return false;
+        }
+        if (tF?.enabled) {
+          const ts = new Date(r.created_at).getTime();
+          if (tF.dateFrom && ts < new Date(tF.dateFrom).getTime())
+            return false;
+          if (tF.dateTo && ts > new Date(tF.dateTo).getTime() + 86400000)
+            return false;
+        }
+        if (pF?.enabled && pF.value && r.provider !== pF.value)
+          return false;
+        return true;
+      });
+    },
+    [
+      rows,
+      search,
+      filters,
+    ],
+  );
 
   return (
     <Card className="bg-card/50 border-border/50">
@@ -524,10 +713,21 @@ function RecentFailuresTable({
             rows={filtered}
             filename="ai_recent_failures"
             columns={[
-              { header: "Time", accessor: (r) => formatWithPattern(r.created_at, "yyyy-MM-dd HH:mm") },
-              { header: "Feature", accessor: (r) => REQUEST_TYPE_LABELS[r.request_type] || r.request_type },
-              { header: "Provider", accessor: "provider" },
-              { header: "Error", accessor: (r) => r.error_message || "Unknown error" },
+              {
+                header: "Time", accessor: r => formatWithPattern(
+                  r.created_at,
+                  "yyyy-MM-dd HH:mm",
+                ),
+              },
+              {
+                header: "Feature", accessor: r => REQUEST_TYPE_LABELS[r.request_type] || r.request_type,
+              },
+              {
+                header: "Provider", accessor: "provider",
+              },
+              {
+                header: "Error", accessor: r => r.error_message || "Unknown error",
+              },
             ]}
           />
         </div>
@@ -552,30 +752,35 @@ function RecentFailuresTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center py-6 text-sm text-muted-foreground">
-                  No failures match your filters.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((log) => (
-                <TableRow key={log.id}>
-                  <TableCell className="text-sm">
-                    {formatDayMonthTime(log.created_at)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {REQUEST_TYPE_LABELS[log.request_type] || log.request_type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">{log.provider}</TableCell>
-                  <TableCell className="text-sm text-destructive max-w-[300px] truncate">
-                    {log.error_message || "Unknown error"}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            {filtered.length === 0
+              ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="text-center py-6 text-sm text-muted-foreground"
+                    >
+                      No failures match your filters.
+                    </TableCell>
+                  </TableRow>
+                )
+              : (
+                  filtered.map(log => (
+                    <TableRow key={log.id}>
+                      <TableCell className="text-sm">
+                        {formatDayMonthTime(log.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {REQUEST_TYPE_LABELS[log.request_type] || log.request_type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{log.provider}</TableCell>
+                      <TableCell className="text-sm text-destructive max-w-[300px] truncate">
+                        {log.error_message || "Unknown error"}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
           </TableBody>
         </Table>
       </CardContent>

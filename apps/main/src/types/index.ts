@@ -1,62 +1,91 @@
 // User Roles
 // Legacy roles kept for DB enum compatibility; frontend permission checks now use org-scoped roles.
-export type UserRole = 'platform_admin' | 'tenant_admin' | 'operations_manager' | 'supervisor' | 'dispatcher' | 'viewer_finance' | 'driver' | 'installer';
+export type UserRole = "platform_admin" | "tenant_admin" | "operations_manager" | "supervisor" | "dispatcher" | "viewer_finance" | "driver" | "installer";
 
 // ── Org-scoped role key (canonical) ──
-export type OrgRoleKey = 'ADMIN' | 'OPERATIONS_MANAGER' | 'DISPATCHER' | 'FINANCE' | 'VIEWER';
+export type OrgRoleKey = "ADMIN" | "OPERATIONS_MANAGER" | "DISPATCHER" | "FINANCE" | "VIEWER";
 
 // Legacy role → org role key mapping (used during transition)
 export function legacyRoleToOrgRoleKey(role: UserRole): OrgRoleKey {
   switch (role) {
-    case 'platform_admin': return 'ADMIN';
-    case 'tenant_admin': return 'ADMIN';
-    case 'operations_manager': return 'OPERATIONS_MANAGER';
-    case 'supervisor': return 'DISPATCHER';
-    case 'dispatcher': return 'DISPATCHER';
-    case 'viewer_finance': return 'FINANCE';
-    case 'driver': return 'VIEWER';
-    case 'installer': return 'VIEWER';
-    default: return 'VIEWER';
+    case "platform_admin": return "ADMIN";
+    case "tenant_admin": return "ADMIN";
+    case "operations_manager": return "OPERATIONS_MANAGER";
+    case "supervisor": return "DISPATCHER";
+    case "dispatcher": return "DISPATCHER";
+    case "viewer_finance": return "FINANCE";
+    case "driver": return "VIEWER";
+    case "installer": return "VIEWER";
+    default: return "VIEWER";
   }
 }
 
 // Device permission roles (org-scoped: ADMIN, OPERATIONS_MANAGER can manage; DISPATCHER, FINANCE can view)
-export type DeviceManageRole = 'tenant_admin' | 'operations_manager' | 'platform_admin';
-export type DeviceViewRole = 'tenant_admin' | 'operations_manager' | 'dispatcher' | 'platform_admin' | 'viewer_finance';
+export type DeviceManageRole = "tenant_admin" | "operations_manager" | "platform_admin";
+export type DeviceViewRole = "tenant_admin" | "operations_manager" | "dispatcher" | "platform_admin" | "viewer_finance";
 
 // SIM permission roles
-export type SIMRequestRole = 'tenant_admin';
-export type SIMApproveRole = 'platform_admin';
-export type SIMViewRole = 'tenant_admin' | 'operations_manager' | 'dispatcher' | 'platform_admin' | 'viewer_finance' | 'supervisor';
-export type SIMAssignRole = 'tenant_admin';
+export type SIMRequestRole = "tenant_admin";
+export type SIMApproveRole = "platform_admin";
+export type SIMViewRole = "tenant_admin" | "operations_manager" | "dispatcher" | "platform_admin" | "viewer_finance" | "supervisor";
+export type SIMAssignRole = "tenant_admin";
 
 // Role permission helpers - Devices (kept for backward compat, prefer org-scoped checks)
-export const canManageDevices = (role: UserRole): boolean => 
-  ['tenant_admin', 'operations_manager', 'platform_admin'].includes(role);
+export function canManageDevices(role: UserRole): boolean {
+  return [
+    "tenant_admin",
+    "operations_manager",
+    "platform_admin",
+  ].includes(role);
+}
 
-export const canViewDevices = (role: UserRole): boolean => 
-  ['tenant_admin', 'operations_manager', 'dispatcher', 'platform_admin', 'viewer_finance'].includes(role);
+export function canViewDevices(role: UserRole): boolean {
+  return [
+    "tenant_admin",
+    "operations_manager",
+    "dispatcher",
+    "platform_admin",
+    "viewer_finance",
+  ].includes(role);
+}
 
 // Role permission helpers - SIM Management
-export const canRequestSimActivation = (role: UserRole): boolean => 
-  role === 'tenant_admin';
+export function canRequestSimActivation(role: UserRole): boolean {
+  return role === "tenant_admin";
+}
 
-export const canApproveSimRequests = (role: UserRole): boolean => 
-  role === 'platform_admin';
+export function canApproveSimRequests(role: UserRole): boolean {
+  return role === "platform_admin";
+}
 
-export const canConfigureFonu = (role: UserRole): boolean => 
-  role === 'platform_admin';
+export function canConfigureFonu(role: UserRole): boolean {
+  return role === "platform_admin";
+}
 
-export const canViewSims = (role: UserRole): boolean => 
-  ['tenant_admin', 'operations_manager', 'dispatcher', 'platform_admin', 'viewer_finance', 'supervisor'].includes(role);
+export function canViewSims(role: UserRole): boolean {
+  return [
+    "tenant_admin",
+    "operations_manager",
+    "dispatcher",
+    "platform_admin",
+    "viewer_finance",
+    "supervisor",
+  ].includes(role);
+}
 
-export const canAssignSimToDevice = (role: UserRole): boolean => 
-  role === 'tenant_admin';
+export function canAssignSimToDevice(role: UserRole): boolean {
+  return role === "tenant_admin";
+}
 
-export const canViewSimUsageData = (role: UserRole): boolean => 
-  ['platform_admin', 'viewer_finance', 'tenant_admin'].includes(role);
+export function canViewSimUsageData(role: UserRole): boolean {
+  return [
+    "platform_admin",
+    "viewer_finance",
+    "tenant_admin",
+  ].includes(role);
+}
 
-export interface User {
+export type User = {
   id: string;
   email: string;
   name: string;
@@ -65,22 +94,22 @@ export interface User {
   avatar?: string;
   phone?: string;
   createdAt: Date;
-}
+};
 
 // Tenant/Organization
-export interface Tenant {
+export type Tenant = {
   id: string;
   name: string;
   logo?: string;
-  plan: 'starter' | 'professional' | 'enterprise';
-  status: 'active' | 'suspended' | 'pending';
+  plan: "starter" | "professional" | "enterprise";
+  status: "active" | "suspended" | "pending";
   vehicleCount: number;
   driverCount: number;
   createdAt: Date;
-}
+};
 
 // Vehicle
-export interface Vehicle {
+export type Vehicle = {
   id: string;
   plateNumber?: string;
   vin: string;
@@ -88,8 +117,8 @@ export interface Vehicle {
   make: string;
   model: string;
   year: number;
-  type: 'truck' | 'van' | 'trailer';
-  status: 'active' | 'inactive' | 'maintenance' | 'decommissioned';
+  type: "truck" | "van" | "trailer";
+  status: "active" | "inactive" | "maintenance" | "decommissioned";
   capacity: number;
   currentDriver?: string;
   deviceId?: string;
@@ -101,58 +130,58 @@ export interface Vehicle {
     lastUpdate: Date;
   };
   fuelLevel?: number;
-}
+};
 
 // Driver
-export interface Driver {
+export type Driver = {
   id: string;
   name: string;
   phone: string;
   email?: string;
   licenseNumber: string;
   licenseExpiry: Date;
-  status: 'active' | 'available' | 'offline' | 'suspended';
+  status: "active" | "available" | "offline" | "suspended";
   rating: number;
   totalTrips: number;
   currentVehicle?: string;
-  communicationPreference: 'whatsapp' | 'sms' | 'email' | 'voice';
-}
+  communicationPreference: "whatsapp" | "sms" | "email" | "voice";
+};
 
 // IoT Device
-export interface IoTDevice {
+export type IoTDevice = {
   id: string;
   imei: string;
   manufacturer: string;
   model: string;
-  status: 'registered' | 'configured' | 'assigned' | 'active' | 'faulty' | 'decommissioned';
+  status: "registered" | "configured" | "assigned" | "active" | "faulty" | "decommissioned";
   vehicleId?: string;
   simId?: string;
   firmwareVersion: string;
   lastSeen?: Date;
   signalStrength?: number;
   batteryLevel?: number;
-}
+};
 
 // SIM Card
-export interface SIMCard {
+export type SIMCard = {
   id: string;
   iccid: string;
   imsi: string;
   mobileNumber: string;
   networkOperator: string;
-  status: 'registered' | 'active' | 'assigned' | 'suspended' | 'deactivated';
+  status: "registered" | "active" | "assigned" | "suspended" | "deactivated";
   dataUsage: number;
   dataLimit: number;
   deviceId?: string;
   fonuSimId?: string | null;
   fonuStatus?: string | null;
-}
+};
 
 // Job/Dispatch
-export interface Job {
+export type Job = {
   id: string;
   reference: string;
-  status: 'created' | 'assigned' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
+  status: "created" | "assigned" | "accepted" | "in_progress" | "completed" | "cancelled";
   pickup: {
     address: string;
     lat: number;
@@ -175,34 +204,34 @@ export interface Job {
   amount: number;
   deadline: Date;
   createdAt: Date;
-}
+};
 
 // Alert
-export interface Alert {
+export type Alert = {
   id: string;
-  type: 'geofence' | 'speed' | 'maintenance' | 'fuel' | 'sos' | 'offline';
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  type: "geofence" | "speed" | "maintenance" | "fuel" | "sos" | "offline";
+  severity: "low" | "medium" | "high" | "critical";
   message: string;
   vehicleId: string;
   driverId?: string;
   timestamp: Date;
   acknowledged: boolean;
-}
+};
 
 // Communication Message
-export interface Message {
+export type Message = {
   id: string;
-  channel: 'whatsapp' | 'sms' | 'email' | 'voice';
-  direction: 'inbound' | 'outbound';
+  channel: "whatsapp" | "sms" | "email" | "voice";
+  direction: "inbound" | "outbound";
   recipient: string;
   content: string;
-  status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+  status: "pending" | "sent" | "delivered" | "read" | "failed";
   timestamp: Date;
   driverId?: string;
-}
+};
 
 // Analytics
-export interface FleetMetrics {
+export type FleetMetrics = {
   totalVehicles: number;
   activeVehicles: number;
   totalDrivers: number;
@@ -213,4 +242,4 @@ export interface FleetMetrics {
   fuelConsumed: number;
   avgFuelEfficiency: number;
   onTimeDelivery: number;
-}
+};

@@ -1,28 +1,33 @@
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  CheckCircle,
+  Clock,
+  Mail,
+  MessageSquare,
+  Phone,
+  RefreshCw,
+  Search,
+  XCircle,
+} from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import { Input } from "@/components/shadcn/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {
-  MessageSquare,
-  Phone,
-  Mail,
-  Search,
-  Clock,
-  CheckCircle,
-  XCircle,
-  ArrowUpRight,
-  ArrowDownLeft,
-  RefreshCw,
-} from "lucide-react";
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
+import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
+import { cn } from "@/lib/utils";
+
 type DriverMessage = any;
 type DriverCallLog = any;
-import { cn } from "@/lib/utils";
-import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 
 const statusColors: Record<string, string> = {
   sent: "bg-success/20 text-success",
@@ -38,33 +43,69 @@ const statusColors: Record<string, string> = {
 };
 
 const DEMO_MESSAGES: DriverMessage[] = [
-  { id: "dm1", tenant_id: "demo", driver_id: "d1", driver_name: "Adewale Johnson", driver_phone: "+2348012345678", message_type: "whatsapp", direction: "outbound", content: "Hi Adewale, please confirm pickup at Apapa terminal by 9am.", status: "delivered", external_id: null, sender_id: null, sender_name: "Dispatcher", error_message: null, created_at: new Date(Date.now() - 1000 * 60 * 12).toISOString(), updated_at: new Date().toISOString() },
-  { id: "dm2", tenant_id: "demo", driver_id: "d1", driver_name: "Adewale Johnson", driver_phone: "+2348012345678", message_type: "whatsapp", direction: "inbound", content: "Confirmed. On my way now.", status: "read", external_id: null, sender_id: null, sender_name: null, error_message: null, created_at: new Date(Date.now() - 1000 * 60 * 9).toISOString(), updated_at: new Date().toISOString() },
-  { id: "dm3", tenant_id: "demo", driver_id: "d2", driver_name: "Chinedu Okafor", driver_phone: "+2348023456789", message_type: "sms", direction: "outbound", content: "Reminder: Vehicle inspection due tomorrow at HQ workshop.", status: "sent", external_id: null, sender_id: null, sender_name: "Fleet Manager", error_message: null, created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(), updated_at: new Date().toISOString() },
-  { id: "dm4", tenant_id: "demo", driver_id: "d3", driver_name: "Funmi Adebayo", driver_phone: "+2348034567890", message_type: "whatsapp", direction: "inbound", content: "Traffic at Third Mainland Bridge. ETA delayed by 30 min.", status: "read", external_id: null, sender_id: null, sender_name: null, error_message: null, created_at: new Date(Date.now() - 1000 * 60 * 90).toISOString(), updated_at: new Date().toISOString() },
-  { id: "dm5", tenant_id: "demo", driver_id: "d4", driver_name: "Ibrahim Musa", driver_phone: "+2348045678901", message_type: "sms", direction: "outbound", content: "New job offer: Lagos → Ibadan, ₦85,000. Reply YES to accept.", status: "delivered", external_id: null, sender_id: null, sender_name: "Dispatcher", error_message: null, created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), updated_at: new Date().toISOString() },
-  { id: "dm6", tenant_id: "demo", driver_id: "d4", driver_name: "Ibrahim Musa", driver_phone: "+2348045678901", message_type: "sms", direction: "inbound", content: "YES", status: "read", external_id: null, sender_id: null, sender_name: null, error_message: null, created_at: new Date(Date.now() - 1000 * 60 * 60 * 3 + 60000).toISOString(), updated_at: new Date().toISOString() },
-  { id: "dm7", tenant_id: "demo", driver_id: "d5", driver_name: "Blessing Eze", driver_phone: "+2348056789012", message_type: "whatsapp", direction: "outbound", content: "Please share POD photo once delivery is complete.", status: "delivered", external_id: null, sender_id: null, sender_name: "Dispatcher", error_message: null, created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), updated_at: new Date().toISOString() },
-  { id: "dm8", tenant_id: "demo", driver_id: "d2", driver_name: "Chinedu Okafor", driver_phone: "+2348023456789", message_type: "whatsapp", direction: "outbound", content: "Harsh braking detected. Please drive safely.", status: "failed", external_id: null, sender_id: null, sender_name: "Safety Bot", error_message: "Recipient outside session window", created_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(), updated_at: new Date().toISOString() },
+  {
+    id: "dm1", tenant_id: "demo", driver_id: "d1", driver_name: "Adewale Johnson", driver_phone: "+2348012345678", message_type: "whatsapp", direction: "outbound", content: "Hi Adewale, please confirm pickup at Apapa terminal by 9am.", status: "delivered", external_id: null, sender_id: null, sender_name: "Dispatcher", error_message: null, created_at: new Date(Date.now() - 1000 * 60 * 12).toISOString(), updated_at: new Date().toISOString(),
+  },
+  {
+    id: "dm2", tenant_id: "demo", driver_id: "d1", driver_name: "Adewale Johnson", driver_phone: "+2348012345678", message_type: "whatsapp", direction: "inbound", content: "Confirmed. On my way now.", status: "read", external_id: null, sender_id: null, sender_name: null, error_message: null, created_at: new Date(Date.now() - 1000 * 60 * 9).toISOString(), updated_at: new Date().toISOString(),
+  },
+  {
+    id: "dm3", tenant_id: "demo", driver_id: "d2", driver_name: "Chinedu Okafor", driver_phone: "+2348023456789", message_type: "sms", direction: "outbound", content: "Reminder: Vehicle inspection due tomorrow at HQ workshop.", status: "sent", external_id: null, sender_id: null, sender_name: "Fleet Manager", error_message: null, created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(), updated_at: new Date().toISOString(),
+  },
+  {
+    id: "dm4", tenant_id: "demo", driver_id: "d3", driver_name: "Funmi Adebayo", driver_phone: "+2348034567890", message_type: "whatsapp", direction: "inbound", content: "Traffic at Third Mainland Bridge. ETA delayed by 30 min.", status: "read", external_id: null, sender_id: null, sender_name: null, error_message: null, created_at: new Date(Date.now() - 1000 * 60 * 90).toISOString(), updated_at: new Date().toISOString(),
+  },
+  {
+    id: "dm5", tenant_id: "demo", driver_id: "d4", driver_name: "Ibrahim Musa", driver_phone: "+2348045678901", message_type: "sms", direction: "outbound", content: "New job offer: Lagos → Ibadan, ₦85,000. Reply YES to accept.", status: "delivered", external_id: null, sender_id: null, sender_name: "Dispatcher", error_message: null, created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), updated_at: new Date().toISOString(),
+  },
+  {
+    id: "dm6", tenant_id: "demo", driver_id: "d4", driver_name: "Ibrahim Musa", driver_phone: "+2348045678901", message_type: "sms", direction: "inbound", content: "YES", status: "read", external_id: null, sender_id: null, sender_name: null, error_message: null, created_at: new Date(Date.now() - 1000 * 60 * 60 * 3 + 60000).toISOString(), updated_at: new Date().toISOString(),
+  },
+  {
+    id: "dm7", tenant_id: "demo", driver_id: "d5", driver_name: "Blessing Eze", driver_phone: "+2348056789012", message_type: "whatsapp", direction: "outbound", content: "Please share POD photo once delivery is complete.", status: "delivered", external_id: null, sender_id: null, sender_name: "Dispatcher", error_message: null, created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), updated_at: new Date().toISOString(),
+  },
+  {
+    id: "dm8", tenant_id: "demo", driver_id: "d2", driver_name: "Chinedu Okafor", driver_phone: "+2348023456789", message_type: "whatsapp", direction: "outbound", content: "Harsh braking detected. Please drive safely.", status: "failed", external_id: null, sender_id: null, sender_name: "Safety Bot", error_message: "Recipient outside session window", created_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(), updated_at: new Date().toISOString(),
+  },
 ];
 
 const DEMO_CALLS: DriverCallLog[] = [
-  { id: "dc1", tenant_id: "demo", driver_id: "d1", driver_name: "Adewale Johnson", driver_phone: "+2348012345678", caller_id: null, caller_name: "Dispatcher", call_type: "outbound", status: "completed", external_call_id: null, duration_seconds: 184, recording_url: null, notes: "Confirmed pickup details", started_at: new Date(Date.now() - 1000 * 60 * 25).toISOString(), ended_at: new Date(Date.now() - 1000 * 60 * 22).toISOString(), created_at: new Date(Date.now() - 1000 * 60 * 25).toISOString() },
-  { id: "dc2", tenant_id: "demo", driver_id: "d3", driver_name: "Funmi Adebayo", driver_phone: "+2348034567890", caller_id: null, caller_name: "Fleet Manager", call_type: "outbound", status: "no_answer", external_call_id: null, duration_seconds: 0, recording_url: null, notes: null, started_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(), ended_at: null, created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString() },
-  { id: "dc3", tenant_id: "demo", driver_id: "d2", driver_name: "Chinedu Okafor", driver_phone: "+2348023456789", caller_id: null, caller_name: null, call_type: "inbound", status: "completed", external_call_id: null, duration_seconds: 67, recording_url: null, notes: "Reported flat tyre near Berger", started_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), ended_at: new Date(Date.now() - 1000 * 60 * 60 * 2 + 67000).toISOString(), created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() },
-  { id: "dc4", tenant_id: "demo", driver_id: "d4", driver_name: "Ibrahim Musa", driver_phone: "+2348045678901", caller_id: null, caller_name: "Dispatcher", call_type: "outbound", status: "completed", external_call_id: null, duration_seconds: 312, recording_url: null, notes: "Briefed on Ibadan delivery", started_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(), ended_at: new Date(Date.now() - 1000 * 60 * 60 * 4 + 312000).toISOString(), created_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString() },
-  { id: "dc5", tenant_id: "demo", driver_id: "d5", driver_name: "Blessing Eze", driver_phone: "+2348056789012", caller_id: null, caller_name: "Dispatcher", call_type: "outbound", status: "failed", external_call_id: null, duration_seconds: 0, recording_url: null, notes: null, started_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), ended_at: null, created_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString() },
-  { id: "dc6", tenant_id: "demo", driver_id: "d1", driver_name: "Adewale Johnson", driver_phone: "+2348012345678", caller_id: null, caller_name: null, call_type: "inbound", status: "completed", external_call_id: null, duration_seconds: 95, recording_url: null, notes: "Asked for fuel card top-up", started_at: new Date(Date.now() - 1000 * 60 * 60 * 9).toISOString(), ended_at: new Date(Date.now() - 1000 * 60 * 60 * 9 + 95000).toISOString(), created_at: new Date(Date.now() - 1000 * 60 * 60 * 9).toISOString() },
+  {
+    id: "dc1", tenant_id: "demo", driver_id: "d1", driver_name: "Adewale Johnson", driver_phone: "+2348012345678", caller_id: null, caller_name: "Dispatcher", call_type: "outbound", status: "completed", external_call_id: null, duration_seconds: 184, recording_url: null, notes: "Confirmed pickup details", started_at: new Date(Date.now() - 1000 * 60 * 25).toISOString(), ended_at: new Date(Date.now() - 1000 * 60 * 22).toISOString(), created_at: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
+  },
+  {
+    id: "dc2", tenant_id: "demo", driver_id: "d3", driver_name: "Funmi Adebayo", driver_phone: "+2348034567890", caller_id: null, caller_name: "Fleet Manager", call_type: "outbound", status: "no_answer", external_call_id: null, duration_seconds: 0, recording_url: null, notes: null, started_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(), ended_at: null, created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+  },
+  {
+    id: "dc3", tenant_id: "demo", driver_id: "d2", driver_name: "Chinedu Okafor", driver_phone: "+2348023456789", caller_id: null, caller_name: null, call_type: "inbound", status: "completed", external_call_id: null, duration_seconds: 67, recording_url: null, notes: "Reported flat tyre near Berger", started_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), ended_at: new Date(Date.now() - 1000 * 60 * 60 * 2 + 67000).toISOString(), created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+  },
+  {
+    id: "dc4", tenant_id: "demo", driver_id: "d4", driver_name: "Ibrahim Musa", driver_phone: "+2348045678901", caller_id: null, caller_name: "Dispatcher", call_type: "outbound", status: "completed", external_call_id: null, duration_seconds: 312, recording_url: null, notes: "Briefed on Ibadan delivery", started_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(), ended_at: new Date(Date.now() - 1000 * 60 * 60 * 4 + 312000).toISOString(), created_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
+  },
+  {
+    id: "dc5", tenant_id: "demo", driver_id: "d5", driver_name: "Blessing Eze", driver_phone: "+2348056789012", caller_id: null, caller_name: "Dispatcher", call_type: "outbound", status: "failed", external_call_id: null, duration_seconds: 0, recording_url: null, notes: null, started_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), ended_at: null, created_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+  },
+  {
+    id: "dc6", tenant_id: "demo", driver_id: "d1", driver_name: "Adewale Johnson", driver_phone: "+2348012345678", caller_id: null, caller_name: null, call_type: "inbound", status: "completed", external_call_id: null, duration_seconds: 95, recording_url: null, notes: "Asked for fuel card top-up", started_at: new Date(Date.now() - 1000 * 60 * 60 * 9).toISOString(), ended_at: new Date(Date.now() - 1000 * 60 * 60 * 9 + 95000).toISOString(), created_at: new Date(Date.now() - 1000 * 60 * 60 * 9).toISOString(),
+  },
 ];
 
 export function DriverMessagesInbox() {
   const liveMessages: any[] = [];
   const liveCalls: any[] = [];
   const isLoading = false;
-  const getStats = () => ({ todayMessages: 0, todayCalls: 0, sentMessages: 0, failedMessages: 0, totalMessages: 0, totalCalls: 0, completedCalls: 0, missedCalls: 0 });
+  const getStats = () => ({
+    todayMessages: 0, todayCalls: 0, sentMessages: 0, failedMessages: 0, totalMessages: 0, totalCalls: 0, completedCalls: 0, missedCalls: 0,
+  });
   const refetch = async (...args: any[]) => {};
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("messages");
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    activeTab,
+    setActiveTab,
+  ] = useState("messages");
 
   const messages = liveMessages.length === 0 ? DEMO_MESSAGES : liveMessages;
   const callLogs = liveCalls.length === 0 ? DEMO_CALLS : liveCalls;
@@ -82,16 +123,16 @@ export function DriverMessagesInbox() {
     : getStats();
 
   const filteredMessages = messages.filter(
-    (m) =>
-      m.driver_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      m.driver_phone.includes(searchQuery) ||
-      m.content.toLowerCase().includes(searchQuery.toLowerCase())
+    m =>
+      m.driver_name?.toLowerCase().includes(searchQuery.toLowerCase())
+      || m.driver_phone.includes(searchQuery)
+      || m.content.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const filteredCalls = callLogs.filter(
-    (c) =>
-      c.driver_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.driver_phone.includes(searchQuery)
+    c =>
+      c.driver_name?.toLowerCase().includes(searchQuery.toLowerCase())
+      || c.driver_phone.includes(searchQuery),
   );
 
   if (isLoading) {
@@ -102,8 +143,11 @@ export function DriverMessagesInbox() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full" />
+            {[...Array.from({ length: 5 })].map((_, i) => (
+              <Skeleton
+                key={i}
+                className="h-16 w-full"
+              />
             ))}
           </div>
         </CardContent>
@@ -120,7 +164,11 @@ export function DriverMessagesInbox() {
             Driver Communications
           </CardTitle>
           <TooltipWrapper content="Refresh communications">
-            <Button variant="ghost" size="icon" onClick={() => refetch()}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => refetch()}
+            >
               <RefreshCw className="h-4 w-4" />
             </Button>
           </TooltipWrapper>
@@ -153,54 +201,83 @@ export function DriverMessagesInbox() {
           <Input
             placeholder="Search by driver name, phone, or content..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
             className="pl-10"
           />
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+        >
           <TabsList className="w-full">
-            <TabsTrigger value="messages" className="flex-1">
+            <TabsTrigger
+              value="messages"
+              className="flex-1"
+            >
               <MessageSquare className="h-4 w-4 mr-2" />
-              Messages ({filteredMessages.length})
+              Messages (
+              {filteredMessages.length}
+              )
             </TabsTrigger>
-            <TabsTrigger value="calls" className="flex-1">
+            <TabsTrigger
+              value="calls"
+              className="flex-1"
+            >
               <Phone className="h-4 w-4 mr-2" />
-              Calls ({filteredCalls.length})
+              Calls (
+              {filteredCalls.length}
+              )
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="messages" className="mt-4">
+          <TabsContent
+            value="messages"
+            className="mt-4"
+          >
             <ScrollArea className="h-[400px]">
               <div className="space-y-2">
-                {filteredMessages.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>No messages found</p>
-                  </div>
-                ) : (
-                  filteredMessages.map((message) => (
-                    <MessageItem key={message.id} message={message} />
-                  ))
-                )}
+                {filteredMessages.length === 0
+                  ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>No messages found</p>
+                      </div>
+                    )
+                  : (
+                      filteredMessages.map(message => (
+                        <MessageItem
+                          key={message.id}
+                          message={message}
+                        />
+                      ))
+                    )}
               </div>
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="calls" className="mt-4">
+          <TabsContent
+            value="calls"
+            className="mt-4"
+          >
             <ScrollArea className="h-[400px]">
               <div className="space-y-2">
-                {filteredCalls.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Phone className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>No call logs found</p>
-                  </div>
-                ) : (
-                  filteredCalls.map((call) => (
-                    <CallItem key={call.id} call={call} />
-                  ))
-                )}
+                {filteredCalls.length === 0
+                  ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Phone className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>No call logs found</p>
+                      </div>
+                    )
+                  : (
+                      filteredCalls.map(call => (
+                        <CallItem
+                          key={call.id}
+                          call={call}
+                        />
+                      ))
+                    )}
               </div>
             </ScrollArea>
           </TabsContent>
@@ -217,24 +294,29 @@ function MessageItem({ message }: { message: DriverMessage }) {
     <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
       <div className={cn(
         "flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white",
-        "bg-gradient-to-br from-primary to-accent"
-      )}>
+        "bg-gradient-to-br from-primary to-accent",
+      )}
+      >
         {message.driver_name?.split(" ").map(n => n[0]).join("") || "?"}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <p className="font-medium truncate">{message.driver_name || message.driver_phone}</p>
-            {isOutbound ? (
-              <ArrowUpRight className="h-3 w-3 text-primary" />
-            ) : (
-              <ArrowDownLeft className="h-3 w-3 text-success" />
-            )}
-            {message.message_type === "whatsapp" ? (
-              <MessageSquare className="h-3 w-3 text-success" />
-            ) : (
-              <Mail className="h-3 w-3 text-primary" />
-            )}
+            {isOutbound
+              ? (
+                  <ArrowUpRight className="h-3 w-3 text-primary" />
+                )
+              : (
+                  <ArrowDownLeft className="h-3 w-3 text-success" />
+                )}
+            {message.message_type === "whatsapp"
+              ? (
+                  <MessageSquare className="h-3 w-3 text-success" />
+                )
+              : (
+                  <Mail className="h-3 w-3 text-primary" />
+                )}
           </div>
           <Badge className={statusColors[message.status] || "bg-muted"}>
             {message.status}
@@ -247,7 +329,10 @@ function MessageItem({ message }: { message: DriverMessage }) {
             {formatRelative(message.created_at)}
           </span>
           {message.sender_name && (
-            <span>by {message.sender_name}</span>
+            <span>
+              by
+              {message.sender_name}
+            </span>
           )}
         </div>
       </div>
@@ -257,42 +342,61 @@ function MessageItem({ message }: { message: DriverMessage }) {
 
 function CallItem({ call }: { call: DriverCallLog }) {
   const isOutbound = call.call_type === "outbound";
-  const statusIcon = call.status === "completed" ? (
-    <CheckCircle className="h-4 w-4 text-success" />
-  ) : call.status === "failed" || call.status === "no_answer" ? (
-    <XCircle className="h-4 w-4 text-destructive" />
-  ) : (
-    <Phone className="h-4 w-4 text-primary" />
-  );
+  const statusIcon = call.status === "completed"
+    ? (
+        <CheckCircle className="h-4 w-4 text-success" />
+      )
+    : call.status === "failed" || call.status === "no_answer"
+      ? (
+          <XCircle className="h-4 w-4 text-destructive" />
+        )
+      : (
+          <Phone className="h-4 w-4 text-primary" />
+        );
 
   return (
     <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
       <div className={cn(
         "flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white",
-        call.status === "completed" ? "bg-success" :
-        call.status === "failed" || call.status === "no_answer" ? "bg-destructive" :
-        "bg-primary"
-      )}>
+        call.status === "completed"
+          ? "bg-success"
+          : call.status === "failed" || call.status === "no_answer"
+            ? "bg-destructive"
+            : "bg-primary",
+      )}
+      >
         {statusIcon}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <p className="font-medium truncate">{call.driver_name || call.driver_phone}</p>
-            {isOutbound ? (
-              <ArrowUpRight className="h-3 w-3 text-primary" />
-            ) : (
-              <ArrowDownLeft className="h-3 w-3 text-success" />
-            )}
+            {isOutbound
+              ? (
+                  <ArrowUpRight className="h-3 w-3 text-primary" />
+                )
+              : (
+                  <ArrowDownLeft className="h-3 w-3 text-success" />
+                )}
           </div>
           <Badge className={statusColors[call.status] || "bg-muted"}>
-            {call.status.replace("_", " ")}
+            {call.status.replace(
+              "_",
+              " ",
+            )}
           </Badge>
         </div>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span>{call.driver_phone}</span>
           {call.duration_seconds !== null && call.duration_seconds > 0 && (
-            <span>{Math.floor(call.duration_seconds / 60)}:{(call.duration_seconds % 60).toString().padStart(2, '0')}</span>
+            <span>
+              {Math.floor(call.duration_seconds / 60)}
+              :
+              {(call.duration_seconds % 60).toString().padStart(
+                2,
+                "0",
+              )}
+            </span>
           )}
         </div>
         <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
@@ -301,7 +405,10 @@ function CallItem({ call }: { call: DriverCallLog }) {
             {formatRelative(call.started_at)}
           </span>
           {call.caller_name && (
-            <span>by {call.caller_name}</span>
+            <span>
+              by
+              {call.caller_name}
+            </span>
           )}
         </div>
       </div>

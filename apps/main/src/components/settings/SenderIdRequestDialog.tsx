@@ -1,64 +1,91 @@
-import { useState, useRef } from "react";
+import {
+  Download, FileText, Loader2, Upload, X,
+} from "lucide-react";
+import {
+  useRef, useState,
+} from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle } from "@/components/shadcn/dialog";
-import { Button } from "@/components/shadcn/button";
+  DialogTitle,
+} from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Textarea } from "@/components/shadcn/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from "@/components/shadcn/select";
-import {Upload, FileText, X, Loader2, Download} from "lucide-react";
-type SenderIdType = string;
+  SelectValue,
+} from "@/components/shadcn/select";
+import { Textarea } from "@/components/shadcn/textarea";
 import { useAuthStore } from "@/stores/authStore";
 import { generateSenderIdRequestLetter } from "@/utils/senderIdTemplateGenerator";
-import { toast } from "sonner";
 
-interface SenderIdRequestDialogProps {
+type SenderIdType = string;
+
+type SenderIdRequestDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
+};
 
-export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDialogProps) {
+export function SenderIdRequestDialog({
+  open, onOpenChange,
+}: SenderIdRequestDialogProps) {
   const { user } = useAuthStore();
   const requestSenderId = async (_data: any) => {};
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<{ name: string; url: string } | null>(null);
-  const [formData, setFormData] = useState({
+  const [
+    isSubmitting,
+    setIsSubmitting,
+  ] = useState(false);
+  const [
+    isUploading,
+    setIsUploading,
+  ] = useState(false);
+  const [
+    uploadedFile,
+    setUploadedFile,
+  ] = useState<{
+    name: string; url: string;
+  } | null>(null);
+  const [
+    formData,
+    setFormData,
+  ] = useState({
     sender_id: "",
     sender_type: "sms" as SenderIdType,
-    request_notes: "" });
+    request_notes: "",
+  });
 
   const handleDownloadTemplate = async () => {
     try {
       await generateSenderIdRequestLetter({
         senderId: formData.sender_id || undefined,
-        senderType: formData.sender_type === 'both' ? 'SMS & Voice' : formData.sender_type.toUpperCase() });
+        senderType: formData.sender_type === "both" ? "SMS & Voice" : formData.sender_type.toUpperCase(),
+      });
       toast.success("Template downloaded - edit the highlighted fields and upload");
-    } catch (error) {
+    }
+    catch (error) {
       toast.error("Failed to generate template");
     }
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file)
+      return;
 
     // Validate file type
     const allowedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ];
     if (!allowedTypes.includes(file.type)) {
       toast.error("Please upload a PDF or Word document");
@@ -76,21 +103,22 @@ export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDia
       return;
     }
 
-    toast.info('Coming soon');
+    toast.info("Coming soon");
     setIsUploading(false);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   const handleRemoveFile = async () => {
-    if (!uploadedFile) return;
+    if (!uploadedFile)
+      return;
     setUploadedFile(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.sender_id.trim()) {
       toast.error("Please enter a sender ID");
       return;
@@ -107,13 +135,18 @@ export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDia
         sender_id: formData.sender_id.trim(),
         sender_type: formData.sender_type,
         request_notes: formData.request_notes.trim() || undefined,
-        request_letter_url: uploadedFile.url });
+        request_letter_url: uploadedFile.url,
+      });
       onOpenChange(false);
-      setFormData({ sender_id: "", sender_type: "sms", request_notes: "" });
+      setFormData({
+        sender_id: "", sender_type: "sms", request_notes: "",
+      });
       setUploadedFile(null);
-    } catch {
+    }
+    catch {
       // Error handled in hook
-    } finally {
+    }
+    finally {
       setIsSubmitting(false);
     }
   };
@@ -124,12 +157,17 @@ export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDia
       handleRemoveFile();
     }
     onOpenChange(false);
-    setFormData({ sender_id: "", sender_type: "sms", request_notes: "" });
+    setFormData({
+      sender_id: "", sender_type: "sms", request_notes: "",
+    });
     setUploadedFile(null);
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog
+      open={open}
+      onOpenChange={handleClose}
+    >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Request Sender ID</DialogTitle>
@@ -137,8 +175,11 @@ export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDia
             Submit a sender ID for approval. Download the template letter, edit it with your company details, then upload the signed version.
           </DialogDescription>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
+
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="sender_id">Sender ID</Label>
@@ -146,7 +187,9 @@ export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDia
                 id="sender_id"
                 placeholder="e.g., MYCOMPANY"
                 value={formData.sender_id}
-                onChange={(e) => setFormData(prev => ({ ...prev, sender_id: e.target.value }))}
+                onChange={e => setFormData(prev => ({
+                  ...prev, sender_id: e.target.value,
+                }))}
                 maxLength={20}
               />
               <p className="text-xs text-muted-foreground">
@@ -158,7 +201,9 @@ export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDia
               <Label htmlFor="sender_type">Type</Label>
               <Select
                 value={formData.sender_type}
-                onValueChange={(value: SenderIdType) => setFormData(prev => ({ ...prev, sender_type: value }))}
+                onValueChange={(value: SenderIdType) => setFormData(prev => ({
+                  ...prev, sender_type: value,
+                }))}
               >
                 <SelectTrigger id="sender_type">
                   <SelectValue />
@@ -187,62 +232,66 @@ export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDia
                 Download Template
               </Button>
             </div>
-            
+
             <p className="text-sm text-muted-foreground">
               Download the template, fill in your company details (highlighted in yellow), print on company letterhead, sign, scan, and upload.
             </p>
 
-            {!uploadedFile ? (
-              <div className="space-y-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="w-full gap-2"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
-                >
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4" />
-                      Upload Signed Request Letter
-                    </>
-                  )}
-                </Button>
-                <p className="text-xs text-muted-foreground text-center">
-                  PDF or Word document, max 5MB
-                </p>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between p-3 rounded-lg bg-background border">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <span className="text-sm font-medium truncate max-w-[200px]">
-                    {uploadedFile.name}
-                  </span>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleRemoveFile}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+            {!uploadedFile
+              ? (
+                  <div className="space-y-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full gap-2"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                    >
+                      {isUploading
+                        ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Uploading...
+                            </>
+                          )
+                        : (
+                            <>
+                              <Upload className="h-4 w-4" />
+                              Upload Signed Request Letter
+                            </>
+                          )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      PDF or Word document, max 5MB
+                    </p>
+                  </div>
+                )
+              : (
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-background border">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-primary" />
+                      <span className="text-sm font-medium truncate max-w-[200px]">
+                        {uploadedFile.name}
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={handleRemoveFile}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
           </div>
 
           <div className="space-y-2">
@@ -251,17 +300,23 @@ export function SenderIdRequestDialog({ open, onOpenChange }: SenderIdRequestDia
               id="request_notes"
               placeholder="Any additional context for the administrator..."
               value={formData.request_notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, request_notes: e.target.value }))}
+              onChange={e => setFormData(prev => ({
+                ...prev, request_notes: e.target.value,
+              }))}
               rows={2}
             />
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+            >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isSubmitting || !formData.sender_id.trim() || !uploadedFile}
             >
               {isSubmitting ? "Submitting..." : "Submit Request"}

@@ -94,4 +94,8 @@ pnpm build
 
 ```sh
 pnpm lint
+pnpm lint:fix
 ```
+
+All three apps share one config, exported from `app-core`. See
+[docs/lint.md](docs/lint.md).

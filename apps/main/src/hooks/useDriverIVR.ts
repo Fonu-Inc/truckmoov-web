@@ -1,26 +1,29 @@
 import { useState } from "react";
 
-interface JobDetails {
+type JobDetails = {
   pickup: string;
   dropoff: string;
   cargo: string;
   amount: number;
   deadline?: string;
-}
+};
 
-interface IVROptions {
+type IVROptions = {
   driverName?: string;
   jobId?: string;
   language?: string;
-}
+};
 
-interface IVRResult {
+type IVRResult = {
   success: boolean;
   callId: string;
-}
+};
 
 export function useDriverIVR() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [
+    isLoading,
+    setIsLoading,
+  ] = useState(false);
 
   const notifyNewJob = async (
     _phone: string,
@@ -29,9 +32,15 @@ export function useDriverIVR() {
   ): Promise<IVRResult> => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      return { success: true, callId: `ivr-${Date.now()}` };
-    } finally {
+      await new Promise(resolve => setTimeout(
+        resolve,
+        1000,
+      ));
+      return {
+        success: true, callId: `ivr-${Date.now()}`,
+      };
+    }
+    finally {
       setIsLoading(false);
     }
   };
@@ -43,12 +52,20 @@ export function useDriverIVR() {
   ): Promise<IVRResult> => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      return { success: true, callId: `ivr-urgent-${Date.now()}` };
-    } finally {
+      await new Promise(resolve => setTimeout(
+        resolve,
+        1000,
+      ));
+      return {
+        success: true, callId: `ivr-urgent-${Date.now()}`,
+      };
+    }
+    finally {
       setIsLoading(false);
     }
   };
 
-  return { notifyNewJob, notifyUrgent, isLoading };
+  return {
+    notifyNewJob, notifyUrgent, isLoading,
+  };
 }

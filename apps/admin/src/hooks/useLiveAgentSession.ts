@@ -1,9 +1,8 @@
-import { useState, useCallback } from 'react';
-import { useAuthStore } from '@/stores/authStore';
+import { useCallback } from "react";
 
-export type LiveSessionStatus = 'queued' | 'assigned' | 'active' | 'ended' | 'abandoned';
+export type LiveSessionStatus = "queued" | "assigned" | "active" | "ended" | "abandoned";
 
-export interface LiveSession {
+export type LiveSession = {
   id: string;
   tenant_id: string;
   org_id: string | null;
@@ -23,17 +22,17 @@ export interface LiveSession {
   wait_seconds: number | null;
   duration_seconds: number | null;
   ended_reason: string | null;
-}
+};
 
-export interface LiveMessage {
+export type LiveMessage = {
   id: string;
   session_id: string;
   sender_id: string;
   sender_name: string | null;
-  sender_role: 'user' | 'agent' | 'system';
+  sender_role: "user" | "agent" | "system";
   message: string;
   created_at: string;
-}
+};
 
 /**
  * Manages a single live-agent chat session for the current end-user.
@@ -44,9 +43,29 @@ export function useLiveAgentSession() {
   const queuePosition: number | null = null;
   const isJoining = false;
 
-  const joinQueue = useCallback(async (_opts: { topic?: string; contextSummary?: string }) => null, []);
-  const sendMessage = useCallback(async (_text: string) => {}, []);
-  const endSession = useCallback(async (_reason?: string) => {}, []);
+  const joinQueue = useCallback(
+    async (_opts: {
+      topic?: string;
+      contextSummary?: string;
+    }) => null,
+    [],
+  );
+  const sendMessage = useCallback(
+    async (_text: string) => {},
+    [],
+  );
+  const endSession = useCallback(
+    async (_reason?: string) => {},
+    [],
+  );
 
-  return { session, messages, queuePosition, isJoining, joinQueue, sendMessage, endSession };
+  return {
+    session,
+    messages,
+    queuePosition,
+    isJoining,
+    joinQueue,
+    sendMessage,
+    endSession,
+  };
 }

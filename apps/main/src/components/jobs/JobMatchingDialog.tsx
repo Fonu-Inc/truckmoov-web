@@ -1,5 +1,21 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/shadcn/dialog";
+import type {
+  Driver, Job, Vehicle,
+} from "@/types";
+import {
+  useDrivers, useVehicles,
+} from "@truckmoov/api/fleet";
+import {
+  AlertCircle, Brain, CheckCircle, Clock, Eye, Info,
+  ListChecks, Loader2, Lock, MapPin, MessageSquare, Phone,
+  PhoneCall, Route, ShieldCheck, Sparkles, Star, Truck, User, Zap,
+} from "lucide-react";
+import {
+  useEffect, useState,
+} from "react";
+import { toast } from "sonner";
+import {
+  Alert, AlertDescription, AlertTitle,
+} from "@/components/shadcn/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,13 +26,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
-import { Button } from "@/components/shadcn/button";
 import { Badge } from "@/components/shadcn/badge";
-import { Progress } from "@/components/shadcn/progress";
-import { Card, CardContent } from "@/components/shadcn/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent,
+} from "@/components/shadcn/card";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "@/components/shadcn/dialog";
 import { Label } from "@/components/shadcn/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { Progress } from "@/components/shadcn/progress";
 import {
   Select,
   SelectContent,
@@ -24,9 +43,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { Job, Vehicle, Driver } from "@/types";
-import { mockVehicles, mockDrivers } from "@/data/mockData";
-import { useDrivers, useVehicles } from "@truckmoov/api/fleet";
+import {
+  Tabs, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import {
+  mockDrivers, mockVehicles,
+} from "@/data/mockData";
+import { useDriverIVR } from "@/hooks/useDriverIVR";
+import { useJobMatching } from "@/hooks/useJobMatching";
+
 type MatchResult = {
   vehicle: Vehicle;
   driver: Driver;
@@ -36,53 +62,74 @@ type MatchResult = {
   distance: number;
   reasons: string[];
 };
-import { useCurrency } from "@/contexts/CurrencyContext";
-import { useDriverIVR } from "@/hooks/useDriverIVR";
-import { useJobMatching } from "@/hooks/useJobMatching";
-import { 
-  Truck, User, MapPin, Star, Clock, CheckCircle, 
-  Sparkles, Route, MessageSquare, Phone, PhoneCall, Brain, 
-  AlertCircle, ShieldCheck, Lock, ListChecks, Eye, Zap, Info, Loader2
-} from "lucide-react";
-import { toast } from "sonner";
 
-interface JobMatchingDialogProps {
+type JobMatchingDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   job: Job | null;
   onAssign: (vehicleId: string, driverId: string, driverPhone?: string) => void | Promise<void>;
   onRecommend?: (vehicleId: string, driverId: string) => void;
-  /** When true, the dialog only allows recommending a driver (no live dispatch).
-   *  Used by Enterprise admins — only Fleet Providers and Dispatchers can assign. */
+  /**
+   * When true, the dialog only allows recommending a driver (no live dispatch).
+   *  Used by Enterprise admins — only Fleet Providers and Dispatchers can assign.
+   */
   recommendOnly?: boolean;
-}
+};
 
-export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecommend, recommendOnly = false }: JobMatchingDialogProps) {
-  const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
-  const [confirmRecommendOpen, setConfirmRecommendOpen] = useState(false);
-  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
-  const [isSendingIVR, setIsSendingIVR] = useState(false);
-  const [mode, setMode] = useState<"ai" | "manual">("ai");
-  const [manualVehicleId, setManualVehicleId] = useState<string>("");
-  const [manualDriverId, setManualDriverId] = useState<string>("");
-  const [isManualAssigning, setIsManualAssigning] = useState(false);
+export function JobMatchingDialog({
+  open, onOpenChange, job, onAssign, onRecommend, recommendOnly = false,
+}: JobMatchingDialogProps) {
+  const [
+    selectedMatch,
+    setSelectedMatch,
+  ] = useState<MatchResult | null>(null);
+  const [
+    confirmRecommendOpen,
+    setConfirmRecommendOpen,
+  ] = useState(false);
+  const [
+    isSendingWhatsApp,
+    setIsSendingWhatsApp,
+  ] = useState(false);
+  const [
+    isSendingIVR,
+    setIsSendingIVR,
+  ] = useState(false);
+  const [
+    mode,
+    setMode,
+  ] = useState<"ai" | "manual">("ai");
+  const [
+    manualVehicleId,
+    setManualVehicleId,
+  ] = useState<string>("");
+  const [
+    manualDriverId,
+    setManualDriverId,
+  ] = useState<string>("");
+  const [
+    isManualAssigning,
+    setIsManualAssigning,
+  ] = useState(false);
   const vehiclesQuery = useVehicles();
   const driversQuery = useDrivers();
-  
-  const { notifyNewJob, notifyUrgent, isLoading: isIVRLoading } = useDriverIVR();
+
+  const {
+    notifyNewJob, notifyUrgent, isLoading: isIVRLoading,
+  } = useDriverIVR();
   const { format: formatCurrency } = useCurrency();
-  
+
   // Use the new unified hook with mode control
-  const { 
-    matches, 
-    isMatching, 
-    matchProgress, 
-    analysis, 
-    provider, 
-    model, 
-    overallConfidence, 
+  const {
+    matches,
+    isMatching,
+    matchProgress,
+    analysis,
+    provider,
+    model,
+    overallConfidence,
     requiresApproval,
-    runMatching, 
+    runMatching,
     reset,
     error: matchingError,
     // Mode control
@@ -112,29 +159,44 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
   const selectedManualVehicle = availableVehicles.find(v => v.id === manualVehicleId);
   const selectedManualDriver = availableDrivers.find(d => d.id === manualDriverId);
 
-  useEffect(() => {
-    if (open && job) {
-      setMode(canRunAIMatching ? "ai" : "manual");
-      setManualVehicleId("");
-      setManualDriverId("");
-      setSelectedMatch(null);
-      
-      if (canRunAIMatching) {
+  useEffect(
+    () => {
+      if (open && job) {
+        setMode(canRunAIMatching ? "ai" : "manual");
+        setManualVehicleId("");
+        setManualDriverId("");
+        setSelectedMatch(null);
+
+        if (canRunAIMatching) {
         // Request matching with the role's default mode
-        runMatching(job, mockVehicles, mockDrivers, defaultMode);
+          runMatching(
+            job,
+            mockVehicles,
+            mockDrivers,
+            defaultMode,
+          );
+        }
       }
-    } else {
-      reset();
-      setMode("ai");
-    }
-  }, [open, job, canRunAIMatching, defaultMode]);
+      else {
+        reset();
+        setMode("ai");
+      }
+    },
+    [
+      open,
+      job,
+      canRunAIMatching,
+      defaultMode,
+    ],
+  );
 
   // LIVE mode: Actual dispatch actions
   const handleAssignViaWhatsApp = async (match: MatchResult) => {
     if (isSimulationMode) {
-      toast.error('Simulation mode', {
-        description: 'Cannot send offers in simulation mode. Switch to a dispatcher role for live execution.',
-      });
+      toast.error(
+        "Simulation mode",
+        { description: "Cannot send offers in simulation mode. Switch to a dispatcher role for live execution." },
+      );
       return;
     }
 
@@ -143,24 +205,33 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
 
     try {
       // In LIVE mode, this would trigger actual WhatsApp API
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(
+        resolve,
+        1500,
+      ));
 
-      toast.success(`Job assignment sent to ${match.driver.name} via WhatsApp`, {
-        description: `Awaiting confirmation for job ${job?.reference}`,
-      });
+      toast.success(
+        `Job assignment sent to ${match.driver.name} via WhatsApp`,
+        { description: `Awaiting confirmation for job ${job?.reference}` },
+      );
 
-      onAssign(match.vehicle.id, match.driver.id);
+      onAssign(
+        match.vehicle.id,
+        match.driver.id,
+      );
       onOpenChange(false);
-    } finally {
+    }
+    finally {
       setIsSendingWhatsApp(false);
     }
   };
 
   const handleAssignViaIVR = async (match: MatchResult, urgent: boolean = false) => {
     if (isSimulationMode) {
-      toast.error('Simulation mode', {
-        description: 'Cannot trigger IVR calls in simulation mode. Switch to a dispatcher role for live execution.',
-      });
+      toast.error(
+        "Simulation mode",
+        { description: "Cannot trigger IVR calls in simulation mode. Switch to a dispatcher role for live execution." },
+      );
       return;
     }
 
@@ -178,102 +249,144 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
 
       const result = urgent
         ? await notifyUrgent(
-            match.driver.phone || '+2348012345678',
+            match.driver.phone || "+2348012345678",
             jobDetails,
-            { driverName: match.driver.name, jobId: job!.id, language: 'en' }
+            {
+              driverName: match.driver.name, jobId: job!.id, language: "en",
+            },
           )
         : await notifyNewJob(
-            match.driver.phone || '+2348012345678',
+            match.driver.phone || "+2348012345678",
             jobDetails,
-            { driverName: match.driver.name, jobId: job!.id, language: 'en' }
+            {
+              driverName: match.driver.name, jobId: job!.id, language: "en",
+            },
           );
 
       if (result?.success) {
-        toast.success(`IVR call initiated to ${match.driver.name}`, {
-          description: urgent 
-            ? `Urgent notification with retry - Call ID: ${result.callId}`
-            : `Awaiting driver response via phone - Call ID: ${result.callId}`,
-        });
-        onAssign(match.vehicle.id, match.driver.id);
+        toast.success(
+          `IVR call initiated to ${match.driver.name}`,
+          {
+            description: urgent
+              ? `Urgent notification with retry - Call ID: ${result.callId}`
+              : `Awaiting driver response via phone - Call ID: ${result.callId}`,
+          },
+        );
+        onAssign(
+          match.vehicle.id,
+          match.driver.id,
+        );
         onOpenChange(false);
       }
-    } catch (error) {
-      toast.error('Failed to initiate IVR call');
-    } finally {
+    }
+    catch (error) {
+      toast.error("Failed to initiate IVR call");
+    }
+    finally {
       setIsSendingIVR(false);
     }
   };
 
   const handleManualAssign = async () => {
     if (!manualVehicleId || !manualDriverId) {
-      toast.error('Please select both a vehicle and driver');
+      toast.error("Please select both a vehicle and driver");
       return;
     }
-    if (!selectedManualVehicle || !selectedManualDriver) return;
+    if (!selectedManualVehicle || !selectedManualDriver)
+      return;
 
     setIsManualAssigning(true);
     try {
-      await onAssign(manualVehicleId, manualDriverId, selectedManualDriver.phone);
+      await onAssign(
+        manualVehicleId,
+        manualDriverId,
+        selectedManualDriver.phone,
+      );
       onOpenChange(false);
-    } catch {
+    }
+    catch {
       // The page-level mutation handler displays the API error and keeps the modal open.
-    } finally {
+    }
+    finally {
       setIsManualAssigning(false);
     }
   };
 
-  if (!job) return null;
+  if (!job)
+    return null;
 
-  const providerInfo = provider ? {
-    provider,
-    model: model || 'unknown',
-    confidence: overallConfidence || 0.75,
-    requiresApproval,
-  } : null;
+  const providerInfo = provider
+    ? {
+        provider,
+        model: model || "unknown",
+        confidence: overallConfidence || 0.75,
+        requiresApproval,
+      }
+    : null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {isManualMode ? (
-              <ListChecks className="h-5 w-5 text-primary" />
-            ) : (
-              <Brain className="h-5 w-5 text-primary" />
-            )}
-            {isManualMode ? 'Manual Dispatch' : 'AI Load Matching'}
-            
+            {isManualMode
+              ? (
+                  <ListChecks className="h-5 w-5 text-primary" />
+                )
+              : (
+                  <Brain className="h-5 w-5 text-primary" />
+                )}
+            {isManualMode ? "Manual Dispatch" : "AI Load Matching"}
+
             {/* Mode Badge */}
-            <Badge 
+            <Badge
               variant={isSimulationMode ? "secondary" : "default"}
-              className={`ml-2 ${isSimulationMode ? 'bg-muted text-muted-foreground' : 'bg-success/20 text-success border-success/30'}`}
+              className={`ml-2 ${isSimulationMode ? "bg-muted text-muted-foreground" : "bg-success/20 text-success border-success/30"}`}
             >
-              {isSimulationMode ? (
-                <>
-                  <Eye className="h-3 w-3 mr-1" />
-                  Simulation
-                </>
-              ) : (
-                <>
-                  <Zap className="h-3 w-3 mr-1" />
-                  Live
-                </>
-              )}
+              {isSimulationMode
+                ? (
+                    <>
+                      <Eye className="h-3 w-3 mr-1" />
+                      Simulation
+                    </>
+                  )
+                : (
+                    <>
+                      <Zap className="h-3 w-3 mr-1" />
+                      Live
+                    </>
+                  )}
             </Badge>
           </DialogTitle>
           <DialogDescription className="flex items-center gap-2">
-            {isManualMode ? (
-              <>Manually select vehicle and driver for job {job.reference}</>
-            ) : (
-              <>
-                AI-powered matching for job {job.reference}
-                {providerInfo && (
-                  <Badge variant="outline" className="ml-2 capitalize">
-                    {providerInfo.provider} / {providerInfo.model}
-                  </Badge>
+            {isManualMode
+              ? (
+                  <>
+                    Manually select vehicle and driver for job
+                    {job.reference}
+                  </>
+                )
+              : (
+                  <>
+                    AI-powered matching for job
+                    {" "}
+                    {job.reference}
+                    {providerInfo && (
+                      <Badge
+                        variant="outline"
+                        className="ml-2 capitalize"
+                      >
+                        {providerInfo.provider}
+                        {" "}
+                        /
+                        {providerInfo.model}
+                      </Badge>
+                    )}
+                  </>
                 )}
-              </>
-            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -284,10 +397,10 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
               <Info className="h-4 w-4" />
               <AlertTitle>Simulation Mode</AlertTitle>
               <AlertDescription>
-                You are viewing AI matching results in read-only mode. 
-                {modeDowngraded 
-                  ? ' Your role (Admin) is restricted to simulation only.'
-                  : ' Dispatchers can execute assignments in live mode.'}
+                You are viewing AI matching results in read-only mode.
+                {modeDowngraded
+                  ? " Your role (Admin) is restricted to simulation only."
+                  : " Dispatchers can execute assignments in live mode."}
               </AlertDescription>
             </Alert>
           )}
@@ -300,16 +413,28 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
               setMode(nextMode);
 
               if (nextMode === "ai" && job && canRunAIMatching && !isMatching && matches.length === 0) {
-                runMatching(job, mockVehicles, mockDrivers, defaultMode);
+                runMatching(
+                  job,
+                  mockVehicles,
+                  mockDrivers,
+                  defaultMode,
+                );
               }
             }}
           >
             <TabsList className="w-full bg-muted/50">
-              <TabsTrigger value="ai" disabled={!canRunAIMatching || !canViewAIResults} className="flex-1">
+              <TabsTrigger
+                value="ai"
+                disabled={!canRunAIMatching || !canViewAIResults}
+                className="flex-1"
+              >
                 <Brain className="h-4 w-4 mr-2" />
                 AI
               </TabsTrigger>
-              <TabsTrigger value="manual" className="flex-1">
+              <TabsTrigger
+                value="manual"
+                className="flex-1"
+              >
                 <ListChecks className="h-4 w-4 mr-2" />
                 Manual
               </TabsTrigger>
@@ -322,7 +447,8 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>AI Matching Unavailable</AlertTitle>
               <AlertDescription>
-                {matchingError}. You can manually select a vehicle and driver below.
+                {matchingError}
+                . You can manually select a vehicle and driver below.
               </AlertDescription>
             </Alert>
           )}
@@ -343,7 +469,11 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-lg">{formatCurrency(job.amount)}</p>
-                  <p className="text-sm text-muted-foreground">{job.cargo.weight} tons</p>
+                  <p className="text-sm text-muted-foreground">
+                    {job.cargo.weight}
+                    {" "}
+                    tons
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -357,30 +487,45 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
                   <ListChecks className="h-4 w-4 text-primary" />
                   Manual Selection
                   {isSimulationMode && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge
+                      variant="secondary"
+                      className="text-xs"
+                    >
                       <Lock className="h-3 w-3 mr-1" />
                       Read-only
                     </Badge>
                   )}
                 </h4>
-                
+
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
                       <Truck className="h-4 w-4" />
                       Select Vehicle
                     </Label>
-                    <Select value={manualVehicleId} onValueChange={setManualVehicleId} disabled={vehiclesQuery.isLoading || vehiclesQuery.isError}>
+                    <Select
+                      value={manualVehicleId}
+                      onValueChange={setManualVehicleId}
+                      disabled={vehiclesQuery.isLoading || vehiclesQuery.isError}
+                    >
                       <SelectTrigger aria-label="Select vehicle">
                         <SelectValue placeholder="Choose a vehicle..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableVehicles.map((v) => (
-                          <SelectItem key={v.id} value={v.id}>
+                        {availableVehicles.map(v => (
+                          <SelectItem
+                            key={v.id}
+                            value={v.id}
+                          >
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{v.registrationNumber || v.plateNumber}</span>
                               <span className="text-muted-foreground">
-                                - {[v.make, v.model].filter(Boolean).join(" ") || v.type}
+                                -
+                                {" "}
+                                {[
+                                  v.make,
+                                  v.model,
+                                ].filter(Boolean).join(" ") || v.type}
                                 {v.capacity != null ? ` (${v.capacity}t)` : ""}
                               </span>
                             </div>
@@ -395,13 +540,20 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
                       <User className="h-4 w-4" />
                       Select Driver
                     </Label>
-                    <Select value={manualDriverId} onValueChange={setManualDriverId} disabled={driversQuery.isLoading || driversQuery.isError}>
+                    <Select
+                      value={manualDriverId}
+                      onValueChange={setManualDriverId}
+                      disabled={driversQuery.isLoading || driversQuery.isError}
+                    >
                       <SelectTrigger aria-label="Select driver">
                         <SelectValue placeholder="Choose a driver..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableDrivers.map((d) => (
-                          <SelectItem key={d.id} value={d.id}>
+                        {availableDrivers.map(d => (
+                          <SelectItem
+                            key={d.id}
+                            value={d.id}
+                          >
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{d.name}</span>
                               <span className="text-muted-foreground">{d.phone}</span>
@@ -431,7 +583,13 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
                   <Alert className="bg-muted/30">
                     <CheckCircle className="h-4 w-4 text-success" />
                     <AlertDescription>
-                      Ready to dispatch: {selectedManualVehicle?.registrationNumber || selectedManualVehicle?.plateNumber} with {selectedManualDriver?.name}
+                      Ready to dispatch:
+                      {" "}
+                      {selectedManualVehicle?.registrationNumber || selectedManualVehicle?.plateNumber}
+                      {" "}
+                      with
+                      {" "}
+                      {selectedManualDriver?.name}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -446,7 +604,10 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
                 <Brain className="h-5 w-5 text-primary animate-pulse" />
                 <span className="text-sm font-medium">AI analyzing fleet data...</span>
               </div>
-              <Progress value={matchProgress} className="h-2" />
+              <Progress
+                value={matchProgress}
+                className="h-2"
+              />
               <p className="text-xs text-muted-foreground text-center">
                 {matchProgress < 40 && "Processing vehicle locations and capacity..."}
                 {matchProgress >= 40 && matchProgress < 70 && "Evaluating driver ratings and availability..."}
@@ -472,15 +633,24 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
           {!isMatching && !isManualMode && matches.length > 0 && providerInfo && (
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
-                <Badge 
+                <Badge
                   variant={providerInfo.confidence >= 0.8 ? "default" : "secondary"}
                   className="gap-1"
                 >
                   <Sparkles className="h-3 w-3" />
-                  {(providerInfo.confidence * 100).toFixed(0)}% Confidence
+                  {(providerInfo.confidence * 100).toFixed(0)}
+                  % Confidence
                 </Badge>
-                <Badge variant="outline" className="text-xs">
-                  {eligibleVehicleCount} vehicles / {eligibleDriverCount} drivers eligible
+                <Badge
+                  variant="outline"
+                  className="text-xs"
+                >
+                  {eligibleVehicleCount}
+                  {" "}
+                  vehicles /
+                  {eligibleDriverCount}
+                  {" "}
+                  drivers eligible
                 </Badge>
               </div>
               {providerInfo.requiresApproval && isLiveMode && (
@@ -499,10 +669,10 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
                 <CheckCircle className="h-4 w-4 text-primary" />
                 Top Matches Found
               </h4>
-              
+
               {matches.map((match, index) => (
-                <Card 
-                  key={match.vehicle.id} 
+                <Card
+                  key={match.vehicle.id}
                   className={`bg-muted/30 border-border/50 transition-all cursor-pointer hover:border-primary/50 ${
                     selectedMatch?.vehicle.id === match.vehicle.id ? "border-primary ring-1 ring-primary" : ""
                   }`}
@@ -513,21 +683,30 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
                       <div className="flex items-center gap-3">
                         <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
                           index === 0 ? "bg-gradient-to-br from-primary to-accent" : "bg-muted"
-                        }`}>
+                        }`}
+                        >
                           <Truck className="h-5 w-5 text-primary-foreground" />
                         </div>
                         <div>
-                          <p className="font-medium">{match.vehicle.make} {match.vehicle.model}</p>
+                          <p className="font-medium">
+                            {match.vehicle.make}
+                            {" "}
+                            {match.vehicle.model}
+                          </p>
                           <p className="text-sm text-muted-foreground">{match.vehicle.registrationNumber}</p>
                         </div>
                       </div>
                       <div className="text-right">
                         <Badge className={`${
-                          match.matchScore >= 95 ? "bg-success/20 text-success border-success/30" :
-                          match.matchScore >= 90 ? "bg-primary/20 text-primary border-primary/30" :
-                          "bg-warning/20 text-warning border-warning/30"
-                        }`}>
-                          {match.matchScore}% Match
+                          match.matchScore >= 95
+                            ? "bg-success/20 text-success border-success/30"
+                            : match.matchScore >= 90
+                              ? "bg-primary/20 text-primary border-primary/30"
+                              : "bg-warning/20 text-warning border-warning/30"
+                        }`}
+                        >
+                          {match.matchScore}
+                          % Match
                         </Badge>
                         {index === 0 && (
                           <p className="text-xs text-primary mt-1">Recommended</p>
@@ -550,7 +729,11 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
                       </div>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Route className="h-4 w-4" />
-                        <span>{match.distance} km</span>
+                        <span>
+                          {match.distance}
+                          {" "}
+                          km
+                        </span>
                       </div>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
@@ -560,7 +743,11 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
 
                     <div className="flex flex-wrap gap-2">
                       {match.reasons.map((reason, i) => (
-                        <Badge key={i} variant="outline" className="text-xs">
+                        <Badge
+                          key={i}
+                          variant="outline"
+                          className="text-xs"
+                        >
                           {reason}
                         </Badge>
                       ))}
@@ -579,7 +766,10 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
               <p className="text-sm text-muted-foreground mb-4">
                 AI couldn't find optimal matches. You can select manually.
               </p>
-              <Button variant="outline" onClick={() => setMode("manual")}>
+              <Button
+                variant="outline"
+                onClick={() => setMode("manual")}
+              >
                 <ListChecks className="h-4 w-4 mr-2" />
                 Switch to Manual Selection
               </Button>
@@ -614,44 +804,56 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
             {/* AI mode action buttons - ONLY in LIVE mode */}
             {!isManualMode && selectedMatch && isLiveMode && !recommendOnly && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <Button 
-                  variant="gradient" 
+                <Button
+                  variant="gradient"
                   onClick={() => handleAssignViaWhatsApp(selectedMatch)}
                   disabled={isSendingWhatsApp || isSendingIVR}
                   className="flex-1"
                 >
-                  {isSendingWhatsApp ? <>Sending...</> : (
-                    <>
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      WhatsApp
-                    </>
-                  )}
+                  {isSendingWhatsApp
+                    ? <>Sending...</>
+                    : (
+                        <>
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          WhatsApp
+                        </>
+                      )}
                 </Button>
-                <Button 
-                  variant="secondary" 
-                  onClick={() => handleAssignViaIVR(selectedMatch, false)}
+                <Button
+                  variant="secondary"
+                  onClick={() => handleAssignViaIVR(
+                    selectedMatch,
+                    false,
+                  )}
                   disabled={isSendingWhatsApp || isSendingIVR || isIVRLoading}
                   className="flex-1"
                 >
-                  {isSendingIVR ? <>Calling...</> : (
-                    <>
-                      <Phone className="h-4 w-4 mr-2" />
-                      IVR Call
-                    </>
-                  )}
+                  {isSendingIVR
+                    ? <>Calling...</>
+                    : (
+                        <>
+                          <Phone className="h-4 w-4 mr-2" />
+                          IVR Call
+                        </>
+                      )}
                 </Button>
-                <Button 
-                  variant="destructive" 
-                  onClick={() => handleAssignViaIVR(selectedMatch, true)}
+                <Button
+                  variant="destructive"
+                  onClick={() => handleAssignViaIVR(
+                    selectedMatch,
+                    true,
+                  )}
                   disabled={isSendingWhatsApp || isSendingIVR || isIVRLoading}
                   className="flex-1"
                 >
-                  {isSendingIVR ? <>Calling...</> : (
-                    <>
-                      <PhoneCall className="h-4 w-4 mr-2" />
-                      Urgent Call
-                    </>
-                  )}
+                  {isSendingIVR
+                    ? <>Calling...</>
+                    : (
+                        <>
+                          <PhoneCall className="h-4 w-4 mr-2" />
+                          Urgent Call
+                        </>
+                      )}
                 </Button>
               </div>
             )}
@@ -675,12 +877,21 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
                       onClick={() => setConfirmRecommendOpen(true)}
                     >
                       <Sparkles className="h-4 w-4 mr-2" />
-                      {verb} Driver
+                      {verb}
+                      {" "}
+                      Driver
                     </Button>
-                    <AlertDialog open={confirmRecommendOpen} onOpenChange={setConfirmRecommendOpen}>
+                    <AlertDialog
+                      open={confirmRecommendOpen}
+                      onOpenChange={setConfirmRecommendOpen}
+                    >
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>{verb} this driver?</AlertDialogTitle>
+                          <AlertDialogTitle>
+                            {verb}
+                            {" "}
+                            this driver?
+                          </AlertDialogTitle>
                           <AlertDialogDescription>
                             {recommendOnly
                               ? (recommendDriverName
@@ -695,20 +906,28 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => {
-                              if (!recommendVehicleId || !recommendDriverId) return;
+                              if (!recommendVehicleId || !recommendDriverId)
+                                return;
                               if (recommendOnly && onRecommend) {
-                                onRecommend(recommendVehicleId, recommendDriverId);
+                                onRecommend(
+                                  recommendVehicleId,
+                                  recommendDriverId,
+                                );
                                 toast.success(
                                   recommendDriverName
                                     ? `${recommendDriverName} recommended for job ${job?.reference}`
-                                    : 'Driver recommended for job'
+                                    : "Driver recommended for job",
                                 );
-                              } else {
-                                onAssign(recommendVehicleId, recommendDriverId);
+                              }
+                              else {
+                                onAssign(
+                                  recommendVehicleId,
+                                  recommendDriverId,
+                                );
                                 toast.success(
                                   recommendDriverName
                                     ? `${recommendDriverName} assigned to job ${job?.reference}`
-                                    : 'Driver assigned to job'
+                                    : "Driver assigned to job",
                                 );
                               }
                               setConfirmRecommendOpen(false);
@@ -716,7 +935,9 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
                             }}
                           >
                             <Sparkles className="h-4 w-4 mr-2" />
-                            {verb} Driver
+                            {verb}
+                            {" "}
+                            Driver
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -727,7 +948,10 @@ export function JobMatchingDialog({ open, onOpenChange, job, onAssign, onRecomme
 
               return (
                 <div className="flex justify-end">
-                  <Button variant="outline" onClick={() => onOpenChange(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                  >
                     Cancel
                   </Button>
                 </div>

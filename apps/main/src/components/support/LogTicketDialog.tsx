@@ -1,4 +1,11 @@
-import { useRef, useState } from "react";
+import {
+  FileText, Image as ImageIcon, Loader2, Ticket, UploadCloud, X,
+} from "lucide-react";
+import {
+  useRef, useState,
+} from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
@@ -7,10 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
-import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Textarea } from "@/components/shadcn/textarea";
 import {
   Select,
   SelectContent,
@@ -18,58 +23,114 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { Textarea } from "@/components/shadcn/textarea";
+import { useAuthStore } from "@/stores/authStore";
 // Local type aliases (hook deleted)
 type TicketCategory = "device_tracking" | "sim_connectivity" | "messaging" | "billing" | "account_access" | "other";
 type ContextType = "device" | "sim" | "vehicle" | "whatsapp" | "billing" | "none";
 type TicketPriority = "low" | "medium" | "high" | "critical";
-import { useAuthStore } from "@/stores/authStore";
-import { Loader2, Ticket, UploadCloud, X, FileText, Image as ImageIcon } from "lucide-react";
-import { toast } from "sonner";
 
-interface LogTicketDialogProps {
+type LogTicketDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
-}
+};
 
-const CHANNELS: { value: ContextType; label: string }[] = [
-  { value: "device", label: "Device & Tracking" },
-  { value: "sim", label: "SIM & Connectivity" },
-  { value: "vehicle", label: "Vehicle" },
-  { value: "whatsapp", label: "Messaging (WhatsApp / SMS)" },
-  { value: "billing", label: "Billing & Wallet" },
-  { value: "none", label: "Other" },
+const CHANNELS: {
+  value: ContextType; label: string;
+}[] = [
+  {
+    value: "device", label: "Device & Tracking",
+  },
+  {
+    value: "sim", label: "SIM & Connectivity",
+  },
+  {
+    value: "vehicle", label: "Vehicle",
+  },
+  {
+    value: "whatsapp", label: "Messaging (WhatsApp / SMS)",
+  },
+  {
+    value: "billing", label: "Billing & Wallet",
+  },
+  {
+    value: "none", label: "Other",
+  },
 ];
 
-const CATEGORIES: { value: TicketCategory; label: string }[] = [
-  { value: "device_tracking", label: "Device & Tracking" },
-  { value: "sim_connectivity", label: "SIM & Connectivity" },
-  { value: "messaging", label: "Messaging" },
-  { value: "billing", label: "Billing" },
-  { value: "account_access", label: "Account / Access" },
-  { value: "other", label: "Other" },
+const CATEGORIES: {
+  value: TicketCategory; label: string;
+}[] = [
+  {
+    value: "device_tracking", label: "Device & Tracking",
+  },
+  {
+    value: "sim_connectivity", label: "SIM & Connectivity",
+  },
+  {
+    value: "messaging", label: "Messaging",
+  },
+  {
+    value: "billing", label: "Billing",
+  },
+  {
+    value: "account_access", label: "Account / Access",
+  },
+  {
+    value: "other", label: "Other",
+  },
 ];
 
 const ACCEPTED_TYPES = "image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx,.xls";
 const MAX_FILE_MB = 10;
 
-export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDialogProps) {
+export function LogTicketDialog({
+  open, onOpenChange, onSuccess,
+}: LogTicketDialogProps) {
   const { user } = useAuthStore();
   const createTicket = async (..._args: any[]): Promise<any> => null;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [title, setTitle] = useState("");
-  const [message, setMessage] = useState("");
-  const [channel, setChannel] = useState<ContextType>("device");
-  const [otherChannel, setOtherChannel] = useState("");
-  const [category, setCategory] = useState<TicketCategory>("device_tracking");
-  const [priority, setPriority] = useState<TicketPriority>("medium");
-  const [attachments, setAttachments] = useState<File[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
+  const [
+    title,
+    setTitle,
+  ] = useState("");
+  const [
+    message,
+    setMessage,
+  ] = useState("");
+  const [
+    channel,
+    setChannel,
+  ] = useState<ContextType>("device");
+  const [
+    otherChannel,
+    setOtherChannel,
+  ] = useState("");
+  const [
+    category,
+    setCategory,
+  ] = useState<TicketCategory>("device_tracking");
+  const [
+    priority,
+    setPriority,
+  ] = useState<TicketPriority>("medium");
+  const [
+    attachments,
+    setAttachments,
+  ] = useState<File[]>([]);
+  const [
+    isSubmitting,
+    setIsSubmitting,
+  ] = useState(false);
+  const [
+    isDragging,
+    setIsDragging,
+  ] = useState(false);
 
-  const reporterName =
-    user?.name || user?.email || "Current user";
+  const reporterName
+    = user?.name || user?.email || "Current user";
 
   const reset = () => {
     setTitle("");
@@ -82,7 +143,8 @@ export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDial
   };
 
   const handleFiles = (files: FileList | null) => {
-    if (!files) return;
+    if (!files)
+      return;
     const valid: File[] = [];
     Array.from(files).forEach((f) => {
       if (f.size > MAX_FILE_MB * 1024 * 1024) {
@@ -91,11 +153,17 @@ export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDial
       }
       valid.push(f);
     });
-    setAttachments((prev) => [...prev, ...valid].slice(0, 8));
+    setAttachments(prev => [
+      ...prev,
+      ...valid,
+    ].slice(
+      0,
+      8,
+    ));
   };
 
   const removeFile = (idx: number) => {
-    setAttachments((prev) => prev.filter((_, i) => i !== idx));
+    setAttachments(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleSubmit = async () => {
@@ -120,8 +188,8 @@ export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDial
           channel_label:
             channel === "none"
               ? otherChannel.trim()
-              : CHANNELS.find((c) => c.value === channel)?.label,
-          attachments: attachments.map((f) => ({
+              : CHANNELS.find(c => c.value === channel)?.label,
+          attachments: attachments.map(f => ({
             name: f.name,
             size: f.size,
             type: f.type,
@@ -135,13 +203,17 @@ export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDial
         onOpenChange(false);
         onSuccess?.();
       }
-    } finally {
+    }
+    finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-base">Log a Ticket</DialogTitle>
@@ -153,12 +225,17 @@ export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDial
         <div className="space-y-3 py-1">
           {/* Title */}
           <div className="space-y-1.5">
-            <Label htmlFor="ticket-title" className="text-xs">Ticket title *</Label>
+            <Label
+              htmlFor="ticket-title"
+              className="text-xs"
+            >
+              Ticket title *
+            </Label>
             <Input
               id="ticket-title"
               placeholder="Short summary of the issue"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={e => setTitle(e.target.value)}
               maxLength={120}
               className="h-9"
             />
@@ -166,12 +243,17 @@ export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDial
 
           {/* Message */}
           <div className="space-y-1.5">
-            <Label htmlFor="ticket-message" className="text-xs">Message *</Label>
+            <Label
+              htmlFor="ticket-message"
+              className="text-xs"
+            >
+              Message *
+            </Label>
             <Textarea
               id="ticket-message"
               placeholder="Describe what happened, when it started, and any steps to reproduce."
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={e => setMessage(e.target.value)}
               rows={4}
               maxLength={2000}
               className="text-sm"
@@ -183,7 +265,10 @@ export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDial
             <Label className="text-xs">Reporter</Label>
             <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-2.5 py-1.5">
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
-                {reporterName.slice(0, 2).toUpperCase()}
+                {reporterName.slice(
+                  0,
+                  2,
+                ).toUpperCase()}
               </div>
               <span className="text-sm">{reporterName}</span>
             </div>
@@ -193,13 +278,19 @@ export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDial
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="ticket-channel">Channel *</Label>
-              <Select value={channel} onValueChange={(v) => setChannel(v as ContextType)}>
+              <Select
+                value={channel}
+                onValueChange={v => setChannel(v as ContextType)}
+              >
                 <SelectTrigger id="ticket-channel">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {CHANNELS.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
+                  {CHANNELS.map(c => (
+                    <SelectItem
+                      key={c.value}
+                      value={c.value}
+                    >
                       {c.label}
                     </SelectItem>
                   ))}
@@ -209,7 +300,7 @@ export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDial
                 <Input
                   placeholder="Specify other channel..."
                   value={otherChannel}
-                  onChange={(e) => setOtherChannel(e.target.value)}
+                  onChange={e => setOtherChannel(e.target.value)}
                   maxLength={60}
                 />
               )}
@@ -219,14 +310,17 @@ export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDial
               <Label htmlFor="ticket-category">Category *</Label>
               <Select
                 value={category}
-                onValueChange={(v) => setCategory(v as TicketCategory)}
+                onValueChange={v => setCategory(v as TicketCategory)}
               >
                 <SelectTrigger id="ticket-category">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
+                  {CATEGORIES.map(c => (
+                    <SelectItem
+                      key={c.value}
+                      value={c.value}
+                    >
                       {c.label}
                     </SelectItem>
                   ))}
@@ -238,7 +332,10 @@ export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDial
           {/* Priority */}
           <div className="space-y-2">
             <Label htmlFor="ticket-priority">Priority</Label>
-            <Select value={priority} onValueChange={(v) => setPriority(v as TicketPriority)}>
+            <Select
+              value={priority}
+              onValueChange={v => setPriority(v as TicketPriority)}
+            >
               <SelectTrigger id="ticket-priority">
                 <SelectValue />
               </SelectTrigger>
@@ -274,11 +371,15 @@ export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDial
             >
               <UploadCloud className="h-6 w-6 text-muted-foreground" />
               <p className="text-sm text-muted-foreground text-center">
-                Drag & drop files here, or{" "}
+                Drag & drop files here, or
+                {" "}
                 <span className="text-primary font-medium">browse</span>
               </p>
               <p className="text-xs text-muted-foreground">
-                Images and documents up to {MAX_FILE_MB}MB each (max 8 files)
+                Images and documents up to
+                {" "}
+                {MAX_FILE_MB}
+                MB each (max 8 files)
               </p>
               <input
                 ref={fileInputRef}
@@ -286,7 +387,7 @@ export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDial
                 accept={ACCEPTED_TYPES}
                 multiple
                 className="hidden"
-                onChange={(e) => handleFiles(e.target.files)}
+                onChange={e => handleFiles(e.target.files)}
               />
             </div>
 
@@ -299,14 +400,18 @@ export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDial
                       key={`${file.name}-${idx}`}
                       className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm"
                     >
-                      {isImage ? (
-                        <ImageIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-                      ) : (
-                        <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                      )}
+                      {isImage
+                        ? (
+                            <ImageIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                          )
+                        : (
+                            <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                          )}
                       <span className="truncate flex-1">{file.name}</span>
                       <span className="text-xs text-muted-foreground shrink-0">
-                        {(file.size / 1024).toFixed(0)} KB
+                        {(file.size / 1024).toFixed(0)}
+                        {" "}
+                        KB
                       </span>
                       <Button
                         type="button"
@@ -336,12 +441,18 @@ export function LogTicketDialog({ open, onOpenChange, onSuccess }: LogTicketDial
           >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting} size="sm">
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Ticket className="h-4 w-4 mr-2" />
-            )}
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            size="sm"
+          >
+            {isSubmitting
+              ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                )
+              : (
+                  <Ticket className="h-4 w-4 mr-2" />
+                )}
             Submit Ticket
           </Button>
         </DialogFooter>

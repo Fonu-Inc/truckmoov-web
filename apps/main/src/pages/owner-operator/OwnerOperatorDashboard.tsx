@@ -1,47 +1,58 @@
-import { addDays, daysBetween, formatDayMonth, formatWithPattern, isBefore } from "@truckmoov/app-core/utils/time-utils";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
-import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
-import { EmptyState } from "@/components/dashboard/EmptyState";
-import { StatCard } from "@/components/dashboard/StatCard";
-import { Alert, AlertDescription } from "@/components/shadcn/alert";
-import { Progress } from "@/components/shadcn/progress";
-import { Separator } from "@/components/shadcn/separator";
+import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import {
-  Truck,
-  Package,
-  TrendingUp,
-  MessageSquare,
-  MapPin,
-  CheckCircle2,
-  Clock,
-  Inbox,
+  addDays, daysBetween, formatDayMonth, formatWithPattern, isBefore,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
   AlertTriangle,
   ArrowUpCircle,
-  ShieldAlert,
   CalendarClock,
-  Wallet,
-  FileWarning,
+  CheckCircle2,
   ChevronRight,
+  Clock,
+  FileWarning,
+  Inbox,
+  MapPin,
+  MessageSquare,
+  Package,
+  ShieldAlert,
+  TrendingUp,
+  Truck,
+  Wallet,
 } from "lucide-react";
-import { useAuthStore } from "@/stores/authStore";
-import { useCurrency } from "@/contexts/CurrencyContext";
-import { useState, useMemo } from "react";
+import {
+  useMemo, useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
-
-import { UpgradeRequestDialog } from "@/components/owner-operator/UpgradeRequestDialog";
-import { ComplianceDocumentsPanel } from "@/components/owner-operator/ComplianceDocumentsPanel";
-import { DeviceSetupRequestTracker } from "@/components/devices/DeviceSetupRequestTracker";
+import {
+  CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from "recharts";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import { StatCard } from "@/components/dashboard/StatCard";
 import { DeviceSetupRequestDialog } from "@/components/devices/DeviceSetupRequestDialog";
-import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
+import { DeviceSetupRequestTracker } from "@/components/devices/DeviceSetupRequestTracker";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ComplianceDocumentsPanel } from "@/components/owner-operator/ComplianceDocumentsPanel";
+import { UpgradeRequestDialog } from "@/components/owner-operator/UpgradeRequestDialog";
+import {
+  Alert, AlertDescription,
+} from "@/components/shadcn/alert";
+import { Badge } from "@/components/shadcn/badge";
+
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
+import { Progress } from "@/components/shadcn/progress";
+import { Separator } from "@/components/shadcn/separator";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   DUMMY_RECENT_JOBS,
   DUMMY_VEHICLES,
   getDummyEarningsSummary,
   getDummyEarningsTrend,
 } from "@/lib/ownerOperatorDummyData";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useAuthStore } from "@/stores/authStore";
 
 /**
  * Owner-Operator Lite Portal
@@ -53,9 +64,18 @@ export default function OwnerOperatorDashboard() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const { format: formatCurrency } = useCurrency();
-  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
-  const [showDeviceRequestDialog, setShowDeviceRequestDialog] = useState(false);
-  const [earningsRange, setEarningsRange] = useState<ChartDateRange>("30d");
+  const [
+    showUpgradeDialog,
+    setShowUpgradeDialog,
+  ] = useState(false);
+  const [
+    showDeviceRequestDialog,
+    setShowDeviceRequestDialog,
+  ] = useState(false);
+  const [
+    earningsRange,
+    setEarningsRange,
+  ] = useState<ChartDateRange>("30d");
   const deviceRequests: any[] = [];
   const deviceRequestsLoading = false;
   const createRequest = async (...args: any[]) => null;
@@ -78,34 +98,71 @@ export default function OwnerOperatorDashboard() {
   const complianceDocs: any[] = [];
 
   // Derived data
-  const activeJob = jobs.find(j => ["assigned", "accepted", "in_progress", "arrived_pickup", "arrived_dropoff"].includes(j.status));
+  const activeJob = jobs.find(j => [
+    "assigned",
+    "accepted",
+    "in_progress",
+    "arrived_pickup",
+    "arrived_dropoff",
+  ].includes(j.status));
   const upcomingJob = jobs.find(j => j.status === "pending" || j.status === "offered");
   const completedJobs = jobs.filter(j => j.status === "completed");
-  const totalEarnings = completedJobs.reduce((sum, j) => sum + (j.revenue_ngn || j.amount_ngn || 0), 0);
+  const totalEarnings = completedJobs.reduce(
+    (sum, j) => sum + (j.revenue_ngn || j.amount_ngn || 0),
+    0,
+  );
 
   // Earnings breakdown: this month vs last month
   const now = new Date();
-  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const thisMonthStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    1,
+  );
+  const lastMonthStart = new Date(
+    now.getFullYear(),
+    now.getMonth() - 1,
+    1,
+  );
   const realThisMonth = completedJobs
     .filter(j => new Date(j.updated_at) >= thisMonthStart)
-    .reduce((sum, j) => sum + (j.revenue_ngn || j.amount_ngn || 0), 0);
+    .reduce(
+      (sum, j) => sum + (j.revenue_ngn || j.amount_ngn || 0),
+      0,
+    );
   const realLastMonth = completedJobs
     .filter(j => new Date(j.updated_at) >= lastMonthStart && new Date(j.updated_at) < thisMonthStart)
-    .reduce((sum, j) => sum + (j.revenue_ngn || j.amount_ngn || 0), 0);
+    .reduce(
+      (sum, j) => sum + (j.revenue_ngn || j.amount_ngn || 0),
+      0,
+    );
   const realThisMonthTrips = completedJobs.filter(j => new Date(j.updated_at) >= thisMonthStart).length;
 
   // Dummy fallbacks (rendered when no real data)
   const usingDummy = jobs.length === 0;
-  const earningsTrend = useMemo(() => getDummyEarningsTrend(earningsRange), [earningsRange]);
-  const earningsSummary = useMemo(() => getDummyEarningsSummary(earningsRange), [earningsRange]);
+  const earningsTrend = useMemo(
+    () => getDummyEarningsTrend(earningsRange),
+    [earningsRange],
+  );
+  const earningsSummary = useMemo(
+    () => getDummyEarningsSummary(earningsRange),
+    [earningsRange],
+  );
   const displayVehicles = vehicles.length > 0 ? vehicles : DUMMY_VEHICLES;
   const displayRecentJobs = jobs.length > 0 ? jobs : DUMMY_RECENT_JOBS;
   const displayActiveJob = activeJob ?? (usingDummy ? DUMMY_RECENT_JOBS[0] : null);
-  const displayPendingOffers = pendingOffers.length > 0 ? pendingOffers : (usingDummy ? [
-    { id: "d-off1", job_id: "dummy-job-1", offered_rate_ngn: 320000 },
-    { id: "d-off2", job_id: "dummy-job-2", offered_rate_ngn: 180000 },
-  ] : []);
+  const displayPendingOffers = pendingOffers.length > 0
+    ? pendingOffers
+    : (usingDummy
+        ? [
+            {
+              id: "d-off1", job_id: "dummy-job-1", offered_rate_ngn: 320000,
+            },
+            {
+              id: "d-off2", job_id: "dummy-job-2", offered_rate_ngn: 180000,
+            },
+          ]
+        : []);
   const thisMonthEarnings = usingDummy ? earningsSummary.total : realThisMonth;
   const lastMonthEarnings = usingDummy ? earningsSummary.lastMonth : realLastMonth;
   const thisMonthTrips = usingDummy ? earningsSummary.trips : realThisMonthTrips;
@@ -113,12 +170,24 @@ export default function OwnerOperatorDashboard() {
   const completedTripsCount = usingDummy ? earningsSummary.trips * 4 : completedJobs.length;
 
   // Compliance alerts: docs expiring within 30 days or already expired
-  const expiringDocs = complianceDocs.filter(doc => {
+  const expiringDocs = complianceDocs.filter((doc) => {
     const expiry = new Date(doc.expiry_date);
-    return isBefore(expiry, addDays(now, 30));
+    return isBefore(
+      expiry,
+      addDays(
+        now,
+        30,
+      ),
+    );
   });
-  const expiredDocs = expiringDocs.filter(doc => isBefore(new Date(doc.expiry_date), now));
-  const soonDocs = expiringDocs.filter(doc => !isBefore(new Date(doc.expiry_date), now));
+  const expiredDocs = expiringDocs.filter(doc => isBefore(
+    new Date(doc.expiry_date),
+    now,
+  ));
+  const soonDocs = expiringDocs.filter(doc => !isBefore(
+    new Date(doc.expiry_date),
+    now,
+  ));
 
   const getStatusVariant = (status: string): "default" | "secondary" | "outline" | "destructive" => {
     switch (status) {
@@ -138,7 +207,11 @@ export default function OwnerOperatorDashboard() {
       <div className="space-y-6">
         {/* Quick Stats */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard title="My Trucks" value={displayVehicles.length} icon={Truck} />
+          <StatCard
+            title="My Trucks"
+            value={displayVehicles.length}
+            icon={Truck}
+          />
           <StatCard
             title="Active Job"
             value={jobsLoading ? "..." : displayActiveJob ? "1" : "None"}
@@ -163,19 +236,41 @@ export default function OwnerOperatorDashboard() {
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">
-                Vehicles: {vehicleCap.currentCount} / {vehicleCap.maxVehicles}
+                Vehicles:
+                {" "}
+                {vehicleCap.currentCount}
+                {" "}
+                /
+                {" "}
+                {vehicleCap.maxVehicles}
               </span>
               <span className="text-muted-foreground">
-                {vehicleCap.remaining} slot{vehicleCap.remaining !== 1 ? "s" : ""} remaining
+                {vehicleCap.remaining}
+                {" "}
+                slot
+                {vehicleCap.remaining !== 1 ? "s" : ""}
+                {" "}
+                remaining
               </span>
             </div>
-            <Progress value={(vehicleCap.currentCount / vehicleCap.maxVehicles) * 100} className="h-2" />
+            <Progress
+              value={(vehicleCap.currentCount / vehicleCap.maxVehicles) * 100}
+              className="h-2"
+            />
             {vehicleCap.isAtCap && (
-              <Alert variant="destructive" className="mt-2">
+              <Alert
+                variant="destructive"
+                className="mt-2"
+              >
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription className="flex items-center justify-between">
                   <span>{vehicleCap.upgradeMessage}</span>
-                  <Button variant="outline" size="sm" className="ml-4 shrink-0" onClick={() => setShowUpgradeDialog(true)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-4 shrink-0"
+                    onClick={() => setShowUpgradeDialog(true)}
+                  >
                     <ArrowUpCircle className="mr-1.5 h-3.5 w-3.5" />
                     Request Upgrade
                   </Button>
@@ -199,7 +294,16 @@ export default function OwnerOperatorDashboard() {
           <Alert>
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              Active jobs: {activeJobs}/{maxActiveJobs}. You can accept {maxActiveJobs - activeJobs} more offer(s).
+              Active jobs:
+              {" "}
+              {activeJobs}
+              /
+              {maxActiveJobs}
+              . You can accept
+              {" "}
+              {maxActiveJobs - activeJobs}
+              {" "}
+              more offer(s).
             </AlertDescription>
           </Alert>
         )}
@@ -216,28 +320,55 @@ export default function OwnerOperatorDashboard() {
             </CardHeader>
             <CardContent className="space-y-2">
               {expiredDocs.map(doc => (
-                <div key={doc.id} className="flex items-center justify-between rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+                <div
+                  key={doc.id}
+                  className="flex items-center justify-between rounded-lg border border-destructive/20 bg-destructive/10 p-3"
+                >
                   <div className="space-y-0.5 min-w-0 flex-1">
                     <p className="font-medium text-sm">{doc.document_name}</p>
-                    <p className="text-xs text-muted-foreground">{doc.vehicle_name || "Vehicle"} · {doc.document_type}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {doc.vehicle_name || "Vehicle"}
+                      {" "}
+                      ·
+                      {" "}
+                      {doc.document_type}
+                    </p>
                   </div>
                   <Badge variant="destructive">
                     <FileWarning className="mr-1 h-3 w-3" />
-                    Expired {formatDayMonth(doc.expiry_date)}
+                    Expired
+                    {" "}
+                    {formatDayMonth(doc.expiry_date)}
                   </Badge>
                 </div>
               ))}
-              {soonDocs.map(doc => {
-                const daysLeft = daysBetween(now, new Date(doc.expiry_date));
+              {soonDocs.map((doc) => {
+                const daysLeft = daysBetween(
+                  now,
+                  new Date(doc.expiry_date),
+                );
                 return (
-                  <div key={doc.id} className="flex items-center justify-between rounded-lg border border-warning/20 bg-warning/5 p-3">
+                  <div
+                    key={doc.id}
+                    className="flex items-center justify-between rounded-lg border border-warning/20 bg-warning/5 p-3"
+                  >
                     <div className="space-y-0.5 min-w-0 flex-1">
                       <p className="font-medium text-sm">{doc.document_name}</p>
-                      <p className="text-xs text-muted-foreground">{doc.vehicle_name || "Vehicle"} · {doc.document_type}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {doc.vehicle_name || "Vehicle"}
+                        {" "}
+                        ·
+                        {" "}
+                        {doc.document_type}
+                      </p>
                     </div>
-                    <Badge variant="outline" className="border-warning text-warning">
+                    <Badge
+                      variant="outline"
+                      className="border-warning text-warning"
+                    >
                       <CalendarClock className="mr-1 h-3 w-3" />
-                      {daysLeft}d left
+                      {daysLeft}
+                      d left
                     </Badge>
                   </div>
                 );
@@ -257,15 +388,32 @@ export default function OwnerOperatorDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {pendingOffers.slice(0, 3).map((offer) => (
-                <div key={offer.id} className="flex items-center justify-between rounded-lg border border-border p-3 bg-card">
+              {pendingOffers.slice(
+                0,
+                3,
+              ).map(offer => (
+                <div
+                  key={offer.id}
+                  className="flex items-center justify-between rounded-lg border border-border p-3 bg-card"
+                >
                   <div className="space-y-1 min-w-0 flex-1">
-                    <p className="font-medium text-sm">Job #{offer.job_id?.slice(0, 8)}</p>
+                    <p className="font-medium text-sm">
+                      Job #
+                      {offer.job_id?.slice(
+                        0,
+                        8,
+                      )}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {offer.offered_rate_ngn ? formatCurrency(offer.offered_rate_ngn) : "Rate TBD"}
                     </p>
                   </div>
-                  <Badge variant="outline" className="shrink-0">Pending</Badge>
+                  <Badge
+                    variant="outline"
+                    className="shrink-0"
+                  >
+                    Pending
+                  </Badge>
                 </div>
               ))}
               <p className="text-xs text-muted-foreground text-center">
@@ -289,12 +437,21 @@ export default function OwnerOperatorDashboard() {
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">{activeJob.reference}</span>
                   <Badge variant={getStatusVariant(activeJob.status)}>
-                    {activeJob.status.replace(/_/g, " ")}
+                    {activeJob.status.replace(
+                      /_/g,
+                      " ",
+                    )}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
                   <MapPin className="h-4 w-4 shrink-0" />
-                  <span>{activeJob.pickup_address?.split(",")[0] || "Pickup"} → {activeJob.delivery_address?.split(",")[0] || "Delivery"}</span>
+                  <span>
+                    {activeJob.pickup_address?.split(",")[0] || "Pickup"}
+                    {" "}
+                    →
+                    {" "}
+                    {activeJob.delivery_address?.split(",")[0] || "Delivery"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Rate</span>
@@ -303,7 +460,12 @@ export default function OwnerOperatorDashboard() {
                 {activeJob.deadline && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Deadline</span>
-                    <span>{formatWithPattern(activeJob.deadline, "MMM d, h:mm a")}</span>
+                    <span>
+                      {formatWithPattern(
+                        activeJob.deadline,
+                        "MMM d, h:mm a",
+                      )}
+                    </span>
                   </div>
                 )}
               </div>
@@ -325,16 +487,46 @@ export default function OwnerOperatorDashboard() {
               <ChartDateFilter
                 value={earningsRange}
                 onValueChange={setEarningsRange}
-                options={["today", "yesterday", "7d", "30d", "90d"]}
+                options={[
+                  "today",
+                  "yesterday",
+                  "7d",
+                  "30d",
+                  "90d",
+                ]}
               />
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="h-[180px] -mx-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={earningsTrend} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
-                    <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `₦${(v / 1000).toFixed(0)}k`} />
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
+                  <LineChart
+                    data={earningsTrend}
+                    margin={{
+                      top: 5, right: 10, left: 0, bottom: 0,
+                    }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                      opacity={0.4}
+                    />
+                    <XAxis
+                      dataKey="label"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={v => `₦${(v / 1000).toFixed(0)}k`}
+                    />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
@@ -344,7 +536,13 @@ export default function OwnerOperatorDashboard() {
                       }}
                       formatter={(v: number) => formatCurrency(v)}
                     />
-                    <Line type="monotone" dataKey="earnings" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line
+                      type="monotone"
+                      dataKey="earnings"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -352,7 +550,12 @@ export default function OwnerOperatorDashboard() {
                 <div className="rounded-lg border border-border p-3 text-center">
                   <p className="text-xs text-muted-foreground mb-1">Selected Period</p>
                   <p className="text-lg font-bold">{formatCurrency(thisMonthEarnings)}</p>
-                  <p className="text-xs text-muted-foreground">{thisMonthTrips} trip{thisMonthTrips !== 1 ? "s" : ""}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {thisMonthTrips}
+                    {" "}
+                    trip
+                    {thisMonthTrips !== 1 ? "s" : ""}
+                  </p>
                 </div>
                 <div className="rounded-lg border border-border p-3 text-center">
                   <p className="text-xs text-muted-foreground mb-1">Previous Period</p>
@@ -381,31 +584,43 @@ export default function OwnerOperatorDashboard() {
               <CardDescription>Trucks registered under your owner-operator account and their current status.</CardDescription>
             </CardHeader>
             <CardContent>
-              {displayVehicles.length === 0 ? (
-                <EmptyState icon={Truck} title="No vehicles registered" description="Your trucks will appear here once registered." />
-              ) : (
-                <div className="space-y-3">
-                  {displayVehicles.map((v: any) => (
-                    <div
-                      key={v.id}
-                      className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-secondary/30 cursor-pointer"
-                      onClick={() => navigate(`/owner-operator/vehicle/${v.id}`)}
-                    >
-                      <div className="space-y-1">
-                        <p className="font-medium text-sm">{v.registration_number}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {v.make} {v.model} · {v.year || "—"}
-                          {v.lastTrip ? ` · ${v.lastTrip}` : ""}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={v.status === "active" ? "default" : "secondary"}>{v.status}</Badge>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      </div>
+              {displayVehicles.length === 0
+                ? (
+                    <EmptyState
+                      icon={Truck}
+                      title="No vehicles registered"
+                      description="Your trucks will appear here once registered."
+                    />
+                  )
+                : (
+                    <div className="space-y-3">
+                      {displayVehicles.map((v: any) => (
+                        <div
+                          key={v.id}
+                          className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-secondary/30 cursor-pointer"
+                          onClick={() => navigate(`/owner-operator/vehicle/${v.id}`)}
+                        >
+                          <div className="space-y-1">
+                            <p className="font-medium text-sm">{v.registration_number}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {v.make}
+                              {" "}
+                              {v.model}
+                              {" "}
+                              ·
+                              {" "}
+                              {v.year || "—"}
+                              {v.lastTrip ? ` · ${v.lastTrip}` : ""}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={v.status === "active" ? "default" : "secondary"}>{v.status}</Badge>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
+                  )}
             </CardContent>
           </Card>
         </div>
@@ -415,7 +630,10 @@ export default function OwnerOperatorDashboard() {
           requests={deviceRequests}
           loading={deviceRequestsLoading}
           onNewRequest={() => setShowDeviceRequestDialog(true)}
-          onCancelRequest={(id) => updateRequestStatus(id, 'cancelled')}
+          onCancelRequest={id => updateRequestStatus(
+            id,
+            "cancelled",
+          )}
         />
 
         {/* Compliance Documents Upload */}
@@ -437,32 +655,52 @@ export default function OwnerOperatorDashboard() {
             <CardDescription>Your latest assigned shipments and their delivery progress.</CardDescription>
           </CardHeader>
           <CardContent>
-            {displayRecentJobs.length === 0 ? (
-              <EmptyState icon={Package} title="No jobs yet" description="Jobs assigned to you will appear here." />
-            ) : (
-              <div className="space-y-2">
-                {displayRecentJobs.slice(0, 8).map((job: any) => (
-                  <div key={job.id} className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-secondary/30">
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">{job.reference}</span>
-                        <Badge variant={getStatusVariant(job.status)}>{job.status.replace(/_/g, " ")}</Badge>
+            {displayRecentJobs.length === 0
+              ? (
+                  <EmptyState
+                    icon={Package}
+                    title="No jobs yet"
+                    description="Jobs assigned to you will appear here."
+                  />
+                )
+              : (
+                  <div className="space-y-2">
+                    {displayRecentJobs.slice(
+                      0,
+                      8,
+                    ).map((job: any) => (
+                      <div
+                        key={job.id}
+                        className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-secondary/30"
+                      >
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">{job.reference}</span>
+                            <Badge variant={getStatusVariant(job.status)}>
+                              {job.status.replace(
+                                /_/g,
+                                " ",
+                              )}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            <span className="truncate">
+                              {job.pickup_address?.split(",")[0] || "Pickup"}
+                              {" "}
+                              →
+                              {job.delivery_address?.split(",")[0] || "Delivery"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 ml-4">
+                          <p className="font-medium text-sm">{formatCurrency(job.amount_ngn || 0)}</p>
+                          <p className="text-xs text-muted-foreground">{formatDayMonth(job.created_at)}</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="h-3 w-3 shrink-0" />
-                        <span className="truncate">
-                          {job.pickup_address?.split(",")[0] || "Pickup"} → {job.delivery_address?.split(",")[0] || "Delivery"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0 ml-4">
-                      <p className="font-medium text-sm">{formatCurrency(job.amount_ngn || 0)}</p>
-                      <p className="text-xs text-muted-foreground">{formatDayMonth(job.created_at)}</p>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
+                )}
           </CardContent>
         </Card>
 
@@ -480,7 +718,12 @@ export default function OwnerOperatorDashboard() {
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className="border-primary/30 text-primary">Active</Badge>
+            <Badge
+              variant="outline"
+              className="border-primary/30 text-primary"
+            >
+              Active
+            </Badge>
           </CardContent>
         </Card>
       </div>

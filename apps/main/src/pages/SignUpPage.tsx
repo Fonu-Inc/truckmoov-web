@@ -1,15 +1,19 @@
-import { useState } from "react";
 import type { ChangeEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, Building2, Eye, EyeOff, Lock, Mail, Truck, User } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import * as z from "zod";
-
 import { useRegister } from "@truckmoov/api/auth";
 import { useAuthStore as useApiAuthStore } from "@truckmoov/api/lib/auth-store";
-import { useAuthStore } from "@/stores/authStore";
+import { AuthBrandingPanel } from "@truckmoov/reusables/components/layouts/AuthBrandingPanel";
+import {
+  ArrowRight, Building2, Eye, EyeOff, Lock, Mail, Truck, User,
+} from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+
+import {
+  Link, useNavigate,
+} from "react-router-dom";
+import { toast } from "sonner";
+import * as z from "zod";
 import { Button } from "@/components/shadcn/button";
 import {
   Form,
@@ -20,21 +24,39 @@ import {
   FormMessage,
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
-import { AuthBrandingPanel } from "@truckmoov/reusables/components/layouts/AuthBrandingPanel";
+import { useAuthStore } from "@/stores/authStore";
 
 const signUpSchema = z
   .object({
-    firstName: z.string().trim().min(1, "First name is required."),
-    lastName: z.string().trim().min(1, "Last name is required."),
-    organizationName: z.string().trim().min(1, "Organization name is required."),
+    firstName: z.string().trim().min(
+      1,
+      "First name is required.",
+    ),
+    lastName: z.string().trim().min(
+      1,
+      "Last name is required.",
+    ),
+    organizationName: z.string().trim().min(
+      1,
+      "Organization name is required.",
+    ),
     email: z.string().trim().email("Enter a valid email address."),
-    password: z.string().min(8, "Password must be at least 8 characters."),
-    confirmPassword: z.string().min(1, "Confirm your password."),
+    password: z.string().min(
+      8,
+      "Password must be at least 8 characters.",
+    ),
+    confirmPassword: z.string().min(
+      1,
+      "Confirm your password.",
+    ),
   })
-  .refine((values) => values.password === values.confirmPassword, {
-    message: "Passwords do not match.",
-    path: ["confirmPassword"],
-  });
+  .refine(
+    values => values.password === values.confirmPassword,
+    {
+      message: "Passwords do not match.",
+      path: ["confirmPassword"],
+    },
+  );
 
 type SignUpFormValues = z.infer<typeof signUpSchema>;
 
@@ -71,7 +93,10 @@ function PasswordFieldControl({
   autoComplete: string;
   inputRef?: (instance: HTMLInputElement | null) => void;
 }) {
-  const [showPassword, setShowPassword] = useState(false);
+  const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
 
   return (
     <div className="relative">
@@ -91,7 +116,7 @@ function PasswordFieldControl({
       </FormControl>
       <button
         type="button"
-        onClick={() => setShowPassword((current) => !current)}
+        onClick={() => setShowPassword(current => !current)}
         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
         tabIndex={-1}
         aria-label={showPassword ? "Hide password" : "Show password"}
@@ -126,15 +151,18 @@ export default function SignUpPage() {
           firstName: values.firstName,
           lastName: values.lastName,
           organizationName: values.organizationName,
-          password: values.password
-        }
+          password: values.password,
+        },
       },
       {
         onSuccess: (res) => {
           useApiAuthStore.getState().setSession(res.data);
           useAuthStore.getState().syncFromSession();
           toast.success("Registration request completed.");
-          navigate("/admin", { replace: true });
+          navigate(
+            "/admin",
+            { replace: true },
+          );
         },
         onError: (error) => {
           toast.error(error.message);
@@ -154,7 +182,11 @@ export default function SignUpPage() {
         </div>
 
         <Form {...form}>
-          <form id={SIGN_UP_FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            id={SIGN_UP_FORM_ID}
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4"
+          >
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <FormField
                 control={form.control}
@@ -165,7 +197,12 @@ export default function SignUpPage() {
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <FormControl>
-                        <Input placeholder="John" className="pl-10" autoComplete="given-name" {...field} />
+                        <Input
+                          placeholder="John"
+                          className="pl-10"
+                          autoComplete="given-name"
+                          {...field}
+                        />
                       </FormControl>
                     </div>
                     <FormMessage />
@@ -182,7 +219,12 @@ export default function SignUpPage() {
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <FormControl>
-                        <Input placeholder="Doe" className="pl-10" autoComplete="family-name" {...field} />
+                        <Input
+                          placeholder="Doe"
+                          className="pl-10"
+                          autoComplete="family-name"
+                          {...field}
+                        />
                       </FormControl>
                     </div>
                     <FormMessage />
@@ -200,7 +242,12 @@ export default function SignUpPage() {
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <FormControl>
-                      <Input placeholder="Your Company Ltd" className="pl-10" autoComplete="organization" {...field} />
+                      <Input
+                        placeholder="Your Company Ltd"
+                        className="pl-10"
+                        autoComplete="organization"
+                        {...field}
+                      />
                     </FormControl>
                   </div>
                   <FormMessage />
@@ -217,7 +264,13 @@ export default function SignUpPage() {
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <FormControl>
-                      <Input type="email" placeholder="you@company.com" className="pl-10" autoComplete="email" {...field} />
+                      <Input
+                        type="email"
+                        placeholder="you@company.com"
+                        className="pl-10"
+                        autoComplete="email"
+                        {...field}
+                      />
                     </FormControl>
                   </div>
                   <FormMessage />
@@ -265,7 +318,13 @@ export default function SignUpPage() {
               )}
             />
 
-            <Button type="submit" form={SIGN_UP_FORM_ID} className="w-full" size="lg" loading={register.isPending}>
+            <Button
+              type="submit"
+              form={SIGN_UP_FORM_ID}
+              className="w-full"
+              size="lg"
+              loading={register.isPending}
+            >
               <span className="flex items-center gap-2">
                 Create Account
                 <ArrowRight className="h-4 w-4" />
@@ -275,8 +334,12 @@ export default function SignUpPage() {
         </Form>
 
         <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link to="/auth" className="font-medium text-primary hover:underline">
+          Already have an account?
+          {" "}
+          <Link
+            to="/auth"
+            className="font-medium text-primary hover:underline"
+          >
             Sign in
           </Link>
         </p>

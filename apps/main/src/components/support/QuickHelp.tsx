@@ -1,33 +1,37 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/shadcn/accordion";
-import { Badge } from "@/components/shadcn/badge";
-import { 
-  Cpu, 
-  Wifi, 
-  MessageSquare, 
-  CreditCard, 
-  Users, 
-  HelpCircle,
+import {
+  AlertTriangle,
   CheckCircle2,
-  AlertTriangle
+  Cpu,
+  CreditCard,
+  HelpCircle,
+  MessageSquare,
+  Users,
+  Wifi,
 } from "lucide-react";
+import { useState } from "react";
+import {
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+} from "@/components/shadcn/accordion";
+import { Badge } from "@/components/shadcn/badge";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import { cn } from "@/lib/utils";
 
-interface HelpCategory {
+type HelpCategory = {
   id: string;
   label: string;
   icon: React.ElementType;
   description: string;
   articles: HelpArticle[];
-}
+};
 
-interface HelpArticle {
+type HelpArticle = {
   id: string;
   title: string;
   steps: string[];
   warning?: string;
-}
+};
 
 const helpCategories: HelpCategory[] = [
   {
@@ -45,9 +49,9 @@ const helpCategories: HelpCategory[] = [
           "Confirm the APN settings match your carrier requirements",
           "Verify the server port and IP are correctly configured",
           "Check if the device protocol matches your platform settings",
-          "Wait 2-5 minutes for the first heartbeat after power-on"
+          "Wait 2-5 minutes for the first heartbeat after power-on",
         ],
-        warning: "If the device was recently installed, it may take up to 10 minutes for the first signal."
+        warning: "If the device was recently installed, it may take up to 10 minutes for the first signal.",
       },
       {
         id: "device-config",
@@ -58,8 +62,8 @@ const helpCategories: HelpCategory[] = [
           "Power on the device and wait for network connection",
           "Send configuration SMS or use the device's config tool",
           "Set the correct server IP, port, and protocol",
-          "Verify the device appears in the 'Devices' section"
-        ]
+          "Verify the device appears in the 'Devices' section",
+        ],
       },
       {
         id: "device-telemetry",
@@ -69,10 +73,10 @@ const helpCategories: HelpCategory[] = [
           "Verify GPS antenna has clear sky view",
           "Ensure the vehicle ignition is ON (some devices require this)",
           "Check the device's reporting interval settings",
-          "Review if there are any geofence or alert filters active"
-        ]
-      }
-    ]
+          "Review if there are any geofence or alert filters active",
+        ],
+      },
+    ],
   },
   {
     id: "sim",
@@ -88,9 +92,9 @@ const helpCategories: HelpCategory[] = [
           "Check that the activation batch is completed",
           "Ensure the SIM is properly inserted in the device",
           "Verify network coverage in your area",
-          "Wait up to 24 hours for carrier provisioning"
+          "Wait up to 24 hours for carrier provisioning",
         ],
-        warning: "SIM activation is managed by Fonu. If issues persist after 24 hours, the platform admin will escalate."
+        warning: "SIM activation is managed by Fonu. If issues persist after 24 hours, the platform admin will escalate.",
       },
       {
         id: "sim-data",
@@ -100,8 +104,8 @@ const helpCategories: HelpCategory[] = [
           "Review if there are unnecessary features enabled (e.g., photo uploads)",
           "Verify no firmware updates are being pushed",
           "Check for devices stuck in constant reconnection loops",
-          "Consider switching to a higher data plan if usage is legitimate"
-        ]
+          "Consider switching to a higher data plan if usage is legitimate",
+        ],
       },
       {
         id: "sim-suspended",
@@ -110,11 +114,11 @@ const helpCategories: HelpCategory[] = [
           "Check if the data limit was exceeded",
           "Verify the subscription is active and paid",
           "Review if there were any fraud alerts",
-          "Contact support if suspension seems incorrect"
+          "Contact support if suspension seems incorrect",
         ],
-        warning: "SIM suspensions for fraud or abuse require platform admin review."
-      }
-    ]
+        warning: "SIM suspensions for fraud or abuse require platform admin review.",
+      },
+    ],
   },
   {
     id: "messaging",
@@ -130,8 +134,8 @@ const helpCategories: HelpCategory[] = [
           "Check if the driver has WhatsApp installed and active",
           "Ensure the WhatsApp Business account is properly connected",
           "Review message templates for approval status",
-          "Check wallet balance for communication credits"
-        ]
+          "Check wallet balance for communication credits",
+        ],
       },
       {
         id: "sms-issues",
@@ -141,8 +145,8 @@ const helpCategories: HelpCategory[] = [
           "Check if the carrier supports the message type",
           "Verify wallet has sufficient balance",
           "Review if the number is on any blocklist",
-          "Try resending after a few minutes"
-        ]
+          "Try resending after a few minutes",
+        ],
       },
       {
         id: "broadcast-failed",
@@ -151,10 +155,10 @@ const helpCategories: HelpCategory[] = [
           "Check the broadcast tracker for individual recipient status",
           "Review which drivers failed and their error messages",
           "Verify all phone numbers are in correct format",
-          "Retry failed messages from the broadcast details page"
-        ]
-      }
-    ]
+          "Retry failed messages from the broadcast details page",
+        ],
+      },
+    ],
   },
   {
     id: "billing",
@@ -170,8 +174,8 @@ const helpCategories: HelpCategory[] = [
           "Click 'Top Up' and enter the amount",
           "Choose your payment method (MTN MoMo recommended)",
           "Complete the payment on your phone",
-          "Balance updates automatically within 2 minutes"
-        ]
+          "Balance updates automatically within 2 minutes",
+        ],
       },
       {
         id: "payment-failed",
@@ -181,10 +185,10 @@ const helpCategories: HelpCategory[] = [
           "Verify the phone number entered is correct",
           "Ensure you approved the payment prompt on your device",
           "Wait 5 minutes and try again",
-          "If issue persists, contact support with the transaction reference"
-        ]
-      }
-    ]
+          "If issue persists, contact support with the transaction reference",
+        ],
+      },
+    ],
   },
   {
     id: "access",
@@ -200,8 +204,8 @@ const helpCategories: HelpCategory[] = [
           "Operations Manager: Fleet and device management",
           "Supervisor: Live tracking and driver management",
           "Dispatcher: Read-only access to tracking and dispatch",
-          "Viewer/Finance: Read-only access to financial data"
-        ]
+          "Viewer/Finance: Read-only access to financial data",
+        ],
       },
       {
         id: "invite-user",
@@ -211,24 +215,27 @@ const helpCategories: HelpCategory[] = [
           "Click 'Invite User'",
           "Enter their email and select a role",
           "They will receive an invitation email",
-          "Once accepted, they can log in with their credentials"
-        ]
-      }
-    ]
-  }
+          "Once accepted, they can log in with their credentials",
+        ],
+      },
+    ],
+  },
 ];
 
 export function QuickHelp() {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [
+    selectedCategory,
+    setSelectedCategory,
+  ] = useState<string | null>(null);
 
-  const currentCategory = helpCategories.find((c) => c.id === selectedCategory);
+  const currentCategory = helpCategories.find(c => c.id === selectedCategory);
 
   return (
     <div className="space-y-6">
       {/* Category Selection */}
       {!selectedCategory && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {helpCategories.map((category) => (
+          {helpCategories.map(category => (
             <Card
               key={category.id}
               className="cursor-pointer hover:border-primary/50 transition-colors"
@@ -241,8 +248,13 @@ export function QuickHelp() {
                   </div>
                   <div>
                     <CardTitle className="text-base">{category.label}</CardTitle>
-                    <Badge variant="secondary" className="mt-1">
-                      {category.articles.length} articles
+                    <Badge
+                      variant="secondary"
+                      className="mt-1"
+                    >
+                      {category.articles.length}
+                      {" "}
+                      articles
                     </Badge>
                   </div>
                 </div>
@@ -280,9 +292,16 @@ export function QuickHelp() {
               </div>
             </CardHeader>
             <CardContent>
-              <Accordion type="single" collapsible className="w-full">
-                {currentCategory.articles.map((article) => (
-                  <AccordionItem key={article.id} value={article.id}>
+              <Accordion
+                type="single"
+                collapsible
+                className="w-full"
+              >
+                {currentCategory.articles.map(article => (
+                  <AccordionItem
+                    key={article.id}
+                    value={article.id}
+                  >
                     <AccordionTrigger className="text-left">
                       <div className="flex items-center gap-2">
                         <HelpCircle className="h-4 w-4 text-muted-foreground" />
@@ -299,7 +318,10 @@ export function QuickHelp() {
                         )}
                         <div className="space-y-2">
                           {article.steps.map((step, index) => (
-                            <div key={index} className="flex items-start gap-3">
+                            <div
+                              key={index}
+                              className="flex items-start gap-3"
+                            >
                               <CheckCircle2 className="h-4 w-4 text-chart-2 mt-0.5 shrink-0" />
                               <p className="text-sm text-muted-foreground">{step}</p>
                             </div>

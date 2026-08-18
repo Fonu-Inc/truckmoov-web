@@ -1,13 +1,22 @@
-import { useState } from "react";
 import type { ChangeEvent } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck, Truck } from "lucide-react";
+import { useSystemLogin } from "@truckmoov/api/auth";
+import { AuthBrandingPanel } from "@truckmoov/reusables/components/layouts/AuthBrandingPanel";
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  ShieldCheck,
+  Truck,
+} from "lucide-react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+
 import { toast } from "sonner";
 import * as z from "zod";
-
-import { useSystemLogin } from "@truckmoov/api/auth";
 import { Button } from "@/components/shadcn/button";
 import {
   Form,
@@ -19,11 +28,13 @@ import {
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
 import { useAuthStore } from "@/stores/authStore";
-import { AuthBrandingPanel } from "@truckmoov/reusables/components/layouts/AuthBrandingPanel";
 
 const adminSignInSchema = z.object({
   email: z.string().trim().email("Enter a valid email address."),
-  password: z.string().min(1, "Password is required."),
+  password: z.string().min(
+    1,
+    "Password is required.",
+  ),
 });
 
 type AdminSignInFormValues = z.infer<typeof adminSignInSchema>;
@@ -55,7 +66,10 @@ function PasswordFieldControl({
   onBlur: () => void;
   name: string;
 }) {
-  const [showPassword, setShowPassword] = useState(false);
+  const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
 
   return (
     <div className="relative">
@@ -74,7 +88,7 @@ function PasswordFieldControl({
       </FormControl>
       <button
         type="button"
-        onClick={() => setShowPassword((current) => !current)}
+        onClick={() => setShowPassword(current => !current)}
         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
         tabIndex={-1}
         aria-label={showPassword ? "Hide password" : "Show password"}
@@ -102,14 +116,17 @@ export default function AuthPage() {
       {
         data: {
           email: values.email,
-          password: values.password
-        }
+          password: values.password,
+        },
       },
       {
         onSuccess: async () => {
           await useAuthStore.getState().bootstrapFromSession();
           toast.success("System login request completed.");
-          navigate("/", { replace: true });
+          navigate(
+            "/",
+            { replace: true },
+          );
         },
         onError: (error) => {
           toast.error(error.message);
@@ -132,7 +149,11 @@ export default function AuthPage() {
         </div>
 
         <Form {...form}>
-          <form id={ADMIN_SIGN_IN_FORM_ID} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            id={ADMIN_SIGN_IN_FORM_ID}
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="email"
@@ -142,7 +163,13 @@ export default function AuthPage() {
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <FormControl>
-                      <Input type="email" placeholder="admin@company.com" className="pl-10" autoComplete="email" {...field} />
+                      <Input
+                        type="email"
+                        placeholder="admin@company.com"
+                        className="pl-10"
+                        autoComplete="email"
+                        {...field}
+                      />
                     </FormControl>
                   </div>
                   <FormMessage />
@@ -162,7 +189,13 @@ export default function AuthPage() {
               )}
             />
 
-            <Button type="submit" form={ADMIN_SIGN_IN_FORM_ID} className="w-full" size="lg" loading={systemLogin.isPending}>
+            <Button
+              type="submit"
+              form={ADMIN_SIGN_IN_FORM_ID}
+              className="w-full"
+              size="lg"
+              loading={systemLogin.isPending}
+            >
               <span className="flex items-center gap-2">
                 Sign In
                 <ArrowRight className="h-4 w-4" />

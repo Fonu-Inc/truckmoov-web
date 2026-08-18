@@ -1,31 +1,33 @@
+import type {
+  FormEvent, KeyboardEvent,
+} from "react";
 import {
+  Loader2, MapPin,
+} from "lucide-react";
+import {
+
   useEffect,
   useId,
   useRef,
   useState,
-  type FormEvent,
-  type KeyboardEvent,
 } from "react";
-import { Loader2, MapPin } from "lucide-react";
 import { Input } from "@/components/shadcn/input";
-import { cn } from "@/lib/utils";
 import { getBrowserCoordinates } from "@/lib/browserLocation";
+import { cn } from "@/lib/utils";
 
-export interface MapLocation {
+export type MapLocation = {
   address: string;
   lat: number;
   lng: number;
-}
+};
 
-interface LocationSuggestion extends MapLocation {
+type LocationSuggestion = {
   id: string;
   countryCode?: string;
-}
+} & MapLocation;
 
-interface PhotonFeature {
-  geometry: {
-    coordinates: [number, number];
-  };
+type PhotonFeature = {
+  geometry: { coordinates: [number, number] };
   properties: {
     osm_id?: number;
     osm_type?: string;
@@ -39,19 +41,17 @@ interface PhotonFeature {
     country?: string;
     countrycode?: string;
   };
-}
+};
 
-interface PhotonResponse {
-  features: PhotonFeature[];
-}
+type PhotonResponse = { features: PhotonFeature[] };
 
-interface UserLocationBias {
+type UserLocationBias = {
   lat: number;
   lng: number;
   countryCode?: string;
-}
+};
 
-export interface MapLocationInputProps {
+export type MapLocationInputProps = {
   onLocationSelect: (location: MapLocation) => void;
   value?: MapLocation | null;
   placeholder?: string;
@@ -60,20 +60,24 @@ export interface MapLocationInputProps {
   suggestionsSide?: "top" | "bottom";
   inputClassName?: string;
   className?: string;
-}
+};
 
 const PHOTON_API_URL = "https://photon.komoot.io";
 let userLocationBiasPromise: Promise<UserLocationBias | null> | null = null;
 
 function getUserLocationBias() {
-  if (userLocationBiasPromise) return userLocationBiasPromise;
+  if (userLocationBiasPromise)
+    return userLocationBiasPromise;
 
   userLocationBiasPromise = (async () => {
     try {
       const coordinates = await getBrowserCoordinates();
-      if (!coordinates) return null;
+      if (!coordinates)
+        return null;
 
-      const { lat, lng } = coordinates;
+      const {
+        lat, lng,
+      } = coordinates;
       const params = new URLSearchParams({
         lat: String(lat),
         lon: String(lng),
@@ -82,7 +86,11 @@ function getUserLocationBias() {
 
       try {
         const response = await fetch(`${PHOTON_API_URL}/reverse?${params}`);
-        if (!response.ok) return { lat, lng };
+        if (!response.ok) {
+          return {
+            lat, lng,
+          };
+        }
 
         const data = (await response.json()) as PhotonResponse;
         return {
@@ -90,10 +98,14 @@ function getUserLocationBias() {
           lng,
           countryCode: data.features[0]?.properties.countrycode?.toUpperCase(),
         };
-      } catch {
-        return { lat, lng };
       }
-    } catch {
+      catch {
+        return {
+          lat, lng,
+        };
+      }
+    }
+    catch {
       return null;
     }
   })();
@@ -102,7 +114,10 @@ function getUserLocationBias() {
 }
 
 function formatAddress(properties: PhotonFeature["properties"]) {
-  const streetAddress = [properties.housenumber, properties.street]
+  const streetAddress = [
+    properties.housenumber,
+    properties.street,
+  ]
     .filter(Boolean)
     .join(" ");
   const addressParts = [
@@ -118,8 +133,8 @@ function formatAddress(properties: PhotonFeature["properties"]) {
   return addressParts.filter(
     (part, index) =>
       addressParts.findIndex(
-        (candidate) => candidate.toLowerCase() === part.toLowerCase()
-      ) === index
+        candidate => candidate.toLowerCase() === part.toLowerCase(),
+      ) === index,
   ).join(", ");
 }
 
@@ -131,35 +146,67 @@ async function findLocations(query: string, signal?: AbortSignal) {
   });
 
   if (locationBias) {
-    globalParams.set("lat", String(locationBias.lat));
-    globalParams.set("lon", String(locationBias.lng));
-    globalParams.set("zoom", "6");
-    globalParams.set("location_bias_scale", "0.1");
+    globalParams.set(
+      "lat",
+      String(locationBias.lat),
+    );
+    globalParams.set(
+      "lon",
+      String(locationBias.lng),
+    );
+    globalParams.set(
+      "zoom",
+      "6",
+    );
+    globalParams.set(
+      "location_bias_scale",
+      "0.1",
+    );
   }
 
   const fetchFeatures = async (params: URLSearchParams) => {
-    const response = await fetch(`${PHOTON_API_URL}/api?${params}`, { signal });
-    if (!response.ok) throw new Error("Location search failed");
+    const response = await fetch(
+      `${PHOTON_API_URL}/api?${params}`,
+      { signal },
+    );
+    if (!response.ok)
+      throw new Error("Location search failed");
     return ((await response.json()) as PhotonResponse).features;
   };
 
   let features: PhotonFeature[];
   if (locationBias?.countryCode) {
     const localParams = new URLSearchParams(globalParams);
-    localParams.set("limit", "5");
-    localParams.set("countrycode", locationBias.countryCode);
+    localParams.set(
+      "limit",
+      "5",
+    );
+    localParams.set(
+      "countrycode",
+      locationBias.countryCode,
+    );
 
-    const [localFeatures, globalFeatures] = await Promise.all([
+    const [
+      localFeatures,
+      globalFeatures,
+    ] = await Promise.all([
       fetchFeatures(localParams),
       fetchFeatures(globalParams),
     ]);
-    features = [...localFeatures, ...globalFeatures];
-  } else {
+    features = [
+      ...localFeatures,
+      ...globalFeatures,
+    ];
+  }
+  else {
     features = await fetchFeatures(globalParams);
   }
 
   const suggestions = features.map<LocationSuggestion>((feature, index) => {
-    const [lng, lat] = feature.geometry.coordinates;
+    const [
+      lng,
+      lat,
+    ] = feature.geometry.coordinates;
     return {
       id: `${feature.properties.osm_type ?? "place"}-${feature.properties.osm_id ?? index}-${lat}-${lng}`,
       address: formatAddress(feature.properties),
@@ -172,12 +219,15 @@ async function findLocations(query: string, signal?: AbortSignal) {
   return suggestions
     .filter(
       (suggestion, index, allSuggestions) =>
-        suggestion.address &&
-        allSuggestions.findIndex(
-          (candidate) => candidate.address.toLowerCase() === suggestion.address.toLowerCase()
-        ) === index
+        suggestion.address
+        && allSuggestions.findIndex(
+          candidate => candidate.address.toLowerCase() === suggestion.address.toLowerCase(),
+        ) === index,
     )
-    .slice(0, 5);
+    .slice(
+      0,
+      5,
+    );
 }
 
 export function MapLocationInput({
@@ -192,70 +242,121 @@ export function MapLocationInput({
 }: MapLocationInputProps) {
   const inputId = useId();
   const suggestionsId = `${inputId}-suggestions`;
-  const [query, setQuery] = useState(value?.address ?? "");
-  const [selectedAddress, setSelectedAddress] = useState<string | null>(
-    value?.address ?? null
+  const [
+    query,
+    setQuery,
+  ] = useState(value?.address ?? "");
+  const [
+    selectedAddress,
+    setSelectedAddress,
+  ] = useState<string | null>(
+    value?.address ?? null,
   );
-  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const [error, setError] = useState<string | null>(null);
+  const [
+    suggestions,
+    setSuggestions,
+  ] = useState<LocationSuggestion[]>([]);
+  const [
+    isSearching,
+    setIsSearching,
+  ] = useState(false);
+  const [
+    isOpen,
+    setIsOpen,
+  ] = useState(false);
+  const [
+    highlightedIndex,
+    setHighlightedIndex,
+  ] = useState(-1);
+  const [
+    error,
+    setError,
+  ] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
 
-  useEffect(() => {
-    void getUserLocationBias();
-  }, []);
+  useEffect(
+    () => {
+      void getUserLocationBias();
+    },
+    [],
+  );
 
-  useEffect(() => {
-    const nextAddress = value?.address ?? "";
-    setQuery(nextAddress);
-    setSelectedAddress(nextAddress || null);
-  }, [value?.address]);
+  useEffect(
+    () => {
+      const nextAddress = value?.address ?? "";
+      setQuery(nextAddress);
+      setSelectedAddress(nextAddress || null);
+    },
+    [value?.address],
+  );
 
-  useEffect(() => {
-    const location = query.trim();
-    if (location.length < 3 || location === selectedAddress) {
-      setSuggestions([]);
-      setIsOpen(false);
-      setIsSearching(false);
-      return;
-    }
+  useEffect(
+    () => {
+      const location = query.trim();
+      if (location.length < 3 || location === selectedAddress) {
+        setSuggestions([]);
+        setIsOpen(false);
+        setIsSearching(false);
+        return;
+      }
 
-    const controller = new AbortController();
-    const timeout = window.setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const results = await findLocations(location, controller.signal);
-        setSuggestions(results);
-        setHighlightedIndex(-1);
-        setIsOpen(results.length > 0);
-      } catch (searchError) {
-        if ((searchError as Error).name !== "AbortError") {
-          setSuggestions([]);
+      const controller = new AbortController();
+      const timeout = window.setTimeout(
+        async () => {
+          setIsSearching(true);
+          try {
+            const results = await findLocations(
+              location,
+              controller.signal,
+            );
+            setSuggestions(results);
+            setHighlightedIndex(-1);
+            setIsOpen(results.length > 0);
+          }
+          catch (searchError) {
+            if ((searchError as Error).name !== "AbortError") {
+              setSuggestions([]);
+              setIsOpen(false);
+            }
+          }
+          finally {
+            if (!controller.signal.aborted)
+              setIsSearching(false);
+          }
+        },
+        350,
+      );
+
+      return () => {
+        window.clearTimeout(timeout);
+        controller.abort();
+      };
+    },
+    [
+      query,
+      selectedAddress,
+    ],
+  );
+
+  useEffect(
+    () => {
+      const closeSuggestions = (event: MouseEvent) => {
+        if (formRef.current && !formRef.current.contains(event.target as Node)) {
           setIsOpen(false);
         }
-      } finally {
-        if (!controller.signal.aborted) setIsSearching(false);
-      }
-    }, 350);
+      };
 
-    return () => {
-      window.clearTimeout(timeout);
-      controller.abort();
-    };
-  }, [query, selectedAddress]);
-
-  useEffect(() => {
-    const closeSuggestions = (event: MouseEvent) => {
-      if (formRef.current && !formRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", closeSuggestions);
-    return () => document.removeEventListener("mousedown", closeSuggestions);
-  }, []);
+      document.addEventListener(
+        "mousedown",
+        closeSuggestions,
+      );
+      return () => document.removeEventListener(
+        "mousedown",
+        closeSuggestions,
+      );
+    },
+    [],
+  );
 
   const selectSuggestion = (result: LocationSuggestion) => {
     const location = {
@@ -283,7 +384,8 @@ export function MapLocationInput({
     }
 
     const location = query.trim();
-    if (!location || isSearching) return;
+    if (!location || isSearching)
+      return;
 
     setIsSearching(true);
     setError(null);
@@ -295,27 +397,30 @@ export function MapLocationInput({
         return;
       }
       selectSuggestion(result);
-    } catch {
+    }
+    catch {
       setError("Unable to find that location right now.");
-    } finally {
+    }
+    finally {
       setIsSearching(false);
     }
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (!isOpen || suggestions.length === 0) return;
+    if (!isOpen || suggestions.length === 0)
+      return;
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      setHighlightedIndex((current) =>
-        current < suggestions.length - 1 ? current + 1 : 0
-      );
-    } else if (event.key === "ArrowUp") {
+      setHighlightedIndex(current =>
+        current < suggestions.length - 1 ? current + 1 : 0);
+    }
+    else if (event.key === "ArrowUp") {
       event.preventDefault();
-      setHighlightedIndex((current) =>
-        current > 0 ? current - 1 : suggestions.length - 1
-      );
-    } else if (event.key === "Escape") {
+      setHighlightedIndex(current =>
+        current > 0 ? current - 1 : suggestions.length - 1);
+    }
+    else if (event.key === "Escape") {
       setIsOpen(false);
       setHighlightedIndex(-1);
     }
@@ -325,10 +430,17 @@ export function MapLocationInput({
     <form
       ref={formRef}
       onSubmit={handleSubmit}
-      className={cn("space-y-2", isOpen && "relative z-[1200]", className)}
+      className={cn(
+        "space-y-2",
+        isOpen && "relative z-[1200]",
+        className,
+      )}
     >
       {label && (
-        <label htmlFor={inputId} className="text-sm font-medium text-foreground">
+        <label
+          htmlFor={inputId}
+          className="text-sm font-medium text-foreground"
+        >
           {label}
         </label>
       )}
@@ -344,7 +456,8 @@ export function MapLocationInput({
           onChange={(event) => {
             setQuery(event.target.value);
             setSelectedAddress(null);
-            if (error) setError(null);
+            if (error)
+              setError(null);
           }}
           onFocus={() => suggestions.length > 0 && setIsOpen(true)}
           onKeyDown={handleKeyDown}
@@ -363,7 +476,7 @@ export function MapLocationInput({
           aria-invalid={Boolean(error)}
           className={cn(
             "h-10 rounded-md bg-background pl-10 pr-10",
-            inputClassName
+            inputClassName,
           )}
         />
         {isSearching && (
@@ -376,7 +489,7 @@ export function MapLocationInput({
             role="listbox"
             className={cn(
               "absolute z-[1200] max-h-60 w-full overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-xl",
-              suggestionsSide === "top" ? "bottom-full mb-2" : "mt-2"
+              suggestionsSide === "top" ? "bottom-full mb-2" : "mt-2",
             )}
           >
             {suggestions.map((suggestion, index) => (
@@ -392,7 +505,7 @@ export function MapLocationInput({
                   "flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors",
                   highlightedIndex === index
                     ? "bg-accent text-accent-foreground"
-                    : "hover:bg-accent hover:text-accent-foreground"
+                    : "hover:bg-accent hover:text-accent-foreground",
                 )}
               >
                 <MapPin

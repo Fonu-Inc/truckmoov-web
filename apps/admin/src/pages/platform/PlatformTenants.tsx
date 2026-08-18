@@ -1,10 +1,81 @@
+import type {
+  SubscriptionPlan,
+  SystemTenant,
+} from "@truckmoov/api/auth";
+import type {
+  FilterDraft,
+  FilterField,
+} from "@/components/shadcn/platform-filter-popover";
+import {
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  getSystemSubscriptionPlansQueryOptions,
+  getSystemTenantsExportQueryOptions,
+  getSystemTenantsQueryOptions,
+  getSystemTenantsSummaryQueryOptions,
+
+  useResendTenantInvite,
+  useUpdateTenantStatus,
+} from "@truckmoov/api/auth";
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
-import { useState, useEffect, useMemo } from "react";
+import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Ban,
+  Building2,
+  CheckCircle,
+  Clock,
+  Cpu,
+  Download,
+  Eye,
+  MoreHorizontal,
+  Pencil,
+  Search,
+  Send,
+  Smartphone,
+  Sparkles,
+  Truck,
+  Users,
+  XCircle,
+} from "lucide-react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { toast } from "sonner";
+import { StatCard } from "@/components/dashboard/StatCard";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
+import { TenantDetailsSheet } from "@/components/platform/TenantDetailsSheet";
+import { TenantEditDialog } from "@/components/platform/TenantEditDialog";
+import { TenantOnboardingWizard } from "@/components/platform/TenantOnboardingWizard";
+import { TerminateTenantDialog } from "@/components/platform/TerminateTenantDialog";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
+import { Input } from "@/components/shadcn/input";
+import {
+  buildEmptyDraft,
+
+  PlatformFilterPopover,
+} from "@/components/shadcn/platform-filter-popover";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
@@ -12,62 +83,10 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "@/components/shadcn/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from "@/components/shadcn/dropdown-menu";
-import {
-  Building2,
-  Search,
-  MoreHorizontal,
-  Truck,
-  Users,
-  Send,
-  Eye,
-  Pencil,
-  Ban,
-  CheckCircle,
-  XCircle,
-  Clock,
-  AlertTriangle,
-  Cpu,
-  Sparkles,
-  Smartphone,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  Download
-} from "lucide-react";
-import { StatCard } from "@/components/dashboard/StatCard";
-import { toast } from "sonner";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { TenantOnboardingWizard } from "@/components/platform/TenantOnboardingWizard";
-import { TenantEditDialog } from "@/components/platform/TenantEditDialog";
-import {
-  PlatformFilterPopover,
-  buildEmptyDraft,
-  type FilterField,
-  type FilterDraft
-} from "@/components/shadcn/platform-filter-popover";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  getSystemTenantsQueryOptions,
-  getSystemTenantsSummaryQueryOptions,
-  getSystemTenantsExportQueryOptions,
-  getSystemSubscriptionPlansQueryOptions,
-  useUpdateTenantStatus,
-  useResendTenantInvite,
-  type SubscriptionPlan,
-  type SystemTenant,
-} from "@truckmoov/api/auth";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
-import { TenantDetailsSheet } from "@/components/platform/TenantDetailsSheet";
-import { TerminateTenantDialog } from "@/components/platform/TerminateTenantDialog";
 
 const ORG_TYPE_LABELS: Record<string, string> = {
   enterprise: "Enterprise",
@@ -82,47 +101,103 @@ const tenantFilterFields: FilterField[] = [
     label: "Status",
     type: "select",
     options: [
-      { value: "active", label: "Active" },
-      { value: "pending", label: "Trial" },
-      { value: "suspended", label: "Suspended" },
-      { value: "inactive", label: "Inactive" },
-    ]
+      {
+        value: "active",
+        label: "Active",
+      },
+      {
+        value: "pending",
+        label: "Trial",
+      },
+      {
+        value: "suspended",
+        label: "Suspended",
+      },
+      {
+        value: "inactive",
+        label: "Inactive",
+      },
+    ],
   },
   {
     key: "orgType",
     label: "Organization Type",
     type: "select",
     options: [
-      { value: "enterprise", label: "Enterprise" },
-      { value: "fleet_provider", label: "Fleet Provider" },
-      { value: "aggregator", label: "Aggregator" },
-      { value: "owner_operator", label: "Owner-Operator" },
-    ]
+      {
+        value: "enterprise",
+        label: "Enterprise",
+      },
+      {
+        value: "fleet_provider",
+        label: "Fleet Provider",
+      },
+      {
+        value: "aggregator",
+        label: "Aggregator",
+      },
+      {
+        value: "owner_operator",
+        label: "Owner-Operator",
+      },
+    ],
   },
   {
     key: "plan",
     label: "Plan",
     type: "select",
     options: [
-      { value: "starter", label: "Starter" },
-      { value: "professional", label: "Professional" },
-      { value: "enterprise", label: "Enterprise" },
-    ]
+      {
+        value: "starter",
+        label: "Starter",
+      },
+      {
+        value: "professional",
+        label: "Professional",
+      },
+      {
+        value: "enterprise",
+        label: "Enterprise",
+      },
+    ],
   },
   {
     key: "kyc",
     label: "KYC Status",
     type: "select",
     options: [
-      { value: "not_submitted", label: "Not Submitted" },
-      { value: "pending", label: "Pending" },
-      { value: "under_review", label: "Under Review" },
-      { value: "verified", label: "Verified" },
-      { value: "rejected", label: "Rejected" },
-    ]
+      {
+        value: "not_submitted",
+        label: "Not Submitted",
+      },
+      {
+        value: "pending",
+        label: "Pending",
+      },
+      {
+        value: "under_review",
+        label: "Under Review",
+      },
+      {
+        value: "verified",
+        label: "Verified",
+      },
+      {
+        value: "rejected",
+        label: "Rejected",
+      },
+    ],
   },
-  { key: "revenue", label: "Revenue (NGN)", type: "range" },
-  { key: "lastActive", label: "Last Active", type: "date" },
+  {
+    key: "revenue",
+    label: "Revenue (NGN)",
+    type: "range",
+  },
+  {
+    key: "lastActive",
+    label: "Last Active",
+    type: "date",
+  },
 ];
 
 // Badge colours are a UI concern — not returned by the API
@@ -133,24 +208,53 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 export default function PlatformTenants() {
-  const { currency, format } = useCurrency();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications, addNotification } = useRealtimeNotifications();
+  const {
+    currency,
+    format,
+  } = useCurrency();
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    clearNotifications,
+    addNotification,
+  } = useRealtimeNotifications();
 
   const queryClient = useQueryClient();
   const updateTenantStatusMutation = useUpdateTenantStatus();
   const resendTenantInviteMutation = useResendTenantInvite();
-  const [isExporting, setIsExporting] = useState(false);
+  const [
+    isExporting,
+    setIsExporting,
+  ] = useState(false);
 
   // Filter state declared before the query so params can be wired
-  const [searchQuery, setSearchQuery] = useState("");
-  const [advancedFilters, setAdvancedFilters] = useState<FilterDraft>(buildEmptyDraft(tenantFilterFields));
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    advancedFilters,
+    setAdvancedFilters,
+  ] = useState<FilterDraft>(buildEmptyDraft(tenantFilterFields));
 
   // Debounce search to avoid a query on every keystroke
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  const [
+    debouncedSearch,
+    setDebouncedSearch,
+  ] = useState("");
+  useEffect(
+    () => {
+      const timer = setTimeout(
+        setDebouncedSearch,
+        400,
+        searchQuery,
+      );
+      return () => clearTimeout(timer);
+    },
+    [searchQuery],
+  );
 
   // Derive server-side filter params.
   const apiStatus = advancedFilters.status?.enabled && advancedFilters.status?.value
@@ -198,50 +302,83 @@ export default function PlatformTenants() {
   const tenantsPayload = tenantsQuery.data?.data;
   const summaryPayload = summaryQuery.data?.data;
 
-  const dbTenants: SystemTenant[] = useMemo(() => tenantsPayload?.tenants ?? [], [tenantsPayload]);
+  const dbTenants: SystemTenant[] = useMemo(
+    () => tenantsPayload?.tenants ?? [],
+    [tenantsPayload],
+  );
   const isLoadingDbTenants = tenantsQuery.isLoading;
   const refetchDbTenants = tenantsQuery.refetch;
 
-  const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [selectedDbTenant, setSelectedDbTenant] = useState<SystemTenant | null>(null);
-  const [isDbDetailsSheetOpen, setIsDbDetailsSheetOpen] = useState(false);
-  const [isDbEditDialogOpen, setIsDbEditDialogOpen] = useState(false);
-  const [deleteConfirmDbTenant, setDeleteConfirmDbTenant] = useState<SystemTenant | null>(null);
+  const [
+    isWizardOpen,
+    setIsWizardOpen,
+  ] = useState(false);
+  const [
+    selectedDbTenant,
+    setSelectedDbTenant,
+  ] = useState<SystemTenant | null>(null);
+  const [
+    isDbDetailsSheetOpen,
+    setIsDbDetailsSheetOpen,
+  ] = useState(false);
+  const [
+    isDbEditDialogOpen,
+    setIsDbEditDialogOpen,
+  ] = useState(false);
+  const [
+    deleteConfirmDbTenant,
+    setDeleteConfirmDbTenant,
+  ] = useState<SystemTenant | null>(null);
 
   // Sorting state
   type SortKey = "name" | "orgType" | "plan" | "status" | "vehicleCount" | "simCount" | "monthlyRevenueNgn" | "lastActiveAt";
-  const [sortKey, setSortKey] = useState<SortKey>("name");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [
+    sortKey,
+    setSortKey,
+  ] = useState<SortKey>("name");
+  const [
+    sortDir,
+    setSortDir,
+  ] = useState<"asc" | "desc">("asc");
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
-    } else {
+    }
+    else {
       setSortKey(key);
       setSortDir("asc");
     }
   };
   const SortIcon = ({ k }: { k: SortKey }) => {
-    if (sortKey !== k) return <ArrowUpDown className="h-3 w-3 ml-1 inline opacity-50" />;
+    if (sortKey !== k)
+      return <ArrowUpDown className="h-3 w-3 ml-1 inline opacity-50" />;
     return sortDir === "asc"
       ? <ArrowUp className="h-3 w-3 ml-1 inline" />
       : <ArrowDown className="h-3 w-3 ml-1 inline" />;
   };
 
-
   // Auto-refresh every 60 seconds
-  useEffect(() => {
-    const id = setInterval(() => {
-      refetchDbTenants();
-    }, 60000);
-    return () => clearInterval(id);
-  }, [refetchDbTenants]);
+  useEffect(
+    () => {
+      const id = setInterval(
+        () => {
+          refetchDbTenants();
+        },
+        60000,
+      );
+      return () => clearInterval(id);
+    },
+    [refetchDbTenants],
+  );
 
-
-  const plansByTier = useMemo(() => {
-    const map: Record<string, SubscriptionPlan> = {};
-    (plansQuery.data?.data?.plans ?? []).forEach((p) => { map[p.tier] = p; });
-    return map;
-  }, [plansQuery.data]);
+  const plansByTier = useMemo(
+    () => {
+      const map: Record<string, SubscriptionPlan> = {};
+      (plansQuery.data?.data?.plans ?? []).forEach((p) => { map[p.tier] = p; });
+      return map;
+    },
+    [plansQuery.data],
+  );
 
   const getPlanLimits = (tier: string) => {
     const p = plansByTier[tier];
@@ -255,52 +392,76 @@ export default function PlatformTenants() {
   };
 
   // Org types per tenant — derived from API response
-  const tenantOrgTypesState = useMemo<Record<string, string[]>>(() => {
-    const map: Record<string, string[]> = {};
-    (tenantsPayload?.tenants ?? []).forEach((raw) => {
-      if (raw.id && raw.organizationTypes?.length) map[raw.id] = raw.organizationTypes;
-    });
-    return map;
-  }, [tenantsPayload]);
+  const tenantOrgTypesState = useMemo<Record<string, string[]>>(
+    () => {
+      const map: Record<string, string[]> = {};
+      (tenantsPayload?.tenants ?? []).forEach((raw) => {
+        if (raw.id && raw.organizationTypes?.length)
+          map[raw.id] = raw.organizationTypes;
+      });
+      return map;
+    },
+    [tenantsPayload],
+  );
 
   // Apply sorting
-  const sortedDbTenants = useMemo(() => {
-    const arr = [...dbTenants];
-    arr.sort((a, b) => {
-      let av: string | number;
-      let bv: string | number;
-      switch (sortKey) {
-        case "name": av = a.name?.toLowerCase() || ""; bv = b.name?.toLowerCase() || ""; break;
-        case "orgType":
-          av = (tenantOrgTypesState[a.id] || []).join(",");
-          bv = (tenantOrgTypesState[b.id] || []).join(",");
-          break;
-        case "plan": av = a.plan || ""; bv = b.plan || ""; break;
-        case "status": av = a.status || ""; bv = b.status || ""; break;
-        case "vehicleCount": av = a.vehicleCount || 0; bv = b.vehicleCount || 0; break;
-        case "simCount": av = a.simCount || 0; bv = b.simCount || 0; break;
-        case "monthlyRevenueNgn": av = a.monthlyRevenueNgn || 0; bv = b.monthlyRevenueNgn || 0; break;
-        case "lastActiveAt":
-          av = a.lastActiveAt ? new Date(a.lastActiveAt).getTime() : 0;
-          bv = b.lastActiveAt ? new Date(b.lastActiveAt).getTime() : 0;
-          break;
-      }
-      if (av < bv) return sortDir === "asc" ? -1 : 1;
-      if (av > bv) return sortDir === "asc" ? 1 : -1;
-      return 0;
-    });
-    return arr;
-  }, [dbTenants, sortKey, sortDir, tenantOrgTypesState]);
+  const sortedDbTenants = useMemo(
+    () => {
+      const arr = [...dbTenants];
+      arr.sort((a, b) => {
+        let av: string | number;
+        let bv: string | number;
+        switch (sortKey) {
+          case "name": av = a.name?.toLowerCase() || ""; bv = b.name?.toLowerCase() || ""; break;
+          case "orgType":
+            av = (tenantOrgTypesState[a.id] || []).join(",");
+            bv = (tenantOrgTypesState[b.id] || []).join(",");
+            break;
+          case "plan": av = a.plan || ""; bv = b.plan || ""; break;
+          case "status": av = a.status || ""; bv = b.status || ""; break;
+          case "vehicleCount": av = a.vehicleCount || 0; bv = b.vehicleCount || 0; break;
+          case "simCount": av = a.simCount || 0; bv = b.simCount || 0; break;
+          case "monthlyRevenueNgn": av = a.monthlyRevenueNgn || 0; bv = b.monthlyRevenueNgn || 0; break;
+          case "lastActiveAt":
+            av = a.lastActiveAt ? new Date(a.lastActiveAt).getTime() : 0;
+            bv = b.lastActiveAt ? new Date(b.lastActiveAt).getTime() : 0;
+            break;
+        }
+        if (av < bv)
+          return sortDir === "asc" ? -1 : 1;
+        if (av > bv)
+          return sortDir === "asc" ? 1 : -1;
+        return 0;
+      });
+      return arr;
+    },
+    [
+      dbTenants,
+      sortKey,
+      sortDir,
+      tenantOrgTypesState,
+    ],
+  );
 
   // Stats — sourced exclusively from the summary API; show "N/A" when not available
-  const { totalTenants, activeTenants, suspendedTenants, totalVehicles, totalSims, overdueInvoices } = useMemo(() => ({
-    totalTenants: summaryPayload?.totalTenants ?? "N/A",
-    activeTenants: summaryPayload?.activeTenants ?? "N/A",
-    suspendedTenants: summaryPayload?.suspendedTenants ?? "N/A",
-    totalVehicles: summaryPayload?.totalVehicles ?? "N/A",
-    totalSims: summaryPayload?.totalSims ?? "N/A",
-    overdueInvoices: summaryPayload?.overdueInvoices ?? "N/A",
-  }), [summaryPayload]);
+  const {
+    totalTenants,
+    activeTenants,
+    suspendedTenants,
+    totalVehicles,
+    totalSims,
+    overdueInvoices,
+  } = useMemo(
+    () => ({
+      totalTenants: summaryPayload?.totalTenants ?? "N/A",
+      activeTenants: summaryPayload?.activeTenants ?? "N/A",
+      suspendedTenants: summaryPayload?.suspendedTenants ?? "N/A",
+      totalVehicles: summaryPayload?.totalVehicles ?? "N/A",
+      totalSims: summaryPayload?.totalSims ?? "N/A",
+      overdueInvoices: summaryPayload?.overdueInvoices ?? "N/A",
+    }),
+    [summaryPayload],
+  );
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -321,7 +482,6 @@ export default function PlatformTenants() {
     }
   };
 
-
   const handleWizardComplete = (wizardData: { companyName?: string }) => {
     addNotification({
       type: "tenant_created",
@@ -334,14 +494,18 @@ export default function PlatformTenants() {
   // DB Tenant handlers
   const handleDbTenantStatusChange = async (tenant: SystemTenant, newStatus: SystemTenant["status"]) => {
     try {
-      await updateTenantStatusMutation.mutateAsync({ id: tenant.id, data: { status: newStatus } });
+      await updateTenantStatusMutation.mutateAsync({
+        id: tenant.id,
+        data: { status: newStatus },
+      });
       addNotification({
         type: "system",
         title: "Tenant Status Changed",
         message: `${tenant.name} status changed to ${newStatus}`,
         severity: newStatus === "suspended" ? "warning" : "info",
       });
-    } catch {
+    }
+    catch {
       // Error handled by react-query
     }
   };
@@ -355,7 +519,8 @@ export default function PlatformTenants() {
     try {
       await resendTenantInviteMutation.mutateAsync({ id: tenant.id });
       toast.success(`Invitation resent to ${tenant.name}`);
-    } catch {
+    }
+    catch {
       // error handled by react-query
     }
   };
@@ -376,7 +541,7 @@ export default function PlatformTenants() {
             ...(apiLastActiveFrom ? { lastActiveFrom: apiLastActiveFrom } : {}),
             ...(apiLastActiveTo ? { lastActiveTo: apiLastActiveTo } : {}),
           },
-        })
+        }),
       );
       const url = URL.createObjectURL(blob as Blob);
       const a = document.createElement("a");
@@ -384,13 +549,14 @@ export default function PlatformTenants() {
       a.download = "tenants.csv";
       a.click();
       URL.revokeObjectURL(url);
-    } catch {
+    }
+    catch {
       toast.error("Export failed");
-    } finally {
+    }
+    finally {
       setIsExporting(false);
     }
   };
-
 
   return (
     <DashboardLayout
@@ -400,7 +566,10 @@ export default function PlatformTenants() {
       <div className="space-y-6">
         {/* Top-right grouped controls (currency configured globally in Settings → Billing) */}
         <div className="flex items-center justify-end gap-2">
-          <Button size="sm" onClick={() => setIsWizardOpen(true)}>
+          <Button
+            size="sm"
+            onClick={() => setIsWizardOpen(true)}
+          >
             <Sparkles className="h-4 w-4 mr-2" />
             Onboard Tenant
           </Button>
@@ -445,7 +614,6 @@ export default function PlatformTenants() {
           />
         </div>
 
-
         {/* All Tenants */}
         <Card>
           <CardHeader className="pb-4">
@@ -459,7 +627,12 @@ export default function PlatformTenants() {
                   Complete directory of tenant organizations with plan, KYC status, fleet size, and revenue.
                 </CardDescription>
               </div>
-              <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                disabled={isExporting}
+              >
                 <Download className="h-4 w-4 mr-2" />
                 {isExporting ? "Exporting…" : "Export Data"}
               </Button>
@@ -473,7 +646,7 @@ export default function PlatformTenants() {
                   placeholder="Search by name or email..."
                   className="pl-10"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                 />
               </div>
               <PlatformFilterPopover
@@ -487,8 +660,15 @@ export default function PlatformTenants() {
 
             {isLoadingDbTenants ? (
               <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center gap-4">
+                {[
+                  1,
+                  2,
+                  3,
+                ].map(i => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-4"
+                  >
                     <Skeleton className="h-10 w-10 rounded-lg" />
                     <div className="space-y-2 flex-1">
                       <Skeleton className="h-4 w-[200px]" />
@@ -507,45 +687,84 @@ export default function PlatformTenants() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Tenant ID</TableHead>
-                      <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("name")}>
-                        Tenant<SortIcon k="name" />
+                      <TableHead
+                        className="cursor-pointer select-none"
+                        onClick={() => toggleSort("name")}
+                      >
+                        Tenant
+                        <SortIcon k="name" />
                       </TableHead>
                       <TableHead>Primary Contact</TableHead>
-                      <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("orgType")}>
-                        Org Type<SortIcon k="orgType" />
+                      <TableHead
+                        className="cursor-pointer select-none"
+                        onClick={() => toggleSort("orgType")}
+                      >
+                        Org Type
+                        <SortIcon k="orgType" />
                       </TableHead>
-                      <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("plan")}>
-                        Plan<SortIcon k="plan" />
+                      <TableHead
+                        className="cursor-pointer select-none"
+                        onClick={() => toggleSort("plan")}
+                      >
+                        Plan
+                        <SortIcon k="plan" />
                       </TableHead>
-                      <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("status")}>
-                        Status<SortIcon k="status" />
+                      <TableHead
+                        className="cursor-pointer select-none"
+                        onClick={() => toggleSort("status")}
+                      >
+                        Status
+                        <SortIcon k="status" />
                       </TableHead>
                       <TableHead>KYC Status</TableHead>
-                      <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("vehicleCount")}>
-                        Vehicles<SortIcon k="vehicleCount" />
+                      <TableHead
+                        className="cursor-pointer select-none"
+                        onClick={() => toggleSort("vehicleCount")}
+                      >
+                        Vehicles
+                        <SortIcon k="vehicleCount" />
                       </TableHead>
                       <TableHead>Drivers</TableHead>
                       <TableHead>Devices</TableHead>
-                      <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("simCount")}>
-                        SIMs<SortIcon k="simCount" />
+                      <TableHead
+                        className="cursor-pointer select-none"
+                        onClick={() => toggleSort("simCount")}
+                      >
+                        SIMs
+                        <SortIcon k="simCount" />
                       </TableHead>
-                      <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("monthlyRevenueNgn")}>
-                        Revenue<SortIcon k="monthlyRevenueNgn" />
+                      <TableHead
+                        className="cursor-pointer select-none"
+                        onClick={() => toggleSort("monthlyRevenueNgn")}
+                      >
+                        Revenue
+                        <SortIcon k="monthlyRevenueNgn" />
                       </TableHead>
-                      <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("lastActiveAt")}>
-                        Last Active<SortIcon k="lastActiveAt" />
+                      <TableHead
+                        className="cursor-pointer select-none"
+                        onClick={() => toggleSort("lastActiveAt")}
+                      >
+                        Last Active
+                        <SortIcon k="lastActiveAt" />
                       </TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedDbTenants.map((tenant) => (
+                    {sortedDbTenants.map(tenant => (
                       <TableRow
                         key={tenant.id}
                       >
                         <TableCell>
                           <span className="font-mono text-xs px-2 py-1 rounded bg-muted text-foreground">
-                            TENANT-{String(tenant.id).replace(/-/g, "").slice(0, 8).toUpperCase()}
+                            TENANT-
+                            {String(tenant.id).replace(
+                              /-/g,
+                              "",
+                            ).slice(
+                              0,
+                              8,
+                            ).toUpperCase()}
                           </span>
                         </TableCell>
                         <TableCell>
@@ -560,27 +779,35 @@ export default function PlatformTenants() {
                           </div>
                         </TableCell>
                         <TableCell className="text-sm">
-                          {tenant.primaryContactName ? (
-                            <span className="font-medium">{tenant.primaryContactName}</span>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
+                          {tenant.primaryContactName
+                            ? (
+                                <span className="font-medium">{tenant.primaryContactName}</span>
+                              )
+                            : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
-                            {(tenantOrgTypesState[tenant.id] || []).length > 0 ? (
-                              tenantOrgTypesState[tenant.id].map((ot) => (
-                                <Badge key={ot} variant="outline" className="text-xs whitespace-nowrap">
-                                  {ORG_TYPE_LABELS[ot] ?? ot}
-                                </Badge>
-                              ))
-                            ) : (
-                              <span className="text-xs text-muted-foreground">—</span>
-                            )}
+                            {(tenantOrgTypesState[tenant.id] || []).length > 0
+                              ? (
+                                  tenantOrgTypesState[tenant.id].map(ot => (
+                                    <Badge
+                                      key={ot}
+                                      variant="outline"
+                                      className="text-xs whitespace-nowrap"
+                                    >
+                                      {ORG_TYPE_LABELS[ot] ?? ot}
+                                    </Badge>
+                                  ))
+                                )
+                              : (
+                                  <span className="text-xs text-muted-foreground">—</span>
+                                )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={TIER_COLORS[tenant.plan] + " capitalize"}>
+                          <Badge className={`${TIER_COLORS[tenant.plan]} capitalize`}>
                             {tenant.plan}
                           </Badge>
                         </TableCell>
@@ -593,41 +820,48 @@ export default function PlatformTenants() {
                                 {!tenant.invitationStatus?.invitationAccepted && tenant.invitationStatus?.hasPendingInvitation
                                   ? "(Awaiting Invite Acceptance)"
                                   : (!tenant.businessInfo?.verificationStatus || tenant.businessInfo?.verificationStatus === "pending")
-                                    ? "(Awaiting KYC)"
-                                    : null
-                                }
+                                      ? "(Awaiting KYC)"
+                                      : null}
                               </span>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          {tenant.businessInfo?.verificationStatus === "verified" ? (
-                            <Badge className="bg-success/10 text-success border-success/30">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Verified
-                            </Badge>
-                          ) : tenant.businessInfo?.verificationStatus === "under_review" ? (
-                            <Badge className="bg-warning/10 text-warning border-warning/30">
-                              <Clock className="h-3 w-3 mr-1" />
-                              Under Review
-                            </Badge>
-                          ) : tenant.businessInfo?.verificationStatus === "rejected" ? (
-                            <Badge variant="destructive">
-                              <XCircle className="h-3 w-3 mr-1" />
-                              Rejected
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary">
-                              <Clock className="h-3 w-3 mr-1" />
-                              Not Submitted
-                            </Badge>
-                          )}
+                          {tenant.businessInfo?.verificationStatus === "verified"
+                            ? (
+                                <Badge className="bg-success/10 text-success border-success/30">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Verified
+                                </Badge>
+                              )
+                            : tenant.businessInfo?.verificationStatus === "under_review"
+                              ? (
+                                  <Badge className="bg-warning/10 text-warning border-warning/30">
+                                    <Clock className="h-3 w-3 mr-1" />
+                                    Under Review
+                                  </Badge>
+                                )
+                              : tenant.businessInfo?.verificationStatus === "rejected"
+                                ? (
+                                    <Badge variant="destructive">
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      Rejected
+                                    </Badge>
+                                  )
+                                : (
+                                    <Badge variant="secondary">
+                                      <Clock className="h-3 w-3 mr-1" />
+                                      Not Submitted
+                                    </Badge>
+                                  )}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <Truck className="h-4 w-4 text-muted-foreground" />
                             <span className={tenant.vehicleCount >= getPlanLimits(tenant.plan).maxVehicles ? "text-destructive font-medium" : ""}>
-                              {tenant.vehicleCount}/{getPlanLimits(tenant.plan).maxVehicles}
+                              {tenant.vehicleCount}
+                              /
+                              {getPlanLimits(tenant.plan).maxVehicles}
                             </span>
                           </div>
                         </TableCell>
@@ -635,7 +869,9 @@ export default function PlatformTenants() {
                           <div className="flex items-center gap-1">
                             <Users className="h-4 w-4 text-muted-foreground" />
                             <span className={tenant.driverCount >= getPlanLimits(tenant.plan).maxDrivers ? "text-destructive font-medium" : ""}>
-                              {tenant.driverCount}/{getPlanLimits(tenant.plan).maxDrivers}
+                              {tenant.driverCount}
+                              /
+                              {getPlanLimits(tenant.plan).maxDrivers}
                             </span>
                           </div>
                         </TableCell>
@@ -643,7 +879,9 @@ export default function PlatformTenants() {
                           <div className="flex items-center gap-1">
                             <Cpu className="h-4 w-4 text-muted-foreground" />
                             <span className={tenant.deviceCount >= getPlanLimits(tenant.plan).maxDevices ? "text-destructive font-medium" : ""}>
-                              {tenant.deviceCount}/{getPlanLimits(tenant.plan).maxDevices}
+                              {tenant.deviceCount}
+                              /
+                              {getPlanLimits(tenant.plan).maxDevices}
                             </span>
                           </div>
                         </TableCell>
@@ -651,7 +889,9 @@ export default function PlatformTenants() {
                           <div className="flex items-center gap-1">
                             <Smartphone className="h-4 w-4 text-muted-foreground" />
                             <span className={tenant.simCount >= getPlanLimits(tenant.plan).maxSims ? "text-destructive font-medium" : ""}>
-                              {tenant.simCount}/{getPlanLimits(tenant.plan).maxSims}
+                              {tenant.simCount}
+                              /
+                              {getPlanLimits(tenant.plan).maxSims}
                             </span>
                           </div>
                         </TableCell>
@@ -668,7 +908,11 @@ export default function PlatformTenants() {
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                              >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -676,7 +920,8 @@ export default function PlatformTenants() {
                               <DropdownMenuItem onClick={() => {
                                 setSelectedDbTenant(tenant);
                                 setIsDbDetailsSheetOpen(true);
-                              }}>
+                              }}
+                              >
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
@@ -691,23 +936,33 @@ export default function PlatformTenants() {
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuSeparator />
-                              {tenant.status === "active" ? (
-                                <DropdownMenuItem
-                                  onClick={() => handleDbTenantStatusChange(tenant, "suspended")}
-                                  className="text-warning"
-                                >
-                                  <XCircle className="h-4 w-4 mr-2" />
-                                  Suspend
-                                </DropdownMenuItem>
-                              ) : tenant.status === "suspended" ? (
-                                <DropdownMenuItem
-                                  onClick={() => handleDbTenantStatusChange(tenant, "active")}
-                                  className="text-success"
-                                >
-                                  <CheckCircle className="h-4 w-4 mr-2" />
-                                  Activate
-                                </DropdownMenuItem>
-                              ) : null}
+                              {tenant.status === "active"
+                                ? (
+                                    <DropdownMenuItem
+                                      onClick={() => handleDbTenantStatusChange(
+                                        tenant,
+                                        "suspended",
+                                      )}
+                                      className="text-warning"
+                                    >
+                                      <XCircle className="h-4 w-4 mr-2" />
+                                      Suspend
+                                    </DropdownMenuItem>
+                                  )
+                                : tenant.status === "suspended"
+                                  ? (
+                                      <DropdownMenuItem
+                                        onClick={() => handleDbTenantStatusChange(
+                                          tenant,
+                                          "active",
+                                        )}
+                                        className="text-success"
+                                      >
+                                        <CheckCircle className="h-4 w-4 mr-2" />
+                                        Activate
+                                      </DropdownMenuItem>
+                                    )
+                                  : null}
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => setDeleteConfirmDbTenant(tenant)}
@@ -758,7 +1013,10 @@ export default function PlatformTenants() {
         <TerminateTenantDialog
           tenant={deleteConfirmDbTenant}
           open={!!deleteConfirmDbTenant}
-          onOpenChange={(o) => { if (!o) setDeleteConfirmDbTenant(null); }}
+          onOpenChange={(o) => {
+            if (!o)
+              setDeleteConfirmDbTenant(null);
+          }}
           onTerminated={() => {
             setDeleteConfirmDbTenant(null);
             refetchDbTenants();
@@ -768,6 +1026,3 @@ export default function PlatformTenants() {
     </DashboardLayout>
   );
 }
-
-
-

@@ -1,41 +1,55 @@
-import { useState, useEffect, useRef } from "react";
+import {
+  addDays, daysUntil, formatDate,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  AlertTriangle, Bell, Calendar, CheckCircle, Clock, Download, Eye, File, FileText, Loader2, Mail, MoreHorizontal, Plus, Search, Shield, Truck, Upload, User, X,
+} from "lucide-react";
+import {
+  useEffect, useRef, useState,
+} from "react";
+import { toast } from "sonner";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
 import { Progress } from "@/components/shadcn/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from "@/components/shadcn/table";
+  TableRow,
+} from "@/components/shadcn/table";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter } from "@/components/shadcn/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue } from "@/components/shadcn/select";
-import { Label } from "@/components/shadcn/label";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import {Download, Shield, FileText, AlertTriangle, CheckCircle, Clock, Calendar, Truck, User, Upload, Search, MoreHorizontal, Eye, Bell, Plus, Mail, Loader2, File, X} from "lucide-react";
-import { addDays, daysUntil, formatDate } from "@truckmoov/app-core/utils/time-utils";
-import { toast } from "sonner";
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -44,12 +58,13 @@ type ComplianceDocument = any;
 const statusColors: Record<string, string> = {
   valid: "bg-success/20 text-success border-success/30",
   expiring: "bg-warning/20 text-warning border-warning/30",
-  expired: "bg-destructive/20 text-destructive border-destructive/30" };
+  expired: "bg-destructive/20 text-destructive border-destructive/30",
+};
 
 export default function ComplianceManagement() {
   const { user } = useAuthStore();
-  const tenantId = user?.tenantId || '';
-  
+  const tenantId = user?.tenantId || "";
+
   const documents: any[] = [];
   const isLoading = false;
   const addDocument = async (..._args: any[]): Promise<any> => null;
@@ -57,40 +72,88 @@ export default function ComplianceManagement() {
   const deleteDocument = async (..._args: any[]) => {};
   const renewDocument = async (..._args: any[]) => {};
   const setReminderDays = async (..._args: any[]) => {};
-  const getStats = () => ({ total: 0, valid: 0, expiring: 0, expired: 0 });
+  const getStats = () => ({
+    total: 0, valid: 0, expiring: 0, expired: 0,
+  });
   const sendReminders = async (..._args: any[]) => {};
   const isSending = false;
-  
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [entityFilter, setEntityFilter] = useState("all");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [isRenewalDialogOpen, setIsRenewalDialogOpen] = useState(false);
-  const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
-  const [isSendRemindersDialogOpen, setIsSendRemindersDialogOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<ComplianceDocument | null>(null);
-  const [reminderDaysValue, setReminderDaysValue] = useState("30");
-  const [recipientEmail, setRecipientEmail] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [renewalFile, setRenewalFile] = useState<File | null>(null);
+
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("all");
+  const [
+    entityFilter,
+    setEntityFilter,
+  ] = useState("all");
+  const [
+    isAddDialogOpen,
+    setIsAddDialogOpen,
+  ] = useState(false);
+  const [
+    isViewDialogOpen,
+    setIsViewDialogOpen,
+  ] = useState(false);
+  const [
+    isRenewalDialogOpen,
+    setIsRenewalDialogOpen,
+  ] = useState(false);
+  const [
+    isReminderDialogOpen,
+    setIsReminderDialogOpen,
+  ] = useState(false);
+  const [
+    isSendRemindersDialogOpen,
+    setIsSendRemindersDialogOpen,
+  ] = useState(false);
+  const [
+    selectedDocument,
+    setSelectedDocument,
+  ] = useState<ComplianceDocument | null>(null);
+  const [
+    reminderDaysValue,
+    setReminderDaysValue,
+  ] = useState("30");
+  const [
+    recipientEmail,
+    setRecipientEmail,
+  ] = useState("");
+  const [
+    isUploading,
+    setIsUploading,
+  ] = useState(false);
+  const [
+    selectedFile,
+    setSelectedFile,
+  ] = useState<File | null>(null);
+  const [
+    renewalFile,
+    setRenewalFile,
+  ] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const renewalFileInputRef = useRef<HTMLInputElement>(null);
-  
-  const [newDocument, setNewDocument] = useState({
+
+  const [
+    newDocument,
+    setNewDocument,
+  ] = useState({
     entityType: "vehicle" as "vehicle" | "driver",
     entityName: "",
     documentType: "",
     documentNumber: "",
     issueDate: "",
-    expiryDate: "" });
+    expiryDate: "",
+  });
 
   const filteredDocuments = documents.filter((doc) => {
-    const matchesSearch =
-      (doc.vehicle_name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
-      doc.document_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (doc.document_number?.toLowerCase() || "").includes(searchQuery.toLowerCase());
+    const matchesSearch
+      = (doc.vehicle_name?.toLowerCase() || "").includes(searchQuery.toLowerCase())
+        || doc.document_type.toLowerCase().includes(searchQuery.toLowerCase())
+        || (doc.document_number?.toLowerCase() || "").includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || doc.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -114,12 +177,11 @@ export default function ComplianceManagement() {
   };
 
   const handleDownload = async (_doc: ComplianceDocument) => {
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
   const uploadFile = async (_file: File, _docId: string): Promise<string | null> => {
-    toast.info('Coming soon');
+    toast.info("Coming soon");
     return null;
   };
 
@@ -127,7 +189,7 @@ export default function ComplianceManagement() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
-        toast.error('File size must be less than 10MB');
+        toast.error("File size must be less than 10MB");
         return;
       }
       setSelectedFile(file);
@@ -138,7 +200,7 @@ export default function ComplianceManagement() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
-        toast.error('File size must be less than 10MB');
+        toast.error("File size must be less than 10MB");
         return;
       }
       setRenewalFile(file);
@@ -154,12 +216,19 @@ export default function ComplianceManagement() {
         document_name: `${newDocument.documentType} - ${newDocument.entityName}`,
         document_number: newDocument.documentNumber,
         issue_date: newDocument.issueDate ? new Date(newDocument.issueDate).toISOString() : null,
-        expiry_date: new Date(newDocument.expiryDate).toISOString() });
+        expiry_date: new Date(newDocument.expiryDate).toISOString(),
+      });
 
       if (selectedFile && doc) {
-        const filePath = await uploadFile(selectedFile, doc.id);
+        const filePath = await uploadFile(
+          selectedFile,
+          doc.id,
+        );
         if (filePath) {
-          await updateDocument(doc.id, { file_path: filePath });
+          await updateDocument(
+            doc.id,
+            { file_path: filePath },
+          );
         }
       }
 
@@ -170,11 +239,17 @@ export default function ComplianceManagement() {
         documentType: "",
         documentNumber: "",
         issueDate: "",
-        expiryDate: "" });
+        expiryDate: "",
+      });
       setSelectedFile(null);
-    } catch (err) {
-      console.error('Error adding document:', err);
-    } finally {
+    }
+    catch (err) {
+      console.error(
+        "Error adding document:",
+        err,
+      );
+    }
+    finally {
       setIsUploading(false);
     }
   };
@@ -184,23 +259,38 @@ export default function ComplianceManagement() {
       setIsUploading(true);
       try {
         let filePath = selectedDocument.file_path;
-        
+
         if (renewalFile) {
-          filePath = await uploadFile(renewalFile, selectedDocument.id);
+          filePath = await uploadFile(
+            renewalFile,
+            selectedDocument.id,
+          );
         }
 
-        await updateDocument(selectedDocument.id, {
-          expiry_date: addDays(new Date(), 365)!.toISOString(),
-          issue_date: new Date().toISOString(),
-          file_path: filePath });
-        
-        toast.success('Document renewed successfully');
+        await updateDocument(
+          selectedDocument.id,
+          {
+            expiry_date: addDays(
+              new Date(),
+              365,
+            )!.toISOString(),
+            issue_date: new Date().toISOString(),
+            file_path: filePath,
+          },
+        );
+
+        toast.success("Document renewed successfully");
         setIsRenewalDialogOpen(false);
         setSelectedDocument(null);
         setRenewalFile(null);
-      } catch (err) {
-        console.error('Renewal error:', err);
-      } finally {
+      }
+      catch (err) {
+        console.error(
+          "Renewal error:",
+          err,
+        );
+      }
+      finally {
         setIsUploading(false);
       }
     }
@@ -209,10 +299,14 @@ export default function ComplianceManagement() {
   const handleReminderSubmit = async () => {
     if (selectedDocument) {
       try {
-        await setReminderDays(selectedDocument.id, parseInt(reminderDaysValue));
+        await setReminderDays(
+          selectedDocument.id,
+          parseInt(reminderDaysValue),
+        );
         setIsReminderDialogOpen(false);
         setSelectedDocument(null);
-      } catch (err) {
+      }
+      catch (err) {
         // Error handled by hook
       }
     }
@@ -224,10 +318,14 @@ export default function ComplianceManagement() {
       return;
     }
     try {
-      await sendReminders('compliance', recipientEmail);
+      await sendReminders(
+        "compliance",
+        recipientEmail,
+      );
       setIsSendRemindersDialogOpen(false);
       setRecipientEmail("");
-    } catch (err) {
+    }
+    catch (err) {
       // Error handled by hook
     }
   };
@@ -240,8 +338,11 @@ export default function ComplianceManagement() {
       >
         <div className="space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {[...Array(5)].map((_, i) => (
-              <Card key={i} className="bg-card/50 border-border/50">
+            {[...Array.from({ length: 5 })].map((_, i) => (
+              <Card
+                key={i}
+                className="bg-card/50 border-border/50"
+              >
                 <CardContent className="p-4">
                   <Skeleton className="h-12 w-full" />
                 </CardContent>
@@ -268,11 +369,14 @@ export default function ComplianceManagement() {
               <Input
                 placeholder="Search by entity, document type, number..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="pl-10 bg-card/50 border-border/50"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+            >
               <SelectTrigger className="w-[170px] bg-card/50 border-border/50">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -286,11 +390,18 @@ export default function ComplianceManagement() {
           </div>
 
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsSendRemindersDialogOpen(true)} disabled={isSending}>
+            <Button
+              variant="outline"
+              onClick={() => setIsSendRemindersDialogOpen(true)}
+              disabled={isSending}
+            >
               <Mail className="h-4 w-4 mr-2" />
               Send Reminders
             </Button>
-            <Button variant="gradient" onClick={() => setIsAddDialogOpen(true)}>
+            <Button
+              variant="gradient"
+              onClick={() => setIsAddDialogOpen(true)}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Document
             </Button>
@@ -305,7 +416,9 @@ export default function ComplianceManagement() {
                 <AlertTriangle className="h-5 w-5 text-destructive" />
                 <div>
                   <p className="font-medium text-destructive">
-                    {stats.expired} document(s) have expired
+                    {stats.expired}
+                    {" "}
+                    document(s) have expired
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Immediate action required to maintain compliance
@@ -321,7 +434,9 @@ export default function ComplianceManagement() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
-              Compliance Documents ({filteredDocuments.length})
+              Compliance Documents (
+              {filteredDocuments.length}
+              )
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -338,79 +453,93 @@ export default function ComplianceManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredDocuments.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No documents found. Add your first compliance document.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredDocuments.map((doc) => {
-                    const daysLeft = daysUntil(doc.expiry_date);
-                    return (
-                      <TableRow key={doc.id} className="border-border/50">
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Truck className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="font-medium">{doc.vehicle_name || 'Unknown'}</p>
-                              <p className="text-xs text-muted-foreground">Vehicle</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{doc.document_type}</TableCell>
-                        <TableCell className="font-mono text-sm">{doc.document_number || '—'}</TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[doc.status] || statusColors.valid}>{doc.status}</Badge>
-                        </TableCell>
-                        <TableCell>{formatDate(doc.expiry_date)}</TableCell>
-                        <TableCell>
-                          <span
-                            className={cn(
-                              "font-medium",
-                              daysLeft < 0
-                                ? "text-destructive"
-                                : daysLeft <= 30
-                                ? "text-warning"
-                                : "text-success"
-                            )}
-                          >
-                            {daysLeft < 0
-                              ? `${Math.abs(daysLeft)} days overdue`
-                              : `${daysLeft} days`}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-popover border-border">
-                              <DropdownMenuItem onClick={() => handleViewDocument(doc)}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Document
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleUploadRenewal(doc)}>
-                                <Upload className="h-4 w-4 mr-2" />
-                                Upload Renewal
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleSetReminder(doc)}>
-                                <Bell className="h-4 w-4 mr-2" />
-                                Set Reminder
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDownload(doc)}>
-                                <Download className="h-4 w-4 mr-2" />
-                                Download
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                {filteredDocuments.length === 0
+                  ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={7}
+                          className="text-center py-8 text-muted-foreground"
+                        >
+                          No documents found. Add your first compliance document.
                         </TableCell>
                       </TableRow>
-                    );
-                  })
-                )}
+                    )
+                  : (
+                      filteredDocuments.map((doc) => {
+                        const daysLeft = daysUntil(doc.expiry_date);
+                        return (
+                          <TableRow
+                            key={doc.id}
+                            className="border-border/50"
+                          >
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Truck className="h-4 w-4 text-muted-foreground" />
+                                <div>
+                                  <p className="font-medium">{doc.vehicle_name || "Unknown"}</p>
+                                  <p className="text-xs text-muted-foreground">Vehicle</p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{doc.document_type}</TableCell>
+                            <TableCell className="font-mono text-sm">{doc.document_number || "—"}</TableCell>
+                            <TableCell>
+                              <Badge className={statusColors[doc.status] || statusColors.valid}>{doc.status}</Badge>
+                            </TableCell>
+                            <TableCell>{formatDate(doc.expiry_date)}</TableCell>
+                            <TableCell>
+                              <span
+                                className={cn(
+                                  "font-medium",
+                                  daysLeft < 0
+                                    ? "text-destructive"
+                                    : daysLeft <= 30
+                                      ? "text-warning"
+                                      : "text-success",
+                                )}
+                              >
+                                {daysLeft < 0
+                                  ? `${Math.abs(daysLeft)} days overdue`
+                                  : `${daysLeft} days`}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="bg-popover border-border"
+                                >
+                                  <DropdownMenuItem onClick={() => handleViewDocument(doc)}>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Document
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleUploadRenewal(doc)}>
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Upload Renewal
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleSetReminder(doc)}>
+                                    <Bell className="h-4 w-4 mr-2" />
+                                    Set Reminder
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleDownload(doc)}>
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Download
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
               </TableBody>
             </Table>
           </CardContent>
@@ -418,7 +547,10 @@ export default function ComplianceManagement() {
       </div>
 
       {/* Add Document Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      <Dialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+      >
         <DialogContent className="bg-card border-border max-w-md">
           <DialogHeader>
             <DialogTitle>Add Compliance Document</DialogTitle>
@@ -427,17 +559,21 @@ export default function ComplianceManagement() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Entity Name</Label>
-              <Input 
+              <Input
                 placeholder="e.g., LAG-234-XY or Driver Name"
                 value={newDocument.entityName}
-                onChange={(e) => setNewDocument({ ...newDocument, entityName: e.target.value })}
+                onChange={e => setNewDocument({
+                  ...newDocument, entityName: e.target.value,
+                })}
               />
             </div>
             <div className="space-y-2">
               <Label>Document Type</Label>
               <Select
                 value={newDocument.documentType}
-                onValueChange={(v) => setNewDocument({ ...newDocument, documentType: v })}
+                onValueChange={v => setNewDocument({
+                  ...newDocument, documentType: v,
+                })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select document type" />
@@ -454,27 +590,33 @@ export default function ComplianceManagement() {
             </div>
             <div className="space-y-2">
               <Label>Document Number</Label>
-              <Input 
+              <Input
                 placeholder="Enter document number"
                 value={newDocument.documentNumber}
-                onChange={(e) => setNewDocument({ ...newDocument, documentNumber: e.target.value })}
+                onChange={e => setNewDocument({
+                  ...newDocument, documentNumber: e.target.value,
+                })}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Issue Date</Label>
-                <Input 
+                <Input
                   type="date"
                   value={newDocument.issueDate}
-                  onChange={(e) => setNewDocument({ ...newDocument, issueDate: e.target.value })}
+                  onChange={e => setNewDocument({
+                    ...newDocument, issueDate: e.target.value,
+                  })}
                 />
               </div>
               <div className="space-y-2">
                 <Label>Expiry Date</Label>
-                <Input 
+                <Input
                   type="date"
                   value={newDocument.expiryDate}
-                  onChange={(e) => setNewDocument({ ...newDocument, expiryDate: e.target.value })}
+                  onChange={e => setNewDocument({
+                    ...newDocument, expiryDate: e.target.value,
+                  })}
                 />
               </div>
             </div>
@@ -487,45 +629,50 @@ export default function ComplianceManagement() {
                 accept=".pdf,.jpg,.jpeg,.png"
                 className="hidden"
               />
-              <div 
+              <div
                 className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
                 onClick={() => fileInputRef.current?.click()}
               >
-                {selectedFile ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <File className="h-5 w-5 text-primary" />
-                    <span className="text-sm font-medium">{selectedFile.name}</span>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-5 w-5"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedFile(null);
-                      }}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      Drag & drop or click to upload
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      PDF, JPG, or PNG up to 10MB
-                    </p>
-                  </>
-                )}
+                {selectedFile
+                  ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <File className="h-5 w-5 text-primary" />
+                        <span className="text-sm font-medium">{selectedFile.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedFile(null);
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )
+                  : (
+                      <>
+                        <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          Drag & drop or click to upload
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          PDF, JPG, or PNG up to 10MB
+                        </p>
+                      </>
+                    )}
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsAddDialogOpen(false);
-              setSelectedFile(null);
-            }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddDialogOpen(false);
+                setSelectedFile(null);
+              }}
+            >
               Cancel
             </Button>
             <Button
@@ -533,26 +680,34 @@ export default function ComplianceManagement() {
               onClick={handleAddDocument}
               disabled={!newDocument.entityName || !newDocument.documentType || !newDocument.expiryDate || isUploading}
             >
-              {isUploading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                'Add Document'
-              )}
+              {isUploading
+                ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  )
+                : (
+                    "Add Document"
+                  )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* View Document Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+      <Dialog
+        open={isViewDialogOpen}
+        onOpenChange={setIsViewDialogOpen}
+      >
         <DialogContent className="bg-card border-border max-w-md">
           <DialogHeader>
             <DialogTitle>Document Details</DialogTitle>
             <DialogDescription>
-              {selectedDocument?.document_type} for {selectedDocument?.vehicle_name}
+              {selectedDocument?.document_type}
+              {" "}
+              for
+              {selectedDocument?.vehicle_name}
             </DialogDescription>
           </DialogHeader>
           {selectedDocument && (
@@ -570,7 +725,7 @@ export default function ComplianceManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground text-xs">Document Number</Label>
-                  <p className="font-medium font-mono">{selectedDocument.document_number || '—'}</p>
+                  <p className="font-medium font-mono">{selectedDocument.document_number || "—"}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground text-xs">Status</Label>
@@ -585,9 +740,9 @@ export default function ComplianceManagement() {
                 <div>
                   <Label className="text-muted-foreground text-xs">Issue Date</Label>
                   <p className="font-medium">
-                    {selectedDocument.issue_date 
+                    {selectedDocument.issue_date
                       ? formatDate(selectedDocument.issue_date)
-                      : '—'}
+                      : "—"}
                   </p>
                 </div>
                 <div>
@@ -596,27 +751,36 @@ export default function ComplianceManagement() {
                 </div>
               </div>
               <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                {selectedDocument.file_path ? (
-                  <>
-                    <FileText className="h-12 w-12 mx-auto text-primary mb-2" />
-                    <p className="text-sm font-medium">Document attached</p>
-                    <p className="text-xs text-muted-foreground mb-2">{selectedDocument.file_path.split('/').pop()}</p>
-                    <Button variant="outline" size="sm" onClick={() => handleDownload(selectedDocument)}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Receipt Document
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">No file attached</p>
-                  </>
-                )}
+                {selectedDocument.file_path
+                  ? (
+                      <>
+                        <FileText className="h-12 w-12 mx-auto text-primary mb-2" />
+                        <p className="text-sm font-medium">Document attached</p>
+                        <p className="text-xs text-muted-foreground mb-2">{selectedDocument.file_path.split("/").pop()}</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownload(selectedDocument)}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Receipt Document
+                        </Button>
+                      </>
+                    )
+                  : (
+                      <>
+                        <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">No file attached</p>
+                      </>
+                    )}
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsViewDialogOpen(false)}
+            >
               Close
             </Button>
           </DialogFooter>
@@ -624,12 +788,21 @@ export default function ComplianceManagement() {
       </Dialog>
 
       {/* Upload Renewal Dialog */}
-      <Dialog open={isRenewalDialogOpen} onOpenChange={setIsRenewalDialogOpen}>
+      <Dialog
+        open={isRenewalDialogOpen}
+        onOpenChange={setIsRenewalDialogOpen}
+      >
         <DialogContent className="bg-card border-border max-w-md">
           <DialogHeader>
             <DialogTitle>Upload Renewal</DialogTitle>
             <DialogDescription>
-              Upload a renewed {selectedDocument?.document_type} for {selectedDocument?.vehicle_name}
+              Upload a renewed
+              {" "}
+              {selectedDocument?.document_type}
+              {" "}
+              for
+              {" "}
+              {selectedDocument?.vehicle_name}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -642,37 +815,39 @@ export default function ComplianceManagement() {
                 accept=".pdf,.jpg,.jpeg,.png"
                 className="hidden"
               />
-              <div 
+              <div
                 className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
                 onClick={() => renewalFileInputRef.current?.click()}
               >
-                {renewalFile ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <File className="h-5 w-5 text-primary" />
-                    <span className="text-sm font-medium">{renewalFile.name}</span>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-5 w-5"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setRenewalFile(null);
-                      }}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      Drag & drop or click to upload
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      PDF, JPG, or PNG up to 10MB
-                    </p>
-                  </>
-                )}
+                {renewalFile
+                  ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <File className="h-5 w-5 text-primary" />
+                        <span className="text-sm font-medium">{renewalFile.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRenewalFile(null);
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )
+                  : (
+                      <>
+                        <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          Drag & drop or click to upload
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          PDF, JPG, or PNG up to 10MB
+                        </p>
+                      </>
+                    )}
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -680,39 +855,58 @@ export default function ComplianceManagement() {
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsRenewalDialogOpen(false);
-              setRenewalFile(null);
-            }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsRenewalDialogOpen(false);
+                setRenewalFile(null);
+              }}
+            >
               Cancel
             </Button>
-            <Button variant="gradient" onClick={handleRenewalSubmit} disabled={isUploading}>
-              {isUploading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                'Submit Renewal'
-              )}
+            <Button
+              variant="gradient"
+              onClick={handleRenewalSubmit}
+              disabled={isUploading}
+            >
+              {isUploading
+                ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  )
+                : (
+                    "Submit Renewal"
+                  )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Set Reminder Dialog */}
-      <Dialog open={isReminderDialogOpen} onOpenChange={setIsReminderDialogOpen}>
+      <Dialog
+        open={isReminderDialogOpen}
+        onOpenChange={setIsReminderDialogOpen}
+      >
         <DialogContent className="bg-card border-border max-w-sm">
           <DialogHeader>
             <DialogTitle>Set Reminder</DialogTitle>
             <DialogDescription>
-              Get notified before {selectedDocument?.document_type} expires
+              Get notified before
+              {" "}
+              {selectedDocument?.document_type}
+              {" "}
+              expires
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Remind me before expiry</Label>
-              <Select value={reminderDaysValue} onValueChange={setReminderDaysValue}>
+              <Select
+                value={reminderDaysValue}
+                onValueChange={setReminderDaysValue}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select days" />
                 </SelectTrigger>
@@ -728,21 +922,34 @@ export default function ComplianceManagement() {
             {selectedDocument && (
               <div className="bg-muted/50 rounded-lg p-3">
                 <p className="text-sm text-muted-foreground">
-                  Current expiry: <span className="font-medium text-foreground">{formatDate(selectedDocument.expiry_date)}</span>
+                  Current expiry:
+                  {" "}
+                  <span className="font-medium text-foreground">{formatDate(selectedDocument.expiry_date)}</span>
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Reminder date: <span className="font-medium text-foreground">
-                    {formatDate(addDays(selectedDocument.expiry_date, -parseInt(reminderDaysValue)))}
+                  Reminder date:
+                  {" "}
+                  <span className="font-medium text-foreground">
+                    {formatDate(addDays(
+                      selectedDocument.expiry_date,
+                      -parseInt(reminderDaysValue),
+                    ))}
                   </span>
                 </p>
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsReminderDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsReminderDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button variant="gradient" onClick={handleReminderSubmit}>
+            <Button
+              variant="gradient"
+              onClick={handleReminderSubmit}
+            >
               Set Reminder
             </Button>
           </DialogFooter>
@@ -750,7 +957,10 @@ export default function ComplianceManagement() {
       </Dialog>
 
       {/* Send Reminders Dialog */}
-      <Dialog open={isSendRemindersDialogOpen} onOpenChange={setIsSendRemindersDialogOpen}>
+      <Dialog
+        open={isSendRemindersDialogOpen}
+        onOpenChange={setIsSendRemindersDialogOpen}
+      >
         <DialogContent className="bg-card border-border max-w-sm">
           <DialogHeader>
             <DialogTitle>Send Email Reminders</DialogTitle>
@@ -765,7 +975,7 @@ export default function ComplianceManagement() {
                 type="email"
                 placeholder="Enter email address"
                 value={recipientEmail}
-                onChange={(e) => setRecipientEmail(e.target.value)}
+                onChange={e => setRecipientEmail(e.target.value)}
               />
             </div>
             <div className="bg-muted/50 rounded-lg p-3">
@@ -775,10 +985,17 @@ export default function ComplianceManagement() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsSendRemindersDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsSendRemindersDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button variant="gradient" onClick={handleSendReminders} disabled={isSending || !recipientEmail}>
+            <Button
+              variant="gradient"
+              onClick={handleSendReminders}
+              disabled={isSending || !recipientEmail}
+            >
               {isSending ? "Sending..." : "Send Reminders"}
             </Button>
           </DialogFooter>

@@ -1,12 +1,110 @@
-import { useState, useEffect } from "react";
+import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
+import type {
+  FilterDraft,
+  FilterField,
+} from "@/components/shadcn/platform-filter-popover";
+import {
+  formatDateOnlyInTimezone,
+  getTimezoneLabel,
+
+  TIMEZONES,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  ArrowUpRight,
+  BarChart3,
+  Building2,
+  Calendar,
+  CheckCircle,
+  Clock,
+  CreditCard,
+  DollarSign,
+  Download,
+  Eye,
+  FileText,
+  Loader2,
+  MoreHorizontal,
+  Phone,
+  PieChart,
+  Plus,
+  Receipt,
+  Search,
+  Send,
+  Smartphone,
+  TrendingUp,
+  Users,
+  Wallet,
+  XCircle,
+} from "lucide-react";
+import {
+  useEffect,
+  useState,
+} from "react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart as RechartsPieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { toast } from "sonner";
+import { StatCard } from "@/components/dashboard/StatCard";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
+import { PostpaidBillingTab } from "@/components/platform/PostpaidBillingTab";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
+import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Dialog as Sheet,
+  DialogContent as SheetContent,
+  DialogDescription as SheetDescription,
+  DialogHeader as SheetHeader,
+  DialogTitle as SheetTitle,
+} from "@/components/shadcn/dialog";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+
+} from "@/components/shadcn/dropdown-menu";
+import { ExportButton } from "@/components/shadcn/export-button";
+import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import {
+  buildEmptyDraft,
+
+  PlatformFilterPopover,
+} from "@/components/shadcn/platform-filter-popover";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+
+} from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
 import {
   Table,
@@ -14,85 +112,25 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow } from "@/components/shadcn/table";
+  TableRow,
+
+} from "@/components/shadcn/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter } from "@/components/shadcn/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue } from "@/components/shadcn/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
-import {
-  Dialog as Sheet,
-  DialogContent as SheetContent,
-  DialogDescription as SheetDescription,
-  DialogHeader as SheetHeader,
-  DialogTitle as SheetTitle } from "@/components/shadcn/dialog";
-import {Download, Receipt, CreditCard,
-  Search,
-  RefreshCw,
-  Eye,
-  MoreHorizontal,
-  TrendingUp,
-  Building2,
-  Calendar,
-  FileText,
-  CheckCircle,
-  XCircle,
-  Clock,
-  DollarSign,
-  PieChart,
-  ArrowUpRight,
-  Send,
-  Phone,
-  Smartphone,
-  Wallet,
-  BarChart3,
-  Users,
-  Loader2,
-  Globe,
-  Plus } from "lucide-react";
-import { ChartDateFilter, type ChartDateRange } from "@/components/shadcn/chart-date-filter";
-import {
-  PlatformFilterPopover,
-  buildEmptyDraft,
-  type FilterDraft,
-  type FilterField } from "@/components/shadcn/platform-filter-popover";
-import { ExportButton } from "@/components/shadcn/export-button";
-import { StatCard } from "@/components/dashboard/StatCard";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart as RechartsPieChart,
-  Pie,
-  Cell,
-  Legend } from "recharts";
-import { toast } from "sonner";
-import { PostpaidBillingTab } from "@/components/platform/PostpaidBillingTab";
-import { downloadReceiptPDF } from "@/lib/receiptPdf";
-import { formatCurrency, type Currency, CURRENCIES, DEFAULT_CURRENCY, convertCurrency } from "@/lib/currency";
-import { formatDateOnlyInTimezone, type Timezone, TIMEZONES, DEFAULT_TIMEZONE, getTimezoneLabel } from "@truckmoov/app-core/utils/time-utils";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/shadcn/tabs";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { usePreferences } from "@/contexts/PreferencesContext";
+import {
+  convertCurrency,
+  CURRENCIES,
+  formatCurrency,
+} from "@/lib/currency";
+import { downloadReceiptPDF } from "@/lib/receiptPdf";
 
-interface Invoice {
+type Invoice = {
   id: string;
   invoiceNumber: string;
   tenant: string;
@@ -110,9 +148,9 @@ interface Invoice {
     unitPrice: number;
     total: number;
   }[];
-}
+};
 
-interface Subscription {
+type Subscription = {
   id: string;
   tenant: string;
   tenantId: string;
@@ -123,33 +161,117 @@ interface Subscription {
   amount: number;
   paymentMethod: "mtn_momo" | "bank_transfer" | "card";
   autoRenew: boolean;
-}
+};
 
 const revenueData = [
-  { month: "Jan", revenue: 12500000, subscriptions: 45, invoices: 48 },
-  { month: "Feb", revenue: 14200000, subscriptions: 52, invoices: 55 },
-  { month: "Mar", revenue: 15800000, subscriptions: 61, invoices: 64 },
-  { month: "Apr", revenue: 17500000, subscriptions: 68, invoices: 71 },
-  { month: "May", revenue: 18900000, subscriptions: 74, invoices: 78 },
-  { month: "Jun", revenue: 21500000, subscriptions: 82, invoices: 86 },
-  { month: "Jul", revenue: 22800000, subscriptions: 89, invoices: 93 },
-  { month: "Aug", revenue: 24500000, subscriptions: 95, invoices: 99 },
-  { month: "Sep", revenue: 26800000, subscriptions: 103, invoices: 107 },
-  { month: "Oct", revenue: 28500000, subscriptions: 112, invoices: 116 },
-  { month: "Nov", revenue: 30200000, subscriptions: 118, invoices: 122 },
-  { month: "Dec", revenue: 32500000, subscriptions: 125, invoices: 130 },
+  {
+    month: "Jan",
+    revenue: 12500000,
+    subscriptions: 45,
+    invoices: 48,
+  },
+  {
+    month: "Feb",
+    revenue: 14200000,
+    subscriptions: 52,
+    invoices: 55,
+  },
+  {
+    month: "Mar",
+    revenue: 15800000,
+    subscriptions: 61,
+    invoices: 64,
+  },
+  {
+    month: "Apr",
+    revenue: 17500000,
+    subscriptions: 68,
+    invoices: 71,
+  },
+  {
+    month: "May",
+    revenue: 18900000,
+    subscriptions: 74,
+    invoices: 78,
+  },
+  {
+    month: "Jun",
+    revenue: 21500000,
+    subscriptions: 82,
+    invoices: 86,
+  },
+  {
+    month: "Jul",
+    revenue: 22800000,
+    subscriptions: 89,
+    invoices: 93,
+  },
+  {
+    month: "Aug",
+    revenue: 24500000,
+    subscriptions: 95,
+    invoices: 99,
+  },
+  {
+    month: "Sep",
+    revenue: 26800000,
+    subscriptions: 103,
+    invoices: 107,
+  },
+  {
+    month: "Oct",
+    revenue: 28500000,
+    subscriptions: 112,
+    invoices: 116,
+  },
+  {
+    month: "Nov",
+    revenue: 30200000,
+    subscriptions: 118,
+    invoices: 122,
+  },
+  {
+    month: "Dec",
+    revenue: 32500000,
+    subscriptions: 125,
+    invoices: 130,
+  },
 ];
 
 const planDistribution = [
-  { name: "Starter", value: 45, color: "#94a3b8" },
-  { name: "Professional", value: 62, color: "#3b82f6" },
-  { name: "Enterprise", value: 18, color: "#22c55e" },
+  {
+    name: "Starter",
+    value: 45,
+    color: "#94a3b8",
+  },
+  {
+    name: "Professional",
+    value: 62,
+    color: "#3b82f6",
+  },
+  {
+    name: "Enterprise",
+    value: 18,
+    color: "#22c55e",
+  },
 ];
 
 const paymentMethodData = [
-  { method: "MTN MoMo", count: 78, revenue: 18500000 },
-  { method: "Bank Transfer", count: 32, revenue: 9500000 },
-  { method: "Card", count: 15, revenue: 4500000 },
+  {
+    method: "MTN MoMo",
+    count: 78,
+    revenue: 18500000,
+  },
+  {
+    method: "Bank Transfer",
+    count: 32,
+    revenue: 9500000,
+  },
+  {
+    method: "Card",
+    count: 15,
+    revenue: 4500000,
+  },
 ];
 
 const mockInvoices: Invoice[] = [
@@ -166,9 +288,21 @@ const mockInvoices: Invoice[] = [
     plan: "Professional",
     period: "December 2024",
     items: [
-      { description: "Professional Plan - Monthly", quantity: 1, unitPrice: 129900, total: 129900 },
-      { description: "Additional Vehicles (5)", quantity: 5, unitPrice: 4000, total: 20000 },
-    ] },
+      {
+        description: "Professional Plan - Monthly",
+        quantity: 1,
+        unitPrice: 129900,
+        total: 129900,
+      },
+      {
+        description: "Additional Vehicles (5)",
+        quantity: 5,
+        unitPrice: 4000,
+        total: 20000,
+      },
+    ],
+
+  },
   {
     id: "inv-002",
     invoiceNumber: "INV-2024-002",
@@ -182,8 +316,15 @@ const mockInvoices: Invoice[] = [
     plan: "Enterprise",
     period: "December 2024",
     items: [
-      { description: "Enterprise Plan - Monthly", quantity: 1, unitPrice: 499900, total: 499900 },
-    ] },
+      {
+        description: "Enterprise Plan - Monthly",
+        quantity: 1,
+        unitPrice: 499900,
+        total: 499900,
+      },
+    ],
+
+  },
   {
     id: "inv-003",
     invoiceNumber: "INV-2024-003",
@@ -197,8 +338,15 @@ const mockInvoices: Invoice[] = [
     plan: "Starter",
     period: "December 2024",
     items: [
-      { description: "Starter Plan - Monthly", quantity: 1, unitPrice: 49900, total: 49900 },
-    ] },
+      {
+        description: "Starter Plan - Monthly",
+        quantity: 1,
+        unitPrice: 49900,
+        total: 49900,
+      },
+    ],
+
+  },
   {
     id: "inv-004",
     invoiceNumber: "INV-2024-004",
@@ -212,8 +360,15 @@ const mockInvoices: Invoice[] = [
     plan: "Professional",
     period: "November 2024",
     items: [
-      { description: "Professional Plan - Monthly", quantity: 1, unitPrice: 149900, total: 149900 },
-    ] },
+      {
+        description: "Professional Plan - Monthly",
+        quantity: 1,
+        unitPrice: 149900,
+        total: 149900,
+      },
+    ],
+
+  },
   {
     id: "inv-005",
     invoiceNumber: "INV-2024-005",
@@ -227,9 +382,21 @@ const mockInvoices: Invoice[] = [
     plan: "Professional",
     period: "December 2024",
     items: [
-      { description: "Professional Plan - Monthly", quantity: 1, unitPrice: 149900, total: 149900 },
-      { description: "SMS Bundle (500)", quantity: 1, unitPrice: 20000, total: 20000 },
-    ] },
+      {
+        description: "Professional Plan - Monthly",
+        quantity: 1,
+        unitPrice: 149900,
+        total: 149900,
+      },
+      {
+        description: "SMS Bundle (500)",
+        quantity: 1,
+        unitPrice: 20000,
+        total: 20000,
+      },
+    ],
+
+  },
 ];
 
 const mockSubscriptions: Subscription[] = [
@@ -243,7 +410,9 @@ const mockSubscriptions: Subscription[] = [
     nextBillingDate: "2025-01-15",
     amount: 149900,
     paymentMethod: "mtn_momo",
-    autoRenew: true },
+    autoRenew: true,
+
+  },
   {
     id: "sub-002",
     tenant: "XYZ Transport",
@@ -254,7 +423,9 @@ const mockSubscriptions: Subscription[] = [
     nextBillingDate: "2024-12-20",
     amount: 499900,
     paymentMethod: "bank_transfer",
-    autoRenew: true },
+    autoRenew: true,
+
+  },
   {
     id: "sub-003",
     tenant: "Quick Movers",
@@ -265,7 +436,9 @@ const mockSubscriptions: Subscription[] = [
     nextBillingDate: "2024-12-15",
     amount: 49900,
     paymentMethod: "mtn_momo",
-    autoRenew: true },
+    autoRenew: true,
+
+  },
   {
     id: "sub-004",
     tenant: "Metro Couriers",
@@ -276,13 +449,17 @@ const mockSubscriptions: Subscription[] = [
     nextBillingDate: "2024-11-30",
     amount: 149900,
     paymentMethod: "card",
-    autoRenew: false },
+    autoRenew: false,
+
+  },
 ];
 
 const planColors = {
   starter: "bg-muted text-muted-foreground",
   professional: "bg-primary/10 text-primary",
-  enterprise: "bg-success/10 text-success" };
+  enterprise: "bg-success/10 text-success",
+
+};
 
 const INVOICE_FILTER_FIELDS: FilterField[] = [
   {
@@ -290,30 +467,73 @@ const INVOICE_FILTER_FIELDS: FilterField[] = [
     label: "Payment Method",
     type: "select",
     options: [
-      { value: "mtn_momo", label: "MTN MoMo" },
-      { value: "bank_transfer", label: "Bank Transfer" },
-      { value: "card", label: "Card" },
-    ] },
-  { key: "amount", label: "Amount (NGN)", type: "range", fromPlaceholder: "Min", toPlaceholder: "Max" },
+      {
+        value: "mtn_momo",
+        label: "MTN MoMo",
+      },
+      {
+        value: "bank_transfer",
+        label: "Bank Transfer",
+      },
+      {
+        value: "card",
+        label: "Card",
+      },
+    ],
+
+  },
+  {
+    key: "amount",
+    label: "Amount (NGN)",
+    type: "range",
+    fromPlaceholder: "Min",
+    toPlaceholder: "Max",
+  },
   {
     key: "status",
     label: "Status",
     type: "select",
     options: [
-      { value: "paid", label: "Paid" },
-      { value: "pending", label: "Pending" },
-      { value: "overdue", label: "Overdue" },
-      { value: "cancelled", label: "Cancelled" },
-    ] },
-  { key: "date", label: "Due Date", type: "date" },
+      {
+        value: "paid",
+        label: "Paid",
+      },
+      {
+        value: "pending",
+        label: "Pending",
+      },
+      {
+        value: "overdue",
+        label: "Overdue",
+      },
+      {
+        value: "cancelled",
+        label: "Cancelled",
+      },
+    ],
+
+  },
+  {
+    key: "date",
+    label: "Due Date",
+    type: "date",
+  },
   {
     key: "payment_type",
     label: "Payment Type",
     type: "select",
     options: [
-      { value: "subscription", label: "Subscription" },
-      { value: "one_time", label: "One-Time" },
-    ] },
+      {
+        value: "subscription",
+        label: "Subscription",
+      },
+      {
+        value: "one_time",
+        label: "One-Time",
+      },
+    ],
+
+  },
 ];
 
 const SUBSCRIPTION_FILTER_FIELDS: FilterField[] = [
@@ -322,50 +542,144 @@ const SUBSCRIPTION_FILTER_FIELDS: FilterField[] = [
     label: "Plan",
     type: "select",
     options: [
-      { value: "starter", label: "Starter" },
-      { value: "professional", label: "Professional" },
-      { value: "enterprise", label: "Enterprise" },
-    ] },
-  { key: "amount", label: "Amount (NGN)", type: "range", fromPlaceholder: "Min", toPlaceholder: "Max" },
-  { key: "next_billing", label: "Next Billing Date", type: "date" },
+      {
+        value: "starter",
+        label: "Starter",
+      },
+      {
+        value: "professional",
+        label: "Professional",
+      },
+      {
+        value: "enterprise",
+        label: "Enterprise",
+      },
+    ],
+
+  },
+  {
+    key: "amount",
+    label: "Amount (NGN)",
+    type: "range",
+    fromPlaceholder: "Min",
+    toPlaceholder: "Max",
+  },
+  {
+    key: "next_billing",
+    label: "Next Billing Date",
+    type: "date",
+  },
   {
     key: "payment_method",
     label: "Payment Method",
     type: "select",
     options: [
-      { value: "mtn_momo", label: "MTN MoMo" },
-      { value: "bank_transfer", label: "Bank Transfer" },
-      { value: "card", label: "Card" },
-    ] },
+      {
+        value: "mtn_momo",
+        label: "MTN MoMo",
+      },
+      {
+        value: "bank_transfer",
+        label: "Bank Transfer",
+      },
+      {
+        value: "card",
+        label: "Card",
+      },
+    ],
+
+  },
 ];
 
 export default function PlatformBilling() {
-  const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
+  const [
+    invoices,
+    setInvoices,
+  ] = useState<Invoice[]>(mockInvoices);
   const [subscriptions] = useState<Subscription[]>(mockSubscriptions);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("overview");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-  const [isInvoiceSheetOpen, setIsInvoiceSheetOpen] = useState(false);
-  const [isMomoDialogOpen, setIsMomoDialogOpen] = useState(false);
-  const [momoPhone, setMomoPhone] = useState("");
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
-  const [markPaidMethod, setMarkPaidMethod] = useState<"mtn_momo" | "bank_transfer" | "card">("mtn_momo");
-  const [markPaidReference, setMarkPaidReference] = useState("");
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    activeTab,
+    setActiveTab,
+  ] = useState("overview");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("all");
+  const [
+    selectedInvoice,
+    setSelectedInvoice,
+  ] = useState<Invoice | null>(null);
+  const [
+    isInvoiceSheetOpen,
+    setIsInvoiceSheetOpen,
+  ] = useState(false);
+  const [
+    isMomoDialogOpen,
+    setIsMomoDialogOpen,
+  ] = useState(false);
+  const [
+    momoPhone,
+    setMomoPhone,
+  ] = useState("");
+  const [
+    isProcessingPayment,
+    setIsProcessingPayment,
+  ] = useState(false);
+  const [
+    isMarkPaidOpen,
+    setIsMarkPaidOpen,
+  ] = useState(false);
+  const [
+    markPaidMethod,
+    setMarkPaidMethod,
+  ] = useState<"mtn_momo" | "bank_transfer" | "card">("mtn_momo");
+  const [
+    markPaidReference,
+    setMarkPaidReference,
+  ] = useState("");
   const { currency } = useCurrency();
-  const { timezone, defaultDateRange } = usePreferences();
-  const [revenueRange, setRevenueRange] = useState<ChartDateRange>(defaultDateRange);
-  const [planRange, setPlanRange] = useState<ChartDateRange>(defaultDateRange);
-  const [invoiceFilters, setInvoiceFilters] = useState<FilterDraft>(() => buildEmptyDraft(INVOICE_FILTER_FIELDS));
+  const {
+    timezone,
+    defaultDateRange,
+  } = usePreferences();
+  const [
+    revenueRange,
+    setRevenueRange,
+  ] = useState<ChartDateRange>(defaultDateRange);
+  const [
+    planRange,
+    setPlanRange,
+  ] = useState<ChartDateRange>(defaultDateRange);
+  const [
+    invoiceFilters,
+    setInvoiceFilters,
+  ] = useState<FilterDraft>(() => buildEmptyDraft(INVOICE_FILTER_FIELDS));
 
   // Subscription tab state
-  const [subSearchQuery, setSubSearchQuery] = useState("");
-  const [subStatusFilter, setSubStatusFilter] = useState("all");
-  const [subFilters, setSubFilters] = useState<FilterDraft>(() => buildEmptyDraft(SUBSCRIPTION_FILTER_FIELDS));
-  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
-  const [isSubDialogOpen, setIsSubDialogOpen] = useState(false);
-
+  const [
+    subSearchQuery,
+    setSubSearchQuery,
+  ] = useState("");
+  const [
+    subStatusFilter,
+    setSubStatusFilter,
+  ] = useState("all");
+  const [
+    subFilters,
+    setSubFilters,
+  ] = useState<FilterDraft>(() => buildEmptyDraft(SUBSCRIPTION_FILTER_FIELDS));
+  const [
+    selectedSubscription,
+    setSelectedSubscription,
+  ] = useState<Subscription | null>(null);
+  const [
+    isSubDialogOpen,
+    setIsSubDialogOpen,
+  ] = useState(false);
 
   const isBillingLoading = false;
   const summary: any = null;
@@ -373,25 +687,67 @@ export default function PlatformBilling() {
   const checkRenewals = async (...args: any[]) => {};
   const processPayment = async (...args: any[]) => {};
   const generateInvoice = async (...args: any[]) => null as any;
-  const [generatingFor, setGeneratingFor] = useState<string | null>(null);
-  const [isCreateInvoiceOpen, setIsCreateInvoiceOpen] = useState(false);
-  const [createInvoiceSubId, setCreateInvoiceSubId] = useState<string>("");
-  const [isMomoConfigOpen, setIsMomoConfigOpen] = useState(false);
-  const [isBankDetailsOpen, setIsBankDetailsOpen] = useState(false);
-  const [isCardSetupOpen, setIsCardSetupOpen] = useState(false);
-  const [isAddProviderOpen, setIsAddProviderOpen] = useState(false);
-  const [momoConfig, setMomoConfig] = useState({
+  const [
+    generatingFor,
+    setGeneratingFor,
+  ] = useState<string | null>(null);
+  const [
+    isCreateInvoiceOpen,
+    setIsCreateInvoiceOpen,
+  ] = useState(false);
+  const [
+    createInvoiceSubId,
+    setCreateInvoiceSubId,
+  ] = useState<string>("");
+  const [
+    isMomoConfigOpen,
+    setIsMomoConfigOpen,
+  ] = useState(false);
+  const [
+    isBankDetailsOpen,
+    setIsBankDetailsOpen,
+  ] = useState(false);
+  const [
+    isCardSetupOpen,
+    setIsCardSetupOpen,
+  ] = useState(false);
+  const [
+    isAddProviderOpen,
+    setIsAddProviderOpen,
+  ] = useState(false);
+  const [
+    momoConfig,
+    setMomoConfig,
+  ] = useState({
     apiUserId: "",
     subscriptionKey: "",
     environment: "production",
     defaultCurrency: "NGN",
-    callbackUrl: "https://api.fleetpro.ng/webhooks/mtn-momo" });
-  const [cardSetup, setCardSetup] = useState({ provider: "paystack", publicKey: "", secretKey: "" });
-  const [newProvider, setNewProvider] = useState({ name: "", apiKey: "" });
+    callbackUrl: "https://api.fleetpro.ng/webhooks/mtn-momo",
 
-  useEffect(() => {
-    fetchBillingSummary();
-  }, [fetchBillingSummary]);
+  });
+  const [
+    cardSetup,
+    setCardSetup,
+  ] = useState({
+    provider: "paystack",
+    publicKey: "",
+    secretKey: "",
+  });
+  const [
+    newProvider,
+    setNewProvider,
+  ] = useState({
+    name: "",
+    apiKey: "",
+  });
+
+  useEffect(
+    () => {
+      fetchBillingSummary();
+    },
+    [fetchBillingSummary],
+  );
 
   const handleGenerateInvoiceForSub = async (sub: Subscription) => {
     setGeneratingFor(sub.id);
@@ -401,13 +757,14 @@ export default function PlatformBilling() {
         toast.success(`Invoice generated for ${sub.tenant}`);
         await fetchBillingSummary();
       }
-    } finally {
+    }
+    finally {
       setGeneratingFor(null);
     }
   };
 
   const handleGenerateInvoiceForTenant = async (tenantName: string) => {
-    const sub = subscriptions.find((s) => s.tenant === tenantName);
+    const sub = subscriptions.find(s => s.tenant === tenantName);
     if (!sub) {
       toast.error(`No active subscription found for ${tenantName}`);
       return;
@@ -424,36 +781,42 @@ export default function PlatformBilling() {
     try {
       const invoice = await generateInvoice(createInvoiceSubId);
       if (invoice) {
-        const sub = subscriptions.find((s) => s.id === createInvoiceSubId);
+        const sub = subscriptions.find(s => s.id === createInvoiceSubId);
         toast.success(`Invoice created${sub ? ` for ${sub.tenant}` : ""}`);
         await fetchBillingSummary();
         setIsCreateInvoiceOpen(false);
         setCreateInvoiceSubId("");
       }
-    } finally {
+    }
+    finally {
       setGeneratingFor(null);
     }
   };
 
   const filteredInvoices = invoices.filter((invoice) => {
-    const matchesSearch =
-      invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      invoice.tenant.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch
+      = invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase())
+        || invoice.tenant.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || invoice.status === statusFilter;
 
     // Advanced filters
     const f = invoiceFilters;
-    if (f.payment_method?.enabled && f.payment_method.value && invoice.paymentMethod !== f.payment_method.value) return false;
-    if (f.status?.enabled && f.status.value && invoice.status !== f.status.value) return false;
+    if (f.payment_method?.enabled && f.payment_method.value && invoice.paymentMethod !== f.payment_method.value)
+      return false;
+    if (f.status?.enabled && f.status.value && invoice.status !== f.status.value)
+      return false;
     if (f.amount?.enabled) {
       const min = f.amount.from ? Number(f.amount.from) : -Infinity;
       const max = f.amount.to ? Number(f.amount.to) : Infinity;
-      if (invoice.amount < min || invoice.amount > max) return false;
+      if (invoice.amount < min || invoice.amount > max)
+        return false;
     }
     if (f.date?.enabled) {
       const d = new Date(invoice.dueDate).getTime();
-      if (f.date.from && d < new Date(f.date.from).getTime()) return false;
-      if (f.date.to && d > new Date(f.date.to).getTime()) return false;
+      if (f.date.from && d < new Date(f.date.from).getTime())
+        return false;
+      if (f.date.to && d > new Date(f.date.to).getTime())
+        return false;
     }
     return matchesSearch && matchesStatus;
   });
@@ -462,30 +825,49 @@ export default function PlatformBilling() {
     const matchesSearch = sub.tenant.toLowerCase().includes(subSearchQuery.toLowerCase());
     const matchesStatus = subStatusFilter === "all" || sub.status === subStatusFilter;
     const f = subFilters;
-    if (f.plan?.enabled && f.plan.value && sub.plan !== f.plan.value) return false;
-    if (f.payment_method?.enabled && f.payment_method.value && sub.paymentMethod !== f.payment_method.value) return false;
+    if (f.plan?.enabled && f.plan.value && sub.plan !== f.plan.value)
+      return false;
+    if (f.payment_method?.enabled && f.payment_method.value && sub.paymentMethod !== f.payment_method.value)
+      return false;
     if (f.amount?.enabled) {
       const min = f.amount.from ? Number(f.amount.from) : -Infinity;
       const max = f.amount.to ? Number(f.amount.to) : Infinity;
-      if (sub.amount < min || sub.amount > max) return false;
+      if (sub.amount < min || sub.amount > max)
+        return false;
     }
     if (f.next_billing?.enabled) {
       const d = new Date(sub.nextBillingDate).getTime();
-      if (f.next_billing.from && d < new Date(f.next_billing.from).getTime()) return false;
-      if (f.next_billing.to && d > new Date(f.next_billing.to).getTime()) return false;
+      if (f.next_billing.from && d < new Date(f.next_billing.from).getTime())
+        return false;
+      if (f.next_billing.to && d > new Date(f.next_billing.to).getTime())
+        return false;
     }
     return matchesSearch && matchesStatus;
   });
 
   const getDisplayAmount = (amount: number) => {
-    if (currency === 'NGN') return amount;
-    return convertCurrency(amount, 'NGN', currency);
+    if (currency === "NGN")
+      return amount;
+    return convertCurrency(
+      amount,
+      "NGN",
+      currency,
+    );
   };
 
-  const totalRevenue = invoices.filter((i) => i.status === "paid").reduce((sum, i) => sum + i.amount, 0);
-  const pendingRevenue = invoices.filter((i) => i.status === "pending" || i.status === "overdue").reduce((sum, i) => sum + i.amount, 0);
-  const activeSubscriptions = subscriptions.filter((s) => s.status === "active" || s.status === "trialing").length;
-  const mrr = subscriptions.filter((s) => s.status === "active").reduce((sum, s) => sum + s.amount, 0);
+  const totalRevenue = invoices.filter(i => i.status === "paid").reduce(
+    (sum, i) => sum + i.amount,
+    0,
+  );
+  const pendingRevenue = invoices.filter(i => i.status === "pending" || i.status === "overdue").reduce(
+    (sum, i) => sum + i.amount,
+    0,
+  );
+  const activeSubscriptions = subscriptions.filter(s => s.status === "active" || s.status === "trialing").length;
+  const mrr = subscriptions.filter(s => s.status === "active").reduce(
+    (sum, s) => sum + s.amount,
+    0,
+  );
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -522,8 +904,7 @@ export default function PlatformBilling() {
   };
 
   const handleSendMomoRequest = async () => {
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
   const handleViewInvoice = (invoice: Invoice) => {
@@ -536,23 +917,40 @@ export default function PlatformBilling() {
       toast.error("Download is only available after payment is confirmed");
       return;
     }
-    const subtotal = invoice.items.reduce((sum, i) => sum + i.total, 0);
+    const subtotal = invoice.items.reduce(
+      (sum, i) => sum + i.total,
+      0,
+    );
     downloadReceiptPDF({
       invoiceNumber: invoice.invoiceNumber,
       tenantName: invoice.tenant,
       plan: invoice.plan,
       period: invoice.period,
-      issueDate: formatDateOnlyInTimezone(invoice.dueDate, timezone),
-      paidDate: formatDateOnlyInTimezone(invoice.paidDate, timezone),
-      dueDate: formatDateOnlyInTimezone(invoice.dueDate, timezone),
+      issueDate: formatDateOnlyInTimezone(
+        invoice.dueDate,
+        timezone,
+      ),
+      paidDate: formatDateOnlyInTimezone(
+        invoice.paidDate,
+        timezone,
+      ),
+      dueDate: formatDateOnlyInTimezone(
+        invoice.dueDate,
+        timezone,
+      ),
       paymentMethod: invoice.paymentMethod
-        ? invoice.paymentMethod.replace("_", " ").toUpperCase()
+        ? invoice.paymentMethod.replace(
+            "_",
+            " ",
+          ).toUpperCase()
         : "—",
       paymentReference: `PAY-${invoice.invoiceNumber}`,
       items: invoice.items,
       subtotal,
       amount: invoice.amount,
-      currency });
+      currency,
+
+    });
     toast.success(`Download for ${invoice.invoiceNumber} downloaded`);
   };
 
@@ -564,19 +962,24 @@ export default function PlatformBilling() {
   };
 
   const confirmMarkAsPaid = () => {
-    if (!selectedInvoice) return;
-    const today = new Date().toISOString().slice(0, 10);
-    const paid = invoices.map((inv) =>
+    if (!selectedInvoice)
+      return;
+    const today = new Date().toISOString().slice(
+      0,
+      10,
+    );
+    const paid = invoices.map(inv =>
       inv.id === selectedInvoice.id
         ? {
             ...inv,
             status: "paid" as const,
             paidDate: today,
-            paymentMethod: markPaidMethod }
-        : inv,
-    );
+            paymentMethod: markPaidMethod,
+
+          }
+        : inv);
     setInvoices(paid);
-    const updated = paid.find((i) => i.id === selectedInvoice.id) ?? null;
+    const updated = paid.find(i => i.id === selectedInvoice.id) ?? null;
     setSelectedInvoice(updated);
     setIsMarkPaidOpen(false);
     toast.success(
@@ -584,11 +987,15 @@ export default function PlatformBilling() {
       {
         description: "Download is now available for download.",
         action: updated
-          ? { label: "Receipt", onClick: () => handleDownloadReceipt(updated) }
-          : undefined },
+          ? {
+              label: "Receipt",
+              onClick: () => handleDownloadReceipt(updated),
+            }
+          : undefined,
+
+      },
     );
   };
-
 
   return (
     <DashboardLayout
@@ -597,7 +1004,11 @@ export default function PlatformBilling() {
     >
       {/* Currency & timezone are now driven by global Settings → Billing / Preferences */}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-4"
+      >
         {/* Centered tabs */}
         <div className="flex justify-center">
           <TabsList>
@@ -609,14 +1020,19 @@ export default function PlatformBilling() {
           </TabsList>
         </div>
 
-
         {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent
+          value="overview"
+          className="space-y-6"
+        >
           {/* Stats */}
           <div className="grid gap-4 md:grid-cols-4">
             <StatCard
               title="Total Revenue (YTD)"
-              value={formatCurrency(getDisplayAmount(totalRevenue), currency)}
+              value={formatCurrency(
+                getDisplayAmount(totalRevenue),
+                currency,
+              )}
               icon={DollarSign}
               change={18}
               changeLabel="vs last year"
@@ -624,14 +1040,20 @@ export default function PlatformBilling() {
             />
             <StatCard
               title="Monthly Recurring"
-              value={formatCurrency(getDisplayAmount(mrr), currency)}
+              value={formatCurrency(
+                getDisplayAmount(mrr),
+                currency,
+              )}
               icon={TrendingUp}
               change={12}
               changeLabel="vs last month"
             />
             <StatCard
               title="Pending Payments"
-              value={formatCurrency(getDisplayAmount(pendingRevenue), currency)}
+              value={formatCurrency(
+                getDisplayAmount(pendingRevenue),
+                currency,
+              )}
               icon={Clock}
               variant="warning"
             />
@@ -655,37 +1077,79 @@ export default function PlatformBilling() {
                       <BarChart3 className="h-5 w-5 text-primary" />
                       Revenue Trend
                     </CardTitle>
-                    <CardDescription>Monthly revenue ({CURRENCIES[currency].code})</CardDescription>
+                    <CardDescription>
+                      Monthly revenue (
+                      {CURRENCIES[currency].code}
+                      )
+                    </CardDescription>
                   </div>
                   <ChartDateFilter
                     value={revenueRange}
                     onValueChange={setRevenueRange}
-                    options={["today", "yesterday", "7d", "30d", "90d"]}
+                    options={[
+                      "today",
+                      "yesterday",
+                      "7d",
+                      "30d",
+                      "90d",
+                    ]}
                   />
                 </div>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer
+                  width="100%"
+                  height={300}
+                >
                   <AreaChart data={revenueData}>
                     <defs>
-                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      <linearGradient
+                        id="colorRevenue"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.3}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0}
+                        />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                    />
+                    <XAxis
+                      dataKey="month"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
                     <YAxis
                       stroke="hsl(var(--muted-foreground))"
                       fontSize={12}
-                      tickFormatter={(value) => `${CURRENCIES[currency].symbol}${(getDisplayAmount(value) / 1000000).toFixed(1)}M`}
+                      tickFormatter={value => `${CURRENCIES[currency].symbol}${(getDisplayAmount(value) / 1000000).toFixed(1)}M`}
                     />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px" }}
-                      formatter={(value: number) => [formatCurrency(getDisplayAmount(value), currency), "Revenue"]}
+                        borderRadius: "8px",
+
+                      }}
+                      formatter={(value: number) => [
+                        formatCurrency(
+                          getDisplayAmount(value),
+                          currency,
+                        ),
+                        "Revenue",
+                      ]}
                     />
                     <Area
                       type="monotone"
@@ -714,12 +1178,21 @@ export default function PlatformBilling() {
                   <ChartDateFilter
                     value={planRange}
                     onValueChange={setPlanRange}
-                    options={["today", "yesterday", "7d", "30d", "90d"]}
+                    options={[
+                      "today",
+                      "yesterday",
+                      "7d",
+                      "30d",
+                      "90d",
+                    ]}
                   />
                 </div>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer
+                  width="100%"
+                  height={300}
+                >
                   <RechartsPieChart>
                     <Pie
                       data={planDistribution}
@@ -731,14 +1204,19 @@ export default function PlatformBilling() {
                       dataKey="value"
                     >
                       {planDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color}
+                        />
                       ))}
                     </Pie>
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px" }}
+                        borderRadius: "8px",
+
+                      }}
                     />
                     <Legend />
                   </RechartsPieChart>
@@ -759,7 +1237,7 @@ export default function PlatformBilling() {
                 <CardDescription>Volume and value of payments received per channel</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {paymentMethodData.map((pm) => (
+                {paymentMethodData.map(pm => (
                   <div
                     key={pm.method}
                     className="flex items-center justify-between p-3 rounded-lg border"
@@ -782,10 +1260,19 @@ export default function PlatformBilling() {
                       )}
                       <div>
                         <p className="font-medium text-sm">{pm.method}</p>
-                        <p className="text-xs text-muted-foreground">{pm.count} payments</p>
+                        <p className="text-xs text-muted-foreground">
+                          {pm.count}
+                          {" "}
+                          payments
+                        </p>
                       </div>
                     </div>
-                    <p className="font-semibold">{formatCurrency(getDisplayAmount(pm.revenue), currency)}</p>
+                    <p className="font-semibold">
+                      {formatCurrency(
+                        getDisplayAmount(pm.revenue),
+                        currency,
+                      )}
+                    </p>
                   </div>
                 ))}
               </CardContent>
@@ -802,7 +1289,11 @@ export default function PlatformBilling() {
                     </CardTitle>
                     <CardDescription>Latest tenant invoices issued across all subscription plans</CardDescription>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setActiveTab("invoices")}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setActiveTab("invoices")}
+                  >
                     View All
                     <ArrowUpRight className="h-4 w-4 ml-1" />
                   </Button>
@@ -810,7 +1301,10 @@ export default function PlatformBilling() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {invoices.slice(0, 5).map((invoice) => (
+                  {invoices.slice(
+                    0,
+                    5,
+                  ).map(invoice => (
                     <div
                       key={invoice.id}
                       className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
@@ -827,7 +1321,12 @@ export default function PlatformBilling() {
                       </div>
                       <div className="flex items-center gap-4">
                         {getStatusBadge(invoice.status)}
-                        <p className="font-semibold">{formatCurrency(getDisplayAmount(invoice.amount), currency)}</p>
+                        <p className="font-semibold">
+                          {formatCurrency(
+                            getDisplayAmount(invoice.amount),
+                            currency,
+                          )}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -838,7 +1337,10 @@ export default function PlatformBilling() {
         </TabsContent>
 
         {/* Invoices Tab */}
-        <TabsContent value="invoices" className="space-y-6">
+        <TabsContent
+          value="invoices"
+          className="space-y-6"
+        >
           <Card>
             <CardHeader className="pb-4">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -855,15 +1357,42 @@ export default function PlatformBilling() {
                     label="Export Data"
                     rows={filteredInvoices}
                     columns={[
-                      { header: "Invoice #", accessor: (i) => i.invoiceNumber },
-                      { header: "Tenant", accessor: (i) => i.tenant },
-                      { header: "Plan", accessor: (i) => i.plan },
-                      { header: "Period", accessor: (i) => i.period },
-                      { header: "Amount (NGN)", accessor: (i) => i.amount },
-                      { header: "Status", accessor: (i) => i.status },
-                      { header: "Due Date", accessor: (i) => i.dueDate },
-                      { header: "Paid Date", accessor: (i) => i.paidDate ?? "" },
-                      { header: "Payment Method", accessor: (i) => i.paymentMethod ?? "" },
+                      {
+                        header: "Invoice #",
+                        accessor: i => i.invoiceNumber,
+                      },
+                      {
+                        header: "Tenant",
+                        accessor: i => i.tenant,
+                      },
+                      {
+                        header: "Plan",
+                        accessor: i => i.plan,
+                      },
+                      {
+                        header: "Period",
+                        accessor: i => i.period,
+                      },
+                      {
+                        header: "Amount (NGN)",
+                        accessor: i => i.amount,
+                      },
+                      {
+                        header: "Status",
+                        accessor: i => i.status,
+                      },
+                      {
+                        header: "Due Date",
+                        accessor: i => i.dueDate,
+                      },
+                      {
+                        header: "Paid Date",
+                        accessor: i => i.paidDate ?? "",
+                      },
+                      {
+                        header: "Payment Method",
+                        accessor: i => i.paymentMethod ?? "",
+                      },
                     ]}
                   />
                 </div>
@@ -877,10 +1406,13 @@ export default function PlatformBilling() {
                     placeholder="Search by invoice number or tenant..."
                     className="pl-10"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={e => setSearchQuery(e.target.value)}
                   />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select
+                  value={statusFilter}
+                  onValueChange={setStatusFilter}
+                >
                   <SelectTrigger className="w-[150px]">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
@@ -909,13 +1441,17 @@ export default function PlatformBilling() {
                       <TableHead>Tenant</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Due Date ({TIMEZONES[timezone].offset})</TableHead>
+                      <TableHead>
+                        Due Date (
+                        {TIMEZONES[timezone].offset}
+                        )
+                      </TableHead>
                       <TableHead>Payment Method</TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredInvoices.map((invoice) => (
+                    {filteredInvoices.map(invoice => (
                       <TableRow key={invoice.id}>
                         <TableCell>
                           <div>
@@ -930,31 +1466,46 @@ export default function PlatformBilling() {
                           </div>
                         </TableCell>
                         <TableCell className="font-semibold">
-                          {formatCurrency(getDisplayAmount(invoice.amount), currency)}
+                          {formatCurrency(
+                            getDisplayAmount(invoice.amount),
+                            currency,
+                          )}
                         </TableCell>
                         <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2 text-sm">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
-                            {formatDateOnlyInTimezone(invoice.dueDate, timezone)}
+                            {formatDateOnlyInTimezone(
+                              invoice.dueDate,
+                              timezone,
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          {invoice.paymentMethod ? (
-                            <div className="flex items-center gap-2">
-                              {getPaymentMethodIcon(invoice.paymentMethod)}
-                              <span className="text-sm capitalize">
-                                {invoice.paymentMethod.replace("_", " ")}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
+                          {invoice.paymentMethod
+                            ? (
+                                <div className="flex items-center gap-2">
+                                  {getPaymentMethodIcon(invoice.paymentMethod)}
+                                  <span className="text-sm capitalize">
+                                    {invoice.paymentMethod.replace(
+                                      "_",
+                                      " ",
+                                    )}
+                                  </span>
+                                </div>
+                              )
+                            : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                              >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -964,7 +1515,7 @@ export default function PlatformBilling() {
                                 View Details
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleGenerateInvoiceForTenant(invoice.tenant)}>
-                                  <Receipt className="h-4 w-4 mr-2" />
+                                <Receipt className="h-4 w-4 mr-2" />
                                 Generate Invoice
                               </DropdownMenuItem>
                               {invoice.status === "paid" && (
@@ -1013,7 +1564,10 @@ export default function PlatformBilling() {
         </TabsContent>
 
         {/* Subscriptions Tab */}
-        <TabsContent value="subscriptions" className="space-y-6">
+        <TabsContent
+          value="subscriptions"
+          className="space-y-6"
+        >
           <Card>
             <CardHeader className="pb-4">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -1029,13 +1583,34 @@ export default function PlatformBilling() {
                   label="Export Data"
                   rows={filteredSubscriptions}
                   columns={[
-                    { header: "Tenant", accessor: (s) => s.tenant },
-                    { header: "Plan", accessor: (s) => s.plan },
-                    { header: "Status", accessor: (s) => s.status },
-                    { header: "Amount (NGN)", accessor: (s) => s.amount },
-                    { header: "Next Billing", accessor: (s) => s.nextBillingDate },
-                    { header: "Payment Method", accessor: (s) => s.paymentMethod },
-                    { header: "Auto Renew", accessor: (s) => (s.autoRenew ? "Yes" : "No") },
+                    {
+                      header: "Tenant",
+                      accessor: s => s.tenant,
+                    },
+                    {
+                      header: "Plan",
+                      accessor: s => s.plan,
+                    },
+                    {
+                      header: "Status",
+                      accessor: s => s.status,
+                    },
+                    {
+                      header: "Amount (NGN)",
+                      accessor: s => s.amount,
+                    },
+                    {
+                      header: "Next Billing",
+                      accessor: s => s.nextBillingDate,
+                    },
+                    {
+                      header: "Payment Method",
+                      accessor: s => s.paymentMethod,
+                    },
+                    {
+                      header: "Auto Renew",
+                      accessor: s => (s.autoRenew ? "Yes" : "No"),
+                    },
                   ]}
                 />
               </div>
@@ -1048,10 +1623,13 @@ export default function PlatformBilling() {
                     placeholder="Search by tenant..."
                     className="pl-10"
                     value={subSearchQuery}
-                    onChange={(e) => setSubSearchQuery(e.target.value)}
+                    onChange={e => setSubSearchQuery(e.target.value)}
                   />
                 </div>
-                <Select value={subStatusFilter} onValueChange={setSubStatusFilter}>
+                <Select
+                  value={subStatusFilter}
+                  onValueChange={setSubStatusFilter}
+                >
                   <SelectTrigger className="w-[150px]">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
@@ -1080,14 +1658,18 @@ export default function PlatformBilling() {
                       <TableHead>Plan</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Amount</TableHead>
-                      <TableHead>Next Billing ({TIMEZONES[timezone].offset})</TableHead>
+                      <TableHead>
+                        Next Billing (
+                        {TIMEZONES[timezone].offset}
+                        )
+                      </TableHead>
                       <TableHead>Payment Method</TableHead>
                       <TableHead>Auto-Renew</TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredSubscriptions.map((sub) => (
+                    {filteredSubscriptions.map(sub => (
                       <TableRow key={sub.id}>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -1104,34 +1686,50 @@ export default function PlatformBilling() {
                         </TableCell>
                         <TableCell>{getStatusBadge(sub.status)}</TableCell>
                         <TableCell className="font-semibold">
-                          {formatCurrency(getDisplayAmount(sub.amount), currency)}/mo
+                          {formatCurrency(
+                            getDisplayAmount(sub.amount),
+                            currency,
+                          )}
+                          /mo
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2 text-sm">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
-                            {formatDateOnlyInTimezone(sub.nextBillingDate, timezone)}
+                            {formatDateOnlyInTimezone(
+                              sub.nextBillingDate,
+                              timezone,
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             {getPaymentMethodIcon(sub.paymentMethod)}
                             <span className="text-sm capitalize">
-                              {sub.paymentMethod.replace("_", " ")}
+                              {sub.paymentMethod.replace(
+                                "_",
+                                " ",
+                              )}
                             </span>
                           </div>
                         </TableCell>
                         <TableCell>
-                          {sub.autoRenew ? (
-                            <CheckCircle className="h-5 w-5 text-success" />
-                          ) : (
-                            <XCircle className="h-5 w-5 text-muted-foreground" />
-                          )}
+                          {sub.autoRenew
+                            ? (
+                                <CheckCircle className="h-5 w-5 text-success" />
+                              )
+                            : (
+                                <XCircle className="h-5 w-5 text-muted-foreground" />
+                              )}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-1">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -1157,11 +1755,13 @@ export default function PlatformBilling() {
                                   onClick={() => handleGenerateInvoiceForSub(sub)}
                                   disabled={generatingFor === sub.id}
                                 >
-                                  {generatingFor === sub.id ? (
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                  ) : (
-                                    <Receipt className="h-4 w-4 mr-2" />
-                                  )}
+                                  {generatingFor === sub.id
+                                    ? (
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      )
+                                    : (
+                                        <Receipt className="h-4 w-4 mr-2" />
+                                      )}
                                   Generate Invoice
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
@@ -1183,12 +1783,21 @@ export default function PlatformBilling() {
         </TabsContent>
 
         {/* Postpaid Tab */}
-        <TabsContent value="postpaid" className="space-y-6">
-          <PostpaidBillingTab currency={currency} getDisplayAmount={getDisplayAmount} />
+        <TabsContent
+          value="postpaid"
+          className="space-y-6"
+        >
+          <PostpaidBillingTab
+            currency={currency}
+            getDisplayAmount={getDisplayAmount}
+          />
         </TabsContent>
 
         {/* Payment Methods Tab */}
-        <TabsContent value="payments" className="space-y-6">
+        <TabsContent
+          value="payments"
+          className="space-y-6"
+        >
           <div className="grid gap-6 md:grid-cols-2">
             {/* MTN MoMo Integration */}
             <Card className="border-warning/30">
@@ -1232,14 +1841,23 @@ export default function PlatformBilling() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Total Volume</span>
-                    <span className="font-semibold">{formatCurrency(getDisplayAmount(18500000), currency)}</span>
+                    <span className="font-semibold">
+                      {formatCurrency(
+                        getDisplayAmount(18500000),
+                        currency,
+                      )}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Success Rate</span>
                     <span className="font-semibold text-success">98.5%</span>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full" onClick={() => setIsMomoConfigOpen(true)}>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setIsMomoConfigOpen(true)}
+                >
                   Configure Settings
                 </Button>
               </CardContent>
@@ -1282,10 +1900,19 @@ export default function PlatformBilling() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Total Volume</span>
-                    <span className="font-semibold">{formatCurrency(getDisplayAmount(9500000), currency)}</span>
+                    <span className="font-semibold">
+                      {formatCurrency(
+                        getDisplayAmount(9500000),
+                        currency,
+                      )}
+                    </span>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full" onClick={() => setIsBankDetailsOpen(true)}>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setIsBankDetailsOpen(true)}
+                >
                   View Bank Details
                 </Button>
               </CardContent>
@@ -1309,7 +1936,10 @@ export default function PlatformBilling() {
                 <p className="text-sm text-muted-foreground">
                   Card payments require integration with a payment gateway like Paystack or Flutterwave.
                 </p>
-                <Button className="w-full" onClick={() => setIsCardSetupOpen(true)}>
+                <Button
+                  className="w-full"
+                  onClick={() => setIsCardSetupOpen(true)}
+                >
                   Setup Card Payments
                 </Button>
               </CardContent>
@@ -1325,7 +1955,12 @@ export default function PlatformBilling() {
                 <p className="text-sm text-muted-foreground mb-4">
                   Configure additional payment providers
                 </p>
-                <Button variant="outline" onClick={() => setIsAddProviderOpen(true)}>Add Provider</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAddProviderOpen(true)}
+                >
+                  Add Provider
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -1333,7 +1968,10 @@ export default function PlatformBilling() {
       </Tabs>
 
       {/* MTN MoMo Configuration */}
-      <Dialog open={isMomoConfigOpen} onOpenChange={setIsMomoConfigOpen}>
+      <Dialog
+        open={isMomoConfigOpen}
+        onOpenChange={setIsMomoConfigOpen}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1347,16 +1985,39 @@ export default function PlatformBilling() {
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label htmlFor="momo-api-user">API User ID</Label>
-              <Input id="momo-api-user" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" value={momoConfig.apiUserId} onChange={(e) => setMomoConfig({ ...momoConfig, apiUserId: e.target.value })} />
+              <Input
+                id="momo-api-user"
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                value={momoConfig.apiUserId}
+                onChange={e => setMomoConfig({
+                  ...momoConfig,
+                  apiUserId: e.target.value,
+                })}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="momo-sub-key">Subscription Key</Label>
-              <Input id="momo-sub-key" type="password" placeholder="••••••••••••••••" value={momoConfig.subscriptionKey} onChange={(e) => setMomoConfig({ ...momoConfig, subscriptionKey: e.target.value })} />
+              <Input
+                id="momo-sub-key"
+                type="password"
+                placeholder="••••••••••••••••"
+                value={momoConfig.subscriptionKey}
+                onChange={e => setMomoConfig({
+                  ...momoConfig,
+                  subscriptionKey: e.target.value,
+                })}
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Environment</Label>
-                <Select value={momoConfig.environment} onValueChange={(v) => setMomoConfig({ ...momoConfig, environment: v })}>
+                <Select
+                  value={momoConfig.environment}
+                  onValueChange={v => setMomoConfig({
+                    ...momoConfig,
+                    environment: v,
+                  })}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="sandbox">Sandbox</SelectItem>
@@ -1366,7 +2027,13 @@ export default function PlatformBilling() {
               </div>
               <div className="space-y-2">
                 <Label>Default Currency</Label>
-                <Select value={momoConfig.defaultCurrency} onValueChange={(v) => setMomoConfig({ ...momoConfig, defaultCurrency: v })}>
+                <Select
+                  value={momoConfig.defaultCurrency}
+                  onValueChange={v => setMomoConfig({
+                    ...momoConfig,
+                    defaultCurrency: v,
+                  })}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NGN">NGN (₦)</SelectItem>
@@ -1377,18 +2044,33 @@ export default function PlatformBilling() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="momo-callback">Callback URL</Label>
-              <Input id="momo-callback" value={momoConfig.callbackUrl} onChange={(e) => setMomoConfig({ ...momoConfig, callbackUrl: e.target.value })} />
+              <Input
+                id="momo-callback"
+                value={momoConfig.callbackUrl}
+                onChange={e => setMomoConfig({
+                  ...momoConfig,
+                  callbackUrl: e.target.value,
+                })}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsMomoConfigOpen(false)}>Cancel</Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsMomoConfigOpen(false)}
+            >
+              Cancel
+            </Button>
             <Button onClick={() => { toast.success("MTN MoMo settings saved"); setIsMomoConfigOpen(false); }}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Bank Transfer Details */}
-      <Dialog open={isBankDetailsOpen} onOpenChange={setIsBankDetailsOpen}>
+      <Dialog
+        open={isBankDetailsOpen}
+        onOpenChange={setIsBankDetailsOpen}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1401,19 +2083,48 @@ export default function PlatformBilling() {
           </DialogHeader>
           <div className="space-y-3 py-2">
             {[
-              { label: "Account Name", value: "Fleet Pro Nigeria Ltd" },
-              { label: "Bank", value: "GTBank Business" },
-              { label: "Account Number", value: "0123457890" },
-              { label: "Sort Code", value: "058" },
-              { label: "Swift / BIC", value: "GTBINGLA" },
-              { label: "Branch", value: "Victoria Island, Lagos" },
-              { label: "Reference Format", value: "FP-{TENANT_ID}-{INVOICE}" },
-            ].map((row) => (
-              <div key={row.label} className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2 text-sm">
+              {
+                label: "Account Name",
+                value: "Fleet Pro Nigeria Ltd",
+              },
+              {
+                label: "Bank",
+                value: "GTBank Business",
+              },
+              {
+                label: "Account Number",
+                value: "0123457890",
+              },
+              {
+                label: "Sort Code",
+                value: "058",
+              },
+              {
+                label: "Swift / BIC",
+                value: "GTBINGLA",
+              },
+              {
+                label: "Branch",
+                value: "Victoria Island, Lagos",
+              },
+              {
+                label: "Reference Format",
+                value: "FP-{TENANT_ID}-{INVOICE}",
+              },
+            ].map(row => (
+              <div
+                key={row.label}
+                className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2 text-sm"
+              >
                 <span className="text-muted-foreground">{row.label}</span>
                 <div className="flex items-center gap-2">
                   <span className="font-mono">{row.value}</span>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(row.value); toast.success(`${row.label} copied`); }}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => { navigator.clipboard.writeText(row.value); toast.success(`${row.label} copied`); }}
+                  >
                     <FileText className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -1427,7 +2138,10 @@ export default function PlatformBilling() {
       </Dialog>
 
       {/* Setup Card Payments */}
-      <Dialog open={isCardSetupOpen} onOpenChange={setIsCardSetupOpen}>
+      <Dialog
+        open={isCardSetupOpen}
+        onOpenChange={setIsCardSetupOpen}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1441,7 +2155,13 @@ export default function PlatformBilling() {
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Provider</Label>
-              <Select value={cardSetup.provider} onValueChange={(v) => setCardSetup({ ...cardSetup, provider: v })}>
+              <Select
+                value={cardSetup.provider}
+                onValueChange={v => setCardSetup({
+                  ...cardSetup,
+                  provider: v,
+                })}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="paystack">Paystack</SelectItem>
@@ -1452,26 +2172,54 @@ export default function PlatformBilling() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="card-public">Public Key</Label>
-              <Input id="card-public" placeholder="pk_live_..." value={cardSetup.publicKey} onChange={(e) => setCardSetup({ ...cardSetup, publicKey: e.target.value })} />
+              <Input
+                id="card-public"
+                placeholder="pk_live_..."
+                value={cardSetup.publicKey}
+                onChange={e => setCardSetup({
+                  ...cardSetup,
+                  publicKey: e.target.value,
+                })}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="card-secret">Secret Key</Label>
-              <Input id="card-secret" type="password" placeholder="sk_live_..." value={cardSetup.secretKey} onChange={(e) => setCardSetup({ ...cardSetup, secretKey: e.target.value })} />
+              <Input
+                id="card-secret"
+                type="password"
+                placeholder="sk_live_..."
+                value={cardSetup.secretKey}
+                onChange={e => setCardSetup({
+                  ...cardSetup,
+                  secretKey: e.target.value,
+                })}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCardSetupOpen(false)}>Cancel</Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsCardSetupOpen(false)}
+            >
+              Cancel
+            </Button>
             <Button onClick={() => {
               if (!cardSetup.publicKey || !cardSetup.secretKey) { toast.error("Both keys are required"); return; }
               toast.success(`${cardSetup.provider} connected for card payments`);
               setIsCardSetupOpen(false);
-            }}>Connect</Button>
+            }}
+            >
+              Connect
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Add Provider */}
-      <Dialog open={isAddProviderOpen} onOpenChange={setIsAddProviderOpen}>
+      <Dialog
+        open={isAddProviderOpen}
+        onOpenChange={setIsAddProviderOpen}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1485,27 +2233,58 @@ export default function PlatformBilling() {
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label htmlFor="prov-name">Provider Name</Label>
-              <Input id="prov-name" placeholder="e.g. Opay, Palmpay, Remita" value={newProvider.name} onChange={(e) => setNewProvider({ ...newProvider, name: e.target.value })} />
+              <Input
+                id="prov-name"
+                placeholder="e.g. Opay, Palmpay, Remita"
+                value={newProvider.name}
+                onChange={e => setNewProvider({
+                  ...newProvider,
+                  name: e.target.value,
+                })}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="prov-key">API Key</Label>
-              <Input id="prov-key" type="password" placeholder="••••••••" value={newProvider.apiKey} onChange={(e) => setNewProvider({ ...newProvider, apiKey: e.target.value })} />
+              <Input
+                id="prov-key"
+                type="password"
+                placeholder="••••••••"
+                value={newProvider.apiKey}
+                onChange={e => setNewProvider({
+                  ...newProvider,
+                  apiKey: e.target.value,
+                })}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddProviderOpen(false)}>Cancel</Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddProviderOpen(false)}
+            >
+              Cancel
+            </Button>
             <Button onClick={() => {
               if (!newProvider.name) { toast.error("Provider name is required"); return; }
               toast.success(`${newProvider.name} added as a payment provider`);
-              setNewProvider({ name: "", apiKey: "" });
+              setNewProvider({
+                name: "",
+                apiKey: "",
+              });
               setIsAddProviderOpen(false);
-            }}>Add Provider</Button>
+            }}
+            >
+              Add Provider
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Invoice Details Sheet */}
-      <Sheet open={isInvoiceSheetOpen} onOpenChange={setIsInvoiceSheetOpen}>
+      <Sheet
+        open={isInvoiceSheetOpen}
+        onOpenChange={setIsInvoiceSheetOpen}
+      >
         <SheetContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-3">
@@ -1529,7 +2308,11 @@ export default function PlatformBilling() {
                     </div>
                     <div>
                       <p className="font-medium">{selectedInvoice.tenant}</p>
-                      <p className="text-sm text-muted-foreground">{selectedInvoice.plan} Plan</p>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedInvoice.plan}
+                        {" "}
+                        Plan
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1540,20 +2323,39 @@ export default function PlatformBilling() {
                   <h4 className="font-medium text-sm text-muted-foreground">Items</h4>
                   <div className="space-y-2">
                     {selectedInvoice.items.map((item, index) => (
-                      <div key={index} className="flex justify-between text-sm p-2 rounded bg-muted/30">
+                      <div
+                        key={index}
+                        className="flex justify-between text-sm p-2 rounded bg-muted/30"
+                      >
                         <div>
                           <p>{item.description}</p>
                           <p className="text-xs text-muted-foreground">
-                            {item.quantity} x {formatCurrency(getDisplayAmount(item.unitPrice), currency)}
+                            {item.quantity}
+                            {" "}
+                            x
+                            {formatCurrency(
+                              getDisplayAmount(item.unitPrice),
+                              currency,
+                            )}
                           </p>
                         </div>
-                        <p className="font-medium">{formatCurrency(getDisplayAmount(item.total), currency)}</p>
+                        <p className="font-medium">
+                          {formatCurrency(
+                            getDisplayAmount(item.total),
+                            currency,
+                          )}
+                        </p>
                       </div>
                     ))}
                   </div>
                   <div className="flex justify-between pt-2 border-t">
                     <span className="font-semibold">Total</span>
-                    <span className="font-bold text-lg">{formatCurrency(getDisplayAmount(selectedInvoice.amount), currency)}</span>
+                    <span className="font-bold text-lg">
+                      {formatCurrency(
+                        getDisplayAmount(selectedInvoice.amount),
+                        currency,
+                      )}
+                    </span>
                   </div>
                 </div>
 
@@ -1564,12 +2366,22 @@ export default function PlatformBilling() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Due Date</span>
-                      <span>{formatDateOnlyInTimezone(selectedInvoice.dueDate, timezone)}</span>
+                      <span>
+                        {formatDateOnlyInTimezone(
+                          selectedInvoice.dueDate,
+                          timezone,
+                        )}
+                      </span>
                     </div>
                     {selectedInvoice.paidDate && (
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Paid Date</span>
-                        <span className="text-success">{formatDateOnlyInTimezone(selectedInvoice.paidDate, timezone)}</span>
+                        <span className="text-success">
+                          {formatDateOnlyInTimezone(
+                            selectedInvoice.paidDate,
+                            timezone,
+                          )}
+                        </span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
@@ -1577,7 +2389,10 @@ export default function PlatformBilling() {
                       <div className="flex items-center gap-2">
                         {getPaymentMethodIcon(selectedInvoice.paymentMethod)}
                         <span className="capitalize">
-                          {selectedInvoice.paymentMethod?.replace("_", " ") || "Not paid"}
+                          {selectedInvoice.paymentMethod?.replace(
+                            "_",
+                            " ",
+                          ) || "Not paid"}
                         </span>
                       </div>
                     </div>
@@ -1619,7 +2434,10 @@ export default function PlatformBilling() {
                 )}
 
                 <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                  >
                     <Send className="h-4 w-4 mr-2" />
                     Send to Tenant
                   </Button>
@@ -1631,7 +2449,10 @@ export default function PlatformBilling() {
       </Sheet>
 
       {/* Subscription Details Dialog (centered) */}
-      <Dialog open={isSubDialogOpen} onOpenChange={setIsSubDialogOpen}>
+      <Dialog
+        open={isSubDialogOpen}
+        onOpenChange={setIsSubDialogOpen}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
@@ -1660,7 +2481,11 @@ export default function PlatformBilling() {
                 <div>
                   <Label className="text-xs text-muted-foreground">Amount</Label>
                   <p className="mt-1 font-semibold">
-                    {formatCurrency(getDisplayAmount(selectedSubscription.amount), currency)}/mo
+                    {formatCurrency(
+                      getDisplayAmount(selectedSubscription.amount),
+                      currency,
+                    )}
+                    /mo
                   </p>
                 </div>
                 <div>
@@ -1670,33 +2495,52 @@ export default function PlatformBilling() {
                 <div>
                   <Label className="text-xs text-muted-foreground">Start Date</Label>
                   <p className="mt-1 text-sm">
-                    {formatDateOnlyInTimezone(selectedSubscription.startDate, timezone)}
+                    {formatDateOnlyInTimezone(
+                      selectedSubscription.startDate,
+                      timezone,
+                    )}
                   </p>
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Next Billing</Label>
                   <p className="mt-1 text-sm">
-                    {formatDateOnlyInTimezone(selectedSubscription.nextBillingDate, timezone)}
+                    {formatDateOnlyInTimezone(
+                      selectedSubscription.nextBillingDate,
+                      timezone,
+                    )}
                   </p>
                 </div>
                 <div className="col-span-2">
                   <Label className="text-xs text-muted-foreground">Payment Method</Label>
                   <div className="mt-1 flex items-center gap-2">
                     {getPaymentMethodIcon(selectedSubscription.paymentMethod)}
-                    <span className="capitalize">{selectedSubscription.paymentMethod.replace("_", " ")}</span>
+                    <span className="capitalize">
+                      {selectedSubscription.paymentMethod.replace(
+                        "_",
+                        " ",
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsSubDialogOpen(false)}>Close</Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsSubDialogOpen(false)}
+            >
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* MTN MoMo Payment Dialog */}
-      <Dialog open={isMomoDialogOpen} onOpenChange={setIsMomoDialogOpen}>
+      <Dialog
+        open={isMomoDialogOpen}
+        onOpenChange={setIsMomoDialogOpen}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
@@ -1718,7 +2562,12 @@ export default function PlatformBilling() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Amount</span>
-                <span className="font-bold text-lg">{formatCurrency(selectedInvoice?.amount || 0, 'NGN')}</span>
+                <span className="font-bold text-lg">
+                  {formatCurrency(
+                    selectedInvoice?.amount || 0,
+                    "NGN",
+                  )}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Currency</span>
@@ -1733,7 +2582,7 @@ export default function PlatformBilling() {
                 <Input
                   id="momoPhone"
                   value={momoPhone}
-                  onChange={(e) => setMomoPhone(e.target.value)}
+                  onChange={e => setMomoPhone(e.target.value)}
                   placeholder="+234 803 123 4567"
                   className="pl-10"
                 />
@@ -1745,32 +2594,41 @@ export default function PlatformBilling() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsMomoDialogOpen(false)} disabled={isProcessingPayment}>
+            <Button
+              variant="outline"
+              onClick={() => setIsMomoDialogOpen(false)}
+              disabled={isProcessingPayment}
+            >
               Cancel
             </Button>
-            <Button 
-              className="bg-warning hover:bg-warning/90 text-warning-foreground" 
+            <Button
+              className="bg-warning hover:bg-warning/90 text-warning-foreground"
               onClick={handleSendMomoRequest}
               disabled={isProcessingPayment}
             >
-              {isProcessingPayment ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Send Request
-                </>
-              )}
+              {isProcessingPayment
+                ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  )
+                : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Send Request
+                    </>
+                  )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Create Invoice Dialog */}
-      <Dialog open={isCreateInvoiceOpen} onOpenChange={setIsCreateInvoiceOpen}>
+      <Dialog
+        open={isCreateInvoiceOpen}
+        onOpenChange={setIsCreateInvoiceOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create Invoice</DialogTitle>
@@ -1780,47 +2638,71 @@ export default function PlatformBilling() {
           </DialogHeader>
           <div className="space-y-2 py-2">
             <Label>Subscription</Label>
-            <Select value={createInvoiceSubId} onValueChange={setCreateInvoiceSubId}>
+            <Select
+              value={createInvoiceSubId}
+              onValueChange={setCreateInvoiceSubId}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select a subscription" />
               </SelectTrigger>
               <SelectContent>
                 {subscriptions
-                  .filter((s) => s.status === "active" || s.status === "trialing" || s.status === "past_due")
-                  .map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.tenant} — {s.plan} ({formatCurrency(getDisplayAmount(s.amount), currency)}/mo)
+                  .filter(s => s.status === "active" || s.status === "trialing" || s.status === "past_due")
+                  .map(s => (
+                    <SelectItem
+                      key={s.id}
+                      value={s.id}
+                    >
+                      {s.tenant}
+                      {" "}
+                      —
+                      {s.plan}
+                      {" "}
+                      (
+                      {formatCurrency(
+                        getDisplayAmount(s.amount),
+                        currency,
+                      )}
+                      /mo)
                     </SelectItem>
                   ))}
               </SelectContent>
             </Select>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateInvoiceOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateInvoiceOpen(false)}
+            >
               Cancel
             </Button>
             <Button
               onClick={handleCreateInvoiceConfirm}
               disabled={!createInvoiceSubId || generatingFor === createInvoiceSubId}
             >
-              {generatingFor === createInvoiceSubId ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                    <Receipt className="h-4 w-4 mr-2" />
-                  Generate Invoice
-                </>
-              )}
+              {generatingFor === createInvoiceSubId
+                ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  )
+                : (
+                    <>
+                      <Receipt className="h-4 w-4 mr-2" />
+                      Generate Invoice
+                    </>
+                  )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Mark Invoice as Paid Dialog */}
-      <Dialog open={isMarkPaidOpen} onOpenChange={setIsMarkPaidOpen}>
+      <Dialog
+        open={isMarkPaidOpen}
+        onOpenChange={setIsMarkPaidOpen}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
@@ -1847,14 +2729,22 @@ export default function PlatformBilling() {
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Amount</span>
                 <span className="font-bold text-lg">
-                  {selectedInvoice ? formatCurrency(getDisplayAmount(selectedInvoice.amount), currency) : ""}
+                  {selectedInvoice
+                    ? formatCurrency(
+                        getDisplayAmount(selectedInvoice.amount),
+                        currency,
+                      )
+                    : ""}
                 </span>
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Payment Method</Label>
-              <Select value={markPaidMethod} onValueChange={(v) => setMarkPaidMethod(v as typeof markPaidMethod)}>
+              <Select
+                value={markPaidMethod}
+                onValueChange={v => setMarkPaidMethod(v as typeof markPaidMethod)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -1871,14 +2761,17 @@ export default function PlatformBilling() {
               <Input
                 id="payRef"
                 value={markPaidReference}
-                onChange={(e) => setMarkPaidReference(e.target.value)}
+                onChange={e => setMarkPaidReference(e.target.value)}
                 placeholder="e.g. MOMO-TXN-123456"
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsMarkPaidOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsMarkPaidOpen(false)}
+            >
               Cancel
             </Button>
             <Button onClick={confirmMarkAsPaid}>
@@ -1891,6 +2784,3 @@ export default function PlatformBilling() {
     </DashboardLayout>
   );
 }
-
-
-

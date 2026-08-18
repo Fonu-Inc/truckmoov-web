@@ -1,24 +1,31 @@
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  AlertTriangle, Fuel, Gauge, Info,
+} from "lucide-react";
+import {
+  useEffect, useState,
+} from "react";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/shadcn/dialog";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
-import { Button } from "@/components/shadcn/button";
 import {
   Select,
   SelectContent,
@@ -26,11 +33,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { Badge } from "@/components/shadcn/badge";
-import { useEffect, useState } from "react";
-import { Gauge, Fuel, AlertTriangle, Info } from "lucide-react";
+import { Skeleton } from "@/components/shadcn/skeleton";
 
-interface DeviceCatalogEntry {
+type DeviceCatalogEntry = {
   id: string;
   manufacturer: string;
   model: string;
@@ -39,22 +44,32 @@ interface DeviceCatalogEntry {
   supports_obd: boolean;
   supports_fuel: boolean;
   supports_sos: boolean;
-}
-import { Skeleton } from "@/components/shadcn/skeleton";
+};
 
 const deviceSchema = z.object({
-  imei: z.string().min(15, "IMEI must be 15 digits").max(15, "IMEI must be 15 digits").regex(/^\d+$/, "IMEI must contain only digits"),
+  imei: z.string().min(
+    15,
+    "IMEI must be 15 digits",
+  ).max(
+    15,
+    "IMEI must be 15 digits",
+  ).regex(
+    /^\d+$/,
+    "IMEI must contain only digits",
+  ),
   catalog_id: z.string().uuid("Please select a device model"),
 });
 
 type DeviceFormData = z.infer<typeof deviceSchema>;
 
-interface DeviceFormDialogWithCatalogProps {
+type DeviceFormDialogWithCatalogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { imei: string; catalog_id: string; manufacturer: string; model: string }) => void;
+  onSubmit: (data: {
+    imei: string; catalog_id: string; manufacturer: string; model: string;
+  }) => void;
   title: string;
-}
+};
 
 export function DeviceFormDialogWithCatalog({
   open,
@@ -66,8 +81,14 @@ export function DeviceFormDialogWithCatalog({
   const loading = false;
   const getManufacturers = (): string[] => [];
   const getModelsForManufacturer = (_manufacturer: string): DeviceCatalogEntry[] => [];
-  const [selectedManufacturer, setSelectedManufacturer] = useState<string>("");
-  const [selectedCatalogEntry, setSelectedCatalogEntry] = useState<DeviceCatalogEntry | null>(null);
+  const [
+    selectedManufacturer,
+    setSelectedManufacturer,
+  ] = useState<string>("");
+  const [
+    selectedCatalogEntry,
+    setSelectedCatalogEntry,
+  ] = useState<DeviceCatalogEntry | null>(null);
 
   const form = useForm<DeviceFormData>({
     resolver: zodResolver(deviceSchema),
@@ -78,37 +99,50 @@ export function DeviceFormDialogWithCatalog({
   });
 
   // Reset form when dialog opens
-  useEffect(() => {
-    if (open) {
-      form.reset({
-        imei: "",
-        catalog_id: "",
-      });
-      setSelectedManufacturer("");
-      setSelectedCatalogEntry(null);
-    }
-  }, [open, form]);
+  useEffect(
+    () => {
+      if (open) {
+        form.reset({
+          imei: "",
+          catalog_id: "",
+        });
+        setSelectedManufacturer("");
+        setSelectedCatalogEntry(null);
+      }
+    },
+    [
+      open,
+      form,
+    ],
+  );
 
   const manufacturers = getManufacturers();
-  const modelsForManufacturer = selectedManufacturer 
-    ? getModelsForManufacturer(selectedManufacturer) 
+  const modelsForManufacturer = selectedManufacturer
+    ? getModelsForManufacturer(selectedManufacturer)
     : [];
 
   const handleManufacturerChange = (manufacturer: string) => {
     setSelectedManufacturer(manufacturer);
-    form.setValue("catalog_id", "");
+    form.setValue(
+      "catalog_id",
+      "",
+    );
     setSelectedCatalogEntry(null);
   };
 
   const handleModelChange = (catalogId: string) => {
-    form.setValue("catalog_id", catalogId);
+    form.setValue(
+      "catalog_id",
+      catalogId,
+    );
     const entry = catalog.find(c => c.id === catalogId);
     setSelectedCatalogEntry(entry || null);
   };
 
   const handleSubmit = (data: DeviceFormData) => {
     const entry = catalog.find(c => c.id === data.catalog_id);
-    if (!entry) return;
+    if (!entry)
+      return;
 
     onSubmit({
       imei: data.imei,
@@ -120,7 +154,10 @@ export function DeviceFormDialogWithCatalog({
 
   if (loading) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog
+        open={open}
+        onOpenChange={onOpenChange}
+      >
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
@@ -136,7 +173,10 @@ export function DeviceFormDialogWithCatalog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -146,20 +186,28 @@ export function DeviceFormDialogWithCatalog({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             {/* Manufacturer Selection */}
             <div className="space-y-2">
               <FormLabel>Manufacturer</FormLabel>
-              <Select 
-                value={selectedManufacturer} 
+              <Select
+                value={selectedManufacturer}
                 onValueChange={handleManufacturerChange}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select manufacturer" />
                 </SelectTrigger>
                 <SelectContent>
-                  {manufacturers.map((m) => (
-                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                  {manufacturers.map(m => (
+                    <SelectItem
+                      key={m}
+                      value={m}
+                    >
+                      {m}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -177,26 +225,33 @@ export function DeviceFormDialogWithCatalog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Model</FormLabel>
-                  <Select 
-                    onValueChange={handleModelChange} 
+                  <Select
+                    onValueChange={handleModelChange}
                     value={field.value}
                     disabled={!selectedManufacturer}
                   >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder={
-                          selectedManufacturer 
-                            ? "Select model" 
+                          selectedManufacturer
+                            ? "Select model"
                             : "Select manufacturer first"
-                        } />
+                        }
+                        />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {modelsForManufacturer.map((entry) => (
-                        <SelectItem key={entry.id} value={entry.id}>
+                      {modelsForManufacturer.map(entry => (
+                        <SelectItem
+                          key={entry.id}
+                          value={entry.id}
+                        >
                           <div className="flex items-center gap-2">
                             <span>{entry.model}</span>
-                            <Badge variant="outline" className="text-xs">
+                            <Badge
+                              variant="outline"
+                              className="text-xs"
+                            >
                               {entry.protocol_type.toUpperCase()}
                             </Badge>
                           </div>
@@ -214,13 +269,20 @@ export function DeviceFormDialogWithCatalog({
               <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">
-                    {selectedCatalogEntry.manufacturer} {selectedCatalogEntry.model}
+                    {selectedCatalogEntry.manufacturer}
+                    {" "}
+                    {selectedCatalogEntry.model}
                   </span>
-                  <Badge variant="outline" className="text-xs">
-                    Port: {selectedCatalogEntry.default_port || "Default"}
+                  <Badge
+                    variant="outline"
+                    className="text-xs"
+                  >
+                    Port:
+                    {" "}
+                    {selectedCatalogEntry.default_port || "Default"}
                   </Badge>
                 </div>
-                
+
                 <div className="flex gap-3 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Gauge className={`h-3.5 w-3.5 ${selectedCatalogEntry.supports_obd ? "text-blue-500" : "text-muted-foreground/30"}`} />
@@ -246,10 +308,10 @@ export function DeviceFormDialogWithCatalog({
                 <FormItem>
                   <FormLabel>IMEI Number</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="359779090012345" 
-                      maxLength={15} 
-                      {...field} 
+                    <Input
+                      placeholder="359779090012345"
+                      maxLength={15}
+                      {...field}
                     />
                   </FormControl>
                   <FormDescription className="flex items-center gap-1 text-xs">
@@ -264,17 +326,26 @@ export function DeviceFormDialogWithCatalog({
             {/* Lifecycle Info */}
             <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-3">
               <p className="text-xs text-muted-foreground">
-                <strong>Next Steps:</strong> After registration, the device will be in <em>Registered</em> status. 
-                An installer must configure the device, then it needs to transmit valid telemetry before 
+                <strong>Next Steps:</strong>
+                {" "}
+                After registration, the device will be in
+                <em>Registered</em>
+                {" "}
+                status.
+                An installer must configure the device, then it needs to transmit valid telemetry before
                 it can be assigned to a vehicle.
               </p>
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 type="submit"
                 disabled={!form.formState.isValid}
               >

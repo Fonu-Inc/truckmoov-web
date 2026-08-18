@@ -1,17 +1,19 @@
+import {
+  AlertTriangle, Sparkles,
+} from "lucide-react";
 import { useState } from "react";
-import { useAuthStore } from "@/stores/authStore";
-import { Sparkles, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/shadcn/button";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/shadcn/button";
+import { useAuthStore } from "@/stores/authStore";
 
-interface TrialStatus {
+type TrialStatus = {
   status: string;
   trial_ends_at: string | null;
   days_remaining: number | null;
   trial_vehicle_cap: number | null;
   trial_sim_cap: number | null;
   is_expired: boolean;
-}
+};
 
 /**
  * Shown to tenant admins while their tenant is on a Trial. Surfaces days
@@ -22,7 +24,8 @@ export function TrialBanner() {
   const navigate = useNavigate();
   const [trial] = useState<TrialStatus | null>(null);
 
-  if (!trial || trial.status !== "trial") return null;
+  if (!trial || trial.status !== "trial")
+    return null;
 
   const days = trial.days_remaining ?? 0;
   const urgent = days <= 7;
@@ -43,7 +46,15 @@ export function TrialBanner() {
               : "Your trial has expired"}
           </p>
           <p className="text-xs text-muted-foreground">
-            Trial limits: up to {trial.trial_vehicle_cap ?? 5} vehicles and {trial.trial_sim_cap ?? 5} SIMs. Add a payment method to keep your account active when the trial ends.
+            Trial limits: up to
+            {" "}
+            {trial.trial_vehicle_cap ?? 5}
+            {" "}
+            vehicles and
+            {" "}
+            {trial.trial_sim_cap ?? 5}
+            {" "}
+            SIMs. Add a payment method to keep your account active when the trial ends.
           </p>
         </div>
       </div>

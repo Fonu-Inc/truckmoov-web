@@ -1,28 +1,48 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  CheckCircle, Clock, DollarSign, FileText, Route,
+} from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/shadcn/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/shadcn/form";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent,
+} from "@/components/shadcn/card";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "@/components/shadcn/dialog";
+import {
+  Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage,
+} from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
 import { Textarea } from "@/components/shadcn/textarea";
-import { Button } from "@/components/shadcn/button";
-import { Card, CardContent } from "@/components/shadcn/card";
-import { Badge } from "@/components/shadcn/badge";
-import { CheckCircle, DollarSign, Route, Clock, FileText } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 const completionSchema = z.object({
-  revenueNgn: z.coerce.number().min(0, "Revenue must be positive"),
-  billableKm: z.coerce.number().min(0, "Distance must be positive").optional(),
-  billableHours: z.coerce.number().min(0, "Hours must be positive").optional(),
-  customerChargeNgn: z.coerce.number().min(0, "Charge must be positive").optional(),
+  revenueNgn: z.coerce.number().min(
+    0,
+    "Revenue must be positive",
+  ),
+  billableKm: z.coerce.number().min(
+    0,
+    "Distance must be positive",
+  ).optional(),
+  billableHours: z.coerce.number().min(
+    0,
+    "Hours must be positive",
+  ).optional(),
+  customerChargeNgn: z.coerce.number().min(
+    0,
+    "Charge must be positive",
+  ).optional(),
   completionNotes: z.string().max(500).optional(),
 });
 
 type CompletionFormData = z.infer<typeof completionSchema>;
 
-interface JobCompletionDialogProps {
+type JobCompletionDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   job: {
@@ -40,14 +60,14 @@ interface JobCompletionDialogProps {
     completionNotes?: string;
   }) => void;
   isSubmitting?: boolean;
-}
+};
 
-export function JobCompletionDialog({ 
-  open, 
-  onOpenChange, 
-  job, 
+export function JobCompletionDialog({
+  open,
+  onOpenChange,
+  job,
   onComplete,
-  isSubmitting = false 
+  isSubmitting = false,
 }: JobCompletionDialogProps) {
   const { format: formatCurrency } = useCurrency();
 
@@ -62,18 +82,24 @@ export function JobCompletionDialog({
     },
   });
 
-  useEffect(() => {
-    if (job) {
+  useEffect(
+    () => {
+      if (job) {
       // Pre-populate with job amount as default revenue
-      form.reset({
-        revenueNgn: job.amountNgn || 0,
-        billableKm: undefined,
-        billableHours: undefined,
-        customerChargeNgn: job.amountNgn || 0,
-        completionNotes: "",
-      });
-    }
-  }, [job, form]);
+        form.reset({
+          revenueNgn: job.amountNgn || 0,
+          billableKm: undefined,
+          billableHours: undefined,
+          customerChargeNgn: job.amountNgn || 0,
+          completionNotes: "",
+        });
+      }
+    },
+    [
+      job,
+      form,
+    ],
+  );
 
   const handleSubmit = (data: CompletionFormData) => {
     onComplete({
@@ -85,12 +111,16 @@ export function JobCompletionDialog({
     });
   };
 
-  if (!job) return null;
+  if (!job)
+    return null;
 
   const watchedRevenue = form.watch("revenueNgn");
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="sm:max-w-[500px] bg-card border-border">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -106,29 +136,43 @@ export function JobCompletionDialog({
         <Card className="bg-muted/30 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
-              <Badge variant="outline" className="font-mono">
+              <Badge
+                variant="outline"
+                className="font-mono"
+              >
                 {job.reference}
               </Badge>
               <span className="text-sm text-muted-foreground">
-                Quoted: {formatCurrency(job.amountNgn)}
+                Quoted:
+                {" "}
+                {formatCurrency(job.amountNgn)}
               </span>
             </div>
             <div className="text-sm text-muted-foreground space-y-1">
-              <p className="truncate">From: {job.pickupAddress}</p>
-              <p className="truncate">To: {job.deliveryAddress}</p>
+              <p className="truncate">
+                From:
+                {job.pickupAddress}
+              </p>
+              <p className="truncate">
+                To:
+                {job.deliveryAddress}
+              </p>
             </div>
           </CardContent>
         </Card>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             {/* Revenue Section */}
             <div className="p-4 rounded-lg bg-success/5 border border-success/20 space-y-4">
               <h4 className="font-medium text-sm flex items-center gap-2 text-success">
                 <DollarSign className="h-4 w-4" />
                 Revenue Details
               </h4>
-              
+
               <FormField
                 control={form.control}
                 name="revenueNgn"
@@ -136,11 +180,11 @@ export function JobCompletionDialog({
                   <FormItem>
                     <FormLabel>Final Revenue (NGN) *</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        step="100" 
+                      <Input
+                        type="number"
+                        step="100"
                         placeholder="0.00"
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormDescription>
@@ -158,11 +202,11 @@ export function JobCompletionDialog({
                   <FormItem>
                     <FormLabel>Customer Charge (NGN)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        step="100" 
+                      <Input
+                        type="number"
+                        step="100"
                         placeholder="0.00"
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormDescription>
@@ -180,7 +224,7 @@ export function JobCompletionDialog({
                 <Route className="h-4 w-4 text-primary" />
                 Trip Metrics
               </h4>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -189,11 +233,11 @@ export function JobCompletionDialog({
                     <FormItem>
                       <FormLabel>Distance (km)</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          step="0.1" 
+                        <Input
+                          type="number"
+                          step="0.1"
                           placeholder="0"
-                          {...field} 
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -208,11 +252,11 @@ export function JobCompletionDialog({
                     <FormItem>
                       <FormLabel>Duration (hours)</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          step="0.5" 
+                        <Input
+                          type="number"
+                          step="0.5"
                           placeholder="0"
-                          {...field} 
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -233,11 +277,11 @@ export function JobCompletionDialog({
                     Completion Notes
                   </FormLabel>
                   <FormControl>
-                    <Textarea 
+                    <Textarea
                       placeholder="Any additional notes about the delivery..."
                       className="resize-none"
                       rows={3}
-                      {...field} 
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -256,16 +300,16 @@ export function JobCompletionDialog({
             )}
 
             <div className="flex justify-end gap-3 pt-2">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 variant="gradient"
                 disabled={isSubmitting}
               >

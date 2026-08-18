@@ -2,14 +2,21 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ComplianceDocumentsPanel } from "@/components/owner-operator/ComplianceDocumentsPanel";
 
 export default function OwnerOperatorDocuments() {
-  const orgCtx = { memberships: [], isLoading: false, hasOrgRole: () => false, hasOrgType: () => false, getByOrgType: (_type: string) => [] as any[] };
+  const orgCtx = {
+    memberships: [], isLoading: false, hasOrgRole: () => false, hasOrgType: () => false, getByOrgType: (_type: string) => [] as any[],
+  };
   const ownerOrg = orgCtx.getByOrgType("OWNER_OPERATOR")[0];
 
-  const vehicles: { id: string; tenant_id?: string }[] = [];
+  const vehicles: {
+    id: string; tenant_id?: string;
+  }[] = [];
   const tenantId = vehicles[0]?.tenant_id;
 
   return (
-    <DashboardLayout title="Documents" subtitle="Manage compliance and vehicle documents">
+    <DashboardLayout
+      title="Documents"
+      subtitle="Manage compliance and vehicle documents"
+    >
       <ComplianceDocumentsPanel
         orgId={ownerOrg?.orgId}
         tenantId={tenantId}

@@ -1,20 +1,32 @@
-import {Download,  AlertTriangle, CalendarIcon, DollarSign, Droplets, Edit, Eye, Fuel, Gauge, Loader2, MoreHorizontal, Plus, Search, SlidersHorizontal, Trash2, Truck } from 'lucide-react';
-import { useState, useEffect, useMemo } from "react";
-import { useFuelTransactions, useFuelSummary, useFuelBudgetVsActual, useFuelMetrics, useFuelEfficiency, useRecordFuelTransaction, useUpdateFuelTransaction, useDeleteFuelTransaction, exportFuelTransactions, useVehicles, useDrivers } from "@truckmoov/api/fleet";
-import type { FleetDriver, FuelConsumptionBucket, FuelRecord, Vehicle, VehicleEfficiency } from "@truckmoov/api/fleet";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Badge } from "@/components/shadcn/badge";
-import { Progress } from "@/components/shadcn/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import type {
+  FleetDriver, FuelConsumptionBucket, FuelRecord, Vehicle, VehicleEfficiency,
+} from "@truckmoov/api/fleet";
+import type { PeriodValue } from "./PeriodFilter";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow } from "@/components/shadcn/table";
+  exportFuelTransactions, useDeleteFuelTransaction, useDrivers, useFuelBudgetVsActual, useFuelEfficiency, useFuelMetrics, useFuelSummary, useFuelTransactions, useRecordFuelTransaction, useUpdateFuelTransaction, useVehicles,
+} from "@truckmoov/api/fleet";
+import {
+  formatDate, formatDayMonth, formatDayMonthTime, toDateParam,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  AlertTriangle, CalendarIcon, DollarSign, Download, Droplets, Edit, Eye, Fuel, Gauge, Loader2, MoreHorizontal, Plus, Search, SlidersHorizontal, Trash2, Truck,
+} from "lucide-react";
+import {
+  useEffect, useMemo, useState,
+} from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -24,44 +36,54 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import { Calendar } from "@/components/shadcn/calendar";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter } from "@/components/shadcn/dialog";
+} from "@/components/shadcn/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/shadcn/popover";
+import { Progress } from "@/components/shadcn/progress";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue } from "@/components/shadcn/select";
-import { Label } from "@/components/shadcn/label";
+  SelectValue,
+} from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import { Checkbox } from "@/components/shadcn/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
-import { Calendar } from "@/components/shadcn/calendar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/shadcn/table";
 import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend } from "recharts";
-import { formatDate, formatDayMonth, formatDayMonthTime, toDateParam } from "@truckmoov/app-core/utils/time-utils";
-import { toast } from "sonner";
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
 import { cn } from "@/lib/utils";
-import { PeriodFilter, PeriodValue } from "./PeriodFilter";
+import { PeriodFilter } from "./PeriodFilter";
 
 type FuelTransaction = FuelRecord;
 
@@ -89,29 +111,38 @@ const FUEL_METRIC_PERIOD_LABEL: Record<FuelMetricsPeriod, string> = {
 
 function getFuelTypeLiters(bucket: FuelConsumptionBucket, fuelType: "diesel" | "petrol") {
   const byFuelType = bucket.byFuelType ?? {};
-  const fuelTypeMetrics =
-    byFuelType[fuelType] ??
-    byFuelType[fuelType.toUpperCase()] ??
-    byFuelType[fuelType.charAt(0).toUpperCase() + fuelType.slice(1)];
+  const fuelTypeMetrics
+    = byFuelType[fuelType]
+      ?? byFuelType[fuelType.toUpperCase()]
+      ?? byFuelType[fuelType.charAt(0).toUpperCase() + fuelType.slice(1)];
 
   return fuelTypeMetrics?.liters ?? 0;
 }
 
 function getEfficiencyProgressValue(vehicle: VehicleEfficiency) {
-  if (vehicle.kmPerLiter === null) return 0;
+  if (vehicle.kmPerLiter === null)
+    return 0;
   const target = vehicle.threshold && vehicle.threshold > 0 ? vehicle.threshold * 2 : 15;
-  return Math.min((vehicle.kmPerLiter / target) * 100, 100);
+  return Math.min(
+    (vehicle.kmPerLiter / target) * 100,
+    100,
+  );
 }
 
 function getPeriodRange(period: PeriodValue) {
   const today = new Date();
-  const end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const end = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
   const start = new Date(end);
 
   if (period === "1") {
     start.setDate(end.getDate() - 1);
     end.setDate(end.getDate() - 1);
-  } else if (period !== "0") {
+  }
+  else if (period !== "0") {
     start.setDate(end.getDate() - Number(period) + 1);
   }
 
@@ -126,7 +157,8 @@ function formatNgn(value: number) {
 }
 
 function formatBudgetWindow(start?: string, end?: string) {
-  if (!start || !end) return "Selected period";
+  if (!start || !end)
+    return "Selected period";
   return `${formatDate(start)} - ${formatDate(end)}`;
 }
 
@@ -136,167 +168,322 @@ function getVehicleRegistration(vehicle: Vehicle) {
 
 function getVehicleOptionLabel(vehicle: Vehicle) {
   const registration = getVehicleRegistration(vehicle);
-  const descriptor = [vehicle.make, vehicle.model].filter(Boolean).join(" ");
+  const descriptor = [
+    vehicle.make,
+    vehicle.model,
+  ].filter(Boolean).join(" ");
   return descriptor ? `${registration} - ${descriptor}` : registration;
 }
 
 function getDriverDisplayName(driver: FleetDriver) {
-  return driver.name || [driver.firstName, driver.lastName].filter(Boolean).join(" ").trim();
+  return driver.name || [
+    driver.firstName,
+    driver.lastName,
+  ].filter(Boolean).join(" ").trim();
 }
 
 export function FuelTab() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [activeTab, setActiveTab] = useState("transactions");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState<FuelTransaction | null>(null);
-  const [transactionPendingDelete, setTransactionPendingDelete] = useState<FuelTransaction | null>(null);
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    debouncedSearch,
+    setDebouncedSearch,
+  ] = useState("");
+  const [
+    activeTab,
+    setActiveTab,
+  ] = useState("transactions");
+  const [
+    isAddDialogOpen,
+    setIsAddDialogOpen,
+  ] = useState(false);
+  const [
+    isViewDialogOpen,
+    setIsViewDialogOpen,
+  ] = useState(false);
+  const [
+    isEditDialogOpen,
+    setIsEditDialogOpen,
+  ] = useState(false);
+  const [
+    selectedTransaction,
+    setSelectedTransaction,
+  ] = useState<FuelTransaction | null>(null);
+  const [
+    transactionPendingDelete,
+    setTransactionPendingDelete,
+  ] = useState<FuelTransaction | null>(null);
 
   // Per-chart period filters
-  const [metricsPeriod, setMetricsPeriod] = useState<FuelMetricsPeriod>("weekly");
-  const [budgetPeriod, setBudgetPeriod] = useState<PeriodValue>("7");
+  const [
+    metricsPeriod,
+    setMetricsPeriod,
+  ] = useState<FuelMetricsPeriod>("weekly");
+  const [
+    budgetPeriod,
+    setBudgetPeriod,
+  ] = useState<PeriodValue>("7");
 
   // Filter state
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [fuelTypeFilter, setFuelTypeFilter] = useState<"all" | "diesel" | "petrol">("all");
-  const [qtyMin, setQtyMin] = useState("");
-  const [qtyMax, setQtyMax] = useState("");
-  const [costMin, setCostMin] = useState("");
-  const [costMax, setCostMax] = useState("");
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
-  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [
+    filterOpen,
+    setFilterOpen,
+  ] = useState(false);
+  const [
+    fuelTypeFilter,
+    setFuelTypeFilter,
+  ] = useState<"all" | "diesel" | "petrol">("all");
+  const [
+    qtyMin,
+    setQtyMin,
+  ] = useState("");
+  const [
+    qtyMax,
+    setQtyMax,
+  ] = useState("");
+  const [
+    costMin,
+    setCostMin,
+  ] = useState("");
+  const [
+    costMax,
+    setCostMax,
+  ] = useState("");
+  const [
+    dateFrom,
+    setDateFrom,
+  ] = useState<Date | undefined>(undefined);
+  const [
+    dateTo,
+    setDateTo,
+  ] = useState<Date | undefined>(undefined);
 
-  const [draftEnableFuelType, setDraftEnableFuelType] = useState(false);
-  const [draftFuelType, setDraftFuelType] = useState<"all" | "diesel" | "petrol">("all");
-  const [draftEnableQty, setDraftEnableQty] = useState(false);
-  const [draftQtyMin, setDraftQtyMin] = useState("");
-  const [draftQtyMax, setDraftQtyMax] = useState("");
-  const [draftEnableCost, setDraftEnableCost] = useState(false);
-  const [draftCostMin, setDraftCostMin] = useState("");
-  const [draftCostMax, setDraftCostMax] = useState("");
-  const [draftEnableDate, setDraftEnableDate] = useState(false);
-  const [draftDateFrom, setDraftDateFrom] = useState<Date | undefined>(undefined);
-  const [draftDateTo, setDraftDateTo] = useState<Date | undefined>(undefined);
+  const [
+    draftEnableFuelType,
+    setDraftEnableFuelType,
+  ] = useState(false);
+  const [
+    draftFuelType,
+    setDraftFuelType,
+  ] = useState<"all" | "diesel" | "petrol">("all");
+  const [
+    draftEnableQty,
+    setDraftEnableQty,
+  ] = useState(false);
+  const [
+    draftQtyMin,
+    setDraftQtyMin,
+  ] = useState("");
+  const [
+    draftQtyMax,
+    setDraftQtyMax,
+  ] = useState("");
+  const [
+    draftEnableCost,
+    setDraftEnableCost,
+  ] = useState(false);
+  const [
+    draftCostMin,
+    setDraftCostMin,
+  ] = useState("");
+  const [
+    draftCostMax,
+    setDraftCostMax,
+  ] = useState("");
+  const [
+    draftEnableDate,
+    setDraftEnableDate,
+  ] = useState(false);
+  const [
+    draftDateFrom,
+    setDraftDateFrom,
+  ] = useState<Date | undefined>(undefined);
+  const [
+    draftDateTo,
+    setDraftDateTo,
+  ] = useState<Date | undefined>(undefined);
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
-    return () => clearTimeout(t);
-  }, [searchQuery]);
+  useEffect(
+    () => {
+      const t = setTimeout(
+        setDebouncedSearch,
+        300,
+        searchQuery,
+      );
+      return () => clearTimeout(t);
+    },
+    [searchQuery],
+  );
 
-  const queryParams = useMemo(() => ({
-    params: {
-      from: dateFrom ? dateFrom.toISOString() : undefined,
-      to: dateTo ? dateTo.toISOString() : undefined,
-    }
-  }), [dateFrom, dateTo]);
+  const queryParams = useMemo(
+    () => ({
+      params: {
+        from: dateFrom ? dateFrom.toISOString() : undefined,
+        to: dateTo ? dateTo.toISOString() : undefined,
+      },
+    }),
+    [
+      dateFrom,
+      dateTo,
+    ],
+  );
 
   const fuelQuery = useFuelTransactions(queryParams);
   const summaryQuery = useFuelSummary();
   const efficiencyQuery = useFuelEfficiency();
   const vehiclesQuery = useVehicles();
   const driversQuery = useDrivers();
-  const fuelMetricsQuery = useFuelMetrics({
-    params: {
-      period: metricsPeriod,
-    },
-  });
-  const budgetRange = useMemo(() => getPeriodRange(budgetPeriod), [budgetPeriod]);
+  const fuelMetricsQuery = useFuelMetrics({ params: { period: metricsPeriod } });
+  const budgetRange = useMemo(
+    () => getPeriodRange(budgetPeriod),
+    [budgetPeriod],
+  );
   const budgetVsActualQuery = useFuelBudgetVsActual({ params: budgetRange });
   const transactions = fuelQuery.data?.data ?? [];
   const isLoading = fuelQuery.isLoading && !fuelQuery.data;
-  const vehicleOptions = useMemo(() => {
-    const seen = new Set<string>();
+  const vehicleOptions = useMemo(
+    () => {
+      const seen = new Set<string>();
 
-    return (vehiclesQuery.data?.data ?? []).flatMap((vehicle) => {
-      const value = vehicle.id;
-      if (!value || seen.has(value)) return [];
-      seen.add(value);
-      return [{ value, label: getVehicleOptionLabel(vehicle), type: vehicle.type }];
-    });
-  }, [vehiclesQuery.data]);
-  const driverOptions = useMemo(() => {
-    const seen = new Set<string>();
+      return (vehiclesQuery.data?.data ?? []).flatMap((vehicle) => {
+        const value = vehicle.id;
+        if (!value || seen.has(value))
+          return [];
+        seen.add(value);
+        return [
+          {
+            value, label: getVehicleOptionLabel(vehicle), type: vehicle.type,
+          },
+        ];
+      });
+    },
+    [vehiclesQuery.data],
+  );
+  const driverOptions = useMemo(
+    () => {
+      const seen = new Set<string>();
 
-    return (driversQuery.data?.data ?? []).flatMap((driver) => {
-      const value = driver.id;
-      if (!value || seen.has(value)) return [];
-      seen.add(value);
-      return [{ value, label: getDriverDisplayName(driver) }];
-    });
-  }, [driversQuery.data]);
+      return (driversQuery.data?.data ?? []).flatMap((driver) => {
+        const value = driver.id;
+        if (!value || seen.has(value))
+          return [];
+        seen.add(value);
+        return [
+          {
+            value, label: getDriverDisplayName(driver),
+          },
+        ];
+      });
+    },
+    [driversQuery.data],
+  );
 
   const recordMutation = useRecordFuelTransaction();
   const updateMutation = useUpdateFuelTransaction();
   const deleteMutation = useDeleteFuelTransaction();
 
-  const [newTransaction, setNewTransaction] = useState({
+  const [
+    newTransaction,
+    setNewTransaction,
+  ] = useState({
     vehicleReg: "",
     driverName: "",
     fuelType: "diesel" as "diesel" | "petrol",
     quantity: "",
     pricePerLitre: "",
     odometer: "",
-    station: "" });
+    station: "",
+  });
 
   const filteredTransactions = transactions.filter((t) => {
     const query = debouncedSearch.trim().toLocaleLowerCase();
-    if (query && ![t.vehiclePlateNumber, t.vehicleId, t.driverName, t.driverId, t.station]
-      .some((value) => value?.toLocaleLowerCase().includes(query))) return false;
-    if (fuelTypeFilter !== "all" && t.fuelType.toLocaleLowerCase() !== fuelTypeFilter) return false;
+    if (query && ![
+      t.vehiclePlateNumber,
+      t.vehicleId,
+      t.driverName,
+      t.driverId,
+      t.station,
+    ]
+      .some(value => value?.toLocaleLowerCase().includes(query))) {
+      return false;
+    }
+    if (fuelTypeFilter !== "all" && t.fuelType.toLocaleLowerCase() !== fuelTypeFilter)
+      return false;
     const qty = t.liters;
-    if (qtyMin && qty < Number(qtyMin)) return false;
-    if (qtyMax && qty > Number(qtyMax)) return false;
+    if (qtyMin && qty < Number(qtyMin))
+      return false;
+    if (qtyMax && qty > Number(qtyMax))
+      return false;
     const cost = t.totalCost;
-    if (costMin && cost < Number(costMin)) return false;
-    if (costMax && cost > Number(costMax)) return false;
+    if (costMin && cost < Number(costMin))
+      return false;
+    if (costMax && cost > Number(costMax))
+      return false;
     return true;
   });
 
-  const uniqueVehicleCount = new Set(filteredTransactions.map((t) => t.vehicleId)).size;
-  const activeFilterCount =
-    (qtyMin || qtyMax ? 1 : 0) +
-    (costMin || costMax ? 1 : 0) +
-    (dateFrom || dateTo ? 1 : 0);
+  const uniqueVehicleCount = new Set(filteredTransactions.map(t => t.vehicleId)).size;
+  const activeFilterCount
+    = (qtyMin || qtyMax ? 1 : 0)
+      + (costMin || costMax ? 1 : 0)
+      + (dateFrom || dateTo ? 1 : 0);
 
   const summary = summaryQuery.data?.data;
-  const fuelConsumptionChartData = useMemo<FuelConsumptionChartPoint[]>(() => {
-    return (fuelMetricsQuery.data?.data ?? []).map((bucket) => ({
-      label: bucket.label,
-      diesel: getFuelTypeLiters(bucket, "diesel"),
-      petrol: getFuelTypeLiters(bucket, "petrol"),
-    }));
-  }, [fuelMetricsQuery.data]);
-  const budgetVsActual = budgetVsActualQuery.data?.data;
-  const budgetChartData = useMemo<BudgetChartPoint[]>(() => {
-    const vehicles = budgetVsActual?.vehicles ?? [];
-
-    if (vehicles.length > 0) {
-      return vehicles.map((vehicle) => ({
-        label: vehicle.vehicleId,
-        budgetedNgn: vehicle.budgetedNgn,
-        actualNgn: vehicle.actualNgn,
-        variance: vehicle.variance,
-        utilizationPct: vehicle.utilizationPct,
-        periodType: vehicle.periodType,
+  const fuelConsumptionChartData = useMemo<FuelConsumptionChartPoint[]>(
+    () => {
+      return (fuelMetricsQuery.data?.data ?? []).map(bucket => ({
+        label: bucket.label,
+        diesel: getFuelTypeLiters(
+          bucket,
+          "diesel",
+        ),
+        petrol: getFuelTypeLiters(
+          bucket,
+          "petrol",
+        ),
       }));
-    }
+    },
+    [fuelMetricsQuery.data],
+  );
+  const budgetVsActual = budgetVsActualQuery.data?.data;
+  const budgetChartData = useMemo<BudgetChartPoint[]>(
+    () => {
+      const vehicles = budgetVsActual?.vehicles ?? [];
 
-    if (budgetVsActual?.fleet) {
-      return [{
-        label: "Fleet",
-        budgetedNgn: budgetVsActual.fleet.budgetedNgn,
-        actualNgn: budgetVsActual.fleet.actualNgn,
-        variance: budgetVsActual.fleet.variance,
-        utilizationPct: budgetVsActual.fleet.utilizationPct,
-        periodType: budgetVsActual.fleet.periodType,
-      }];
-    }
+      if (vehicles.length > 0) {
+        return vehicles.map(vehicle => ({
+          label: vehicle.vehicleId,
+          budgetedNgn: vehicle.budgetedNgn,
+          actualNgn: vehicle.actualNgn,
+          variance: vehicle.variance,
+          utilizationPct: vehicle.utilizationPct,
+          periodType: vehicle.periodType,
+        }));
+      }
 
-    return [];
-  }, [budgetVsActual]);
-  const budgetWindowLabel = formatBudgetWindow(budgetVsActual?.windowStart, budgetVsActual?.windowEnd);
+      if (budgetVsActual?.fleet) {
+        return [
+          {
+            label: "Fleet",
+            budgetedNgn: budgetVsActual.fleet.budgetedNgn,
+            actualNgn: budgetVsActual.fleet.actualNgn,
+            variance: budgetVsActual.fleet.variance,
+            utilizationPct: budgetVsActual.fleet.utilizationPct,
+            periodType: budgetVsActual.fleet.periodType,
+          },
+        ];
+      }
+
+      return [];
+    },
+    [budgetVsActual],
+  );
+  const budgetWindowLabel = formatBudgetWindow(
+    budgetVsActual?.windowStart,
+    budgetVsActual?.windowEnd,
+  );
   const fleetBudget = budgetVsActual?.fleet;
   const stats = {
     totalLitres: summary?.totalLitres ?? 0,
@@ -304,23 +491,25 @@ export function FuelTab() {
     avgPricePerLitre: summary?.avgPricePerLitre ?? 0,
   };
   const vehicleEfficiency = efficiencyQuery.data?.data ?? [];
-  const lowEfficiencyVehicles = vehicleEfficiency.filter((vehicle) => vehicle.belowThreshold).length;
-  const efficiencyThresholds = [...new Set(
-    vehicleEfficiency
-      .map((vehicle) => vehicle.threshold)
-      .filter((threshold): threshold is number => threshold !== null)
-  )];
-  const efficiencyThresholdLabel =
-    efficiencyThresholds.length === 0
+  const lowEfficiencyVehicles = vehicleEfficiency.filter(vehicle => vehicle.belowThreshold).length;
+  const efficiencyThresholds = [
+    ...new Set(
+      vehicleEfficiency
+        .map(vehicle => vehicle.threshold)
+        .filter((threshold): threshold is number => threshold !== null),
+    ),
+  ];
+  const efficiencyThresholdLabel
+    = efficiencyThresholds.length === 0
       ? "not set"
       : efficiencyThresholds.length === 1
         ? `${efficiencyThresholds[0]} km/L`
         : "configured per vehicle";
 
   const handleAddTransaction = async () => {
-    const liters = parseFloat(newTransaction.quantity);
-    const pricePerLiter = parseFloat(newTransaction.pricePerLitre);
-    const selectedVehicle = vehicleOptions.find((vehicle) => vehicle.value === newTransaction.vehicleReg);
+    const liters = Number.parseFloat(newTransaction.quantity);
+    const pricePerLiter = Number.parseFloat(newTransaction.pricePerLitre);
+    const selectedVehicle = vehicleOptions.find(vehicle => vehicle.value === newTransaction.vehicleReg);
 
     if (!Number.isFinite(liters) || liters <= 0 || !Number.isFinite(pricePerLiter) || pricePerLiter <= 0) {
       toast.error("Enter a valid quantity and price per litre");
@@ -343,7 +532,8 @@ export function FuelTab() {
       toast.success("Fuel transaction recorded");
       setIsAddDialogOpen(false);
       resetNewTransaction();
-    } catch {
+    }
+    catch {
       toast.error("Failed to record transaction");
     }
   };
@@ -362,14 +552,16 @@ export function FuelTab() {
       quantity: transaction.liters.toString(),
       pricePerLitre: transaction.pricePerLiter.toFixed(0),
       odometer: transaction.odometer?.toString() || "",
-      station: transaction.station || "" });
+      station: transaction.station || "",
+    });
     setIsEditDialogOpen(true);
   };
 
   const handleUpdateTransaction = async () => {
-    if (!selectedTransaction) return;
-    const liters = parseFloat(newTransaction.quantity);
-    const pricePerLiter = parseFloat(newTransaction.pricePerLitre);
+    if (!selectedTransaction)
+      return;
+    const liters = Number.parseFloat(newTransaction.quantity);
+    const pricePerLiter = Number.parseFloat(newTransaction.pricePerLitre);
     try {
       await updateMutation.mutateAsync({
         id: selectedTransaction.id,
@@ -386,7 +578,8 @@ export function FuelTab() {
       setIsEditDialogOpen(false);
       setSelectedTransaction(null);
       resetNewTransaction();
-    } catch {
+    }
+    catch {
       toast.error("Failed to update transaction");
     }
   };
@@ -396,7 +589,8 @@ export function FuelTab() {
       await deleteMutation.mutateAsync({ id });
       toast.success("Transaction deleted");
       setTransactionPendingDelete(null);
-    } catch {
+    }
+    catch {
       toast.error("Failed to delete transaction");
     }
   };
@@ -404,14 +598,18 @@ export function FuelTab() {
   const handleExport = async () => {
     try {
       const csv = await exportFuelTransactions();
-      const blob = new Blob([csv], { type: "text/csv" });
+      const blob = new Blob(
+        [csv],
+        { type: "text/csv" },
+      );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = "fuel-transactions.csv";
       a.click();
       URL.revokeObjectURL(url);
-    } catch {
+    }
+    catch {
       toast.error("Failed to export data");
     }
   };
@@ -424,15 +622,19 @@ export function FuelTab() {
       quantity: "",
       pricePerLitre: "",
       odometer: "",
-      station: "" });
+      station: "",
+    });
   };
 
   if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i} className="bg-card/50 border-border/50">
+          {[...Array.from({ length: 4 })].map((_, i) => (
+            <Card
+              key={i}
+              className="bg-card/50 border-border/50"
+            >
               <CardContent className="p-4">
                 <Skeleton className="h-12 w-full" />
               </CardContent>
@@ -463,7 +665,10 @@ export function FuelTab() {
                 <Droplets className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stats.totalLitres.toLocaleString()}L</p>
+                <p className="text-2xl font-bold">
+                  {stats.totalLitres.toLocaleString()}
+                  L
+                </p>
                 <p className="text-xs text-muted-foreground">Total Litres</p>
               </div>
             </div>
@@ -476,7 +681,11 @@ export function FuelTab() {
                 <DollarSign className="h-5 w-5 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold">₦{(stats.totalCost / 1000).toFixed(0)}K</p>
+                <p className="text-2xl font-bold">
+                  ₦
+                  {(stats.totalCost / 1000).toFixed(0)}
+                  K
+                </p>
                 <p className="text-xs text-muted-foreground">Total Spent</p>
               </div>
             </div>
@@ -490,7 +699,7 @@ export function FuelTab() {
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {stats.avgPricePerLitre > 0 ? `₦${stats.avgPricePerLitre.toFixed(0)}/L` : '—'}
+                  {stats.avgPricePerLitre > 0 ? `₦${stats.avgPricePerLitre.toFixed(0)}/L` : "—"}
                 </p>
                 <p className="text-xs text-muted-foreground">Avg Price</p>
               </div>
@@ -513,25 +722,37 @@ export function FuelTab() {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+      >
         <TabsList className="bg-muted/50 mb-4">
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="efficiency">Efficiency</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="transactions" className="space-y-4">
+        <TabsContent
+          value="transactions"
+          className="space-y-4"
+        >
           <Card className="bg-card/50 border-border/50">
             <CardHeader className="space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Fuel className="h-5 w-5 text-primary" />
-                    Fuel Consumption ({uniqueVehicleCount})
+                    Fuel Consumption (
+                    {uniqueVehicleCount}
+                    )
                   </CardTitle>
                   <CardDescription className="mt-1">Per-vehicle fuel usage and spend — spot anomalies, theft signals, and efficiency trends.</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={handleExport}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExport}
+                >
                   <Download className="h-4 w-4 mr-2" />
                   Export Data
                 </Button>
@@ -542,7 +763,7 @@ export function FuelTab() {
                   <Input
                     placeholder="Search by vehicle, driver, station..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={e => setSearchQuery(e.target.value)}
                     className="pl-10 pr-10 bg-background/50 border-border/50"
                   />
                   {fuelQuery.isFetching && !isLoading && (
@@ -569,17 +790,26 @@ export function FuelTab() {
                   }}
                 >
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="bg-card/50 border-border/50 relative">
+                    <Button
+                      variant="outline"
+                      className="bg-card/50 border-border/50 relative"
+                    >
                       <SlidersHorizontal className="h-4 w-4 mr-2" />
                       Filter
                       {activeFilterCount > 0 && (
-                        <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-[10px]">
+                        <Badge
+                          variant="secondary"
+                          className="ml-2 h-5 px-1.5 text-[10px]"
+                        >
                           {activeFilterCount}
                         </Badge>
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent align="end" className="w-80 space-y-4 max-h-[70vh] overflow-y-auto">
+                  <PopoverContent
+                    align="end"
+                    className="w-80 space-y-4 max-h-[70vh] overflow-y-auto"
+                  >
                     <Label className="text-sm font-semibold">Show Fuel Records</Label>
 
                     {/* Fuel Type */}
@@ -588,13 +818,18 @@ export function FuelTab() {
                         <Checkbox
                           id="fuel-flt-type"
                           checked={draftEnableFuelType}
-                          onCheckedChange={(c) => setDraftEnableFuelType(c === true)}
+                          onCheckedChange={c => setDraftEnableFuelType(c === true)}
                         />
-                        <Label htmlFor="fuel-flt-type" className="text-xs cursor-pointer">Fuel Type</Label>
+                        <Label
+                          htmlFor="fuel-flt-type"
+                          className="text-xs cursor-pointer"
+                        >
+                          Fuel Type
+                        </Label>
                       </div>
                       <Select
                         value={draftFuelType}
-                        onValueChange={(v) => setDraftFuelType(v as "all" | "diesel" | "petrol")}
+                        onValueChange={v => setDraftFuelType(v as "all" | "diesel" | "petrol")}
                         disabled={!draftEnableFuelType}
                       >
                         <SelectTrigger className="h-9">
@@ -614,9 +849,14 @@ export function FuelTab() {
                         <Checkbox
                           id="fuel-flt-qty"
                           checked={draftEnableQty}
-                          onCheckedChange={(c) => setDraftEnableQty(c === true)}
+                          onCheckedChange={c => setDraftEnableQty(c === true)}
                         />
-                        <Label htmlFor="fuel-flt-qty" className="text-xs cursor-pointer">Quantity (L)</Label>
+                        <Label
+                          htmlFor="fuel-flt-qty"
+                          className="text-xs cursor-pointer"
+                        >
+                          Quantity (L)
+                        </Label>
                       </div>
                       <div className="flex items-center gap-2">
                         <Input
@@ -624,7 +864,7 @@ export function FuelTab() {
                           min={0}
                           placeholder="From"
                           value={draftQtyMin}
-                          onChange={(e) => setDraftQtyMin(e.target.value)}
+                          onChange={e => setDraftQtyMin(e.target.value)}
                           disabled={!draftEnableQty}
                           className="h-9"
                         />
@@ -634,7 +874,7 @@ export function FuelTab() {
                           min={0}
                           placeholder="To"
                           value={draftQtyMax}
-                          onChange={(e) => setDraftQtyMax(e.target.value)}
+                          onChange={e => setDraftQtyMax(e.target.value)}
                           disabled={!draftEnableQty}
                           className="h-9"
                         />
@@ -647,9 +887,14 @@ export function FuelTab() {
                         <Checkbox
                           id="fuel-flt-cost"
                           checked={draftEnableCost}
-                          onCheckedChange={(c) => setDraftEnableCost(c === true)}
+                          onCheckedChange={c => setDraftEnableCost(c === true)}
                         />
-                        <Label htmlFor="fuel-flt-cost" className="text-xs cursor-pointer">Total (₦)</Label>
+                        <Label
+                          htmlFor="fuel-flt-cost"
+                          className="text-xs cursor-pointer"
+                        >
+                          Total (₦)
+                        </Label>
                       </div>
                       <div className="flex items-center gap-2">
                         <Input
@@ -657,7 +902,7 @@ export function FuelTab() {
                           min={0}
                           placeholder="From"
                           value={draftCostMin}
-                          onChange={(e) => setDraftCostMin(e.target.value)}
+                          onChange={e => setDraftCostMin(e.target.value)}
                           disabled={!draftEnableCost}
                           className="h-9"
                         />
@@ -667,7 +912,7 @@ export function FuelTab() {
                           min={0}
                           placeholder="To"
                           value={draftCostMax}
-                          onChange={(e) => setDraftCostMax(e.target.value)}
+                          onChange={e => setDraftCostMax(e.target.value)}
                           disabled={!draftEnableCost}
                           className="h-9"
                         />
@@ -680,9 +925,14 @@ export function FuelTab() {
                         <Checkbox
                           id="fuel-flt-date"
                           checked={draftEnableDate}
-                          onCheckedChange={(c) => setDraftEnableDate(c === true)}
+                          onCheckedChange={c => setDraftEnableDate(c === true)}
                         />
-                        <Label htmlFor="fuel-flt-date" className="text-xs cursor-pointer">Date Range</Label>
+                        <Label
+                          htmlFor="fuel-flt-date"
+                          className="text-xs cursor-pointer"
+                        >
+                          Date Range
+                        </Label>
                       </div>
                       <div className="flex items-center gap-2">
                         <Popover>
@@ -693,14 +943,17 @@ export function FuelTab() {
                               disabled={!draftEnableDate}
                               className={cn(
                                 "h-9 flex-1 justify-start text-left font-normal",
-                                !draftDateFrom && "text-muted-foreground"
+                                !draftDateFrom && "text-muted-foreground",
                               )}
                             >
                               <CalendarIcon className="mr-2 h-3.5 w-3.5" />
                               {draftDateFrom ? formatDayMonth(draftDateFrom) : "From"}
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
+                          <PopoverContent
+                            className="w-auto p-0"
+                            align="start"
+                          >
                             <Calendar
                               mode="single"
                               selected={draftDateFrom}
@@ -719,14 +972,17 @@ export function FuelTab() {
                               disabled={!draftEnableDate}
                               className={cn(
                                 "h-9 flex-1 justify-start text-left font-normal",
-                                !draftDateTo && "text-muted-foreground"
+                                !draftDateTo && "text-muted-foreground",
                               )}
                             >
                               <CalendarIcon className="mr-2 h-3.5 w-3.5" />
                               {draftDateTo ? formatDayMonth(draftDateTo) : "To"}
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
+                          <PopoverContent
+                            className="w-auto p-0"
+                            align="start"
+                          >
                             <Calendar
                               mode="single"
                               selected={draftDateTo}
@@ -788,89 +1044,120 @@ export function FuelTab() {
             </CardHeader>
             <CardContent className="p-0">
               <Table>
-              <TableHeader>
-                <TableRow className="border-border/50 hover:bg-transparent">
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead>Driver</TableHead>
-                  <TableHead>Fuel Type</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Station</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="w-[60px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTransactions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      No fuel transactions found.
-                    </TableCell>
+                <TableHeader>
+                  <TableRow className="border-border/50 hover:bg-transparent">
+                    <TableHead>Vehicle</TableHead>
+                    <TableHead>Driver</TableHead>
+                    <TableHead>Fuel Type</TableHead>
+                    <TableHead>Quantity</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Station</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="w-[60px]"></TableHead>
                   </TableRow>
-                ) : (
-                  filteredTransactions.map((transaction) => (
-                    <TableRow key={transaction.id} className="border-border/50">
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Truck className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-mono">{transaction.vehiclePlateNumber || transaction.vehicleId}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{transaction.driverName || transaction.driverId || '—'}</TableCell>
-                      <TableCell className="capitalize">
-                        {transaction.fuelType || '—'}
-                      </TableCell>
-                      <TableCell>{transaction.liters.toFixed(1)}L</TableCell>
-                      <TableCell className="font-medium">
-                        ₦{transaction.totalCost.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="max-w-[150px] truncate">
-                        {transaction.station || '—'}
-                      </TableCell>
-                      <TableCell>{formatDayMonthTime(transaction.recordedAt)}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-popover border-border">
-                            <DropdownMenuItem onClick={() => handleViewTransaction(transaction)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditTransaction(transaction)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => setTransactionPendingDelete(transaction)}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredTransactions.length === 0
+                    ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={8}
+                            className="text-center py-8 text-muted-foreground"
+                          >
+                            No fuel transactions found.
+                          </TableCell>
+                        </TableRow>
+                      )
+                    : (
+                        filteredTransactions.map(transaction => (
+                          <TableRow
+                            key={transaction.id}
+                            className="border-border/50"
+                          >
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Truck className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-mono">{transaction.vehiclePlateNumber || transaction.vehicleId}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>{transaction.driverName || transaction.driverId || "—"}</TableCell>
+                            <TableCell className="capitalize">
+                              {transaction.fuelType || "—"}
+                            </TableCell>
+                            <TableCell>
+                              {transaction.liters.toFixed(1)}
+                              L
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              ₦
+                              {transaction.totalCost.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="max-w-[150px] truncate">
+                              {transaction.station || "—"}
+                            </TableCell>
+                            <TableCell>{formatDayMonthTime(transaction.recordedAt)}</TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="bg-popover border-border"
+                                >
+                                  <DropdownMenuItem onClick={() => handleViewTransaction(transaction)}>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Details
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEditTransaction(transaction)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => setTransactionPendingDelete(transaction)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="analytics" className="space-y-4">
+        <TabsContent
+          value="analytics"
+          className="space-y-4"
+        >
           <Card className="bg-card/50 border-border/50">
             <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
               <div>
-                <CardTitle className="text-base">{FUEL_METRIC_PERIOD_LABEL[metricsPeriod]} Consumption</CardTitle>
-                <CardDescription>Diesel vs Petrol usage by {metricsPeriod === "weekly" ? "week" : "month"}</CardDescription>
+                <CardTitle className="text-base">
+                  {FUEL_METRIC_PERIOD_LABEL[metricsPeriod]}
+                  {" "}
+                  Consumption
+                </CardTitle>
+                <CardDescription>
+                  Diesel vs Petrol usage by
+                  {metricsPeriod === "weekly" ? "week" : "month"}
+                </CardDescription>
               </div>
-              <Select value={metricsPeriod} onValueChange={(value) => setMetricsPeriod(value as FuelMetricsPeriod)}>
+              <Select
+                value={metricsPeriod}
+                onValueChange={value => setMetricsPeriod(value as FuelMetricsPeriod)}
+              >
                 <SelectTrigger className="w-[140px]">
                   <SelectValue />
                 </SelectTrigger>
@@ -881,109 +1168,170 @@ export function FuelTab() {
               </Select>
             </CardHeader>
             <CardContent>
-              {fuelMetricsQuery.isLoading ? (
-                <Skeleton className="h-[300px] w-full" />
-              ) : fuelMetricsQuery.isError ? (
-                <div className="flex h-[300px] flex-col items-center justify-center gap-3 text-center text-sm text-muted-foreground">
-                  <p>Unable to load fuel consumption data.</p>
-                  <Button variant="outline" size="sm" onClick={() => fuelMetricsQuery.refetch()}>
-                    Retry
-                  </Button>
-                </div>
-              ) : fuelConsumptionChartData.length === 0 ? (
-                <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
-                  No fuel consumption data available for this period.
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={fuelConsumptionChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                    <Tooltip
-                      formatter={(value) => `${Number(value).toLocaleString()} L`}
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px" }}
-                    />
-                    <Legend />
-                    <Bar
-                      dataKey="diesel"
-                      name="Diesel (L)"
-                      fill="hsl(var(--primary))"
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="petrol"
-                      name="Petrol (L)"
-                      fill="hsl(var(--warning))"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
+              {fuelMetricsQuery.isLoading
+                ? (
+                    <Skeleton className="h-[300px] w-full" />
+                  )
+                : fuelMetricsQuery.isError
+                  ? (
+                      <div className="flex h-[300px] flex-col items-center justify-center gap-3 text-center text-sm text-muted-foreground">
+                        <p>Unable to load fuel consumption data.</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fuelMetricsQuery.refetch()}
+                        >
+                          Retry
+                        </Button>
+                      </div>
+                    )
+                  : fuelConsumptionChartData.length === 0
+                    ? (
+                        <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
+                          No fuel consumption data available for this period.
+                        </div>
+                      )
+                    : (
+                        <ResponsiveContainer
+                          width="100%"
+                          height={300}
+                        >
+                          <BarChart data={fuelConsumptionChartData}>
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              stroke="hsl(var(--border))"
+                            />
+                            <XAxis
+                              dataKey="label"
+                              stroke="hsl(var(--muted-foreground))"
+                              fontSize={12}
+                            />
+                            <YAxis
+                              stroke="hsl(var(--muted-foreground))"
+                              fontSize={12}
+                            />
+                            <Tooltip
+                              formatter={value => `${Number(value).toLocaleString()} L`}
+                              contentStyle={{
+                                backgroundColor: "hsl(var(--card))",
+                                border: "1px solid hsl(var(--border))",
+                                borderRadius: "8px",
+                              }}
+                            />
+                            <Legend />
+                            <Bar
+                              dataKey="diesel"
+                              name="Diesel (L)"
+                              fill="hsl(var(--primary))"
+                              radius={[
+                                4,
+                                4,
+                                0,
+                                0,
+                              ]}
+                            />
+                            <Bar
+                              dataKey="petrol"
+                              name="Petrol (L)"
+                              fill="hsl(var(--warning))"
+                              radius={[
+                                4,
+                                4,
+                                0,
+                                0,
+                              ]}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="efficiency" className="space-y-4">
+        <TabsContent
+          value="efficiency"
+          className="space-y-4"
+        >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card className="bg-card/50 border-border/50">
               <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
                 <div>
                   <CardTitle className="text-base">Vehicle Fuel Efficiency</CardTitle>
-                  <CardDescription>Kilometers per litre by vehicle (threshold: {efficiencyThresholdLabel})</CardDescription>
+                  <CardDescription>
+                    Kilometers per litre by vehicle (threshold:
+                    {efficiencyThresholdLabel}
+                    )
+                  </CardDescription>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {efficiencyQuery.isLoading ? (
-                    <div className="space-y-4">
-                      {[...Array(4)].map((_, index) => (
-                        <Skeleton key={index} className="h-6 w-full" />
-                      ))}
-                    </div>
-                  ) : efficiencyQuery.isError ? (
-                    <div className="flex flex-col items-center justify-center gap-3 py-8 text-center text-muted-foreground">
-                      <p>Unable to load fuel efficiency data.</p>
-                      <Button variant="outline" size="sm" onClick={() => efficiencyQuery.refetch()}>
-                        Retry
-                      </Button>
-                    </div>
-                  ) : vehicleEfficiency.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No efficiency data available. Record fuel transactions with odometer readings to calculate efficiency.
-                    </div>
-                  ) : (
-                    vehicleEfficiency.map((vehicle: VehicleEfficiency) => (
-                      <div key={vehicle.vehicleId} className="flex items-center gap-4">
-                        <div className="w-24 font-mono text-sm truncate">{vehicle.vehicleId}</div>
-                        <div className="flex-1">
-                          {vehicle.kmPerLiter !== null ? (
-                            <Progress
-                              value={getEfficiencyProgressValue(vehicle)}
-                              className={cn(
-                                "h-3",
-                                vehicle.belowThreshold && "[&>div]:bg-destructive",
-                                !vehicle.belowThreshold && "[&>div]:bg-success"
-                              )}
+                  {efficiencyQuery.isLoading
+                    ? (
+                        <div className="space-y-4">
+                          {[...Array.from({ length: 4 })].map((_, index) => (
+                            <Skeleton
+                              key={index}
+                              className="h-6 w-full"
                             />
-                          ) : (
-                            <div className="text-xs text-muted-foreground italic">Insufficient data</div>
+                          ))}
+                        </div>
+                      )
+                    : efficiencyQuery.isError
+                      ? (
+                          <div className="flex flex-col items-center justify-center gap-3 py-8 text-center text-muted-foreground">
+                            <p>Unable to load fuel efficiency data.</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => efficiencyQuery.refetch()}
+                            >
+                              Retry
+                            </Button>
+                          </div>
+                        )
+                      : vehicleEfficiency.length === 0
+                        ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                              No efficiency data available. Record fuel transactions with odometer readings to calculate efficiency.
+                            </div>
+                          )
+                        : (
+                            vehicleEfficiency.map((vehicle: VehicleEfficiency) => (
+                              <div
+                                key={vehicle.vehicleId}
+                                className="flex items-center gap-4"
+                              >
+                                <div className="w-24 font-mono text-sm truncate">{vehicle.vehicleId}</div>
+                                <div className="flex-1">
+                                  {vehicle.kmPerLiter !== null
+                                    ? (
+                                        <Progress
+                                          value={getEfficiencyProgressValue(vehicle)}
+                                          className={cn(
+                                            "h-3",
+                                            vehicle.belowThreshold && "[&>div]:bg-destructive",
+                                            !vehicle.belowThreshold && "[&>div]:bg-success",
+                                          )}
+                                        />
+                                      )
+                                    : (
+                                        <div className="text-xs text-muted-foreground italic">Insufficient data</div>
+                                      )}
+                                </div>
+                                <div className="w-20 text-right">
+                                  <span className="font-medium">
+                                    {vehicle.kmPerLiter !== null ? vehicle.kmPerLiter.toFixed(1) : "N/A"}
+                                    {" "}
+                                    km/L
+                                  </span>
+                                </div>
+                                <div className="w-20 text-right text-sm text-muted-foreground">
+                                  {vehicle.threshold !== null ? `${vehicle.threshold} target` : "No target"}
+                                </div>
+                              </div>
+                            ))
                           )}
-                        </div>
-                        <div className="w-20 text-right">
-                          <span className="font-medium">
-                            {vehicle.kmPerLiter !== null ? vehicle.kmPerLiter.toFixed(1) : 'N/A'} km/L
-                          </span>
-                        </div>
-                        <div className="w-20 text-right text-sm text-muted-foreground">
-                          {vehicle.threshold !== null ? `${vehicle.threshold} target` : "No target"}
-                        </div>
-                      </div>
-                    ))
-                  )}
                 </div>
               </CardContent>
             </Card>
@@ -994,82 +1342,119 @@ export function FuelTab() {
                   <CardTitle className="text-base">Budget vs Actual</CardTitle>
                   <CardDescription>{budgetWindowLabel}</CardDescription>
                 </div>
-                <PeriodFilter value={budgetPeriod} onChange={setBudgetPeriod} variant="short" className="w-[150px]" />
+                <PeriodFilter
+                  value={budgetPeriod}
+                  onChange={setBudgetPeriod}
+                  variant="short"
+                  className="w-[150px]"
+                />
               </CardHeader>
               <CardContent>
-                {budgetVsActualQuery.isLoading ? (
-                  <Skeleton className="h-[300px] w-full" />
-                ) : budgetVsActualQuery.isError ? (
-                  <div className="flex h-[300px] flex-col items-center justify-center gap-3 text-center text-sm text-muted-foreground">
-                    <p>Unable to load budget data.</p>
-                    <Button variant="outline" size="sm" onClick={() => budgetVsActualQuery.refetch()}>
-                      Retry
-                    </Button>
-                  </div>
-                ) : budgetChartData.length === 0 ? (
-                  <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
-                    No budget data available for this period.
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {fleetBudget && (
-                      <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Fleet budget</p>
-                          <p className="font-semibold">{formatNgn(fleetBudget.budgetedNgn)}</p>
+                {budgetVsActualQuery.isLoading
+                  ? (
+                      <Skeleton className="h-[300px] w-full" />
+                    )
+                  : budgetVsActualQuery.isError
+                    ? (
+                        <div className="flex h-[300px] flex-col items-center justify-center gap-3 text-center text-sm text-muted-foreground">
+                          <p>Unable to load budget data.</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => budgetVsActualQuery.refetch()}
+                          >
+                            Retry
+                          </Button>
                         </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Actual spend</p>
-                          <p className="font-semibold">{formatNgn(fleetBudget.actualNgn)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Variance</p>
-                          <p className={cn("font-semibold", fleetBudget.variance > 0 ? "text-destructive" : "text-success")}>
-                            {formatNgn(fleetBudget.variance)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Utilization</p>
-                          <p className="font-semibold">{fleetBudget.utilizationPct.toFixed(1)}%</p>
-                        </div>
-                      </div>
-                    )}
-                    <ResponsiveContainer width="100%" height={260}>
-                      <LineChart data={budgetChartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(value) => `${Number(value) / 1000}K`} />
-                        <Tooltip
-                          formatter={(value) => formatNgn(Number(value))}
-                          labelFormatter={(label) => `Vehicle: ${label}`}
-                          contentStyle={{
-                            backgroundColor: "hsl(var(--card))",
-                            border: "1px solid hsl(var(--border))",
-                            borderRadius: "8px" }}
-                        />
-                        <Legend />
-                        <Line
-                          type="monotone"
-                          dataKey="actualNgn"
-                          name="Actual (NGN)"
-                          stroke="hsl(var(--primary))"
-                          strokeWidth={2}
-                          dot={{ r: 3 }}
-                          activeDot={{ r: 5 }}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="budgetedNgn"
-                          name="Budget (NGN)"
-                          stroke="hsl(var(--warning))"
-                          strokeWidth={2}
-                          strokeDasharray="5 5"
-                          dot={{ r: 3 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
+                      )
+                    : budgetChartData.length === 0
+                      ? (
+                          <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
+                            No budget data available for this period.
+                          </div>
+                        )
+                      : (
+                          <div className="space-y-4">
+                            {fleetBudget && (
+                              <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Fleet budget</p>
+                                  <p className="font-semibold">{formatNgn(fleetBudget.budgetedNgn)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Actual spend</p>
+                                  <p className="font-semibold">{formatNgn(fleetBudget.actualNgn)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Variance</p>
+                                  <p className={cn(
+                                    "font-semibold",
+                                    fleetBudget.variance > 0 ? "text-destructive" : "text-success",
+                                  )}
+                                  >
+                                    {formatNgn(fleetBudget.variance)}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Utilization</p>
+                                  <p className="font-semibold">
+                                    {fleetBudget.utilizationPct.toFixed(1)}
+                                    %
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            <ResponsiveContainer
+                              width="100%"
+                              height={260}
+                            >
+                              <LineChart data={budgetChartData}>
+                                <CartesianGrid
+                                  strokeDasharray="3 3"
+                                  stroke="hsl(var(--border))"
+                                />
+                                <XAxis
+                                  dataKey="label"
+                                  stroke="hsl(var(--muted-foreground))"
+                                  fontSize={12}
+                                />
+                                <YAxis
+                                  stroke="hsl(var(--muted-foreground))"
+                                  fontSize={12}
+                                  tickFormatter={value => `${Number(value) / 1000}K`}
+                                />
+                                <Tooltip
+                                  formatter={value => formatNgn(Number(value))}
+                                  labelFormatter={label => `Vehicle: ${label}`}
+                                  contentStyle={{
+                                    backgroundColor: "hsl(var(--card))",
+                                    border: "1px solid hsl(var(--border))",
+                                    borderRadius: "8px",
+                                  }}
+                                />
+                                <Legend />
+                                <Line
+                                  type="monotone"
+                                  dataKey="actualNgn"
+                                  name="Actual (NGN)"
+                                  stroke="hsl(var(--primary))"
+                                  strokeWidth={2}
+                                  dot={{ r: 3 }}
+                                  activeDot={{ r: 5 }}
+                                />
+                                <Line
+                                  type="monotone"
+                                  dataKey="budgetedNgn"
+                                  name="Budget (NGN)"
+                                  stroke="hsl(var(--warning))"
+                                  strokeWidth={2}
+                                  strokeDasharray="5 5"
+                                  dot={{ r: 3 }}
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        )}
               </CardContent>
             </Card>
           </div>
@@ -1111,7 +1496,10 @@ export function FuelTab() {
       </AlertDialog>
 
       {/* Add Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      <Dialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+      >
         <DialogContent className="bg-card border-border max-w-lg">
           <DialogHeader>
             <DialogTitle>Record Fuel Transaction</DialogTitle>
@@ -1123,19 +1511,24 @@ export function FuelTab() {
                 <Label>Vehicle Registration</Label>
                 <Select
                   value={newTransaction.vehicleReg}
-                  onValueChange={(value) => setNewTransaction({ ...newTransaction, vehicleReg: value })}
+                  onValueChange={value => setNewTransaction({
+                    ...newTransaction, vehicleReg: value,
+                  })}
                   disabled={vehiclesQuery.isLoading || vehicleOptions.length === 0}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={vehiclesQuery.isLoading ? "Loading vehicles..." : "Select vehicle"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {vehicleOptions.map((vehicle) => (
-                      <SelectItem key={vehicle.value} value={vehicle.value}>
+                    {vehicleOptions.map(vehicle => (
+                      <SelectItem
+                        key={vehicle.value}
+                        value={vehicle.value}
+                      >
                         {vehicle.label}
                       </SelectItem>
                     ))}
-                    {newTransaction.vehicleReg && !vehicleOptions.some((vehicle) => vehicle.value === newTransaction.vehicleReg) && (
+                    {newTransaction.vehicleReg && !vehicleOptions.some(vehicle => vehicle.value === newTransaction.vehicleReg) && (
                       <SelectItem value={newTransaction.vehicleReg}>{newTransaction.vehicleReg}</SelectItem>
                     )}
                   </SelectContent>
@@ -1145,19 +1538,24 @@ export function FuelTab() {
                 <Label>Driver Name</Label>
                 <Select
                   value={newTransaction.driverName}
-                  onValueChange={(value) => setNewTransaction({ ...newTransaction, driverName: value })}
+                  onValueChange={value => setNewTransaction({
+                    ...newTransaction, driverName: value,
+                  })}
                   disabled={driversQuery.isLoading || driverOptions.length === 0}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={driversQuery.isLoading ? "Loading drivers..." : "Select driver"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {driverOptions.map((driver) => (
-                      <SelectItem key={driver.value} value={driver.value}>
+                    {driverOptions.map(driver => (
+                      <SelectItem
+                        key={driver.value}
+                        value={driver.value}
+                      >
                         {driver.label}
                       </SelectItem>
                     ))}
-                    {newTransaction.driverName && !driverOptions.some((driver) => driver.value === newTransaction.driverName) && (
+                    {newTransaction.driverName && !driverOptions.some(driver => driver.value === newTransaction.driverName) && (
                       <SelectItem value={newTransaction.driverName}>{newTransaction.driverName}</SelectItem>
                     )}
                   </SelectContent>
@@ -1167,7 +1565,12 @@ export function FuelTab() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Fuel Type</Label>
-                <Select value={newTransaction.fuelType} onValueChange={(v: any) => setNewTransaction({ ...newTransaction, fuelType: v })}>
+                <Select
+                  value={newTransaction.fuelType}
+                  onValueChange={(v: any) => setNewTransaction({
+                    ...newTransaction, fuelType: v,
+                  })}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="diesel">Diesel</SelectItem>
@@ -1180,7 +1583,9 @@ export function FuelTab() {
                 <Input
                   placeholder="e.g. Total Lekki"
                   value={newTransaction.station}
-                  onChange={(e) => setNewTransaction({ ...newTransaction, station: e.target.value })}
+                  onChange={e => setNewTransaction({
+                    ...newTransaction, station: e.target.value,
+                  })}
                 />
               </div>
             </div>
@@ -1191,7 +1596,9 @@ export function FuelTab() {
                   type="number"
                   placeholder="e.g. 50"
                   value={newTransaction.quantity}
-                  onChange={(e) => setNewTransaction({ ...newTransaction, quantity: e.target.value })}
+                  onChange={e => setNewTransaction({
+                    ...newTransaction, quantity: e.target.value,
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -1200,7 +1607,9 @@ export function FuelTab() {
                   type="number"
                   placeholder="e.g. 650"
                   value={newTransaction.pricePerLitre}
-                  onChange={(e) => setNewTransaction({ ...newTransaction, pricePerLitre: e.target.value })}
+                  onChange={e => setNewTransaction({
+                    ...newTransaction, pricePerLitre: e.target.value,
+                  })}
                 />
               </div>
             </div>
@@ -1210,13 +1619,23 @@ export function FuelTab() {
                 type="number"
                 placeholder="Current mileage"
                 value={newTransaction.odometer}
-                onChange={(e) => setNewTransaction({ ...newTransaction, odometer: e.target.value })}
+                onChange={e => setNewTransaction({
+                  ...newTransaction, odometer: e.target.value,
+                })}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleAddTransaction} disabled={recordMutation.isPending || !newTransaction.vehicleReg || !newTransaction.quantity || !newTransaction.pricePerLitre}>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddTransaction}
+              disabled={recordMutation.isPending || !newTransaction.vehicleReg || !newTransaction.quantity || !newTransaction.pricePerLitre}
+            >
               {recordMutation.isPending ? "Recording..." : "Record"}
             </Button>
           </DialogFooter>
@@ -1224,7 +1643,10 @@ export function FuelTab() {
       </Dialog>
 
       {/* View Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+      <Dialog
+        open={isViewDialogOpen}
+        onOpenChange={setIsViewDialogOpen}
+      >
         <DialogContent className="bg-card border-border max-w-lg">
           <DialogHeader>
             <DialogTitle>Transaction Details</DialogTitle>
@@ -1238,27 +1660,33 @@ export function FuelTab() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Driver</p>
-                  <p>{selectedTransaction.driverId || '—'}</p>
+                  <p>{selectedTransaction.driverId || "—"}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-muted-foreground">Vehicle Type</p>
-                  <Badge>{selectedTransaction.vehicleType ?? '—'}</Badge>
+                  <Badge>{selectedTransaction.vehicleType ?? "—"}</Badge>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Station</p>
-                  <p>{selectedTransaction.station || '—'}</p>
+                  <p>{selectedTransaction.station || "—"}</p>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs text-muted-foreground">Quantity</p>
-                  <p>{selectedTransaction.liters.toFixed(1)}L</p>
+                  <p>
+                    {selectedTransaction.liters.toFixed(1)}
+                    L
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Cost</p>
-                  <p>₦{selectedTransaction.totalCost.toLocaleString()}</p>
+                  <p>
+                    ₦
+                    {selectedTransaction.totalCost.toLocaleString()}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Date</p>
@@ -1268,7 +1696,11 @@ export function FuelTab() {
               {selectedTransaction.odometer && (
                 <div>
                   <p className="text-xs text-muted-foreground">Odometer</p>
-                  <p>{selectedTransaction.odometer.toLocaleString()} km</p>
+                  <p>
+                    {selectedTransaction.odometer.toLocaleString()}
+                    {" "}
+                    km
+                  </p>
                 </div>
               )}
             </div>
@@ -1277,7 +1709,10 @@ export function FuelTab() {
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+      >
         <DialogContent className="bg-card border-border max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Transaction</DialogTitle>
@@ -1288,19 +1723,24 @@ export function FuelTab() {
                 <Label>Vehicle Registration</Label>
                 <Select
                   value={newTransaction.vehicleReg}
-                  onValueChange={(value) => setNewTransaction({ ...newTransaction, vehicleReg: value })}
+                  onValueChange={value => setNewTransaction({
+                    ...newTransaction, vehicleReg: value,
+                  })}
                   disabled={vehiclesQuery.isLoading || vehicleOptions.length === 0}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={vehiclesQuery.isLoading ? "Loading vehicles..." : "Select vehicle"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {vehicleOptions.map((vehicle) => (
-                      <SelectItem key={vehicle.value} value={vehicle.value}>
+                    {vehicleOptions.map(vehicle => (
+                      <SelectItem
+                        key={vehicle.value}
+                        value={vehicle.value}
+                      >
                         {vehicle.label}
                       </SelectItem>
                     ))}
-                    {newTransaction.vehicleReg && !vehicleOptions.some((vehicle) => vehicle.value === newTransaction.vehicleReg) && (
+                    {newTransaction.vehicleReg && !vehicleOptions.some(vehicle => vehicle.value === newTransaction.vehicleReg) && (
                       <SelectItem value={newTransaction.vehicleReg}>{newTransaction.vehicleReg}</SelectItem>
                     )}
                   </SelectContent>
@@ -1310,19 +1750,24 @@ export function FuelTab() {
                 <Label>Driver Name</Label>
                 <Select
                   value={newTransaction.driverName}
-                  onValueChange={(value) => setNewTransaction({ ...newTransaction, driverName: value })}
+                  onValueChange={value => setNewTransaction({
+                    ...newTransaction, driverName: value,
+                  })}
                   disabled={driversQuery.isLoading || driverOptions.length === 0}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={driversQuery.isLoading ? "Loading drivers..." : "Select driver"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {driverOptions.map((driver) => (
-                      <SelectItem key={driver.value} value={driver.value}>
+                    {driverOptions.map(driver => (
+                      <SelectItem
+                        key={driver.value}
+                        value={driver.value}
+                      >
                         {driver.label}
                       </SelectItem>
                     ))}
-                    {newTransaction.driverName && !driverOptions.some((driver) => driver.value === newTransaction.driverName) && (
+                    {newTransaction.driverName && !driverOptions.some(driver => driver.value === newTransaction.driverName) && (
                       <SelectItem value={newTransaction.driverName}>{newTransaction.driverName}</SelectItem>
                     )}
                   </SelectContent>
@@ -1332,7 +1777,12 @@ export function FuelTab() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Fuel Type</Label>
-                <Select value={newTransaction.fuelType} onValueChange={(v: any) => setNewTransaction({ ...newTransaction, fuelType: v })}>
+                <Select
+                  value={newTransaction.fuelType}
+                  onValueChange={(v: any) => setNewTransaction({
+                    ...newTransaction, fuelType: v,
+                  })}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="diesel">Diesel</SelectItem>
@@ -1344,7 +1794,9 @@ export function FuelTab() {
                 <Label>Station</Label>
                 <Input
                   value={newTransaction.station}
-                  onChange={(e) => setNewTransaction({ ...newTransaction, station: e.target.value })}
+                  onChange={e => setNewTransaction({
+                    ...newTransaction, station: e.target.value,
+                  })}
                 />
               </div>
             </div>
@@ -1354,7 +1806,9 @@ export function FuelTab() {
                 <Input
                   type="number"
                   value={newTransaction.quantity}
-                  onChange={(e) => setNewTransaction({ ...newTransaction, quantity: e.target.value })}
+                  onChange={e => setNewTransaction({
+                    ...newTransaction, quantity: e.target.value,
+                  })}
                 />
               </div>
               <div className="space-y-2">
@@ -1362,7 +1816,9 @@ export function FuelTab() {
                 <Input
                   type="number"
                   value={newTransaction.pricePerLitre}
-                  onChange={(e) => setNewTransaction({ ...newTransaction, pricePerLitre: e.target.value })}
+                  onChange={e => setNewTransaction({
+                    ...newTransaction, pricePerLitre: e.target.value,
+                  })}
                 />
               </div>
             </div>
@@ -1371,13 +1827,23 @@ export function FuelTab() {
               <Input
                 type="number"
                 value={newTransaction.odometer}
-                onChange={(e) => setNewTransaction({ ...newTransaction, odometer: e.target.value })}
+                onChange={e => setNewTransaction({
+                  ...newTransaction, odometer: e.target.value,
+                })}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleUpdateTransaction} disabled={updateMutation.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateTransaction}
+              disabled={updateMutation.isPending}
+            >
               {updateMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>

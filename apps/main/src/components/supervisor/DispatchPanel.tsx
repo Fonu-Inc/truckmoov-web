@@ -1,17 +1,13 @@
-import { useState } from "react";
-import { Send, MapPin, Package, Clock, User, Truck } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
-import { Textarea } from "@/components/shadcn/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/shadcn/select";
+  Clock, MapPin, Package, Send, Truck, User,
+} from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import {
   Dialog,
   DialogContent,
@@ -20,29 +16,37 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
-import { Badge } from "@/components/shadcn/badge";
-import { toast } from "sonner";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
+import { Textarea } from "@/components/shadcn/textarea";
 
-interface Vehicle {
+type Vehicle = {
   id: string;
   registrationNumber: string;
   status: string;
   currentDriver?: string;
-}
+};
 
-interface Driver {
+type Driver = {
   id: string;
   name: string;
   status: string;
-}
+};
 
-interface DispatchPanelProps {
+type DispatchPanelProps = {
   vehicles: Vehicle[];
   drivers: Driver[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedVehicleId?: string | null;
-}
+};
 
 export function DispatchPanel({
   vehicles,
@@ -51,7 +55,10 @@ export function DispatchPanel({
   onOpenChange,
   selectedVehicleId,
 }: DispatchPanelProps) {
-  const [formData, setFormData] = useState({
+  const [
+    formData,
+    setFormData,
+  ] = useState({
     vehicleId: selectedVehicleId || "",
     driverId: "",
     pickupLocation: "",
@@ -60,12 +67,15 @@ export function DispatchPanel({
     priority: "normal",
     notes: "",
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [
+    isSubmitting,
+    setIsSubmitting,
+  ] = useState(false);
 
   const availableVehicles = vehicles.filter(
-    (v) => v.status === "active" || v.status === "idle"
+    v => v.status === "active" || v.status === "idle",
   );
-  const availableDrivers = drivers.filter((d) => d.status === "available" || d.status === "active");
+  const availableDrivers = drivers.filter(d => d.status === "available" || d.status === "active");
 
   const handleSubmit = async () => {
     if (!formData.vehicleId || !formData.pickupLocation || !formData.deliveryLocation) {
@@ -74,16 +84,22 @@ export function DispatchPanel({
     }
 
     setIsSubmitting(true);
-    
+
     // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    toast.success("Dispatch created successfully", {
-      description: `Job assigned to ${
-        availableVehicles.find((v) => v.id === formData.vehicleId)?.registrationNumber
-      }`,
-    });
-    
+    await new Promise(resolve => setTimeout(
+      resolve,
+      1500,
+    ));
+
+    toast.success(
+      "Dispatch created successfully",
+      {
+        description: `Job assigned to ${
+          availableVehicles.find(v => v.id === formData.vehicleId)?.registrationNumber
+        }`,
+      },
+    );
+
     setIsSubmitting(false);
     onOpenChange(false);
     setFormData({
@@ -98,7 +114,10 @@ export function DispatchPanel({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -113,22 +132,35 @@ export function DispatchPanel({
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="vehicle" className="flex items-center gap-1">
-                <Truck className="h-3 w-3" /> Vehicle *
+              <Label
+                htmlFor="vehicle"
+                className="flex items-center gap-1"
+              >
+                <Truck className="h-3 w-3" />
+                {" "}
+                Vehicle *
               </Label>
               <Select
                 value={formData.vehicleId}
-                onValueChange={(value) => setFormData({ ...formData, vehicleId: value })}
+                onValueChange={value => setFormData({
+                  ...formData, vehicleId: value,
+                })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select vehicle" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableVehicles.map((vehicle) => (
-                    <SelectItem key={vehicle.id} value={vehicle.id}>
+                  {availableVehicles.map(vehicle => (
+                    <SelectItem
+                      key={vehicle.id}
+                      value={vehicle.id}
+                    >
                       <div className="flex items-center gap-2">
                         {vehicle.registrationNumber}
-                        <Badge variant="outline" className="text-xs">
+                        <Badge
+                          variant="outline"
+                          className="text-xs"
+                        >
                           {vehicle.status}
                         </Badge>
                       </div>
@@ -139,26 +171,39 @@ export function DispatchPanel({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="driver" className="flex items-center gap-1">
-                <User className="h-3 w-3" /> Driver
+              <Label
+                htmlFor="driver"
+                className="flex items-center gap-1"
+              >
+                <User className="h-3 w-3" />
+                {" "}
+                Driver
               </Label>
               <Select
                 value={formData.driverId}
-                onValueChange={(value) => setFormData({ ...formData, driverId: value })}
+                onValueChange={value => setFormData({
+                  ...formData, driverId: value,
+                })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Assign driver" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableDrivers.map((driver) => (
-                    <SelectItem key={driver.id} value={driver.id}>
+                  {availableDrivers.map(driver => (
+                    <SelectItem
+                      key={driver.id}
+                      value={driver.id}
+                    >
                       <div className="flex items-center gap-2">
                         {driver.name}
                         <Badge
                           variant={driver.status === "available" ? "default" : "secondary"}
                           className="text-xs"
                         >
-                          {driver.status.replace("_", " ")}
+                          {driver.status.replace(
+                            "_",
+                            " ",
+                          )}
                         </Badge>
                       </div>
                     </SelectItem>
@@ -169,49 +214,77 @@ export function DispatchPanel({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="pickup" className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" /> Pickup Location *
+            <Label
+              htmlFor="pickup"
+              className="flex items-center gap-1"
+            >
+              <MapPin className="h-3 w-3" />
+              {" "}
+              Pickup Location *
             </Label>
             <Input
               id="pickup"
               placeholder="Enter pickup address"
               value={formData.pickupLocation}
-              onChange={(e) => setFormData({ ...formData, pickupLocation: e.target.value })}
+              onChange={e => setFormData({
+                ...formData, pickupLocation: e.target.value,
+              })}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="delivery" className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" /> Delivery Location *
+            <Label
+              htmlFor="delivery"
+              className="flex items-center gap-1"
+            >
+              <MapPin className="h-3 w-3" />
+              {" "}
+              Delivery Location *
             </Label>
             <Input
               id="delivery"
               placeholder="Enter delivery address"
               value={formData.deliveryLocation}
-              onChange={(e) => setFormData({ ...formData, deliveryLocation: e.target.value })}
+              onChange={e => setFormData({
+                ...formData, deliveryLocation: e.target.value,
+              })}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="cargo" className="flex items-center gap-1">
-                <Package className="h-3 w-3" /> Cargo Description
+              <Label
+                htmlFor="cargo"
+                className="flex items-center gap-1"
+              >
+                <Package className="h-3 w-3" />
+                {" "}
+                Cargo Description
               </Label>
               <Input
                 id="cargo"
                 placeholder="e.g., Electronics, 50kg"
                 value={formData.cargoDescription}
-                onChange={(e) => setFormData({ ...formData, cargoDescription: e.target.value })}
+                onChange={e => setFormData({
+                  ...formData, cargoDescription: e.target.value,
+                })}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="priority" className="flex items-center gap-1">
-                <Clock className="h-3 w-3" /> Priority
+              <Label
+                htmlFor="priority"
+                className="flex items-center gap-1"
+              >
+                <Clock className="h-3 w-3" />
+                {" "}
+                Priority
               </Label>
               <Select
                 value={formData.priority}
-                onValueChange={(value) => setFormData({ ...formData, priority: value })}
+                onValueChange={value => setFormData({
+                  ...formData, priority: value,
+                })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -232,17 +305,25 @@ export function DispatchPanel({
               id="notes"
               placeholder="Any special instructions..."
               value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              onChange={e => setFormData({
+                ...formData, notes: e.target.value,
+              })}
               rows={3}
             />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
             {isSubmitting ? "Creating..." : "Create Dispatch"}
           </Button>
         </DialogFooter>

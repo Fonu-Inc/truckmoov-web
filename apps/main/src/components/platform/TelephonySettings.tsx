@@ -1,12 +1,41 @@
-import { formatClockDuration, formatTime } from "@truckmoov/app-core/utils/time-utils";
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import {
+  formatClockDuration, formatTime,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  Activity,
+  AlertTriangle,
+  BarChart3,
+  Bell,
+  CheckCircle2,
+  Clock,
+  Copy,
+  DollarSign,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Loader2,
+  Mic,
+  Phone,
+  PhoneCall,
+  PhoneIncoming,
+  PhoneMissed,
+  PhoneOutgoing,
+  RefreshCw,
+  TrendingUp,
+  Wallet,
+  XCircle,
+} from "lucide-react";
+import {
+  useEffect, useState,
+} from "react";
+import { toast } from "sonner";
+import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Switch } from "@/components/shadcn/switch";
-import { Badge } from "@/components/shadcn/badge";
-import { Separator } from "@/components/shadcn/separator";
 import { Progress } from "@/components/shadcn/progress";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import {
@@ -16,42 +45,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Phone,
-  PhoneCall,
-  PhoneIncoming,
-  PhoneOutgoing,
-  PhoneMissed,
-  Mic,
-  Activity,
-  RefreshCw,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Clock,
-  BarChart3,
-  Loader2,
-  ExternalLink,
-  Copy,
-  Eye,
-  EyeOff,
-  DollarSign,
-  TrendingUp,
-  Bell,
-  Wallet,
-} from "lucide-react";
-import { toast } from "sonner";
+import { Separator } from "@/components/shadcn/separator";
+import { Switch } from "@/components/shadcn/switch";
 
-const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, '') || "/api";
+const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL?.replace(
+  /\/+$/,
+  "",
+) || "/api";
 const FONU_WEBHOOK_URL = `${BACKEND_BASE_URL}/webhooks/fonu`;
 
-interface ConnectionStatus {
+type ConnectionStatus = {
   api: "connected" | "disconnected" | "error";
   webhook: "active" | "inactive" | "error";
   lastCheck: Date;
-}
+};
 
-interface UsageStats {
+type UsageStats = {
   totalCalls: number;
   successfulCalls: number;
   failedCalls: number;
@@ -59,9 +68,9 @@ interface UsageStats {
   recordingsCount: number;
   apiCalls: number;
   apiLimit: number;
-}
+};
 
-interface LiveCall {
+type LiveCall = {
   id: string;
   type: "incoming" | "outgoing";
   status: "ringing" | "connected" | "ended" | "failed";
@@ -69,26 +78,49 @@ interface LiveCall {
   phoneNumber: string;
   startTime: Date;
   duration?: number;
-}
+};
 
-interface CostBreakdown {
+type CostBreakdown = {
   monthlyBudget: number;
   currentSpend: number;
   projectedSpend: number;
-  outboundCalls: { count: number; cost: number };
-  inboundCalls: { count: number; cost: number };
-  recordings: { count: number; cost: number };
-  transcriptions: { count: number; cost: number };
+  outboundCalls: {
+    count: number; cost: number;
+  };
+  inboundCalls: {
+    count: number; cost: number;
+  };
+  recordings: {
+    count: number; cost: number;
+  };
+  transcriptions: {
+    count: number; cost: number;
+  };
   alertThreshold: number;
-}
+};
 
 export function TelephonySettings() {
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [showApiSecret, setShowApiSecret] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  
-  const [fonuSettings, setFonuSettings] = useState({
+  const [
+    showApiKey,
+    setShowApiKey,
+  ] = useState(false);
+  const [
+    showApiSecret,
+    setShowApiSecret,
+  ] = useState(false);
+  const [
+    isTesting,
+    setIsTesting,
+  ] = useState(false);
+  const [
+    isRefreshing,
+    setIsRefreshing,
+  ] = useState(false);
+
+  const [
+    fonuSettings,
+    setFonuSettings,
+  ] = useState({
     apiKey: "",
     apiSecret: "",
     webhookUrl: "",
@@ -99,13 +131,19 @@ export function TelephonySettings() {
     defaultLanguage: "en",
   });
 
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
+  const [
+    connectionStatus,
+    setConnectionStatus,
+  ] = useState<ConnectionStatus>({
     api: "connected",
     webhook: "active",
     lastCheck: new Date(),
   });
 
-  const [usageStats, setUsageStats] = useState<UsageStats>({
+  const [
+    usageStats,
+    setUsageStats,
+  ] = useState<UsageStats>({
     totalCalls: 1247,
     successfulCalls: 1189,
     failedCalls: 58,
@@ -115,7 +153,10 @@ export function TelephonySettings() {
     apiLimit: 50000,
   });
 
-  const [liveCalls, setLiveCalls] = useState<LiveCall[]>([
+  const [
+    liveCalls,
+    setLiveCalls,
+  ] = useState<LiveCall[]>([
     {
       id: "call-1",
       type: "incoming",
@@ -144,60 +185,81 @@ export function TelephonySettings() {
     },
   ]);
 
-  const [costBreakdown, setCostBreakdown] = useState<CostBreakdown>({
+  const [
+    costBreakdown,
+    setCostBreakdown,
+  ] = useState<CostBreakdown>({
     monthlyBudget: 150000,
     currentSpend: 87500,
     projectedSpend: 125000,
-    outboundCalls: { count: 823, cost: 41150 },
-    inboundCalls: { count: 424, cost: 12720 },
-    recordings: { count: 892, cost: 22300 },
-    transcriptions: { count: 456, cost: 11330 },
+    outboundCalls: {
+      count: 823, cost: 41150,
+    },
+    inboundCalls: {
+      count: 424, cost: 12720,
+    },
+    recordings: {
+      count: 892, cost: 22300,
+    },
+    transcriptions: {
+      count: 456, cost: 11330,
+    },
     alertThreshold: 80,
   });
 
   // Simulate live call updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveCalls((prev) =>
-        prev.map((call) => {
-          if (call.status === "connected") {
-            return {
-              ...call,
-              duration: Math.floor((Date.now() - call.startTime.getTime()) / 1000),
-            };
-          }
-          return call;
-        })
+  useEffect(
+    () => {
+      const interval = setInterval(
+        () => {
+          setLiveCalls(prev =>
+            prev.map((call) => {
+              if (call.status === "connected") {
+                return {
+                  ...call,
+                  duration: Math.floor((Date.now() - call.startTime.getTime()) / 1000),
+                };
+              }
+              return call;
+            }));
+        },
+        1000,
       );
-    }, 1000);
 
-    return () => clearInterval(interval);
-  }, []);
+      return () => clearInterval(interval);
+    },
+    [],
+  );
 
   const handleTestConnection = async () => {
-    toast.info('Coming soon');
-    return;
+    toast.info("Coming soon");
   };
 
   const handleRefreshStats = async () => {
     setIsRefreshing(true);
     // Simulate API call
-    setTimeout(() => {
-      setUsageStats((prev) => ({
-        ...prev,
-        apiCalls: prev.apiCalls + Math.floor(Math.random() * 100),
-      }));
-      setIsRefreshing(false);
-      toast.success("Usage statistics refreshed");
-    }, 1000);
+    setTimeout(
+      () => {
+        setUsageStats(prev => ({
+          ...prev,
+          apiCalls: prev.apiCalls + Math.floor(Math.random() * 100),
+        }));
+        setIsRefreshing(false);
+        toast.success("Usage statistics refreshed");
+      },
+      1000,
+    );
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-      minimumFractionDigits: 0,
-    }).format(amount);
+    return new Intl.NumberFormat(
+      "en-NG",
+      {
+        style: "currency",
+        currency: "NGN",
+        minimumFractionDigits: 0,
+      },
+    ).format(amount);
   };
 
   const getCallStatusIcon = (call: LiveCall) => {
@@ -252,8 +314,8 @@ export function TelephonySettings() {
     }
   };
 
-  const successRate = usageStats.totalCalls > 0 
-    ? ((usageStats.successfulCalls / usageStats.totalCalls) * 100).toFixed(1) 
+  const successRate = usageStats.totalCalls > 0
+    ? ((usageStats.successfulCalls / usageStats.totalCalls) * 100).toFixed(1)
     : 0;
 
   const apiUsagePercent = (usageStats.apiCalls / usageStats.apiLimit) * 100;
@@ -288,7 +350,9 @@ export function TelephonySettings() {
                   {getStatusBadge(connectionStatus.api)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Last checked: {formatTime(connectionStatus.lastCheck)}
+                  Last checked:
+                  {" "}
+                  {formatTime(connectionStatus.lastCheck)}
                 </p>
               </CardContent>
             </Card>
@@ -316,9 +380,17 @@ export function TelephonySettings() {
                   <span className="text-sm font-medium">Success Rate</span>
                   <CheckCircle2 className="h-4 w-4 text-success" />
                 </div>
-                <p className="text-2xl font-bold mt-1">{successRate}%</p>
+                <p className="text-2xl font-bold mt-1">
+                  {successRate}
+                  %
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  {usageStats.successfulCalls.toLocaleString()} / {usageStats.totalCalls.toLocaleString()} calls
+                  {usageStats.successfulCalls.toLocaleString()}
+                  {" "}
+                  /
+                  {usageStats.totalCalls.toLocaleString()}
+                  {" "}
+                  calls
                 </p>
               </CardContent>
             </Card>
@@ -330,9 +402,17 @@ export function TelephonySettings() {
                   <span className="text-sm font-medium">API Usage</span>
                   <BarChart3 className="h-4 w-4 text-primary" />
                 </div>
-                <Progress value={apiUsagePercent} className="mt-2 h-2" />
+                <Progress
+                  value={apiUsagePercent}
+                  className="mt-2 h-2"
+                />
                 <p className="text-xs text-muted-foreground mt-2">
-                  {usageStats.apiCalls.toLocaleString()} / {usageStats.apiLimit.toLocaleString()} calls
+                  {usageStats.apiCalls.toLocaleString()}
+                  {" "}
+                  /
+                  {usageStats.apiLimit.toLocaleString()}
+                  {" "}
+                  calls
                 </p>
               </CardContent>
             </Card>
@@ -420,14 +500,16 @@ export function TelephonySettings() {
               </CardDescription>
             </div>
             <Badge className="bg-success/10 text-success border-success/20">
-              {liveCalls.filter((c) => c.status === "connected" || c.status === "ringing").length} Active
+              {liveCalls.filter(c => c.status === "connected" || c.status === "ringing").length}
+              {" "}
+              Active
             </Badge>
           </div>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[280px]">
             <div className="space-y-3">
-              {liveCalls.map((call) => (
+              {liveCalls.map(call => (
                 <div
                   key={call.id}
                   className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-muted/20"
@@ -479,7 +561,8 @@ export function TelephonySettings() {
             {isOverBudgetAlert && (
               <Badge className="bg-warning/10 text-warning border-warning/20 animate-pulse">
                 <Bell className="h-3 w-3 mr-1" />
-                {Math.round(spendPercentage)}% of Budget
+                {Math.round(spendPercentage)}
+                % of Budget
               </Badge>
             )}
           </div>
@@ -497,13 +580,19 @@ export function TelephonySettings() {
                 <p className="text-2xl font-bold text-primary">{formatCurrency(costBreakdown.currentSpend)}</p>
               </div>
             </div>
-            <Progress 
-              value={spendPercentage} 
+            <Progress
+              value={spendPercentage}
               className={`h-3 ${spendPercentage >= 100 ? "bg-destructive/20" : spendPercentage >= costBreakdown.alertThreshold ? "bg-warning/20" : ""}`}
             />
             <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-              <span>{Math.round(spendPercentage)}% used</span>
-              <span>Projected: {formatCurrency(costBreakdown.projectedSpend)}</span>
+              <span>
+                {Math.round(spendPercentage)}
+                % used
+              </span>
+              <span>
+                Projected:
+                {formatCurrency(costBreakdown.projectedSpend)}
+              </span>
             </div>
           </div>
 
@@ -515,7 +604,11 @@ export function TelephonySettings() {
                 <span className="text-sm font-medium">Outbound Calls</span>
               </div>
               <p className="text-xl font-bold">{formatCurrency(costBreakdown.outboundCalls.cost)}</p>
-              <p className="text-xs text-muted-foreground">{costBreakdown.outboundCalls.count.toLocaleString()} calls</p>
+              <p className="text-xs text-muted-foreground">
+                {costBreakdown.outboundCalls.count.toLocaleString()}
+                {" "}
+                calls
+              </p>
             </div>
 
             <div className="p-4 rounded-lg border border-border/50">
@@ -524,7 +617,11 @@ export function TelephonySettings() {
                 <span className="text-sm font-medium">Inbound Calls</span>
               </div>
               <p className="text-xl font-bold">{formatCurrency(costBreakdown.inboundCalls.cost)}</p>
-              <p className="text-xs text-muted-foreground">{costBreakdown.inboundCalls.count.toLocaleString()} calls</p>
+              <p className="text-xs text-muted-foreground">
+                {costBreakdown.inboundCalls.count.toLocaleString()}
+                {" "}
+                calls
+              </p>
             </div>
 
             <div className="p-4 rounded-lg border border-border/50">
@@ -533,7 +630,11 @@ export function TelephonySettings() {
                 <span className="text-sm font-medium">Recordings</span>
               </div>
               <p className="text-xl font-bold">{formatCurrency(costBreakdown.recordings.cost)}</p>
-              <p className="text-xs text-muted-foreground">{costBreakdown.recordings.count.toLocaleString()} recordings</p>
+              <p className="text-xs text-muted-foreground">
+                {costBreakdown.recordings.count.toLocaleString()}
+                {" "}
+                recordings
+              </p>
             </div>
 
             <div className="p-4 rounded-lg border border-border/50">
@@ -542,7 +643,11 @@ export function TelephonySettings() {
                 <span className="text-sm font-medium">Transcriptions</span>
               </div>
               <p className="text-xl font-bold">{formatCurrency(costBreakdown.transcriptions.cost)}</p>
-              <p className="text-xs text-muted-foreground">{costBreakdown.transcriptions.count.toLocaleString()} transcribed</p>
+              <p className="text-xs text-muted-foreground">
+                {costBreakdown.transcriptions.count.toLocaleString()}
+                {" "}
+                transcribed
+              </p>
             </div>
           </div>
 
@@ -555,15 +660,19 @@ export function TelephonySettings() {
               <div>
                 <p className="font-medium">Budget Alert Threshold</p>
                 <p className="text-sm text-muted-foreground">
-                  Get notified when spending reaches {costBreakdown.alertThreshold}% of budget
+                  Get notified when spending reaches
+                  {" "}
+                  {costBreakdown.alertThreshold}
+                  % of budget
                 </p>
               </div>
             </div>
             <Select
               value={costBreakdown.alertThreshold.toString()}
-              onValueChange={(value) => 
-                setCostBreakdown({ ...costBreakdown, alertThreshold: parseInt(value) })
-              }
+              onValueChange={value =>
+                setCostBreakdown({
+                  ...costBreakdown, alertThreshold: parseInt(value),
+                })}
             >
               <SelectTrigger className="w-[120px]">
                 <SelectValue />
@@ -612,7 +721,9 @@ export function TelephonySettings() {
                     id="fonuApiKey"
                     type={showApiKey ? "text" : "password"}
                     value={fonuSettings.apiKey}
-                    onChange={(e) => setFonuSettings({ ...fonuSettings, apiKey: e.target.value })}
+                    onChange={e => setFonuSettings({
+                      ...fonuSettings, apiKey: e.target.value,
+                    })}
                     placeholder="fonu_key_••••••••••••"
                     className="pr-20"
                   />
@@ -631,7 +742,10 @@ export function TelephonySettings() {
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6"
-                      onClick={() => copyToClipboard(fonuSettings.apiKey, "API Key")}
+                      onClick={() => copyToClipboard(
+                        fonuSettings.apiKey,
+                        "API Key",
+                      )}
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
@@ -651,7 +765,9 @@ export function TelephonySettings() {
                     id="fonuApiSecret"
                     type={showApiSecret ? "text" : "password"}
                     value={fonuSettings.apiSecret}
-                    onChange={(e) => setFonuSettings({ ...fonuSettings, apiSecret: e.target.value })}
+                    onChange={e => setFonuSettings({
+                      ...fonuSettings, apiSecret: e.target.value,
+                    })}
                     placeholder="••••••••••••••••"
                     className="pr-20"
                   />
@@ -670,7 +786,10 @@ export function TelephonySettings() {
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6"
-                      onClick={() => copyToClipboard(fonuSettings.apiSecret, "API Secret")}
+                      onClick={() => copyToClipboard(
+                        fonuSettings.apiSecret,
+                        "API Secret",
+                      )}
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
@@ -691,7 +810,9 @@ export function TelephonySettings() {
                   <Input
                     id="webhookUrl"
                     value={fonuSettings.webhookUrl || FONU_WEBHOOK_URL}
-                    onChange={(e) => setFonuSettings({ ...fonuSettings, webhookUrl: e.target.value })}
+                    onChange={e => setFonuSettings({
+                      ...fonuSettings, webhookUrl: e.target.value,
+                    })}
                     placeholder="https://your-domain.com/webhooks/fonu"
                     readOnly
                   />
@@ -700,7 +821,7 @@ export function TelephonySettings() {
                     size="icon"
                     onClick={() => copyToClipboard(
                       fonuSettings.webhookUrl || FONU_WEBHOOK_URL,
-                      "Webhook URL"
+                      "Webhook URL",
                     )}
                   >
                     <Copy className="h-4 w-4" />
@@ -716,7 +837,9 @@ export function TelephonySettings() {
                 <Input
                   id="callerId"
                   value={fonuSettings.defaultCallerId}
-                  onChange={(e) => setFonuSettings({ ...fonuSettings, defaultCallerId: e.target.value })}
+                  onChange={e => setFonuSettings({
+                    ...fonuSettings, defaultCallerId: e.target.value,
+                  })}
                   placeholder="+234 800 000 0000"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -740,7 +863,9 @@ export function TelephonySettings() {
                 </div>
                 <Switch
                   checked={fonuSettings.enableRecording}
-                  onCheckedChange={(checked) => setFonuSettings({ ...fonuSettings, enableRecording: checked })}
+                  onCheckedChange={checked => setFonuSettings({
+                    ...fonuSettings, enableRecording: checked,
+                  })}
                 />
               </div>
 
@@ -753,7 +878,9 @@ export function TelephonySettings() {
                 </div>
                 <Switch
                   checked={fonuSettings.transcriptionEnabled}
-                  onCheckedChange={(checked) => setFonuSettings({ ...fonuSettings, transcriptionEnabled: checked })}
+                  onCheckedChange={checked => setFonuSettings({
+                    ...fonuSettings, transcriptionEnabled: checked,
+                  })}
                 />
               </div>
 
@@ -761,7 +888,9 @@ export function TelephonySettings() {
                 <Label>Recording Retention</Label>
                 <Select
                   value={fonuSettings.recordingRetentionDays.toString()}
-                  onValueChange={(value) => setFonuSettings({ ...fonuSettings, recordingRetentionDays: parseInt(value) })}
+                  onValueChange={value => setFonuSettings({
+                    ...fonuSettings, recordingRetentionDays: parseInt(value),
+                  })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -780,7 +909,9 @@ export function TelephonySettings() {
                 <Label>Default Language</Label>
                 <Select
                   value={fonuSettings.defaultLanguage}
-                  onValueChange={(value) => setFonuSettings({ ...fonuSettings, defaultLanguage: value })}
+                  onValueChange={value => setFonuSettings({
+                    ...fonuSettings, defaultLanguage: value,
+                  })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -803,15 +934,24 @@ export function TelephonySettings() {
               onClick={handleTestConnection}
               disabled={isTesting}
             >
-              {isTesting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <PhoneCall className="h-4 w-4 mr-2" />
-              )}
+              {isTesting
+                ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  )
+                : (
+                    <PhoneCall className="h-4 w-4 mr-2" />
+                  )}
               Test Connection
             </Button>
-            <Button variant="outline" asChild>
-              <a href="https://fonu.com/dashboard" target="_blank" rel="noopener noreferrer">
+            <Button
+              variant="outline"
+              asChild
+            >
+              <a
+                href="https://fonu.com/dashboard"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Open Fonu Dashboard
               </a>

@@ -1,42 +1,59 @@
-import { daysBetween, formatDate, isBefore } from "@truckmoov/app-core/utils/time-utils";
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
-import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/shadcn/dialog";
-import { EmptyState } from "@/components/dashboard/EmptyState";
 import {
-  ShieldCheck,
-  Upload,
-  FileText,
+  useMutation, useQuery, useQueryClient,
+} from "@tanstack/react-query";
+import {
+  daysBetween, formatDate, isBefore,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
   CalendarClock,
-  FileWarning,
   CheckCircle2,
   Clock,
-  Plus,
+  FileText,
+  FileWarning,
   Loader2,
+  Plus,
+  ShieldCheck,
+  Upload,
 } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
-
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/shadcn/dialog";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/shadcn/select";
 
 const DOCUMENT_TYPES = [
-  { value: "drivers_license", label: "Driver's License" },
-  { value: "vehicle_registration", label: "Vehicle Registration" },
-  { value: "insurance", label: "Insurance Certificate" },
-  { value: "roadworthiness", label: "Roadworthiness Certificate" },
+  {
+    value: "drivers_license", label: "Driver's License",
+  },
+  {
+    value: "vehicle_registration", label: "Vehicle Registration",
+  },
+  {
+    value: "insurance", label: "Insurance Certificate",
+  },
+  {
+    value: "roadworthiness", label: "Roadworthiness Certificate",
+  },
 ] as const;
 
 // Dummy compliance documents shown when no real records exist yet, so
 // owner-operators can preview what the panel looks like populated.
-const daysFromNow = (n: number) => {
+function daysFromNow(n: number) {
   const d = new Date();
   d.setDate(d.getDate() + n);
   return d.toISOString();
-};
+}
 const DUMMY_COMPLIANCE_DOCS = [
   {
     id: "dummy-doc-1",
@@ -90,36 +107,72 @@ const DUMMY_COMPLIANCE_DOCS = [
   },
 ];
 
-interface ComplianceDocumentsPanelProps {
+type ComplianceDocumentsPanelProps = {
   orgId: string;
   tenantId?: string;
   vehicleIds: string[];
-}
+};
 
-export function ComplianceDocumentsPanel({ orgId, tenantId, vehicleIds }: ComplianceDocumentsPanelProps) {
+export function ComplianceDocumentsPanel({
+  orgId, tenantId, vehicleIds,
+}: ComplianceDocumentsPanelProps) {
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [docType, setDocType] = useState("");
-  const [docName, setDocName] = useState("");
-  const [docNumber, setDocNumber] = useState("");
-  const [expiryDate, setExpiryDate] = useState("");
-  const [issueDate, setIssueDate] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [
+    open,
+    setOpen,
+  ] = useState(false);
+  const [
+    docType,
+    setDocType,
+  ] = useState("");
+  const [
+    docName,
+    setDocName,
+  ] = useState("");
+  const [
+    docNumber,
+    setDocNumber,
+  ] = useState("");
+  const [
+    expiryDate,
+    setExpiryDate,
+  ] = useState("");
+  const [
+    issueDate,
+    setIssueDate,
+  ] = useState("");
+  const [
+    file,
+    setFile,
+  ] = useState<File | null>(null);
+  const [
+    uploading,
+    setUploading,
+  ] = useState(false);
 
-  const { data: docs = [], isLoading } = useQuery({
-    queryKey: ["oo-compliance-docs", orgId],
+  const {
+    data: docs = [], isLoading,
+  } = useQuery({
+    queryKey: [
+      "oo-compliance-docs",
+      orgId,
+    ],
     queryFn: async () => [],
     enabled: !!orgId,
   });
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
-      toast.info('Coming soon');
+      toast.info("Coming soon");
     },
     onSuccess: () => {
       toast.success("Document uploaded successfully");
-      queryClient.invalidateQueries({ queryKey: ["oo-compliance-docs", orgId] });
+      queryClient.invalidateQueries({
+        queryKey: [
+          "oo-compliance-docs",
+          orgId,
+        ],
+      });
       queryClient.invalidateQueries({ queryKey: ["oo-compliance"] });
       resetForm();
       setOpen(false);
@@ -141,12 +194,20 @@ export function ComplianceDocumentsPanel({ orgId, tenantId, vehicleIds }: Compli
 
   const now = new Date();
 
-  const getStatusBadge = (doc: { expiry_date: string; verification_status?: string }) => {
+  const getStatusBadge = (doc: {
+    expiry_date: string; verification_status?: string;
+  }) => {
     const expiry = new Date(doc.expiry_date);
-    const daysLeft = daysBetween(now, expiry);
+    const daysLeft = daysBetween(
+      now,
+      expiry,
+    );
     const verStatus = (doc as any).verification_status || "pending";
 
-    if (isBefore(expiry, now)) {
+    if (isBefore(
+      expiry,
+      now,
+    )) {
       return (
         <Badge variant="destructive">
           <FileWarning className="mr-1 h-3 w-3" />
@@ -156,15 +217,22 @@ export function ComplianceDocumentsPanel({ orgId, tenantId, vehicleIds }: Compli
     }
     if (daysLeft <= 30) {
       return (
-        <Badge variant="outline" className="border-warning text-warning">
+        <Badge
+          variant="outline"
+          className="border-warning text-warning"
+        >
           <CalendarClock className="mr-1 h-3 w-3" />
-          {daysLeft}d left
+          {daysLeft}
+          d left
         </Badge>
       );
     }
     if (verStatus === "verified") {
       return (
-        <Badge variant="default" className="bg-success text-success-foreground">
+        <Badge
+          variant="default"
+          className="bg-success text-success-foreground"
+        >
           <CheckCircle2 className="mr-1 h-3 w-3" />
           Verified
         </Badge>
@@ -197,9 +265,15 @@ export function ComplianceDocumentsPanel({ orgId, tenantId, vehicleIds }: Compli
             </CardTitle>
             <CardDescription>Upload and track licenses, insurance, and roadworthiness documents for your fleet.</CardDescription>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog
+            open={open}
+            onOpenChange={setOpen}
+          >
             <DialogTrigger asChild>
-              <Button size="sm" variant="outline">
+              <Button
+                size="sm"
+                variant="outline"
+              >
                 <Plus className="mr-1.5 h-3.5 w-3.5" />
                 Upload
               </Button>
@@ -211,14 +285,23 @@ export function ComplianceDocumentsPanel({ orgId, tenantId, vehicleIds }: Compli
               <div className="space-y-4 pt-2">
                 <div className="space-y-2">
                   <Label>Document Type *</Label>
-                  <Select value={docType} onValueChange={(v) => {
-                    setDocType(v);
-                    if (!docName) setDocName(DOCUMENT_TYPES.find(d => d.value === v)?.label || "");
-                  }}>
+                  <Select
+                    value={docType}
+                    onValueChange={(v) => {
+                      setDocType(v);
+                      if (!docName)
+                        setDocName(DOCUMENT_TYPES.find(d => d.value === v)?.label || "");
+                    }}
+                  >
                     <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                     <SelectContent>
                       {DOCUMENT_TYPES.map(dt => (
-                        <SelectItem key={dt.value} value={dt.value}>{dt.label}</SelectItem>
+                        <SelectItem
+                          key={dt.value}
+                          value={dt.value}
+                        >
+                          {dt.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -226,22 +309,38 @@ export function ComplianceDocumentsPanel({ orgId, tenantId, vehicleIds }: Compli
 
                 <div className="space-y-2">
                   <Label>Document Name *</Label>
-                  <Input value={docName} onChange={e => setDocName(e.target.value)} placeholder="e.g. My Driver's License" />
+                  <Input
+                    value={docName}
+                    onChange={e => setDocName(e.target.value)}
+                    placeholder="e.g. My Driver's License"
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Document Number</Label>
-                  <Input value={docNumber} onChange={e => setDocNumber(e.target.value)} placeholder="Optional" />
+                  <Input
+                    value={docNumber}
+                    onChange={e => setDocNumber(e.target.value)}
+                    placeholder="Optional"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label>Issue Date</Label>
-                    <Input type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)} />
+                    <Input
+                      type="date"
+                      value={issueDate}
+                      onChange={e => setIssueDate(e.target.value)}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Expiry Date *</Label>
-                    <Input type="date" value={expiryDate} onChange={e => setExpiryDate(e.target.value)} />
+                    <Input
+                      type="date"
+                      value={expiryDate}
+                      onChange={e => setExpiryDate(e.target.value)}
+                    />
                   </div>
                 </div>
 
@@ -260,17 +359,19 @@ export function ComplianceDocumentsPanel({ orgId, tenantId, vehicleIds }: Compli
                   disabled={uploading || !docType || !docName || !expiryDate}
                   onClick={() => uploadMutation.mutate()}
                 >
-                  {uploading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload Document
-                    </>
-                  )}
+                  {uploading
+                    ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Uploading...
+                        </>
+                      )
+                    : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Document
+                        </>
+                      )}
                 </Button>
               </div>
             </DialogContent>
@@ -278,33 +379,35 @@ export function ComplianceDocumentsPanel({ orgId, tenantId, vehicleIds }: Compli
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : (() => {
-          const displayDocs = docs.length > 0 ? docs : DUMMY_COMPLIANCE_DOCS;
-          return (
-            <div className="space-y-2">
-              {displayDocs.map((doc: any) => (
-                <div
-                  key={doc.id}
-                  className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-secondary/30"
-                >
-                  <div className="space-y-0.5 min-w-0 flex-1">
-                    <p className="font-medium text-sm">{doc.document_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {getDocTypeLabel(doc.document_type)}
-                      {doc.document_number && ` · ${doc.document_number}`}
-                      {doc.expiry_date && ` · Expires ${formatDate(doc.expiry_date)}`}
-                    </p>
-                  </div>
-                  {getStatusBadge(doc)}
+        {isLoading
+          ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            )
+          : (() => {
+              const displayDocs = docs.length > 0 ? docs : DUMMY_COMPLIANCE_DOCS;
+              return (
+                <div className="space-y-2">
+                  {displayDocs.map((doc: any) => (
+                    <div
+                      key={doc.id}
+                      className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-secondary/30"
+                    >
+                      <div className="space-y-0.5 min-w-0 flex-1">
+                        <p className="font-medium text-sm">{doc.document_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {getDocTypeLabel(doc.document_type)}
+                          {doc.document_number && ` · ${doc.document_number}`}
+                          {doc.expiry_date && ` · Expires ${formatDate(doc.expiry_date)}`}
+                        </p>
+                      </div>
+                      {getStatusBadge(doc)}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          );
-        })()}
+              );
+            })()}
       </CardContent>
     </Card>
   );

@@ -1,29 +1,52 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import type {
+  FilterField, FilterValues,
+} from "@/components/shadcn/table-toolbar";
+import {
+  Bot, Clock, Cpu, Download, MessageCircle, MessageSquare, Phone,
+  Shield, TrendingUp, Zap,
+} from "lucide-react";
+import {
+  useMemo, useState,
+} from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { ExportButton } from "@/components/shadcn/export-button";
 import { Progress } from "@/components/shadcn/progress";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
-import { Button } from "@/components/shadcn/button";
-import { formatCurrency } from "@/lib/currency";
-import {Download, Shield, TrendingUp, Clock, Zap, MessageSquare, Phone,
-  MessageCircle, Bot, Cpu } from "lucide-react";
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
-import { useMemo, useState } from "react";
-import { TableToolbar, type FilterField, type FilterValues } from "@/components/shadcn/table-toolbar";
-import { ExportButton } from "@/components/shadcn/export-button";
-import { toast } from "sonner";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/shadcn/table";
+import { TableToolbar } from "@/components/shadcn/table-toolbar";
+import { formatCurrency } from "@/lib/currency";
 
-interface PostpaidUsageDashboardProps {
-  tenantId: string;
-}
+type PostpaidUsageDashboardProps = { tenantId: string };
 
-const eventTypeConfig: Record<string, { label: string; icon: React.ElementType }> = {
-  sms: { label: "SMS", icon: MessageSquare },
-  voice_minute: { label: "Voice Calls", icon: Phone },
-  whatsapp: { label: "WhatsApp", icon: MessageCircle },
-  ai_request: { label: "AI Optimization", icon: Bot },
-  iot_sim_active: { label: "IoT SIM", icon: Cpu } };
+const eventTypeConfig: Record<string, {
+  label: string; icon: React.ElementType;
+}> = {
+  sms: {
+    label: "SMS", icon: MessageSquare,
+  },
+  voice_minute: {
+    label: "Voice Calls", icon: Phone,
+  },
+  whatsapp: {
+    label: "WhatsApp", icon: MessageCircle,
+  },
+  ai_request: {
+    label: "AI Optimization", icon: Bot,
+  },
+  iot_sim_active: {
+    label: "IoT SIM", icon: Cpu,
+  },
+};
 
 export function PostpaidUsageDashboard({ tenantId }: PostpaidUsageDashboardProps) {
   const {
@@ -32,7 +55,8 @@ export function PostpaidUsageDashboard({ tenantId }: PostpaidUsageDashboardProps
     currentPeriod,
     creditLimit,
     postpaidInvoices,
-    isLoading } = usePostpaidBilling(tenantId);
+    isLoading,
+  } = usePostpaidBilling(tenantId);
 
   if (isLoading) {
     return (
@@ -45,22 +69,46 @@ export function PostpaidUsageDashboard({ tenantId }: PostpaidUsageDashboardProps
   }
 
   // ── Demo fallbacks ──
-  const demoUsageSummary: Record<string, { count: number; total: number }> = {
-    sms: { count: 1284, total: 5_136 },
-    voice_minute: { count: 642, total: 14_124 },
-    whatsapp: { count: 980, total: 7_840 },
-    ai_request: { count: 312, total: 4_680 },
-    iot_sim_active: { count: 48, total: 24_000 } };
+  const demoUsageSummary: Record<string, {
+    count: number; total: number;
+  }> = {
+    sms: {
+      count: 1284, total: 5_136,
+    },
+    voice_minute: {
+      count: 642, total: 14_124,
+    },
+    whatsapp: {
+      count: 980, total: 7_840,
+    },
+    ai_request: {
+      count: 312, total: 4_680,
+    },
+    iot_sim_active: {
+      count: 48, total: 24_000,
+    },
+  };
   const displayUsageSummary = Object.keys(usageSummary).length > 0 ? usageSummary : demoUsageSummary;
   const displayTotalCurrentUsage = totalCurrentUsage > 0
     ? totalCurrentUsage
-    : Object.values(demoUsageSummary).reduce((s, v) => s + v.total, 0);
+    : Object.values(demoUsageSummary).reduce(
+        (s, v) => s + v.total,
+        0,
+      );
 
   const demoInvoices = [
-    { id: "demo-inv-1", invoice_number: "INV-2025-0042", billing_period: "Mar 2026", total_usage_ngn: 142_500, wallet_deducted_ngn: 100_000, invoice_balance_ngn: 42_500, due_date: "2026-04-15", status: "paid" },
-    { id: "demo-inv-2", invoice_number: "INV-2025-0041", billing_period: "Feb 2026", total_usage_ngn: 128_300, wallet_deducted_ngn: 128_300, invoice_balance_ngn: 0, due_date: "2026-03-15", status: "paid" },
-    { id: "demo-inv-3", invoice_number: "INV-2025-0040", billing_period: "Jan 2026", total_usage_ngn: 156_800, wallet_deducted_ngn: 90_000, invoice_balance_ngn: 66_800, due_date: "2026-02-15", status: "overdue" },
-    { id: "demo-inv-4", invoice_number: "INV-2025-0039", billing_period: "Dec 2025", total_usage_ngn: 174_200, wallet_deducted_ngn: 150_000, invoice_balance_ngn: 24_200, due_date: "2026-01-15", status: "pending" },
+    {
+      id: "demo-inv-1", invoice_number: "INV-2025-0042", billing_period: "Mar 2026", total_usage_ngn: 142_500, wallet_deducted_ngn: 100_000, invoice_balance_ngn: 42_500, due_date: "2026-04-15", status: "paid",
+    },
+    {
+      id: "demo-inv-2", invoice_number: "INV-2025-0041", billing_period: "Feb 2026", total_usage_ngn: 128_300, wallet_deducted_ngn: 128_300, invoice_balance_ngn: 0, due_date: "2026-03-15", status: "paid",
+    },
+    {
+      id: "demo-inv-3", invoice_number: "INV-2025-0040", billing_period: "Jan 2026", total_usage_ngn: 156_800, wallet_deducted_ngn: 90_000, invoice_balance_ngn: 66_800, due_date: "2026-02-15", status: "overdue",
+    },
+    {
+      id: "demo-inv-4", invoice_number: "INV-2025-0039", billing_period: "Dec 2025", total_usage_ngn: 174_200, wallet_deducted_ngn: 150_000, invoice_balance_ngn: 24_200, due_date: "2026-01-15", status: "pending",
+    },
   ];
   const displayInvoices = postpaidInvoices.length > 0 ? postpaidInvoices : (demoInvoices as typeof postpaidInvoices);
 
@@ -87,21 +135,27 @@ export function PostpaidUsageDashboard({ tenantId }: PostpaidUsageDashboardProps
   );
 }
 
-interface CurrentUsageCardProps {
+type CurrentUsageCardProps = {
   currentPeriod: string;
-  displayUsageSummary: Record<string, { count: number; total: number }>;
+  displayUsageSummary: Record<string, {
+    count: number; total: number;
+  }>;
   displayTotalCurrentUsage: number;
   creditLimit: any;
   creditUtilization: number;
-}
+};
 
 function CurrentUsageCard({
   currentPeriod,
   displayUsageSummary,
   displayTotalCurrentUsage,
   creditLimit,
-  creditUtilization }: CurrentUsageCardProps) {
-  const [serviceFilter, setServiceFilter] = useState<string>("all");
+  creditUtilization,
+}: CurrentUsageCardProps) {
+  const [
+    serviceFilter,
+    setServiceFilter,
+  ] = useState<string>("all");
 
   const availableServices = Object.keys(displayUsageSummary);
   const filteredEntries = serviceFilter === "all"
@@ -110,7 +164,12 @@ function CurrentUsageCard({
 
   const filteredTotal = serviceFilter === "all"
     ? displayTotalCurrentUsage
-    : filteredEntries.reduce((s, [, v]) => s + v.total, 0);
+    : filteredEntries.reduce(
+        (s, [
+          , v,
+        ]) => s + v.total,
+        0,
+      );
 
   return (
     <Card>
@@ -119,13 +178,18 @@ function CurrentUsageCard({
           <div>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              Current Usage — {currentPeriod}
+              Current Usage —
+              {" "}
+              {currentPeriod}
             </CardTitle>
             <CardDescription>
               Real-time usage tracking for the current billing period
             </CardDescription>
           </div>
-          <Select value={serviceFilter} onValueChange={setServiceFilter}>
+          <Select
+            value={serviceFilter}
+            onValueChange={setServiceFilter}
+          >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter service" />
             </SelectTrigger>
@@ -134,7 +198,10 @@ function CurrentUsageCard({
               {availableServices.map((type) => {
                 const cfg = eventTypeConfig[type] || { label: type };
                 return (
-                  <SelectItem key={type} value={type}>
+                  <SelectItem
+                    key={type}
+                    value={type}
+                  >
                     {cfg.label}
                   </SelectItem>
                 );
@@ -150,7 +217,10 @@ function CurrentUsageCard({
               {serviceFilter === "all" ? "Current Period Spend" : `${eventTypeConfig[serviceFilter]?.label ?? serviceFilter} Spend`}
             </p>
             <p className="text-2xl font-bold text-foreground mt-1">
-              {formatCurrency(filteredTotal, 'NGN')}
+              {formatCurrency(
+                filteredTotal,
+                "NGN",
+              )}
             </p>
           </div>
           <div className="p-4 rounded-lg bg-muted/50 border">
@@ -159,11 +229,18 @@ function CurrentUsageCard({
               <Shield className="h-4 w-4 text-muted-foreground" />
             </div>
             <p className="text-2xl font-bold text-foreground mt-1">
-              {formatCurrency(Number(creditLimit?.credit_limit_ngn ?? 250_000), 'NGN')}
+              {formatCurrency(
+                Number(creditLimit?.credit_limit_ngn ?? 250_000),
+                "NGN",
+              )}
             </p>
-            <Progress value={creditUtilization} className="mt-2 h-2" />
+            <Progress
+              value={creditUtilization}
+              className="mt-2 h-2"
+            />
             <p className="text-xs text-muted-foreground mt-1">
-              {creditUtilization.toFixed(1)}% utilized
+              {creditUtilization.toFixed(1)}
+              % utilized
             </p>
           </div>
         </div>
@@ -177,30 +254,43 @@ function CurrentUsageCard({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredEntries.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center text-muted-foreground py-6">
-                  No usage for this service
-                </TableCell>
-              </TableRow>
-            ) : filteredEntries.map(([type, data]) => {
-              const config = eventTypeConfig[type] || { label: type, icon: Zap };
-              const Icon = config.icon;
-              return (
-                <TableRow key={type}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4 text-muted-foreground" />
-                      {config.label}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">{data.count.toLocaleString()}</TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatCurrency(data.total, 'NGN')}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {filteredEntries.length === 0
+              ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="text-center text-muted-foreground py-6"
+                    >
+                      No usage for this service
+                    </TableCell>
+                  </TableRow>
+                )
+              : filteredEntries.map(([
+                  type,
+                  data,
+                ]) => {
+                  const config = eventTypeConfig[type] || {
+                    label: type, icon: Zap,
+                  };
+                  const Icon = config.icon;
+                  return (
+                    <TableRow key={type}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4 text-muted-foreground" />
+                          {config.label}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">{data.count.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(
+                          data.total,
+                          "NGN",
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
           </TableBody>
         </Table>
       </CardContent>
@@ -208,7 +298,7 @@ function CurrentUsageCard({
   );
 }
 
-interface PostpaidInvoiceRow {
+type PostpaidInvoiceRow = {
   id: string;
   invoice_number: string;
   billing_period: string;
@@ -217,12 +307,21 @@ interface PostpaidInvoiceRow {
   invoice_balance_ngn: number | string;
   due_date: string;
   status: string;
-}
+};
 
 function PostpaidInvoicesTable({ invoices }: { invoices: PostpaidInvoiceRow[] }) {
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<string>("all");
-  const [filters, setFilters] = useState<FilterValues>({});
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+  const [
+    status,
+    setStatus,
+  ] = useState<string>("all");
+  const [
+    filters,
+    setFilters,
+  ] = useState<FilterValues>({});
 
   const filterFields: FilterField[] = [
     {
@@ -230,32 +329,45 @@ function PostpaidInvoicesTable({ invoices }: { invoices: PostpaidInvoiceRow[] })
       key: "due_date",
       label: "Due date",
       placeholderFrom: "From",
-      placeholderTo: "To" },
+      placeholderTo: "To",
+    },
   ];
 
-  const filteredInvoices = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const dueFilter = filters.due_date;
-    return invoices.filter((inv) => {
-      if (q) {
-        const hay = `${inv.invoice_number} ${inv.billing_period} ${inv.status}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      if (status !== "all" && inv.status !== status) return false;
-      if (dueFilter?.enabled) {
-        const d = new Date(inv.due_date).getTime();
-        if (dueFilter.dateFrom) {
-          const f = new Date(dueFilter.dateFrom).getTime();
-          if (d < f) return false;
+  const filteredInvoices = useMemo(
+    () => {
+      const q = search.trim().toLowerCase();
+      const dueFilter = filters.due_date;
+      return invoices.filter((inv) => {
+        if (q) {
+          const hay = `${inv.invoice_number} ${inv.billing_period} ${inv.status}`.toLowerCase();
+          if (!hay.includes(q))
+            return false;
         }
-        if (dueFilter.dateTo) {
-          const t = new Date(dueFilter.dateTo).getTime();
-          if (d > t) return false;
+        if (status !== "all" && inv.status !== status)
+          return false;
+        if (dueFilter?.enabled) {
+          const d = new Date(inv.due_date).getTime();
+          if (dueFilter.dateFrom) {
+            const f = new Date(dueFilter.dateFrom).getTime();
+            if (d < f)
+              return false;
+          }
+          if (dueFilter.dateTo) {
+            const t = new Date(dueFilter.dateTo).getTime();
+            if (d > t)
+              return false;
+          }
         }
-      }
-      return true;
-    });
-  }, [invoices, search, status, filters]);
+        return true;
+      });
+    },
+    [
+      invoices,
+      search,
+      status,
+      filters,
+    ],
+  );
 
   return (
     <Card>
@@ -271,13 +383,27 @@ function PostpaidInvoicesTable({ invoices }: { invoices: PostpaidInvoiceRow[] })
           <ExportButton
             rows={filteredInvoices}
             columns={[
-              { header: "Invoice #", accessor: "invoice_number" },
-              { header: "Period", accessor: "billing_period" },
-              { header: "Total (NGN)", accessor: (r) => Number(r.total_usage_ngn) },
-              { header: "Wallet Paid (NGN)", accessor: (r) => Number(r.wallet_deducted_ngn) },
-              { header: "Balance (NGN)", accessor: (r) => Number(r.invoice_balance_ngn) },
-              { header: "Due Date", accessor: "due_date" },
-              { header: "Status", accessor: "status" },
+              {
+                header: "Invoice #", accessor: "invoice_number",
+              },
+              {
+                header: "Period", accessor: "billing_period",
+              },
+              {
+                header: "Total (NGN)", accessor: r => Number(r.total_usage_ngn),
+              },
+              {
+                header: "Wallet Paid (NGN)", accessor: r => Number(r.wallet_deducted_ngn),
+              },
+              {
+                header: "Balance (NGN)", accessor: r => Number(r.invoice_balance_ngn),
+              },
+              {
+                header: "Due Date", accessor: "due_date",
+              },
+              {
+                header: "Status", accessor: "status",
+              },
             ]}
             filename="postpaid_invoices"
           />
@@ -291,9 +417,15 @@ function PostpaidInvoicesTable({ invoices }: { invoices: PostpaidInvoiceRow[] })
           status={status}
           onStatusChange={setStatus}
           statusOptions={[
-            { value: "paid", label: "Paid" },
-            { value: "generated", label: "Pending" },
-            { value: "overdue", label: "Overdue" },
+            {
+              value: "paid", label: "Paid",
+            },
+            {
+              value: "generated", label: "Pending",
+            },
+            {
+              value: "overdue", label: "Overdue",
+            },
           ]}
           filterEntity="invoices"
           filterFields={filterFields}
@@ -314,46 +446,72 @@ function PostpaidInvoicesTable({ invoices }: { invoices: PostpaidInvoiceRow[] })
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredInvoices.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                  No invoices match your filters
-                </TableCell>
-              </TableRow>
-            ) : filteredInvoices.map(inv => {
-              const balance = Number(inv.invoice_balance_ngn);
-              const isUnpaid = inv.status !== "paid" && balance > 0;
-              return (
-                <TableRow key={inv.id}>
-                  <TableCell className="font-mono text-sm">{inv.invoice_number}</TableCell>
-                  <TableCell>{inv.billing_period}</TableCell>
-                  <TableCell>{formatCurrency(Number(inv.total_usage_ngn), 'NGN')}</TableCell>
-                  <TableCell>{formatCurrency(Number(inv.wallet_deducted_ngn), 'NGN')}</TableCell>
-                  <TableCell className="font-semibold">
-                    {formatCurrency(balance, 'NGN')}
-                  </TableCell>
-                  <TableCell>{inv.due_date}</TableCell>
-                  <TableCell>
-                    <Badge className={
-                      inv.status === 'paid' ? 'bg-success/10 text-success border-success/30' :
-                      inv.status === 'overdue' ? 'bg-destructive/10 text-destructive' :
-                      'bg-muted text-muted-foreground'
-                    }>
-                      {inv.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {isUnpaid ? (
-                      <Button size="sm" onClick={() => toast.info("Payment coming soon.")}>
-                        Pay
-                      </Button>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {filteredInvoices.length === 0
+              ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={8}
+                      className="text-center text-muted-foreground py-8"
+                    >
+                      No invoices match your filters
+                    </TableCell>
+                  </TableRow>
+                )
+              : filteredInvoices.map((inv) => {
+                  const balance = Number(inv.invoice_balance_ngn);
+                  const isUnpaid = inv.status !== "paid" && balance > 0;
+                  return (
+                    <TableRow key={inv.id}>
+                      <TableCell className="font-mono text-sm">{inv.invoice_number}</TableCell>
+                      <TableCell>{inv.billing_period}</TableCell>
+                      <TableCell>
+                        {formatCurrency(
+                          Number(inv.total_usage_ngn),
+                          "NGN",
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {formatCurrency(
+                          Number(inv.wallet_deducted_ngn),
+                          "NGN",
+                        )}
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        {formatCurrency(
+                          balance,
+                          "NGN",
+                        )}
+                      </TableCell>
+                      <TableCell>{inv.due_date}</TableCell>
+                      <TableCell>
+                        <Badge className={
+                          inv.status === "paid"
+                            ? "bg-success/10 text-success border-success/30"
+                            : inv.status === "overdue"
+                              ? "bg-destructive/10 text-destructive"
+                              : "bg-muted text-muted-foreground"
+                        }
+                        >
+                          {inv.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {isUnpaid
+                          ? (
+                              <Button
+                                size="sm"
+                                onClick={() => toast.info("Payment coming soon.")}
+                              >
+                                Pay
+                              </Button>
+                            )
+                          : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
           </TableBody>
         </Table>
       </CardContent>

@@ -1,12 +1,26 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/shadcn/dialog";
-import { Button } from "@/components/shadcn/button";
+import type { Job } from "@/types";
+import {
+  AlertCircle, Brain, CheckCircle, Clock, ListChecks, Lock,
+  MapPin, MessageSquare, Phone, PhoneCall, Route, ShieldCheck,
+  Sparkles, Star, Truck, User,
+} from "lucide-react";
+import {
+  useEffect, useState,
+} from "react";
+import { toast } from "sonner";
+import {
+  Alert, AlertDescription, AlertTitle,
+} from "@/components/shadcn/alert";
 import { Badge } from "@/components/shadcn/badge";
-import { Progress } from "@/components/shadcn/progress";
-import { Card, CardContent } from "@/components/shadcn/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent,
+} from "@/components/shadcn/card";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "@/components/shadcn/dialog";
 import { Label } from "@/components/shadcn/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { Progress } from "@/components/shadcn/progress";
 import {
   Select,
   SelectContent,
@@ -14,38 +28,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { Job, Vehicle, Driver } from "@/types";
-import { mockVehicles, mockDrivers } from "@/data/mockData";
+import {
+  Tabs, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import {
+  mockDrivers, mockVehicles,
+} from "@/data/mockData";
 import { useAIConfigPermissions } from "@/hooks/useAIConfigPermissions";
+import {
+  Driver, Vehicle,
+} from "@/types";
 
 type AIMatchResult = any;
-import { useCurrency } from "@/contexts/CurrencyContext";
-import { 
-  Truck, User, MapPin, Star, Clock, CheckCircle, 
-  Sparkles, Route, MessageSquare, Phone, PhoneCall, Brain, 
-  AlertCircle, ShieldCheck, Lock, ListChecks
-} from "lucide-react";
-import { toast } from "sonner";
 
-interface TruckMatchingDialogProps {
+type TruckMatchingDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   job: Job | null;
   onAssign: (vehicleId: string, driverId: string) => void;
-}
+};
 
-export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: TruckMatchingDialogProps) {
-  const [selectedMatch, setSelectedMatch] = useState<AIMatchResult | null>(null);
-  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
-  const [isSendingIVR, setIsSendingIVR] = useState(false);
-  const [mode, setMode] = useState<"ai" | "manual">("ai");
-  const [manualVehicleId, setManualVehicleId] = useState<string>("");
-  const [manualDriverId, setManualDriverId] = useState<string>("");
-  const [aiError, setAiError] = useState<string | null>(null);
-  const notifyNewJob = async (..._args: any[]) => ({ success: false, callId: '' });
-  const notifyUrgent = async (..._args: any[]) => ({ success: false, callId: '' });
+export function TruckMatchingDialog({
+  open, onOpenChange, job, onAssign,
+}: TruckMatchingDialogProps) {
+  const [
+    selectedMatch,
+    setSelectedMatch,
+  ] = useState<AIMatchResult | null>(null);
+  const [
+    isSendingWhatsApp,
+    setIsSendingWhatsApp,
+  ] = useState(false);
+  const [
+    isSendingIVR,
+    setIsSendingIVR,
+  ] = useState(false);
+  const [
+    mode,
+    setMode,
+  ] = useState<"ai" | "manual">("ai");
+  const [
+    manualVehicleId,
+    setManualVehicleId,
+  ] = useState<string>("");
+  const [
+    manualDriverId,
+    setManualDriverId,
+  ] = useState<string>("");
+  const [
+    aiError,
+    setAiError,
+  ] = useState<string | null>(null);
+  const notifyNewJob = async (..._args: any[]) => ({
+    success: false, callId: "",
+  });
+  const notifyUrgent = async (..._args: any[]) => ({
+    success: false, callId: "",
+  });
   const isIVRLoading = false;
-  const { canRunAIMatching, canViewAIResults } = useAIConfigPermissions();
+  const {
+    canRunAIMatching, canViewAIResults,
+  } = useAIConfigPermissions();
   const { format: formatCurrency } = useCurrency();
   const matches: any[] = [];
   const isMatching = false;
@@ -61,46 +105,66 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
   const isManualMode = mode === "manual";
 
   // Available vehicles and drivers for manual selection
-  const availableVehicles = mockVehicles.filter(v => v.status === 'active');
-  const availableDrivers = mockDrivers.filter(d => d.status === 'available' || d.status === 'active');
+  const availableVehicles = mockVehicles.filter(v => v.status === "active");
+  const availableDrivers = mockDrivers.filter(d => d.status === "available" || d.status === "active");
 
-  useEffect(() => {
-    if (open && job) {
-      setAiError(null);
-      setMode(canRunAIMatching ? "ai" : "manual");
-      setManualVehicleId("");
-      setManualDriverId("");
-      
-      if (canRunAIMatching) {
-        runMatching(job, mockVehicles, mockDrivers).catch((err) => {
-          setAiError(err?.message || 'AI matching failed');
-          setMode("manual");
-        });
-      } else {
+  useEffect(
+    () => {
+      if (open && job) {
+        setAiError(null);
+        setMode(canRunAIMatching ? "ai" : "manual");
+        setManualVehicleId("");
+        setManualDriverId("");
+
+        if (canRunAIMatching) {
+          runMatching(
+            job,
+            mockVehicles,
+            mockDrivers,
+          ).catch((err) => {
+            setAiError(err?.message || "AI matching failed");
+            setMode("manual");
+          });
+        }
+        else {
         // No AI permission, go straight to manual mode
-        setMode("manual");
+          setMode("manual");
+        }
       }
-    } else {
-      reset();
-      setSelectedMatch(null);
-      setMode("ai");
-      setAiError(null);
-    }
-  }, [open, job, canRunAIMatching]);
+      else {
+        reset();
+        setSelectedMatch(null);
+        setMode("ai");
+        setAiError(null);
+      }
+    },
+    [
+      open,
+      job,
+      canRunAIMatching,
+    ],
+  );
 
   const handleAssignViaWhatsApp = async (match: AIMatchResult) => {
     setSelectedMatch(match);
     setIsSendingWhatsApp(true);
 
     // Simulate WhatsApp API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(
+      resolve,
+      1500,
+    ));
 
-    toast.success(`Job assignment sent to ${match.driver.name} via WhatsApp`, {
-      description: `Awaiting confirmation for job ${job?.reference}`,
-    });
+    toast.success(
+      `Job assignment sent to ${match.driver.name} via WhatsApp`,
+      { description: `Awaiting confirmation for job ${job?.reference}` },
+    );
 
     setIsSendingWhatsApp(false);
-    onAssign(match.vehicle.id, match.driver.id);
+    onAssign(
+      match.vehicle.id,
+      match.driver.id,
+    );
     onOpenChange(false);
   };
 
@@ -119,98 +183,140 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
 
       const result = urgent
         ? await notifyUrgent(
-            match.driver.phone || '+2348012345678',
+            match.driver.phone || "+2348012345678",
             jobDetails,
-            { driverName: match.driver.name, jobId: job!.id, language: 'en' }
+            {
+              driverName: match.driver.name, jobId: job!.id, language: "en",
+            },
           )
         : await notifyNewJob(
-            match.driver.phone || '+2348012345678',
+            match.driver.phone || "+2348012345678",
             jobDetails,
-            { driverName: match.driver.name, jobId: job!.id, language: 'en' }
+            {
+              driverName: match.driver.name, jobId: job!.id, language: "en",
+            },
           );
 
       if (result?.success) {
-        toast.success(`IVR call initiated to ${match.driver.name}`, {
-          description: urgent 
-            ? `Urgent notification with retry - Call ID: ${result.callId}`
-            : `Awaiting driver response via phone - Call ID: ${result.callId}`,
-        });
-        onAssign(match.vehicle.id, match.driver.id);
+        toast.success(
+          `IVR call initiated to ${match.driver.name}`,
+          {
+            description: urgent
+              ? `Urgent notification with retry - Call ID: ${result.callId}`
+              : `Awaiting driver response via phone - Call ID: ${result.callId}`,
+          },
+        );
+        onAssign(
+          match.vehicle.id,
+          match.driver.id,
+        );
         onOpenChange(false);
       }
-    } catch (error) {
-      toast.error('Failed to initiate IVR call');
-    } finally {
+    }
+    catch (error) {
+      toast.error("Failed to initiate IVR call");
+    }
+    finally {
       setIsSendingIVR(false);
     }
   };
 
   // Handle manual assignment
-  const handleManualAssign = (method: 'whatsapp' | 'ivr' | 'urgent') => {
+  const handleManualAssign = (method: "whatsapp" | "ivr" | "urgent") => {
     if (!manualVehicleId || !manualDriverId) {
-      toast.error('Please select both a vehicle and driver');
+      toast.error("Please select both a vehicle and driver");
       return;
     }
 
     const vehicle = availableVehicles.find(v => v.id === manualVehicleId);
     const driver = availableDrivers.find(d => d.id === manualDriverId);
 
-    if (!vehicle || !driver) return;
+    if (!vehicle || !driver)
+      return;
 
     // Create a synthetic match for the assignment flow
     const manualMatch: AIMatchResult = {
       vehicle,
       driver,
       matchScore: 100,
-      estimatedTime: 'Manual assignment',
+      estimatedTime: "Manual assignment",
       distance: 0,
-      reasons: ['Manually selected by dispatcher'],
+      reasons: ["Manually selected by dispatcher"],
     };
 
-    if (method === 'whatsapp') {
+    if (method === "whatsapp") {
       handleAssignViaWhatsApp(manualMatch);
-    } else if (method === 'ivr') {
-      handleAssignViaIVR(manualMatch, false);
-    } else {
-      handleAssignViaIVR(manualMatch, true);
+    }
+    else if (method === "ivr") {
+      handleAssignViaIVR(
+        manualMatch,
+        false,
+      );
+    }
+    else {
+      handleAssignViaIVR(
+        manualMatch,
+        true,
+      );
     }
   };
 
-  if (!job) return null;
+  if (!job)
+    return null;
 
   // Use hook-provided provider info instead of extracting from matches
-  const providerInfo = provider ? {
-    provider,
-    model: model || 'unknown',
-    confidence: overallConfidence || 0.75,
-    requiresApproval,
-  } : null;
+  const providerInfo = provider
+    ? {
+        provider,
+        model: model || "unknown",
+        confidence: overallConfidence || 0.75,
+        requiresApproval,
+      }
+    : null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {isManualMode ? (
-              <ListChecks className="h-5 w-5 text-primary" />
-            ) : (
-              <Brain className="h-5 w-5 text-primary" />
-            )}
-            {isManualMode ? 'Manual Dispatch' : 'AI Load Matching'}
+            {isManualMode
+              ? (
+                  <ListChecks className="h-5 w-5 text-primary" />
+                )
+              : (
+                  <Brain className="h-5 w-5 text-primary" />
+                )}
+            {isManualMode ? "Manual Dispatch" : "AI Load Matching"}
           </DialogTitle>
           <DialogDescription className="flex items-center gap-2">
-            {isManualMode ? (
-              <>Manually select vehicle and driver for job {job.reference}</>
-            ) : (
-              <>
-                AI-powered matching for job {job.reference}
-                {providerInfo && (
-                  <Badge variant="outline" className="ml-2 capitalize">
-                    {providerInfo.provider} / {providerInfo.model}
-                  </Badge>
+            {isManualMode
+              ? (
+                  <>
+                    Manually select vehicle and driver for job
+                    {job.reference}
+                  </>
+                )
+              : (
+                  <>
+                    AI-powered matching for job
+                    {" "}
+                    {job.reference}
+                    {providerInfo && (
+                      <Badge
+                        variant="outline"
+                        className="ml-2 capitalize"
+                      >
+                        {providerInfo.provider}
+                        {" "}
+                        /
+                        {providerInfo.model}
+                      </Badge>
+                    )}
+                  </>
                 )}
-              </>
-            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -224,7 +330,11 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
 
               if (nextMode === "ai" && job && canRunAIMatching && !isMatching && matches.length === 0) {
                 setAiError(null);
-                runMatching(job, mockVehicles, mockDrivers).catch((err) => {
+                runMatching(
+                  job,
+                  mockVehicles,
+                  mockDrivers,
+                ).catch((err) => {
                   setAiError(err?.message || "AI matching failed");
                   setMode("manual");
                 });
@@ -232,11 +342,18 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
             }}
           >
             <TabsList className="w-full bg-muted/50">
-              <TabsTrigger value="ai" disabled={!canRunAIMatching || !canViewAIResults} className="flex-1">
+              <TabsTrigger
+                value="ai"
+                disabled={!canRunAIMatching || !canViewAIResults}
+                className="flex-1"
+              >
                 <Brain className="h-4 w-4 mr-2" />
                 AI
               </TabsTrigger>
-              <TabsTrigger value="manual" className="flex-1">
+              <TabsTrigger
+                value="manual"
+                className="flex-1"
+              >
                 <ListChecks className="h-4 w-4 mr-2" />
                 Manual
               </TabsTrigger>
@@ -249,7 +366,8 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>AI Matching Unavailable</AlertTitle>
               <AlertDescription>
-                {aiError}. You can manually select a vehicle and driver below.
+                {aiError}
+                . You can manually select a vehicle and driver below.
               </AlertDescription>
             </Alert>
           )}
@@ -270,7 +388,11 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-lg">{formatCurrency(job.amount)}</p>
-                  <p className="text-sm text-muted-foreground">{job.cargo.weight} tons</p>
+                  <p className="text-sm text-muted-foreground">
+                    {job.cargo.weight}
+                    {" "}
+                    tons
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -284,7 +406,7 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
                   <ListChecks className="h-4 w-4 text-primary" />
                   Manual Selection
                 </h4>
-                
+
                 <div className="grid gap-4 md:grid-cols-2">
                   {/* Vehicle Selection */}
                   <div className="space-y-2">
@@ -292,17 +414,31 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
                       <Truck className="h-4 w-4" />
                       Select Vehicle
                     </Label>
-                    <Select value={manualVehicleId} onValueChange={setManualVehicleId}>
+                    <Select
+                      value={manualVehicleId}
+                      onValueChange={setManualVehicleId}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a vehicle..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableVehicles.map((v) => (
-                          <SelectItem key={v.id} value={v.id}>
+                        {availableVehicles.map(v => (
+                          <SelectItem
+                            key={v.id}
+                            value={v.id}
+                          >
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{v.registrationNumber}</span>
                               <span className="text-muted-foreground">
-                                - {v.make} {v.model} ({v.capacity}t)
+                                -
+                                {" "}
+                                {v.make}
+                                {" "}
+                                {v.model}
+                                {" "}
+                                (
+                                {v.capacity}
+                                t)
                               </span>
                             </div>
                           </SelectItem>
@@ -317,20 +453,29 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
                       <User className="h-4 w-4" />
                       Select Driver
                     </Label>
-                    <Select value={manualDriverId} onValueChange={setManualDriverId}>
+                    <Select
+                      value={manualDriverId}
+                      onValueChange={setManualDriverId}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a driver..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableDrivers.map((d) => (
-                          <SelectItem key={d.id} value={d.id}>
+                        {availableDrivers.map(d => (
+                          <SelectItem
+                            key={d.id}
+                            value={d.id}
+                          >
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{d.name}</span>
                               <div className="flex items-center gap-1 text-muted-foreground">
                                 <Star className="h-3 w-3 text-warning fill-current" />
                                 <span>{d.rating.toFixed(1)}</span>
                               </div>
-                              <Badge variant="outline" className="text-xs capitalize">
+                              <Badge
+                                variant="outline"
+                                className="text-xs capitalize"
+                              >
                                 {d.status}
                               </Badge>
                             </div>
@@ -345,7 +490,13 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
                   <Alert className="bg-muted/30">
                     <CheckCircle className="h-4 w-4 text-success" />
                     <AlertDescription>
-                      Ready to dispatch: {availableVehicles.find(v => v.id === manualVehicleId)?.registrationNumber} with {availableDrivers.find(d => d.id === manualDriverId)?.name}
+                      Ready to dispatch:
+                      {" "}
+                      {availableVehicles.find(v => v.id === manualVehicleId)?.registrationNumber}
+                      {" "}
+                      with
+                      {" "}
+                      {availableDrivers.find(d => d.id === manualDriverId)?.name}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -360,7 +511,10 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
                 <Brain className="h-5 w-5 text-primary animate-pulse" />
                 <span className="text-sm font-medium">AI analyzing fleet data...</span>
               </div>
-              <Progress value={matchProgress} className="h-2" />
+              <Progress
+                value={matchProgress}
+                className="h-2"
+              />
               <p className="text-xs text-muted-foreground text-center">
                 {matchProgress < 40 && "Processing vehicle locations and capacity..."}
                 {matchProgress >= 40 && matchProgress < 70 && "Evaluating driver ratings and availability..."}
@@ -386,12 +540,13 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
           {!isMatching && !isManualMode && matches.length > 0 && providerInfo && (
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
-                <Badge 
+                <Badge
                   variant={providerInfo.confidence >= 0.8 ? "default" : "secondary"}
                   className="gap-1"
                 >
                   <Sparkles className="h-3 w-3" />
-                  {(providerInfo.confidence * 100).toFixed(0)}% Confidence
+                  {(providerInfo.confidence * 100).toFixed(0)}
+                  % Confidence
                 </Badge>
               </div>
               {providerInfo.requiresApproval && (
@@ -410,10 +565,10 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
                 <CheckCircle className="h-4 w-4 text-primary" />
                 Top Matches Found
               </h4>
-              
+
               {matches.map((match, index) => (
-                <Card 
-                  key={match.vehicle.id} 
+                <Card
+                  key={match.vehicle.id}
                   className={`bg-muted/30 border-border/50 transition-all cursor-pointer hover:border-primary/50 ${
                     selectedMatch?.vehicle.id === match.vehicle.id ? "border-primary ring-1 ring-primary" : ""
                   }`}
@@ -424,21 +579,30 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
                       <div className="flex items-center gap-3">
                         <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
                           index === 0 ? "bg-gradient-to-br from-primary to-accent" : "bg-muted"
-                        }`}>
+                        }`}
+                        >
                           <Truck className="h-5 w-5 text-primary-foreground" />
                         </div>
                         <div>
-                          <p className="font-medium">{match.vehicle.make} {match.vehicle.model}</p>
+                          <p className="font-medium">
+                            {match.vehicle.make}
+                            {" "}
+                            {match.vehicle.model}
+                          </p>
                           <p className="text-sm text-muted-foreground">{match.vehicle.registrationNumber}</p>
                         </div>
                       </div>
                       <div className="text-right">
                         <Badge className={`${
-                          match.matchScore >= 95 ? "bg-success/20 text-success border-success/30" :
-                          match.matchScore >= 90 ? "bg-primary/20 text-primary border-primary/30" :
-                          "bg-warning/20 text-warning border-warning/30"
-                        }`}>
-                          {match.matchScore}% Match
+                          match.matchScore >= 95
+                            ? "bg-success/20 text-success border-success/30"
+                            : match.matchScore >= 90
+                              ? "bg-primary/20 text-primary border-primary/30"
+                              : "bg-warning/20 text-warning border-warning/30"
+                        }`}
+                        >
+                          {match.matchScore}
+                          % Match
                         </Badge>
                         {index === 0 && (
                           <p className="text-xs text-primary mt-1">Recommended</p>
@@ -461,7 +625,11 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
                       </div>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Route className="h-4 w-4" />
-                        <span>{match.distance} km</span>
+                        <span>
+                          {match.distance}
+                          {" "}
+                          km
+                        </span>
                       </div>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
@@ -471,7 +639,11 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
 
                     <div className="flex flex-wrap gap-2">
                       {match.reasons.map((reason, i) => (
-                        <Badge key={i} variant="outline" className="text-xs">
+                        <Badge
+                          key={i}
+                          variant="outline"
+                          className="text-xs"
+                        >
                           {reason}
                         </Badge>
                       ))}
@@ -490,7 +662,10 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
               <p className="text-sm text-muted-foreground mb-4">
                 AI couldn't find optimal matches. You can select manually.
               </p>
-              <Button variant="outline" onClick={() => setMode("manual")}>
+              <Button
+                variant="outline"
+                onClick={() => setMode("manual")}
+              >
                 <ListChecks className="h-4 w-4 mr-2" />
                 Switch to Manual Selection
               </Button>
@@ -502,50 +677,56 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
             {/* Manual mode action buttons */}
             {isManualMode && manualVehicleId && manualDriverId && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <Button 
-                  variant="gradient" 
-                  onClick={() => handleManualAssign('whatsapp')}
+                <Button
+                  variant="gradient"
+                  onClick={() => handleManualAssign("whatsapp")}
                   disabled={isSendingWhatsApp || isSendingIVR}
                   className="flex-1"
                 >
-                  {isSendingWhatsApp ? (
-                    <>Sending...</>
-                  ) : (
-                    <>
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      WhatsApp
-                    </>
-                  )}
+                  {isSendingWhatsApp
+                    ? (
+                        <>Sending...</>
+                      )
+                    : (
+                        <>
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          WhatsApp
+                        </>
+                      )}
                 </Button>
-                <Button 
-                  variant="secondary" 
-                  onClick={() => handleManualAssign('ivr')}
+                <Button
+                  variant="secondary"
+                  onClick={() => handleManualAssign("ivr")}
                   disabled={isSendingWhatsApp || isSendingIVR || isIVRLoading}
                   className="flex-1"
                 >
-                  {isSendingIVR ? (
-                    <>Calling...</>
-                  ) : (
-                    <>
-                      <Phone className="h-4 w-4 mr-2" />
-                      IVR Call
-                    </>
-                  )}
+                  {isSendingIVR
+                    ? (
+                        <>Calling...</>
+                      )
+                    : (
+                        <>
+                          <Phone className="h-4 w-4 mr-2" />
+                          IVR Call
+                        </>
+                      )}
                 </Button>
-                <Button 
-                  variant="destructive" 
-                  onClick={() => handleManualAssign('urgent')}
+                <Button
+                  variant="destructive"
+                  onClick={() => handleManualAssign("urgent")}
                   disabled={isSendingWhatsApp || isSendingIVR || isIVRLoading}
                   className="flex-1"
                 >
-                  {isSendingIVR ? (
-                    <>Calling...</>
-                  ) : (
-                    <>
-                      <PhoneCall className="h-4 w-4 mr-2" />
-                      Urgent Call
-                    </>
-                  )}
+                  {isSendingIVR
+                    ? (
+                        <>Calling...</>
+                      )
+                    : (
+                        <>
+                          <PhoneCall className="h-4 w-4 mr-2" />
+                          Urgent Call
+                        </>
+                      )}
                 </Button>
               </div>
             )}
@@ -553,56 +734,71 @@ export function TruckMatchingDialog({ open, onOpenChange, job, onAssign }: Truck
             {/* AI mode action buttons */}
             {!isManualMode && selectedMatch && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <Button 
-                  variant="gradient" 
+                <Button
+                  variant="gradient"
                   onClick={() => handleAssignViaWhatsApp(selectedMatch)}
                   disabled={isSendingWhatsApp || isSendingIVR}
                   className="flex-1"
                 >
-                  {isSendingWhatsApp ? (
-                    <>Sending...</>
-                  ) : (
-                    <>
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      WhatsApp
-                    </>
-                  )}
+                  {isSendingWhatsApp
+                    ? (
+                        <>Sending...</>
+                      )
+                    : (
+                        <>
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          WhatsApp
+                        </>
+                      )}
                 </Button>
-                <Button 
-                  variant="secondary" 
-                  onClick={() => handleAssignViaIVR(selectedMatch, false)}
+                <Button
+                  variant="secondary"
+                  onClick={() => handleAssignViaIVR(
+                    selectedMatch,
+                    false,
+                  )}
                   disabled={isSendingWhatsApp || isSendingIVR || isIVRLoading}
                   className="flex-1"
                 >
-                  {isSendingIVR ? (
-                    <>Calling...</>
-                  ) : (
-                    <>
-                      <Phone className="h-4 w-4 mr-2" />
-                      IVR Call
-                    </>
-                  )}
+                  {isSendingIVR
+                    ? (
+                        <>Calling...</>
+                      )
+                    : (
+                        <>
+                          <Phone className="h-4 w-4 mr-2" />
+                          IVR Call
+                        </>
+                      )}
                 </Button>
-                <Button 
-                  variant="destructive" 
-                  onClick={() => handleAssignViaIVR(selectedMatch, true)}
+                <Button
+                  variant="destructive"
+                  onClick={() => handleAssignViaIVR(
+                    selectedMatch,
+                    true,
+                  )}
                   disabled={isSendingWhatsApp || isSendingIVR || isIVRLoading}
                   className="flex-1"
                 >
-                  {isSendingIVR ? (
-                    <>Calling...</>
-                  ) : (
-                    <>
-                      <PhoneCall className="h-4 w-4 mr-2" />
-                      Urgent Call
-                    </>
-                  )}
+                  {isSendingIVR
+                    ? (
+                        <>Calling...</>
+                      )
+                    : (
+                        <>
+                          <PhoneCall className="h-4 w-4 mr-2" />
+                          Urgent Call
+                        </>
+                      )}
                 </Button>
               </div>
             )}
 
             <div className="flex justify-end">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancel
               </Button>
             </div>

@@ -1,25 +1,29 @@
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
-import { useState } from "react";
 import {
+  AlertCircle,
   Bot,
-  Key,
-  Sliders,
-  Shield,
   Check,
-  X,
-  Loader2,
   Eye,
   EyeOff,
+  Key,
+  Loader2,
+  Shield,
+  Sliders,
   TestTube,
-  AlertCircle,
+  X,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { useState } from "react";
+import {
+  Alert, AlertDescription, AlertTitle,
+} from "@/components/shadcn/alert";
+import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Checkbox } from "@/components/shadcn/checkbox";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Switch } from "@/components/shadcn/switch";
-import { Badge } from "@/components/shadcn/badge";
-import { Slider } from "@/components/shadcn/slider";
 import {
   Select,
   SelectContent,
@@ -28,14 +32,12 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
-import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import { Checkbox } from "@/components/shadcn/checkbox";
+import { Slider } from "@/components/shadcn/slider";
+import { Switch } from "@/components/shadcn/switch";
 import { useAIConfigPermissions } from "@/hooks/useAIConfigPermissions";
 
-interface TenantAIConfigPanelProps {
-  tenantId: string;
-}
+type TenantAIConfigPanelProps = { tenantId: string };
 
 export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
   // Hooks removed — inline defaults until data source is wired up
@@ -47,9 +49,17 @@ export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
   const testConnection = () => {};
   const platformConfig: null = null;
   const isLoadingPlatform = false;
-  const { canConfigureTenantAI, canRunAIMatching } = useAIConfigPermissions();
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState("");
+  const {
+    canConfigureTenantAI, canRunAIMatching,
+  } = useAIConfigPermissions();
+  const [
+    showApiKey,
+    setShowApiKey,
+  ] = useState(false);
+  const [
+    apiKeyInput,
+    setApiKeyInput,
+  ] = useState("");
 
   if (isLoading || isLoadingPlatform) {
     return (
@@ -126,7 +136,7 @@ export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
           <div className="flex items-center gap-2">
             <Switch
               checked={config?.enabled ?? false}
-              onCheckedChange={(checked) => createOrUpdateConfig({ enabled: checked })}
+              onCheckedChange={checked => createOrUpdateConfig({ enabled: checked })}
               disabled={isSaving}
             />
             <Label className="font-medium">
@@ -149,7 +159,7 @@ export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
           <CardDescription>Select your preferred AI provider</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>AI Provider</Label>
               {!config?.enabled && (
@@ -161,8 +171,9 @@ export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
               <Select
                 value={config?.provider || undefined}
                 onValueChange={(value: "openai" | "anthropic" | "lovable") =>
-                  createOrUpdateConfig({ provider: value, model: getAvailableModels(value)[0] })
-                }
+                  createOrUpdateConfig({
+                    provider: value, model: getAvailableModels(value)[0],
+                  })}
                 disabled={isSaving || !config?.enabled || !canConfigureTenantAI}
               >
                 <SelectTrigger>
@@ -186,15 +197,18 @@ export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
               <Label>Model</Label>
               <Select
                 value={config?.model || undefined}
-                onValueChange={(value) => createOrUpdateConfig({ model: value })}
+                onValueChange={value => createOrUpdateConfig({ model: value })}
                 disabled={isSaving || !config?.enabled || !config?.provider || !canConfigureTenantAI}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select model" />
                 </SelectTrigger>
                 <SelectContent>
-                  {getAvailableModels(config?.provider || "").map((model) => (
-                    <SelectItem key={model} value={model}>
+                  {getAvailableModels(config?.provider || "").map(model => (
+                    <SelectItem
+                      key={model}
+                      value={model}
+                    >
                       {model}
                     </SelectItem>
                   ))}
@@ -211,7 +225,9 @@ export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
                 API Key (Bring Your Own Key)
               </Label>
               <p className="text-xs text-muted-foreground">
-                Provide your own API key for {config.provider === "openai" ? "OpenAI" : "Anthropic"}
+                Provide your own API key for
+                {" "}
+                {config.provider === "openai" ? "OpenAI" : "Anthropic"}
               </p>
               <div className="flex gap-2">
                 <div className="relative flex-1">
@@ -223,7 +239,7 @@ export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
                         : "Enter API key"
                     }
                     value={apiKeyInput}
-                    onChange={(e) => setApiKeyInput(e.target.value)}
+                    onChange={e => setApiKeyInput(e.target.value)}
                     disabled={isSaving}
                   />
                   <Button
@@ -253,12 +269,19 @@ export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
               <Label>Test Connection</Label>
               {config?.last_connection_test_at && (
                 <p className="text-xs text-muted-foreground">
-                  Last tested: {formatWithPattern(config.last_connection_test_at, "PPp")}
-                  {config.last_connection_test_success ? (
-                    <Check className="inline ml-1 h-3 w-3 text-green-500" />
-                  ) : (
-                    <X className="inline ml-1 h-3 w-3 text-destructive" />
+                  Last tested:
+                  {" "}
+                  {formatWithPattern(
+                    config.last_connection_test_at,
+                    "PPp",
                   )}
+                  {config.last_connection_test_success
+                    ? (
+                        <Check className="inline ml-1 h-3 w-3 text-green-500" />
+                      )
+                    : (
+                        <X className="inline ml-1 h-3 w-3 text-destructive" />
+                      )}
                 </p>
               )}
             </div>
@@ -267,17 +290,19 @@ export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
               onClick={testConnection}
               disabled={isTesting || !config?.enabled || !config?.provider}
             >
-              {isTesting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Testing...
-                </>
-              ) : (
-                <>
-                  <TestTube className="h-4 w-4 mr-2" />
-                  Test Connection
-                </>
-              )}
+              {isTesting
+                ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Testing...
+                    </>
+                  )
+                : (
+                    <>
+                      <TestTube className="h-4 w-4 mr-2" />
+                      Test Connection
+                    </>
+                  )}
             </Button>
           </div>
         </CardContent>
@@ -296,25 +321,40 @@ export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
           {/* Weight Sliders */}
           <div className="space-y-4">
             <Label className="text-sm font-medium">Priority Weights</Label>
-            
+
             <div className="space-y-4">
               {[
-                { key: "weight_capacity_fit", label: "Capacity Fit", value: config?.weight_capacity_fit ?? 80 },
-                { key: "weight_distance_pickup", label: "Distance to Pickup", value: config?.weight_distance_pickup ?? 70 },
-                { key: "weight_eta_delivery", label: "ETA / Delivery Time", value: config?.weight_eta_delivery ?? 60 },
-                { key: "weight_driver_availability", label: "Driver Availability", value: config?.weight_driver_availability ?? 75 },
-                { key: "weight_cost_efficiency", label: "Cost Efficiency", value: config?.weight_cost_efficiency ?? 50 },
-              ].map((weight) => (
-                <div key={weight.key} className="space-y-2">
+                {
+                  key: "weight_capacity_fit", label: "Capacity Fit", value: config?.weight_capacity_fit ?? 80,
+                },
+                {
+                  key: "weight_distance_pickup", label: "Distance to Pickup", value: config?.weight_distance_pickup ?? 70,
+                },
+                {
+                  key: "weight_eta_delivery", label: "ETA / Delivery Time", value: config?.weight_eta_delivery ?? 60,
+                },
+                {
+                  key: "weight_driver_availability", label: "Driver Availability", value: config?.weight_driver_availability ?? 75,
+                },
+                {
+                  key: "weight_cost_efficiency", label: "Cost Efficiency", value: config?.weight_cost_efficiency ?? 50,
+                },
+              ].map(weight => (
+                <div
+                  key={weight.key}
+                  className="space-y-2"
+                >
                   <div className="flex items-center justify-between">
                     <Label className="text-sm">{weight.label}</Label>
-                    <span className="text-sm text-muted-foreground">{weight.value}%</span>
+                    <span className="text-sm text-muted-foreground">
+                      {weight.value}
+                      %
+                    </span>
                   </div>
                   <Slider
                     value={[weight.value]}
                     onValueChange={([value]) =>
-                      createOrUpdateConfig({ [weight.key]: value } as any)
-                    }
+                      createOrUpdateConfig({ [weight.key]: value } as any)}
                     max={100}
                     step={5}
                     disabled={isSaving || !config?.enabled}
@@ -332,24 +372,37 @@ export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
             <p className="text-xs text-muted-foreground">
               These constraints must be satisfied for a match to be considered
             </p>
-            
+
             <div className="grid grid-cols-2 gap-3">
               {[
-                { key: "constraint_max_load", label: "Maximum Load Capacity", checked: config?.constraint_max_load ?? true },
-                { key: "constraint_truck_type", label: "Truck Type Suitability", checked: config?.constraint_truck_type ?? true },
-                { key: "constraint_refrigeration", label: "Refrigeration Requirements", checked: config?.constraint_refrigeration ?? true },
-                { key: "constraint_driver_hours", label: "Driver Hours Compliance", checked: config?.constraint_driver_hours ?? true },
-              ].map((constraint) => (
-                <div key={constraint.key} className="flex items-center space-x-2">
+                {
+                  key: "constraint_max_load", label: "Maximum Load Capacity", checked: config?.constraint_max_load ?? true,
+                },
+                {
+                  key: "constraint_truck_type", label: "Truck Type Suitability", checked: config?.constraint_truck_type ?? true,
+                },
+                {
+                  key: "constraint_refrigeration", label: "Refrigeration Requirements", checked: config?.constraint_refrigeration ?? true,
+                },
+                {
+                  key: "constraint_driver_hours", label: "Driver Hours Compliance", checked: config?.constraint_driver_hours ?? true,
+                },
+              ].map(constraint => (
+                <div
+                  key={constraint.key}
+                  className="flex items-center space-x-2"
+                >
                   <Checkbox
                     id={constraint.key}
                     checked={constraint.checked}
-                    onCheckedChange={(checked) =>
-                      createOrUpdateConfig({ [constraint.key]: checked } as any)
-                    }
+                    onCheckedChange={checked =>
+                      createOrUpdateConfig({ [constraint.key]: checked } as any)}
                     disabled={isSaving || !config?.enabled}
                   />
-                  <Label htmlFor={constraint.key} className="text-sm">
+                  <Label
+                    htmlFor={constraint.key}
+                    className="text-sm"
+                  >
                     {constraint.label}
                   </Label>
                 </div>
@@ -364,7 +417,8 @@ export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
             <div className="flex items-center justify-between">
               <Label>Confidence Threshold</Label>
               <span className="text-sm text-muted-foreground">
-                {((config?.confidence_threshold ?? 0.75) * 100).toFixed(0)}%
+                {((config?.confidence_threshold ?? 0.75) * 100).toFixed(0)}
+                %
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -373,8 +427,7 @@ export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
             <Slider
               value={[(config?.confidence_threshold ?? 0.75) * 100]}
               onValueChange={([value]) =>
-                createOrUpdateConfig({ confidence_threshold: value / 100 })
-              }
+                createOrUpdateConfig({ confidence_threshold: value / 100 })}
               max={100}
               min={50}
               step={5}
@@ -403,15 +456,17 @@ export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
             </div>
             <Switch
               checked={config?.require_dispatcher_approval ?? true}
-              onCheckedChange={(checked) =>
-                createOrUpdateConfig({ require_dispatcher_approval: checked })
-              }
+              onCheckedChange={checked =>
+                createOrUpdateConfig({ require_dispatcher_approval: checked })}
               disabled={isSaving || !config?.enabled}
             />
           </div>
-          
+
           {!config?.require_dispatcher_approval && (
-            <Alert className="mt-4" variant="destructive">
+            <Alert
+              className="mt-4"
+              variant="destructive"
+            >
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Warning</AlertTitle>
               <AlertDescription>

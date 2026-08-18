@@ -1,34 +1,48 @@
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
-import { Badge } from '@/components/shadcn/badge';
-import { Button } from '@/components/shadcn/button';
-import { Skeleton } from '@/components/shadcn/skeleton';
-import { Separator } from '@/components/shadcn/separator';
 import {
-  Clock,
-  UserPlus,
-  Play,
-  Radio,
   CheckCircle2,
-  XCircle,
+  Clock,
   Cpu,
   MapPin,
+  Play,
   Plus,
-} from 'lucide-react';
+  Radio,
+  UserPlus,
+  XCircle,
+} from "lucide-react";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Separator } from "@/components/shadcn/separator";
+import { Skeleton } from "@/components/shadcn/skeleton";
 
-interface DeviceSetupRequestTrackerProps {
+type DeviceSetupRequestTrackerProps = {
   requests: any[];
   loading: boolean;
   onNewRequest: () => void;
   onCancelRequest: (id: string) => void;
-}
+};
 
-const STATUS_STEPS: { key: string; label: string; icon: typeof Clock }[] = [
-  { key: 'pending_review', label: 'Pending Review', icon: Clock },
-  { key: 'assigned', label: 'Assigned', icon: UserPlus },
-  { key: 'in_progress', label: 'In Progress', icon: Play },
-  { key: 'awaiting_heartbeat', label: 'Awaiting Heartbeat', icon: Radio },
-  { key: 'active', label: 'Active', icon: CheckCircle2 },
+const STATUS_STEPS: {
+  key: string; label: string; icon: typeof Clock;
+}[] = [
+  {
+    key: "pending_review", label: "Pending Review", icon: Clock,
+  },
+  {
+    key: "assigned", label: "Assigned", icon: UserPlus,
+  },
+  {
+    key: "in_progress", label: "In Progress", icon: Play,
+  },
+  {
+    key: "awaiting_heartbeat", label: "Awaiting Heartbeat", icon: Radio,
+  },
+  {
+    key: "active", label: "Active", icon: CheckCircle2,
+  },
 ];
 
 const STATUS_ORDER: Record<string, number> = {
@@ -52,14 +66,30 @@ export function DeviceSetupRequestTracker({
       <Card>
         <CardHeader><CardTitle>My Device Requests</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          {[1, 2].map(i => <Skeleton key={i} className="h-24 w-full" />)}
+          {[
+            1,
+            2,
+          ].map(i => (
+            <Skeleton
+              key={i}
+              className="h-24 w-full"
+            />
+          ))}
         </CardContent>
       </Card>
     );
   }
 
-  const activeRequests = requests.filter(r => !['active', 'rejected', 'cancelled'].includes(r.status));
-  const pastRequests = requests.filter(r => ['active', 'rejected', 'cancelled'].includes(r.status));
+  const activeRequests = requests.filter(r => ![
+    "active",
+    "rejected",
+    "cancelled",
+  ].includes(r.status));
+  const pastRequests = requests.filter(r => [
+    "active",
+    "rejected",
+    "cancelled",
+  ].includes(r.status));
 
   return (
     <Card>
@@ -71,8 +101,13 @@ export function DeviceSetupRequestTracker({
           </CardTitle>
           <CardDescription>Track the status of IoT device setup requests submitted for your vehicles.</CardDescription>
         </div>
-        <Button size="sm" onClick={onNewRequest}>
-          <Plus className="h-4 w-4 mr-1" /> Request Setup
+        <Button
+          size="sm"
+          onClick={onNewRequest}
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          {" "}
+          Request Setup
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -81,26 +116,41 @@ export function DeviceSetupRequestTracker({
             <Cpu className="h-10 w-10 mx-auto mb-3 opacity-40" />
             <p className="font-medium">No device setup requests yet</p>
             <p className="text-sm mt-1">Request a device to be configured for your vehicle.</p>
-            <Button className="mt-4" onClick={onNewRequest}>
-              <Plus className="h-4 w-4 mr-2" /> Request Device Setup
+            <Button
+              className="mt-4"
+              onClick={onNewRequest}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {" "}
+              Request Device Setup
             </Button>
           </div>
         ) : (
           <>
             {/* Active requests with progress tracker */}
-            {activeRequests.map(req => {
+            {activeRequests.map((req) => {
               const currentStep = STATUS_ORDER[req.status] ?? 0;
               return (
-                <div key={req.id} className="rounded-lg border p-4 space-y-3">
+                <div
+                  key={req.id}
+                  className="rounded-lg border p-4 space-y-3"
+                >
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="font-medium">{req.manufacturer} {req.model}</p>
+                      <p className="font-medium">
+                        {req.manufacturer}
+                        {" "}
+                        {req.model}
+                      </p>
                       <p className="text-xs text-muted-foreground font-mono">{req.imei}</p>
                       {req.vehicle_name && (
-                        <p className="text-xs text-muted-foreground mt-0.5">→ {req.vehicle_name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          →
+                          {req.vehicle_name}
+                        </p>
                       )}
                     </div>
-                    {req.status === 'pending_review' && (
+                    {req.status === "pending_review" && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -119,23 +169,31 @@ export function DeviceSetupRequestTracker({
                       const isComplete = currentStep > i;
                       const isCurrent = currentStep === i;
                       return (
-                        <div key={step.key} className="flex items-center flex-1">
+                        <div
+                          key={step.key}
+                          className="flex items-center flex-1"
+                        >
                           <div className={`flex flex-col items-center flex-1 ${
-                            isComplete ? 'text-primary' : isCurrent ? 'text-primary' : 'text-muted-foreground/40'
-                          }`}>
+                            isComplete ? "text-primary" : isCurrent ? "text-primary" : "text-muted-foreground/40"
+                          }`}
+                          >
                             <div className={`h-7 w-7 rounded-full flex items-center justify-center border-2 ${
-                              isComplete ? 'border-primary bg-primary/10'
-                              : isCurrent ? 'border-primary bg-primary/5 animate-pulse'
-                              : 'border-muted'
-                            }`}>
+                              isComplete
+                                ? "border-primary bg-primary/10"
+                                : isCurrent
+                                  ? "border-primary bg-primary/5 animate-pulse"
+                                  : "border-muted"
+                            }`}
+                            >
                               <StepIcon className="h-3.5 w-3.5" />
                             </div>
                             <span className="text-[10px] mt-1 text-center leading-tight">{step.label}</span>
                           </div>
                           {i < STATUS_STEPS.length - 1 && (
                             <div className={`h-0.5 w-full mx-0.5 mt-[-16px] ${
-                              isComplete ? 'bg-primary' : 'bg-muted'
-                            }`} />
+                              isComplete ? "bg-primary" : "bg-muted"
+                            }`}
+                            />
                           )}
                         </div>
                       );
@@ -144,13 +202,18 @@ export function DeviceSetupRequestTracker({
 
                   {req.assigned_to_name && (
                     <p className="text-xs text-muted-foreground">
-                      Assigned to: <span className="font-medium">{req.assigned_to_name}</span>
+                      Assigned to:
+                      {" "}
+                      <span className="font-medium">{req.assigned_to_name}</span>
                     </p>
                   )}
                   {(req.installation_state || req.installation_city) && (
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <MapPin className="h-3 w-3" />
-                      {[req.installation_city, req.installation_state].filter(Boolean).join(', ')}
+                      {[
+                        req.installation_city,
+                        req.installation_state,
+                      ].filter(Boolean).join(", ")}
                     </div>
                   )}
                 </div>
@@ -163,17 +226,27 @@ export function DeviceSetupRequestTracker({
                 <Separator />
                 <p className="text-xs font-medium text-muted-foreground">Past Requests</p>
                 {pastRequests.map(req => (
-                  <div key={req.id} className="flex items-center justify-between py-2 text-sm">
+                  <div
+                    key={req.id}
+                    className="flex items-center justify-between py-2 text-sm"
+                  >
                     <div>
-                      <p className="font-medium">{req.manufacturer} {req.model}</p>
+                      <p className="font-medium">
+                        {req.manufacturer}
+                        {" "}
+                        {req.model}
+                      </p>
                       <p className="text-xs text-muted-foreground font-mono">{req.imei}</p>
                     </div>
                     <div className="text-right">
-                      <Badge variant={req.status === 'active' ? 'default' : 'destructive'}>
-                        {req.status === 'active' ? 'Active' : req.status === 'rejected' ? 'Rejected' : 'Cancelled'}
+                      <Badge variant={req.status === "active" ? "default" : "destructive"}>
+                        {req.status === "active" ? "Active" : req.status === "rejected" ? "Rejected" : "Cancelled"}
                       </Badge>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {formatWithPattern(req.updated_at, 'dd MMM yyyy')}
+                        {formatWithPattern(
+                          req.updated_at,
+                          "dd MMM yyyy",
+                        )}
                       </p>
                     </div>
                   </div>

@@ -1,51 +1,65 @@
-import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import type { FleetDevice } from "@truckmoov/api/fleet";
 import type { DeviceWithTelemetry } from "@/hooks/useDeviceTelemetry";
+import type { IoTDevice } from "@/types";
 import {
   downloadDeviceImportTemplate,
+  exportDevices,
+
+  getValidateDeviceAssignmentQueryOptions,
   useAssignDevice,
-  useCreateDeviceSetupRequest,
   useCreateDevice,
+  useCreateDeviceSetupRequest,
   useDeleteDevice,
   useDevice,
   useDevices,
   useImportDevices,
+  useUnassignDevice,
   useUpdateDevice,
   useUpdateDeviceFirmware,
   useUpdateDeviceLifecycle,
-  useUnassignDevice,
   useVehicles,
-  exportDevices,
-  getValidateDeviceAssignmentQueryOptions,
-  type FleetDevice,
 } from "@truckmoov/api/fleet";
 import { queryClient } from "@truckmoov/api/lib/query-client";
+import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   Cpu,
-  Plus,
-  Search,
-  Upload,
-  MoreHorizontal,
+  Download,
   Edit,
-  Trash2,
   Eye,
   Link,
-  Unlink,
-  Download,
-  RefreshCw,
-  Signal,
   Loader2,
+  MoreHorizontal,
+  Plus,
+  RefreshCw,
+  Search,
   Settings,
+  Signal,
   SlidersHorizontal,
+  Trash2,
+  Unlink,
+  Upload,
 } from "lucide-react";
+import {
+  useCallback, useEffect, useMemo, useState,
+} from "react";
+import { toast } from "sonner";
+import { AssignDeviceDialogWithLifecycle } from "@/components/devices/AssignDeviceDialogWithLifecycle";
+import { DeviceBulkUploadDialog } from "@/components/devices/DeviceBulkUploadDialog";
+import { DeviceDetailsSheet } from "@/components/devices/DeviceDetailsSheet";
+import { DeviceFormDialog } from "@/components/devices/DeviceFormDialog";
+import { DeviceRequestsTracker } from "@/components/devices/DeviceRequestsTracker";
+import { DeviceSetupRequestDialog } from "@/components/devices/DeviceSetupRequestDialog";
+import { DeviceSetupRequestsQueue } from "@/components/devices/DeviceSetupRequestsQueue";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import {
+  Alert, AlertDescription, AlertTitle,
+} from "@/components/shadcn/alert";
 import { Badge } from "@/components/shadcn/badge";
-import { Label } from "@/components/shadcn/label";
-import { Checkbox } from "@/components/shadcn/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/shadcn/card";
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+} from "@/components/shadcn/card";
+import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -61,6 +75,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/shadcn/popover";
 import {
   Select,
   SelectContent,
@@ -68,19 +87,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { cn } from "@/lib/utils";
-import { DeviceFormDialog } from "@/components/devices/DeviceFormDialog";
-import { DeviceSetupRequestDialog } from "@/components/devices/DeviceSetupRequestDialog";
-import { DeviceRequestsTracker } from "@/components/devices/DeviceRequestsTracker";
-import { DeviceDetailsSheet } from "@/components/devices/DeviceDetailsSheet";
-import { DeviceBulkUploadDialog } from "@/components/devices/DeviceBulkUploadDialog";
-import { AssignDeviceDialogWithLifecycle } from "@/components/devices/AssignDeviceDialogWithLifecycle";
-import { toast } from "sonner";
 import { useDevicePermissions } from "@/hooks/useDevicePermissions";
-import { Alert, AlertDescription, AlertTitle } from "@/components/shadcn/alert";
-import { IoTDevice } from "@/types";
-import { DeviceSetupRequestsQueue } from "@/components/devices/DeviceSetupRequestsQueue";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
+import { cn } from "@/lib/utils";
 
 const KNOWN_DEVICE_MANUFACTURERS = [
   "Teltonika",
@@ -95,38 +104,97 @@ const KNOWN_DEVICE_MANUFACTURERS = [
 
 export default function DeviceManagement() {
   const { requireSubscription } = useRequireSubscription();
-  const { canView, canManage, role } = useDevicePermissions();
+  const {
+    canView, canManage, role,
+  } = useDevicePermissions();
 
   const uploadFile = async (_file: File, _requestId: string, _type: "device_photo" | "receipt") => null;
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [manufacturerFilters, setManufacturerFilters] = useState<string[]>([]);
-  const [lastSeenFilters, setLastSeenFilters] = useState<string[]>([]);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
-  const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
-  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
-  const [selectedDevice, setSelectedDevice] = useState<DeviceWithTelemetry | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [firmwareDevice, setFirmwareDevice] = useState<DeviceWithTelemetry | null>(null);
-  const [firmwareVersion, setFirmwareVersion] = useState("");
-  const [devicePendingDeletion, setDevicePendingDeletion] = useState<DeviceWithTelemetry | null>(null);
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    debouncedSearch,
+    setDebouncedSearch,
+  ] = useState("");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState<string>("all");
+  const [
+    manufacturerFilters,
+    setManufacturerFilters,
+  ] = useState<string[]>([]);
+  const [
+    lastSeenFilters,
+    setLastSeenFilters,
+  ] = useState<string[]>([]);
+  const [
+    isAddDialogOpen,
+    setIsAddDialogOpen,
+  ] = useState(false);
+  const [
+    isEditDialogOpen,
+    setIsEditDialogOpen,
+  ] = useState(false);
+  const [
+    isBulkUploadOpen,
+    setIsBulkUploadOpen,
+  ] = useState(false);
+  const [
+    isRequestDialogOpen,
+    setIsRequestDialogOpen,
+  ] = useState(false);
+  const [
+    isAssignDialogOpen,
+    setIsAssignDialogOpen,
+  ] = useState(false);
+  const [
+    selectedDevice,
+    setSelectedDevice,
+  ] = useState<DeviceWithTelemetry | null>(null);
+  const [
+    isDetailsOpen,
+    setIsDetailsOpen,
+  ] = useState(false);
+  const [
+    isExporting,
+    setIsExporting,
+  ] = useState(false);
+  const [
+    firmwareDevice,
+    setFirmwareDevice,
+  ] = useState<DeviceWithTelemetry | null>(null);
+  const [
+    firmwareVersion,
+    setFirmwareVersion,
+  ] = useState("");
+  const [
+    devicePendingDeletion,
+    setDevicePendingDeletion,
+  ] = useState<DeviceWithTelemetry | null>(null);
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedSearch(searchQuery), 300);
-    return () => window.clearTimeout(timer);
-  }, [searchQuery]);
+  useEffect(
+    () => {
+      const timer = window.setTimeout(
+        setDebouncedSearch,
+        300,
+        searchQuery,
+      );
+      return () => window.clearTimeout(timer);
+    },
+    [searchQuery],
+  );
 
   const apiStatus = statusFilter !== "all" && statusFilter !== "assignable"
     ? statusFilter as FleetDevice["status"]
     : undefined;
   const lifecycleStatus = statusFilter === "assignable" ? statusFilter : undefined;
   const apiManufacturer = manufacturerFilters.length === 1 ? manufacturerFilters[0] : undefined;
-  const { data: devicesResponse, isLoading: loading, error: devicesError } = useDevices({
+  const {
+    data: devicesResponse, isLoading: loading, error: devicesError,
+  } = useDevices({
     params: {
       query: debouncedSearch.trim() || undefined,
       status: apiStatus,
@@ -147,77 +215,100 @@ export default function DeviceManagement() {
   const assignDevice = useAssignDevice();
   const unassignDevice = useUnassignDevice();
 
-  const devices = useMemo<DeviceWithTelemetry[]>(() => (devicesResponse?.data ?? []).map((device) => ({
-    id: device.id,
-    imei: device.imei,
-    manufacturer: device.manufacturer,
-    model: device.model,
-    status: device.status,
-    vehicle_id: device.vehicleId,
-    tenant_id: device.tenantId,
-    last_seen: device.lastSeen,
-    signal_strength: device.signalStrength,
-    battery_level: device.batteryLevel,
-    protocol: "",
-    lifecycle_status: device.lifecycleStatus,
-    assigned_at: device.assignedAt,
-    firmware_version: device.firmwareVersion,
-  })), [devicesResponse]);
+  const devices = useMemo<DeviceWithTelemetry[]>(
+    () => (devicesResponse?.data ?? []).map(device => ({
+      id: device.id,
+      imei: device.imei,
+      manufacturer: device.manufacturer,
+      model: device.model,
+      status: device.status,
+      vehicle_id: device.vehicleId,
+      tenant_id: device.tenantId,
+      last_seen: device.lastSeen,
+      signal_strength: device.signalStrength,
+      battery_level: device.batteryLevel,
+      protocol: "",
+      lifecycle_status: device.lifecycleStatus,
+      assigned_at: device.assignedAt,
+      firmware_version: device.firmwareVersion,
+    })),
+    [devicesResponse],
+  );
   const vehicles = vehiclesResponse?.data ?? [];
   const availableVehicles = availableVehiclesResponse?.data ?? [];
   const error = devicesError?.message ?? null;
   const detailDevice = deviceResponse?.data;
 
-  const filteredDevices = useMemo(() => {
-    const now = Date.now();
-    return devices.filter((device) => {
-      const matchesSearch = true;
-      const matchesStatus = true;
-      const matchesManufacturer = manufacturerFilters.length === 0 || manufacturerFilters.includes(device.manufacturer);
+  const filteredDevices = useMemo(
+    () => {
+      const now = Date.now();
+      return devices.filter((device) => {
+        const matchesSearch = true;
+        const matchesStatus = true;
+        const matchesManufacturer = manufacturerFilters.length === 0 || manufacturerFilters.includes(device.manufacturer);
 
-      let matchesLastSeen = true;
-      if (lastSeenFilters.length > 0) {
-        const ls = device.last_seen ? new Date(device.last_seen).getTime() : 0;
-        const ageMs = ls ? now - ls : Number.POSITIVE_INFINITY;
-        const MIN = 60 * 1000;
-        const HOUR = 60 * MIN;
-        const DAY = 24 * HOUR;
-        matchesLastSeen = lastSeenFilters.some((f) => {
-          if (f === "5m") return ageMs <= 5 * MIN;
-          if (f === "1h") return ageMs <= HOUR;
-          if (f === "24h") return ageMs <= DAY;
-          if (f === "7d") return ageMs <= 7 * DAY;
-          if (f === "never") return !device.last_seen;
-          return false;
-        });
-      }
+        let matchesLastSeen = true;
+        if (lastSeenFilters.length > 0) {
+          const ls = device.last_seen ? new Date(device.last_seen).getTime() : 0;
+          const ageMs = ls ? now - ls : Number.POSITIVE_INFINITY;
+          const MIN = 60 * 1000;
+          const HOUR = 60 * MIN;
+          const DAY = 24 * HOUR;
+          matchesLastSeen = lastSeenFilters.some((f) => {
+            if (f === "5m")
+              return ageMs <= 5 * MIN;
+            if (f === "1h")
+              return ageMs <= HOUR;
+            if (f === "24h")
+              return ageMs <= DAY;
+            if (f === "7d")
+              return ageMs <= 7 * DAY;
+            if (f === "never")
+              return !device.last_seen;
+            return false;
+          });
+        }
 
-      return matchesSearch && matchesStatus && matchesManufacturer && matchesLastSeen;
-    });
-  }, [devices, manufacturerFilters, lastSeenFilters]);
+        return matchesSearch && matchesStatus && matchesManufacturer && matchesLastSeen;
+      });
+    },
+    [
+      devices,
+      manufacturerFilters,
+      lastSeenFilters,
+    ],
+  );
 
   const manufacturers = useMemo(
-    () => [...new Set([...KNOWN_DEVICE_MANUFACTURERS, ...devices.map((device) => device.manufacturer)])],
+    () => [
+      ...new Set([
+        ...KNOWN_DEVICE_MANUFACTURERS,
+        ...devices.map(device => device.manufacturer),
+      ]),
+    ],
     [devices],
   );
 
   // Lifecycle status counts
-  const statusCounts = useMemo(() => {
-    const getLifecycleStatus = (d: DeviceWithTelemetry) => d.lifecycle_status || d.status;
-    return {
-      all: devices.length,
-      registered: devices.filter((d) => getLifecycleStatus(d) === "registered").length,
-      config_pending: devices.filter((d) => getLifecycleStatus(d) === "config_pending").length,
-      configured: devices.filter((d) => getLifecycleStatus(d) === "configured").length,
-      verified_online: devices.filter((d) => getLifecycleStatus(d) === "verified_online").length,
-      assignable: devices.filter((d) => getLifecycleStatus(d) === "assignable").length,
-      // Assigned: lifecycle assigned but NOT operationally active (e.g., vehicle in maintenance)
-      assigned: devices.filter((d) => getLifecycleStatus(d) === "assigned" && d.status !== "active").length,
-      faulty: devices.filter((d) => getLifecycleStatus(d) === "faulty").length,
-      // Active: devices with operational status 'active' (assigned devices that are running)
-      active: devices.filter((d) => d.status === "active").length,
-    };
-  }, [devices]);
+  const statusCounts = useMemo(
+    () => {
+      const getLifecycleStatus = (d: DeviceWithTelemetry) => d.lifecycle_status || d.status;
+      return {
+        all: devices.length,
+        registered: devices.filter(d => getLifecycleStatus(d) === "registered").length,
+        config_pending: devices.filter(d => getLifecycleStatus(d) === "config_pending").length,
+        configured: devices.filter(d => getLifecycleStatus(d) === "configured").length,
+        verified_online: devices.filter(d => getLifecycleStatus(d) === "verified_online").length,
+        assignable: devices.filter(d => getLifecycleStatus(d) === "assignable").length,
+        // Assigned: lifecycle assigned but NOT operationally active (e.g., vehicle in maintenance)
+        assigned: devices.filter(d => getLifecycleStatus(d) === "assigned" && d.status !== "active").length,
+        faulty: devices.filter(d => getLifecycleStatus(d) === "faulty").length,
+        // Active: devices with operational status 'active' (assigned devices that are running)
+        active: devices.filter(d => d.status === "active").length,
+      };
+    },
+    [devices],
+  );
 
   // Convert DeviceWithTelemetry to IoTDevice for the details sheet
   const convertToIoTDevice = (device: DeviceWithTelemetry): IoTDevice => ({
@@ -236,30 +327,37 @@ export default function DeviceManagement() {
   // Handle adding device with catalog selection
   const handleAddDevice = async (newDevice: Partial<IoTDevice>) => {
     try {
-      await createDevice.mutateAsync({ data: {
-        imei: newDevice.imei!,
-        manufacturer: newDevice.manufacturer!,
-        model: newDevice.model!,
-        firmwareVersion: newDevice.firmwareVersion || undefined,
-      }});
+      await createDevice.mutateAsync({
+        data: {
+          imei: newDevice.imei!,
+          manufacturer: newDevice.manufacturer!,
+          model: newDevice.model!,
+          firmwareVersion: newDevice.firmwareVersion || undefined,
+        },
+      });
       toast.success("Device registered");
       setIsAddDialogOpen(false);
-    } catch (err) {
+    }
+    catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to register device");
     }
   };
 
   const handleEditDevice = async (updatedDevice: Partial<IoTDevice>) => {
-    if (!selectedDevice) return;
+    if (!selectedDevice)
+      return;
     try {
-      await updateDevice.mutateAsync({ id: selectedDevice.id, data: {
-        manufacturer: updatedDevice.manufacturer,
-        model: updatedDevice.model,
-        firmwareVersion: updatedDevice.firmwareVersion || undefined,
-      }});
+      await updateDevice.mutateAsync({
+        id: selectedDevice.id, data: {
+          manufacturer: updatedDevice.manufacturer,
+          model: updatedDevice.model,
+          firmwareVersion: updatedDevice.firmwareVersion || undefined,
+        },
+      });
       toast.success("Device updated");
       setIsEditDialogOpen(false);
-    } catch (err) {
+    }
+    catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update device");
     }
   };
@@ -269,7 +367,8 @@ export default function DeviceManagement() {
       await deleteDevice.mutateAsync({ id: deviceId });
       toast.success("Device deleted");
       setDevicePendingDeletion(null);
-    } catch (err) {
+    }
+    catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete device");
     }
   };
@@ -277,12 +376,19 @@ export default function DeviceManagement() {
   // Mark device as configured (transitions to config_pending -> configured)
   const handleMarkConfigured = async (deviceId: string) => {
     try {
-      await updateLifecycle.mutateAsync({ id: deviceId, data: { lifecycleStatus: "configured" } });
-      toast.success("Device marked as configured", {
-        description: "Waiting for first valid telemetry to verify device.",
+      await updateLifecycle.mutateAsync({
+        id: deviceId, data: { lifecycleStatus: "configured" },
       });
-    } catch (err) {
-      console.error('Error marking device configured:', err);
+      toast.success(
+        "Device marked as configured",
+        { description: "Waiting for first valid telemetry to verify device." },
+      );
+    }
+    catch (err) {
+      console.error(
+        "Error marking device configured:",
+        err,
+      );
       toast.error("Failed to update device status");
     }
   };
@@ -290,9 +396,12 @@ export default function DeviceManagement() {
   // Assign device to vehicle (with lifecycle validation)
   const handleAssignDevice = async (deviceId: string, vehicleId: string) => {
     try {
-      await assignDevice.mutateAsync({ id: deviceId, data: { vehicleId } });
+      await assignDevice.mutateAsync({
+        id: deviceId, data: { vehicleId },
+      });
       toast.success("Device assigned to vehicle");
-    } catch (err) {
+    }
+    catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to assign device");
       throw err;
     }
@@ -307,7 +416,8 @@ export default function DeviceManagement() {
     try {
       await unassignDevice.mutateAsync({ id: device.id });
       toast.success("Device unassigned from vehicle");
-    } catch (err) {
+    }
+    catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to unassign device");
     }
   };
@@ -318,7 +428,8 @@ export default function DeviceManagement() {
   };
 
   const handleUpdateFirmware = async () => {
-    if (!firmwareDevice) return;
+    if (!firmwareDevice)
+      return;
 
     const nextVersion = firmwareVersion.trim();
     if (!nextVersion) {
@@ -334,22 +445,28 @@ export default function DeviceManagement() {
       toast.success("Firmware updated");
       setFirmwareDevice(null);
       setFirmwareVersion("");
-    } catch (err) {
+    }
+    catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update firmware");
     }
   };
 
   const handleBulkUpload = async (newDevices: Partial<IoTDevice>[]) => {
     try {
-      const result = await importDevices.mutateAsync({ data: { items: newDevices.map((device) => ({
-        imei: device.imei,
-        manufacturer: device.manufacturer,
-        model: device.model,
-        firmwareVersion: device.firmwareVersion,
-      })) }});
+      const result = await importDevices.mutateAsync({
+        data: {
+          items: newDevices.map(device => ({
+            imei: device.imei,
+            manufacturer: device.manufacturer,
+            model: device.model,
+            firmwareVersion: device.firmwareVersion,
+          })),
+        },
+      });
       toast.success(`${result.data.created} created, ${result.data.updated} updated`);
       setIsBulkUploadOpen(false);
-    } catch (err) {
+    }
+    catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to import devices");
     }
   };
@@ -375,7 +492,8 @@ export default function DeviceManagement() {
       const result = await createDeviceSetupRequest.mutateAsync({ data });
       toast.success("Device setup request submitted");
       return result;
-    } catch (err) {
+    }
+    catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to submit device setup request");
       return null;
     }
@@ -392,36 +510,51 @@ export default function DeviceManagement() {
       link.click();
       URL.revokeObjectURL(url);
       toast.success("Devices export downloaded");
-    } catch (err) {
+    }
+    catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to export devices");
-    } finally {
+    }
+    finally {
       setIsExporting(false);
     }
   };
 
-  const handleValidateAssignment = useCallback(async (deviceId: string, vehicleId: string) => {
-    const response = await queryClient.fetchQuery(getValidateDeviceAssignmentQueryOptions({
-      id: deviceId,
-      params: { vehicleId },
-    }));
-    return response.data;
-  }, []);
+  const handleValidateAssignment = useCallback(
+    async (deviceId: string, vehicleId: string) => {
+      const response = await queryClient.fetchQuery(getValidateDeviceAssignmentQueryOptions({
+        id: deviceId,
+        params: { vehicleId },
+      }));
+      return response.data;
+    },
+    [],
+  );
 
   const getVehicleInfo = (vehicleId?: string | null) => {
-    if (!vehicleId) return null;
-    return vehicles.find((v) => v.id === vehicleId);
+    if (!vehicleId)
+      return null;
+    return vehicles.find(v => v.id === vehicleId);
   };
 
   return (
-    <DashboardLayout title="IoT Device Management" subtitle="Provision and manage GPS tracking devices">
+    <DashboardLayout
+      title="IoT Device Management"
+      subtitle="Provision and manage GPS tracking devices"
+    >
       <div className="space-y-6">
         {/* Top-right actions */}
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <Button variant="outline" onClick={() => setIsBulkUploadOpen(true)}>
+          <Button
+            variant="outline"
+            onClick={() => setIsBulkUploadOpen(true)}
+          >
             <Upload className="mr-2 h-4 w-4" />
             Bulk Import
           </Button>
-          <Button variant="outline" onClick={requireSubscription(() => setIsRequestDialogOpen(true))}>
+          <Button
+            variant="outline"
+            onClick={requireSubscription(() => setIsRequestDialogOpen(true))}
+          >
             <Cpu className="mr-2 h-4 w-4" />
             Request Device
           </Button>
@@ -438,16 +571,25 @@ export default function DeviceManagement() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Cpu className="h-5 w-5 text-primary" />
-                  Devices ({filteredDevices.length})
+                  Devices (
+                  {filteredDevices.length}
+                  )
                 </CardTitle>
                 <CardDescription className="mt-1">All trackers in your fleet — monitor lifecycle status, signal health, and last-seen timestamps.</CardDescription>
               </div>
-              <Button variant="outline" size="sm" onClick={handleExportDevices} disabled={isExporting}>
-                {isExporting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="mr-2 h-4 w-4" />
-                )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportDevices}
+                disabled={isExporting}
+              >
+                {isExporting
+                  ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )
+                  : (
+                      <Download className="mr-2 h-4 w-4" />
+                    )}
                 {isExporting ? "Exporting..." : "Export Data"}
               </Button>
             </div>
@@ -457,11 +599,14 @@ export default function DeviceManagement() {
                 <Input
                   placeholder="Search by IMEI, manufacturer, model..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   className="pl-9"
                 />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select
+                value={statusFilter}
+                onValueChange={setStatusFilter}
+              >
                 <SelectTrigger className="w-full sm:w-[170px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -477,29 +622,46 @@ export default function DeviceManagement() {
               </Select>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="relative">
+                  <Button
+                    variant="outline"
+                    className="relative"
+                  >
                     <SlidersHorizontal className="h-4 w-4 mr-2" />
                     Filter
                     {(manufacturerFilters.length > 0 || lastSeenFilters.length > 0) && (
-                      <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-[10px]">
+                      <Badge
+                        variant="secondary"
+                        className="ml-2 h-5 px-1.5 text-[10px]"
+                      >
                         {manufacturerFilters.length + lastSeenFilters.length}
                       </Badge>
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent align="end" sideOffset={8} className="w-80 p-3 rounded-xl space-y-3 max-h-[70vh] overflow-y-auto">
+                <PopoverContent
+                  align="end"
+                  sideOffset={8}
+                  className="w-80 p-3 rounded-xl space-y-3 max-h-[70vh] overflow-y-auto"
+                >
                   <h4 className="text-xs font-medium text-foreground px-0.5">Only show devices by...</h4>
                   <div className="space-y-1.5">
                     <p className="text-xs font-medium">Manufacturer</p>
                     <div className="space-y-1.5 pl-0.5">
-                      {manufacturers.map((m) => (
-                        <label key={m} className="flex items-center gap-2 cursor-pointer select-none">
+                      {manufacturers.map(m => (
+                        <label
+                          key={m}
+                          className="flex items-center gap-2 cursor-pointer select-none"
+                        >
                           <Checkbox
                             checked={manufacturerFilters.includes(m)}
                             onCheckedChange={(c) => {
-                              setManufacturerFilters((prev) =>
-                                c ? [...prev, m] : prev.filter((x) => x !== m)
-                              );
+                              setManufacturerFilters(prev =>
+                                c
+                                  ? [
+                                      ...prev,
+                                      m,
+                                    ]
+                                  : prev.filter(x => x !== m));
                             }}
                             className="h-3.5 w-3.5"
                           />
@@ -515,19 +677,36 @@ export default function DeviceManagement() {
                     <p className="text-xs font-medium">Last Seen</p>
                     <div className="space-y-1.5 pl-0.5">
                       {[
-                        { v: "5m", l: "Last 5 minutes" },
-                        { v: "1h", l: "Last hour" },
-                        { v: "24h", l: "Last 24 hours" },
-                        { v: "7d", l: "Last 7 days" },
-                        { v: "never", l: "Never seen" },
-                      ].map((opt) => (
-                        <label key={opt.v} className="flex items-center gap-2 cursor-pointer select-none">
+                        {
+                          v: "5m", l: "Last 5 minutes",
+                        },
+                        {
+                          v: "1h", l: "Last hour",
+                        },
+                        {
+                          v: "24h", l: "Last 24 hours",
+                        },
+                        {
+                          v: "7d", l: "Last 7 days",
+                        },
+                        {
+                          v: "never", l: "Never seen",
+                        },
+                      ].map(opt => (
+                        <label
+                          key={opt.v}
+                          className="flex items-center gap-2 cursor-pointer select-none"
+                        >
                           <Checkbox
                             checked={lastSeenFilters.includes(opt.v)}
                             onCheckedChange={(c) => {
-                              setLastSeenFilters((prev) =>
-                                c ? [...prev, opt.v] : prev.filter((x) => x !== opt.v)
-                              );
+                              setLastSeenFilters(prev =>
+                                c
+                                  ? [
+                                      ...prev,
+                                      opt.v,
+                                    ]
+                                  : prev.filter(x => x !== opt.v));
                             }}
                             className="h-3.5 w-3.5"
                           />
@@ -537,186 +716,228 @@ export default function DeviceManagement() {
                     </div>
                   </div>
                   <div className="flex gap-2 pt-2 border-t border-border">
-                    <Button size="sm" className="flex-1">Apply</Button>
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => { setManufacturerFilters([]); setLastSeenFilters([]); }}>Show All</Button>
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                    >
+                      Apply
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => { setManufacturerFilters([]); setLastSeenFilters([]); }}
+                    >
+                      Show All
+                    </Button>
                   </div>
                 </PopoverContent>
               </Popover>
             </div>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : filteredDevices.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Cpu className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">No devices found</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {searchQuery || statusFilter !== "all" || manufacturerFilters.length > 0
-                    ? "Try adjusting your filters"
-                    : "Add your first device to get started"}
-                </p>
-                {canManage && !searchQuery && statusFilter === "all" && (
-                  <Button className="mt-4" onClick={() => setIsAddDialogOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Device
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border text-left text-sm text-muted-foreground">
-                      <th className="pb-3 font-medium">Device</th>
-                      <th className="pb-3 font-medium">IMEI</th>
-                      <th className="pb-3 font-medium">Status</th>
-                      <th className="pb-3 font-medium">Vehicle</th>
-                      <th className="pb-3 font-medium">Signal</th>
-                      <th className="pb-3 font-medium">Last Seen</th>
-                      <th className="pb-3 font-medium text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {filteredDevices.map((device) => {
-                      const vehicle = getVehicleInfo(device.vehicle_id);
-                      return (
-                        <tr key={device.id} className="group transition-colors hover:bg-secondary/30">
-                          <td className="py-4">
-                            <div className="flex items-center gap-3">
-                              <div className={cn(
-                                "flex h-10 w-10 items-center justify-center rounded-lg",
-                                device.status === "active"
-                                  ? "bg-success/10"
-                                  : device.status === "faulty"
-                                    ? "bg-destructive/10"
-                                    : "bg-secondary"
-                              )}>
-                                <Cpu className={cn(
-                                  "h-5 w-5",
-                                  device.status === "active"
-                                    ? "text-success"
-                                    : device.status === "faulty"
-                                      ? "text-destructive"
-                                      : "text-muted-foreground"
-                                )} />
-                              </div>
-                              <div>
-                                <p className="font-medium">{device.manufacturer}</p>
-                                <p className="text-xs text-muted-foreground">{device.model || "—"}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-4">
-                            <span className="rounded bg-secondary px-2 py-1 font-mono text-sm">
-                              {device.imei}
-                            </span>
-                          </td>
-                          <td className="py-4">
-                            <span className={cn(
-                              "rounded-full px-2.5 py-1 text-xs font-medium",
-                              device.status === "active" && "bg-success/10 text-success",
-                              device.status === "registered" && "bg-muted text-muted-foreground",
-                              device.status === "configured" && "bg-info/10 text-info",
-                              device.status === "inactive" && "bg-warning/10 text-warning",
-                              device.status === "faulty" && "bg-destructive/10 text-destructive",
-                            )}>
-                              {device.status}
-                            </span>
-                          </td>
-                          <td className="py-4">
-                            {vehicle ? (
-                              <span className="text-sm">{vehicle.registrationNumber}</span>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </td>
-                          <td className="py-4">
-                            {device.signal_strength !== undefined && device.signal_strength !== null ? (
-                              <div className="flex items-center gap-2">
-                                <Signal className={cn(
-                                  "h-4 w-4",
-                                  device.signal_strength > 70 ? "text-success" :
-                                    device.signal_strength > 40 ? "text-warning" : "text-destructive"
-                                )} />
-                                <span className="text-sm">{device.signal_strength}%</span>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </td>
-                          <td className="py-4 text-sm text-muted-foreground">
-                            {device.last_seen
-                              ? formatRelative(device.last_seen)
-                              : "Never"}
-                          </td>
-                          <td className="py-4 text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => {
-                                  setSelectedDevice(device);
-                                  setIsDetailsOpen(true);
-                                }}>
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => {
-                                  setSelectedDevice(device);
-                                  setIsEditDialogOpen(true);
-                                }}>
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                {device.vehicle_id ? (
-                                  <DropdownMenuItem onClick={() => handleUnassignDevice(device)}>
-                                    <Unlink className="mr-2 h-4 w-4" />
-                                    Unassign Vehicle
-                                  </DropdownMenuItem>
-                                ) : (
-                                  <DropdownMenuItem onClick={() => {
-                                    setSelectedDevice(device);
-                                    setIsAssignDialogOpen(true);
-                                  }}>
-                                    <Link className="mr-2 h-4 w-4" />
-                                    Assign to Vehicle
-                                  </DropdownMenuItem>
-                                )}
-                                {(device.lifecycle_status === "registered" || device.status === "registered") && (
-                                  <DropdownMenuItem onClick={() => handleMarkConfigured(device.id)}>
-                                    <Settings className="mr-2 h-4 w-4" />
-                                    Mark as Configured
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem onClick={() => openFirmwareDialog(device)}>
-                                  <RefreshCw className="mr-2 h-4 w-4" />
-                                  Update Firmware
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive"
-                                  onClick={() => setDevicePendingDeletion(device)}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete Device
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            {loading
+              ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                )
+              : filteredDevices.length === 0
+                ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <Cpu className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium">No devices found</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {searchQuery || statusFilter !== "all" || manufacturerFilters.length > 0
+                          ? "Try adjusting your filters"
+                          : "Add your first device to get started"}
+                      </p>
+                      {canManage && !searchQuery && statusFilter === "all" && (
+                        <Button
+                          className="mt-4"
+                          onClick={() => setIsAddDialogOpen(true)}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Device
+                        </Button>
+                      )}
+                    </div>
+                  )
+                : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-border text-left text-sm text-muted-foreground">
+                            <th className="pb-3 font-medium">Device</th>
+                            <th className="pb-3 font-medium">IMEI</th>
+                            <th className="pb-3 font-medium">Status</th>
+                            <th className="pb-3 font-medium">Vehicle</th>
+                            <th className="pb-3 font-medium">Signal</th>
+                            <th className="pb-3 font-medium">Last Seen</th>
+                            <th className="pb-3 font-medium text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {filteredDevices.map((device) => {
+                            const vehicle = getVehicleInfo(device.vehicle_id);
+                            return (
+                              <tr
+                                key={device.id}
+                                className="group transition-colors hover:bg-secondary/30"
+                              >
+                                <td className="py-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className={cn(
+                                      "flex h-10 w-10 items-center justify-center rounded-lg",
+                                      device.status === "active"
+                                        ? "bg-success/10"
+                                        : device.status === "faulty"
+                                          ? "bg-destructive/10"
+                                          : "bg-secondary",
+                                    )}
+                                    >
+                                      <Cpu className={cn(
+                                        "h-5 w-5",
+                                        device.status === "active"
+                                          ? "text-success"
+                                          : device.status === "faulty"
+                                            ? "text-destructive"
+                                            : "text-muted-foreground",
+                                      )}
+                                      />
+                                    </div>
+                                    <div>
+                                      <p className="font-medium">{device.manufacturer}</p>
+                                      <p className="text-xs text-muted-foreground">{device.model || "—"}</p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-4">
+                                  <span className="rounded bg-secondary px-2 py-1 font-mono text-sm">
+                                    {device.imei}
+                                  </span>
+                                </td>
+                                <td className="py-4">
+                                  <span className={cn(
+                                    "rounded-full px-2.5 py-1 text-xs font-medium",
+                                    device.status === "active" && "bg-success/10 text-success",
+                                    device.status === "registered" && "bg-muted text-muted-foreground",
+                                    device.status === "configured" && "bg-info/10 text-info",
+                                    device.status === "inactive" && "bg-warning/10 text-warning",
+                                    device.status === "faulty" && "bg-destructive/10 text-destructive",
+                                  )}
+                                  >
+                                    {device.status}
+                                  </span>
+                                </td>
+                                <td className="py-4">
+                                  {vehicle
+                                    ? (
+                                        <span className="text-sm">{vehicle.registrationNumber}</span>
+                                      )
+                                    : (
+                                        <span className="text-muted-foreground">—</span>
+                                      )}
+                                </td>
+                                <td className="py-4">
+                                  {device.signal_strength !== undefined && device.signal_strength !== null
+                                    ? (
+                                        <div className="flex items-center gap-2">
+                                          <Signal className={cn(
+                                            "h-4 w-4",
+                                            device.signal_strength > 70
+                                              ? "text-success"
+                                              : device.signal_strength > 40 ? "text-warning" : "text-destructive",
+                                          )}
+                                          />
+                                          <span className="text-sm">
+                                            {device.signal_strength}
+                                            %
+                                          </span>
+                                        </div>
+                                      )
+                                    : (
+                                        <span className="text-muted-foreground">—</span>
+                                      )}
+                                </td>
+                                <td className="py-4 text-sm text-muted-foreground">
+                                  {device.last_seen
+                                    ? formatRelative(device.last_seen)
+                                    : "Never"}
+                                </td>
+                                <td className="py-4 text-right">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                      >
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => {
+                                        setSelectedDevice(device);
+                                        setIsDetailsOpen(true);
+                                      }}
+                                      >
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        View Details
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => {
+                                        setSelectedDevice(device);
+                                        setIsEditDialogOpen(true);
+                                      }}
+                                      >
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Edit
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      {device.vehicle_id
+                                        ? (
+                                            <DropdownMenuItem onClick={() => handleUnassignDevice(device)}>
+                                              <Unlink className="mr-2 h-4 w-4" />
+                                              Unassign Vehicle
+                                            </DropdownMenuItem>
+                                          )
+                                        : (
+                                            <DropdownMenuItem onClick={() => {
+                                              setSelectedDevice(device);
+                                              setIsAssignDialogOpen(true);
+                                            }}
+                                            >
+                                              <Link className="mr-2 h-4 w-4" />
+                                              Assign to Vehicle
+                                            </DropdownMenuItem>
+                                          )}
+                                      {(device.lifecycle_status === "registered" || device.status === "registered") && (
+                                        <DropdownMenuItem onClick={() => handleMarkConfigured(device.id)}>
+                                          <Settings className="mr-2 h-4 w-4" />
+                                          Mark as Configured
+                                        </DropdownMenuItem>
+                                      )}
+                                      <DropdownMenuItem onClick={() => openFirmwareDialog(device)}>
+                                        <RefreshCw className="mr-2 h-4 w-4" />
+                                        Update Firmware
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        className="text-destructive focus:text-destructive"
+                                        onClick={() => setDevicePendingDeletion(device)}
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Device
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
           </CardContent>
         </Card>
 
@@ -738,7 +959,7 @@ export default function DeviceManagement() {
         onSubmit={handleCreateDeviceSetupRequest}
         onUploadFile={uploadFile}
         manufacturers={manufacturers}
-        vehicles={vehicles.map((vehicle) => ({
+        vehicles={vehicles.map(vehicle => ({
           id: vehicle.id,
           registrationNumber: vehicle.registrationNumber,
           make: vehicle.make,
@@ -767,8 +988,13 @@ export default function DeviceManagement() {
           <DialogHeader>
             <DialogTitle>Delete Device</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete {devicePendingDeletion?.manufacturer} {devicePendingDeletion?.model}
-              {devicePendingDeletion?.imei ? ` (${devicePendingDeletion.imei})` : ""}? This action cannot be undone.
+              Are you sure you want to delete
+              {" "}
+              {devicePendingDeletion?.manufacturer}
+              {" "}
+              {devicePendingDeletion?.model}
+              {devicePendingDeletion?.imei ? ` (${devicePendingDeletion.imei})` : ""}
+              ? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -810,7 +1036,12 @@ export default function DeviceManagement() {
           <DialogHeader>
             <DialogTitle>Update Firmware</DialogTitle>
             <DialogDescription>
-              Set the firmware version for {firmwareDevice?.manufacturer} {firmwareDevice?.model}.
+              Set the firmware version for
+              {" "}
+              {firmwareDevice?.manufacturer}
+              {" "}
+              {firmwareDevice?.model}
+              .
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
@@ -818,7 +1049,7 @@ export default function DeviceManagement() {
             <Input
               id="firmware-version"
               value={firmwareVersion}
-              onChange={(event) => setFirmwareVersion(event.target.value)}
+              onChange={event => setFirmwareVersion(event.target.value)}
               placeholder="e.g. 3.28.07"
             />
           </div>
@@ -838,11 +1069,13 @@ export default function DeviceManagement() {
               onClick={handleUpdateFirmware}
               disabled={updateFirmware.isPending}
             >
-              {updateFirmware.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="mr-2 h-4 w-4" />
-              )}
+              {updateFirmware.isPending
+                ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )
+                : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
               Update Firmware
             </Button>
           </DialogFooter>
@@ -859,15 +1092,17 @@ export default function DeviceManagement() {
       <AssignDeviceDialogWithLifecycle
         open={isAssignDialogOpen}
         onOpenChange={setIsAssignDialogOpen}
-        device={selectedDevice ? {
-          id: selectedDevice.id,
-          imei: selectedDevice.imei,
-          manufacturer: selectedDevice.manufacturer,
-          model: selectedDevice.model,
-          lifecycle_status: selectedDevice.lifecycle_status,
-          status: selectedDevice.status,
-          vehicle_id: selectedDevice.vehicle_id,
-        } : null}
+        device={selectedDevice
+          ? {
+              id: selectedDevice.id,
+              imei: selectedDevice.imei,
+              manufacturer: selectedDevice.manufacturer,
+              model: selectedDevice.model,
+              lifecycle_status: selectedDevice.lifecycle_status,
+              status: selectedDevice.status,
+              vehicle_id: selectedDevice.vehicle_id,
+            }
+          : null}
         vehicles={availableVehicles.map(v => ({
           id: v.id,
           registrationNumber: v.registrationNumber,
@@ -886,30 +1121,34 @@ export default function DeviceManagement() {
           <DeviceDetailsSheet
             open={isDetailsOpen}
             onOpenChange={setIsDetailsOpen}
-            device={convertToIoTDevice(detailDevice ? {
-              ...selectedDevice,
-              imei: detailDevice.imei,
-              manufacturer: detailDevice.manufacturer,
-              model: detailDevice.model,
-              status: detailDevice.status,
-              vehicle_id: detailDevice.vehicleId,
-              last_seen: detailDevice.lastSeen,
-              signal_strength: detailDevice.signalStrength,
-              battery_level: detailDevice.batteryLevel,
-              lifecycle_status: detailDevice.lifecycleStatus,
-              firmware_version: detailDevice.firmwareVersion,
-            } : selectedDevice)}
-            vehicle={vehicleData ? {
-              id: vehicleData.id,
-              vin: vehicleData.vin,
-              registrationNumber: vehicleData.registrationNumber,
-              make: vehicleData.make,
-              model: vehicleData.model,
-              year: vehicleData.year,
-              type: vehicleData.type as "truck" | "van" | "trailer",
-              status: vehicleData.status,
-              capacity: vehicleData.capacity || 0,
-            } : undefined}
+            device={convertToIoTDevice(detailDevice
+              ? {
+                  ...selectedDevice,
+                  imei: detailDevice.imei,
+                  manufacturer: detailDevice.manufacturer,
+                  model: detailDevice.model,
+                  status: detailDevice.status,
+                  vehicle_id: detailDevice.vehicleId,
+                  last_seen: detailDevice.lastSeen,
+                  signal_strength: detailDevice.signalStrength,
+                  battery_level: detailDevice.batteryLevel,
+                  lifecycle_status: detailDevice.lifecycleStatus,
+                  firmware_version: detailDevice.firmwareVersion,
+                }
+              : selectedDevice)}
+            vehicle={vehicleData
+              ? {
+                  id: vehicleData.id,
+                  vin: vehicleData.vin,
+                  registrationNumber: vehicleData.registrationNumber,
+                  make: vehicleData.make,
+                  model: vehicleData.model,
+                  year: vehicleData.year,
+                  type: vehicleData.type as "truck" | "van" | "trailer",
+                  status: vehicleData.status,
+                  capacity: vehicleData.capacity || 0,
+                }
+              : undefined}
           />
         );
       })()}

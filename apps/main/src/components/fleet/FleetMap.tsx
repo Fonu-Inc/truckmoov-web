@@ -1,16 +1,23 @@
+import type { RealtimeVehicleLocation } from "@/hooks/useRealtimeTracking";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
-import { useEffect, useState, useMemo, useRef } from "react";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import {
+  AlertTriangle, Clock, Fuel, Navigation, Phone, Truck, Wifi, WifiOff,
+} from "lucide-react";
+import {
+  useEffect, useMemo, useRef, useState,
+} from "react";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import { Card, CardContent } from "@/components/shadcn/card";
-import { Truck, AlertTriangle, Navigation, Clock, Fuel, Phone, Wifi, WifiOff } from "lucide-react";
-import { useRealtimeTracking, RealtimeVehicleLocation } from "@/hooks/useRealtimeTracking";
+import {
+  Card, CardContent,
+} from "@/components/shadcn/card";
+import { useRealtimeTracking } from "@/hooks/useRealtimeTracking";
+import "leaflet/dist/leaflet.css";
 
 // Fix for default marker icons when using Leaflet directly
 // (We rely on custom divIcons below, but keep this to avoid missing image warnings.)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
@@ -19,13 +26,14 @@ L.Icon.Default.mergeOptions({
 });
 
 // Custom vehicle icons
-const createVehicleIcon = (status: string, heading: number, isSelected: boolean = false) => {
+function createVehicleIcon(status: string, heading: number, isSelected: boolean = false) {
   const color = status === "moving" ? "#22c55e" : status === "idle" ? "#f59e0b" : "#ef4444";
   const size = isSelected ? 48 : 36;
   const iconSize = isSelected ? 24 : 18;
   const borderWidth = isSelected ? 4 : 3;
   const borderColor = isSelected ? "#facc15" : "white"; // Yellow highlight for selected
-  const pulseAnimation = isSelected ? `
+  const pulseAnimation = isSelected
+    ? `
     <div style="
       position: absolute;
       top: 50%;
@@ -43,10 +51,11 @@ const createVehicleIcon = (status: string, heading: number, isSelected: boolean 
         100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
       }
     </style>
-  ` : '';
+  `
+    : "";
 
   return L.divIcon({
-    className: `custom-vehicle-marker ${isSelected ? 'selected' : ''}`,
+    className: `custom-vehicle-marker ${isSelected ? "selected" : ""}`,
     html: `
       <div style="position: relative; width: ${size}px; height: ${size}px;">
         ${pulseAnimation}
@@ -60,7 +69,7 @@ const createVehicleIcon = (status: string, heading: number, isSelected: boolean 
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: ${isSelected ? '0 4px 16px rgba(250, 204, 21, 0.5), 0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.3)'};
+          box-shadow: ${isSelected ? "0 4px 16px rgba(250, 204, 21, 0.5), 0 2px 8px rgba(0,0,0,0.3)" : "0 2px 8px rgba(0,0,0,0.3)"};
           border: ${borderWidth}px solid ${borderColor};
           transform: rotate(${heading}deg);
         ">
@@ -70,12 +79,18 @@ const createVehicleIcon = (status: string, heading: number, isSelected: boolean 
         </div>
       </div>
     `,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
+    iconSize: [
+      size,
+      size,
+    ],
+    iconAnchor: [
+      size / 2,
+      size / 2,
+    ],
   });
-};
+}
 
-const createGeofenceAlertIcon = () => {
+function createGeofenceAlertIcon() {
   return L.divIcon({
     className: "geofence-alert-marker",
     html: `
@@ -102,13 +117,19 @@ const createGeofenceAlertIcon = () => {
         }
       </style>
     `,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
+    iconSize: [
+      28,
+      28,
+    ],
+    iconAnchor: [
+      14,
+      14,
+    ],
   });
-};
+}
 
 // Types
-export interface FleetMapVehicle {
+export type FleetMapVehicle = {
   id: string;
   driver: string;
   phone: string;
@@ -125,21 +146,21 @@ export interface FleetMapVehicle {
   networkStatus: "online" | "degraded" | "offline";
   batteryVoltage: number | null;
   signalStrength: number | null;
-}
+};
 
 // Internal alias
 type Vehicle = FleetMapVehicle;
 
-interface GeofenceZone {
+type GeofenceZone = {
   id: number;
   name: string;
   center: [number, number];
   radius: number;
   color: string;
   type: string;
-}
+};
 
-interface GeofenceAlert {
+type GeofenceAlert = {
   id: number;
   vehicleId: string;
   type: string;
@@ -147,11 +168,11 @@ interface GeofenceAlert {
   position: [number, number];
   time: string;
   message: string;
-}
+};
 
 export type HarshEventSeverity = "minor" | "moderate" | "severe";
 
-export interface HarshEvent {
+export type HarshEvent = {
   id: string;
   vehicleId: string;
   vehicleRegistration: string;
@@ -162,15 +183,15 @@ export interface HarshEvent {
   timestamp: string; // ISO
   position: [number, number];
   roadName?: string;
-}
-
-const HARSH_SEVERITY_COLORS: Record<HarshEventSeverity, string> = {
-  minor: "#eab308",      // yellow-500
-  moderate: "#f97316",   // orange-500
-  severe: "#ef4444",     // red-500
 };
 
-const createHarshEventIcon = (severity: HarshEventSeverity) => {
+const HARSH_SEVERITY_COLORS: Record<HarshEventSeverity, string> = {
+  minor: "#eab308", // yellow-500
+  moderate: "#f97316", // orange-500
+  severe: "#ef4444", // red-500
+};
+
+function createHarshEventIcon(severity: HarshEventSeverity) {
   const color = HARSH_SEVERITY_COLORS[severity];
   return L.divIcon({
     className: "harsh-event-marker",
@@ -191,41 +212,64 @@ const createHarshEventIcon = (severity: HarshEventSeverity) => {
         </svg>
       </div>
     `,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
+    iconSize: [
+      22,
+      22,
+    ],
+    iconAnchor: [
+      11,
+      11,
+    ],
   });
-};
-
+}
 
 // Helper to convert database geofence to map display format
-const convertGeofenceToZone = (gf: any): GeofenceZone => {
-  const geometry = gf.geometry as { type: string; coordinates: unknown } | null;
-  let center: [number, number] = [6.5244, 3.3792]; // Lagos default
-  
-  if (geometry?.type === 'Point' && Array.isArray(geometry.coordinates)) {
+function convertGeofenceToZone(gf: any): GeofenceZone {
+  const geometry = gf.geometry as {
+    type: string; coordinates: unknown;
+  } | null;
+  let center: [number, number] = [
+    6.5244,
+    3.3792,
+  ]; // Lagos default
+
+  if (geometry?.type === "Point" && Array.isArray(geometry.coordinates)) {
     // GeoJSON Point is [lng, lat], we need [lat, lng]
     const coords = geometry.coordinates as number[];
-    center = [coords[1] ?? 0, coords[0] ?? 0];
-  } else if (geometry?.type === 'Polygon' && Array.isArray(geometry.coordinates)) {
+    center = [
+      coords[1] ?? 0,
+      coords[0] ?? 0,
+    ];
+  }
+  else if (geometry?.type === "Polygon" && Array.isArray(geometry.coordinates)) {
     // For polygon, calculate centroid from first ring
     const rings = geometry.coordinates as number[][][];
     const ring = rings[0];
     if (ring && ring.length > 0) {
-      const sumLat = ring.reduce((sum, coord) => sum + (coord[1] ?? 0), 0);
-      const sumLng = ring.reduce((sum, coord) => sum + (coord[0] ?? 0), 0);
-      center = [sumLat / ring.length, sumLng / ring.length];
+      const sumLat = ring.reduce(
+        (sum, coord) => sum + (coord[1] ?? 0),
+        0,
+      );
+      const sumLng = ring.reduce(
+        (sum, coord) => sum + (coord[0] ?? 0),
+        0,
+      );
+      center = [
+        sumLat / ring.length,
+        sumLng / ring.length,
+      ];
     }
   }
-  
+
   return {
     id: gf.id as unknown as number, // For compatibility with existing code
     name: gf.name,
     center,
     radius: gf.radius_meters || 500,
     color: gf.color,
-    type: gf.category as GeofenceZone['type'],
+    type: gf.category as GeofenceZone["type"],
   };
-};
+}
 
 // Mock geofence alerts (Lagos, Nigeria)
 const geofenceAlerts: GeofenceAlert[] = [
@@ -234,7 +278,10 @@ const geofenceAlerts: GeofenceAlert[] = [
     vehicleId: "LAG-890-CD",
     type: "exit",
     zone: "Lagos Depot",
-    position: [6.5833, 3.3500],
+    position: [
+      6.5833,
+      3.3500,
+    ],
     time: "10:32 AM",
     message: "Vehicle in maintenance zone",
   },
@@ -243,13 +290,16 @@ const geofenceAlerts: GeofenceAlert[] = [
     vehicleId: "LAG-112-EF",
     type: "enter",
     zone: "Apapa Port Zone",
-    position: [6.4698, 3.5852],
+    position: [
+      6.4698,
+      3.5852,
+    ],
     time: "11:15 AM",
     message: "Vehicle entered port zone",
   },
 ];
 
-interface FleetMapProps {
+type FleetMapProps = {
   selectedVehicle?: string | null;
   onVehicleSelect?: (vehicleId: string) => void;
   showGeofences?: boolean;
@@ -261,7 +311,7 @@ interface FleetMapProps {
   harshEvents?: HarshEvent[];
   /** Called when the user clicks "View route playback" inside a harsh event popup */
   onHarshEventPlayback?: (event: HarshEvent) => void;
-}
+};
 
 export function FleetMap({
   selectedVehicle,
@@ -273,17 +323,23 @@ export function FleetMap({
   harshEvents,
   onHarshEventPlayback,
 }: FleetMapProps) {
-  const [vehicles, setVehicles] = useState<Vehicle[]>(externalVehicles ?? []);
+  const [
+    vehicles,
+    setVehicles,
+  ] = useState<Vehicle[]>(externalVehicles ?? []);
 
   // Fetch geofences from database
   const dbGeofences: any[] = [];
-  
+
   // Convert database geofences to map display format
-  const geofenceZones = useMemo(() => {
-    return (dbGeofences || [])
-      .filter(gf => gf.status === 'ACTIVE')
-      .map(convertGeofenceToZone);
-  }, [dbGeofences]);
+  const geofenceZones = useMemo(
+    () => {
+      return (dbGeofences || [])
+        .filter(gf => gf.status === "ACTIVE")
+        .map(convertGeofenceToZone);
+    },
+    [dbGeofences],
+  );
 
   // Realtime tracking hook for live device locations
   const {
@@ -300,150 +356,224 @@ export function FleetMap({
   const alertMarkersRef = useRef<Map<number, L.Marker>>(new Map());
   const harshEventMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   const harshEventPlaybackRef = useRef<typeof onHarshEventPlayback>(onHarshEventPlayback);
-  useEffect(() => { harshEventPlaybackRef.current = onHarshEventPlayback; }, [onHarshEventPlayback]);
+  useEffect(
+    () => { harshEventPlaybackRef.current = onHarshEventPlayback; },
+    [onHarshEventPlayback],
+  );
 
   // Merge realtime locations with mock vehicle data
-  const vehiclesWithRealtimeData = useMemo(() => {
-    if (realtimeLocations.length === 0) {
-      return vehicles;
-    }
-
-    // Map of locations by device
-    const locationsByDevice = new Map<string, RealtimeVehicleLocation>();
-    realtimeLocations.forEach((loc) => {
-      locationsByDevice.set(loc.deviceId, loc);
-    });
-
-    return vehicles.map((vehicle, index) => {
-      // Demo mapping: round-robin assign locations to vehicles
-      const realtimeLocation = realtimeLocations[index % realtimeLocations.length];
-
-      if (realtimeLocation) {
-        const isMoving = realtimeLocation.speed > 5;
-        return {
-          ...vehicle,
-          position: [realtimeLocation.latitude, realtimeLocation.longitude] as [number, number],
-          heading: realtimeLocation.heading,
-          speed: Math.round(realtimeLocation.speed),
-          fuel: realtimeLocation.fuelLevel || vehicle.fuel,
-          status: isMoving ? "moving" : realtimeLocation.speed > 0 ? "idle" : "stopped",
-          lastUpdate: formatRelative(realtimeLocation.timestamp),
-          batteryVoltage: realtimeLocation.batteryVoltage ?? vehicle.batteryVoltage,
-          networkStatus: (isMoving || realtimeLocation.speed > 0) ? "online" as const : vehicle.networkStatus,
-        };
+  const vehiclesWithRealtimeData = useMemo(
+    () => {
+      if (realtimeLocations.length === 0) {
+        return vehicles;
       }
-      return vehicle;
-    });
-  }, [vehicles, realtimeLocations]);
+
+      // Map of locations by device
+      const locationsByDevice = new Map<string, RealtimeVehicleLocation>();
+      realtimeLocations.forEach((loc) => {
+        locationsByDevice.set(
+          loc.deviceId,
+          loc,
+        );
+      });
+
+      return vehicles.map((vehicle, index) => {
+      // Demo mapping: round-robin assign locations to vehicles
+        const realtimeLocation = realtimeLocations[index % realtimeLocations.length];
+
+        if (realtimeLocation) {
+          const isMoving = realtimeLocation.speed > 5;
+          return {
+            ...vehicle,
+            position: [
+              realtimeLocation.latitude,
+              realtimeLocation.longitude,
+            ] as [number, number],
+            heading: realtimeLocation.heading,
+            speed: Math.round(realtimeLocation.speed),
+            fuel: realtimeLocation.fuelLevel || vehicle.fuel,
+            status: isMoving ? "moving" : realtimeLocation.speed > 0 ? "idle" : "stopped",
+            lastUpdate: formatRelative(realtimeLocation.timestamp),
+            batteryVoltage: realtimeLocation.batteryVoltage ?? vehicle.batteryVoltage,
+            networkStatus: (isMoving || realtimeLocation.speed > 0) ? "online" as const : vehicle.networkStatus,
+          };
+        }
+        return vehicle;
+      });
+    },
+    [
+      vehicles,
+      realtimeLocations,
+    ],
+  );
 
   // Sync external vehicles when prop changes
-  useEffect(() => {
-    if (externalVehicles && externalVehicles.length > 0) {
-      setVehicles(externalVehicles);
-    }
-  }, [externalVehicles]);
+  useEffect(
+    () => {
+      if (externalVehicles && externalVehicles.length > 0) {
+        setVehicles(externalVehicles);
+      }
+    },
+    [externalVehicles],
+  );
 
   // Fallback simulation for demo when no realtime data and no external vehicles
-  useEffect(() => {
-    if (realtimeLocations.length > 0) return;
-    // Only simulate for demo/mock vehicles, not real external data
-    if (externalVehicles && externalVehicles.length > 0) return;
+  useEffect(
+    () => {
+      if (realtimeLocations.length > 0)
+        return;
+      // Only simulate for demo/mock vehicles, not real external data
+      if (externalVehicles && externalVehicles.length > 0)
+        return;
 
-    const interval = setInterval(() => {
-      setVehicles((prev) =>
-        prev.map((vehicle) => {
-          if (vehicle.status === "moving") {
-            const newLat = vehicle.position[0] + (Math.random() - 0.5) * 0.002;
-            const newLng = vehicle.position[1] + (Math.random() - 0.5) * 0.002;
-            const newHeading = vehicle.heading + (Math.random() - 0.5) * 20;
-            const newSpeed = Math.max(0, vehicle.speed + (Math.random() - 0.5) * 10);
+      const interval = setInterval(
+        () => {
+          setVehicles(prev =>
+            prev.map((vehicle) => {
+              if (vehicle.status === "moving") {
+                const newLat = vehicle.position[0] + (Math.random() - 0.5) * 0.002;
+                const newLng = vehicle.position[1] + (Math.random() - 0.5) * 0.002;
+                const newHeading = vehicle.heading + (Math.random() - 0.5) * 20;
+                const newSpeed = Math.max(
+                  0,
+                  vehicle.speed + (Math.random() - 0.5) * 10,
+                );
 
-            return {
-              ...vehicle,
-              position: [newLat, newLng] as [number, number],
-              heading: newHeading,
-              speed: Math.round(newSpeed),
-              lastUpdate: "Just now",
-            };
-          }
-          return vehicle;
-        }),
+                return {
+                  ...vehicle,
+                  position: [
+                    newLat,
+                    newLng,
+                  ] as [number, number],
+                  heading: newHeading,
+                  speed: Math.round(newSpeed),
+                  lastUpdate: "Just now",
+                };
+              }
+              return vehicle;
+            }));
+        },
+        3000,
       );
-    }, 3000);
 
-    return () => clearInterval(interval);
-  }, [realtimeLocations.length, externalVehicles]);
+      return () => clearInterval(interval);
+    },
+    [
+      realtimeLocations.length,
+      externalVehicles,
+    ],
+  );
 
   // Initialize Leaflet map
-  useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
+  useEffect(
+    () => {
+      if (!mapContainerRef.current || mapRef.current)
+        return;
 
-    // Lagos, Nigeria coordinates
-    const initialCenter: [number, number] = [6.5244, 3.3792];
+      // Lagos, Nigeria coordinates
+      const initialCenter: [number, number] = [
+        6.5244,
+        3.3792,
+      ];
 
-    const map = L.map(mapContainerRef.current, { zoomControl: false }).setView(initialCenter, 11);
-    L.control.zoom({ position: "bottomright" }).addTo(map);
+      const map = L.map(
+        mapContainerRef.current,
+        { zoomControl: false },
+      ).setView(
+        initialCenter,
+        11,
+      );
+      L.control.zoom({ position: "bottomright" }).addTo(map);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
+      L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        { attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>" },
+      ).addTo(map);
 
-    mapRef.current = map;
+      mapRef.current = map;
 
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
-  }, []);
+      return () => {
+        if (mapRef.current) {
+          mapRef.current.remove();
+          mapRef.current = null;
+        }
+      };
+    },
+    [],
+  );
 
   // Fit bounds when vehicles change
-  useEffect(() => {
-    if (!mapRef.current || vehiclesWithRealtimeData.length === 0) return;
-    const map = mapRef.current;
+  useEffect(
+    () => {
+      if (!mapRef.current || vehiclesWithRealtimeData.length === 0)
+        return;
+      const map = mapRef.current;
 
-    const bounds = L.latLngBounds(vehiclesWithRealtimeData.map((v) => v.position));
-    map.fitBounds(bounds, { padding: [50, 50] });
-  }, [vehiclesWithRealtimeData]);
+      const bounds = L.latLngBounds(vehiclesWithRealtimeData.map(v => v.position));
+      map.fitBounds(
+        bounds,
+        {
+          padding: [
+            50,
+            50,
+          ],
+        },
+      );
+    },
+    [vehiclesWithRealtimeData],
+  );
 
   // Update vehicle markers
-  useEffect(() => {
-    if (!mapRef.current) return;
-    const map = mapRef.current;
+  useEffect(
+    () => {
+      if (!mapRef.current)
+        return;
+      const map = mapRef.current;
 
-    const existingIds = new Set(markersRef.current.keys());
-    const currentIds = new Set(vehiclesWithRealtimeData.map((v) => v.id));
+      const existingIds = new Set(markersRef.current.keys());
+      const currentIds = new Set(vehiclesWithRealtimeData.map(v => v.id));
 
-    // Remove markers for vehicles no longer present
-    existingIds.forEach((id) => {
-      if (!currentIds.has(id)) {
-        const marker = markersRef.current.get(id);
-        if (marker) {
-          marker.remove();
-          markersRef.current.delete(id);
+      // Remove markers for vehicles no longer present
+      existingIds.forEach((id) => {
+        if (!currentIds.has(id)) {
+          const marker = markersRef.current.get(id);
+          if (marker) {
+            marker.remove();
+            markersRef.current.delete(id);
+          }
         }
-      }
-    });
+      });
 
-    // Add / update markers
-    vehiclesWithRealtimeData.forEach((vehicle) => {
-      let marker = markersRef.current.get(vehicle.id);
-      const isSelected = selectedVehicle === vehicle.id;
-      const icon = createVehicleIcon(vehicle.status, vehicle.heading, isSelected);
+      // Add / update markers
+      vehiclesWithRealtimeData.forEach((vehicle) => {
+        let marker = markersRef.current.get(vehicle.id);
+        const isSelected = selectedVehicle === vehicle.id;
+        const icon = createVehicleIcon(
+          vehicle.status,
+          vehicle.heading,
+          isSelected,
+        );
 
-      const networkColor = vehicle.networkStatus === 'online' ? '#22c55e' : vehicle.networkStatus === 'degraded' ? '#f59e0b' : '#ef4444';
-      const networkLabel = vehicle.networkStatus === 'online' ? 'Online' : vehicle.networkStatus === 'degraded' ? 'Degraded' : 'Offline';
-      const networkIcon = vehicle.networkStatus === 'online' ? '📶' : vehicle.networkStatus === 'degraded' ? '📶' : '📵';
-      const batteryPercent = vehicle.batteryVoltage != null ? Math.min(100, Math.max(0, Math.round(((vehicle.batteryVoltage - 10.5) / (14.4 - 10.5)) * 100))) : null;
-      const batteryDisplay = vehicle.batteryVoltage != null ? `${vehicle.batteryVoltage.toFixed(1)}V` : '—';
-      const batteryColor = batteryPercent != null ? (batteryPercent >= 60 ? '#22c55e' : batteryPercent >= 30 ? '#f59e0b' : '#ef4444') : '#94a3b8';
+        const networkColor = vehicle.networkStatus === "online" ? "#22c55e" : vehicle.networkStatus === "degraded" ? "#f59e0b" : "#ef4444";
+        const networkLabel = vehicle.networkStatus === "online" ? "Online" : vehicle.networkStatus === "degraded" ? "Degraded" : "Offline";
+        const networkIcon = vehicle.networkStatus === "online" ? "📶" : vehicle.networkStatus === "degraded" ? "📶" : "📵";
+        const batteryPercent = vehicle.batteryVoltage != null
+          ? Math.min(
+              100,
+              Math.max(
+                0,
+                Math.round(((vehicle.batteryVoltage - 10.5) / (14.4 - 10.5)) * 100),
+              ),
+            )
+          : null;
+        const batteryDisplay = vehicle.batteryVoltage != null ? `${vehicle.batteryVoltage.toFixed(1)}V` : "—";
+        const batteryColor = batteryPercent != null ? (batteryPercent >= 60 ? "#22c55e" : batteryPercent >= 30 ? "#f59e0b" : "#ef4444") : "#94a3b8";
 
-      const popupContent = `
+        const popupContent = `
         <div style="min-width: 260px; padding: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">
             <div style="font-weight: 700; font-size: 15px;">${vehicle.id}</div>
-            <span style="font-size: 11px; padding: 2px 8px; background: ${vehicle.status === 'moving' ? '#dcfce7' : vehicle.status === 'idle' ? '#fef3c7' : '#fee2e2'}; color: ${vehicle.status === 'moving' ? '#166534' : vehicle.status === 'idle' ? '#92400e' : '#991b1b'}; border-radius: 9999px; text-transform: capitalize;">${vehicle.status}</span>
+            <span style="font-size: 11px; padding: 2px 8px; background: ${vehicle.status === "moving" ? "#dcfce7" : vehicle.status === "idle" ? "#fef3c7" : "#fee2e2"}; color: ${vehicle.status === "moving" ? "#166534" : vehicle.status === "idle" ? "#92400e" : "#991b1b"}; border-radius: 9999px; text-transform: capitalize;">${vehicle.status}</span>
           </div>
           <div style="font-size: 13px; color: #334155; margin-bottom: 10px;">
             <strong>Driver:</strong> ${vehicle.driver}
@@ -465,96 +595,143 @@ export function FleetMap({
             <div style="display: flex; align-items: center; gap: 4px;">
               <span>${networkIcon}</span>
               <span style="color: ${networkColor}; font-weight: 600;">${networkLabel}</span>
-              ${vehicle.signalStrength != null ? `<span style="color: #94a3b8;">(${vehicle.signalStrength}%)</span>` : ''}
+              ${vehicle.signalStrength != null ? `<span style="color: #94a3b8;">(${vehicle.signalStrength}%)</span>` : ""}
             </div>
             <div style="display: flex; align-items: center; gap: 4px;">
               <span>🔋</span>
               <span style="color: ${batteryColor}; font-weight: 600;">${batteryDisplay}</span>
-              ${batteryPercent != null ? `<span style="color: #94a3b8;">(${batteryPercent}%)</span>` : ''}
+              ${batteryPercent != null ? `<span style="color: #94a3b8;">(${batteryPercent}%)</span>` : ""}
             </div>
           </div>
         </div>
       `;
 
-      if (!marker) {
-        marker = L.marker(vehicle.position, { icon, zIndexOffset: isSelected ? 1000 : 0 }).addTo(map);
-        marker.on("click", () => onVehicleSelect?.(vehicle.id));
-        marker.bindPopup(popupContent);
-        markersRef.current.set(vehicle.id, marker);
-      } else {
-        marker.setLatLng(vehicle.position);
-        marker.setIcon(icon);
-        marker.setPopupContent(popupContent);
-        marker.setZIndexOffset(isSelected ? 1000 : 0);
-      }
-    });
-  }, [vehiclesWithRealtimeData, onVehicleSelect, selectedVehicle]);
+        if (!marker) {
+          marker = L.marker(
+            vehicle.position,
+            {
+              icon, zIndexOffset: isSelected ? 1000 : 0,
+            },
+          ).addTo(map);
+          marker.on(
+            "click",
+            () => onVehicleSelect?.(vehicle.id),
+          );
+          marker.bindPopup(popupContent);
+          markersRef.current.set(
+            vehicle.id,
+            marker,
+          );
+        }
+        else {
+          marker.setLatLng(vehicle.position);
+          marker.setIcon(icon);
+          marker.setPopupContent(popupContent);
+          marker.setZIndexOffset(isSelected ? 1000 : 0);
+        }
+      });
+    },
+    [
+      vehiclesWithRealtimeData,
+      onVehicleSelect,
+      selectedVehicle,
+    ],
+  );
 
   // Pan and zoom to selected vehicle
-  useEffect(() => {
-    if (!mapRef.current || !selectedVehicle) return;
-    const map = mapRef.current;
+  useEffect(
+    () => {
+      if (!mapRef.current || !selectedVehicle)
+        return;
+      const map = mapRef.current;
 
-    const vehicle = vehiclesWithRealtimeData.find((v) => v.id === selectedVehicle);
-    if (vehicle) {
-      map.flyTo(vehicle.position, 14, {
-        duration: 0.8,
-      });
+      const vehicle = vehiclesWithRealtimeData.find(v => v.id === selectedVehicle);
+      if (vehicle) {
+        map.flyTo(
+          vehicle.position,
+          14,
+          { duration: 0.8 },
+        );
 
-      // Open popup for selected vehicle
-      const marker = markersRef.current.get(vehicle.id);
-      if (marker) {
-        marker.openPopup();
+        // Open popup for selected vehicle
+        const marker = markersRef.current.get(vehicle.id);
+        if (marker) {
+          marker.openPopup();
+        }
       }
-    }
-  }, [selectedVehicle, vehiclesWithRealtimeData]);
+    },
+    [
+      selectedVehicle,
+      vehiclesWithRealtimeData,
+    ],
+  );
 
   // Update route polylines
-  useEffect(() => {
-    if (!mapRef.current) return;
-    const map = mapRef.current;
+  useEffect(
+    () => {
+      if (!mapRef.current)
+        return;
+      const map = mapRef.current;
 
-    // Clear existing
-    routeRef.current.forEach((polyline) => polyline.remove());
-    routeRef.current.clear();
+      // Clear existing
+      routeRef.current.forEach(polyline => polyline.remove());
+      routeRef.current.clear();
 
-    if (!showRoutes) return;
+      if (!showRoutes)
+        return;
 
-    vehiclesWithRealtimeData
-      .filter((v) => v.route.length > 1)
-      .forEach((vehicle) => {
-        const polyline = L.polyline(vehicle.route, {
-          color: vehicle.status === "moving" ? "#3b82f6" : "#94a3b8",
-          weight: 3,
-          opacity: 0.7,
-          dashArray: "10, 5",
-        }).addTo(map);
+      vehiclesWithRealtimeData
+        .filter(v => v.route.length > 1)
+        .forEach((vehicle) => {
+          const polyline = L.polyline(
+            vehicle.route,
+            {
+              color: vehicle.status === "moving" ? "#3b82f6" : "#94a3b8",
+              weight: 3,
+              opacity: 0.7,
+              dashArray: "10, 5",
+            },
+          ).addTo(map);
 
-        routeRef.current.set(vehicle.id, polyline);
-      });
-  }, [vehiclesWithRealtimeData, showRoutes]);
+          routeRef.current.set(
+            vehicle.id,
+            polyline,
+          );
+        });
+    },
+    [
+      vehiclesWithRealtimeData,
+      showRoutes,
+    ],
+  );
 
   // Update geofence circles
-  useEffect(() => {
-    if (!mapRef.current) return;
-    const map = mapRef.current;
+  useEffect(
+    () => {
+      if (!mapRef.current)
+        return;
+      const map = mapRef.current;
 
-    geofenceCirclesRef.current.forEach((circle) => circle.remove());
-    geofenceCirclesRef.current.clear();
+      geofenceCirclesRef.current.forEach(circle => circle.remove());
+      geofenceCirclesRef.current.clear();
 
-    if (!showGeofences) return;
+      if (!showGeofences)
+        return;
 
-    geofenceZones.forEach((zone) => {
-      const circle = L.circle(zone.center, {
-        radius: zone.radius,
-        color: zone.color,
-        fillColor: zone.color,
-        fillOpacity: 0.15,
-        weight: 2,
-        dashArray: zone.type === "restricted" ? "5, 5" : undefined,
-      }).addTo(map);
+      geofenceZones.forEach((zone) => {
+        const circle = L.circle(
+          zone.center,
+          {
+            radius: zone.radius,
+            color: zone.color,
+            fillColor: zone.color,
+            fillOpacity: 0.15,
+            weight: 2,
+            dashArray: zone.type === "restricted" ? "5, 5" : undefined,
+          },
+        ).addTo(map);
 
-      circle.bindPopup(`
+        circle.bindPopup(`
         <div style="min-width: 150px; padding: 8px;">
           <div style="font-weight: 600; margin-bottom: 4px;">${zone.name}</div>
           <div style="font-size: 12px; color: #666;">
@@ -564,24 +741,38 @@ export function FleetMap({
         </div>
       `);
 
-      geofenceCirclesRef.current.set(zone.id, circle);
-    });
-  }, [showGeofences, geofenceZones]);
+        geofenceCirclesRef.current.set(
+          zone.id,
+          circle,
+        );
+      });
+    },
+    [
+      showGeofences,
+      geofenceZones,
+    ],
+  );
 
   // Update geofence alert markers
-  useEffect(() => {
-    if (!mapRef.current) return;
-    const map = mapRef.current;
+  useEffect(
+    () => {
+      if (!mapRef.current)
+        return;
+      const map = mapRef.current;
 
-    alertMarkersRef.current.forEach((marker) => marker.remove());
-    alertMarkersRef.current.clear();
+      alertMarkersRef.current.forEach(marker => marker.remove());
+      alertMarkersRef.current.clear();
 
-    if (!showAlerts) return;
+      if (!showAlerts)
+        return;
 
-    geofenceAlerts.forEach((alert) => {
-      const marker = L.marker(alert.position, { icon: createGeofenceAlertIcon() }).addTo(map);
+      geofenceAlerts.forEach((alert) => {
+        const marker = L.marker(
+          alert.position,
+          { icon: createGeofenceAlertIcon() },
+        ).addTo(map);
 
-      marker.bindPopup(`
+        marker.bindPopup(`
         <div style="min-width: 200px; padding: 8px;">
           <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px; color:#b91c1c;">
             <span style="font-size:14px; font-weight:600;">Geofence Alert</span>
@@ -594,28 +785,39 @@ export function FleetMap({
         </div>
       `);
 
-      alertMarkersRef.current.set(alert.id, marker);
-    });
-  }, [showAlerts]);
+        alertMarkersRef.current.set(
+          alert.id,
+          marker,
+        );
+      });
+    },
+    [showAlerts],
+  );
 
   // Update harsh driving event markers
-  useEffect(() => {
-    if (!mapRef.current) return;
-    const map = mapRef.current;
+  useEffect(
+    () => {
+      if (!mapRef.current)
+        return;
+      const map = mapRef.current;
 
-    harshEventMarkersRef.current.forEach((m) => m.remove());
-    harshEventMarkersRef.current.clear();
+      harshEventMarkersRef.current.forEach(m => m.remove());
+      harshEventMarkersRef.current.clear();
 
-    const events = harshEvents || [];
-    if (events.length === 0) return;
+      const events = harshEvents || [];
+      if (events.length === 0)
+        return;
 
-    events.forEach((event) => {
-      const marker = L.marker(event.position, { icon: createHarshEventIcon(event.severity) }).addTo(map);
-      const sevColor = HARSH_SEVERITY_COLORS[event.severity];
-      const ts = new Date(event.timestamp);
-      const tsLabel = isNaN(ts.getTime()) ? event.timestamp : ts.toLocaleString();
-      const playbackId = `harsh-playback-${event.id}`;
-      marker.bindPopup(`
+      events.forEach((event) => {
+        const marker = L.marker(
+          event.position,
+          { icon: createHarshEventIcon(event.severity) },
+        ).addTo(map);
+        const sevColor = HARSH_SEVERITY_COLORS[event.severity];
+        const ts = new Date(event.timestamp);
+        const tsLabel = isNaN(ts.getTime()) ? event.timestamp : ts.toLocaleString();
+        const playbackId = `harsh-playback-${event.id}`;
+        marker.bindPopup(`
         <div style="min-width: 240px; padding: 4px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
             <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${sevColor};"></span>
@@ -635,20 +837,31 @@ export function FleetMap({
         </div>
       `);
 
-      marker.on("popupopen", () => {
-        const btn = document.getElementById(playbackId);
-        if (btn) {
-          btn.onclick = () => harshEventPlaybackRef.current?.(event);
-        }
-      });
+        marker.on(
+          "popupopen",
+          () => {
+            const btn = document.getElementById(playbackId);
+            if (btn) {
+              btn.onclick = () => harshEventPlaybackRef.current?.(event);
+            }
+          },
+        );
 
-      harshEventMarkersRef.current.set(event.id, marker);
-    });
-  }, [harshEvents]);
+        harshEventMarkersRef.current.set(
+          event.id,
+          marker,
+        );
+      });
+    },
+    [harshEvents],
+  );
 
   return (
     <div className="relative isolate z-0 w-full h-full rounded-lg overflow-hidden border border-border">
-      <div ref={mapContainerRef} className="w-full h-full" />
+      <div
+        ref={mapContainerRef}
+        className="w-full h-full"
+      />
 
       {/* Map Legend */}
       <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm rounded-lg border border-border p-3 shadow-lg z-[1000]">
@@ -687,15 +900,24 @@ export function FleetMap({
             <>
               <div className="h-px bg-border my-1.5" />
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full" style={{ background: "#eab308" }} />
+                <div
+                  className="h-3 w-3 rounded-full"
+                  style={{ background: "#eab308" }}
+                />
                 <span className="text-xs text-muted-foreground">Harsh — minor</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full" style={{ background: "#f97316" }} />
+                <div
+                  className="h-3 w-3 rounded-full"
+                  style={{ background: "#f97316" }}
+                />
                 <span className="text-xs text-muted-foreground">Harsh — moderate</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full" style={{ background: "#ef4444" }} />
+                <div
+                  className="h-3 w-3 rounded-full"
+                  style={{ background: "#ef4444" }}
+                />
                 <span className="text-xs text-muted-foreground">Harsh — severe</span>
               </div>
             </>
@@ -705,19 +927,21 @@ export function FleetMap({
 
       {/* Live indicator with connection status */}
       <div className="absolute top-4 left-4 bg-card/95 backdrop-blur-sm rounded-full px-3 py-1.5 border border-border shadow-lg z-[1000] flex items-center gap-2">
-        {isConnected ? (
-          <>
-            <Wifi className="h-3.5 w-3.5 text-success" />
-            <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
-            <span className="text-xs font-medium">Live</span>
-          </>
-        ) : (
-          <>
-            <WifiOff className="h-3.5 w-3.5 text-warning" />
-            <div className="h-2 w-2 rounded-full bg-warning" />
-            <span className="text-xs font-medium">Connecting...</span>
-          </>
-        )}
+        {isConnected
+          ? (
+              <>
+                <Wifi className="h-3.5 w-3.5 text-success" />
+                <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
+                <span className="text-xs font-medium">Live</span>
+              </>
+            )
+          : (
+              <>
+                <WifiOff className="h-3.5 w-3.5 text-warning" />
+                <div className="h-2 w-2 rounded-full bg-warning" />
+                <span className="text-xs font-medium">Connecting...</span>
+              </>
+            )}
         {lastUpdate && (
           <span className="text-xs text-muted-foreground ml-1">
             {formatRelative(lastUpdate)}
@@ -729,7 +953,9 @@ export function FleetMap({
       {realtimeLocations.length > 0 && (
         <div className="absolute top-4 right-4 bg-primary/90 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg z-[1000] flex items-center gap-2">
           <span className="text-xs font-medium text-primary-foreground">
-            {realtimeLocations.length} devices tracking
+            {realtimeLocations.length}
+            {" "}
+            devices tracking
           </span>
         </div>
       )}

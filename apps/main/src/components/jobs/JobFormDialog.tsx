@@ -1,9 +1,34 @@
-import { formatWithPattern, toDateTimeInputValue } from "@truckmoov/app-core/utils/time-utils";
-import { useEffect, useMemo, useState } from "react";
 import type { LatLngTuple } from "leaflet";
-import { useForm } from "react-hook-form";
+import type { MapLocation } from "@/components/maps/MapLocationInput";
+import type { RoutePreviewMapMarker } from "@/components/maps/RoutePreviewMap";
+import type { Job } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  formatWithPattern, toDateTimeInputValue,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Calendar,
+  Check,
+  ClipboardList,
+  DollarSign,
+  Lock,
+  MapPin,
+  Package,
+  Plus,
+  Route,
+  X,
+} from "lucide-react";
+import {
+  useEffect, useMemo, useState,
+} from "react";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { MapLocationInput } from "@/components/maps/MapLocationInput";
+import { RoutePreviewMap } from "@/components/maps/RoutePreviewMap";
+import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
@@ -20,8 +45,6 @@ import {
   FormMessage,
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
-import { Textarea } from "@/components/shadcn/textarea";
-import { Button } from "@/components/shadcn/button";
 import {
   Select,
   SelectContent,
@@ -29,47 +52,47 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { Badge } from "@/components/shadcn/badge";
 import { Separator } from "@/components/shadcn/separator";
-import {
-  RoutePreviewMap,
-  type RoutePreviewMapMarker,
-} from "@/components/maps/RoutePreviewMap";
-import {
-  MapLocationInput,
-  type MapLocation,
-} from "@/components/maps/MapLocationInput";
-import { Job } from "@/types";
+import { Textarea } from "@/components/shadcn/textarea";
 import { cn } from "@/lib/utils";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  MapPin,
-  Package,
-  ClipboardList,
-  Route,
-  Calendar,
-  DollarSign,
-  Lock,
-  Plus,
-  X,
-} from "lucide-react";
 
 const jobSchema = z.object({
   reference: z.string().min(3).max(50),
-  pickupAddress: z.string().min(5, "Pickup address required").max(200),
+  pickupAddress: z.string().min(
+    5,
+    "Pickup address required",
+  ).max(200),
   pickupLat: z.coerce.number().min(-90).max(90),
   pickupLng: z.coerce.number().min(-180).max(180),
-  deliveryAddress: z.string().min(5, "Delivery address required").max(200),
+  deliveryAddress: z.string().min(
+    5,
+    "Delivery address required",
+  ).max(200),
   deliveryLat: z.coerce.number().min(-90).max(90),
   deliveryLng: z.coerce.number().min(-180).max(180),
-  cargoType: z.string().min(2, "Cargo type required").max(100),
-  cargoWeight: z.coerce.number().min(0.1, "Weight must be positive"),
+  cargoType: z.string().min(
+    2,
+    "Cargo type required",
+  ).max(100),
+  cargoWeight: z.coerce.number().min(
+    0.1,
+    "Weight must be positive",
+  ),
   cargoDescription: z.string().max(500).optional(),
-  amount: z.coerce.number().min(0, "Amount must be positive"),
-  deadline: z.string().min(1, "Deadline required"),
-  priority: z.enum(["low", "medium", "high", "urgent"]),
+  amount: z.coerce.number().min(
+    0,
+    "Amount must be positive",
+  ),
+  deadline: z.string().min(
+    1,
+    "Deadline required",
+  ),
+  priority: z.enum([
+    "low",
+    "medium",
+    "high",
+    "urgent",
+  ]),
 });
 
 type JobFormData = z.infer<typeof jobSchema>;
@@ -85,32 +108,38 @@ export type JobFormSubmitData = JobFormData & {
   }>;
 };
 
-interface JobFormDialogProps {
+type JobFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   job?: Job | null;
   onSubmit: (data: JobFormSubmitData) => void;
   isSubmitting?: boolean;
-}
+};
 
-interface IntermediateStop {
+type IntermediateStop = {
   id: string;
   address: string;
   lat: number;
   lng: number;
-}
+};
 
-interface JobRoutePoint {
+type JobRoutePoint = {
   lat: number;
   lng: number;
   label: string;
   type: "pickup" | "stop" | "delivery";
-}
+};
 
 const STEPS = [
-  { id: 1, label: "Locations", icon: MapPin, description: "Pickup & delivery" },
-  { id: 2, label: "Details", icon: ClipboardList, description: "Cargo & pricing" },
-  { id: 3, label: "Review", icon: Check, description: "Confirm & create" },
+  {
+    id: 1, label: "Locations", icon: MapPin, description: "Pickup & delivery",
+  },
+  {
+    id: 2, label: "Details", icon: ClipboardList, description: "Cargo & pricing",
+  },
+  {
+    id: 3, label: "Review", icon: Check, description: "Confirm & create",
+  },
 ] as const;
 
 function generateReference() {
@@ -125,8 +154,14 @@ export function JobFormDialog({
   isSubmitting = false,
 }: JobFormDialogProps) {
   const isEditing = !!job;
-  const [step, setStep] = useState(1);
-  const [stops, setStops] = useState<IntermediateStop[]>([]);
+  const [
+    step,
+    setStep,
+  ] = useState(1);
+  const [
+    stops,
+    setStops,
+  ] = useState<IntermediateStop[]>([]);
 
   const form = useForm<JobFormData>({
     resolver: zodResolver(jobSchema),
@@ -148,62 +183,71 @@ export function JobFormDialog({
   });
 
   // Reset on open / job change
-  useEffect(() => {
-    if (!open) return;
-    setStep(1);
-    setStops([]);
-    if (job) {
-      const jobStops =
-        (job as Job & {
-          stops?: Array<{
-            address?: string;
-            latitude?: number;
-            longitude?: number;
-            lat?: number;
-            lng?: number;
-          }>;
-        }).stops ?? [];
-      form.reset({
-        reference: job.reference,
-        pickupAddress: job.pickup.address,
-        pickupLat: job.pickup.lat,
-        pickupLng: job.pickup.lng,
-        deliveryAddress: job.delivery.address,
-        deliveryLat: job.delivery.lat,
-        deliveryLng: job.delivery.lng,
-        cargoType: job.cargo.type,
-        cargoWeight: job.cargo.weight,
-        cargoDescription: job.cargo.description,
-        amount: job.amount,
-        deadline: toDateTimeInputValue(job.deadline),
-        priority: "medium",
-      });
-      setStops(
-        jobStops.map((stop) => ({
-          id: crypto.randomUUID(),
-          address: stop.address ?? "",
-          lat: stop.latitude ?? stop.lat ?? 0,
-          lng: stop.longitude ?? stop.lng ?? 0,
-        })),
-      );
-    } else {
-      form.reset({
-        reference: generateReference(),
-        pickupAddress: "",
-        pickupLat: 0,
-        pickupLng: 0,
-        deliveryAddress: "",
-        deliveryLat: 0,
-        deliveryLng: 0,
-        cargoType: "",
-        cargoWeight: 0,
-        cargoDescription: "",
-        amount: 0,
-        deadline: "",
-        priority: "medium",
-      });
-    }
-  }, [open, job, form]);
+  useEffect(
+    () => {
+      if (!open)
+        return;
+      setStep(1);
+      setStops([]);
+      if (job) {
+        const jobStops
+          = (job as Job & {
+            stops?: Array<{
+              address?: string;
+              latitude?: number;
+              longitude?: number;
+              lat?: number;
+              lng?: number;
+            }>;
+          }).stops ?? [];
+        form.reset({
+          reference: job.reference,
+          pickupAddress: job.pickup.address,
+          pickupLat: job.pickup.lat,
+          pickupLng: job.pickup.lng,
+          deliveryAddress: job.delivery.address,
+          deliveryLat: job.delivery.lat,
+          deliveryLng: job.delivery.lng,
+          cargoType: job.cargo.type,
+          cargoWeight: job.cargo.weight,
+          cargoDescription: job.cargo.description,
+          amount: job.amount,
+          deadline: toDateTimeInputValue(job.deadline),
+          priority: "medium",
+        });
+        setStops(
+          jobStops.map(stop => ({
+            id: crypto.randomUUID(),
+            address: stop.address ?? "",
+            lat: stop.latitude ?? stop.lat ?? 0,
+            lng: stop.longitude ?? stop.lng ?? 0,
+          })),
+        );
+      }
+      else {
+        form.reset({
+          reference: generateReference(),
+          pickupAddress: "",
+          pickupLat: 0,
+          pickupLng: 0,
+          deliveryAddress: "",
+          deliveryLat: 0,
+          deliveryLng: 0,
+          cargoType: "",
+          cargoWeight: 0,
+          cargoDescription: "",
+          amount: 0,
+          deadline: "",
+          priority: "medium",
+        });
+      }
+    },
+    [
+      open,
+      job,
+      form,
+    ],
+  );
 
   const values = form.watch();
 
@@ -213,7 +257,11 @@ export function JobFormDialog({
       lat: values.pickupLat || 0,
       lng: values.pickupLng || 0,
     }),
-    [values.pickupAddress, values.pickupLat, values.pickupLng]
+    [
+      values.pickupAddress,
+      values.pickupLat,
+      values.pickupLng,
+    ],
   );
   const deliveryValue = useMemo<MapLocation>(
     () => ({
@@ -221,39 +269,55 @@ export function JobFormDialog({
       lat: values.deliveryLat || 0,
       lng: values.deliveryLng || 0,
     }),
-    [values.deliveryAddress, values.deliveryLat, values.deliveryLng]
+    [
+      values.deliveryAddress,
+      values.deliveryLat,
+      values.deliveryLng,
+    ],
   );
 
-  const routePoints: JobRoutePoint[] = useMemo(() => {
-    const arr: JobRoutePoint[] = [];
-    if (pickupValue.lat && pickupValue.lng) {
-      arr.push({
-        lat: pickupValue.lat,
-        lng: pickupValue.lng,
-        label: pickupValue.address,
-        type: "pickup",
-      });
-    }
-    stops.forEach((s) => {
-      if (s.lat && s.lng) {
-        arr.push({ lat: s.lat, lng: s.lng, label: s.address, type: "stop" });
+  const routePoints: JobRoutePoint[] = useMemo(
+    () => {
+      const arr: JobRoutePoint[] = [];
+      if (pickupValue.lat && pickupValue.lng) {
+        arr.push({
+          lat: pickupValue.lat,
+          lng: pickupValue.lng,
+          label: pickupValue.address,
+          type: "pickup",
+        });
       }
-    });
-    if (deliveryValue.lat && deliveryValue.lng) {
-      arr.push({
-        lat: deliveryValue.lat,
-        lng: deliveryValue.lng,
-        label: deliveryValue.address,
-        type: "delivery",
+      stops.forEach((s) => {
+        if (s.lat && s.lng) {
+          arr.push({
+            lat: s.lat, lng: s.lng, label: s.address, type: "stop",
+          });
+        }
       });
-    }
-    return arr;
-  }, [pickupValue, deliveryValue, stops]);
+      if (deliveryValue.lat && deliveryValue.lng) {
+        arr.push({
+          lat: deliveryValue.lat,
+          lng: deliveryValue.lng,
+          label: deliveryValue.address,
+          type: "delivery",
+        });
+      }
+      return arr;
+    },
+    [
+      pickupValue,
+      deliveryValue,
+      stops,
+    ],
+  );
 
   const mapMarkers = useMemo<RoutePreviewMapMarker[]>(
     () =>
-      routePoints.map((point) => ({
-        position: [point.lat, point.lng] as LatLngTuple,
+      routePoints.map(point => ({
+        position: [
+          point.lat,
+          point.lng,
+        ] as LatLngTuple,
         label: point.label,
         color:
           point.type === "pickup"
@@ -262,12 +326,15 @@ export function JobFormDialog({
               ? "#ef4444"
               : "#f59e0b",
       })),
-    [routePoints]
+    [routePoints],
   );
 
   const mapWaypoints = useMemo<LatLngTuple[]>(
-    () => routePoints.map((point) => [point.lat, point.lng]),
-    [routePoints]
+    () => routePoints.map(point => [
+      point.lat,
+      point.lng,
+    ]),
+    [routePoints],
   );
 
   const handleNext = async () => {
@@ -280,9 +347,11 @@ export function JobFormDialog({
         "deliveryLat",
         "deliveryLng",
       ]);
-      if (!ok) return;
+      if (!ok)
+        return;
       setStep(2);
-    } else if (step === 2) {
+    }
+    else if (step === 2) {
       const ok = await form.trigger([
         "priority",
         "cargoType",
@@ -290,19 +359,23 @@ export function JobFormDialog({
         "amount",
         "deadline",
       ]);
-      if (!ok) return;
+      if (!ok)
+        return;
       setStep(3);
     }
   };
 
-  const handleBack = () => setStep((s) => Math.max(1, s - 1));
+  const handleBack = () => setStep(s => Math.max(
+    1,
+    s - 1,
+  ));
 
   const handleFinalSubmit = (data: JobFormData) => {
     onSubmit({
       ...data,
       stops: stops
-        .filter((stop) => stop.address.trim())
-        .map((stop) => ({
+        .filter(stop => stop.address.trim())
+        .map(stop => ({
           address: stop.address,
           latitude: stop.lat,
           longitude: stop.lng,
@@ -311,29 +384,34 @@ export function JobFormDialog({
   };
 
   const addStop = () => {
-    setStops((prev) => [
+    setStops(prev => [
       ...prev,
-      { id: crypto.randomUUID(), address: "", lat: 0, lng: 0 },
+      {
+        id: crypto.randomUUID(), address: "", lat: 0, lng: 0,
+      },
     ]);
   };
 
   const removeStop = (id: string) => {
-    setStops((prev) => prev.filter((s) => s.id !== id));
+    setStops(prev => prev.filter(s => s.id !== id));
   };
 
   const updateStop = (id: string, value: MapLocation) => {
-    setStops((prev) =>
-      prev.map((s) =>
+    setStops(prev =>
+      prev.map(s =>
         s.id === id
-          ? { ...s, address: value.address, lat: value.lat, lng: value.lng }
-          : s
-      )
-    );
+          ? {
+              ...s, address: value.address, lat: value.lat, lng: value.lng,
+            }
+          : s));
   };
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog
+        open={open}
+        onOpenChange={onOpenChange}
+      >
         <DialogContent className="sm:max-w-[680px] max-h-[88vh] overflow-y-auto bg-card border-border p-5">
           <DialogHeader>
             <DialogTitle className="text-xl">
@@ -353,25 +431,30 @@ export function JobFormDialog({
               const isComplete = step > s.id;
               const Icon = s.icon;
               return (
-                <div key={s.id} className="flex items-center flex-1">
+                <div
+                  key={s.id}
+                  className="flex items-center flex-1"
+                >
                   <div className="flex items-center gap-2">
                     <div
                       className={cn(
                         "h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all shrink-0",
-                        isActive &&
-                          "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/20",
-                        isComplete &&
-                          "bg-primary/20 text-primary border-primary",
-                        !isActive &&
-                          !isComplete &&
-                          "bg-muted text-muted-foreground border-border"
+                        isActive
+                        && "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/20",
+                        isComplete
+                        && "bg-primary/20 text-primary border-primary",
+                        !isActive
+                        && !isComplete
+                        && "bg-muted text-muted-foreground border-border",
                       )}
                     >
-                      {isComplete ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Icon className="h-4 w-4" />
-                      )}
+                      {isComplete
+                        ? (
+                            <Check className="h-4 w-4" />
+                          )
+                        : (
+                            <Icon className="h-4 w-4" />
+                          )}
                     </div>
                     <div className="hidden sm:block leading-tight">
                       <p
@@ -381,10 +464,12 @@ export function JobFormDialog({
                             ? "text-foreground"
                             : isComplete
                               ? "text-foreground/80"
-                              : "text-muted-foreground"
+                              : "text-muted-foreground",
                         )}
                       >
-                        {s.id}. {s.label}
+                        {s.id}
+                        .
+                        {s.label}
                       </p>
                     </div>
                   </div>
@@ -392,7 +477,7 @@ export function JobFormDialog({
                     <div
                       className={cn(
                         "flex-1 h-0.5 mx-2 transition-colors",
-                        step > s.id ? "bg-primary" : "bg-border"
+                        step > s.id ? "bg-primary" : "bg-border",
                       )}
                     />
                   )}
@@ -430,15 +515,21 @@ export function JobFormDialog({
                       pinColor="#22c55e"
                       value={pickupValue}
                       onLocationSelect={(v) => {
-                        form.setValue("pickupAddress", v.address, {
-                          shouldValidate: true,
-                        });
-                        form.setValue("pickupLat", v.lat, {
-                          shouldValidate: true,
-                        });
-                        form.setValue("pickupLng", v.lng, {
-                          shouldValidate: true,
-                        });
+                        form.setValue(
+                          "pickupAddress",
+                          v.address,
+                          { shouldValidate: true },
+                        );
+                        form.setValue(
+                          "pickupLat",
+                          v.lat,
+                          { shouldValidate: true },
+                        );
+                        form.setValue(
+                          "pickupLng",
+                          v.lng,
+                          { shouldValidate: true },
+                        );
                       }}
                     />
                     <MapLocationInput
@@ -447,15 +538,21 @@ export function JobFormDialog({
                       pinColor="#ef4444"
                       value={deliveryValue}
                       onLocationSelect={(v) => {
-                        form.setValue("deliveryAddress", v.address, {
-                          shouldValidate: true,
-                        });
-                        form.setValue("deliveryLat", v.lat, {
-                          shouldValidate: true,
-                        });
-                        form.setValue("deliveryLng", v.lng, {
-                          shouldValidate: true,
-                        });
+                        form.setValue(
+                          "deliveryAddress",
+                          v.address,
+                          { shouldValidate: true },
+                        );
+                        form.setValue(
+                          "deliveryLat",
+                          v.lat,
+                          { shouldValidate: true },
+                        );
+                        form.setValue(
+                          "deliveryLng",
+                          v.lng,
+                          { shouldValidate: true },
+                        );
                       }}
                     />
                   </div>
@@ -467,7 +564,10 @@ export function JobFormDialog({
                         Intermediate stops
                       </p>
                       {stops.map((s, idx) => (
-                        <div key={s.id} className="flex items-end gap-2">
+                        <div
+                          key={s.id}
+                          className="flex items-end gap-2"
+                        >
                           <div className="flex-1">
                             <MapLocationInput
                               label={`Stop ${idx + 1}`}
@@ -478,7 +578,10 @@ export function JobFormDialog({
                                 lat: s.lat,
                                 lng: s.lng,
                               }}
-                              onLocationSelect={(v) => updateStop(s.id, v)}
+                              onLocationSelect={v => updateStop(
+                                s.id,
+                                v,
+                              )}
                             />
                           </div>
                           <Button
@@ -518,8 +621,13 @@ export function JobFormDialog({
                             : "Route preview"}
                       </p>
                       {routePoints.length >= 2 && (
-                        <Badge variant="outline" className="text-xs">
-                          {routePoints.length} points
+                        <Badge
+                          variant="outline"
+                          className="text-xs"
+                        >
+                          {routePoints.length}
+                          {" "}
+                          points
                         </Badge>
                       )}
                     </div>
@@ -650,7 +758,11 @@ export function JobFormDialog({
                         <FormItem>
                           <FormLabel>Weight (tons)</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.1" {...field} />
+                            <Input
+                              type="number"
+                              step="0.1"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -688,7 +800,11 @@ export function JobFormDialog({
                         <FormItem>
                           <FormLabel>Amount (NGN)</FormLabel>
                           <FormControl>
-                            <Input type="number" step="100" {...field} />
+                            <Input
+                              type="number"
+                              step="100"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -704,7 +820,10 @@ export function JobFormDialog({
                             Deadline
                           </FormLabel>
                           <FormControl>
-                            <Input type="datetime-local" {...field} />
+                            <Input
+                              type="datetime-local"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -734,8 +853,13 @@ export function JobFormDialog({
                         <Route className="h-4 w-4 text-primary" />
                         Route
                       </h4>
-                      <Badge variant="outline" className="text-xs">
-                        {routePoints.length} stops
+                      <Badge
+                        variant="outline"
+                        className="text-xs"
+                      >
+                        {routePoints.length}
+                        {" "}
+                        stops
                       </Badge>
                     </div>
                     <div className="h-[220px] overflow-hidden rounded-md border border-border">
@@ -763,11 +887,16 @@ export function JobFormDialog({
                         </div>
                       </div>
                       {stops.map((s, i) => (
-                        <div key={s.id} className="flex items-start gap-2">
+                        <div
+                          key={s.id}
+                          className="flex items-start gap-2"
+                        >
                           <span className="h-2 w-2 rounded-full bg-warning mt-1.5" />
                           <div className="flex-1">
                             <p className="text-xs uppercase text-muted-foreground tracking-wide">
-                              Stop {i + 1}
+                              Stop
+                              {" "}
+                              {i + 1}
                             </p>
                             <p className="font-medium">
                               {s.address || "Unset"}
@@ -790,12 +919,19 @@ export function JobFormDialog({
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <SummaryCard label="Reference" value={values.reference} mono />
+                    <SummaryCard
+                      label="Reference"
+                      value={values.reference}
+                      mono
+                    />
                     <SummaryCard
                       label="Priority"
                       value={values.priority?.toUpperCase()}
                     />
-                    <SummaryCard label="Cargo type" value={values.cargoType} />
+                    <SummaryCard
+                      label="Cargo type"
+                      value={values.cargoType}
+                    />
                     <SummaryCard
                       label="Weight"
                       value={`${values.cargoWeight} tons`}
@@ -808,7 +944,10 @@ export function JobFormDialog({
                       label="Deadline"
                       value={
                         values.deadline
-                          ? formatWithPattern(values.deadline, "PPp")
+                          ? formatWithPattern(
+                              values.deadline,
+                              "PPp",
+                            )
                           : "—"
                       }
                     />
@@ -847,13 +986,21 @@ export function JobFormDialog({
                     </Button>
                   )}
                   {step < 3 && (
-                    <Button type="button" onClick={handleNext} variant="gradient">
+                    <Button
+                      type="button"
+                      onClick={handleNext}
+                      variant="gradient"
+                    >
                       Next
                       <ArrowRight className="h-4 w-4 ml-1" />
                     </Button>
                   )}
                   {step === 3 && (
-                    <Button type="submit" variant="gradient" loading={isSubmitting}>
+                    <Button
+                      type="submit"
+                      variant="gradient"
+                      loading={isSubmitting}
+                    >
                       <Check className="h-4 w-4 mr-1" />
                       {isEditing ? "Update Job" : "Create Job"}
                     </Button>
@@ -883,7 +1030,11 @@ function SummaryCard({
       <p className="text-xs uppercase text-muted-foreground tracking-wide">
         {label}
       </p>
-      <p className={cn("text-sm font-medium mt-0.5", mono && "font-mono")}>
+      <p className={cn(
+        "text-sm font-medium mt-0.5",
+        mono && "font-mono",
+      )}
+      >
         {value || "—"}
       </p>
     </div>

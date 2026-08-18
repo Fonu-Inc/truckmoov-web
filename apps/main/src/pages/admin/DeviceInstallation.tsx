@@ -1,20 +1,28 @@
-import { useState } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shadcn/tabs';
-import { ConfigQueue } from '@/components/installation/ConfigQueue';
-import { InstallerGuide } from '@/components/installation/InstallerGuide';
-import { VerificationMonitor } from '@/components/installation/VerificationMonitor';
-import { DeviceTroubleshooting } from '@/components/installation/DeviceTroubleshooting';
 import {
-  ListChecks,
   BookOpen,
+  ListChecks,
   Radio,
   Wrench,
-} from 'lucide-react';
+} from "lucide-react";
+import { useState } from "react";
+import { ConfigQueue } from "@/components/installation/ConfigQueue";
+import { DeviceTroubleshooting } from "@/components/installation/DeviceTroubleshooting";
+import { InstallerGuide } from "@/components/installation/InstallerGuide";
+import { VerificationMonitor } from "@/components/installation/VerificationMonitor";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/shadcn/tabs";
 
 export default function DeviceInstallation() {
-  const [activeTab, setActiveTab] = useState('config-queue');
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const [
+    activeTab,
+    setActiveTab,
+  ] = useState("config-queue");
+  const [
+    selectedDeviceId,
+    setSelectedDeviceId,
+  ] = useState<string | null>(null);
 
   const configQueueDevices: any[] = [];
   const loading = false;
@@ -29,7 +37,7 @@ export default function DeviceInstallation() {
 
   const handleOpenTroubleshooting = (deviceId: string) => {
     setSelectedDeviceId(deviceId);
-    setActiveTab('troubleshooting');
+    setActiveTab("troubleshooting");
   };
 
   return (
@@ -38,29 +46,47 @@ export default function DeviceInstallation() {
       subtitle="Installer-friendly device setup and verification"
     >
       <div className="space-y-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+        >
           <div className="flex justify-center">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
-            <TabsTrigger value="config-queue" className="flex items-center gap-2">
-              <ListChecks className="h-4 w-4" />
-              <span className="hidden sm:inline">Config Queue</span>
-            </TabsTrigger>
-            <TabsTrigger value="installer-guide" className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              <span className="hidden sm:inline">Installer Guide</span>
-            </TabsTrigger>
-            <TabsTrigger value="verification" className="flex items-center gap-2">
-              <Radio className="h-4 w-4" />
-              <span className="hidden sm:inline">Verification</span>
-            </TabsTrigger>
-            <TabsTrigger value="troubleshooting" className="flex items-center gap-2">
-              <Wrench className="h-4 w-4" />
-              <span className="hidden sm:inline">Troubleshooting</span>
-            </TabsTrigger>
-          </TabsList>
+            <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+              <TabsTrigger
+                value="config-queue"
+                className="flex items-center gap-2"
+              >
+                <ListChecks className="h-4 w-4" />
+                <span className="hidden sm:inline">Config Queue</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="installer-guide"
+                className="flex items-center gap-2"
+              >
+                <BookOpen className="h-4 w-4" />
+                <span className="hidden sm:inline">Installer Guide</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="verification"
+                className="flex items-center gap-2"
+              >
+                <Radio className="h-4 w-4" />
+                <span className="hidden sm:inline">Verification</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="troubleshooting"
+                className="flex items-center gap-2"
+              >
+                <Wrench className="h-4 w-4" />
+                <span className="hidden sm:inline">Troubleshooting</span>
+              </TabsTrigger>
+            </TabsList>
           </div>
 
-          <TabsContent value="config-queue" className="mt-6">
+          <TabsContent
+            value="config-queue"
+            className="mt-6"
+          >
             <ConfigQueue
               devices={configQueueDevices}
               catalog={catalog}
@@ -74,23 +100,34 @@ export default function DeviceInstallation() {
             />
           </TabsContent>
 
-          <TabsContent value="installer-guide" className="mt-6">
-            <InstallerGuide catalog={catalog} loading={catalogLoading} />
+          <TabsContent
+            value="installer-guide"
+            className="mt-6"
+          >
+            <InstallerGuide
+              catalog={catalog}
+              loading={catalogLoading}
+            />
           </TabsContent>
 
-          <TabsContent value="verification" className="mt-6">
+          <TabsContent
+            value="verification"
+            className="mt-6"
+          >
             <VerificationMonitor
               devices={configQueueDevices.filter(d =>
-                d.lifecycle_status === 'configured' ||
-                (d as any).verification_status === 'pending'
-              )}
+                d.lifecycle_status === "configured"
+                || (d as any).verification_status === "pending")}
               loading={loading}
               onRefresh={refetch}
               onTroubleshoot={handleOpenTroubleshooting}
             />
           </TabsContent>
 
-          <TabsContent value="troubleshooting" className="mt-6">
+          <TabsContent
+            value="troubleshooting"
+            className="mt-6"
+          >
             <DeviceTroubleshooting
               devices={configQueueDevices}
               selectedDeviceId={selectedDeviceId}

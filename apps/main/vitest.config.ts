@@ -1,6 +1,6 @@
-import { defineConfig } from "vitest/config";
+import path from "node:path";
 import react from "@vitejs/plugin-react-swc";
-import path from "path";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [react()],
@@ -12,9 +12,18 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@/components/shadcn": path.resolve(__dirname, "../../packages/reusables/src/components/shadcn"),
-      "@/lib/utils": path.resolve(__dirname, "../../packages/reusables/src/lib/utils.ts"),
-      "@": path.resolve(__dirname, "./src"),
+      "@/components/shadcn": path.resolve(
+        __dirname,
+        "../../packages/reusables/src/components/shadcn",
+      ),
+      "@/lib/utils": path.resolve(
+        __dirname,
+        "../../packages/reusables/src/lib/utils.ts",
+      ),
+      "@": path.resolve(
+        __dirname,
+        "./src",
+      ),
     },
   },
 });

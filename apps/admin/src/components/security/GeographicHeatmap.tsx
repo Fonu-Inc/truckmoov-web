@@ -1,105 +1,145 @@
-import { useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/shadcn/card';
-import { Badge } from '@/components/shadcn/badge';
-import { Globe, MapPin, TrendingUp, AlertTriangle } from 'lucide-react';
+import {
+  AlertTriangle,
+  Globe,
+  MapPin,
+  TrendingUp,
+} from "lucide-react";
+import { useMemo } from "react";
+import { Badge } from "@/components/shadcn/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/card";
 
-interface LoginAttempt {
+type LoginAttempt = {
   ip: string;
   country: string;
   countryCode: string;
   city: string;
   count: number;
-  threatLevel: 'low' | 'medium' | 'high';
+  threatLevel: "low" | "medium" | "high";
   lastAttempt: Date;
-}
+};
 
-interface GeographicHeatmapProps {
-  attempts: LoginAttempt[];
-}
+type GeographicHeatmapProps = { attempts: LoginAttempt[] };
 
-interface CountryData {
+type CountryData = {
   country: string;
   countryCode: string;
   totalAttempts: number;
-  cities: { city: string; count: number }[];
-  threatLevel: 'low' | 'medium' | 'high';
+  cities: {
+    city: string;
+    count: number;
+  }[];
+  threatLevel: "low" | "medium" | "high";
   ips: string[];
-}
+};
 
-const getFlagEmoji = (countryCode: string): string => {
-  if (!countryCode || countryCode.length !== 2) return '🌍';
+function getFlagEmoji(countryCode: string): string {
+  if (!countryCode || countryCode.length !== 2)
+    return "🌍";
   const codePoints = countryCode
     .toUpperCase()
-    .split('')
+    .split("")
     .map(char => 127397 + char.charCodeAt(0));
   return String.fromCodePoint(...codePoints);
-};
+}
 
-const getHeatColor = (intensity: number, max: number): string => {
+function getHeatColor(intensity: number, max: number): string {
   const ratio = max > 0 ? intensity / max : 0;
-  if (ratio > 0.7) return 'bg-red-500/20 border-red-500/50';
-  if (ratio > 0.4) return 'bg-orange-500/20 border-orange-500/50';
-  if (ratio > 0.2) return 'bg-yellow-500/20 border-yellow-500/50';
-  return 'bg-green-500/20 border-green-500/50';
-};
+  if (ratio > 0.7)
+    return "bg-red-500/20 border-red-500/50";
+  if (ratio > 0.4)
+    return "bg-orange-500/20 border-orange-500/50";
+  if (ratio > 0.2)
+    return "bg-yellow-500/20 border-yellow-500/50";
+  return "bg-green-500/20 border-green-500/50";
+}
 
-const getThreatColor = (level: string): string => {
+function getThreatColor(level: string): string {
   switch (level) {
-    case 'high': return 'bg-destructive text-destructive-foreground';
-    case 'medium': return 'bg-orange-500 text-white';
-    default: return 'bg-green-500 text-white';
+    case "high": return "bg-destructive text-destructive-foreground";
+    case "medium": return "bg-orange-500 text-white";
+    default: return "bg-green-500 text-white";
   }
-};
+}
 
 export function GeographicHeatmap({ attempts }: GeographicHeatmapProps) {
-  const countryData = useMemo(() => {
-    const grouped = attempts.reduce<Record<string, CountryData>>((acc, attempt) => {
-      const key = attempt.countryCode || attempt.country;
-      
-      if (!acc[key]) {
-        acc[key] = {
-          country: attempt.country,
-          countryCode: attempt.countryCode,
-          totalAttempts: 0,
-          cities: [],
-          threatLevel: 'low',
-          ips: []
-        };
-      }
-      
-      acc[key].totalAttempts += attempt.count;
-      acc[key].ips.push(attempt.ip);
-      
-      const cityIndex = acc[key].cities.findIndex(c => c.city === attempt.city);
-      if (cityIndex >= 0) {
-        acc[key].cities[cityIndex].count += attempt.count;
-      } else {
-        acc[key].cities.push({ city: attempt.city, count: attempt.count });
-      }
-      
-      // Escalate threat level
-      if (attempt.threatLevel === 'high') acc[key].threatLevel = 'high';
-      else if (attempt.threatLevel === 'medium' && acc[key].threatLevel !== 'high') {
-        acc[key].threatLevel = 'medium';
-      }
-      
-      return acc;
-    }, {});
+  const countryData = useMemo(
+    () => {
+      const grouped = attempts.reduce<Record<string, CountryData>>(
+        (acc, attempt) => {
+          const key = attempt.countryCode || attempt.country;
 
-    return Object.values(grouped).sort((a, b) => b.totalAttempts - a.totalAttempts);
-  }, [attempts]);
+          if (!acc[key]) {
+            acc[key] = {
+              country: attempt.country,
+              countryCode: attempt.countryCode,
+              totalAttempts: 0,
+              cities: [],
+              threatLevel: "low",
+              ips: [],
+            };
+          }
 
-  const maxAttempts = useMemo(() => 
-    Math.max(...countryData.map(c => c.totalAttempts), 1),
-  [countryData]);
+          acc[key].totalAttempts += attempt.count;
+          acc[key].ips.push(attempt.ip);
 
-  const totalAttempts = useMemo(() => 
-    countryData.reduce((sum, c) => sum + c.totalAttempts, 0),
-  [countryData]);
+          const cityIndex = acc[key].cities.findIndex(c => c.city === attempt.city);
+          if (cityIndex >= 0) {
+            acc[key].cities[cityIndex].count += attempt.count;
+          }
+          else {
+            acc[key].cities.push({
+              city: attempt.city,
+              count: attempt.count,
+            });
+          }
 
-  const highThreatCount = useMemo(() => 
-    countryData.filter(c => c.threatLevel === 'high').length,
-  [countryData]);
+          // Escalate threat level
+          if (attempt.threatLevel === "high") {
+            acc[key].threatLevel = "high";
+          }
+          else if (attempt.threatLevel === "medium" && acc[key].threatLevel !== "high") {
+            acc[key].threatLevel = "medium";
+          }
+
+          return acc;
+        },
+        {},
+      );
+
+      return Object.values(grouped).sort((a, b) => b.totalAttempts - a.totalAttempts);
+    },
+    [attempts],
+  );
+
+  const maxAttempts = useMemo(
+    () =>
+      Math.max(
+        ...countryData.map(c => c.totalAttempts),
+        1,
+      ),
+    [countryData],
+  );
+
+  const totalAttempts = useMemo(
+    () =>
+      countryData.reduce(
+        (sum, c) => sum + c.totalAttempts,
+        0,
+      ),
+    [countryData],
+  );
+
+  const highThreatCount = useMemo(
+    () =>
+      countryData.filter(c => c.threatLevel === "high").length,
+    [countryData],
+  );
 
   if (attempts.length === 0) {
     return (
@@ -133,14 +173,24 @@ export function GeographicHeatmap({ attempts }: GeographicHeatmapProps) {
             <CardDescription>Login activity and threat density mapped by country of origin</CardDescription>
           </div>
           <div className="flex gap-2">
-            <Badge variant="outline" className="flex items-center gap-1">
+            <Badge
+              variant="outline"
+              className="flex items-center gap-1"
+            >
               <TrendingUp className="h-3 w-3" />
-              {totalAttempts} total
+              {totalAttempts}
+              {" "}
+              total
             </Badge>
             {highThreatCount > 0 && (
-              <Badge variant="destructive" className="flex items-center gap-1">
+              <Badge
+                variant="destructive"
+                className="flex items-center gap-1"
+              >
                 <AlertTriangle className="h-3 w-3" />
-                {highThreatCount} high threat
+                {highThreatCount}
+                {" "}
+                high threat
               </Badge>
             )}
           </div>
@@ -149,10 +199,16 @@ export function GeographicHeatmap({ attempts }: GeographicHeatmapProps) {
       <CardContent>
         {/* Heatmap Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
-          {countryData.slice(0, 8).map((country) => (
+          {countryData.slice(
+            0,
+            8,
+          ).map(country => (
             <div
               key={country.countryCode}
-              className={`relative p-4 rounded-lg border-2 transition-all hover:scale-105 ${getHeatColor(country.totalAttempts, maxAttempts)}`}
+              className={`relative p-4 rounded-lg border-2 transition-all hover:scale-105 ${getHeatColor(
+                country.totalAttempts,
+                maxAttempts,
+              )}`}
             >
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-2xl">{getFlagEmoji(country.countryCode)}</span>
@@ -163,13 +219,16 @@ export function GeographicHeatmap({ attempts }: GeographicHeatmapProps) {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-2xl font-bold text-foreground">{country.totalAttempts}</span>
-                <Badge className={getThreatColor(country.threatLevel)} variant="secondary">
+                <Badge
+                  className={getThreatColor(country.threatLevel)}
+                  variant="secondary"
+                >
                   {country.threatLevel}
                 </Badge>
               </div>
               {/* Intensity bar */}
               <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-primary transition-all"
                   style={{ width: `${(country.totalAttempts / maxAttempts) * 100}%` }}
                 />
@@ -192,7 +251,10 @@ export function GeographicHeatmap({ attempts }: GeographicHeatmapProps) {
             </thead>
             <tbody>
               {countryData.map((country, index) => (
-                <tr key={country.countryCode} className={index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
+                <tr
+                  key={country.countryCode}
+                  className={index % 2 === 0 ? "bg-background" : "bg-muted/20"}
+                >
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <span className="text-xl">{getFlagEmoji(country.countryCode)}</span>
@@ -201,15 +263,32 @@ export function GeographicHeatmap({ attempts }: GeographicHeatmapProps) {
                   </td>
                   <td className="p-3">
                     <div className="flex flex-wrap gap-1">
-                      {country.cities.slice(0, 3).map((city) => (
-                        <Badge key={city.city} variant="outline" className="text-xs">
+                      {country.cities.slice(
+                        0,
+                        3,
+                      ).map(city => (
+                        <Badge
+                          key={city.city}
+                          variant="outline"
+                          className="text-xs"
+                        >
                           <MapPin className="h-3 w-3 mr-1" />
-                          {city.city} ({city.count})
+                          {city.city}
+                          {" "}
+                          (
+                          {city.count}
+                          )
                         </Badge>
                       ))}
                       {country.cities.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{country.cities.length - 3} more
+                        <Badge
+                          variant="outline"
+                          className="text-xs"
+                        >
+                          +
+                          {country.cities.length - 3}
+                          {" "}
+                          more
                         </Badge>
                       )}
                     </div>
@@ -255,6 +334,3 @@ export function GeographicHeatmap({ attempts }: GeographicHeatmapProps) {
     </Card>
   );
 }
-
-
-
