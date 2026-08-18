@@ -10,6 +10,7 @@ import {
   useResendOrgInvite,
   useUpdateOrganizationUser,
   useUpdateOrganizationUserStatus,
+  UserRole,
   type OrganizationUser,
 } from "@truckmoov/api/auth";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -77,56 +78,66 @@ import { useAuthStore } from "@/stores/authStore";
 import { useActiveOrgStore } from "@/stores/activeOrgStore";
 import type { OrgMembership } from "@/types/orgRoles";
 
-/** Invite role options scoped per organization type. */
+/** Human labels for the backend roles. */
+const ROLE_LABELS: Record<UserRole, string> = {
+  SUPER_ADMIN: "Super Admin",
+  SYSTEM_ADMIN: "System Admin",
+  PLATFORM_ADMIN: "Platform Admin",
+  ENTERPRISE_ADMIN: "Enterprise Admin",
+  AGGREGATOR_ADMIN: "Aggregator Admin",
+  OWNER_OPERATOR: "Owner Operator",
+  FLEET_ADMIN: "Fleet Admin",
+  OPERATIONS_MANAGER: "Operations Manager",
+  DISPATCHER: "Dispatcher",
+  FINANCE_VIEWER: "Finance Viewer",
+};
+
+/**
+ * Invite role options scoped per organization type. Values are `UserRole` so
+ * whatever the admin picks is exactly what the backend receives.
+ *
+ * ponytail: the old "Maintenance Supervisor" and "Analyst" options are gone —
+ * the backend has no matching role, so those invites silently landed as
+ * something else. Add them back when `UserRole` gains SUPERVISOR / ANALYST.
+ */
 const INVITE_ROLES_BY_ORG_TYPE: Record<
   string,
-  Array<{ value: string; label: string }>
+  Array<{ value: UserRole; label: string }>
 > = {
   ENTERPRISE: [
-    { value: "operations_manager", label: "Operations Manager - Run day-to-day operations" },
-    { value: "finance", label: "Finance Officer - Billing, invoices & wallet" },
-    { value: "viewer", label: "Viewer - Read-only access" },
+    { value: UserRole.OPERATIONS_MANAGER, label: "Operations Manager - Run day-to-day operations" },
+    { value: UserRole.DISPATCHER, label: "Dispatcher - Assign jobs & track drivers" },
+    { value: UserRole.FINANCE_VIEWER, label: "Finance Viewer - Billing, invoices & wallet" },
   ],
   FLEET_PROVIDER: [
-    { value: "operations_manager", label: "Operations Manager - Run day-to-day operations" },
-    { value: "dispatcher", label: "Dispatcher - Assign jobs & track drivers" },
-    { value: "finance", label: "Finance Officer - Billing, invoices & wallet" },
-    { value: "maintenance_supervisor", label: "Maintenance Supervisor - Vehicle service & repairs" },
+    { value: UserRole.OPERATIONS_MANAGER, label: "Operations Manager - Run day-to-day operations" },
+    { value: UserRole.DISPATCHER, label: "Dispatcher - Assign jobs & track drivers" },
+    { value: UserRole.FINANCE_VIEWER, label: "Finance Viewer - Billing, invoices & wallet" },
   ],
   AGGREGATOR: [
-    { value: "operations_manager", label: "Operations Manager - Cross-fleet coordination" },
-    { value: "analyst", label: "Analyst - Reporting & insights" },
+    { value: UserRole.OPERATIONS_MANAGER, label: "Operations Manager - Cross-fleet coordination" },
+    { value: UserRole.FINANCE_VIEWER, label: "Finance Viewer - Reporting & insights" },
   ],
   OWNER_OPERATOR: [],
 };
 
-/** Map invite UI role -> DB role enum. */
-const INVITE_ROLE_TO_DB: Record<string, string> = {
-  operations_manager: "operations_manager",
-  dispatcher: "dispatcher",
-  finance: "viewer_finance",
-  viewer: "viewer_finance",
-  maintenance_supervisor: "supervisor",
-  analyst: "viewer_finance",
+/** The owner/admin role for each organization type. */
+const ADMIN_ROLE_BY_ORG_TYPE: Record<string, UserRole> = {
+  ENTERPRISE: UserRole.ENTERPRISE_ADMIN,
+  FLEET_PROVIDER: UserRole.FLEET_ADMIN,
+  AGGREGATOR: UserRole.AGGREGATOR_ADMIN,
+  OWNER_OPERATOR: UserRole.OWNER_OPERATOR,
 };
 
 interface TenantUser {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: UserRole;
   status: string;
   lastActive: string;
   accountStatus: string;
 }
-
-const DISPLAY_ROLE_TO_DB: Record<string, string> = {
-  admin: "tenant_admin",
-  manager: "operations_manager",
-  supervisor: "supervisor",
-  dispatcher: "dispatcher",
-  viewer: "viewer_finance",
-};
 
 function formatLastActive(value?: string) {
   if (!value) return "Never";
@@ -159,7 +170,8 @@ export default function Settings() {
   const activeOrgType = activeOrg?.orgType || "FLEET_PROVIDER";
   const inviteRoleOptions = INVITE_ROLES_BY_ORG_TYPE[activeOrgType] ?? [];
   const canInviteUsers = inviteRoleOptions.length > 0;
-  const defaultInviteRole = inviteRoleOptions[0]?.value ?? "viewer";
+  const defaultInviteRole: UserRole = inviteRoleOptions[0]?.value ?? UserRole.FINANCE_VIEWER;
+  const orgAdminRole = ADMIN_ROLE_BY_ORG_TYPE[activeOrgType] ?? UserRole.FLEET_ADMIN;
 
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -176,22 +188,23 @@ export default function Settings() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<TenantUser | null>(null);
   const [editName, setEditName] = useState("");
-  const [editRole, setEditRole] = useState("");
-  
+  const [editRole, setEditRole] = useState<UserRole>(UserRole.FINANCE_VIEWER);
+
+  /**
+   * Roles offered when editing a member: the org's admin role + the invitable
+   * roles, plus the member's current role so it always has a matching option.
+   */
+  const editRoleOptions: Array<{ value: UserRole; label: string }> = [
+    { value: orgAdminRole, label: `${ROLE_LABELS[orgAdminRole]} - Full access` },
+    ...inviteRoleOptions,
+  ];
+  if (!editRoleOptions.some((o) => o.value === editRole)) {
+    editRoleOptions.push({ value: editRole, label: ROLE_LABELS[editRole] ?? editRole });
+  }
+
   // Remove user state
   const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
   const [removingUser, setRemovingUser] = useState<TenantUser | null>(null);
-
-  // Map database roles to display roles
-  const roleDisplayMap: Record<string, string> = {
-    tenant_admin: "admin",
-    operations_manager: "manager",
-    supervisor: "supervisor",
-    dispatcher: "dispatcher",
-    viewer_finance: "viewer",
-    platform_admin: "admin",
-    driver: "driver",
-  };
 
   const organizationUsersQuery = useQuery({
     ...getOrganizationUsersQueryOptions(),
@@ -209,7 +222,7 @@ export default function Settings() {
       id: organizationUser.userId,
       name: organizationUser.profile?.fullName || organizationUser.email,
       email: organizationUser.email,
-      role: roleDisplayMap[organizationUser.role] || organizationUser.role,
+      role: organizationUser.role,
       status:
         organizationUser.accountStatus === "disabled"
           ? "disabled"
@@ -232,7 +245,7 @@ export default function Settings() {
       {
         data: {
           email: inviteEmail.trim(),
-          role: INVITE_ROLE_TO_DB[inviteRole] || inviteRole,
+          role: inviteRole,
         },
       },
       {
@@ -254,23 +267,15 @@ export default function Settings() {
   const handleEditUser = (tenantUser: TenantUser) => {
     setEditingUser(tenantUser);
     setEditName(tenantUser.name);
-    // Map display role back to select value
-    const reverseRoleMap: Record<string, string> = {
-      admin: "admin",
-      manager: "manager",
-      supervisor: "supervisor",
-      dispatcher: "dispatcher",
-      viewer: "viewer",
-    };
-    setEditRole(reverseRoleMap[tenantUser.role] || "viewer");
+    setEditRole(tenantUser.role);
     setIsEditDialogOpen(true);
   };
 
   // Save user changes
   const handleSaveUser = async () => {
     if (!editingUser) return;
-    const nextRole = DISPLAY_ROLE_TO_DB[editRole] || editRole;
-    const currentRole = DISPLAY_ROLE_TO_DB[editingUser.role] || editingUser.role;
+    const nextRole = editRole;
+    const currentRole = editingUser.role;
 
     try {
       const updates: Promise<unknown>[] = [];
@@ -345,12 +350,17 @@ export default function Settings() {
     toast.success("API key copied to clipboard");
   };
 
-  const roleColors: Record<string, string> = {
-    admin: "bg-primary/20 text-primary border-primary/30",
-    manager: "bg-accent/20 text-accent border-accent/30",
-    supervisor: "bg-warning/20 text-warning border-warning/30",
-    dispatcher: "bg-success/20 text-success border-success/30",
-    viewer: "bg-muted text-muted-foreground border-muted",
+  const roleColors: Partial<Record<UserRole, string>> = {
+    SUPER_ADMIN: "bg-primary/20 text-primary border-primary/30",
+    SYSTEM_ADMIN: "bg-primary/20 text-primary border-primary/30",
+    PLATFORM_ADMIN: "bg-primary/20 text-primary border-primary/30",
+    ENTERPRISE_ADMIN: "bg-primary/20 text-primary border-primary/30",
+    FLEET_ADMIN: "bg-primary/20 text-primary border-primary/30",
+    AGGREGATOR_ADMIN: "bg-primary/20 text-primary border-primary/30",
+    OWNER_OPERATOR: "bg-primary/20 text-primary border-primary/30",
+    OPERATIONS_MANAGER: "bg-accent/20 text-accent border-accent/30",
+    DISPATCHER: "bg-success/20 text-success border-success/30",
+    FINANCE_VIEWER: "bg-muted text-muted-foreground border-muted",
   };
 
   const statusColors: Record<string, string> = {
@@ -370,13 +380,11 @@ export default function Settings() {
       type: "select",
       key: "role",
       label: "Role",
-      options: [
-        { value: "admin", label: "Admin" },
-        { value: "manager", label: "Manager" },
-        { value: "supervisor", label: "Supervisor" },
-        { value: "dispatcher", label: "Dispatcher" },
-        { value: "viewer", label: "Viewer" },
-      ],
+      // ponytail: offer only the roles actually present in this org
+      options: [...new Set(tenantUsers.map((u) => u.role))].map((role) => ({
+        value: role,
+        label: ROLE_LABELS[role] ?? role,
+      })),
     },
     {
       type: "select",
@@ -541,7 +549,7 @@ export default function Settings() {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="inviteRole">Role</Label>
-                        <Select value={inviteRole} onValueChange={setInviteRole}>
+                        <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as UserRole)}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -643,7 +651,9 @@ export default function Settings() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={roleColors[tenantUser.role]}>{tenantUser.role}</Badge>
+                        <Badge className={roleColors[tenantUser.role]}>
+                          {ROLE_LABELS[tenantUser.role] ?? tenantUser.role}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge className={statusColors[tenantUser.status]}>{tenantUser.status}</Badge>
@@ -733,16 +743,16 @@ export default function Settings() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="editRole">Role</Label>
-                    <Select value={editRole} onValueChange={setEditRole}>
+                    <Select value={editRole} onValueChange={(v) => setEditRole(v as UserRole)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="admin">Admin - Full access</SelectItem>
-                        <SelectItem value="manager">Manager - Manage fleet & drivers</SelectItem>
-                        <SelectItem value="supervisor">Supervisor - Monitor operations</SelectItem>
-                        <SelectItem value="dispatcher">Dispatcher - Assign jobs</SelectItem>
-                        <SelectItem value="viewer">Viewer - Read-only access</SelectItem>
+                        {editRoleOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

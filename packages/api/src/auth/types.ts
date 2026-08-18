@@ -121,14 +121,14 @@ export type RegisterInvitedPayload = {
 export type InviteUserPayload = {
   data: {
     email: string
-    role: string
+    role: UserRole
   }
 }
 
 export type ChangeRolePayload = {
   data: {
     targetUserId: string
-    newRole: string
+    newRole: UserRole
   }
 }
 
@@ -517,17 +517,28 @@ export type SystemChangePasswordPayload = {
 
 // ─── Response entity types ────────────────────────────────────────────────────
 
-export type UserRole =
-  | 'SUPER_ADMIN'
-  | 'SYSTEM_ADMIN'
-  | 'PLATFORM_ADMIN'
-  | 'ENTERPRISE_ADMIN'
-  | 'AGGREGATOR_ADMIN'
-  | 'OWNER_OPERATOR'
-  | 'FLEET_ADMIN'
-  | 'OPERATIONS_MANAGER'
-  | 'DISPATCHER'
-  | 'FINANCE_VIEWER'
+/**
+ * Backend user roles. Usable as values (`UserRole.FLEET_ADMIN`) and as a type.
+ *
+ * ponytail: const object rather than `enum` so existing string-literal
+ * comparisons (`user.role === 'FLEET_ADMIN'`, `case 'FLEET_ADMIN':`) keep
+ * compiling — a real enum is not comparable to literals and would break ~80
+ * call sites. Same convention as `ORG_ROLES`.
+ */
+export const UserRole = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  SYSTEM_ADMIN: 'SYSTEM_ADMIN',
+  PLATFORM_ADMIN: 'PLATFORM_ADMIN',
+  ENTERPRISE_ADMIN: 'ENTERPRISE_ADMIN',
+  AGGREGATOR_ADMIN: 'AGGREGATOR_ADMIN',
+  OWNER_OPERATOR: 'OWNER_OPERATOR',
+  FLEET_ADMIN: 'FLEET_ADMIN',
+  OPERATIONS_MANAGER: 'OPERATIONS_MANAGER',
+  DISPATCHER: 'DISPATCHER',
+  FINANCE_VIEWER: 'FINANCE_VIEWER',
+} as const
+
+export type UserRole = (typeof UserRole)[keyof typeof UserRole]
 
 export type AuthUser = {
   id: string

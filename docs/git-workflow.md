@@ -1,17 +1,22 @@
 # Git Workflow
 
-This project uses Husky hooks to validate commit messages and build before every commit.
+This project uses a Husky hook to build before every commit.
 
 ## Hooks
 
 | Hook | When it runs | Purpose |
 |------|--------------|---------|
-| `commit-msg` | After the commit message is written | Validates conventional commit format |
 | `pre-commit` | Before a commit is created | Runs `pnpm run build` |
 
-If the build fails, fix the reported issue and commit again.
+`pnpm run build` is a turbo build of all three apps and the shared packages, so
+a commit takes minutes. If the build fails, fix the reported issue and commit
+again. Never bypass it with `--no-verify`.
 
 ## Commit Messages
+
+There is no `commit-msg` hook, so the format below is convention rather than
+something the repo enforces. See [commit-messages.md](commit-messages.md) for
+the full guide — scopes, body structure, and what a commit must mention.
 
 Commit messages must use:
 

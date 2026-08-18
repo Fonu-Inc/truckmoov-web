@@ -16,7 +16,9 @@ packages/
   reusables/     Shared React UI components, utilities, and base styles for main and admin.
 
 docs/
-  api.md         API package conventions and service patterns.
+  design.md            App design system, layout, navigation, and page patterns.
+  commit-messages.md   How to write and make a commit in this repo.
+  api.md               API package conventions and service patterns.
 ```
 
 The workspace is declared in `pnpm-workspace.yaml` with `apps/*` and `packages/*`.
@@ -35,8 +37,10 @@ The workspace is declared in `pnpm-workspace.yaml` with `apps/*` and `packages/*
 
 ## Documentation
 
+- [docs/design.md](docs/design.md) documents the design tokens and theme, the dashboard layout shell, role-based navigation, and the standard page/table patterns. Read it first for any UI work.
 - [docs/api.md](docs/api.md) documents the API package structure, import paths, service file conventions, React Query patterns, and how to add a new API service.
-- [docs/git-workflow.md](docs/git-workflow.md) documents the Husky commit hooks and conventional commit message format.
+- [docs/git-workflow.md](docs/git-workflow.md) documents the Husky pre-commit hook and conventional commit message format.
+- [docs/commit-messages.md](docs/commit-messages.md) documents how to write and make a commit here — scopes, body structure, and the deploy consequences of a push.
 - [docs/tsconfig.md](docs/tsconfig.md) documents the shared TypeScript base config and app/package override conventions.
 
 When adding backend calls, put the service in `packages/api` and import it from the app through `@truckmoov/api`. Apps should not call backend endpoints directly.

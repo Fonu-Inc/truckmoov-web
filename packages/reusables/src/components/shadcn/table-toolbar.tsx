@@ -151,7 +151,10 @@ export function TableToolbar({
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
+            {/* ponytail: callers often pass their own "all" option — don't render a duplicate */}
+            {!statusOptions.some((o) => o.value === "all") && (
+              <SelectItem value="all">All Status</SelectItem>
+            )}
             {statusOptions.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}

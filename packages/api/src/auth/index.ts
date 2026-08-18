@@ -340,6 +340,9 @@ export type {
   VerificationStatus,
 } from './types'
 
+// Value + type export: UserRole is a const object, so it must not be type-only.
+export { UserRole } from './types'
+
 export const AUTH_QUERY_KEY = {
   me: ['me'],
   profile: ['profile'],
