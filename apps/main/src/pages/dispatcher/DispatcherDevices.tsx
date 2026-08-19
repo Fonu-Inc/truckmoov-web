@@ -2,12 +2,9 @@ import type { DeviceWithTelemetry } from "@/hooks/useDeviceTelemetry";
 import type { IoTDevice } from "@/types";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
-  AlertTriangle,
-  CheckCircle2,
   Cpu,
   Edit,
   Eye,
-  SlidersHorizontal as Filter,
   Link,
   Loader2,
   MoreHorizontal,
@@ -21,7 +18,6 @@ import {
   Trash2,
   Unlink,
   Upload,
-  Wifi,
 } from "lucide-react";
 import {
   useMemo, useState,
@@ -31,8 +27,6 @@ import { AssignDeviceDialogWithLifecycle } from "@/components/devices/AssignDevi
 import { DeviceBulkUploadDialog } from "@/components/devices/DeviceBulkUploadDialog";
 import { DeviceDetailsSheet } from "@/components/devices/DeviceDetailsSheet";
 import { DeviceFormDialog } from "@/components/devices/DeviceFormDialog";
-import { DeviceFormDialogWithCatalog } from "@/components/devices/DeviceFormDialogWithCatalog";
-import { DeviceLifecycleBadge } from "@/components/devices/DeviceLifecycleBadge";
 import { DeviceRequestsTracker } from "@/components/devices/DeviceRequestsTracker";
 import { DeviceSetupRequestDialog } from "@/components/devices/DeviceSetupRequestDialog";
 import { DeviceSetupRequestsQueue } from "@/components/devices/DeviceSetupRequestsQueue";
@@ -66,12 +60,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { Skeleton } from "@/components/shadcn/skeleton";
 import { useDevicePermissions } from "@/hooks/useDevicePermissions";
 import { useDeviceTelemetry } from "@/hooks/useDeviceTelemetry";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 import { cn } from "@/lib/utils";
-import { useActiveOrgStore } from "@/stores/activeOrgStore";
 import { useAuthStore } from "@/stores/authStore";
 
 type DeviceLifecycleStatus = any;
@@ -83,11 +75,10 @@ export default function DispatcherDevices() {
   } = useDevicePermissions();
   const { user } = useAuthStore();
   const tenantId = user?.tenantId;
-  const markAsConfigured = async (...args: any[]) => ({ success: false });
-  const isAssignable = (...args: any[]) => false;
+  const markAsConfigured = async (..._args: any[]) => ({ success: false });
+  const isAssignable = (..._args: any[]) => false;
 
   // Org context for aggregator detection
-  const { resolveActiveOrg } = useActiveOrgStore();
   const activeOrg: any = null;
   const isAggregator = activeOrg?.orgType === "AGGREGATOR";
 
@@ -100,10 +91,10 @@ export default function DispatcherDevices() {
   // Device setup requests (used by aggregator view)
   const setupRequests: any[] = [];
   const setupLoading = false;
-  const refetchSetup = async (...args: any[]) => {};
-  const updateRequestStatus = async (...args: any[]) => {};
-  const createRequest = async (...args: any[]) => null;
-  const uploadFile = async (...args: any[]) => null;
+  const refetchSetup = async (..._args: any[]) => {};
+  const updateRequestStatus = async (..._args: any[]) => {};
+  const createRequest = async (..._args: any[]) => null;
+  const uploadFile = async (..._args: any[]) => null;
 
   const [
     searchQuery,
@@ -175,25 +166,6 @@ export default function DispatcherDevices() {
   );
 
   // Lifecycle status counts
-  const statusCounts = useMemo(
-    () => {
-      const getLifecycleStatus = (d: DeviceWithTelemetry) => d.lifecycle_status || d.status;
-      return {
-        all: devices.length,
-        registered: devices.filter(d => getLifecycleStatus(d) === "registered").length,
-        config_pending: devices.filter(d => getLifecycleStatus(d) === "config_pending").length,
-        configured: devices.filter(d => getLifecycleStatus(d) === "configured").length,
-        verified_online: devices.filter(d => getLifecycleStatus(d) === "verified_online").length,
-        assignable: devices.filter(d => getLifecycleStatus(d) === "assignable").length,
-        // Assigned: lifecycle assigned but NOT operationally active (e.g., vehicle in maintenance)
-        assigned: devices.filter(d => getLifecycleStatus(d) === "assigned" && d.status !== "active").length,
-        faulty: devices.filter(d => getLifecycleStatus(d) === "faulty").length,
-        // Active: devices with operational status 'active' (assigned devices that are running)
-        active: devices.filter(d => d.status === "active").length,
-      };
-    },
-    [devices],
-  );
 
   // Convert DeviceWithTelemetry to IoTDevice for the details sheet
   const convertToIoTDevice = (device: DeviceWithTelemetry): IoTDevice => ({

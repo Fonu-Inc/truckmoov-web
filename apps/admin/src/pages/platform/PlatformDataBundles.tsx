@@ -507,14 +507,8 @@ export default function PlatformDataBundles() {
     search,
     setSearch,
   ] = useState("");
-  const [
-    carrierFilter,
-    setCarrierFilter,
-  ] = useState<string>("");
-  const [
-    carrierFilterEnabled,
-    setCarrierFilterEnabled,
-  ] = useState(false);
+  const [carrierFilter] = useState<string>("");
+  const [carrierFilterEnabled] = useState(false);
   const [
     statusFilter,
     setStatusFilter,
@@ -577,12 +571,6 @@ export default function PlatformDataBundles() {
     ),
     0,
   );
-
-  const openCreate = () => {
-    setForm(emptyForm);
-    setEditing(false);
-    setFormOpen(true);
-  };
 
   const openEdit = (b: BundleCatalogItem) => {
     setForm({
@@ -666,7 +654,9 @@ export default function PlatformDataBundles() {
     );
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `bundle-catalog-${Date.now()}.csv`; a.click();
+    a.href = url;
+    a.download = `bundle-catalog-${Date.now()}.csv`;
+    a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -756,7 +746,9 @@ export default function PlatformDataBundles() {
                           setForm({
                             ...emptyForm,
                             carrier,
-                          }); setEditing(false); setFormOpen(true);
+                          });
+                          setEditing(false);
+                          setFormOpen(true);
                         }}
                       >
                         <Plus className="h-4 w-4 mr-2" />
@@ -1202,7 +1194,9 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
     );
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `tenant-adoption-${Date.now()}.csv`; a.click();
+    a.href = url;
+    a.download = `tenant-adoption-${Date.now()}.csv`;
+    a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -1212,9 +1206,12 @@ function TenantAdoptionTable({ data }: { data: TenantAdoption[] }) {
     setPopOpen(false);
   };
   const clearFilters = () => {
-    setDraftCarrier("all"); setDraftBundleType("all");
-    setCarrierEnabled(false); setTypeEnabled(false);
-    setAppliedCarrier("all"); setAppliedType("all");
+    setDraftCarrier("all");
+    setDraftBundleType("all");
+    setCarrierEnabled(false);
+    setTypeEnabled(false);
+    setAppliedCarrier("all");
+    setAppliedType("all");
     setPopOpen(false);
   };
 

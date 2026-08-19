@@ -31,7 +31,6 @@ import {
   TableRow,
 } from "@/components/shadcn/table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
-import { useAuthStore } from "@/stores/authStore";
 
 const CHART_COLORS = [
   "hsl(var(--primary))",
@@ -112,15 +111,11 @@ function buildDemoFeatureBreakdown(days: number) {
 }
 
 export function AIUsageAnalyticsPanel() {
-  const { user } = useAuthStore();
   // Hooks removed — no live data source; fall back to demo data
   const logs: any[] = [];
   const stats: null = null;
   const isLoading = false;
-  const [
-    dailyRange,
-    setDailyRange,
-  ] = useState<TimeRange>("30d");
+  const [dailyRange] = useState<TimeRange>("30d");
   const [
     featureRange,
     setFeatureRange,

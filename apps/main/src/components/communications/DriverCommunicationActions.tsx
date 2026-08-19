@@ -9,7 +9,6 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -27,7 +26,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
-import { Input } from "@/components/shadcn/input";
 import { Textarea } from "@/components/shadcn/textarea";
 import { cn } from "@/lib/utils";
 
@@ -46,13 +44,12 @@ export function DriverCommunicationActions({
   variant = "buttons",
   size = "default",
 }: DriverCommunicationActionsProps) {
-  const sendSMS = async (...args: any[]) => {};
-  const sendWhatsApp = async (...args: any[]) => {};
-  const initiateCall = async (...args: any[]): Promise<any> => null;
-  const endCall = async (...args: any[]) => {};
+  const sendSMS = async (..._args: any[]) => {};
+  const sendWhatsApp = async (..._args: any[]) => {};
+  const initiateCall = async (..._args: any[]): Promise<any> => null;
+  const endCall = async (..._args: any[]) => {};
   const isSending = false;
   const isCalling = false;
-  const activeCallId: string | null = null;
   const [
     isMessageDialogOpen,
     setIsMessageDialogOpen,
@@ -104,7 +101,7 @@ export function DriverCommunicationActions({
       setMessageContent("");
       setIsMessageDialogOpen(false);
     }
-    catch (error) {
+    catch {
       // Error handled in hook
     }
   };
@@ -124,7 +121,7 @@ export function DriverCommunicationActions({
         setCallStatus("connected");
       }
     }
-    catch (error) {
+    catch {
       setCallStatus("idle");
       setIsCallDialogOpen(false);
     }
@@ -178,7 +175,11 @@ export function DriverCommunicationActions({
               <MessageSquare className="h-4 w-4 mr-2 text-success" />
               Send WhatsApp
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { setMessageType("sms"); setIsMessageDialogOpen(true); }}>
+            <DropdownMenuItem onClick={() => {
+              setMessageType("sms");
+              setIsMessageDialogOpen(true);
+            }}
+            >
               <Phone className="h-4 w-4 mr-2 text-primary" />
               Send SMS
             </DropdownMenuItem>
@@ -231,7 +232,10 @@ export function DriverCommunicationActions({
             buttonSize,
             "text-success hover:text-success hover:bg-success/10",
           )}
-          onClick={() => { setMessageType("whatsapp"); setIsMessageDialogOpen(true); }}
+          onClick={() => {
+            setMessageType("whatsapp");
+            setIsMessageDialogOpen(true);
+          }}
           title="Send WhatsApp"
         >
           <MessageSquare className={iconSize} />
@@ -243,7 +247,10 @@ export function DriverCommunicationActions({
             buttonSize,
             "text-primary hover:text-primary hover:bg-primary/10",
           )}
-          onClick={() => { setMessageType("sms"); setIsMessageDialogOpen(true); }}
+          onClick={() => {
+            setMessageType("sms");
+            setIsMessageDialogOpen(true);
+          }}
           title="Send SMS"
         >
           <Mail className={iconSize} />
@@ -294,7 +301,10 @@ export function DriverCommunicationActions({
         variant="outline"
         size={size}
         className="gap-2"
-        onClick={() => { setMessageType("whatsapp"); setIsMessageDialogOpen(true); }}
+        onClick={() => {
+          setMessageType("whatsapp");
+          setIsMessageDialogOpen(true);
+        }}
       >
         <MessageSquare className={`${iconSize} text-success`} />
         WhatsApp
@@ -303,7 +313,10 @@ export function DriverCommunicationActions({
         variant="outline"
         size={size}
         className="gap-2"
-        onClick={() => { setMessageType("sms"); setIsMessageDialogOpen(true); }}
+        onClick={() => {
+          setMessageType("sms");
+          setIsMessageDialogOpen(true);
+        }}
       >
         <Phone className={`${iconSize} text-primary`} />
         SMS

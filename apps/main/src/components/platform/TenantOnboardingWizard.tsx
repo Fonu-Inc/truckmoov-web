@@ -9,13 +9,10 @@ import {
   CreditCard,
   Loader2,
   Mail,
-  MapPin,
   Phone,
   Send,
-  Settings,
   Smartphone,
   Sparkles,
-  Truck,
   Truck as TruckIcon, User,
 } from "lucide-react";
 import { useState } from "react";
@@ -30,7 +27,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
-import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
@@ -45,19 +41,9 @@ import {
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Progress } from "@/components/shadcn/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/shadcn/select";
+
 import { Separator } from "@/components/shadcn/separator";
 import { Slider } from "@/components/shadcn/slider";
-import { Switch } from "@/components/shadcn/switch";
-import { useCurrency } from "@/contexts/CurrencyContext";
-import { useAuthStore } from "@/stores/authStore";
-import { OnboardingPlanStep } from "./OnboardingPlanStep";
 
 type TenantOnboardingWizardProps = {
   open: boolean;
@@ -190,200 +176,6 @@ const NAME_LABEL: Record<OrgType, string> = {
   OWNER_OPERATOR: "Company Name",
 };
 
-// MVP plan catalog — Source: FleetPro Enterprise MVP billing model document
-type MvpPlan = {
-  id: string;
-  name: string;
-  tier: string;
-  billingMode: "PREPAID" | "POSTPAID";
-  monthlyPrice: number; // 0 = custom/negotiated
-  yearlyPrice: number; // 0 = custom/negotiated
-  isCustomPriced: boolean;
-  maxVehicles: number | null; // null = custom/unlimited
-  maxDrivers: number | null;
-  maxJobs: number | null;
-  maxUsers: number | null;
-  features: string[];
-  bundle?: {
-    messages?: number; voiceMins?: number;
-  };
-  rates?: {
-    whatsapp?: number; sms?: number; voicePerMin?: number;
-  };
-  applicableOrgTypes: OrgType[];
-  isPopular?: boolean;
-};
-
-const MVP_PLANS: MvpPlan[] = [
-  // PREPAID
-  {
-    id: "prepaid-starter",
-    name: "Starter",
-    tier: "Starter",
-    billingMode: "PREPAID",
-    monthlyPrice: 50_000,
-    yearlyPrice: 540_000,
-    isCustomPriced: false,
-    maxVehicles: 25,
-    maxDrivers: 30,
-    maxJobs: 500,
-    maxUsers: 2,
-    features: [
-      "Basic fleet management",
-      "2 users",
-      "WhatsApp messaging",
-      "Standard support",
-    ],
-    applicableOrgTypes: [
-      "FLEET_PROVIDER",
-      "ENTERPRISE",
-      "AGGREGATOR",
-      "OWNER_OPERATOR",
-    ],
-  },
-  {
-    id: "prepaid-professional",
-    name: "Professional",
-    tier: "Professional",
-    billingMode: "PREPAID",
-    monthlyPrice: 150_000,
-    yearlyPrice: 1_620_000,
-    isCustomPriced: false,
-    maxVehicles: 100,
-    maxDrivers: 120,
-    maxJobs: 2_000,
-    maxUsers: 10,
-    features: [
-      "Full feature set",
-      "10 users",
-      "AI load matching",
-      "Priority support",
-      "API access",
-    ],
-    applicableOrgTypes: [
-      "FLEET_PROVIDER",
-      "ENTERPRISE",
-      "AGGREGATOR",
-      "OWNER_OPERATOR",
-    ],
-    isPopular: true,
-  },
-  {
-    id: "prepaid-enterprise",
-    name: "Enterprise",
-    tier: "Enterprise",
-    billingMode: "PREPAID",
-    monthlyPrice: 0,
-    yearlyPrice: 0,
-    isCustomPriced: true,
-    maxVehicles: null,
-    maxDrivers: null,
-    maxJobs: null,
-    maxUsers: null,
-    features: [
-      "100+ vehicles",
-      "Unlimited users",
-      "Custom integrations",
-      "Dedicated account manager",
-      "SLA guarantees",
-    ],
-    applicableOrgTypes: [
-      "FLEET_PROVIDER",
-      "ENTERPRISE",
-      "AGGREGATOR",
-      "OWNER_OPERATOR",
-    ],
-  },
-  // POSTPAID
-  {
-    id: "postpaid-business",
-    name: "Business",
-    tier: "Business",
-    billingMode: "POSTPAID",
-    monthlyPrice: 120_000,
-    yearlyPrice: 1_296_000,
-    isCustomPriced: false,
-    maxVehicles: 50,
-    maxDrivers: 60,
-    maxJobs: 1_000,
-    maxUsers: 5,
-    bundle: {
-      messages: 5_000, voiceMins: 500,
-    },
-    rates: {
-      whatsapp: 18, sms: 5, voicePerMin: 60,
-    },
-    features: [
-      "5,000 messages bundle",
-      "500 voice mins bundle",
-      "WhatsApp ₦18/msg · SMS ₦5/msg",
-      "Voice ₦60/min",
-    ],
-    applicableOrgTypes: [
-      "FLEET_PROVIDER",
-      "ENTERPRISE",
-      "AGGREGATOR",
-      "OWNER_OPERATOR",
-    ],
-  },
-  {
-    id: "postpaid-corporate",
-    name: "Corporate",
-    tier: "Corporate",
-    billingMode: "POSTPAID",
-    monthlyPrice: 350_000,
-    yearlyPrice: 3_780_000,
-    isCustomPriced: false,
-    maxVehicles: 200,
-    maxDrivers: 240,
-    maxJobs: 4_000,
-    maxUsers: 20,
-    bundle: {
-      messages: 20_000, voiceMins: 2_000,
-    },
-    rates: {
-      whatsapp: 16, sms: 4.5, voicePerMin: 55,
-    },
-    features: [
-      "20,000 messages bundle",
-      "2,000 voice mins bundle",
-      "WhatsApp ₦16/msg · SMS ₦4.50/msg",
-      "Voice ₦55/min",
-    ],
-    applicableOrgTypes: [
-      "FLEET_PROVIDER",
-      "ENTERPRISE",
-      "AGGREGATOR",
-      "OWNER_OPERATOR",
-    ],
-    isPopular: true,
-  },
-  {
-    id: "postpaid-enterprise",
-    name: "Enterprise",
-    tier: "Enterprise",
-    billingMode: "POSTPAID",
-    monthlyPrice: 0,
-    yearlyPrice: 0,
-    isCustomPriced: true,
-    maxVehicles: null,
-    maxDrivers: null,
-    maxJobs: null,
-    maxUsers: null,
-    features: [
-      "200+ vehicles",
-      "Custom bundle",
-      "Negotiated rates based on volume",
-    ],
-    applicableOrgTypes: [
-      "FLEET_PROVIDER",
-      "ENTERPRISE",
-      "AGGREGATOR",
-      "OWNER_OPERATOR",
-    ],
-  },
-];
-
 // Vehicle scale per stakeholder (from MVP doc)
 const VEHICLE_SCALE: Record<OrgType, {
   min: number; max: number; default: number;
@@ -473,10 +265,7 @@ export function TenantOnboardingWizard({
     formData,
     setFormData,
   ] = useState<TenantFormData>(initialFormData);
-  const [
-    isSubmitting,
-    setIsSubmitting,
-  ] = useState(false);
+  const [isSubmitting] = useState(false);
   const [
     duplicateInfo,
     setDuplicateInfo,
@@ -487,53 +276,14 @@ export function TenantOnboardingWizard({
     isCheckingDuplicate,
     setIsCheckingDuplicate,
   ] = useState(false);
-  const {
-    format, currency,
-  } = useCurrency();
-  const { user } = useAuthStore();
-  const plansLoading = false;
 
   const progress = (currentStep / steps.length) * 100;
 
   // Plans applicable to the chosen organization type
-  const availablePlans = MVP_PLANS.filter(p =>
-    p.applicableOrgTypes.includes(formData.organizationType));
 
   const updateFormData = (updates: Partial<TenantFormData>) => {
     setFormData(prev => ({
       ...prev, ...updates,
-    }));
-  };
-
-  const updateFeatures = (updates: Partial<TenantFormData["features"]>) => {
-    setFormData(prev => ({
-      ...prev,
-      features: {
-        ...prev.features, ...updates,
-      },
-    }));
-  };
-
-  const handlePlanSelect = (planId: string) => {
-    const plan = availablePlans.find(p => p.id === planId);
-    if (!plan)
-      return;
-    const scale = VEHICLE_SCALE[formData.organizationType];
-    setFormData(prev => ({
-      ...prev,
-      plan: planId,
-      billingMode: plan.billingMode,
-      vehicleQuota: prev.quotaOverride
-        ? prev.vehicleQuota
-        : Math.min(
-            scale.max,
-            Math.max(
-              scale.min,
-              plan.maxVehicles ?? scale.default,
-            ),
-          ),
-      driverQuota: prev.quotaOverride ? prev.driverQuota : (plan.maxDrivers ?? prev.driverQuota),
-      jobQuota: prev.quotaOverride ? prev.jobQuota : (plan.maxJobs ?? prev.jobQuota),
     }));
   };
 
@@ -594,6 +344,10 @@ export function TenantOnboardingWizard({
   };
 
   /** Entry point from the Complete Setup button — runs duplicate check first. */
+  const performSubmit = async () => {
+    toast.info("Coming soon");
+  };
+
   const handleAttemptSubmit = async () => {
     if (!validateStep())
       return;
@@ -612,10 +366,6 @@ export function TenantOnboardingWizard({
   };
 
   /** Actual tenant creation + audit log — runs after any required confirmation. */
-  const performSubmit = async () => {
-    toast.info("Coming soon");
-  };
-
   return (
     <Dialog
       open={open}
@@ -640,7 +390,6 @@ export function TenantOnboardingWizard({
           />
           <div className="flex justify-between">
             {steps.map((step) => {
-              const Icon = step.icon;
               const isActive = currentStep === step.id;
               const isCompleted = currentStep > step.id;
               return (
@@ -1028,14 +777,14 @@ export function TenantOnboardingWizard({
                                   e.target.value,
                                   10,
                                 );
-                                updateFormData({ [key]: isNaN(v) ? 0 : v } as Partial<TenantFormData>);
+                                updateFormData({ [key]: Number.isNaN(v) ? 0 : v } as Partial<TenantFormData>);
                               }}
                               onBlur={(e) => {
                                 const v = parseInt(
                                   e.target.value,
                                   10,
                                 );
-                                const clamped = isNaN(v)
+                                const clamped = Number.isNaN(v)
                                   ? scale.default
                                   : Math.min(
                                       scale.max,

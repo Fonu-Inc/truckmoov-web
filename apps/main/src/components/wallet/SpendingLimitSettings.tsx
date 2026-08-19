@@ -1,10 +1,7 @@
-import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle, AlertTriangle, CheckCircle2, Gauge, Mail, RotateCcw,
 } from "lucide-react";
-import {
-  useEffect, useState,
-} from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -44,14 +41,12 @@ type SpendingLimitSettingsProps = {
 };
 
 export function SpendingLimitSettings({
-  tenantId, onUpdate,
+  tenantId: _tenantId, onUpdate: _onUpdate,
 }: SpendingLimitSettingsProps) {
   const { format } = useCurrency();
   const { user } = useAuthStore();
-  const queryClient = useQueryClient();
   const isPlatformAdmin = user?.role === "platform_admin";
 
-  const settings = null;
   const isLoading = false;
 
   const [
@@ -74,14 +69,8 @@ export function SpendingLimitSettings({
     alertEmail,
     setAlertEmail,
   ] = useState("");
-  const [
-    isPersisting,
-    setIsPersisting,
-  ] = useState(false);
-  const [
-    isResetting,
-    setIsResetting,
-  ] = useState(false);
+  const [isPersisting] = useState(false);
+  const [isResetting] = useState(false);
 
   const handleSave = () => {
     if (!monthlyLimit || Number.parseFloat(monthlyLimit) <= 0) {

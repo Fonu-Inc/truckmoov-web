@@ -39,7 +39,7 @@ import { KYCRequestDialog } from "./KYCRequestDialog";
 import { SIMApprovalSummaryCards } from "./SIMApprovalSummaryCards";
 import { SIMRequestDetailsDialog } from "./SIMRequestDetailsDialog";
 import {
-  KYCBadge, PriorityBadge, RequestStatusBadge,
+  KYCBadge, RequestStatusBadge,
 } from "./SIMStatusBadges";
 // Local type aliases (hooks deleted)
 type SIMProvisioningRequest = {
@@ -460,7 +460,11 @@ export function SIMApprovalQueue() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => { setSelectedRequest(request); setIsDetailsOpen(true); }}>
+                                  <DropdownMenuItem onClick={() => {
+                                    setSelectedRequest(request);
+                                    setIsDetailsOpen(true);
+                                  }}
+                                  >
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
@@ -489,7 +493,10 @@ export function SIMApprovalQueue() {
                                         </Tooltip>
                                       </TooltipProvider>
                                       <DropdownMenuItem
-                                        onClick={() => { setSelectedRequest(request); setIsRejectOpen(true); }}
+                                        onClick={() => {
+                                          setSelectedRequest(request);
+                                          setIsRejectOpen(true);
+                                        }}
                                         className="text-destructive"
                                       >
                                         <ThumbsDown className="h-4 w-4 mr-2" />
@@ -526,8 +533,14 @@ export function SIMApprovalQueue() {
             setIsDetailsOpen(false);
           }
         }}
-        onReject={() => { setIsDetailsOpen(false); setIsRejectOpen(true); }}
-        onRequestKYC={() => { setIsDetailsOpen(false); setIsKYCRequestOpen(true); }}
+        onReject={() => {
+          setIsDetailsOpen(false);
+          setIsRejectOpen(true);
+        }}
+        onRequestKYC={() => {
+          setIsDetailsOpen(false);
+          setIsKYCRequestOpen(true);
+        }}
       />
 
       {selectedRequest && (
@@ -559,7 +572,10 @@ export function SIMApprovalQueue() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => { setIsRejectOpen(false); setRejectReason(""); }}
+              onClick={() => {
+                setIsRejectOpen(false);
+                setRejectReason("");
+              }}
             >
               Cancel
             </Button>

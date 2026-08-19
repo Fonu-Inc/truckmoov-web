@@ -2,7 +2,6 @@ import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
   Copy,
   Eye,
-  SlidersHorizontal as Filter,
   Loader2,
   MessageSquare,
   MoreHorizontal,
@@ -18,7 +17,6 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -36,9 +34,7 @@ import {
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import {
-  Popover, PopoverContent, PopoverTrigger,
-} from "@/components/shadcn/popover";
+
 import {
   Select,
   SelectContent,
@@ -225,26 +221,11 @@ export function SMSTemplatesManager() {
     searchQuery,
     setSearchQuery,
   ] = useState("");
-  const [
-    activeFilter,
-    setActiveFilter,
-  ] = useState<string>("all");
-  const [
-    draftCategory,
-    setDraftCategory,
-  ] = useState("all");
-  const [
-    draftActive,
-    setDraftActive,
-  ] = useState<string>("all");
-  const [
-    enableCategoryFilter,
-    setEnableCategoryFilter,
-  ] = useState(false);
-  const [
-    enableActiveFilter,
-    setEnableActiveFilter,
-  ] = useState(false);
+  const [activeFilter] = useState<string>("all");
+  const [_draftCategory] = useState("all");
+  const [_draftActive] = useState<string>("all");
+  const [_enableCategoryFilter] = useState(false);
+  const [_enableActiveFilter] = useState(false);
 
   const handleOpenCreate = () => {
     setSelectedTemplate(null);
@@ -314,30 +295,6 @@ export function SMSTemplatesManager() {
         || (activeFilter === "active" ? t.is_active : !t.is_active);
     return matchesCategory && matchesSearch && matchesActive;
   });
-
-  const filterCount
-    = (categoryFilter !== "all" ? 1 : 0) + (activeFilter !== "all" ? 1 : 0);
-
-  const openFilterPopover = () => {
-    setDraftCategory(categoryFilter);
-    setDraftActive(activeFilter);
-    setEnableCategoryFilter(categoryFilter !== "all");
-    setEnableActiveFilter(activeFilter !== "all");
-  };
-
-  const applyFilters = () => {
-    setCategoryFilter(enableCategoryFilter ? draftCategory : "all");
-    setActiveFilter(enableActiveFilter ? draftActive : "all");
-  };
-
-  const resetFilters = () => {
-    setCategoryFilter("all");
-    setActiveFilter("all");
-    setEnableCategoryFilter(false);
-    setEnableActiveFilter(false);
-    setDraftCategory("all");
-    setDraftActive("all");
-  };
 
   const getCharCount = (text: string) => text?.length || 0;
   const getSMSCount = (text: string) => Math.ceil((text?.length || 0) / 160);

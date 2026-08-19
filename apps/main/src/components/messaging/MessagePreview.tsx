@@ -1,5 +1,5 @@
 import {
-  CheckCheck, Clock, Mail, MessageSquare, Phone,
+  CheckCheck, Clock, Mail, Phone,
 } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { Badge } from "@/components/shadcn/badge";
@@ -32,10 +32,11 @@ function parseFormatting(text: string, channel: string): React.ReactNode {
   let lastIndex = 0;
 
   // Combined regex for all formatting patterns
-  const formatRegex = /(\*([^*]+)\*)|(_([^_]+)_)|(~([^~]+)~)|(`([^`]+)`)|(\[Image:\s*([^\]]+)\])/g;
-  let match;
-
-  while ((match = formatRegex.exec(text)) !== null) {
+  const formatRegex = /(\*([^*]+)\*)|(_([^_]+)_)|(~([^~]+)~)|(`([^`]+)`)|(\[Image:([^\]]+)\])/g;
+  for (;;) {
+    const match = formatRegex.exec(text);
+    if (match === null)
+      break;
     // Add text before the match
     if (match.index > lastIndex) {
       parts.push(text.substring(
@@ -97,7 +98,7 @@ function parseFormatting(text: string, channel: string): React.ReactNode {
         >
           📷 Image:
           {" "}
-          {match[10]}
+          {match[10].trim()}
         </span>,
       );
     }
@@ -128,14 +129,13 @@ export function MessagePreview({
     );
 
   // SMS segment calculation (160 chars for GSM-7, 70 for Unicode)
-  const hasUnicode = /[^\x00-\x7F]/.test(message);
+  const hasUnicode = [...(message ?? "")].some(ch => ch.codePointAt(0) > 127);
   const segmentSize = hasUnicode ? 70 : 160;
   const smsSegments = Math.ceil((message?.length || 0) / segmentSize) || 1;
   const charsRemaining = segmentSize - ((message?.length || 0) % segmentSize || segmentSize);
 
   // Character limits
   const whatsappLimit = 4096;
-  const smsLimit = 160;
   const emailLimit = 10000;
 
   const currentTime = new Date().toLocaleTimeString(

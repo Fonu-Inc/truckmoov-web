@@ -104,7 +104,7 @@ function StatCard({
   title,
   value,
   icon: Icon,
-  trend,
+  trend: _trend,
   suffix,
 }: {
   title: string;

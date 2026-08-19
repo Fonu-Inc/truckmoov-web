@@ -2,7 +2,7 @@ import {
   formatDateTime, formatDayMonthTime,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
-  AlertTriangle, Calendar, DollarSign, Download, Droplets, Edit, Eye, Fuel, Gauge, MoreHorizontal, Plus, Search, Trash2, TrendingDown, TrendingUp, Truck,
+  AlertTriangle, DollarSign, Download, Droplets, Edit, Eye, Gauge, MoreHorizontal, Plus, Search, Trash2, Truck,
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -17,7 +17,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { toast } from "sonner";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -94,9 +93,7 @@ export default function FuelManagement() {
     weeklyConsumption,
     vehicleEfficiency,
     fleetSummary,
-    efficiencyThreshold,
     exportToCSV,
-    isLoading: efficiencyLoading,
   } = useFuelEfficiency();
 
   const [
@@ -146,6 +143,18 @@ export default function FuelManagement() {
   const stats = getStats();
   const lowEfficiencyVehicles = fleetSummary.lowEfficiencyVehicles;
 
+  const resetNewTransaction = () => {
+    setNewTransaction({
+      vehicleReg: "",
+      driverName: "",
+      fuelType: "diesel",
+      quantity: "",
+      pricePerLitre: "",
+      odometer: "",
+      station: "",
+    });
+  };
+
   const handleAddTransaction = async () => {
     const quantity = Number.parseFloat(newTransaction.quantity);
     const pricePerLitre = Number.parseFloat(newTransaction.pricePerLitre);
@@ -165,7 +174,7 @@ export default function FuelManagement() {
       setIsAddDialogOpen(false);
       resetNewTransaction();
     }
-    catch (err) {
+    catch {
       // Error handled by hook
     }
   };
@@ -213,7 +222,7 @@ export default function FuelManagement() {
         setSelectedTransaction(null);
         resetNewTransaction();
       }
-      catch (err) {
+      catch {
         // Error handled by hook
       }
     }
@@ -223,25 +232,13 @@ export default function FuelManagement() {
     try {
       await deleteTransaction(id);
     }
-    catch (err) {
+    catch {
       // Error handled by hook
     }
   };
 
   const handleExport = () => {
     exportToCSV();
-  };
-
-  const resetNewTransaction = () => {
-    setNewTransaction({
-      vehicleReg: "",
-      driverName: "",
-      fuelType: "diesel",
-      quantity: "",
-      pricePerLitre: "",
-      odometer: "",
-      station: "",
-    });
   };
 
   if (isLoading) {

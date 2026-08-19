@@ -135,7 +135,7 @@ const SEVERITY_OPTIONS = [
 ] as const;
 
 type LimitValue = (typeof LIMIT_OPTIONS)[number]["value"];
-type SeverityFilter = (typeof SEVERITY_OPTIONS)[number]["value"];
+type SeverityValue = (typeof SEVERITY_OPTIONS)[number]["value"];
 
 function clampScore(value: number) {
   return Math.max(
@@ -204,14 +204,14 @@ function SeverityFilter({
   onChange,
   className,
 }: {
-  value: SeverityFilter;
-  onChange: (value: SeverityFilter) => void;
+  value: SeverityValue;
+  onChange: (value: SeverityValue) => void;
   className?: string;
 }) {
   return (
     <Select
       value={value}
-      onValueChange={nextValue => onChange(nextValue as SeverityFilter)}
+      onValueChange={nextValue => onChange(nextValue as SeverityValue)}
     >
       <SelectTrigger className={className ?? "h-8 w-[126px]"}>
         <SelectValue />
@@ -384,7 +384,7 @@ export function FleetAnalyticsTab() {
   const [
     eventFeedSeverity,
     setEventFeedSeverity,
-  ] = useState<SeverityFilter>("all");
+  ] = useState<SeverityValue>("all");
 
   const summaryQuery = useFleetAnalyticsSummary({ params: { period_days: toPeriodDays(summaryPeriod) } });
   const fleetStatusQuery = useFleetAnalyticsFleetStatus({ params: { period_days: toPeriodDays(fleetStatusPeriod) } });

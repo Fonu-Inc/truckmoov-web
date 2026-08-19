@@ -4,12 +4,12 @@ import type {
 } from "@/components/shadcn/platform-filter-popover";
 import {
   BarChart3,
-  Battery, Car, ChevronDown, ChevronUp, Fuel, Leaf,
+  Battery, Fuel, Leaf,
   Search, Target, TreePine, TrendingDown, Users, Zap,
 } from "lucide-react";
 import { useState } from "react";
 import {
-  Bar, BarChart, CartesianGrid, Cell, Legend, Line,
+  CartesianGrid, Cell, Line,
   LineChart, Pie, PieChart, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar,
   RadarChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
@@ -30,9 +30,7 @@ import {
   buildEmptyDraft, PlatformFilterPopover,
 } from "@/components/shadcn/platform-filter-popover";
 import { Progress } from "@/components/shadcn/progress";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/shadcn/select";
+
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
@@ -74,7 +72,7 @@ export default function Sustainability() {
   const targets: any = { data: null };
   const evSessions: any = { data: [] };
   const saveTarget = {
-    mutate: async (...args: any[]) => {}, isPending: false,
+    mutate: async (..._args: any[]) => {}, isPending: false,
   };
   const totalCo2 = 0;
   const totalDistance = 0;
@@ -87,10 +85,7 @@ export default function Sustainability() {
     activeTab,
     setActiveTab,
   ] = useState("overview");
-  const [
-    trendRange,
-    setTrendRange,
-  ] = useState<ChartDateRange>("30d");
+  const [trendRange] = useState<ChartDateRange>("30d");
   const [
     fuelRange,
     setFuelRange,
@@ -206,15 +201,6 @@ export default function Sustainability() {
 
   // Target progress
   const targetData = targets.data;
-  const co2Progress = targetData?.baseline_co2_kg_per_month && targetData?.target_co2_kg_per_month
-    ? Math.min(
-        100,
-        Math.max(
-          0,
-          ((targetData.baseline_co2_kg_per_month - totalCo2) / (targetData.baseline_co2_kg_per_month - targetData.target_co2_kg_per_month)) * 100,
-        ),
-      )
-    : 0;
 
   const evAdoptionProgress = totalProfiled > 0
     ? (evCount / totalProfiled) * 100

@@ -1,7 +1,7 @@
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   CheckCircle2, Clock, FileText, Loader2,
-  MessageSquare, MoreHorizontal, Phone, RefreshCw, Trash2, XCircle,
+  MessageSquare, MoreHorizontal, Phone, Trash2, XCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -61,7 +61,6 @@ export function SenderIdApprovalQueue() {
   const pendingCount = 0;
   const whitelistingCount = 0;
   const loading = false;
-  const refetch = async () => {};
   const updateStatus = async (_id: string, _status: SenderIdStatus, _data?: any) => {};
   const deleteRequest = async (_id: string) => {};
   const [
@@ -85,6 +84,14 @@ export function SenderIdApprovalQueue() {
     isSubmitting,
     setIsSubmitting,
   ] = useState(false);
+
+  const closeDialog = () => {
+    setSelectedRequest(null);
+    setActionType(null);
+    setFormData({
+      telecom_reference: "", telecom_provider: "", admin_notes: "", rejection_reason: "",
+    });
+  };
 
   const handleAction = async () => {
     if (!selectedRequest || !actionType)
@@ -128,14 +135,6 @@ export function SenderIdApprovalQueue() {
     finally {
       setIsSubmitting(false);
     }
-  };
-
-  const closeDialog = () => {
-    setSelectedRequest(null);
-    setActionType(null);
-    setFormData({
-      telecom_reference: "", telecom_provider: "", admin_notes: "", rejection_reason: "",
-    });
   };
 
   const openActionDialog = (request: TenantSenderId, action: "approve" | "reject" | "whitelist") => {

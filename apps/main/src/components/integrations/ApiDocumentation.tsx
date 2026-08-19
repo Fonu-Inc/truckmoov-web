@@ -1,6 +1,6 @@
 import {
-  AlertTriangle, BookOpen, Check, ChevronRight, Clock, Code,
-  Copy, FileJson, Lock, Shield, Terminal, Zap,
+  AlertTriangle, Check, Clock, Code,
+  Copy, Lock, Shield, Terminal, Zap,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -12,7 +12,6 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";

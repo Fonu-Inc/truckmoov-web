@@ -10,6 +10,7 @@ import {
   Truck,
 } from "lucide-react";
 import {
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -38,10 +39,7 @@ import { useSidebarStore } from "@/stores/sidebarStore";
 export function DashboardSidebar() {
   const logout = useAuthStore(state => state.logout);
   const location = useLocation();
-  const {
-    collapsed,
-    toggle,
-  } = useSidebarStore();
+  const { collapsed } = useSidebarStore();
   const [
     expandedGroups,
     setExpandedGroups,
@@ -99,7 +97,7 @@ export function DashboardSidebar() {
   );
 
   // Auto-expand group if current route is in it
-  useMemo(
+  useEffect(
     () => {
       navItems.forEach((entry) => {
         if (isNavGroup(entry)) {

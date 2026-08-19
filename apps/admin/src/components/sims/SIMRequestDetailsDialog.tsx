@@ -32,7 +32,6 @@ import {
 import { Separator } from "@/components/shadcn/separator";
 
 type SIMProvisioningRequest = any;
-type DeviceMappingRow = any;
 
 type SIMRequestDetailsDialogProps = {
   open: boolean;
@@ -53,7 +52,7 @@ export function SIMRequestDetailsDialog({
   onOpenChange,
   request,
   tenantEmail,
-  kycStatus,
+  kycStatus: _kycStatus,
   kycVerified,
   onApprove,
   onReject,
@@ -115,8 +114,6 @@ export function SIMRequestDetailsDialog({
         return <Badge variant="outline">Normal</Badge>;
     }
   };
-
-  const deviceMappingData = request.device_mapping_data as DeviceMappingRow[] | null;
 
   return (
     <Dialog

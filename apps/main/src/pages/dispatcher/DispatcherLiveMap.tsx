@@ -1,14 +1,12 @@
 import type { FleetMapVehicle } from "@/components/fleet/FleetMap";
 import { formatTime } from "@truckmoov/app-core/utils/time-utils";
 import {
-  AlertTriangle, CheckCircle2, CircleDot, Clock, Loader2, MapPin, MessageSquarePlus,
-  Navigation, Package, Radio, RefreshCw, Route, Search, Shield, Truck,
+  AlertTriangle, CheckCircle2, CircleDot, Clock, Loader2, MapPin, MessageSquarePlus, Package, Radio, RefreshCw, Route, Search, Shield, Truck,
   User, UserPlus, Wifi, WifiOff, X,
 } from "lucide-react";
 import {
   useEffect, useMemo, useRef, useState,
 } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { FleetMap } from "@/components/fleet/FleetMap";
@@ -94,16 +92,14 @@ function statusLabel(j: JobData) {
 }
 
 export default function DispatcherLiveMap() {
-  const navigate = useNavigate();
   const vehicles: any[] = [];
   const vehiclesLoading = false;
-  const refetchVehicles = async (...args: any[]) => {};
+  const refetchVehicles = async (..._args: any[]) => {};
   const drivers: any[] = [];
   const alerts: any[] = [];
   const jobs: any[] = [];
-  const addJob = async (...args: any[]) => false;
-  const updateJob = async (...args: any[]) => false;
-  const geofenceEvents: any[] = [];
+  const addJob = async (..._args: any[]) => false;
+  const updateJob = async (..._args: any[]) => false;
 
   const [
     selectedJobId,
@@ -460,7 +456,7 @@ export default function DispatcherLiveMap() {
           title="No vehicles to track"
           description="Add vehicles to your fleet to start dispatching"
           actionLabel="View Fleet"
-          actionHref="/admin/fleet"
+          actionHref="/fleet"
         />
       </DashboardLayout>
     );

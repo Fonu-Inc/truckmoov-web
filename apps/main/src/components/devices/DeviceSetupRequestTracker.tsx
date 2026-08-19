@@ -8,7 +8,6 @@ import {
   Plus,
   Radio,
   UserPlus,
-  XCircle,
 } from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";

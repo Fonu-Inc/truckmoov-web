@@ -27,7 +27,6 @@ import {
   Settings2,
   Shield,
   Square,
-  Trash2,
   X,
   Zap,
 } from "lucide-react";
@@ -177,7 +176,6 @@ export function GeofenceManagementDialog({
   const updateGeofence = useUpdateGeofence();
   const archiveGeofence = useArchiveGeofence();
   const canManageGeofences = true;
-  const canAssignGeofences = true;
   const vehicles = vehicleResponse?.data ?? [];
 
   const geofences = useMemo(

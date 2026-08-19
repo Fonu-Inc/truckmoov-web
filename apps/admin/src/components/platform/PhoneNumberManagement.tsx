@@ -79,7 +79,6 @@ export function PhoneNumberManagement() {
   const suspendNumber = async (..._args: any[]) => {};
   const releaseNumber = async (..._args: any[]) => {};
   const deleteNumber = async (..._args: any[]) => {};
-  const refetch = () => {};
   const { tenants } = useTenants();
   const { user } = useAuthStore();
 
@@ -233,6 +232,17 @@ export function PhoneNumberManagement() {
     [isProvisionDialogOpen],
   );
 
+  const resetProvisionForm = () => {
+    setNewNumber("");
+    setNumberType("mobile");
+    setCapabilities([
+      "sms",
+      "voice",
+    ]);
+    setMonthlyCost("");
+    setNotes("");
+  };
+
   const handleProvision = async () => {
     if (!newNumber.trim())
       return;
@@ -267,17 +277,6 @@ export function PhoneNumberManagement() {
     setIsAssignDialogOpen(false);
     setSelectedNumber(null);
     setSelectedTenantId("");
-  };
-
-  const resetProvisionForm = () => {
-    setNewNumber("");
-    setNumberType("mobile");
-    setCapabilities([
-      "sms",
-      "voice",
-    ]);
-    setMonthlyCost("");
-    setNotes("");
   };
 
   const getStatusBadge = (status: string) => {

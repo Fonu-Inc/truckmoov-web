@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
-import { ORG_TYPES } from "@/types/orgRoles";
 
 type CreateOwnerOperatorDialogProps = {
   open: boolean;
@@ -33,15 +32,12 @@ type CreateOwnerOperatorDialogProps = {
 export function CreateOwnerOperatorDialog({
   open,
   onOpenChange,
-  onCreated,
+  onCreated: _onCreated,
 }: CreateOwnerOperatorDialogProps) {
   const aggregatorOrgs: any[] = [];
   const aggregatorOrgId = aggregatorOrgs[0]?.orgId;
 
-  const [
-    isSubmitting,
-    setIsSubmitting,
-  ] = useState(false);
+  const [isSubmitting] = useState(false);
   const [
     form,
     setForm,

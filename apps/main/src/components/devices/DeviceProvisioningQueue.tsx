@@ -60,7 +60,6 @@ import {
   TableRow,
 } from "@/components/shadcn/table";
 import { Textarea } from "@/components/shadcn/textarea";
-import { startDeviceProvisioningSimulation } from "@/lib/provisioningEngineSim";
 import { useAuthStore } from "@/stores/authStore";
 import { DeviceRequestDetailsDialog } from "./DeviceRequestDetailsDialog";
 
@@ -216,10 +215,7 @@ export function DeviceProvisioningQueue() {
     actionNote,
     setActionNote,
   ] = useState("");
-  const [
-    busy,
-    setBusy,
-  ] = useState(false);
+  const [busy] = useState(false);
   const [
     detailsOpen,
     setDetailsOpen,
@@ -311,7 +307,7 @@ export function DeviceProvisioningQueue() {
     setActionNote("");
   };
 
-  const approveDirect = async (id: string) => {
+  const approveDirect = async (_id) => {
     toast.info("Coming soon");
   };
 

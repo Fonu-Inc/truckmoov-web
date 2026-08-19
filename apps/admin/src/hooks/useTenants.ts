@@ -4,7 +4,6 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { apiGet } from "@/lib/backendApi";
-import { useAuthStore } from "@/stores/authStore";
 
 type BackendTenant = {
   id: string;
@@ -98,7 +97,6 @@ export function useTenants() {
     error,
     setError,
   ] = useState<Error | null>(null);
-  const { user } = useAuthStore();
 
   const fetchTenants = useCallback(
     async () => {

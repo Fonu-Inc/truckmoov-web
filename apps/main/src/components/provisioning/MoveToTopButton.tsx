@@ -19,17 +19,14 @@ type Props = {
  * priority_order to (current min - 1). Lower priority_order ranks first.
  */
 export function MoveToTopButton({
-  table,
-  requestId,
-  onMoved,
+  table: _table,
+  requestId: _requestId,
+  onMoved: _onMoved,
   variant = "outline",
   size = "sm",
   label = "Move to Top",
 }: Props) {
-  const [
-    busy,
-    setBusy,
-  ] = useState(false);
+  const [busy] = useState(false);
 
   const handleClick = async () => {
     toast.info("Coming soon");

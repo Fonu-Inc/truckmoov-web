@@ -114,7 +114,8 @@ export function AssignSIMDialog({
                   onAssign(
                     sim.id,
                     selectedDevice,
-                  ); setSelectedDevice(null);
+                  );
+                  setSelectedDevice(null);
                 }
               }}
               disabled={!selectedDevice}

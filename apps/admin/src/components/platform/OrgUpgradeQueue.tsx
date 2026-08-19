@@ -41,10 +41,7 @@ export function OrgUpgradeQueue() {
     reviewNotes,
     setReviewNotes,
   ] = useState("");
-  const [
-    isProcessing,
-    setIsProcessing,
-  ] = useState(false);
+  const [isProcessing] = useState(false);
 
   const DEMO_REQUESTS = [
     {

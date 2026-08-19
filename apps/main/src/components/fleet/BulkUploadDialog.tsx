@@ -50,7 +50,7 @@ export function BulkUploadDialog({
     setParsedData,
   ] = useState<ParsedRow[]>([]);
   const [
-    isProcessing,
+    _isProcessing,
     setIsProcessing,
   ] = useState(false);
 
@@ -80,7 +80,7 @@ export function BulkUploadDialog({
       yearStr,
       10,
     );
-    if (isNaN(year) || year < 1990 || year > new Date().getFullYear() + 1) {
+    if (Number.isNaN(year) || year < 1990 || year > new Date().getFullYear() + 1) {
       errors.push("Invalid year");
     }
 
@@ -95,7 +95,7 @@ export function BulkUploadDialog({
     }
 
     const capacity = Number.parseFloat(capacityStr);
-    if (isNaN(capacity) || capacity < 0) {
+    if (Number.isNaN(capacity) || capacity < 0) {
       errors.push("Invalid capacity");
     }
 
@@ -134,7 +134,7 @@ export function BulkUploadDialog({
         const parsed = parseCSV(content);
         setParsedData(parsed);
       }
-      catch (error) {
+      catch {
         toast.error("Failed to parse CSV file");
       }
       finally {

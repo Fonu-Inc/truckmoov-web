@@ -58,11 +58,11 @@ export default function SupervisorLiveMap() {
   const navigate = useNavigate();
   const vehicles: any[] = [];
   const vehiclesLoading = false;
-  const refetchVehicles = async (...args: any[]) => {};
+  const refetchVehicles = async (..._args: any[]) => {};
   const drivers: any[] = [];
   const alerts: any[] = [];
   const jobs: any[] = [];
-  const addJob = async (...args: any[]) => false;
+  const addJob = async (..._args: any[]) => false;
   const geofenceEvents: any[] = [];
   const geofenceStats = {
     entries: 0, exits: 0,
@@ -293,7 +293,7 @@ export default function SupervisorLiveMap() {
     setIsJobFormOpen,
   ] = useState(false);
   const [
-    jobFormPrefillVehicle,
+    _jobFormPrefillVehicle,
     setJobFormPrefillVehicle,
   ] = useState<string | null>(null);
 
@@ -374,7 +374,8 @@ export default function SupervisorLiveMap() {
           const vehicleId = a.vehicleId || a.vehicle_id || "";
           const veh = vehiclesWithDrivers.find(v => v.vehicleId === vehicleId);
           // Spread mock pins around Lagos so they're visible during demo
-          const baseLat = 6.5244; const baseLng = 3.3792;
+          const baseLat = 6.5244;
+          const baseLng = 3.3792;
           const pos: [number, number] = [
             baseLat + (Math.sin(idx) * 0.02),
             baseLng + (Math.cos(idx) * 0.02),
@@ -408,7 +409,7 @@ export default function SupervisorLiveMap() {
 
   const handleHarshEventPlayback = (event: HarshEvent) => {
     if (event.vehicleId) {
-      navigate(`/admin/fleet/${event.vehicleId}/history?playbackFrom=${encodeURIComponent(event.timestamp)}&offsetMinutes=-2`);
+      navigate(`/fleet/${event.vehicleId}/history?playbackFrom=${encodeURIComponent(event.timestamp)}&offsetMinutes=-2`);
     }
     else {
       toast.message(`Route playback for ${event.vehicleRegistration} from 2 minutes before event`);
@@ -439,7 +440,7 @@ export default function SupervisorLiveMap() {
           title="No vehicles to track"
           description="Add vehicles to your fleet to see them on the live map"
           actionLabel="View Fleet"
-          actionHref="/admin/fleet"
+          actionHref="/fleet"
         />
       </DashboardLayout>
     );
@@ -957,7 +958,7 @@ export default function SupervisorLiveMap() {
                               size="sm"
                               variant="outline"
                               className="flex-1"
-                              onClick={() => navigate(`/admin/fleet/${v.vehicleId}/history`)}
+                              onClick={() => navigate(`/fleet/${v.vehicleId}/history`)}
                             >
                               <History className="h-3.5 w-3.5 mr-1.5" />
                               View History

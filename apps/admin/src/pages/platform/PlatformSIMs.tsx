@@ -275,14 +275,6 @@ const statuses = [
   "suspended",
   "unassigned",
 ];
-const plans = [
-  "all",
-  "data_only",
-  "data_sms",
-  "data_sms_voice",
-  "iot_basic",
-  "iot_premium",
-];
 
 const planLabels: Record<string, string> = {
   data_only: "Data Only",
@@ -537,6 +529,22 @@ export default function PlatformSIMs() {
     });
   };
 
+  const filteredSIMs = sims.filter((sim) => {
+    const normalizedSearchQuery = debouncedSearchQuery.toLowerCase();
+    const matchesSearch
+      = sim.iccid.includes(debouncedSearchQuery)
+        || Boolean(sim.msisdn?.includes(debouncedSearchQuery))
+        || Boolean(sim.tenant?.toLowerCase().includes(normalizedSearchQuery));
+
+    const statusF = simFilterDraft.status;
+    const matchesStatus = !statusF?.enabled || !statusF.value || sim.status === statusF.value;
+
+    const carrierF = simFilterDraft.carrier;
+    const matchesCarrier = !carrierF?.enabled || !carrierF.value || sim.carrier === carrierF.value;
+
+    return matchesSearch && matchesStatus && matchesCarrier;
+  });
+
   const toggleAllSIMs = () => {
     if (selectedSIMIds.size === filteredSIMs.length) {
       setSelectedSIMIds(new Set());
@@ -568,22 +576,6 @@ export default function PlatformSIMs() {
     ],
   );
 
-  const filteredSIMs = sims.filter((sim) => {
-    const normalizedSearchQuery = debouncedSearchQuery.toLowerCase();
-    const matchesSearch
-      = sim.iccid.includes(debouncedSearchQuery)
-        || Boolean(sim.msisdn?.includes(debouncedSearchQuery))
-        || Boolean(sim.tenant?.toLowerCase().includes(normalizedSearchQuery));
-
-    const statusF = simFilterDraft.status;
-    const matchesStatus = !statusF?.enabled || !statusF.value || sim.status === statusF.value;
-
-    const carrierF = simFilterDraft.carrier;
-    const matchesCarrier = !carrierF?.enabled || !carrierF.value || sim.carrier === carrierF.value;
-
-    return matchesSearch && matchesStatus && matchesCarrier;
-  });
-
   const statPlaceholder = systemSimsSummaryQuery.isLoading ? "..." : "N/A";
 
   const getStatusBadge = (status: string) => {
@@ -609,15 +601,6 @@ export default function PlatformSIMs() {
     if (strength >= 30)
       return <SignalLow className="h-4 w-4 text-warning" />;
     return <SignalZero className="h-4 w-4 text-destructive" />;
-  };
-
-  const getDataUsageColor = (usage: number, limit: number) => {
-    const percent = (usage / limit) * 100;
-    if (percent >= 90)
-      return "bg-destructive";
-    if (percent >= 70)
-      return "bg-warning";
-    return "bg-primary";
   };
 
   const handleCreateSIM = () => {
@@ -765,122 +748,6 @@ export default function PlatformSIMs() {
       ...updates,
     }));
   };
-
-  const SIMForm = () => (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="iccid">ICCID *</Label>
-          <Input
-            id="iccid"
-            value={formData.iccid || ""}
-            onChange={e => updateFormData({ iccid: e.target.value })}
-            placeholder="8923411012345678901"
-            maxLength={20}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="msisdn">Phone Number *</Label>
-          <Input
-            id="msisdn"
-            value={formData.msisdn || ""}
-            onChange={e => updateFormData({ msisdn: e.target.value })}
-            placeholder="+2348031234567"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="imsi">IMSI</Label>
-          <Input
-            id="imsi"
-            value={formData.imsi || ""}
-            onChange={e => updateFormData({ imsi: e.target.value })}
-            placeholder="621301234567890"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Carrier</Label>
-          <Select
-            value={formData.carrier}
-            onValueChange={value => updateFormData({ carrier: value })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="MTN Nigeria">MTN Nigeria</SelectItem>
-              <SelectItem value="Glo">Glo</SelectItem>
-              <SelectItem value="Airtel">Airtel</SelectItem>
-              <SelectItem value="9mobile">9mobile</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Plan</Label>
-          <Select
-            value={formData.plan}
-            onValueChange={value => updateFormData({ plan: value as SIMCard["plan"] })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="data_only">Data Only</SelectItem>
-              <SelectItem value="data_sms">Data + SMS</SelectItem>
-              <SelectItem value="data_sms_voice">Data + SMS + Voice</SelectItem>
-              <SelectItem value="iot_basic">IoT Basic</SelectItem>
-              <SelectItem value="iot_premium">IoT Premium</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="monthlyCost">Monthly Cost (R)</Label>
-          <Input
-            id="monthlyCost"
-            type="number"
-            value={formData.monthlyCost || 0}
-            onChange={e => updateFormData({ monthlyCost: Number(e.target.value) })}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="dataLimit">Data Limit (MB)</Label>
-          <Input
-            id="dataLimit"
-            type="number"
-            value={formData.dataLimit || 0}
-            onChange={e => updateFormData({ dataLimit: Number(e.target.value) })}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="smsLimit">SMS Limit</Label>
-          <Input
-            id="smsLimit"
-            type="number"
-            value={formData.smsLimit || 0}
-            onChange={e => updateFormData({ smsLimit: Number(e.target.value) })}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="expiryDate">Expiry Date</Label>
-        <Input
-          id="expiryDate"
-          type="date"
-          value={formData.expiryDate || ""}
-          onChange={e => updateFormData({ expiryDate: e.target.value })}
-        />
-      </div>
-    </div>
-  );
 
   return (
     <DashboardLayout
@@ -1254,7 +1121,119 @@ export default function PlatformSIMs() {
               Add a new SIM card to the inventory
             </DialogDescription>
           </DialogHeader>
-          <SIMForm />
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="iccid">ICCID *</Label>
+                <Input
+                  id="iccid"
+                  value={formData.iccid || ""}
+                  onChange={e => updateFormData({ iccid: e.target.value })}
+                  placeholder="8923411012345678901"
+                  maxLength={20}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="msisdn">Phone Number *</Label>
+                <Input
+                  id="msisdn"
+                  value={formData.msisdn || ""}
+                  onChange={e => updateFormData({ msisdn: e.target.value })}
+                  placeholder="+2348031234567"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="imsi">IMSI</Label>
+                <Input
+                  id="imsi"
+                  value={formData.imsi || ""}
+                  onChange={e => updateFormData({ imsi: e.target.value })}
+                  placeholder="621301234567890"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Carrier</Label>
+                <Select
+                  value={formData.carrier}
+                  onValueChange={value => updateFormData({ carrier: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MTN Nigeria">MTN Nigeria</SelectItem>
+                    <SelectItem value="Glo">Glo</SelectItem>
+                    <SelectItem value="Airtel">Airtel</SelectItem>
+                    <SelectItem value="9mobile">9mobile</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Plan</Label>
+                <Select
+                  value={formData.plan}
+                  onValueChange={value => updateFormData({ plan: value as SIMCard["plan"] })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="data_only">Data Only</SelectItem>
+                    <SelectItem value="data_sms">Data + SMS</SelectItem>
+                    <SelectItem value="data_sms_voice">Data + SMS + Voice</SelectItem>
+                    <SelectItem value="iot_basic">IoT Basic</SelectItem>
+                    <SelectItem value="iot_premium">IoT Premium</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="monthlyCost">Monthly Cost (R)</Label>
+                <Input
+                  id="monthlyCost"
+                  type="number"
+                  value={formData.monthlyCost || 0}
+                  onChange={e => updateFormData({ monthlyCost: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="dataLimit">Data Limit (MB)</Label>
+                <Input
+                  id="dataLimit"
+                  type="number"
+                  value={formData.dataLimit || 0}
+                  onChange={e => updateFormData({ dataLimit: Number(e.target.value) })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="smsLimit">SMS Limit</Label>
+                <Input
+                  id="smsLimit"
+                  type="number"
+                  value={formData.smsLimit || 0}
+                  onChange={e => updateFormData({ smsLimit: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="expiryDate">Expiry Date</Label>
+              <Input
+                id="expiryDate"
+                type="date"
+                value={formData.expiryDate || ""}
+                onChange={e => updateFormData({ expiryDate: e.target.value })}
+              />
+            </div>
+          </div>
           <DialogFooter>
             <Button
               variant="outline"
@@ -1942,7 +1921,10 @@ function BulkImportContent({
                 </Button>
               </div>
               <div
-                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
                 className={`relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-border"}`}

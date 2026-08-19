@@ -18,10 +18,8 @@ import { JobMatchingDialog } from "@/components/jobs/JobMatchingDialog";
 import {
   buildDefaultFilterValue,
   countActiveFilters,
-
-  JobsFilterDialog,
-
-} from "@/components/jobs/JobsFilterDialog";
+} from "@/components/jobs/jobsFilter";
+import { JobsFilterDialog } from "@/components/jobs/JobsFilterDialog";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -54,9 +52,9 @@ type JobData = any;
 export default function DispatcherDispatch() {
   const jobs: any[] = [];
   const isLoading = false;
-  const addJob = async (...args: any[]) => false;
-  const updateJob = async (...args: any[]) => false;
-  const deleteJob = async (...args: any[]) => {};
+  const addJob = async (..._args: any[]) => false;
+  const updateJob = async (..._args: any[]) => false;
+  const deleteJob = async (..._args: any[]) => {};
 
   const [
     searchQuery,
@@ -237,10 +235,22 @@ export default function DispatcherDispatch() {
     );
   };
 
-  const openDetails = (job: JobData) => { setSelectedJob(job); setIsDetailsOpen(true); };
-  const openEdit = (job: JobData) => { setSelectedJob(job); setIsFormOpen(true); };
-  const openMatching = (job: JobData) => { setSelectedJob(job); setIsMatchingOpen(true); };
-  const openCompletion = (job: JobData) => { setSelectedJob(job); setIsCompletionOpen(true); };
+  const openDetails = (job: JobData) => {
+    setSelectedJob(job);
+    setIsDetailsOpen(true);
+  };
+  const openEdit = (job: JobData) => {
+    setSelectedJob(job);
+    setIsFormOpen(true);
+  };
+  const openMatching = (job: JobData) => {
+    setSelectedJob(job);
+    setIsMatchingOpen(true);
+  };
+  const openCompletion = (job: JobData) => {
+    setSelectedJob(job);
+    setIsCompletionOpen(true);
+  };
 
   const handleCompleteJob = async (data: {
     revenueNgn: number;
@@ -323,7 +333,10 @@ export default function DispatcherDispatch() {
         <div className="flex justify-end">
           <Button
             variant="gradient"
-            onClick={() => { setSelectedJob(null); setIsFormOpen(true); }}
+            onClick={() => {
+              setSelectedJob(null);
+              setIsFormOpen(true);
+            }}
           >
             <Plus className="h-4 w-4 mr-2" />
             Create Job
@@ -440,7 +453,10 @@ export default function DispatcherDispatch() {
                 title="No jobs yet"
                 description="Create your first job to start dispatching deliveries"
                 actionLabel="Create Job"
-                onAction={() => { setSelectedJob(null); setIsFormOpen(true); }}
+                onAction={() => {
+                  setSelectedJob(null);
+                  setIsFormOpen(true);
+                }}
               />
             )
           : filteredJobs.length > 0

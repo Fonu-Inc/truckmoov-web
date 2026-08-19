@@ -101,7 +101,6 @@ export function TieredServicesManager() {
   const getPlanFeatures = (_planId: string): any[] => [];
   const getFeatureCategories = (): string[] => [];
   const getUniqueFeatures = (): any[] => [];
-  const refetch = () => {};
 
   const [
     editingPlan,
@@ -1298,19 +1297,19 @@ function UsageSummaryItemsManager() {
     toast.info("Coming soon");
   };
 
-  const handleToggle = async (id: string, current: boolean) => {
+  const handleToggle = async (_id, _current) => {
     toast.info("Coming soon");
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (_id) => {
     toast.info("Coming soon");
   };
 
-  const handleUpdateLabel = async (id: string, label: string) => {
+  const handleUpdateLabel = async (_id, _label) => {
     toast.info("Coming soon");
   };
 
-  const handleUpdateIcon = async (id: string, icon_key: string) => {
+  const handleUpdateIcon = async (_id, _icon_key) => {
     toast.info("Coming soon");
   };
 
@@ -1387,8 +1386,6 @@ function UsageSummaryItemsManager() {
                     </TableHeader>
                     <TableBody>
                       {items.map((item) => {
-                        const IconMatch = USAGE_ICON_OPTIONS.find(o => o.key === item.icon_key);
-                        const IconComponent = IconMatch?.Icon || Wifi;
                         return (
                           <TableRow key={item.id}>
                             <TableCell>

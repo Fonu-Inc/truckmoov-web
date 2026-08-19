@@ -40,10 +40,8 @@ import { JobMatchingDialog } from "@/components/jobs/JobMatchingDialog";
 import {
   buildDefaultFilterValue,
   countActiveFilters,
-
-  JobsFilterDialog,
-
-} from "@/components/jobs/JobsFilterDialog";
+} from "@/components/jobs/jobsFilter";
+import { JobsFilterDialog } from "@/components/jobs/JobsFilterDialog";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
   AlertDialog,
@@ -679,7 +677,10 @@ export default function JobDispatch() {
                   title="No jobs found"
                   description="Create your first job or adjust the search and filters"
                   actionLabel="Create Job"
-                  onAction={() => { setSelectedJob(null); setIsFormOpen(true); }}
+                  onAction={() => {
+                    setSelectedJob(null);
+                    setIsFormOpen(true);
+                  }}
                 />
               )
             : (

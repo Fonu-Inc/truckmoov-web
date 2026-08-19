@@ -1,6 +1,6 @@
 import type { SimBundleValue } from "./SimBundlePicker";
 import {
-  Cpu, Loader2, Upload,
+  Cpu, Loader2,
 } from "lucide-react";
 import {
   useEffect, useState,
@@ -24,9 +24,8 @@ import {
 } from "@/components/shadcn/select";
 import { Switch } from "@/components/shadcn/switch";
 import { Textarea } from "@/components/shadcn/textarea";
-import {
-  formatSimBundle, SimBundlePicker,
-} from "./SimBundlePicker";
+import { formatSimBundle } from "./simBundle";
+import { SimBundlePicker } from "./SimBundlePicker";
 
 type RequestVehicleOption = {
   id: string;
@@ -59,7 +58,7 @@ export function DeviceSetupRequestDialog({
   open,
   onOpenChange,
   onSubmit,
-  onUploadFile,
+  onUploadFile: _onUploadFile,
   manufacturers: manufacturerOptions = DEFAULT_MANUFACTURERS,
   vehicles = [],
 }: DeviceSetupRequestDialogProps) {
@@ -72,11 +71,11 @@ export function DeviceSetupRequestDialog({
     setModel,
   ] = useState("");
   const [
-    catalogId,
+    _catalogId,
     setCatalogId,
   ] = useState<string | undefined>();
   const [
-    imei,
+    _imei,
     setImei,
   ] = useState("");
   const [
@@ -248,7 +247,10 @@ export function DeviceSetupRequestDialog({
               <Label>Manufacturer *</Label>
               <Select
                 value={manufacturer}
-                onValueChange={(v) => { setManufacturer(v); setModel(""); }}
+                onValueChange={(v) => {
+                  setManufacturer(v);
+                  setModel("");
+                }}
               >
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                 <SelectContent>

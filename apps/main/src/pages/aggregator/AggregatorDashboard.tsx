@@ -8,7 +8,6 @@ import {
   Building2,
   CheckCircle2,
   Clock,
-  FileText,
   SlidersHorizontal as FilterIcon,
   Fuel,
   Gauge,
@@ -1488,7 +1487,8 @@ export default function AggregatorDashboard() {
                   if (settleStatusEnabled && r.status !== settleStatusVal)
                     return false;
                   if (settleNetEnabled && settleNetAmt) {
-                    const a = r.netNum; const b = Number(settleNetAmt);
+                    const a = r.netNum;
+                    const b = Number(settleNetAmt);
                     if (settleNetOp === "gte" && !(a >= b))
                       return false;
                     if (settleNetOp === "lte" && !(a <= b))

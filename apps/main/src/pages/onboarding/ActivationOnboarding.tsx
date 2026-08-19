@@ -10,7 +10,6 @@ import {
 } from "@truckmoov/api/auth";
 import {
   AlertTriangle,
-  ArrowRight,
   Check,
   Cpu,
   Info,
@@ -18,7 +17,6 @@ import {
   Send,
   Settings as SettingsIcon,
   Smartphone,
-  Truck,
   Upload,
 } from "lucide-react";
 import {
@@ -34,22 +32,14 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Progress } from "@/components/shadcn/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/shadcn/select";
+
 import { Switch } from "@/components/shadcn/switch";
 
 import { SIMFormDialog } from "@/components/sims/SIMFormDialog";
 import { SIMRequestFormDialogMinimal } from "@/components/sims/SIMRequestFormDialogMinimal";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
 import { OnboardingLayout } from "./OnboardingLayout";
 
 /**
@@ -184,7 +174,6 @@ function parseCsvCount(text: string): {
 // =========================================================================
 export default function ActivationOnboarding() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
   const capsQuery = useQuery(getOnboardingSubscriptionCapsQueryOptions());
   const provisionDevicesMutation = useProvisionDevices();
   const registerSimsMutation = useRegisterSims();

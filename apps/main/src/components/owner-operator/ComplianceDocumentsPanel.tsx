@@ -8,7 +8,6 @@ import {
   CalendarClock,
   CheckCircle2,
   Clock,
-  FileText,
   FileWarning,
   Loader2,
   Plus,
@@ -17,7 +16,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { EmptyState } from "@/components/dashboard/EmptyState";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -114,7 +112,7 @@ type ComplianceDocumentsPanelProps = {
 };
 
 export function ComplianceDocumentsPanel({
-  orgId, tenantId, vehicleIds,
+  orgId, tenantId: _tenantId, vehicleIds: _vehicleIds,
 }: ComplianceDocumentsPanelProps) {
   const queryClient = useQueryClient();
   const [
@@ -142,7 +140,7 @@ export function ComplianceDocumentsPanel({
     setIssueDate,
   ] = useState("");
   const [
-    file,
+    _file,
     setFile,
   ] = useState<File | null>(null);
   const [
@@ -160,6 +158,15 @@ export function ComplianceDocumentsPanel({
     queryFn: async () => [],
     enabled: !!orgId,
   });
+
+  const resetForm = () => {
+    setDocType("");
+    setDocName("");
+    setDocNumber("");
+    setExpiryDate("");
+    setIssueDate("");
+    setFile(null);
+  };
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
@@ -182,15 +189,6 @@ export function ComplianceDocumentsPanel({
     },
     onSettled: () => setUploading(false),
   });
-
-  const resetForm = () => {
-    setDocType("");
-    setDocName("");
-    setDocNumber("");
-    setExpiryDate("");
-    setIssueDate("");
-    setFile(null);
-  };
 
   const now = new Date();
 

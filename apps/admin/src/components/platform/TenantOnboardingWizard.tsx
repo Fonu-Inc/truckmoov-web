@@ -308,21 +308,6 @@ export function TenantOnboardingWizard({
     };
   };
 
-  const handleAttemptSubmit = async () => {
-    setIsCheckingDuplicate(true);
-    try {
-      const dup = await checkForDuplicateOrgName();
-      if (dup.count > 0) {
-        setDuplicateInfo(dup);
-        return;
-      }
-      await performSubmit();
-    }
-    finally {
-      setIsCheckingDuplicate(false);
-    }
-  };
-
   const performSubmit = async () => {
     const values = form.getValues();
     try {
@@ -346,6 +331,21 @@ export function TenantOnboardingWizard({
     }
     catch {
       toast.error("Failed to create tenant. Please try again.");
+    }
+  };
+
+  const handleAttemptSubmit = async () => {
+    setIsCheckingDuplicate(true);
+    try {
+      const dup = await checkForDuplicateOrgName();
+      if (dup.count > 0) {
+        setDuplicateInfo(dup);
+        return;
+      }
+      await performSubmit();
+    }
+    finally {
+      setIsCheckingDuplicate(false);
     }
   };
 
@@ -390,7 +390,6 @@ export function TenantOnboardingWizard({
           />
           <div className="flex justify-between">
             {steps.map((step) => {
-              const Icon = step.icon;
               const isActive = currentStep === step.id;
               const isCompleted = currentStep > step.id;
               return (

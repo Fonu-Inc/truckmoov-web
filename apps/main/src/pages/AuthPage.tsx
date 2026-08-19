@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useLogin } from "@truckmoov/api/auth";
 import { AuthBrandingPanel } from "@truckmoov/reusables/components/layouts/AuthBrandingPanel";
 import {
-  ArrowRight, Car, ChevronDown, Eye, EyeOff, Factory, Headphones, Lock, Mail, Network, Settings, Sparkles, Truck, Users, Wrench,
+  ArrowRight, Eye, EyeOff, Lock, Mail, Truck,
 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";

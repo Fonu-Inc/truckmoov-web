@@ -5,7 +5,6 @@ import {
   BrowserRouter, Navigate, Outlet, Route, Routes, useLocation,
 } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/shadcn/sonner";
-import { KeyboardShortcutsDialog } from "./components/KeyboardShortcutsDialog";
 import { GlobalSupportChat } from "./components/support/GlobalSupportChat";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
@@ -54,7 +53,6 @@ import DispatcherLiveMap from "./pages/dispatcher/DispatcherLiveMap";
 import DispatcherMessages from "./pages/dispatcher/DispatcherMessages";
 import DispatcherReports from "./pages/dispatcher/DispatcherReports";
 import DispatcherSIMs from "./pages/dispatcher/DispatcherSIMs";
-import DriverInterface from "./pages/driver/DriverInterface";
 import EnterpriseLogisticsDashboard from "./pages/enterprise/EnterpriseLogisticsDashboard";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import NotAuthorized from "./pages/NotAuthorized";
@@ -220,146 +218,146 @@ function App() {
 
                       {/* Tenant Admin / Fleet Provider Routes */}
                       <Route
-                        path="/admin"
+                        path="/overview"
                         element={<TenantAdminDashboard />}
                       />
                       <Route
-                        path="/admin/fleet"
+                        path="/fleet"
                         element={<FleetManagement />}
                       />
                       <Route
-                        path="/admin/drivers"
+                        path="/drivers"
                         element={<DriverManagement />}
                       />
                       <Route
-                        path="/admin/devices"
+                        path="/devices"
                         element={<DeviceManagement />}
                       />
                       <Route
-                        path="/admin/sims"
+                        path="/sims"
                         element={<SIMManagement />}
                       />
                       <Route
-                        path="/admin/data-bundles"
+                        path="/data-bundles"
                         element={<DataBundles />}
                       />
 
                       <Route
-                        path="/admin/jobs"
+                        path="/jobs"
                         element={<JobDispatch />}
                       />
                       <Route
-                        path="/admin/ivr-dashboard"
+                        path="/ivr-dashboard"
                         element={(
                           <Navigate
-                            to="/admin/messages?tab=ivr-dashboard"
+                            to="/messages?tab=ivr-dashboard"
                             replace
                           />
                         )}
                       />
                       <Route
-                        path="/admin/analytics"
+                        path="/analytics"
                         element={(
                           <Navigate
-                            to="/admin/fleet?tab=analytics"
+                            to="/fleet?tab=analytics"
                             replace
                           />
                         )}
                       />
                       <Route
-                        path="/admin/map"
+                        path="/map"
                         element={<LiveMap />}
                       />
                       <Route
-                        path="/admin/behavior"
+                        path="/behavior"
                         element={<DriverBehaviorDashboard />}
                       />
                       <Route
-                        path="/admin/fatigue"
+                        path="/fatigue"
                         element={<DriverFatigueDashboard />}
                       />
                       <Route
-                        path="/admin/messages"
+                        path="/messages"
                         element={<MessagingCenter />}
                       />
                       <Route
-                        path="/admin/inbox"
+                        path="/inbox"
                         element={<OmnichannelInbox />}
                       />
                       <Route
-                        path="/admin/maintenance"
+                        path="/maintenance"
                         element={(
                           <Navigate
-                            to="/admin/fleet?tab=maintenance"
+                            to="/fleet?tab=maintenance"
                             replace
                           />
                         )}
                       />
                       <Route
-                        path="/admin/fuel"
+                        path="/fuel"
                         element={(
                           <Navigate
-                            to="/admin/fleet?tab=fuel"
+                            to="/fleet?tab=fuel"
                             replace
                           />
                         )}
                       />
                       <Route
-                        path="/admin/compliance"
+                        path="/compliance"
                         element={(
                           <Navigate
-                            to="/admin/fleet?tab=compliance"
+                            to="/fleet?tab=compliance"
                             replace
                           />
                         )}
                       />
                       <Route
-                        path="/admin/wallet"
+                        path="/wallet"
                         element={<TenantWallet />}
                       />
                       <Route
-                        path="/admin/installation"
+                        path="/installation"
                         element={<DeviceInstallation />}
                       />
                       <Route
-                        path="/admin/integrations"
+                        path="/integrations"
                         element={<Integrations />}
                       />
                       <Route
-                        path="/admin/job-offers"
+                        path="/job-offers"
                         element={<JobOffers />}
                       />
                       <Route
-                        path="/admin/subscription"
+                        path="/subscription"
                         element={(
                           <Navigate
-                            to="/admin/settings?tab=subscription"
+                            to="/settings?tab=subscription"
                             replace
                           />
                         )}
                       />
                       <Route
-                        path="/admin/reports"
+                        path="/reports"
                         element={<Reports />}
                       />
                       <Route
-                        path="/admin/waybill-invoices"
+                        path="/waybill-invoices"
                         element={<WaybillInvoices />}
                       />
                       <Route
-                        path="/admin/subscription-invoices"
+                        path="/subscription-invoices"
                         element={<SubscriptionInvoices />}
                       />
                       <Route
-                        path="/admin/sustainability"
+                        path="/sustainability"
                         element={<Sustainability />}
                       />
                       <Route
-                        path="/admin/fleet/pl-statement"
+                        path="/fleet/pl-statement"
                         element={<VehiclePLStatementPreview />}
                       />
                       <Route
-                        path="/admin/settings"
+                        path="/settings"
                         element={<Settings />}
                       />
 

@@ -1,7 +1,6 @@
-import type { FileText } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  AlertTriangle, Archive, Database, HardDrive, Image as ImageIcon, Receipt, ShieldCheck, TrendingUp,
+  AlertTriangle, Archive, Database, HardDrive, TrendingUp,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/shadcn/badge";
@@ -16,13 +15,6 @@ import {
 } from "@/components/shadcn/table";
 import { useAuthStore } from "@/stores/authStore";
 
-const AVG = {
-  waybill: 350 * 1024,
-  pod: 600 * 1024,
-  compliance: 250 * 1024,
-};
-const GB = 1024 * 1024 * 1024;
-
 function fmt(bytes: number) {
   if (bytes < 1024)
     return `${bytes} B`;
@@ -34,15 +26,6 @@ function fmt(bytes: number) {
     return `${MB.toFixed(1)} MB`;
   return `${(MB / 1024).toFixed(2)} GB`;
 }
-
-type Row = {
-  key: string;
-  label: string;
-  icon: typeof FileText;
-  count: number;
-  bytes: number;
-  color: string;
-};
 
 export function StoragePanel() {
   const navigate = useNavigate();
@@ -232,7 +215,7 @@ export function StoragePanel() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => navigate("/admin/settings?tab=subscription")}
+                        onClick={() => navigate("/settings?tab=subscription")}
                       >
                         Upgrade plan
                       </Button>

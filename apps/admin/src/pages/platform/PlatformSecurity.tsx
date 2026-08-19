@@ -923,14 +923,8 @@ export default function PlatformSecurity() {
     activeTab,
     setActiveTab,
   ] = useState("overview");
-  const [
-    tenantFilter,
-    setTenantFilter,
-  ] = useState("all");
-  const [
-    severityFilter,
-    setSeverityFilter,
-  ] = useState("all");
+  const [tenantFilter] = useState("all");
+  const [severityFilter] = useState("all");
   const [
     selectedEvent,
     setSelectedEvent,
@@ -1009,12 +1003,10 @@ export default function PlatformSecurity() {
   // IP Blocking state (hooks removed — using inline defaults)
   const rawBlockedIPs: BlockedIP[] = [];
   const isLoadingIPs = false;
-  const fetchBlockedIPs = async () => {};
   const blockIP = async (_ip: string, _reason: string, _opts?: { isPermanent?: boolean }) => false;
   const unblockIP = async (_ip: string) => false;
   const rawAuditLogs: SecurityAuditLog[] = [];
   const isLoadingLogs = false;
-  const fetchLogs = async () => {};
 
   // Demo fallback so platform admins always see realistic content
   const DEMO_BLOCKED_IPS: BlockedIP[] = [
@@ -1358,10 +1350,7 @@ export default function PlatformSecurity() {
     isBlocking,
     setIsBlocking,
   ] = useState(false);
-  const [
-    isRulesDialogOpen,
-    setIsRulesDialogOpen,
-  ] = useState(false);
+  const [_isRulesDialogOpen] = useState(false);
   const ipGeoData = useMemo(
     () => new Map<string, IPGeolocation>(),
     [],

@@ -97,7 +97,7 @@ export function DriverMessagesInbox() {
   const getStats = () => ({
     todayMessages: 0, todayCalls: 0, sentMessages: 0, failedMessages: 0, totalMessages: 0, totalCalls: 0, completedCalls: 0, missedCalls: 0,
   });
-  const refetch = async (...args: any[]) => {};
+  const refetch = async (..._args: any[]) => {};
   const [
     searchQuery,
     setSearchQuery,

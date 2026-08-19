@@ -3,8 +3,8 @@ import {
 } from "@truckmoov/app-core/utils/time-utils";
 import {
   BarChart3, CalendarIcon, CheckCircle, Clock, Copy, Eye,
-  SlidersHorizontal as Filter, Inbox, Mail, MessageSquare, Mic,
-  MoreHorizontal, Phone, PhoneCall, Plus, Search, Send, Settings, Trash2, TrendingUp, Users, XCircle, Zap,
+  SlidersHorizontal as Filter, Inbox, Mail,
+  MoreHorizontal, Phone, PhoneCall, Plus, Search, Send, Trash2, TrendingUp, Users,
 } from "lucide-react";
 import {
   useCallback, useEffect, useState,
@@ -127,10 +127,7 @@ export default function MessagingCenter() {
     isCampaignBuilderOpen,
     setIsCampaignBuilderOpen,
   ] = useState(false);
-  const [
-    messageStats,
-    setMessageStats,
-  ] = useState({
+  const [messageStats] = useState({
     sent: 0, delivered: 0, read: 0,
   });
   const [

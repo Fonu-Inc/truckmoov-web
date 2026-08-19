@@ -2,10 +2,6 @@ import {
   useCallback,
   useEffect,
 } from "react";
-import {
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
 
 type ShortcutAction = {
   key: string;
@@ -72,9 +68,6 @@ export function useGlobalShortcuts(callbacks?: {
   onSearch?: () => void;
   onRefresh?: () => void;
 }) {
-  const navigate = useNavigate();
-  const location = useLocation();
-
   const shortcuts: ShortcutAction[] = [
     {
       key: "k",

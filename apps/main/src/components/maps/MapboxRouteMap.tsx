@@ -1,9 +1,6 @@
 import { formatHumanDuration } from "@truckmoov/app-core/utils/time-utils";
 import {
-  ArrowRight,
   ArrowUp,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   CornerDownRight,
   CornerUpRight,
@@ -23,7 +20,6 @@ import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { Separator } from "@/components/shadcn/separator";
 import { cn } from "@/lib/utils";
 import "mapbox-gl/dist/mapbox-gl.css";
 

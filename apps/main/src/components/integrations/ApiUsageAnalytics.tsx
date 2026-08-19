@@ -1,29 +1,22 @@
 import type { TimeRange } from "@/components/charts/TimeRangeSelect";
+import { formatDayMonth } from "@truckmoov/app-core/utils/time-utils";
 import {
-  formatDayMonth, toDate,
-} from "@truckmoov/app-core/utils/time-utils";
-import {
-  Activity, AlertTriangle, CheckCircle, Clock, RefreshCw, TrendingDown, TrendingUp, Zap,
+  Activity, CheckCircle, Clock, TrendingDown, TrendingUp, Zap,
 } from "lucide-react";
 import { useState } from "react";
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import {
-  sliceByRange, TimeRangeSelect,
-} from "@/components/charts/TimeRangeSelect";
+import { sliceByRange } from "@/components/charts/timeRange";
+import { TimeRangeSelect } from "@/components/charts/TimeRangeSelect";
 import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 
 export function ApiUsageAnalytics() {
-  const [
-    daysRange,
-    setDaysRange,
-  ] = useState(30);
+  const [daysRange] = useState(30);
   const [
     requestsRange,
     setRequestsRange,
@@ -43,8 +36,6 @@ export function ApiUsageAnalytics() {
   const summary = {
     totalRequests: 0, successRate: 0, avgLatencyMs: 0, requestsToday: 0, errorRateToday: 0,
   };
-  const isLoading = false;
-  const refreshAnalytics = async () => {};
 
   const chartData = dailyUsage.map(d => ({
     date: formatDayMonth(d.date),

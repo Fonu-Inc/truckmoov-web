@@ -108,38 +108,6 @@ const FLEET_PROVIDER_KYC_CONFIG: StakeholderKYCConfig = {
   ],
 };
 
-const DOCUMENT_TYPES = [
-  {
-    value: "certificate_of_incorporation", label: "Certificate of Incorporation", required: true,
-  },
-  {
-    value: "memorandum_of_association", label: "Memorandum of Association", required: true,
-  },
-  {
-    value: "tax_clearance", label: "Tax Clearance Certificate", required: true,
-  },
-  {
-    value: "vat_certificate", label: "VAT Registration Certificate", required: false,
-  },
-  {
-    value: "business_license", label: "Business License / Permit", required: true,
-  },
-  {
-    value: "insurance_certificate", label: "Insurance Certificate", required: false,
-  },
-  {
-    value: "proof_of_address", label: "Proof of Business Address", required: true,
-  },
-  {
-    value: "director_id", label: "Director ID / Passport", required: true,
-  },
-  {
-    value: "other", label: "Other Document", required: false,
-  },
-];
-
-const REQUIRED_DOCUMENTS = DOCUMENT_TYPES.filter(d => d.required);
-
 const BUSINESS_TYPES = [
   "Sole Proprietorship",
   "Partnership",

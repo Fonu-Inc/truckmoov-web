@@ -1,7 +1,4 @@
-import {
-  useCallback, useState,
-} from "react";
-import { useAuthStore } from "@/stores/authStore";
+import { useCallback } from "react";
 
 export type LiveSessionStatus = "queued" | "assigned" | "active" | "ended" | "abandoned";
 

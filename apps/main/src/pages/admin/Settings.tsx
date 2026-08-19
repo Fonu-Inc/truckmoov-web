@@ -74,7 +74,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { Separator } from "@/components/shadcn/separator";
 import {
   Table,
   TableBody,
@@ -151,7 +150,7 @@ const INVITE_ROLES_BY_ORG_TYPE: Record<
   OWNER_OPERATOR: [],
 };
 
-/** The owner/admin role for each organization type. */
+/** The owner/overview role for each organization type. */
 const ADMIN_ROLE_BY_ORG_TYPE: Record<string, UserRole> = {
   ENTERPRISE: UserRole.ENTERPRISE_ADMIN,
   FLEET_PROVIDER: UserRole.FLEET_ADMIN,
@@ -228,11 +227,8 @@ export default function Settings() {
       }
     },
     [activeOrgType],
-  ); // eslint-disable-line react-hooks/exhaustive-deps
-  const [
-    showApiKey,
-    setShowApiKey,
-  ] = useState(false);
+  );
+  const [_showApiKey] = useState(false);
   // Edit user state
   const [
     isEditDialogOpen,
@@ -335,10 +331,6 @@ export default function Settings() {
     );
   };
 
-  const handleToggleIntegration = (integrationId: string) => {
-    toast.success("Integration settings updated");
-  };
-
   // Open edit dialog for a user
   const handleEditUser = (tenantUser: TenantUser) => {
     setEditingUser(tenantUser);
@@ -426,11 +418,6 @@ export default function Settings() {
         onError: error => toast.error(error.message),
       },
     );
-  };
-
-  const copyApiKey = () => {
-    navigator.clipboard.writeText("tm_live_sk_xxxxxxxxxxxxxxxxxxxx");
-    toast.success("API key copied to clipboard");
   };
 
   const roleColors: Partial<Record<UserRole, string>> = {

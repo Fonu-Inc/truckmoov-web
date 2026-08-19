@@ -1,7 +1,6 @@
 import {
   Activity,
   AlertTriangle,
-  ChevronRight,
   Info,
   RefreshCw,
   Shield,

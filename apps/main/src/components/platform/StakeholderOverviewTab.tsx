@@ -1,6 +1,5 @@
 import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import {
-  ArrowRight,
   Building2,
   Cpu,
   Loader2,

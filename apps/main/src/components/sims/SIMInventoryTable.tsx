@@ -36,7 +36,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
 import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/shadcn/popover";

@@ -37,76 +37,76 @@ type QuickAction = {
 
 const FLEET_ADMIN_ACTIONS: QuickAction[] = [
   {
-    id: "add-vehicle", title: "Add a vehicle", description: "Register vehicles you'll be managing.", icon: Truck, to: "/admin/fleet",
+    id: "add-vehicle", title: "Add a vehicle", description: "Register vehicles you'll be managing.", icon: Truck, to: "/fleet",
   },
   {
-    id: "add-driver", title: "Add a driver", description: "Invite drivers to receive job offers.", icon: Users, to: "/admin/drivers",
+    id: "add-driver", title: "Add a driver", description: "Invite drivers to receive job offers.", icon: Users, to: "/drivers",
   },
   {
-    id: "request-sim", title: "Request a SIM", description: "Order MTN SIMs for your IoT devices.", icon: Smartphone, to: "/admin/sims",
+    id: "request-sim", title: "Request a SIM", description: "Order MTN SIMs for your IoT devices.", icon: Smartphone, to: "/sims",
   },
   {
-    id: "request-device", title: "Request a device", description: "Order IoT trackers from the platform.", icon: Cpu, to: "/admin/devices",
+    id: "request-device", title: "Request a device", description: "Order IoT trackers from the platform.", icon: Cpu, to: "/devices",
   },
   {
-    id: "live-map", title: "Live Map & Zones", description: "Track vehicles and manage zones in real-time.", icon: MapPinned, to: "/admin/map",
+    id: "live-map", title: "Live Map & Zones", description: "Track vehicles and manage zones in real-time.", icon: MapPinned, to: "/map",
   },
   {
-    id: "payouts", title: "Payouts & Invoicing", description: "View waybills and manage invoices.", icon: Receipt, to: "/admin/waybill-invoices",
+    id: "payouts", title: "Payouts & Invoicing", description: "View waybills and manage invoices.", icon: Receipt, to: "/waybill-invoices",
   },
   {
-    id: "installation", title: "Schedule installation", description: "Coordinate device installation for vehicles.", icon: Wrench, to: "/admin/installation",
+    id: "installation", title: "Schedule installation", description: "Coordinate device installation for vehicles.", icon: Wrench, to: "/installation",
   },
   {
-    id: "settings", title: "Organization Settings", description: "Set timezone, currency and notification rules.", icon: SettingsIcon, to: "/admin/settings",
+    id: "settings", title: "Organization Settings", description: "Set timezone, currency and notification rules.", icon: SettingsIcon, to: "/settings",
   },
 ];
 
 const ENTERPRISE_ADMIN_ACTIONS: QuickAction[] = [
   {
-    id: "shipments", title: "Shipments", description: "View and manage all active shipments.", icon: Package, to: "/admin/jobs",
+    id: "shipments", title: "Shipments", description: "View and manage all active shipments.", icon: Package, to: "/jobs",
   },
   {
-    id: "fleet", title: "Fleet Providers", description: "Manage your network of fleet providers.", icon: Truck, to: "/admin/fleet",
+    id: "fleet", title: "Fleet Providers", description: "Manage your network of fleet providers.", icon: Truck, to: "/fleet",
   },
   {
-    id: "devices", title: "Devices", description: "Monitor IoT devices across your fleet.", icon: Cpu, to: "/admin/devices",
+    id: "devices", title: "Devices", description: "Monitor IoT devices across your fleet.", icon: Cpu, to: "/devices",
   },
   {
-    id: "live-map", title: "Live Tracking", description: "Track shipments and vehicles in real-time.", icon: Map, to: "/admin/map",
+    id: "live-map", title: "Live Tracking", description: "Track shipments and vehicles in real-time.", icon: Map, to: "/map",
   },
   {
-    id: "reports", title: "Reports", description: "View logistics performance reports.", icon: BarChart3, to: "/admin/reports",
+    id: "reports", title: "Reports", description: "View logistics performance reports.", icon: BarChart3, to: "/reports",
   },
   {
-    id: "integrations", title: "Integrations", description: "Connect third-party tools and APIs.", icon: Code2, to: "/admin/integrations",
+    id: "integrations", title: "Integrations", description: "Connect third-party tools and APIs.", icon: Code2, to: "/integrations",
   },
   {
-    id: "settings", title: "Organization Settings", description: "Configure your enterprise preferences.", icon: SettingsIcon, to: "/admin/settings",
+    id: "settings", title: "Organization Settings", description: "Configure your enterprise preferences.", icon: SettingsIcon, to: "/settings",
   },
 ];
 
 const AGGREGATOR_ADMIN_ACTIONS: QuickAction[] = [
   {
-    id: "jobs", title: "Job Coordination", description: "Coordinate jobs across your network.", icon: Package, to: "/admin/jobs",
+    id: "jobs", title: "Job Coordination", description: "Coordinate jobs across your network.", icon: Package, to: "/jobs",
   },
   {
-    id: "members", title: "Network Members", description: "Manage drivers and operators in your network.", icon: Users, to: "/admin/drivers",
+    id: "members", title: "Network Members", description: "Manage drivers and operators in your network.", icon: Users, to: "/drivers",
   },
   {
-    id: "fleet", title: "Network Fleet", description: "View and manage fleet across the network.", icon: Truck, to: "/admin/fleet",
+    id: "fleet", title: "Network Fleet", description: "View and manage fleet across the network.", icon: Truck, to: "/fleet",
   },
   {
-    id: "payouts", title: "Payouts & Invoicing", description: "Handle waybills and network invoicing.", icon: Receipt, to: "/admin/waybill-invoices",
+    id: "payouts", title: "Payouts & Invoicing", description: "Handle waybills and network invoicing.", icon: Receipt, to: "/waybill-invoices",
   },
   {
-    id: "zones", title: "Zones", description: "Define and manage operational zones.", icon: MapPinned, to: "/admin/map",
+    id: "zones", title: "Zones", description: "Define and manage operational zones.", icon: MapPinned, to: "/map",
   },
   {
-    id: "reports", title: "Reports", description: "Analyse network performance.", icon: BarChart3, to: "/admin/reports",
+    id: "reports", title: "Reports", description: "Analyse network performance.", icon: BarChart3, to: "/reports",
   },
   {
-    id: "settings", title: "Organization Settings", description: "Configure aggregator preferences.", icon: SettingsIcon, to: "/admin/settings",
+    id: "settings", title: "Organization Settings", description: "Configure aggregator preferences.", icon: SettingsIcon, to: "/settings",
   },
 ];
 
@@ -115,46 +115,46 @@ const OWNER_OPERATOR_ACTIONS: QuickAction[] = [
     id: "my-jobs", title: "My Jobs", description: "View your current and past jobs.", icon: Package, to: "/owner-operator/jobs",
   },
   {
-    id: "job-offers", title: "Job Offers", description: "Browse and accept available job offers.", icon: Bell, to: "/admin/job-offers",
+    id: "job-offers", title: "Job Offers", description: "Browse and accept available job offers.", icon: Bell, to: "/job-offers",
   },
   {
     id: "vehicles", title: "My Vehicles", description: "Manage the vehicles you own.", icon: Truck, to: "/owner-operator/vehicles",
   },
   {
-    id: "devices", title: "Devices", description: "Manage IoT devices on your vehicles.", icon: Cpu, to: "/admin/devices",
+    id: "devices", title: "Devices", description: "Manage IoT devices on your vehicles.", icon: Cpu, to: "/devices",
   },
   {
-    id: "payouts", title: "Payouts & Invoicing", description: "Track your earnings and invoices.", icon: Receipt, to: "/admin/waybill-invoices",
+    id: "payouts", title: "Payouts & Invoicing", description: "Track your earnings and invoices.", icon: Receipt, to: "/waybill-invoices",
   },
   {
     id: "documents", title: "Documents", description: "Upload and manage your compliance documents.", icon: FileText, to: "/owner-operator/documents",
   },
   {
-    id: "profile", title: "Profile", description: "Update your personal and business details.", icon: Users, to: "/admin/settings",
+    id: "profile", title: "Profile", description: "Update your personal and business details.", icon: Users, to: "/settings",
   },
 ];
 
 const OPERATIONS_MANAGER_ACTIONS: QuickAction[] = [
   {
-    id: "fleet", title: "Fleet", description: "View and manage the vehicle fleet.", icon: Truck, to: "/admin/fleet",
+    id: "fleet", title: "Fleet", description: "View and manage the vehicle fleet.", icon: Truck, to: "/fleet",
   },
   {
-    id: "live-map", title: "Live Map", description: "Track vehicles in real-time.", icon: Map, to: "/admin/map",
+    id: "live-map", title: "Live Map", description: "Track vehicles in real-time.", icon: Map, to: "/map",
   },
   {
-    id: "drivers", title: "Drivers", description: "Manage drivers and their assignments.", icon: Users, to: "/admin/drivers",
+    id: "drivers", title: "Drivers", description: "Manage drivers and their assignments.", icon: Users, to: "/drivers",
   },
   {
-    id: "jobs", title: "Jobs", description: "View and manage active jobs.", icon: Package, to: "/admin/jobs",
+    id: "jobs", title: "Jobs", description: "View and manage active jobs.", icon: Package, to: "/jobs",
   },
   {
-    id: "installation", title: "Installation", description: "Coordinate device installation for vehicles.", icon: Wrench, to: "/admin/installation",
+    id: "installation", title: "Installation", description: "Coordinate device installation for vehicles.", icon: Wrench, to: "/installation",
   },
   {
-    id: "analytics", title: "Analytics", description: "Review fleet performance analytics.", icon: BarChart3, to: "/admin/analytics",
+    id: "analytics", title: "Analytics", description: "Review fleet performance analytics.", icon: BarChart3, to: "/analytics",
   },
   {
-    id: "devices", title: "Devices", description: "Monitor IoT device status.", icon: Cpu, to: "/admin/devices",
+    id: "devices", title: "Devices", description: "Monitor IoT device status.", icon: Cpu, to: "/devices",
   },
 ];
 
@@ -184,22 +184,22 @@ const DISPATCHER_ACTIONS: QuickAction[] = [
 
 const FINANCE_VIEWER_ACTIONS: QuickAction[] = [
   {
-    id: "fleet", title: "Fleet", description: "View fleet assets and status.", icon: Truck, to: "/admin/fleet",
+    id: "fleet", title: "Fleet", description: "View fleet assets and status.", icon: Truck, to: "/fleet",
   },
   {
-    id: "devices", title: "Devices", description: "Monitor IoT devices and their costs.", icon: Cpu, to: "/admin/devices",
+    id: "devices", title: "Devices", description: "Monitor IoT devices and their costs.", icon: Cpu, to: "/devices",
   },
   {
-    id: "fuel", title: "Fuel Costs", description: "Track and analyse fuel expenses.", icon: Gauge, to: "/admin/fuel",
+    id: "fuel", title: "Fuel Costs", description: "Track and analyse fuel expenses.", icon: Gauge, to: "/fuel",
   },
   {
-    id: "maintenance", title: "Maintenance", description: "View scheduled and completed maintenance.", icon: Wrench, to: "/admin/fleet?tab=maintenance",
+    id: "maintenance", title: "Maintenance", description: "View scheduled and completed maintenance.", icon: Wrench, to: "/fleet?tab=maintenance",
   },
   {
-    id: "analytics", title: "Analytics", description: "Review financial and operational analytics.", icon: BarChart3, to: "/admin/analytics",
+    id: "analytics", title: "Analytics", description: "Review financial and operational analytics.", icon: BarChart3, to: "/analytics",
   },
   {
-    id: "wallet", title: "Wallet & Billing", description: "Manage wallet balance and billing details.", icon: CreditCard, to: "/admin/wallet",
+    id: "wallet", title: "Wallet & Billing", description: "Manage wallet balance and billing details.", icon: CreditCard, to: "/wallet",
   },
 ];
 
@@ -223,7 +223,7 @@ export default function WelcomeDashboard() {
 
   const goToDashboard = () => {
     const config = getSidebarConfig(user ?? null);
-    navigate(config?.homeRoute ?? "/admin");
+    navigate(config?.homeRoute ?? "/overview");
   };
 
   return (

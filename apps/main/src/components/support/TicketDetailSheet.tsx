@@ -90,7 +90,7 @@ type Attachment = {
 
 function isImageAttachment(att: Attachment) {
   return (att.type && att.type.startsWith("image/"))
-    || /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(att.name || "");
+    || /\.(?:png|jpe?g|gif|webp|svg|bmp)$/i.test(att.name || "");
 }
 
 export function TicketDetailSheet({

@@ -1,12 +1,10 @@
 import {
-  Keyboard, PanelLeftClose, PanelLeftOpen, Search, Settings as SettingsIcon, X,
+  Keyboard, PanelLeftClose, PanelLeftOpen, Search, X,
 } from "lucide-react";
 import {
   useEffect, useMemo, useRef, useState,
 } from "react";
-import {
-  useLocation, useNavigate,
-} from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { KeyboardShortcutsDialog } from "@/components/KeyboardShortcutsDialog";
 import { NotificationCenter } from "@/components/platform/NotificationCenter";
 import { Button } from "@/components/shadcn/button";
@@ -57,7 +55,6 @@ export function DashboardHeader({
   const {
     collapsed, toggle,
   } = useSidebarStore();
-  const navigate = useNavigate();
 
   // ── Sync top-bar title with the active sidebar entry's label ──
   const location = useLocation();

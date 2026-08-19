@@ -1,16 +1,14 @@
 import {
-  Building2, Loader2, MessageSquare, MoreHorizontal, Phone, PhoneCall, PhoneOff, Plus, RefreshCw, Search, Trash2,
+  Building2, Loader2, MessageSquare, MoreHorizontal, Phone, PhoneCall, PhoneOff, Plus, RefreshCw, Trash2,
 } from "lucide-react";
 import {
   useEffect, useState,
 } from "react";
-import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/shadcn/dialog";
@@ -18,7 +16,6 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
 import { ExportButton } from "@/components/shadcn/export-button";
-import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -48,7 +45,6 @@ export function PhoneNumberManagement() {
   const suspendNumber = async (..._args: any[]) => {};
   const releaseNumber = async (..._args: any[]) => {};
   const deleteNumber = async (..._args: any[]) => {};
-  const refetch = async () => {};
   const { user } = useAuthStore();
 
   const [
@@ -180,6 +176,17 @@ export function PhoneNumberManagement() {
     [isProvisionDialogOpen],
   );
 
+  const resetProvisionForm = () => {
+    setNewNumber("");
+    setNumberType("mobile");
+    setCapabilities([
+      "sms",
+      "voice",
+    ]);
+    setMonthlyCost("");
+    setNotes("");
+  };
+
   const handleProvision = async () => {
     if (!newNumber.trim())
       return;
@@ -210,17 +217,6 @@ export function PhoneNumberManagement() {
     setIsAssignDialogOpen(false);
     setSelectedNumber(null);
     setSelectedTenantId("");
-  };
-
-  const resetProvisionForm = () => {
-    setNewNumber("");
-    setNumberType("mobile");
-    setCapabilities([
-      "sms",
-      "voice",
-    ]);
-    setMonthlyCost("");
-    setNotes("");
   };
 
   const getStatusBadge = (status: string) => {

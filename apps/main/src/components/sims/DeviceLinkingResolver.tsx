@@ -9,7 +9,6 @@ import {
   SkipForward,
   Smartphone,
   Unlink,
-  XCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -85,15 +84,12 @@ type DeviceLinkingResolverProps = {
 export function DeviceLinkingResolver({
   open,
   onOpenChange,
-  batchId,
-  tenantId,
+  batchId: _batchId,
+  tenantId: _tenantId,
   exceptions,
-  onResolved,
+  onResolved: _onResolved,
 }: DeviceLinkingResolverProps) {
-  const [
-    saving,
-    setSaving,
-  ] = useState(false);
+  const [saving] = useState(false);
   const [unlinkedSims] = useState<UnlinkedSIM[]>([]);
   const [unlinkedDevices] = useState<UnlinkedDevice[]>([]);
   const [

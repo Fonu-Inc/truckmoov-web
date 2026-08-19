@@ -20,14 +20,14 @@ import {
   Wrench,
 } from "lucide-react";
 import {
-  useCallback, useEffect, useRef, useState,
+  useCallback, useRef, useState,
 } from "react";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
+  Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import {
   Dialog,
@@ -70,7 +70,6 @@ import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 import {
   SHORTCUTS, useKeyboardShortcuts,
 } from "@/hooks/useKeyboardShortcuts";
-import { cn } from "@/lib/utils";
 
 type MaintenanceRecord = any;
 function useMaintenanceRecords() {
@@ -241,6 +240,18 @@ export default function MaintenanceManagement() {
     ),
   };
 
+  const resetNewRecord = () => {
+    setNewRecord({
+      vehicleReg: "",
+      type: "preventive",
+      category: "",
+      description: "",
+      scheduledDate: "",
+      priority: "medium",
+      technician: "",
+    });
+  };
+
   const handleAddRecord = async () => {
     try {
       await addRecord({
@@ -256,7 +267,7 @@ export default function MaintenanceManagement() {
       setIsAddDialogOpen(false);
       resetNewRecord();
     }
-    catch (err) {
+    catch {
       // Error handled by hook
     }
   };
@@ -265,7 +276,7 @@ export default function MaintenanceManagement() {
     try {
       await markComplete(id);
     }
-    catch (err) {
+    catch {
       // Error handled by hook
     }
   };
@@ -311,7 +322,7 @@ export default function MaintenanceManagement() {
         setSelectedRecord(null);
         resetNewRecord();
       }
-      catch (err) {
+      catch {
         // Error handled by hook
       }
     }
@@ -321,7 +332,7 @@ export default function MaintenanceManagement() {
     try {
       await deleteRecord(id);
     }
-    catch (err) {
+    catch {
       // Error handled by hook
     }
   };
@@ -330,7 +341,7 @@ export default function MaintenanceManagement() {
     try {
       await startMaintenance(id);
     }
-    catch (err) {
+    catch {
       // Error handled by hook
     }
   };
@@ -348,21 +359,9 @@ export default function MaintenanceManagement() {
       setIsSendRemindersDialogOpen(false);
       setRecipientEmail("");
     }
-    catch (err) {
+    catch {
       // Error handled by hook
     }
-  };
-
-  const resetNewRecord = () => {
-    setNewRecord({
-      vehicleReg: "",
-      type: "preventive",
-      category: "",
-      description: "",
-      scheduledDate: "",
-      priority: "medium",
-      technician: "",
-    });
   };
 
   if (isLoading) {

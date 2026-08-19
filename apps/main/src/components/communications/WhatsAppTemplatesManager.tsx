@@ -1,6 +1,5 @@
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
-  AlertTriangle,
   CheckCircle,
   Clock,
   Copy,
@@ -13,7 +12,6 @@ import {
   Plus,
   RefreshCw,
   Search,
-  Send,
   Trash2,
   XCircle,
 } from "lucide-react";
@@ -22,7 +20,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
+  Card, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import {
@@ -131,10 +129,7 @@ export function WhatsAppTemplatesManager({ tenantId }: WhatsAppTemplatesManagerP
     isDialogOpen,
     setIsDialogOpen,
   ] = useState(false);
-  const [
-    isSaving,
-    setIsSaving,
-  ] = useState(false);
+  const [isSaving] = useState(false);
   const [
     editingTemplate,
     setEditingTemplate,
@@ -248,11 +243,11 @@ export function WhatsAppTemplatesManager({ tenantId }: WhatsAppTemplatesManagerP
     toast.info("Coming soon");
   };
 
-  const handleDelete = async (template: WhatsAppTemplate) => {
+  const handleDelete = async (_template) => {
     toast.info("Coming soon");
   };
 
-  const handleDuplicate = async (template: WhatsAppTemplate) => {
+  const handleDuplicate = async (_template) => {
     toast.info("Coming soon");
   };
 

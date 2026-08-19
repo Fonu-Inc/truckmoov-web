@@ -1,12 +1,12 @@
 import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Activity, Check, Clock, Phone, PhoneCall, PhoneMissed, PhoneOff, RefreshCw, TrendingUp, Users, X,
+  Check, Clock, Phone, PhoneCall, PhoneMissed, PhoneOff, RefreshCw, TrendingUp, X,
 } from "lucide-react";
 import {
   useEffect, useMemo, useState,
 } from "react";
 import {
-  Bar, BarChart, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
@@ -39,10 +39,7 @@ type IVRCall = {
 };
 
 export default function DriverIVRDashboard() {
-  const [
-    calls,
-    setCalls,
-  ] = useState<IVRCall[]>([]);
+  const [calls] = useState<IVRCall[]>([]);
   const [
     isLoading,
     setIsLoading,

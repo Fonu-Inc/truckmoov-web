@@ -200,6 +200,12 @@ export function DriverBulkUploadDialog({
     }
   };
 
+  const resetState = () => {
+    setFile(null);
+    setParsedDrivers([]);
+    setUploadProgress(0);
+  };
+
   const handleUpload = () => {
     const validDrivers = parsedDrivers.filter(d => d.valid);
     if (validDrivers.length === 0) {
@@ -211,12 +217,6 @@ export function DriverBulkUploadDialog({
     toast.success(`Successfully uploaded ${validDrivers.length} drivers`);
     onOpenChange(false);
     resetState();
-  };
-
-  const resetState = () => {
-    setFile(null);
-    setParsedDrivers([]);
-    setUploadProgress(0);
   };
 
   const downloadTemplate = () => {
@@ -240,7 +240,8 @@ export function DriverBulkUploadDialog({
     <Dialog
       open={open}
       onOpenChange={(open) => {
-        onOpenChange(open); if (!open)
+        onOpenChange(open);
+        if (!open)
           resetState();
       }}
     >
@@ -268,7 +269,10 @@ export function DriverBulkUploadDialog({
                   className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
                     isDragging ? "border-primary bg-primary/10" : "border-border"
                   }`}
-                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDrop}
                 >
@@ -399,7 +403,10 @@ export function DriverBulkUploadDialog({
           <div className="flex justify-end gap-3 pt-4">
             <Button
               variant="outline"
-              onClick={() => { onOpenChange(false); resetState(); }}
+              onClick={() => {
+                onOpenChange(false);
+                resetState();
+              }}
             >
               Cancel
             </Button>

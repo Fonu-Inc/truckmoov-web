@@ -186,7 +186,10 @@ export function DeviceBulkUploadDialog({
                   </div>
 
                   <div
-                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
+                    }}
                     onDragLeave={() => setIsDragging(false)}
                     onDrop={handleDrop}
                     className={cn(

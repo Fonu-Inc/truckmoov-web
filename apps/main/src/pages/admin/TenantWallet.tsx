@@ -2,7 +2,7 @@ import {
   formatDate, formatTime,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
-  AlertTriangle, ArrowDownRight, ArrowUpRight, BarChart3, CreditCard, Download, FileText, SlidersHorizontal as Filter, History, MessageCircle, MessageSquare, Phone, Plus, RefreshCw, Search, Smartphone, TrendingUp, Wallet,
+  AlertTriangle, ArrowDownRight, ArrowUpRight, CreditCard, Download, FileText, SlidersHorizontal as Filter, History, MessageCircle, MessageSquare, Phone, Plus, RefreshCw, Search, Smartphone, TrendingUp, Wallet,
 } from "lucide-react";
 import {
   useEffect, useState,
@@ -95,21 +95,26 @@ function getUsageRangeBounds(range: UsageRange): {
         start, end,
       };
     case "yesterday": {
-      const yStart = new Date(start); yStart.setDate(yStart.getDate() - 1);
-      const yEnd = new Date(start); yEnd.setMilliseconds(-1);
+      const yStart = new Date(start);
+      yStart.setDate(yStart.getDate() - 1);
+      const yEnd = new Date(start);
+      yEnd.setMilliseconds(-1);
       return {
         start: yStart, end: yEnd,
       };
     }
-    case "last_7_days": start.setDate(start.getDate() - 6); return {
-      start, end,
-    };
-    case "last_30_days": start.setDate(start.getDate() - 29); return {
-      start, end,
-    };
-    case "last_90_days": start.setDate(start.getDate() - 89); return {
-      start, end,
-    };
+    case "last_7_days": start.setDate(start.getDate() - 6);
+      return {
+        start, end,
+      };
+    case "last_30_days": start.setDate(start.getDate() - 29);
+      return {
+        start, end,
+      };
+    case "last_90_days": start.setDate(start.getDate() - 89);
+      return {
+        start, end,
+      };
   }
 }
 
@@ -143,18 +148,9 @@ export default function TenantWallet() {
   const { user } = useAuthStore();
   const tenantId = user?.tenantId || "default";
 
-  const [
-    walletInfo,
-    setWalletInfo,
-  ] = useState<WalletInfo | null>(null);
-  const [
-    transactions,
-    setTransactions,
-  ] = useState<Transaction[]>([]);
-  const [
-    rates,
-    setRates,
-  ] = useState<Rate[]>([]);
+  const [walletInfo] = useState<WalletInfo | null>(null);
+  const [transactions] = useState<Transaction[]>([]);
+  const [rates] = useState<Rate[]>([]);
   const [
     loading,
     setLoading,
@@ -171,10 +167,7 @@ export default function TenantWallet() {
     phoneNumber,
     setPhoneNumber,
   ] = useState("");
-  const [
-    topupLoading,
-    setTopupLoading,
-  ] = useState(false);
+  const [topupLoading] = useState(false);
   const [
     usageRange,
     setUsageRange,
@@ -281,47 +274,54 @@ export default function TenantWallet() {
       + (txDateEnabled ? 1 : 0);
 
   const syncDraftsFromApplied = () => {
-    setDraftTypeEnabled(txTypeEnabled); setDraftType(txTypeValue);
-    setDraftChannelEnabled(txChannelEnabled); setDraftChannel(txChannelValue);
-    setDraftAmountEnabled(txAmountEnabled); setDraftAmountFrom(txAmountFrom); setDraftAmountTo(txAmountTo);
-    setDraftDateEnabled(txDateEnabled); setDraftDateFrom(txDateFrom); setDraftDateTo(txDateTo);
+    setDraftTypeEnabled(txTypeEnabled);
+    setDraftType(txTypeValue);
+    setDraftChannelEnabled(txChannelEnabled);
+    setDraftChannel(txChannelValue);
+    setDraftAmountEnabled(txAmountEnabled);
+    setDraftAmountFrom(txAmountFrom);
+    setDraftAmountTo(txAmountTo);
+    setDraftDateEnabled(txDateEnabled);
+    setDraftDateFrom(txDateFrom);
+    setDraftDateTo(txDateTo);
   };
 
   const handleApplyFilters = () => {
-    setTxTypeEnabled(draftTypeEnabled); setTxTypeValue(draftType);
-    setTxChannelEnabled(draftChannelEnabled); setTxChannelValue(draftChannel);
-    setTxAmountEnabled(draftAmountEnabled); setTxAmountFrom(draftAmountFrom); setTxAmountTo(draftAmountTo);
-    setTxDateEnabled(draftDateEnabled); setTxDateFrom(draftDateFrom); setTxDateTo(draftDateTo);
+    setTxTypeEnabled(draftTypeEnabled);
+    setTxTypeValue(draftType);
+    setTxChannelEnabled(draftChannelEnabled);
+    setTxChannelValue(draftChannel);
+    setTxAmountEnabled(draftAmountEnabled);
+    setTxAmountFrom(draftAmountFrom);
+    setTxAmountTo(draftAmountTo);
+    setTxDateEnabled(draftDateEnabled);
+    setTxDateFrom(draftDateFrom);
+    setTxDateTo(draftDateTo);
     setFilterPopoverOpen(false);
   };
 
   const handleShowAllFilters = () => {
-    setTxTypeEnabled(false); setTxTypeValue("all");
-    setTxChannelEnabled(false); setTxChannelValue("all");
-    setTxAmountEnabled(false); setTxAmountFrom(""); setTxAmountTo("");
-    setTxDateEnabled(false); setTxDateFrom(""); setTxDateTo("");
-    setDraftTypeEnabled(false); setDraftType("all");
-    setDraftChannelEnabled(false); setDraftChannel("all");
-    setDraftAmountEnabled(false); setDraftAmountFrom(""); setDraftAmountTo("");
-    setDraftDateEnabled(false); setDraftDateFrom(""); setDraftDateTo("");
+    setTxTypeEnabled(false);
+    setTxTypeValue("all");
+    setTxChannelEnabled(false);
+    setTxChannelValue("all");
+    setTxAmountEnabled(false);
+    setTxAmountFrom("");
+    setTxAmountTo("");
+    setTxDateEnabled(false);
+    setTxDateFrom("");
+    setTxDateTo("");
+    setDraftTypeEnabled(false);
+    setDraftType("all");
+    setDraftChannelEnabled(false);
+    setDraftChannel("all");
+    setDraftAmountEnabled(false);
+    setDraftAmountFrom("");
+    setDraftAmountTo("");
+    setDraftDateEnabled(false);
+    setDraftDateFrom("");
+    setDraftDateTo("");
     setFilterPopoverOpen(false);
-  };
-
-  useEffect(
-    () => {
-      fetchData();
-    },
-    [tenantId],
-  );
-
-  const fetchData = async () => {
-    setLoading(true);
-    await Promise.all([
-      fetchWallet(),
-      fetchTransactions(),
-      fetchRates(),
-    ]);
-    setLoading(false);
   };
 
   const fetchWallet = async () => {
@@ -335,6 +335,23 @@ export default function TenantWallet() {
   const fetchRates = async () => {
     // Coming soon
   };
+
+  const fetchData = async () => {
+    setLoading(true);
+    await Promise.all([
+      fetchWallet(),
+      fetchTransactions(),
+      fetchRates(),
+    ]);
+    setLoading(false);
+  };
+
+  useEffect(
+    () => {
+      fetchData();
+    },
+    [tenantId],
+  );
 
   const handleTopup = async () => {
     toast.info("Coming soon");
@@ -954,7 +971,8 @@ export default function TenantWallet() {
                   open={filterPopoverOpen}
                   onOpenChange={(o) => {
                     if (o)
-                      syncDraftsFromApplied(); setFilterPopoverOpen(o);
+                      syncDraftsFromApplied();
+                    setFilterPopoverOpen(o);
                   }}
                 >
                   <PopoverTrigger asChild>
@@ -1150,7 +1168,6 @@ export default function TenantWallet() {
                         return false;
                       const ch = (tx.communication_type || "").toLowerCase();
                       if (txChannelEnabled && txChannelValue !== "all") {
-                        const effective = ch || "other";
                         const matchKey = ch && [
                           "call",
                           "sms",

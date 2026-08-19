@@ -249,10 +249,7 @@ export function FleetFinancialAnalytics() {
   const { format } = useCurrency();
   const { data: financialSummaryResp } = useFleetFinancialSummary();
 
-  const [
-    period,
-    setPeriod,
-  ] = useState<PeriodValue>("30");
+  const [_period] = useState<PeriodValue>("30");
   const [
     profitabilityPeriod,
     setProfitabilityPeriod,
@@ -461,15 +458,11 @@ export function FleetFinancialAnalytics() {
     () => ({ data: { periodMonths: periodToMonths(underperformingPeriod) } }),
     [underperformingPeriod],
   );
-  const {
-    data: underperformingResp,
-    isFetching: isUnderperformingFetching,
-  } = useFleetProfitability(underperformingPayload);
+  const { data: underperformingResp } = useFleetProfitability(underperformingPayload);
   const underperformingData = useMemo(
     () => (underperformingResp?.data ?? []).map(normalizeProfitabilityRow),
     [underperformingResp?.data],
   );
-  const isCalculating = isProfitabilityFetching || isVehicleProfitabilityFetching || isCostBreakdownFetching || isUnderperformingFetching;
 
   // Detailed Cost Analysis filters
   const [
@@ -1399,14 +1392,30 @@ export function FleetFinancialAnalytics() {
                         variant="outline"
                         className="flex-1"
                         onClick={() => {
-                          setMarginFilterEnabled(false); setMarginMin(""); setMarginMax("");
-                          setRevenueFilterEnabled(false); setRevenueMin(""); setRevenueMax("");
-                          setProfitFilterEnabled(false); setProfitMin(""); setProfitMax("");
-                          setScoreFilterEnabled(false); setScoreMin(""); setScoreMax("");
-                          setDraftMarginFilterEnabled(false); setDraftMarginMin(""); setDraftMarginMax("");
-                          setDraftRevenueFilterEnabled(false); setDraftRevenueMin(""); setDraftRevenueMax("");
-                          setDraftProfitFilterEnabled(false); setDraftProfitMin(""); setDraftProfitMax("");
-                          setDraftScoreFilterEnabled(false); setDraftScoreMin(""); setDraftScoreMax("");
+                          setMarginFilterEnabled(false);
+                          setMarginMin("");
+                          setMarginMax("");
+                          setRevenueFilterEnabled(false);
+                          setRevenueMin("");
+                          setRevenueMax("");
+                          setProfitFilterEnabled(false);
+                          setProfitMin("");
+                          setProfitMax("");
+                          setScoreFilterEnabled(false);
+                          setScoreMin("");
+                          setScoreMax("");
+                          setDraftMarginFilterEnabled(false);
+                          setDraftMarginMin("");
+                          setDraftMarginMax("");
+                          setDraftRevenueFilterEnabled(false);
+                          setDraftRevenueMin("");
+                          setDraftRevenueMax("");
+                          setDraftProfitFilterEnabled(false);
+                          setDraftProfitMin("");
+                          setDraftProfitMax("");
+                          setDraftScoreFilterEnabled(false);
+                          setDraftScoreMin("");
+                          setDraftScoreMax("");
                         }}
                       >
                         Show All
@@ -1631,14 +1640,30 @@ export function FleetFinancialAnalytics() {
                         variant="outline"
                         className="flex-1"
                         onClick={() => {
-                          setCostTotalEnabled(false); setCostTotalMin(""); setCostTotalMax("");
-                          setCostFuelEnabled(false); setCostFuelMin(""); setCostFuelMax("");
-                          setCostWagesEnabled(false); setCostWagesMin(""); setCostWagesMax("");
-                          setCostMaintEnabled(false); setCostMaintMin(""); setCostMaintMax("");
-                          setDraftCostTotalEnabled(false); setDraftCostTotalMin(""); setDraftCostTotalMax("");
-                          setDraftCostFuelEnabled(false); setDraftCostFuelMin(""); setDraftCostFuelMax("");
-                          setDraftCostWagesEnabled(false); setDraftCostWagesMin(""); setDraftCostWagesMax("");
-                          setDraftCostMaintEnabled(false); setDraftCostMaintMin(""); setDraftCostMaintMax("");
+                          setCostTotalEnabled(false);
+                          setCostTotalMin("");
+                          setCostTotalMax("");
+                          setCostFuelEnabled(false);
+                          setCostFuelMin("");
+                          setCostFuelMax("");
+                          setCostWagesEnabled(false);
+                          setCostWagesMin("");
+                          setCostWagesMax("");
+                          setCostMaintEnabled(false);
+                          setCostMaintMin("");
+                          setCostMaintMax("");
+                          setDraftCostTotalEnabled(false);
+                          setDraftCostTotalMin("");
+                          setDraftCostTotalMax("");
+                          setDraftCostFuelEnabled(false);
+                          setDraftCostFuelMin("");
+                          setDraftCostFuelMax("");
+                          setDraftCostWagesEnabled(false);
+                          setDraftCostWagesMin("");
+                          setDraftCostWagesMax("");
+                          setDraftCostMaintEnabled(false);
+                          setDraftCostMaintMin("");
+                          setDraftCostMaintMax("");
                         }}
                       >
                         Show All

@@ -1,5 +1,5 @@
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
-import jsPDF from "jspdf";
+import JsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
@@ -119,7 +119,7 @@ export function exportVehiclePLToPDF(
   nameLookup: (id: string) => string,
   opts: StatementOptions,
 ) {
-  const doc = new jsPDF({
+  const doc = new JsPDF({
     orientation: "portrait",
     unit: "pt",
     format: "a4",

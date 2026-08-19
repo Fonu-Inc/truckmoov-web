@@ -13,16 +13,13 @@ import {
   Unlink,
   XCircle,
 } from "lucide-react";
-import {
-  useEffect, useState,
-} from "react";
+import { useEffect } from "react";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { Separator } from "@/components/shadcn/separator";
 
 type InvoiceSync = any;
 

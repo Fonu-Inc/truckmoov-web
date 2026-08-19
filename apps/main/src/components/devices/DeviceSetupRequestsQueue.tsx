@@ -112,7 +112,7 @@ const TRACKER_LABELS: Record<string, string> = {
 export function DeviceSetupRequestsQueue({
   requests,
   loading,
-  onRefresh,
+  onRefresh: _onRefresh,
   onUpdateStatus,
   onOpenWizard,
   isConfigurator,
@@ -685,7 +685,10 @@ export function DeviceSetupRequestsQueue({
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
                                           className="text-destructive"
-                                          onClick={() => { setRejectingId(req.id); setShowRejectDialog(true); }}
+                                          onClick={() => {
+                                            setRejectingId(req.id);
+                                            setShowRejectDialog(true);
+                                          }}
                                         >
                                           <XCircle className="h-4 w-4 mr-2" />
                                           {" "}

@@ -207,19 +207,24 @@ const TIER_COLORS: Record<string, string> = {
   enterprise: "bg-success/10 text-success",
 };
 
+type SortKey = "name" | "orgType" | "plan" | "status" | "vehicleCount" | "simCount" | "monthlyRevenueNgn" | "lastActiveAt";
+type SortDir = "asc" | "desc";
+
+function SortIcon({
+  active, dir,
+}: {
+  active: boolean; dir: SortDir;
+}) {
+  if (!active)
+    return <ArrowUpDown className="h-3 w-3 ml-1 inline opacity-50" />;
+  return dir === "asc"
+    ? <ArrowUp className="h-3 w-3 ml-1 inline" />
+    : <ArrowDown className="h-3 w-3 ml-1 inline" />;
+}
+
 export default function PlatformTenants() {
-  const {
-    currency,
-    format,
-  } = useCurrency();
-  const {
-    notifications,
-    unreadCount,
-    markAsRead,
-    markAllAsRead,
-    clearNotifications,
-    addNotification,
-  } = useRealtimeNotifications();
+  const { currency } = useCurrency();
+  const { addNotification } = useRealtimeNotifications();
 
   const queryClient = useQueryClient();
   const updateTenantStatusMutation = useUpdateTenantStatus();
@@ -331,7 +336,6 @@ export default function PlatformTenants() {
   ] = useState<SystemTenant | null>(null);
 
   // Sorting state
-  type SortKey = "name" | "orgType" | "plan" | "status" | "vehicleCount" | "simCount" | "monthlyRevenueNgn" | "lastActiveAt";
   const [
     sortKey,
     setSortKey,
@@ -339,7 +343,7 @@ export default function PlatformTenants() {
   const [
     sortDir,
     setSortDir,
-  ] = useState<"asc" | "desc">("asc");
+  ] = useState<SortDir>("asc");
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
@@ -349,14 +353,6 @@ export default function PlatformTenants() {
       setSortDir("asc");
     }
   };
-  const SortIcon = ({ k }: { k: SortKey }) => {
-    if (sortKey !== k)
-      return <ArrowUpDown className="h-3 w-3 ml-1 inline opacity-50" />;
-    return sortDir === "asc"
-      ? <ArrowUp className="h-3 w-3 ml-1 inline" />
-      : <ArrowDown className="h-3 w-3 ml-1 inline" />;
-  };
-
   // Auto-refresh every 60 seconds
   useEffect(
     () => {
@@ -374,7 +370,9 @@ export default function PlatformTenants() {
   const plansByTier = useMemo(
     () => {
       const map: Record<string, SubscriptionPlan> = {};
-      (plansQuery.data?.data?.plans ?? []).forEach((p) => { map[p.tier] = p; });
+      (plansQuery.data?.data?.plans ?? []).forEach((p) => {
+        map[p.tier] = p;
+      });
       return map;
     },
     [plansQuery.data],
@@ -412,16 +410,34 @@ export default function PlatformTenants() {
         let av: string | number;
         let bv: string | number;
         switch (sortKey) {
-          case "name": av = a.name?.toLowerCase() || ""; bv = b.name?.toLowerCase() || ""; break;
+          case "name":
+            av = a.name?.toLowerCase() || "";
+            bv = b.name?.toLowerCase() || "";
+            break;
           case "orgType":
             av = (tenantOrgTypesState[a.id] || []).join(",");
             bv = (tenantOrgTypesState[b.id] || []).join(",");
             break;
-          case "plan": av = a.plan || ""; bv = b.plan || ""; break;
-          case "status": av = a.status || ""; bv = b.status || ""; break;
-          case "vehicleCount": av = a.vehicleCount || 0; bv = b.vehicleCount || 0; break;
-          case "simCount": av = a.simCount || 0; bv = b.simCount || 0; break;
-          case "monthlyRevenueNgn": av = a.monthlyRevenueNgn || 0; bv = b.monthlyRevenueNgn || 0; break;
+          case "plan":
+            av = a.plan || "";
+            bv = b.plan || "";
+            break;
+          case "status":
+            av = a.status || "";
+            bv = b.status || "";
+            break;
+          case "vehicleCount":
+            av = a.vehicleCount || 0;
+            bv = b.vehicleCount || 0;
+            break;
+          case "simCount":
+            av = a.simCount || 0;
+            bv = b.simCount || 0;
+            break;
+          case "monthlyRevenueNgn":
+            av = a.monthlyRevenueNgn || 0;
+            bv = b.monthlyRevenueNgn || 0;
+            break;
           case "lastActiveAt":
             av = a.lastActiveAt ? new Date(a.lastActiveAt).getTime() : 0;
             bv = b.lastActiveAt ? new Date(b.lastActiveAt).getTime() : 0;
@@ -692,7 +708,10 @@ export default function PlatformTenants() {
                         onClick={() => toggleSort("name")}
                       >
                         Tenant
-                        <SortIcon k="name" />
+                        <SortIcon
+                          active={sortKey === "name"}
+                          dir={sortDir}
+                        />
                       </TableHead>
                       <TableHead>Primary Contact</TableHead>
                       <TableHead
@@ -700,21 +719,30 @@ export default function PlatformTenants() {
                         onClick={() => toggleSort("orgType")}
                       >
                         Org Type
-                        <SortIcon k="orgType" />
+                        <SortIcon
+                          active={sortKey === "orgType"}
+                          dir={sortDir}
+                        />
                       </TableHead>
                       <TableHead
                         className="cursor-pointer select-none"
                         onClick={() => toggleSort("plan")}
                       >
                         Plan
-                        <SortIcon k="plan" />
+                        <SortIcon
+                          active={sortKey === "plan"}
+                          dir={sortDir}
+                        />
                       </TableHead>
                       <TableHead
                         className="cursor-pointer select-none"
                         onClick={() => toggleSort("status")}
                       >
                         Status
-                        <SortIcon k="status" />
+                        <SortIcon
+                          active={sortKey === "status"}
+                          dir={sortDir}
+                        />
                       </TableHead>
                       <TableHead>KYC Status</TableHead>
                       <TableHead
@@ -722,7 +750,10 @@ export default function PlatformTenants() {
                         onClick={() => toggleSort("vehicleCount")}
                       >
                         Vehicles
-                        <SortIcon k="vehicleCount" />
+                        <SortIcon
+                          active={sortKey === "vehicleCount"}
+                          dir={sortDir}
+                        />
                       </TableHead>
                       <TableHead>Drivers</TableHead>
                       <TableHead>Devices</TableHead>
@@ -731,21 +762,30 @@ export default function PlatformTenants() {
                         onClick={() => toggleSort("simCount")}
                       >
                         SIMs
-                        <SortIcon k="simCount" />
+                        <SortIcon
+                          active={sortKey === "simCount"}
+                          dir={sortDir}
+                        />
                       </TableHead>
                       <TableHead
                         className="cursor-pointer select-none"
                         onClick={() => toggleSort("monthlyRevenueNgn")}
                       >
                         Revenue
-                        <SortIcon k="monthlyRevenueNgn" />
+                        <SortIcon
+                          active={sortKey === "monthlyRevenueNgn"}
+                          dir={sortDir}
+                        />
                       </TableHead>
                       <TableHead
                         className="cursor-pointer select-none"
                         onClick={() => toggleSort("lastActiveAt")}
                       >
                         Last Active
-                        <SortIcon k="lastActiveAt" />
+                        <SortIcon
+                          active={sortKey === "lastActiveAt"}
+                          dir={sortDir}
+                        />
                       </TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>

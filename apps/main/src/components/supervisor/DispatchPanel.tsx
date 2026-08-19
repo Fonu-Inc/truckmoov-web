@@ -5,9 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import {
-  Card, CardContent, CardHeader, CardTitle,
-} from "@/components/shadcn/card";
+
 import {
   Dialog,
   DialogContent,

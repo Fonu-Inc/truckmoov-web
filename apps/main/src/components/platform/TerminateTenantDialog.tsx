@@ -32,7 +32,7 @@ export function TerminateTenantDialog({
   tenant,
   open,
   onOpenChange,
-  onTerminated,
+  onTerminated: _onTerminated,
 }: Props) {
   const [
     reason,
@@ -42,10 +42,7 @@ export function TerminateTenantDialog({
     confirmation,
     setConfirmation,
   ] = useState("");
-  const [
-    submitting,
-    setSubmitting,
-  ] = useState(false);
+  const [submitting] = useState(false);
 
   const canSubmit
     = confirmation === "TERMINATE" && reason.trim().length >= 10 && !submitting;

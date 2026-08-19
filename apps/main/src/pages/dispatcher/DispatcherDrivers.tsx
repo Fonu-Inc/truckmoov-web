@@ -5,7 +5,6 @@ import {
 import {
   useEffect, useState,
 } from "react";
-import { toast } from "sonner";
 import { CallInteractionModal } from "@/components/communications/CallInteractionModal";
 // Import the tab components
 import { DriverBehaviorTab } from "@/components/drivers/DriverBehaviorTab";
@@ -47,26 +46,17 @@ export default function DispatcherDrivers() {
     isMessageDialogOpen,
     setIsMessageDialogOpen,
   ] = useState(false);
-  const [
-    messageType,
-    setMessageType,
-  ] = useState<"sms" | "whatsapp">("whatsapp");
+  const [messageType] = useState<"sms" | "whatsapp">("whatsapp");
   const [
     messageContent,
     setMessageContent,
   ] = useState("");
-  const [
-    selectedContactName,
-    setSelectedContactName,
-  ] = useState<string | undefined>();
-  const [
-    selectedContactPhone,
-    setSelectedContactPhone,
-  ] = useState<string | undefined>();
+  const [selectedContactName] = useState<string | undefined>();
+  const [selectedContactPhone] = useState<string | undefined>();
 
   // Use real Fonu integration
-  const sendSMS = async (...args: any[]) => {};
-  const sendWhatsApp = async (...args: any[]) => {};
+  const sendSMS = async (..._args: any[]) => {};
+  const sendWhatsApp = async (..._args: any[]) => {};
   const isSending = false;
 
   // SIP call control (shared across app)
@@ -119,7 +109,7 @@ export default function DispatcherDrivers() {
       setIsMessageDialogOpen(false);
       setMessageContent("");
     }
-    catch (err) {
+    catch {
       // Error handled by hook
     }
   };

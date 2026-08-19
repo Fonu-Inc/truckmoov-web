@@ -4,10 +4,10 @@ export const ROLE_REDIRECT_MAP: Partial<Record<UserRole, string>> = {
   ENTERPRISE_ADMIN: "/enterprise",
   AGGREGATOR_ADMIN: "/aggregator",
   OWNER_OPERATOR: "/owner-operator",
-  FLEET_ADMIN: "/admin",
-  OPERATIONS_MANAGER: "/admin",
+  FLEET_ADMIN: "/overview",
+  OPERATIONS_MANAGER: "/overview",
   DISPATCHER: "/dispatcher",
-  FINANCE_VIEWER: "/admin/fleet?tab=analytics",
+  FINANCE_VIEWER: "/fleet?tab=analytics",
 };
 
 const FALLBACK_PATH = "/not-authorized";

@@ -1,18 +1,16 @@
 import {
   Activity, Brain, Inbox, Loader2,
-  Mail, MessageSquare, Phone, Send, Users,
+  Mail, MessageSquare, Send, Users,
 } from "lucide-react";
 import {
   useEffect, useState,
 } from "react";
-import { toast } from "sonner";
 import { CallInteractionModal } from "@/components/communications/CallInteractionModal";
 // Import the tab components
 import { DriverBehaviorTab } from "@/components/drivers/DriverBehaviorTab";
 import { DriverFatigueTab } from "@/components/drivers/DriverFatigueTab";
 import { DriverMessagesInbox } from "@/components/drivers/DriverMessagesInbox";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
@@ -48,26 +46,17 @@ export default function DriverManagement() {
     isMessageDialogOpen,
     setIsMessageDialogOpen,
   ] = useState(false);
-  const [
-    messageType,
-    setMessageType,
-  ] = useState<"sms" | "whatsapp">("whatsapp");
+  const [messageType] = useState<"sms" | "whatsapp">("whatsapp");
   const [
     messageContent,
     setMessageContent,
   ] = useState("");
-  const [
-    selectedContactName,
-    setSelectedContactName,
-  ] = useState<string | undefined>();
-  const [
-    selectedContactPhone,
-    setSelectedContactPhone,
-  ] = useState<string | undefined>();
+  const [selectedContactName] = useState<string | undefined>();
+  const [selectedContactPhone] = useState<string | undefined>();
 
   // Use real Fonu integration
-  const sendSMS = async (...args: any[]) => {};
-  const sendWhatsApp = async (...args: any[]) => ({ success: false });
+  const sendSMS = async (..._args: any[]) => {};
+  const sendWhatsApp = async (..._args: any[]) => ({ success: false });
   const isSending = false;
 
   // SIP call control (shared across app)
@@ -120,7 +109,7 @@ export default function DriverManagement() {
       setIsMessageDialogOpen(false);
       setMessageContent("");
     }
-    catch (err) {
+    catch {
       // Error handled by hook
     }
   };

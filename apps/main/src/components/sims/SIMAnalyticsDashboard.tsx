@@ -1,11 +1,8 @@
 import {
   Activity,
-  ArrowDownRight,
   ArrowUpRight,
-  Building2,
   Database,
   DollarSign,
-  TrendingDown,
   TrendingUp,
 } from "lucide-react";
 import {
@@ -19,16 +16,11 @@ import {
   CartesianGrid,
   Cell,
   Legend,
-  Line,
-  LineChart,
   Pie,
   PieChart,
-  ResponsiveContainer,
   XAxis,
   YAxis,
 } from "recharts";
-import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
@@ -44,14 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
@@ -104,7 +89,7 @@ function generateMonthlyData(baseCost: number, baseData: number) {
     "Nov",
     "Dec",
   ];
-  return months.map((month, i) => ({
+  return months.map((month, _i) => ({
     month,
     dataUsage: Math.round(baseData * (0.7 + Math.random() * 0.6)),
     cost: Math.round(baseCost * (0.8 + Math.random() * 0.4)),
@@ -131,48 +116,6 @@ export function SIMAnalyticsDashboard({ sims }: SIMAnalyticsDashboardProps) {
   ] = useState("12m");
 
   // Calculate tenant analytics
-  const tenantAnalytics = useMemo(
-    () => {
-      const tenantMap = new Map<string, {
-        name: string;
-        simCount: number;
-        dataUsage: number;
-        dataLimit: number;
-        monthlyCost: number;
-        revenue: number;
-        activeSims: number;
-      }>();
-
-      sims.forEach((sim) => {
-        const tenantName = sim.tenant || "Unassigned";
-        const existing = tenantMap.get(tenantName) || {
-          name: tenantName,
-          simCount: 0,
-          dataUsage: 0,
-          dataLimit: 0,
-          monthlyCost: 0,
-          revenue: 0,
-          activeSims: 0,
-        };
-
-        existing.simCount += 1;
-        existing.dataUsage += sim.dataUsage;
-        existing.dataLimit += sim.dataLimit;
-        existing.monthlyCost += sim.monthlyCost;
-        existing.revenue += sim.monthlyCost * 1.35; // 35% margin
-        if (sim.status === "active")
-          existing.activeSims += 1;
-
-        tenantMap.set(
-          tenantName,
-          existing,
-        );
-      });
-
-      return Array.from(tenantMap.values()).sort((a, b) => b.revenue - a.revenue);
-    },
-    [sims],
-  );
 
   // Calculate totals
   const totals = useMemo(

@@ -13,15 +13,8 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import { Input } from "@/components/shadcn/input";
 import { Progress } from "@/components/shadcn/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/shadcn/select";
+
 import {
   Table,
   TableBody,
@@ -30,7 +23,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import { useAuthStore } from "@/stores/authStore";
 
 type BulkDeviceImportProps = {
   catalog: any[];
@@ -49,9 +41,8 @@ type ImportRow = {
 };
 
 export function BulkDeviceImport({
-  catalog, onImportComplete,
+  catalog, onImportComplete: _onImportComplete,
 }: BulkDeviceImportProps) {
-  const { user } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [
@@ -62,14 +53,8 @@ export function BulkDeviceImport({
     parsedRows,
     setParsedRows,
   ] = useState<ImportRow[]>([]);
-  const [
-    importing,
-    setImporting,
-  ] = useState(false);
-  const [
-    importProgress,
-    setImportProgress,
-  ] = useState(0);
+  const [importing] = useState(false);
+  const [importProgress] = useState(0);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];

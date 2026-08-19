@@ -1,6 +1,6 @@
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
-  AlertTriangle, Check, Clock, Download, SlidersHorizontal as Filter, Hourglass, Radio, Search, ShieldCheck,
+  AlertTriangle, Check, Download, SlidersHorizontal as Filter, Hourglass, Radio, Search, ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/shadcn/badge";
@@ -375,7 +375,10 @@ export function VerificationMonitor({
                     <Checkbox
                       checked={!!timeSinceFrom || !!timeSinceTo}
                       onCheckedChange={(c) => {
-                        if (!c) { setTimeSinceFrom(""); setTimeSinceTo(""); }
+                        if (!c) {
+                          setTimeSinceFrom("");
+                          setTimeSinceTo("");
+                        }
                       }}
                       className="h-3.5 w-3.5"
                     />

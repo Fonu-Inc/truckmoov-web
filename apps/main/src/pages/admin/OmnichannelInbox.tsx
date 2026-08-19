@@ -13,7 +13,6 @@ import {
   FileText,
   Image as ImageIcon,
   Loader2,
-  Mail,
   MessageSquare,
   Pause,
   Phone,
@@ -22,7 +21,6 @@ import {
   PhoneOutgoing,
   Play,
   Plus,
-  RefreshCw,
   Search,
   Send,
   X,
@@ -52,7 +50,6 @@ import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Tabs, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
-import { Textarea } from "@/components/shadcn/textarea";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
@@ -102,16 +99,15 @@ const statusColors: Record<string, string> = {
 
 export default function OmnichannelInbox() {
   const { user } = useAuthStore();
-  const tenantId = user?.tenantId || "";
   const messages: any[] = [];
   const callLogs: any[] = [];
   const isLoading = false;
   const isSending = false;
   const isCalling = false;
-  const sendSMS = async (...args: any[]) => {};
-  const sendWhatsApp = async (...args: any[]) => ({ success: false });
-  const initiateCall = async (...args: any[]) => {};
-  const refetch = async (...args: any[]) => {};
+  const sendSMS = async (..._args: any[]) => {};
+  const sendWhatsApp = async (..._args: any[]) => ({ success: false });
+  const initiateCall = async (..._args: any[]) => {};
+  const refetch = async (..._args: any[]) => {};
 
   const [
     searchQuery,
@@ -337,7 +333,7 @@ export default function OmnichannelInbox() {
         setReplyMessage("");
       }
     }
-    catch (err) {
+    catch {
       // Error toast handled in hook
     }
   };
@@ -354,7 +350,7 @@ export default function OmnichannelInbox() {
         user?.name,
       );
     }
-    catch (err) {
+    catch {
       // Error toast handled in hook
     }
   };

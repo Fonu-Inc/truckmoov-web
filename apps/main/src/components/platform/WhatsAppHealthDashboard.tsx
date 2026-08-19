@@ -2,10 +2,8 @@ import {
   Activity,
   AlertTriangle,
   CheckCircle,
-  Clock,
   Inbox,
   MessageSquare,
-  RefreshCw,
   Send,
   TrendingUp,
   XCircle,
@@ -15,9 +13,8 @@ import {
   useEffect, useState,
 } from "react";
 import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
 import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
+  Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Progress } from "@/components/shadcn/progress";

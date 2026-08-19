@@ -6,29 +6,24 @@ import {
   Check,
   CheckCheck,
   Clock,
-  Mail,
   MessageSquare,
   MoreVertical,
-  Paperclip,
-  Phone,
   PhoneCall,
   RefreshCw,
   Search,
   Send,
-  Video,
   XCircle,
 } from "lucide-react";
 import {
   useEffect, useRef, useState,
 } from "react";
-import { toast } from "sonner";
 import {
   Avatar, AvatarFallback,
 } from "@/components/shadcn/avatar";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
-  Card, CardContent, CardHeader, CardTitle,
+  Card, CardContent,
 } from "@/components/shadcn/card";
 import {
   DropdownMenu,
@@ -42,14 +37,9 @@ import { Skeleton } from "@/components/shadcn/skeleton";
 import { Textarea } from "@/components/shadcn/textarea";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
-import { CallRecordingPlayer } from "./CallRecordingPlayer";
 import {
   SMSIcon, VoiceCallIcon, WhatsAppIcon,
 } from "./ChannelIcons";
-import { MessageActions } from "./MessageActions";
-
-type DriverMessage = any;
 
 type Conversation = {
   driverId: string;
@@ -62,17 +52,14 @@ type Conversation = {
 };
 
 export function ConversationInbox() {
-  const { user } = useAuthStore();
-  const tenantId = user?.tenantId || "";
-
   const messages: any[] = [];
   const isLoading = false;
-  const sendSMS = async (...args: any[]) => {};
-  const sendWhatsApp = async (...args: any[]) => {};
-  const initiateCall = async (...args: any[]) => {};
+  const sendSMS = async (..._args: any[]) => {};
+  const sendWhatsApp = async (..._args: any[]) => {};
+  const initiateCall = async (..._args: any[]) => {};
   const isSending = false;
   const isCalling = false;
-  const refetch = async (...args: any[]) => {};
+  const refetch = async (..._args: any[]) => {};
   const [
     selectedConversation,
     setSelectedConversation,
@@ -182,7 +169,7 @@ export function ConversationInbox() {
       }
       setNewMessage("");
     }
-    catch (error) {
+    catch {
       // Error already handled by hook
     }
   };
@@ -198,7 +185,7 @@ export function ConversationInbox() {
         "Fleet Manager",
       );
     }
-    catch (error) {
+    catch {
       // Error handled by hook
     }
   };

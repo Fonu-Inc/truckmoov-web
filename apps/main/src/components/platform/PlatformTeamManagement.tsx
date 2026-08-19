@@ -1,6 +1,6 @@
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
-  CheckCircle, Clock, Mail, Plus, Search, Shield, SlidersHorizontal, Trash2, Users, XCircle,
+  Clock, Mail, Plus, Search, Shield, SlidersHorizontal, Trash2, Users, XCircle,
 } from "lucide-react";
 import {
   useEffect, useState,
@@ -87,10 +87,7 @@ export function PlatformTeamManagement() {
     isInviteDialogOpen,
     setIsInviteDialogOpen,
   ] = useState(false);
-  const [
-    isInviting,
-    setIsInviting,
-  ] = useState(false);
+  const [isInviting] = useState(false);
   const [
     inviteEmail,
     setInviteEmail,

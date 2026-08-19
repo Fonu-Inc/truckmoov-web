@@ -62,7 +62,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import { Switch } from "@/components/shadcn/switch";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
@@ -70,7 +69,6 @@ import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 
 const formatBundleSize = (mb: number) => mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`;
@@ -80,7 +78,6 @@ function formatDataUsedGb(gb: number) {
     { maximumFractionDigits: 1 },
   )} GB`;
 }
-const useBundleTopups = (_tenantId?: string) => ({ data: [] as any[] });
 function useBundleTopup() {
   return {
     mutateAsync: async (..._args: any[]) => {}, isPending: false,
@@ -253,14 +250,8 @@ export default function DataBundles() {
     viewAlloc,
     setViewAlloc,
   ] = useState<any | null>(null);
-  const [
-    msisdn,
-    setMsisdn,
-  ] = useState("");
-  const [
-    bundleCode,
-    setBundleCode,
-  ] = useState("");
+  const [_msisdn] = useState("");
+  const [_bundleCode] = useState("");
   const [
     topupAmount,
     setTopupAmount,
@@ -563,15 +554,10 @@ export default function DataBundles() {
   );
 
   // KPIs
-  const totalDataMb = allocations.reduce(
-    (s, a) => s + (a.data_mb_total || 0),
-    0,
-  );
   const usedDataMb = allocations.reduce(
     (s, a) => s + (a.data_mb_used || 0),
     0,
   );
-  const usagePct = totalDataMb > 0 ? (usedDataMb / totalDataMb) * 100 : 0;
 
   const successTopups = useMemo(
     () => topups.filter((t: { status: string }) => t.status === "SUCCESS"),
@@ -595,7 +581,9 @@ export default function DataBundles() {
 
   const monthSpend = useMemo(
     () => {
-      const start = new Date(); start.setDate(1); start.setHours(
+      const start = new Date();
+      start.setDate(1);
+      start.setHours(
         0,
         0,
         0,
@@ -619,7 +607,9 @@ export default function DataBundles() {
 
   const monthTopupCount = useMemo(
     () => {
-      const start = new Date(); start.setDate(1); start.setHours(
+      const start = new Date();
+      start.setDate(1);
+      start.setHours(
         0,
         0,
         0,
@@ -677,14 +667,17 @@ export default function DataBundles() {
     const opt = RANGE_OPTIONS.find(r => r.value === rangeKey) ?? RANGE_OPTIONS[3];
     const d = new Date();
     if (rangeKey === "yesterday") {
-      d.setDate(d.getDate() - 1); d.setHours(
+      d.setDate(d.getDate() - 1);
+      d.setHours(
         0,
         0,
         0,
         0,
-      ); return d;
+      );
+      return d;
     }
-    d.setDate(d.getDate() - opt.days); return d;
+    d.setDate(d.getDate() - opt.days);
+    return d;
   };
 
   // Analytics: daily spending trend (range-aware)
@@ -700,7 +693,8 @@ export default function DataBundles() {
       const days = opt.days;
       const buckets = new Map<string, number>();
       for (let i = days - 1; i >= 0; i--) {
-        const d = new Date(); d.setDate(d.getDate() - i);
+        const d = new Date();
+        d.setDate(d.getDate() - i);
         buckets.set(
           d.toISOString().slice(
             0,
@@ -869,10 +863,6 @@ export default function DataBundles() {
   const filteredTopups = topups;
 
   const filteredRates = ratesQuery.data ? ratesLive : catalog.filter(b => b.is_active);
-  const carriers = useMemo(
-    () => Array.from(new Set(catalog.map(b => b.carrier))),
-    [catalog],
-  );
 
   const handleTopup = async () => {
     if (!topupAmount || !topupMomo)
@@ -995,7 +985,9 @@ export default function DataBundles() {
     );
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = url; link.download = filename; link.click();
+    link.href = url;
+    link.download = filename;
+    link.click();
     URL.revokeObjectURL(url);
   };
 
@@ -1535,7 +1527,11 @@ export default function DataBundles() {
                                       </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => { setViewAlloc(a); setViewOpen(true); }}>
+                                      <DropdownMenuItem onClick={() => {
+                                        setViewAlloc(a);
+                                        setViewOpen(true);
+                                      }}
+                                      >
                                         <Eye className="h-4 w-4 mr-2" />
                                         {" "}
                                         View allocation
@@ -2219,7 +2215,11 @@ export default function DataBundles() {
                       <Label className="text-sm font-medium">Carrier</Label>
                       <Select
                         value={allocCarrier}
-                        onValueChange={(v) => { setAllocCarrier(v); setAllocCycle(""); setAllocBundle(""); }}
+                        onValueChange={(v) => {
+                          setAllocCarrier(v);
+                          setAllocCycle("");
+                          setAllocBundle("");
+                        }}
                       >
                         <SelectTrigger><SelectValue placeholder="Select carrier" /></SelectTrigger>
                         <SelectContent>
@@ -2238,7 +2238,10 @@ export default function DataBundles() {
                       <Label className="text-sm font-medium">Plan Type</Label>
                       <Select
                         value={allocCycle}
-                        onValueChange={(v) => { setAllocCycle(v); setAllocBundle(""); }}
+                        onValueChange={(v) => {
+                          setAllocCycle(v);
+                          setAllocBundle("");
+                        }}
                         disabled={!allocCarrier}
                       >
                         <SelectTrigger><SelectValue placeholder={allocCarrier ? "Select plan type" : "Pick carrier first"} /></SelectTrigger>

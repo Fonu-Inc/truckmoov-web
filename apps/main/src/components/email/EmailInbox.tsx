@@ -5,8 +5,6 @@ import {
   AlertCircle,
   Archive,
   ArrowLeft,
-  CheckSquare,
-  Forward,
   Inbox,
   Loader2,
   Mail,
@@ -25,7 +23,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
-  Card, CardContent, CardHeader, CardTitle,
+  Card, CardContent, CardHeader,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import {
@@ -44,9 +42,6 @@ import {
 import { Input } from "@/components/shadcn/input";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Separator } from "@/components/shadcn/separator";
-import {
-  Tabs, TabsContent, TabsList, TabsTrigger,
-} from "@/components/shadcn/tabs";
 
 type Email = {
   id: string;
@@ -880,7 +875,10 @@ export function EmailInbox() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => { setIsReplying(false); setReplyBody(""); }}
+                        onClick={() => {
+                          setIsReplying(false);
+                          setReplyBody("");
+                        }}
                       >
                         Cancel
                       </Button>

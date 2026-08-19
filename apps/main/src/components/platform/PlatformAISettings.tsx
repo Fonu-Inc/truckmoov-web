@@ -3,7 +3,6 @@ import {
   BarChart3,
   Bot,
   Check,
-  Eye,
   EyeOff,
   Settings,
   Shield,
@@ -14,13 +13,11 @@ import {
   useMemo, useState,
 } from "react";
 import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
-import { Label as FilterLabel } from "@/components/shadcn/label";
 import {
   Select,
   SelectContent,
@@ -30,7 +27,6 @@ import {
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import { Slider } from "@/components/shadcn/slider";
 import { Switch } from "@/components/shadcn/switch";
 import {
   Table,

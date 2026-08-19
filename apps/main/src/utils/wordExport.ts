@@ -7,7 +7,6 @@ import {
   Header,
   HeadingLevel,
   ImageRun,
-  NumberFormat,
   Packer,
   PageBreak,
   PageNumber,
@@ -33,82 +32,8 @@ const COLORS = {
 };
 
 // Convert SVG to PNG blob
-async function svgToPngBlob(svgElement: SVGElement): Promise<Uint8Array> {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  const img = new Image();
-
-  const svgData = new XMLSerializer().serializeToString(svgElement);
-  const svgBlob = new Blob(
-    [svgData],
-    { type: "image/svg+xml;charset=utf-8" },
-  );
-  const url = URL.createObjectURL(svgBlob);
-
-  return new Promise((resolve, reject) => {
-    img.onload = () => {
-      canvas.width = img.width * 2;
-      canvas.height = img.height * 2;
-      ctx?.scale(
-        2,
-        2,
-      );
-      if (ctx) {
-        ctx.fillStyle = "#1e293b";
-        ctx.fillRect(
-          0,
-          0,
-          canvas.width,
-          canvas.height,
-        );
-      }
-      ctx?.drawImage(
-        img,
-        0,
-        0,
-      );
-
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            blob.arrayBuffer().then((buffer) => {
-              resolve(new Uint8Array(buffer));
-              URL.revokeObjectURL(url);
-            });
-          }
-          else {
-            reject(new Error("Failed to create blob"));
-          }
-        },
-        "image/png",
-      );
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
-}
 
 // Capture diagram from DOM
-async function captureDiagramImage(diagramId: string): Promise<Uint8Array | null> {
-  try {
-    const container = document.querySelector(`[data-diagram-id="${diagramId}"]`);
-    if (!container)
-      return null;
-
-    const svg = container.querySelector("svg");
-    if (svg) {
-      return await svgToPngBlob(svg);
-    }
-    return null;
-  }
-  catch (error) {
-    console.error(
-      "Error capturing diagram:",
-      error,
-    );
-    return null;
-  }
-}
 
 // Document sections data
 export type DocumentSection = {

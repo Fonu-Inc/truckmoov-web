@@ -367,20 +367,6 @@ export function SupportChatWidget({
     });
   };
 
-  const askAiAbout = (question: string, topicLabel: string) => {
-    setTab("messages");
-    setView("messages");
-    seedMessagesIfEmpty();
-    setTimeout(
-      () => {
-        const text = `I need more help with: "${question}" (topic: ${topicLabel})`;
-        setInput("");
-        void sendMessage(text);
-      },
-      0,
-    );
-  };
-
   const sendMessage = async (text: string) => {
     if (!text.trim() || isStreaming)
       return;
@@ -491,8 +477,10 @@ export function SupportChatWidget({
           { stream: true },
         );
 
-        let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+        for (;;) {
+          const newlineIndex = textBuffer.indexOf("\n");
+          if (newlineIndex === -1)
+            break;
           let line = textBuffer.slice(
             0,
             newlineIndex,
@@ -572,6 +560,20 @@ export function SupportChatWidget({
     finally {
       setIsStreaming(false);
     }
+  };
+
+  const askAiAbout = (question: string, topicLabel: string) => {
+    setTab("messages");
+    setView("messages");
+    seedMessagesIfEmpty();
+    setTimeout(
+      () => {
+        const text = `I need more help with: "${question}" (topic: ${topicLabel})`;
+        setInput("");
+        void sendMessage(text);
+      },
+      0,
+    );
   };
 
   const handleFilesPicked = (files: FileList | null) => {

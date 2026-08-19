@@ -1,7 +1,7 @@
 import type { PlatformNotification } from "@/hooks/useRealtimeNotifications";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Bell, Check, CheckCheck, Trash2, X,
+  Bell, CheckCheck, Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";

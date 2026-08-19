@@ -1037,7 +1037,10 @@ export function EmailInbox() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => { setIsReplying(false); setReplyBody(""); }}
+                        onClick={() => {
+                          setIsReplying(false);
+                          setReplyBody("");
+                        }}
                       >
                         Cancel
                       </Button>

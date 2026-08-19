@@ -188,11 +188,11 @@ export function WhatsAppAssistPanel() {
     toast.info("Coming soon");
   };
 
-  const handleDisconnect = async (account: WhatsAppAccount) => {
+  const handleDisconnect = async (_account) => {
     toast.info("Coming soon");
   };
 
-  const handleSetDefault = async (account: WhatsAppAccount) => {
+  const handleSetDefault = async (_account) => {
     toast.info("Coming soon");
   };
 

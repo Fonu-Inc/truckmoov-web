@@ -1,6 +1,4 @@
-import {
-  useQuery, useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   formatDate, formatDayMonth,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -29,11 +27,8 @@ import {
   DialogTitle,
 } from "@/components/shadcn/dialog";
 import { Textarea } from "@/components/shadcn/textarea";
-import { useAuthStore } from "@/stores/authStore";
 
 export function OrgUpgradeQueue() {
-  const { user } = useAuthStore();
-  const queryClient = useQueryClient();
   const [
     reviewingId,
     setReviewingId,
@@ -42,10 +37,7 @@ export function OrgUpgradeQueue() {
     reviewNotes,
     setReviewNotes,
   ] = useState("");
-  const [
-    isProcessing,
-    setIsProcessing,
-  ] = useState(false);
+  const [isProcessing] = useState(false);
 
   const {
     data: requests = [], isLoading,

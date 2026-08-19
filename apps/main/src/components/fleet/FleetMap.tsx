@@ -2,16 +2,11 @@ import type { RealtimeVehicleLocation } from "@/hooks/useRealtimeTracking";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import L from "leaflet";
 import {
-  AlertTriangle, Clock, Fuel, Navigation, Phone, Truck, Wifi, WifiOff,
+  Wifi, WifiOff,
 } from "lucide-react";
 import {
   useEffect, useMemo, useRef, useState,
 } from "react";
-import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
-import {
-  Card, CardContent,
-} from "@/components/shadcn/card";
 import { useRealtimeTracking } from "@/hooks/useRealtimeTracking";
 import "leaflet/dist/leaflet.css";
 
@@ -815,7 +810,7 @@ export function FleetMap({
         ).addTo(map);
         const sevColor = HARSH_SEVERITY_COLORS[event.severity];
         const ts = new Date(event.timestamp);
-        const tsLabel = isNaN(ts.getTime()) ? event.timestamp : ts.toLocaleString();
+        const tsLabel = Number.isNaN(ts.getTime()) ? event.timestamp : ts.toLocaleString();
         const playbackId = `harsh-playback-${event.id}`;
         marker.bindPopup(`
         <div style="min-width: 240px; padding: 4px;">

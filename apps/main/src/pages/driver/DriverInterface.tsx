@@ -1,8 +1,6 @@
 import { formatClockDuration } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Check,
   CheckCheck,
-  Clock,
   MapPin,
   MessageSquare,
   Mic,

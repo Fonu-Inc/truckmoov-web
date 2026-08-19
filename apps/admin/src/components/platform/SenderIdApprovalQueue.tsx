@@ -127,6 +127,17 @@ export function SenderIdApprovalQueue() {
     setIsSubmitting,
   ] = useState(false);
 
+  const closeDialog = () => {
+    setSelectedRequest(null);
+    setActionType(null);
+    setFormData({
+      telecom_reference: "",
+      telecom_provider: "",
+      admin_notes: "",
+      rejection_reason: "",
+    });
+  };
+
   const handleAction = async () => {
     if (!selectedRequest || !actionType)
       return;
@@ -172,17 +183,6 @@ export function SenderIdApprovalQueue() {
     finally {
       setIsSubmitting(false);
     }
-  };
-
-  const closeDialog = () => {
-    setSelectedRequest(null);
-    setActionType(null);
-    setFormData({
-      telecom_reference: "",
-      telecom_provider: "",
-      admin_notes: "",
-      rejection_reason: "",
-    });
   };
 
   const openActionDialog = (request: TenantSenderId, action: "approve" | "reject" | "whitelist") => {

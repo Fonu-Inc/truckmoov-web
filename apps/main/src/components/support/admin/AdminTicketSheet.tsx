@@ -4,7 +4,6 @@ import {
 import {
   AlertTriangle,
   ArrowUpRight,
-  CheckCircle2,
   FileText,
   ImageIcon,
   Loader2,

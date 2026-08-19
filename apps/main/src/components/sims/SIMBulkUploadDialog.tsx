@@ -74,7 +74,10 @@ export function SIMBulkUploadDialog({
 
   const handleFile = useCallback(
     async (f: File) => {
-      if (!f.name.endsWith(".csv")) { toast.error("Please upload a CSV file"); return; }
+      if (!f.name.endsWith(".csv")) {
+        toast.error("Please upload a CSV file");
+        return;
+      }
       setFile(f);
       setParsedData(parseCSV(await f.text()));
     },
@@ -107,6 +110,8 @@ export function SIMBulkUploadDialog({
     }
   };
 
+  const validCount = parsedData.filter(r => r.isValid).length;
+
   const importFile = async () => {
     if (!file || validCount === 0)
       return;
@@ -124,8 +129,6 @@ export function SIMBulkUploadDialog({
       ));
     }
   };
-
-  const validCount = parsedData.filter(r => r.isValid).length;
 
   return (
     <Dialog
@@ -157,7 +160,10 @@ export function SIMBulkUploadDialog({
                     </Button>
                   </div>
                   <div
-                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
+                    }}
                     onDragLeave={() => setIsDragging(false)}
                     onDrop={handleDrop}
                     className={cn(
@@ -186,7 +192,10 @@ export function SIMBulkUploadDialog({
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      onClick={() => { setFile(null); setParsedData([]); }}
+                      onClick={() => {
+                        setFile(null);
+                        setParsedData([]);
+                      }}
                     >
                       <X className="h-4 w-4" />
                     </Button>

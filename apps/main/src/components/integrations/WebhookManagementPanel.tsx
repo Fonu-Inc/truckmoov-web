@@ -2,7 +2,7 @@ import {
   formatDateTime, formatWithPattern,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
-  AlertTriangle, Check, Clock, Copy, ExternalLink, Eye, Plus, RefreshCw, Trash2, Webhook, X,
+  AlertTriangle, Clock, Copy, ExternalLink, Eye, Plus, RefreshCw, Trash2, Webhook,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
+  Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import {
@@ -42,7 +42,6 @@ export function WebhookManagementPanel() {
   const updateSubscription = async (..._args: any[]) => {};
   const deleteSubscription = async (..._args: any[]) => {};
   const regenerateSecret = async (..._args: any[]) => {};
-  const refreshDeliveryLogs = async () => {};
 
   const [
     isCreateDialogOpen,
@@ -84,7 +83,7 @@ export function WebhookManagementPanel() {
     }
 
     try {
-      new URL(newWebhookUrl);
+      void new URL(newWebhookUrl);
     }
     catch {
       toast.error("Please enter a valid URL");

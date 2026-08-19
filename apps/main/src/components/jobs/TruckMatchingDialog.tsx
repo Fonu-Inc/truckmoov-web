@@ -1,6 +1,6 @@
 import type { Job } from "@/types";
 import {
-  AlertCircle, Brain, CheckCircle, Clock, ListChecks, Lock,
+  AlertCircle, Brain, CheckCircle, Clock, ListChecks,
   MapPin, MessageSquare, Phone, PhoneCall, Route, ShieldCheck,
   Sparkles, Star, Truck, User,
 } from "lucide-react";
@@ -36,9 +36,6 @@ import {
   mockDrivers, mockVehicles,
 } from "@/data/mockData";
 import { useAIConfigPermissions } from "@/hooks/useAIConfigPermissions";
-import {
-  Driver, Vehicle,
-} from "@/types";
 
 type AIMatchResult = any;
 
@@ -99,7 +96,7 @@ export function TruckMatchingDialog({
   const model = null;
   const overallConfidence = null;
   const requiresApproval = false;
-  const runMatching = async (...args: any[]) => {};
+  const runMatching = async (..._args: any[]) => {};
   const reset = () => null;
 
   const isManualMode = mode === "manual";
@@ -213,7 +210,7 @@ export function TruckMatchingDialog({
         onOpenChange(false);
       }
     }
-    catch (error) {
+    catch {
       toast.error("Failed to initiate IVR call");
     }
     finally {

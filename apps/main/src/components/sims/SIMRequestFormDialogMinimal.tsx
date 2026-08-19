@@ -22,14 +22,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { Switch } from "@/components/shadcn/switch";
 import { Textarea } from "@/components/shadcn/textarea";
-import { toMb } from "@/lib/simBundleUtils";
 
 type BundleCatalogItem = any;
 const bundleCatalogData: BundleCatalogItem[] = [];
 const useBundleCatalog = () => ({ data: bundleCatalogData });
-const formatBundleSize = (..._args: any[]) => "";
 
 /**
  * Minimal SIM Request dialog used in the Get Started / Activate System flow
@@ -236,7 +233,10 @@ export function SIMRequestFormDialogMinimal({
             <Label>Carrier *</Label>
             <Select
               value={carrier}
-              onValueChange={(v) => { setCarrier(v); setBundleCode(""); }}
+              onValueChange={(v) => {
+                setCarrier(v);
+                setBundleCode("");
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select carrier" />
@@ -258,7 +258,10 @@ export function SIMRequestFormDialogMinimal({
             <Label>Plan Type *</Label>
             <Select
               value={planCycle}
-              onValueChange={(v) => { setPlanCycle(v as BillingCycle); setBundleCode(""); }}
+              onValueChange={(v) => {
+                setPlanCycle(v as BillingCycle);
+                setBundleCode("");
+              }}
             >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>

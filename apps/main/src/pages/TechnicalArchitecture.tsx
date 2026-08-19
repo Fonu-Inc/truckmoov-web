@@ -1,7 +1,7 @@
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
   Cloud, Cpu, Database, FileIcon, FileText, GitBranch,
-  Layers, Loader2, Lock, MessageSquare, Presentation, Radio, Server, Shield, Users,
+  Layers, Loader2, MessageSquare, Presentation, Radio, Server, Shield, Users,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -12,8 +12,6 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { Separator } from "@/components/shadcn/separator";
 import {
   aiArchitectureDiagram,
   dataArchitectureDiagram,

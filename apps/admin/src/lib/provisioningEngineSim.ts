@@ -109,7 +109,7 @@ const STEP_DELAY_MS = 2500; // 2.5s per step → ~20s total per request
  * Kick off the simulated engine for a device request.
  * Marks status `in_progress`, walks through checklist, then marks `active`.
  */
-export async function startDeviceProvisioningSimulation(requestId: string) {
+export async function startDeviceProvisioningSimulation(_requestId) {
   const checklist: ProvisioningStep[] = DEVICE_PROVISIONING_STEPS.map(s => ({ ...s }));
 
   // Move first step to in_progress, set status to in_progress
@@ -140,7 +140,7 @@ export async function startDeviceProvisioningSimulation(requestId: string) {
  * Kick off the simulated engine for a SIM request.
  * Walks through SIM checklist; final state remains `approved` (Completed).
  */
-export async function startSIMProvisioningSimulation(requestId: string) {
+export async function startSIMProvisioningSimulation(_requestId) {
   const checklist: ProvisioningStep[] = SIM_PROVISIONING_STEPS.map(s => ({ ...s }));
 
   checklist[0].status = "in_progress";

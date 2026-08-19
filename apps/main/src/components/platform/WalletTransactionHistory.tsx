@@ -7,13 +7,11 @@ import {
 import {
   useEffect, useState,
 } from "react";
-import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import { Input } from "@/components/shadcn/input";
 import {
   Table,
   TableBody,
@@ -40,10 +38,7 @@ type WalletTransaction = {
 };
 
 export function WalletTransactionHistory() {
-  const [
-    transactions,
-    setTransactions,
-  ] = useState<WalletTransaction[]>([]);
+  const [transactions] = useState<WalletTransaction[]>([]);
   const [
     loading,
     setLoading,
@@ -61,16 +56,16 @@ export function WalletTransactionHistory() {
     setCommTypeFilter,
   ] = useState<string>("all");
 
+  const fetchTransactions = async () => {
+    setLoading(false);
+  };
+
   useEffect(
     () => {
       fetchTransactions();
     },
     [],
   );
-
-  const fetchTransactions = async () => {
-    setLoading(false);
-  };
 
   const filteredTransactions = transactions.filter((tx) => {
     const matchesSearch

@@ -4,7 +4,6 @@ import type {
 import {
   useCallback, useState,
 } from "react";
-import { useAuthStore } from "@/stores/authStore";
 
 /**
  * Platform-agent view of the live support queue.

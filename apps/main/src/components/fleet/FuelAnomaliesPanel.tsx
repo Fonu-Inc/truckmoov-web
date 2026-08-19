@@ -4,10 +4,8 @@ import {
 import {
   AlertTriangle,
   CheckCircle,
-  Clock,
   Droplets,
   Fuel,
-  MapPin,
   TrendingDown,
 } from "lucide-react";
 import { useState } from "react";
@@ -24,7 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
-import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { Textarea } from "@/components/shadcn/textarea";
@@ -88,7 +85,7 @@ export function FuelAnomaliesPanel() {
       setSelectedAnomaly(null);
       setAcknowledgeNotes("");
     }
-    catch (err) {
+    catch {
       // Error handled by hook
     }
   };

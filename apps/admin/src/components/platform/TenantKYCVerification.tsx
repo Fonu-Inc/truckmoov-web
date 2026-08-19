@@ -163,10 +163,7 @@ export function TenantKYCVerification({
   tenantId: string;
   readOnly?: boolean;
 }) {
-  const [
-    activeTab,
-    setActiveTab,
-  ] = useState("business-info");
+  const [_activeTab] = useState("business-info");
   const [
     businessInfo,
     setBusinessInfo,
@@ -192,22 +189,13 @@ export function TenantKYCVerification({
     annual_revenue: "",
     verification_status: "pending",
   });
-  const [
-    documents,
-    setDocuments,
-  ] = useState<KYCDocument[]>([]);
+  const [documents] = useState<KYCDocument[]>([]);
   const [
     loading,
     setLoading,
   ] = useState(true);
-  const [
-    saving,
-    setSaving,
-  ] = useState(false);
-  const [
-    uploading,
-    setUploading,
-  ] = useState(false);
+  const [saving] = useState(false);
+  const [uploading] = useState(false);
   const [
     selectedDocType,
     setSelectedDocType,
@@ -231,14 +219,6 @@ export function TenantKYCVerification({
     },
     [tenantId],
   );
-
-  const fetchBusinessInfo = async () => {};
-
-  const fetchDocuments = async () => {};
-
-  const handleSaveBusinessInfo = async () => {
-    toast.info("Coming soon");
-  };
 
   const REQUIRED_BIZ_FIELDS: {
     key: keyof BusinessInfo;
@@ -315,6 +295,10 @@ export function TenantKYCVerification({
     toast.info("Coming soon");
   };
 
+  const uploadKycFile = async (_file) => {
+    toast.info("Coming soon");
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -323,15 +307,11 @@ export function TenantKYCVerification({
     await uploadKycFile(file);
   };
 
-  const uploadKycFile = async (file: File) => {
+  const handleDeleteDocument = async (_doc) => {
     toast.info("Coming soon");
   };
 
-  const handleDeleteDocument = async (doc: KYCDocument) => {
-    toast.info("Coming soon");
-  };
-
-  const handleViewDocument = async (doc: KYCDocument) => {
+  const handleViewDocument = async (_doc) => {
     toast.info("Coming soon");
   };
 

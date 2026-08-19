@@ -2,9 +2,7 @@ import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   Activity, BarChart3, BookOpen, Key, Webhook,
 } from "lucide-react";
-import { useState } from "react";
 import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";

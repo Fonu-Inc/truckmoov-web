@@ -4,7 +4,7 @@ import { Navigate } from "react-router-dom";
 export default function SubscriptionInvoices() {
   return (
     <Navigate
-      to="/admin/settings?tab=subscription"
+      to="/settings?tab=subscription"
       replace
     />
   );

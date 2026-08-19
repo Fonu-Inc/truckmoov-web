@@ -1,6 +1,6 @@
 import { formatClockDuration } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Circle, Mic, MicOff, Phone, PhoneCall, PhoneOff, Square, StickyNote,
+  Circle, Mic, Phone, PhoneCall, PhoneOff, Square, StickyNote,
 } from "lucide-react";
 import {
   useEffect, useState,

@@ -1,4 +1,6 @@
-import type { AuthUser } from "@truckmoov/api/auth";
+import type {
+  AuthUser, UserRole,
+} from "@truckmoov/api/auth";
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
@@ -13,14 +15,12 @@ import {
   LayoutDashboard,
   Leaf,
   MapPin,
-  MapPinned,
   Package,
   Receipt,
   Send,
   Settings,
   Telescope,
   Truck,
-  User,
   Users,
   Wifi,
   Wrench,
@@ -33,6 +33,8 @@ export type SidebarNavItem = {
   icon: LucideIcon;
   badge?: number;
   badgeKey?: string;
+  /** Roles allowed to see this entry. On a group child, omit to inherit the group's roles. */
+  hasPermission?: UserRole[];
 };
 
 export type SidebarNavGroup = {
@@ -40,6 +42,7 @@ export type SidebarNavGroup = {
   icon: LucideIcon;
   badgeKey?: string;
   items: SidebarNavItem[];
+  hasPermission?: UserRole[];
 };
 
 export type SidebarEntry = SidebarNavItem | SidebarNavGroup;
@@ -53,28 +56,200 @@ export function isNavGroup(entry: SidebarEntry): entry is SidebarNavGroup {
   return "items" in entry;
 }
 
-// ─── Enterprise ────────────────────────────────────────────────
-const enterpriseEntries: SidebarEntry[] = [
+/**
+ * Every sidebar entry across every role, in one list.
+ *
+ * `hasPermission` is what decides visibility — a role sees an entry iff its key
+ * is listed. One route means one entry with one label: a page is called the same
+ * thing for everybody who can reach it, so `/fleet` is "Fleet" whether you
+ * are a fleet provider or an aggregator.
+ *
+ * ponytail: `hasPermission` is required here (optional on the type only so group
+ * children can inherit) — a new entry that forgets it fails to compile instead
+ * of silently showing up for every role.
+ */
+const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] = [
+  // ─── Overview ──────────────────────────────────────────────────
   {
-    label: "Logistics Overview", href: "/enterprise", icon: LayoutDashboard,
+    label: "Logistics Overview", href: "/enterprise", icon: LayoutDashboard, hasPermission: ["ENTERPRISE_ADMIN"],
   },
   {
-    label: "Shipments", href: "/admin/jobs", icon: Package,
+    label: "Dashboard", href: "/overview", icon: LayoutDashboard, hasPermission: [
+      "FLEET_ADMIN",
+      "OPERATIONS_MANAGER",
+    ],
   },
   {
-    label: "Fleet Providers", href: "/admin/fleet", icon: Truck,
+    label: "Network Overview", href: "/aggregator", icon: LayoutDashboard, hasPermission: ["AGGREGATOR_ADMIN"],
   },
   {
-    label: "Devices", href: "/admin/devices", icon: Cpu,
+    label: "My Overview", href: "/owner-operator", icon: LayoutDashboard, hasPermission: ["OWNER_OPERATOR"],
   },
   {
-    label: "IoT SIMs", href: "/admin/sims", icon: Wifi,
+    label: "Operations Center", href: "/dispatcher", icon: LayoutDashboard, hasPermission: ["DISPATCHER"],
+  },
+
+  // ─── Jobs & dispatch ───────────────────────────────────────────
+  {
+    label: "Jobs", href: "/jobs", icon: Package,
+    hasPermission: [
+      "ENTERPRISE_ADMIN",
+      "FLEET_ADMIN",
+      "AGGREGATOR_ADMIN",
+      "OPERATIONS_MANAGER",
+    ],
   },
   {
-    label: "Data Bundles", href: "/admin/data-bundles", icon: Database,
+    label: "My Jobs", href: "/owner-operator/jobs", icon: Package, hasPermission: ["OWNER_OPERATOR"],
   },
   {
-    label: "Live Tracking", href: "/admin/map", icon: MapPin,
+    label: "Job Offers", href: "/job-offers", icon: Inbox, badgeKey: "jobOffers", hasPermission: ["OWNER_OPERATOR"],
+  },
+  {
+    label: "Dispatch", href: "/dispatcher/dispatch", icon: Telescope, hasPermission: ["DISPATCHER"],
+  },
+
+  // ─── Fleet ─────────────────────────────────────────────────────
+  {
+    label: "Fleet", href: "/fleet", icon: Truck,
+    hasPermission: [
+      "ENTERPRISE_ADMIN",
+      "FLEET_ADMIN",
+      "AGGREGATOR_ADMIN",
+      "OPERATIONS_MANAGER",
+      "FINANCE_VIEWER",
+    ],
+  },
+  {
+    label: "My Vehicles", href: "/owner-operator/vehicles", icon: Truck, hasPermission: ["OWNER_OPERATOR"],
+  },
+
+  // ─── Drivers ───────────────────────────────────────────────────
+  {
+    label: "Drivers", href: "/drivers", icon: Users,
+    hasPermission: [
+      "FLEET_ADMIN",
+      "AGGREGATOR_ADMIN",
+      "OPERATIONS_MANAGER",
+    ],
+  },
+  {
+    label: "Drivers", href: "/dispatcher/drivers", icon: Users, hasPermission: ["DISPATCHER"],
+  },
+
+  // ─── Devices & connectivity ────────────────────────────────────
+  {
+    label: "Devices", href: "/devices", icon: Cpu,
+    hasPermission: [
+      "ENTERPRISE_ADMIN",
+      "FLEET_ADMIN",
+      "AGGREGATOR_ADMIN",
+      "OWNER_OPERATOR",
+      "OPERATIONS_MANAGER",
+      "FINANCE_VIEWER",
+    ],
+  },
+  {
+    label: "Devices", href: "/dispatcher/devices", icon: Cpu, hasPermission: ["DISPATCHER"],
+  },
+  {
+    label: "Installation", href: "/installation", icon: Wrench, hasPermission: [
+      "FLEET_ADMIN",
+      "OPERATIONS_MANAGER",
+    ],
+  },
+  {
+    label: "SIM Cards", href: "/sims", icon: Wifi,
+    hasPermission: [
+      "ENTERPRISE_ADMIN",
+      "FLEET_ADMIN",
+      "OWNER_OPERATOR",
+      "OPERATIONS_MANAGER",
+      "FINANCE_VIEWER",
+    ],
+  },
+  {
+    label: "SIM Cards", href: "/dispatcher/sims", icon: Wifi, hasPermission: ["DISPATCHER"],
+  },
+  {
+    label: "Data Bundles", href: "/data-bundles", icon: Database,
+    hasPermission: [
+      "ENTERPRISE_ADMIN",
+      "FLEET_ADMIN",
+      "AGGREGATOR_ADMIN",
+      "OWNER_OPERATOR",
+    ],
+  },
+
+  // ─── Map ───────────────────────────────────────────────────────
+  {
+    label: "Live Map", href: "/map", icon: MapPin,
+    hasPermission: [
+      "ENTERPRISE_ADMIN",
+      "FLEET_ADMIN",
+      "AGGREGATOR_ADMIN",
+      "OPERATIONS_MANAGER",
+    ],
+  },
+  {
+    label: "Live Map", href: "/dispatcher/map", icon: MapPin, hasPermission: ["DISPATCHER"],
+  },
+
+  // ─── Money ─────────────────────────────────────────────────────
+  {
+    label: "Payouts & Invoicing", href: "/waybill-invoices", icon: Receipt,
+    hasPermission: [
+      "FLEET_ADMIN",
+      "AGGREGATOR_ADMIN",
+      "OWNER_OPERATOR",
+    ],
+  },
+  {
+    label: "Fuel Costs", href: "/fuel", icon: Gauge, hasPermission: ["FINANCE_VIEWER"],
+  },
+  {
+    label: "Maintenance", href: "/fleet?tab=maintenance", icon: Settings, hasPermission: ["FINANCE_VIEWER"],
+  },
+  {
+    label: "Wallet & Billing", href: "/wallet", icon: CreditCard, hasPermission: ["FINANCE_VIEWER"],
+  },
+
+  // ─── Documents & alerts ────────────────────────────────────────
+  {
+    label: "Documents", href: "/owner-operator/documents", icon: FileText, hasPermission: ["OWNER_OPERATOR"],
+  },
+  {
+    label: "Alerts", href: "/dispatcher/alerts", icon: Bell, badge: 3, hasPermission: ["DISPATCHER"],
+  },
+
+  // ─── Analytics ─────────────────────────────────────────────────
+  {
+    label: "Analytics", href: "/analytics", icon: BarChart3, hasPermission: [
+      "OPERATIONS_MANAGER",
+      "FINANCE_VIEWER",
+    ],
+  },
+
+  // ─── Communications ────────────────────────────────────────────
+  {
+    label: "Communications",
+    icon: Bell,
+    badgeKey: "messages",
+    items: [
+      {
+        label: "Messaging Center", href: "/messages", icon: Send,
+      },
+      {
+        label: "Omnichannel Inbox", href: "/inbox", icon: Inbox,
+      },
+    ],
+    hasPermission: [
+      "ENTERPRISE_ADMIN",
+      "FLEET_ADMIN",
+      "AGGREGATOR_ADMIN",
+      "OWNER_OPERATOR",
+      "OPERATIONS_MANAGER",
+    ],
   },
   {
     label: "Communications",
@@ -82,332 +257,79 @@ const enterpriseEntries: SidebarEntry[] = [
     badgeKey: "messages",
     items: [
       {
-        label: "Messaging Center", href: "/admin/messages", icon: Send,
+        label: "Messaging Center", href: "/dispatcher/messages", icon: Send,
       },
       {
-        label: "Omnichannel Inbox", href: "/admin/inbox", icon: Inbox,
+        label: "Omnichannel Inbox", href: "/dispatcher/inbox", icon: Inbox,
       },
+    ],
+    hasPermission: ["DISPATCHER"],
+  },
+
+  // ─── Reports & settings ────────────────────────────────────────
+  {
+    label: "Reports", href: "/reports", icon: BarChart3,
+    hasPermission: [
+      "ENTERPRISE_ADMIN",
+      "FLEET_ADMIN",
+      "AGGREGATOR_ADMIN",
     ],
   },
   {
-    label: "Reports", href: "/admin/reports", icon: BarChart3,
+    label: "Reports", href: "/dispatcher/reports", icon: BarChart3, hasPermission: ["DISPATCHER"],
   },
   {
-    label: "Integrations", href: "/admin/integrations", icon: Code2,
-  },
-  {
-    label: "Organization Settings", href: "/admin/settings", icon: Settings,
-  },
-];
-
-// ─── Fleet Provider ────────────────────────────────────────────
-const fleetProviderEntries: SidebarEntry[] = [
-  {
-    label: "Fleet Operations", href: "/admin", icon: LayoutDashboard,
-  },
-  {
-    label: "Dispatch", href: "/admin/jobs", icon: Package,
-  },
-  {
-    label: "Vehicles", href: "/admin/fleet", icon: Truck,
-  },
-  {
-    label: "Drivers", href: "/admin/drivers", icon: Users,
-  },
-  {
-    label: "Devices", href: "/admin/devices", icon: Cpu,
-  },
-  {
-    label: "Installation", href: "/admin/installation", icon: Wrench,
-  },
-  {
-    label: "IoT SIMs", href: "/admin/sims", icon: Wifi,
-  },
-  {
-    label: "Data Bundles", href: "/admin/data-bundles", icon: Database,
-  },
-  {
-    label: "Live Map & Zones", href: "/admin/map", icon: MapPinned,
-  },
-  {
-    label: "Payouts & Invoicing", href: "/admin/waybill-invoices", icon: Receipt,
-  },
-  {
-    label: "Communications",
-    icon: Bell,
-    badgeKey: "messages",
-    items: [
-      {
-        label: "Messaging Center", href: "/admin/messages", icon: Send,
-      },
-      {
-        label: "Omnichannel Inbox", href: "/admin/inbox", icon: Inbox,
-      },
+    label: "Sustainability", href: "/sustainability", icon: Leaf, hasPermission: [
+      "FLEET_ADMIN",
+      "AGGREGATOR_ADMIN",
     ],
   },
   {
-    label: "Reports", href: "/admin/reports", icon: FileText,
-  },
-  {
-    label: "Sustainability", href: "/admin/sustainability", icon: Leaf,
-  },
-  {
-    label: "Integrations", href: "/admin/integrations", icon: Code2,
-  },
-  {
-    label: "Organization Settings", href: "/admin/settings", icon: Settings,
-  },
-];
-
-// ─── Aggregator ────────────────────────────────────────────────
-const aggregatorEntries: SidebarEntry[] = [
-  {
-    label: "Network Overview", href: "/aggregator", icon: LayoutDashboard,
-  },
-  {
-    label: "Job Coordination", href: "/admin/jobs", icon: Package,
-  },
-  {
-    label: "Network Members", href: "/admin/drivers", icon: Users,
-  },
-  {
-    label: "Network Fleet", href: "/admin/fleet", icon: Truck,
-  },
-  {
-    label: "Device Setup Requests", href: "/admin/devices", icon: Cpu,
-  },
-  {
-    label: "Data Bundles", href: "/admin/data-bundles", icon: Database,
-  },
-  {
-    label: "Payouts & Invoicing", href: "/admin/waybill-invoices", icon: Receipt,
-  },
-  {
-    label: "Zones", href: "/admin/map", icon: MapPinned,
-  },
-  {
-    label: "Communications",
-    icon: Bell,
-    badgeKey: "messages",
-    items: [
-      {
-        label: "Messaging Center", href: "/admin/messages", icon: Send,
-      },
-      {
-        label: "Omnichannel Inbox", href: "/admin/inbox", icon: Inbox,
-      },
+    label: "Integrations", href: "/integrations", icon: Code2,
+    hasPermission: [
+      "ENTERPRISE_ADMIN",
+      "FLEET_ADMIN",
+      "AGGREGATOR_ADMIN",
     ],
   },
   {
-    label: "Reports", href: "/admin/reports", icon: BarChart3,
-  },
-  {
-    label: "Sustainability", href: "/admin/sustainability", icon: Leaf,
-  },
-  {
-    label: "Integrations", href: "/admin/integrations", icon: Code2,
-  },
-  {
-    label: "Organization Settings", href: "/admin/settings", icon: Settings,
-  },
-];
-
-// ─── Owner-Operator ────────────────────────────────────────────
-const ownerOperatorEntries: SidebarEntry[] = [
-  {
-    label: "My Overview", href: "/owner-operator", icon: LayoutDashboard,
-  },
-  {
-    label: "My Jobs", href: "/owner-operator/jobs", icon: Package,
-  },
-  {
-    label: "Job Offers", href: "/admin/job-offers", icon: Inbox, badgeKey: "jobOffers",
-  },
-  {
-    label: "My Vehicles", href: "/owner-operator/vehicles", icon: Truck,
-  },
-  {
-    label: "Devices", href: "/admin/devices", icon: Cpu,
-  },
-  {
-    label: "IoT SIMs", href: "/admin/sims", icon: Wifi,
-  },
-  {
-    label: "Data Bundles", href: "/admin/data-bundles", icon: Database,
-  },
-  {
-    label: "Payouts & Invoicing", href: "/admin/waybill-invoices", icon: Receipt,
-  },
-  {
-    label: "Documents", href: "/owner-operator/documents", icon: FileText,
-  },
-  {
-    label: "Communications",
-    icon: Bell,
-    badgeKey: "messages",
-    items: [
-      {
-        label: "Messaging Center", href: "/admin/messages", icon: Send,
-      },
-      {
-        label: "Omnichannel Inbox", href: "/admin/inbox", icon: Inbox,
-      },
+    label: "Settings", href: "/settings", icon: Settings,
+    hasPermission: [
+      "ENTERPRISE_ADMIN",
+      "FLEET_ADMIN",
+      "AGGREGATOR_ADMIN",
+      "OWNER_OPERATOR",
     ],
   },
-  {
-    label: "Profile", href: "/admin/settings", icon: User,
-  },
 ];
 
-// ─── Operations Manager ────────────────────────────────────────
-const operationsManagerSidebar: SidebarConfig = {
-  homeRoute: ROLE_REDIRECT_MAP.OPERATIONS_MANAGER!,
-  entries: [
-    {
-      label: "Dashboard", href: "/admin", icon: LayoutDashboard,
-    },
-    {
-      label: "Fleet", href: "/admin/fleet", icon: Truck,
-    },
-    {
-      label: "Live Map", href: "/admin/map", icon: MapPin,
-    },
-    {
-      label: "Drivers", href: "/admin/drivers", icon: Users,
-    },
-    {
-      label: "Devices", href: "/admin/devices", icon: Cpu,
-    },
-    {
-      label: "Installation", href: "/admin/installation", icon: Wrench,
-    },
-    {
-      label: "IoT SIMs Request", href: "/admin/sims", icon: Wifi,
-    },
-    {
-      label: "Jobs", href: "/admin/jobs", icon: Package,
-    },
-    {
-      label: "Analytics", href: "/admin/analytics", icon: BarChart3,
-    },
-    {
-      label: "Communications",
-      icon: Bell,
-      badgeKey: "messages",
-      items: [
-        {
-          label: "Messaging Center", href: "/admin/messages", icon: Send,
-        },
-        {
-          label: "Omnichannel Inbox", href: "/admin/inbox", icon: Inbox,
-        },
-      ],
-    },
-  ],
-};
-
-// ─── Dispatcher ────────────────────────────────────────────────
-const dispatcherSidebar: SidebarConfig = {
-  homeRoute: ROLE_REDIRECT_MAP.DISPATCHER!,
-  entries: [
-    {
-      label: "Operations Center", href: "/dispatcher", icon: LayoutDashboard,
-    },
-    {
-      label: "Dispatch", href: "/dispatcher/dispatch", icon: Telescope,
-    },
-    {
-      label: "Live Map", href: "/dispatcher/map", icon: MapPin,
-    },
-    {
-      label: "Drivers", href: "/dispatcher/drivers", icon: Users,
-    },
-    {
-      label: "Devices", href: "/dispatcher/devices", icon: Cpu,
-    },
-    {
-      label: "SIM Cards", href: "/dispatcher/sims", icon: Wifi,
-    },
-    {
-      label: "Alerts", href: "/dispatcher/alerts", icon: Bell, badge: 3,
-    },
-    {
-      label: "Communications",
-      icon: Bell,
-      badgeKey: "messages",
-      items: [
-        {
-          label: "Messaging Center", href: "/dispatcher/messages", icon: Send,
-        },
-        {
-          label: "Omnichannel Inbox", href: "/dispatcher/inbox", icon: Inbox,
-        },
-      ],
-    },
-    {
-      label: "Reports", href: "/dispatcher/reports", icon: BarChart3,
-    },
-  ],
-};
-
-// ─── Finance Viewer ────────────────────────────────────────────
-const financeViewerSidebar: SidebarConfig = {
-  homeRoute: ROLE_REDIRECT_MAP.FINANCE_VIEWER!,
-  entries: [
-    {
-      label: "Dashboard", href: "/admin/analytics", icon: LayoutDashboard,
-    },
-    {
-      label: "Fleet", href: "/admin/fleet", icon: Truck,
-    },
-    {
-      label: "Devices", href: "/admin/devices", icon: Cpu,
-    },
-    {
-      label: "SIM Cards", href: "/admin/sims", icon: Wifi,
-    },
-    {
-      label: "Fuel Costs", href: "/admin/fuel", icon: Gauge,
-    },
-    {
-      label: "Maintenance", href: "/admin/fleet?tab=maintenance", icon: Settings,
-    },
-    {
-      label: "Analytics", href: "/admin/analytics", icon: BarChart3,
-    },
-    {
-      label: "Wallet & Billing", href: "/admin/wallet", icon: CreditCard,
-    },
-  ],
-};
+/** Entries this role may see. Groups whose children are all hidden drop out. */
+export function getEntriesForRole(role: UserRole): SidebarEntry[] {
+  const visible: SidebarEntry[] = [];
+  for (const entry of SIDEBAR_ENTRIES) {
+    if (!entry.hasPermission.includes(role))
+      continue;
+    if (!isNavGroup(entry)) {
+      visible.push(entry);
+      continue;
+    }
+    const items = entry.items.filter(i => i.hasPermission?.includes(role) ?? true);
+    if (items.length > 0) {
+      visible.push({
+        ...entry, items,
+      });
+    }
+  }
+  return visible;
+}
 
 export function getSidebarConfig(user: AuthUser | null): SidebarConfig | null {
-  switch (user?.role) {
-    case "FLEET_ADMIN":
-      return {
-        homeRoute: ROLE_REDIRECT_MAP.FLEET_ADMIN!, entries: fleetProviderEntries,
-      };
-    case "ENTERPRISE_ADMIN":
-      return {
-        homeRoute: ROLE_REDIRECT_MAP.ENTERPRISE_ADMIN!, entries: enterpriseEntries,
-      };
-    case "AGGREGATOR_ADMIN":
-      return {
-        homeRoute: ROLE_REDIRECT_MAP.AGGREGATOR_ADMIN!, entries: aggregatorEntries,
-      };
-    case "OWNER_OPERATOR":
-      return {
-        homeRoute: ROLE_REDIRECT_MAP.OWNER_OPERATOR!, entries: ownerOperatorEntries,
-      };
-    case "OPERATIONS_MANAGER":
-      return operationsManagerSidebar;
-    case "DISPATCHER":
-      return dispatcherSidebar;
-    case "FINANCE_VIEWER":
-      return financeViewerSidebar;
-    default:
-      return null;
-  }
+  const homeRoute = user ? ROLE_REDIRECT_MAP[user.role] : undefined;
+  if (!homeRoute)
+    return null;
+  return {
+    homeRoute, entries: getEntriesForRole(user!.role),
+  };
 }
 
 export function getAllowedRoutes(config: SidebarConfig): string[] {

@@ -138,7 +138,6 @@ export function LocationPicker({
       if (value.address && value.address !== query) {
         setQuery(value.address);
       }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     },
     [value.address],
   );
@@ -245,7 +244,6 @@ export function LocationPicker({
         mapRef.current = null;
         markerRef.current = null;
       };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     },
     [showMap],
   );

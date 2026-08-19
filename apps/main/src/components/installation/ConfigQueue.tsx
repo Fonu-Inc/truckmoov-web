@@ -382,7 +382,10 @@ export function ConfigQueue({
                       variant="outline"
                       size="sm"
                       className="flex-1 h-8 text-xs"
-                      onClick={() => { setDeviceFilter("all"); setLastSeenFilter("all"); }}
+                      onClick={() => {
+                        setDeviceFilter("all");
+                        setLastSeenFilter("all");
+                      }}
                     >
                       Show All
                     </Button>

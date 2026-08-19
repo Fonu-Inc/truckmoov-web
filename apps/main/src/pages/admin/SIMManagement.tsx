@@ -18,7 +18,7 @@ import {
   useUploadSimRequestDeviceMapping,
 } from "@truckmoov/api/auth";
 import {
-  SlidersHorizontal as Filter, Plus, Search, ShieldAlert, Upload,
+  Plus, Upload,
 } from "lucide-react";
 import {
   useEffect, useMemo, useState,
@@ -26,23 +26,14 @@ import {
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import {
-  Alert, AlertDescription, AlertTitle,
-} from "@/components/shadcn/alert";
+
 import { Button } from "@/components/shadcn/button";
-import {
-  Card, CardContent,
-} from "@/components/shadcn/card";
-import { Input } from "@/components/shadcn/input";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/shadcn/select";
+
 import { AssignSIMDialog } from "@/components/sims/AssignSIMDialog";
 import { SIMBulkUploadDialog } from "@/components/sims/SIMBulkUploadDialog";
 import { SIMDetailsSheet } from "@/components/sims/SIMDetailsSheet";
 import { SIMFormDialog } from "@/components/sims/SIMFormDialog";
 import { SIMInventoryTable } from "@/components/sims/SIMInventoryTable";
-import { SIMOverviewCards } from "@/components/sims/SIMOverviewCards";
 import { SIMRequestFormDialog } from "@/components/sims/SIMRequestFormDialog";
 import { SIMRequestsTracker } from "@/components/sims/SIMRequestsTracker";
 import { useDeviceTelemetry } from "@/hooks/useDeviceTelemetry";
@@ -272,8 +263,6 @@ export default function SIMManagement() {
     setIsDetailsOpen,
   ] = useState(false);
 
-  const kycPending = kycStatus.status === "pending" || kycStatus.status === "under_review";
-
   // Device info comes from the SIM list response's inline `assignedDevice`.
   const getDeviceInfo = (deviceId?: string): IoTDevice | null => {
     if (!deviceId)
@@ -313,7 +302,7 @@ export default function SIMManagement() {
         "KYC Verification Required",
         { description: "Complete your business verification before requesting SIM cards." },
       );
-      navigate("/admin/settings");
+      navigate("/settings");
       return;
     }
     setIsRequestDialogOpen(true);
@@ -452,12 +441,21 @@ export default function SIMManagement() {
           operatorFilters={operatorFilters}
           onOperatorFiltersChange={setOperatorFilters}
           operators={operators}
-          onViewDetails={(sim) => { setSelectedSIM(sim); setIsDetailsOpen(true); }}
-          onEdit={(sim) => { setSelectedSIM(sim); setIsEditDialogOpen(true); }}
+          onViewDetails={(sim) => {
+            setSelectedSIM(sim);
+            setIsDetailsOpen(true);
+          }}
+          onEdit={(sim) => {
+            setSelectedSIM(sim);
+            setIsEditDialogOpen(true);
+          }}
           onActivate={handleReactivate}
           onSuspend={handleSuspend}
           onResume={handleReactivate}
-          onAssign={(sim) => { setSelectedSIM(sim); setIsAssignDialogOpen(true); }}
+          onAssign={(sim) => {
+            setSelectedSIM(sim);
+            setIsAssignDialogOpen(true);
+          }}
           onUnassign={handleUnassign}
           onDelete={handleDelete}
         />
@@ -504,7 +502,11 @@ export default function SIMManagement() {
       <SIMBulkUploadDialog
         open={isBulkUploadOpen}
         onOpenChange={setIsBulkUploadOpen}
-        onUpload={(newSIMs) => { refetch(); toast.success(`${newSIMs.length} SIM cards imported successfully`); setIsBulkUploadOpen(false); }}
+        onUpload={(newSIMs) => {
+          refetch();
+          toast.success(`${newSIMs.length} SIM cards imported successfully`);
+          setIsBulkUploadOpen(false);
+        }}
       />
 
       <AssignSIMDialog
@@ -516,7 +518,8 @@ export default function SIMManagement() {
           await assignSIMToDevice(
             simId,
             deviceId,
-          ); setIsAssignDialogOpen(false);
+          );
+          setIsAssignDialogOpen(false);
         }}
       />
     </DashboardLayout>

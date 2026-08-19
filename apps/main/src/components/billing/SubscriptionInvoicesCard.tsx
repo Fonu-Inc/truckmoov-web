@@ -256,7 +256,10 @@ export function SubscriptionInvoicesCard({ tenantName }: Props) {
                 <TableRow
                   key={inv.id}
                   className="cursor-pointer"
-                  onClick={() => { setSelected(inv); setOpen(true); }}
+                  onClick={() => {
+                    setSelected(inv);
+                    setOpen(true);
+                  }}
                 >
                   <TableCell>
                     <div>

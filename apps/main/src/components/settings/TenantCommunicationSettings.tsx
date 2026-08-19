@@ -11,7 +11,6 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import {
   Select,
@@ -59,23 +58,16 @@ export function TenantCommunicationSettings() {
   const { user } = useAuthStore();
   const approvedSmsIds: any[] = [];
   const approvedVoiceIds: any[] = [];
-  const senderIdsLoading = false;
   const [
     config,
     setConfig,
   ] = useState<CommunicationConfig>(DEFAULT_CONFIG);
-  const [
-    assignedNumbers,
-    setAssignedNumbers,
-  ] = useState<AssignedPhoneNumber[]>([]);
+  const [assignedNumbers] = useState<AssignedPhoneNumber[]>([]);
   const [
     isLoading,
     setIsLoading,
   ] = useState(true);
-  const [
-    isSaving,
-    setIsSaving,
-  ] = useState(false);
+  const [isSaving] = useState(false);
   const [
     hasChanges,
     setHasChanges,

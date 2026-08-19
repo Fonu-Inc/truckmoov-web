@@ -1,7 +1,6 @@
 import {
   useCallback, useState,
 } from "react";
-import { useAuthStore } from "@/stores/authStore";
 
 type RealtimeMessage = {
   id: string;

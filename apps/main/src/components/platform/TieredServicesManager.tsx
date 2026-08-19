@@ -12,7 +12,6 @@ import {
   Phone,
   Plug,
   Plus,
-  RefreshCw,
   Route,
   Save,
   Star,
@@ -95,7 +94,6 @@ export function TieredServicesManager() {
   const getPlanFeatures = (_planId: string): any[] => [];
   const getFeatureCategories = (): string[] => [];
   const getUniqueFeatures = (): any[] => [];
-  const refetch = async () => {};
 
   const [
     editingPlan,
@@ -1235,10 +1233,7 @@ type UsageSummaryItem = {
 };
 
 function UsageSummaryItemsManager() {
-  const [
-    items,
-    setItems,
-  ] = useState<UsageSummaryItem[]>([]);
+  const [items] = useState<UsageSummaryItem[]>([]);
   const [
     loading,
     setLoading,
@@ -1354,8 +1349,6 @@ function UsageSummaryItemsManager() {
                     </TableHeader>
                     <TableBody>
                       {items.map((item) => {
-                        const IconMatch = USAGE_ICON_OPTIONS.find(o => o.key === item.icon_key);
-                        const IconComponent = IconMatch?.Icon || Wifi;
                         return (
                           <TableRow key={item.id}>
                             <TableCell>

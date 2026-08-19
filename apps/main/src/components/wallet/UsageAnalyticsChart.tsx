@@ -200,7 +200,6 @@ export function UsageAnalyticsChart({ transactions }: UsageAnalyticsChartProps) 
         ),
         ...data,
       }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     },
     [
       transactions,
@@ -249,7 +248,6 @@ export function UsageAnalyticsChart({ transactions }: UsageAnalyticsChartProps) 
       });
 
       return buckets;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     },
     [
       transactions,
@@ -279,7 +277,6 @@ export function UsageAnalyticsChart({ transactions }: UsageAnalyticsChartProps) 
         value,
         color: COLORS[name as keyof typeof COLORS] || "#888",
       }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     },
     [
       transactions,

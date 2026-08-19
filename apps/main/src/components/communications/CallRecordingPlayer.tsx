@@ -31,10 +31,7 @@ export function CallRecordingPlayer({
     audioDuration,
     setAudioDuration,
   ] = useState(duration || 0);
-  const [
-    volume,
-    setVolume,
-  ] = useState(1);
+  const [volume] = useState(1);
   const [
     isMuted,
     setIsMuted,
@@ -133,17 +130,6 @@ export function CallRecordingPlayer({
 
     audio.currentTime = value[0];
     setCurrentTime(value[0]);
-  };
-
-  const handleVolumeChange = (value: number[]) => {
-    const audio = audioRef.current;
-    if (!audio)
-      return;
-
-    const newVolume = value[0];
-    audio.volume = newVolume;
-    setVolume(newVolume);
-    setIsMuted(newVolume === 0);
   };
 
   const toggleMute = () => {

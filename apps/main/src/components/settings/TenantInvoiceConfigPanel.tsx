@@ -8,7 +8,6 @@ import {
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Switch } from "@/components/shadcn/switch";
-import { useAuthStore } from "@/stores/authStore";
 
 type InvoiceConfig = {
   payment_terms_days: number | null;
@@ -21,8 +20,6 @@ type InvoiceConfig = {
 };
 
 export function TenantInvoiceConfigPanel() {
-  const { user } = useAuthStore();
-  const tenantId = user?.tenantId;
   const [
     cfg,
     setCfg,
@@ -35,10 +32,7 @@ export function TenantInvoiceConfigPanel() {
     tax_rate_percent: 7.5,
     tax_label: "VAT",
   });
-  const [
-    saving,
-    setSaving,
-  ] = useState(false);
+  const [saving] = useState(false);
 
   const save = async () => {
     toast.info("Coming soon");

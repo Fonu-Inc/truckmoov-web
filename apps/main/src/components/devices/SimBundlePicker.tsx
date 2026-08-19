@@ -1,6 +1,3 @@
-import {
-  Database, Smartphone,
-} from "lucide-react";
 import { useMemo } from "react";
 import { Label } from "@/components/shadcn/label";
 import {
@@ -10,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { Separator } from "@/components/shadcn/separator";
 
 export type DataUnit = "KB" | "MB" | "GB";
 export type BillingCycle = "monthly" | "yearly";
@@ -30,17 +26,13 @@ type Props = {
   onIccidChange: (v: string) => void;
 };
 
-export function formatSimBundle(v: SimBundleValue): string {
-  return `${v.amount}${v.unit} / ${v.cycle}`;
-}
-
 export function SimBundlePicker({
   value,
   onChange,
   carrier,
   onCarrierChange,
-  iccid,
-  onIccidChange,
+  iccid: _iccid,
+  onIccidChange: _onIccidChange,
 }: Props) {
   const catalog: any[] = [];
   const availableBundles = useMemo(

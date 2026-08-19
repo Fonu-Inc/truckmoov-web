@@ -123,9 +123,9 @@ markup. Roles:
 
 | Role | Home | Sidebar flavor |
 |------|------|----------------|
-| `ENTERPRISE_ADMIN` | `/enterprise` | Logistics Overview, Shipments, Fleet Providers |
-| `FLEET_ADMIN` | `/admin` | Fleet Operations, Dispatch, Vehicles, Drivers |
-| `AGGREGATOR_ADMIN` | `/aggregator` | Network Overview, Job Coordination, Network Members |
+| `ENTERPRISE_ADMIN` | `/enterprise` | Logistics Overview, Jobs, Fleet |
+| `FLEET_ADMIN` | `/overview` | Dashboard, Jobs, Fleet, Drivers |
+| `AGGREGATOR_ADMIN` | `/aggregator` | Network Overview, Jobs, Fleet, Drivers |
 | `OWNER_OPERATOR` | `/owner-operator` | My Overview, My Jobs, My Vehicles (single-user) |
 | `OPERATIONS_MANAGER` | see config | Operations subset |
 | `DISPATCHER` | see config | Dispatch subset |
@@ -136,10 +136,28 @@ e.g. "Communications" → Messaging Center / Omnichannel Inbox). Groups
 auto-expand when a child route is active. Badges come from `badgeKey`
 (`messages`, `jobOffers`) resolved against live realtime counts.
 
+All entries for all roles live in **one** `SIDEBAR_ENTRIES` array. Visibility is
+a per-entry `hasPermission: UserRole[]` — a role sees an entry iff its key is
+listed — and `getEntriesForRole(role)` filters that array. There are no
+per-role entry arrays. Two consequences:
+
+- One route means one entry with one label. A page is called the same thing for
+  everybody who can reach it — `/fleet` is "Fleet" for the fleet provider,
+  the aggregator and the enterprise alike — so a route is never listed twice
+  under different names.
+- The array order is the single canonical order; each role's sidebar is a
+  projection of it. Moving an entry moves it for every role that sees it.
+
+A group's children may carry their own `hasPermission`; omitted means inherit
+the group's. A group whose children are all filtered out drops from the
+sidebar. `hasPermission` is required on top-level entries (the array's type
+enforces it), so a new entry cannot accidentally default to visible-to-all.
+
 Active item styling: `bg-primary/10 text-primary` with a 2px left primary
 border. Inactive: `text-sidebar-foreground/80` with `hover:bg-sidebar-accent`.
 
-**To add a page to the nav, edit `sidebarConfig.ts`** — `getAllowedRoutes()`
+**To add a page to the nav, add one entry to `SIDEBAR_ENTRIES` in
+`sidebarConfig.ts` with the roles that may see it** — `getAllowedRoutes()`
 derives route authorization from the same config, so a page added only to the
 router is unreachable/unauthorized by design.
 

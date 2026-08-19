@@ -135,26 +135,14 @@ export function TenantDetailsSheet({
     editingCaps,
     setEditingCaps,
   ] = useState<Record<string, number>>({});
-  const [
-    savingOrgId,
-    setSavingOrgId,
-  ] = useState<string | null>(null);
-  const [
-    billingModel,
-    setBillingModel,
-  ] = useState<string | null>(null);
-  const [
-    savingBillingModel,
-    setSavingBillingModel,
-  ] = useState(false);
+  const [savingOrgId] = useState<string | null>(null);
+  const [billingModel] = useState<string | null>(null);
+  const [_savingBillingModel] = useState(false);
   const [
     editingQuota,
     setEditingQuota,
   ] = useState<number | null>(null);
-  const [
-    savingQuota,
-    setSavingQuota,
-  ] = useState(false);
+  const [savingQuota] = useState(false);
   const [
     editingOpQuota,
     setEditingOpQuota,
@@ -163,10 +151,7 @@ export function TenantDetailsSheet({
     device: null,
     sim: null,
   });
-  const [
-    savingOpQuota,
-    setSavingOpQuota,
-  ] = useState<"driver" | "device" | "sim" | null>(null);
+  const [savingOpQuota] = useState<"driver" | "device" | "sim" | null>(null);
 
   // Tenant-level vehicle quota + active vehicle count
   const { data: tenantQuotaData } = useQuery({
@@ -208,7 +193,7 @@ export function TenantDetailsSheet({
     }),
   });
 
-  const handleSaveOpQuota = async (kind: "driver" | "device" | "sim") => {
+  const handleSaveOpQuota = async (_kind) => {
     toast.info("Coming soon");
   };
 
@@ -261,19 +246,6 @@ export function TenantDetailsSheet({
     queryFn: async () => [] as any[],
   });
 
-  // Device setup requests
-  const {
-    data: tenantDeviceRequests = [],
-    isLoading: loadingDeviceRequests,
-  } = useQuery({
-    queryKey: [
-      "tenant-device-requests-list",
-      tenant?.id,
-    ],
-    enabled: false,
-    queryFn: async () => [] as any[],
-  });
-
   // Audit log
   const {
     data: tenantAuditLog = [],
@@ -288,10 +260,7 @@ export function TenantDetailsSheet({
   });
 
   // Trial status (from view)
-  const {
-    data: trialStatus,
-    refetch: refetchTrial,
-  } = useQuery({
+  const { data: trialStatus } = useQuery({
     queryKey: [
       "tenant-trial-status",
       tenant?.id,
@@ -317,10 +286,7 @@ export function TenantDetailsSheet({
     extendDays,
     setExtendDays,
   ] = useState<number>(14);
-  const [
-    savingTrial,
-    setSavingTrial,
-  ] = useState(false);
+  const [savingTrial] = useState(false);
 
   const handleExtendTrial = async () => {
     toast.info("Coming soon");
@@ -330,11 +296,7 @@ export function TenantDetailsSheet({
     toast.info("Coming soon");
   };
 
-  const handleSaveBillingModel = async (newModel: string) => {
-    toast.info("Coming soon");
-  };
-
-  const handleSaveVehicleCap = async (orgId: string) => {
+  const handleSaveVehicleCap = async (_orgId) => {
     toast.info("Coming soon");
   };
 
@@ -397,12 +359,6 @@ export function TenantDetailsSheet({
           </Badge>
         );
     }
-  };
-
-  const formatPrice = (plan: keyof typeof planDetails) => {
-    return currency === "NGN"
-      ? `₦${planDetails[plan].priceNGN.toLocaleString()}`
-      : `$${planDetails[plan].priceUSD.toLocaleString()}`;
   };
 
   const fullAddress = tenant.businessInfo

@@ -77,7 +77,7 @@ export function JobOffersInbox() {
 
   const respondMutation = useMutation({
     mutationFn: async ({
-      offerId, status, note,
+      offerId: _offerId, status: _status, note: _note,
     }: {
       offerId: string; status: string; note: string;
     }) => {
@@ -416,7 +416,10 @@ export function JobOffersInbox() {
       {/* Response Dialog */}
       <Dialog
         open={!!respondingOffer}
-        onOpenChange={() => { setRespondingOffer(null); setResponseAction(null); }}
+        onOpenChange={() => {
+          setRespondingOffer(null);
+          setResponseAction(null);
+        }}
       >
         <DialogContent>
           <DialogHeader>
@@ -440,7 +443,10 @@ export function JobOffersInbox() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => { setRespondingOffer(null); setResponseAction(null); }}
+              onClick={() => {
+                setRespondingOffer(null);
+                setResponseAction(null);
+              }}
             >
               Cancel
             </Button>

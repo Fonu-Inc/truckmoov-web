@@ -258,7 +258,6 @@ function normalizeTicket(raw: Record<string, unknown>): TicketRow {
     raw,
     "ticketId",
   ) ?? "";
-  const tenant = asRecord(raw.tenant);
   const reporter = asRecord(raw.reporter) ?? asRecord(raw.createdByUser) ?? asRecord(raw.createdByProfile);
   const reporterProfile = asRecord(reporter?.profile);
   const firstName = readString(
@@ -520,7 +519,7 @@ export function AllTickets() {
       );
       toast.success("Support tickets exported");
     }
-    catch (error) {
+    catch {
       toast.error("Export failed");
     }
     finally {

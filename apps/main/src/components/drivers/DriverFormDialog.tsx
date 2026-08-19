@@ -1,9 +1,7 @@
 import type { Driver } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toDateParam } from "@truckmoov/app-core/utils/time-utils";
-import {
-  useEffect, useState,
-} from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/shadcn/button";

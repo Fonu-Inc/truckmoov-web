@@ -1,7 +1,9 @@
 # Commit messages
 
-Instructions for an AI agent asked to commit, or to write a commit message, in
-this repo. It writes the message, shows it, then makes the commit.
+Instructions for an AI agent asked for a commit message in this repo. It reads
+the working tree, writes **one** message, and **shows it in chat**. It does not
+commit, does not stage, does not push — the user copies the message and commits
+it themselves.
 
 `truckmoov-web/` is **one git repo** covering all three apps and all shared
 packages. Its parent directory is not a repo, and the `fleetflow-pro-main/`
@@ -20,22 +22,20 @@ folder beside it is a **different** repo — never run git commands there.
    them, and they are usually the most important part of the change. Get the
    untracked paths from `git status`.
 
-3. Return **exactly one** commit message. Never split the diff into several
-   messages, even when it contains unrelated changes — the one message must
-   account for everything in the working tree: every modified file, every
-   untracked file, every deletion, every dep and env var. Nothing in the diff
-   goes unmentioned.
+3. Return **exactly one** commit message, in a fenced code block so it can be
+   copied in one go. Never split the diff into several messages, even when it
+   contains unrelated changes — the one message must account for everything in
+   the working tree: every modified file, every untracked file, every deletion,
+   every dep and env var. Nothing in the diff goes unmentioned.
 
    When the diff really is unrelated work, lead the summary with the largest
-   change and group the rest under short headings in the body (see Body below).
+   change and give the rest a bullet each in the body (see Body below).
 
-4. Say up front which parts of the workspace the diff touches — apps, packages,
-   docs — so it is obvious what the commit covers:
+4. Above the code block, say which parts of the workspace the diff touches —
+   apps, packages, docs — so it is obvious what the commit covers:
 
    ```
    Touches: apps/main, packages/api, docs/
-
-   feat(settings): ...
    ```
 
 5. If the diff spans an app **and** a shared package, say so explicitly. A
@@ -46,25 +46,11 @@ folder beside it is a **different** repo — never run git commands there.
    off-by-one, a hardcoded value — mention it in one line after the message.
    Do not fix it unless asked.
 
-7. Then make the commit:
-
-   ```sh
-   git add -A
-   git commit -F <message-file>
-   ```
-
-   Use `-F` with a temp file, not `-m` — the body has blank lines and
-   backticks that a shell-quoted `-m` mangles. Write the temp file to the
-   scratchpad dir, not into the repo.
-
-   - Do not `git push`. Committing is the end of the job. Pushing to `main`
-     deploys — that is the user's call, not yours.
-   - Never pass `--no-verify`. `.husky/pre-commit` runs `pnpm run build`, which
-     is a turbo build of all three apps plus packages, so a commit takes
-     minutes — let it.
-   - If the pre-commit build fails, stop, show its output, and do not retry.
-     Fix nothing unless asked.
-   - After the commit, print the resulting `git log --oneline -1`.
+7. Stop there. No `git add`, no `git commit`, no `git push`, no temp message
+   file. If the user wants the commit made too, they will say so — and then
+   [git-workflow.md](git-workflow.md) applies: `.husky/pre-commit` runs a turbo
+   build of all three apps, so it takes minutes, and `--no-verify` is never an
+   option.
 
 ## Format rules
 
@@ -125,42 +111,33 @@ Rules:
 
 ## Body
 
-A "detailed" message means:
+The body is a **summary of what was done**, not a walkthrough of the diff. A
+reader should get the shape of the change in ten seconds.
 
 ```
 type(scope): one-line summary of the biggest change, under ~72 chars
 
-Why the change was needed — the behaviour before, and what was wrong or
-missing about it. One short paragraph, wrapped at 72 columns.
-
-- the notable individual changes, one per line
+- one bullet per notable change, one line each
 - new deps, new env vars, renamed or moved files
-- anything a reviewer would otherwise have to reverse-engineer from the diff
-
-Second change:
-
-- same treatment, one heading per unrelated piece of work
-
-Trailing line for incidental changes that rode along.
+- unrelated work that rode along gets its own bullet, not a section
 ```
-
-Use the plain single-block form when the diff is one coherent change. Add the
-headings only when it is not — but either way, one message covering everything.
 
 Rules for the body:
 
-- Explain **why**, not what — the diff already shows what.
-- Mention every new env var and every new dependency by name. These break
-  other people's builds and, for env vars, the deploy (see below).
-- Say when `pnpm-lock.yaml` or `pnpm-workspace.yaml` changed and why.
-- Mention file moves and renames explicitly, and anything newly added to
-  `packages/reusables` — shared components affect both `main` and `admin`.
-- Note when a shared type or API payload got stricter; that is what turns
-  someone else's working code into a type error.
-- Call out deliberately unfinished work ("the picked id is local state for
-  now — nothing consumes it yet") rather than letting a reviewer assume it's
-  wired up.
-- Note `ponytail:` comments in the diff if they mark a real limitation.
+- Summarise. One bullet per change — not per file, not per edited function.
+  If a bullet needs a second line to justify itself, it is too detailed.
+- Aim for 3-6 bullets, hard cap ~8. Needing more means the summary line is
+  wrong, not that the body needs more room.
+- No explanatory paragraph. The exception is a `fix` whose cause is not
+  obvious from the summary line — then **one sentence**, not a paragraph.
+- Still name these, always, because they break other people:
+  - every new env var and every new dependency, by name
+  - `pnpm-lock.yaml` or `pnpm-workspace.yaml` changing
+  - file moves and renames, and anything added to `packages/reusables`
+  - a shared type or API payload getting stricter
+- One bullet for deliberately unfinished work ("nothing consumes the picked
+  id yet") so a reviewer does not assume it is wired up.
+- Note a `ponytail:` comment only if it marks a real limitation.
 - No "Generated with" footer, no Co-Authored-By, unless asked.
 - Skip the body entirely for one-liners like a port change or a dep bump.
 
@@ -183,24 +160,27 @@ them immediately:
 
 ## Example
 
+The whole reply looks like this — touches line, copyable message, one-line
+concern:
+
+---
+
+Touches: apps/main, packages/api, packages/reusables
+
 ```
 fix(settings): send real UserRole values when inviting and editing members
 
 Organization Settings translated its role picker through four legacy maps
-before hitting the API, sending values like `viewer_finance` and
-`supervisor` that the backend's role enum does not contain — so every
-invite landed as the tenant's default role instead of the chosen one.
+before hitting the API, so every invite landed as the tenant's default role.
 
-- turn UserRole into a const object in packages/api so it is usable as a
-  value (`UserRole.FLEET_ADMIN`) as well as a type; a real TS enum would
-  break the ~80 existing string-literal comparisons
-- type InviteUserPayload.role and ChangeRolePayload.newRole as UserRole, so
-  a wrong string is now a compile error
-- drop INVITE_ROLE_TO_DB, DISPLAY_ROLE_TO_DB, roleDisplayMap and
-  reverseRoleMap from Settings.tsx
-- the Maintenance Supervisor and Analyst options are gone; the backend has
-  no matching role, marked with a ponytail: comment
-
-Also dedupes the "all" option in the shared TableToolbar status select,
-which rendered two labels at once.
+- UserRole is now a const object in packages/api, usable as a value as well
+  as a type
+- InviteUserPayload.role and ChangeRolePayload.newRole are typed UserRole, so
+  a wrong string is a compile error
+- drop the four legacy role maps from Settings.tsx
+- the Maintenance Supervisor and Analyst options are gone; no backend role
+- also dedupes the "all" option in the shared TableToolbar status select
 ```
+
+Heads up: `Settings.tsx:214` still has a `console.log(payload)` from
+debugging — left as is.

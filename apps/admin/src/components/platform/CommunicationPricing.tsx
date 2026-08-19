@@ -37,22 +37,20 @@ type CommunicationRate = {
 };
 
 export function CommunicationPricing() {
-  const [
-    rates,
-    setRates,
-  ] = useState<CommunicationRate[]>([]);
+  const [rates] = useState<CommunicationRate[]>([]);
   const [
     loading,
     setLoading,
   ] = useState(true);
-  const [
-    saving,
-    setSaving,
-  ] = useState(false);
+  const [saving] = useState(false);
   const [
     editedRates,
     setEditedRates,
   ] = useState<Record<string, number>>({});
+
+  const fetchRates = async () => {
+    setLoading(false);
+  };
 
   useEffect(
     () => {
@@ -60,10 +58,6 @@ export function CommunicationPricing() {
     },
     [],
   );
-
-  const fetchRates = async () => {
-    setLoading(false);
-  };
 
   const handleRateChange = (id: string, value: string) => {
     const numValue = Number.parseFloat(value) || 0;

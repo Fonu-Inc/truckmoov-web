@@ -33,8 +33,8 @@ export default function DispatcherAlerts() {
   const unacknowledgedAlerts: any[] = [];
   const criticalAlerts: any[] = [];
   const isLoading = false;
-  const refetch = async (...args: any[]) => {};
-  const acknowledgeAlert = async (...args: any[]) => {};
+  const refetch = async (..._args: any[]) => {};
+  const acknowledgeAlert = async (..._args: any[]) => {};
 
   const [
     severityFilter,

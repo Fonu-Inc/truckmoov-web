@@ -35,7 +35,6 @@ import { Progress } from "@/components/shadcn/progress";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
 
 type TenantPlan = any;
 
@@ -88,7 +87,6 @@ export function TenantSubscriptionCard() {
   const isApproachingLimit = (_key: string) => false;
   const isAtLimit = (_key: string) => false;
   const currentPlan = realCurrentPlan ?? DEMO_PLAN;
-  const { user } = useAuthStore();
   const { currency } = useCurrency();
   const [
     upgradeDialogOpen,
@@ -98,10 +96,7 @@ export function TenantSubscriptionCard() {
     downgradeDialogOpen,
     setDowngradeDialogOpen,
   ] = useState(false);
-  const [
-    isSubmitting,
-    setIsSubmitting,
-  ] = useState<string | null>(null);
+  const [isSubmitting] = useState<string | null>(null);
 
   const handleContactSales = async (_plan: TenantPlan, _action: "upgrade" | "downgrade") => {
     toast.info("Coming soon");

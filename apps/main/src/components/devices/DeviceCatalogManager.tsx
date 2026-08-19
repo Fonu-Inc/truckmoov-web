@@ -8,11 +8,8 @@ import {
   Gauge,
   MoreHorizontal,
   Plus,
-  RefreshCw,
   Search,
-  Server,
   Trash2,
-  Wifi,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -77,7 +74,6 @@ type CreateCatalogEntry = Omit<DeviceCatalogEntry, "id">;
 export function DeviceCatalogManager() {
   const catalog: DeviceCatalogEntry[] = [];
   const loading = false;
-  const refetch = () => null;
   const createEntry = async (..._args: any[]) => {};
   const updateEntry = async (..._args: any[]) => {};
   const deleteEntry = async (..._args: any[]) => {};
@@ -206,7 +202,7 @@ export function DeviceCatalogManager() {
       }
       setDialogOpen(false);
     }
-    catch (err) {
+    catch {
       // Error handled in hook
     }
   };

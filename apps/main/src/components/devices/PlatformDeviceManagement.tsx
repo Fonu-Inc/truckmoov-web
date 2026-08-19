@@ -14,14 +14,11 @@ import {
   Cpu,
   Download,
   Eye,
-  FileText,
-  SlidersHorizontal as Filter,
   Fuel,
   Gauge,
   MoreHorizontal,
   Navigation,
   Pencil,
-  RefreshCw,
   Search,
   Signal,
   SignalLow,
@@ -75,7 +72,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import { DriverBehaviorEvent } from "@/hooks/useDeviceTelemetry";
 import { DeviceLifecycleBadge } from "./DeviceLifecycleBadge";
 
 type DeviceLifecycleStatus = string;
@@ -126,7 +122,7 @@ const lifecycleStatuses = [
 ];
 
 export function PlatformDeviceManagement({
-  devices, loading, onRefresh, tenantNameMap: externalTenantMap,
+  devices, loading, onRefresh: _onRefresh, tenantNameMap: externalTenantMap,
 }: PlatformDeviceManagementProps) {
   const [
     searchQuery,
@@ -329,11 +325,6 @@ export function PlatformDeviceManagement({
   const handleViewDetails = (device: DeviceWithTelemetry) => {
     setSelectedDevice(device);
     setShowDetailsSheet(true);
-  };
-
-  const handleViewTelemetry = (device: DeviceWithTelemetry) => {
-    setSelectedDevice(device);
-    setShowTelemetrySheet(true);
   };
 
   // Summary stats - aligned with Tenant Admin view
@@ -620,7 +611,11 @@ export function PlatformDeviceManagement({
                                   <Pencil className="h-4 w-4 mr-2" />
                                   Edit Details
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => { setAssignDevice(device); setAssignTenantId(""); }}>
+                                <DropdownMenuItem onClick={() => {
+                                  setAssignDevice(device);
+                                  setAssignTenantId("");
+                                }}
+                                >
                                   <ArrowUpDown className="h-4 w-4 mr-2" />
                                   {device.tenant_id ? "Reassign" : "Assign to Tenant"}
                                 </DropdownMenuItem>

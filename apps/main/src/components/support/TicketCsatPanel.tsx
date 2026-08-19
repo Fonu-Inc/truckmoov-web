@@ -22,12 +22,12 @@ const RATING_LABELS = [
 ];
 
 export function TicketCsatPanel({
-  ticketId, ticketStatus,
+  ticketId: _ticketId, ticketStatus,
 }: Props) {
   const csat: any = null;
   const isLoading = false;
   const isSubmitting = false;
-  const submit = async (...args: any[]) => {};
+  const submit = async (..._args: any[]) => {};
   const [
     rating,
     setRating,

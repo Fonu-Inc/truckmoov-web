@@ -14,7 +14,6 @@ import {
 } from "@/components/shadcn/dialog";
 import { Label } from "@/components/shadcn/label";
 import { Textarea } from "@/components/shadcn/textarea";
-import { useAuthStore } from "@/stores/authStore";
 
 type UpgradeRequestDialogProps = {
   open: boolean;
@@ -28,20 +27,16 @@ type UpgradeRequestDialogProps = {
 export function UpgradeRequestDialog({
   open,
   onOpenChange,
-  orgId,
-  tenantId,
+  orgId: _orgId,
+  tenantId: _tenantId,
   currentVehicleCount,
-  onSubmitted,
+  onSubmitted: _onSubmitted,
 }: UpgradeRequestDialogProps) {
-  const { user } = useAuthStore();
   const [
     reason,
     setReason,
   ] = useState("");
-  const [
-    isSubmitting,
-    setIsSubmitting,
-  ] = useState(false);
+  const [isSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     toast.info("Coming soon");

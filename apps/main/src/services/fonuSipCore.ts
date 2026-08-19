@@ -33,8 +33,6 @@ export type ISipEvents = {
 };
 
 let _ua: JSSip.UA = {} as any;
-const REGISTRATION_RETRY_LIMIT = 5;
-let registrationRetryCount = 0;
 let registrationRetryTimer: ReturnType<typeof setTimeout> | null = null;
 
 const state = {
@@ -143,7 +141,6 @@ function registerUaEvents(
   ua.on(
     "registered",
     () => {
-      registrationRetryCount = 0;
       registrationRetryTimer && clearTimeout(registrationRetryTimer);
       registrationRetryTimer = null;
       onRegistered?.();
@@ -313,7 +310,6 @@ export function initSipConnection(events: ISipEvents) {
   }
 
   try {
-    registrationRetryCount = 0;
     registrationRetryTimer && clearTimeout(registrationRetryTimer);
     registrationRetryTimer = null;
     JSSip.debug.disable();

@@ -133,18 +133,13 @@ export function JobMatchingDialog({
     reset,
     error: matchingError,
     // Mode control
-    effectiveMode,
     modeDowngraded,
     isSimulationMode,
     isLiveMode,
     // Execution capabilities from server
-    canSendOffers,
-    canTriggerMessaging,
-    canAssign: canAssignFromServer,
     // Role-based permissions
     canRunAIMatching,
     canViewAIResults,
-    canRequestLiveMode,
     defaultMode,
     // Stats
     eligibleVehicleCount,
@@ -279,7 +274,7 @@ export function JobMatchingDialog({
         onOpenChange(false);
       }
     }
-    catch (error) {
+    catch {
       toast.error("Failed to initiate IVR call");
     }
     finally {

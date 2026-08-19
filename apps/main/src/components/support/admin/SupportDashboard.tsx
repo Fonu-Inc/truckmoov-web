@@ -13,7 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import {
-  useEffect, useMemo, useState,
+  useMemo, useState,
 } from "react";
 import { Badge } from "@/components/shadcn/badge";
 import {
@@ -184,7 +184,6 @@ export function SupportDashboard() {
 
   // Use real tickets when present, fall back to demo data otherwise
   const tickets: SupportTicket[] = realTickets.length > 0 ? realTickets : DEMO_TICKETS;
-  const usingDemo = realTickets.length === 0;
 
   // Tenant names are resolved via the hook in the future; for now use demo map
   const tenantName = (id: string) =>

@@ -506,6 +506,18 @@ export function FuelTab() {
         ? `${efficiencyThresholds[0]} km/L`
         : "configured per vehicle";
 
+  const resetNewTransaction = () => {
+    setNewTransaction({
+      vehicleReg: "",
+      driverName: "",
+      fuelType: "diesel",
+      quantity: "",
+      pricePerLitre: "",
+      odometer: "",
+      station: "",
+    });
+  };
+
   const handleAddTransaction = async () => {
     const liters = Number.parseFloat(newTransaction.quantity);
     const pricePerLiter = Number.parseFloat(newTransaction.pricePerLitre);
@@ -612,18 +624,6 @@ export function FuelTab() {
     catch {
       toast.error("Failed to export data");
     }
-  };
-
-  const resetNewTransaction = () => {
-    setNewTransaction({
-      vehicleReg: "",
-      driverName: "",
-      fuelType: "diesel",
-      quantity: "",
-      pricePerLitre: "",
-      odometer: "",
-      station: "",
-    });
   };
 
   if (isLoading) {

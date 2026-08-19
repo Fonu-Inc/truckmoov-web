@@ -95,13 +95,6 @@ export function KYCNotificationHistory() {
     setTypeFilter,
   ] = useState<string>("all");
 
-  useEffect(
-    () => {
-      fetchLogs();
-    },
-    [],
-  );
-
   const fetchLogs = async () => {
     setLoading(true);
     try {
@@ -265,6 +258,13 @@ export function KYCNotificationHistory() {
       setLoading(false);
     }
   };
+
+  useEffect(
+    () => {
+      fetchLogs();
+    },
+    [],
+  );
 
   const getDeliveryStatusBadge = (status: string) => {
     switch (status) {

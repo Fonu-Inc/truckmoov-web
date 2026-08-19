@@ -8,16 +8,11 @@ import {
   Eye,
   Link,
   Loader2,
-  MessageSquare,
   MoreHorizontal,
   Phone,
   Plus,
-  RefreshCw,
-  Search,
-  Shield,
   Star,
   Unlink,
-  XCircle,
 } from "lucide-react";
 import {
   useEffect, useState,
@@ -30,7 +25,7 @@ import {
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
+  Card, CardContent,
 } from "@/components/shadcn/card";
 import {
   Dialog,
@@ -48,7 +43,6 @@ import {
 } from "@/components/shadcn/dropdown-menu";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Separator } from "@/components/shadcn/separator";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
@@ -59,7 +53,6 @@ import {
   TableRow,
 } from "@/components/shadcn/table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
-import { Textarea } from "@/components/shadcn/textarea";
 
 type Tenant = {
   id: string;
@@ -84,14 +77,8 @@ type WhatsAppAccount = {
 };
 
 export function WhatsAppAssistPanel() {
-  const [
-    tenants,
-    setTenants,
-  ] = useState<Tenant[]>([]);
-  const [
-    accounts,
-    setAccounts,
-  ] = useState<WhatsAppAccount[]>([]);
+  const [tenants] = useState<Tenant[]>([]);
+  const [accounts] = useState<WhatsAppAccount[]>([]);
   const [
     isLoading,
     setIsLoading,
@@ -108,10 +95,7 @@ export function WhatsAppAssistPanel() {
     isAddDialogOpen,
     setIsAddDialogOpen,
   ] = useState(false);
-  const [
-    isSaving,
-    setIsSaving,
-  ] = useState(false);
+  const [isSaving] = useState(false);
   const [
     statusFilter,
     setStatusFilter,

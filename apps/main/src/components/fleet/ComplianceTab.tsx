@@ -387,7 +387,7 @@ export function ComplianceTab() {
       setSelectedFile(null);
       toast.success("Document added");
     }
-    catch (err) {
+    catch {
       toast.error("Failed to add document");
     }
     finally {

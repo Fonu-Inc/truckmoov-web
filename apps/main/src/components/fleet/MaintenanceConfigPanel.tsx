@@ -1,5 +1,5 @@
 import {
-  AlertTriangle, Fuel, Save, Settings, Wrench,
+  Fuel, Save, Settings, Wrench,
 } from "lucide-react";
 import {
   useEffect, useState,
@@ -29,7 +29,7 @@ export function MaintenanceConfigPanel() {
   const updateConfig = async (_cfg: any): Promise<boolean> => false;
   const tenantId: string | null = null;
   const [
-    config,
+    _config,
     setConfig,
   ] = useState<TenantMaintenanceConfig | null>(null);
   const [
@@ -117,7 +117,7 @@ export function MaintenanceConfigPanel() {
         toast.error("Failed to save settings");
       }
     }
-    catch (err) {
+    catch {
       toast.error("Failed to save settings");
     }
     finally {

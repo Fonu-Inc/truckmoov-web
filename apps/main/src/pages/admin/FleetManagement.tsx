@@ -17,7 +17,6 @@ import {
   Download,
   Edit,
   Eye,
-  SlidersHorizontal as Filter,
   Fuel,
   Loader2,
   MapPin,
@@ -50,9 +49,8 @@ import { VehicleFormDialog } from "@/components/fleet/VehicleFormDialog";
 import {
   buildDefaultVehiclesFilterValue,
   countActiveVehicleFilters,
-  VehiclesFilterDialog,
-
-} from "@/components/fleet/VehiclesFilterDialog";
+} from "@/components/fleet/vehiclesFilter";
+import { VehiclesFilterDialog } from "@/components/fleet/VehiclesFilterDialog";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
   AlertDialog,
@@ -378,7 +376,7 @@ export default function FleetManagement({
       URL.revokeObjectURL(url);
       toast.success("Vehicles export downloaded");
     }
-    catch (error) {
+    catch {
       toast.error("Vehicle export failed");
     }
     finally {

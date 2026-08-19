@@ -1,10 +1,10 @@
 import {
-  endOfMonth, formatMonthYear, getDateRange, isWithinRange, startOfMonth, subMonths, toDateParam,
+  endOfMonth, formatMonthYear, getDateRange, isWithinRange, startOfMonth, subMonths,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle, Calendar, CheckCircle, ChevronDown, Clock,
-  DollarSign, FileText, Fuel, Loader2, Percent,
-  Search, Shield, SlidersHorizontal, TrendingDown, TrendingUp, Truck, Wrench,
+  DollarSign, FileText, Fuel, Percent,
+  Search, Shield, SlidersHorizontal, TrendingDown, TrendingUp, Truck,
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -86,23 +86,6 @@ function ChartPeriodFilter({
 }
 
 // ─── CSV Export Utility ─────────────────────────────────────────────────────
-function exportToCSV(filename: string, headers: string[], rows: (string | number)[][]) {
-  const csvContent = [
-    headers.join(","),
-    ...rows.map(row => row.map(cell => `"${cell}"`).join(",")),
-  ].join("\n");
-
-  const blob = new Blob(
-    [csvContent],
-    { type: "text/csv;charset=utf-8;" },
-  );
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${filename}_${toDateParam(new Date())}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
-}
 
 // ─── P&L Report Tab ─────────────────────────────────────────────────────────
 function ProfitLossReport({
@@ -194,10 +177,7 @@ function ProfitLossReport({
   );
   const displayMonthlyData = hasRealMonthly ? monthlyData : demoMonthlyData;
 
-  const [
-    chartPeriod,
-    setChartPeriod,
-  ] = useState<ChartPeriod>("30d");
+  const [_chartPeriod] = useState<ChartPeriod>("30d");
 
   // Monthly Breakdown table search + filters
   const [
@@ -318,21 +298,24 @@ function ProfitLossReport({
       return false;
     const num = (s: string) => (s === "" ? null : Number(s));
     if (revenueEnabled) {
-      const min = num(revenueMin); const max = num(revenueMax);
+      const min = num(revenueMin);
+      const max = num(revenueMax);
       if (min !== null && m.revenue < min)
         return false;
       if (max !== null && m.revenue > max)
         return false;
     }
     if (costsEnabled) {
-      const min = num(costsMin); const max = num(costsMax);
+      const min = num(costsMin);
+      const max = num(costsMax);
       if (min !== null && m.costs < min)
         return false;
       if (max !== null && m.costs > max)
         return false;
     }
     if (profitEnabled) {
-      const min = num(profitMin); const max = num(profitMax);
+      const min = num(profitMin);
+      const max = num(profitMax);
       if (min !== null && m.profit < min)
         return false;
       if (max !== null && m.profit > max)
@@ -340,7 +323,8 @@ function ProfitLossReport({
     }
     if (marginEnabled) {
       const margin = m.revenue > 0 ? (m.profit / m.revenue) * 100 : 0;
-      const min = num(marginMin); const max = num(marginMax);
+      const min = num(marginMin);
+      const max = num(marginMax);
       if (min !== null && margin < min)
         return false;
       if (max !== null && margin > max)
@@ -351,54 +335,60 @@ function ProfitLossReport({
 
   const openFilter = () => {
     setDraftRevenueEnabled(revenueEnabled);
-    setDraftRevenueMin(revenueMin); setDraftRevenueMax(revenueMax);
+    setDraftRevenueMin(revenueMin);
+    setDraftRevenueMax(revenueMax);
     setDraftCostsEnabled(costsEnabled);
-    setDraftCostsMin(costsMin); setDraftCostsMax(costsMax);
+    setDraftCostsMin(costsMin);
+    setDraftCostsMax(costsMax);
     setDraftProfitEnabled(profitEnabled);
-    setDraftProfitMin(profitMin); setDraftProfitMax(profitMax);
+    setDraftProfitMin(profitMin);
+    setDraftProfitMax(profitMax);
     setDraftMarginEnabled(marginEnabled);
-    setDraftMarginMin(marginMin); setDraftMarginMax(marginMax);
+    setDraftMarginMin(marginMin);
+    setDraftMarginMax(marginMax);
     setFilterOpen(true);
   };
   const applyFilter = () => {
     setRevenueEnabled(draftRevenueEnabled);
-    setRevenueMin(draftRevenueMin); setRevenueMax(draftRevenueMax);
+    setRevenueMin(draftRevenueMin);
+    setRevenueMax(draftRevenueMax);
     setCostsEnabled(draftCostsEnabled);
-    setCostsMin(draftCostsMin); setCostsMax(draftCostsMax);
+    setCostsMin(draftCostsMin);
+    setCostsMax(draftCostsMax);
     setProfitEnabled(draftProfitEnabled);
-    setProfitMin(draftProfitMin); setProfitMax(draftProfitMax);
+    setProfitMin(draftProfitMin);
+    setProfitMax(draftProfitMax);
     setMarginEnabled(draftMarginEnabled);
-    setMarginMin(draftMarginMin); setMarginMax(draftMarginMax);
+    setMarginMin(draftMarginMin);
+    setMarginMax(draftMarginMax);
     setFilterOpen(false);
   };
   const clearAll = () => {
-    setRevenueEnabled(false); setRevenueMin(""); setRevenueMax("");
-    setCostsEnabled(false); setCostsMin(""); setCostsMax("");
-    setProfitEnabled(false); setProfitMin(""); setProfitMax("");
-    setMarginEnabled(false); setMarginMin(""); setMarginMax("");
-    setDraftRevenueEnabled(false); setDraftRevenueMin(""); setDraftRevenueMax("");
-    setDraftCostsEnabled(false); setDraftCostsMin(""); setDraftCostsMax("");
-    setDraftProfitEnabled(false); setDraftProfitMin(""); setDraftProfitMax("");
-    setDraftMarginEnabled(false); setDraftMarginMin(""); setDraftMarginMax("");
+    setRevenueEnabled(false);
+    setRevenueMin("");
+    setRevenueMax("");
+    setCostsEnabled(false);
+    setCostsMin("");
+    setCostsMax("");
+    setProfitEnabled(false);
+    setProfitMin("");
+    setProfitMax("");
+    setMarginEnabled(false);
+    setMarginMin("");
+    setMarginMax("");
+    setDraftRevenueEnabled(false);
+    setDraftRevenueMin("");
+    setDraftRevenueMax("");
+    setDraftCostsEnabled(false);
+    setDraftCostsMin("");
+    setDraftCostsMax("");
+    setDraftProfitEnabled(false);
+    setDraftProfitMin("");
+    setDraftProfitMax("");
+    setDraftMarginEnabled(false);
+    setDraftMarginMin("");
+    setDraftMarginMax("");
     setFilterOpen(false);
-  };
-
-  const handleExport = () => {
-    exportToCSV(
-      "profit_loss_report",
-      [
-        "Month",
-        "Revenue (NGN)",
-        "Costs (NGN)",
-        "Profit (NGN)",
-      ],
-      filteredMonthly.map(m => [
-        m.month,
-        m.revenue,
-        m.costs,
-        m.profit,
-      ]),
-    );
   };
 
   return (
@@ -831,26 +821,6 @@ function ComplianceAuditReport({
       category: "Fire Extinguisher", total: totalVehicles, compliant: Math.round(totalVehicles * 0.9), status: "pass",
     },
   ];
-
-  const handleExport = () => {
-    exportToCSV(
-      "compliance_audit_report",
-      [
-        "Category",
-        "Total",
-        "Compliant",
-        "Non-Compliant",
-        "Compliance Rate (%)",
-      ],
-      complianceItems.map(c => [
-        c.category,
-        c.total,
-        c.compliant,
-        c.total - c.compliant,
-        c.total > 0 ? ((c.compliant / c.total) * 100).toFixed(1) : "0",
-      ]),
-    );
-  };
 
   const rawPieData = [
     {
@@ -1513,27 +1483,54 @@ function FuelConsumptionReport({
     setDTripsMax,
   ] = useState("");
   const openFuelFilter = () => {
-    setDFuelTypeEnabled(fuelTypeEnabled); setDFuelTypeVal(fuelTypeVal);
-    setDCostEnabled(costEnabled); setDCostMin(costMin); setDCostMax(costMax);
-    setDDistEnabled(distEnabled); setDDistMin(distMin); setDDistMax(distMax);
-    setDEffEnabled(effEnabled); setDEffMin(effMin); setDEffMax(effMax);
-    setDTripsEnabled(tripsEnabled); setDTripsMin(tripsMin); setDTripsMax(tripsMax);
+    setDFuelTypeEnabled(fuelTypeEnabled);
+    setDFuelTypeVal(fuelTypeVal);
+    setDCostEnabled(costEnabled);
+    setDCostMin(costMin);
+    setDCostMax(costMax);
+    setDDistEnabled(distEnabled);
+    setDDistMin(distMin);
+    setDDistMax(distMax);
+    setDEffEnabled(effEnabled);
+    setDEffMin(effMin);
+    setDEffMax(effMax);
+    setDTripsEnabled(tripsEnabled);
+    setDTripsMin(tripsMin);
+    setDTripsMax(tripsMax);
     setFuelFilterOpen(true);
   };
   const applyFuelFilter = () => {
-    setFuelTypeEnabled(dFuelTypeEnabled); setFuelTypeVal(dFuelTypeVal);
-    setCostEnabled(dCostEnabled); setCostMin(dCostMin); setCostMax(dCostMax);
-    setDistEnabled(dDistEnabled); setDistMin(dDistMin); setDistMax(dDistMax);
-    setEffEnabled(dEffEnabled); setEffMin(dEffMin); setEffMax(dEffMax);
-    setTripsEnabled(dTripsEnabled); setTripsMin(dTripsMin); setTripsMax(dTripsMax);
+    setFuelTypeEnabled(dFuelTypeEnabled);
+    setFuelTypeVal(dFuelTypeVal);
+    setCostEnabled(dCostEnabled);
+    setCostMin(dCostMin);
+    setCostMax(dCostMax);
+    setDistEnabled(dDistEnabled);
+    setDistMin(dDistMin);
+    setDistMax(dDistMax);
+    setEffEnabled(dEffEnabled);
+    setEffMin(dEffMin);
+    setEffMax(dEffMax);
+    setTripsEnabled(dTripsEnabled);
+    setTripsMin(dTripsMin);
+    setTripsMax(dTripsMax);
     setFuelFilterOpen(false);
   };
   const clearFuelFilter = () => {
-    setFuelTypeEnabled(false); setFuelTypeVal("all");
-    setCostEnabled(false); setCostMin(""); setCostMax("");
-    setDistEnabled(false); setDistMin(""); setDistMax("");
-    setEffEnabled(false); setEffMin(""); setEffMax("");
-    setTripsEnabled(false); setTripsMin(""); setTripsMax("");
+    setFuelTypeEnabled(false);
+    setFuelTypeVal("all");
+    setCostEnabled(false);
+    setCostMin("");
+    setCostMax("");
+    setDistEnabled(false);
+    setDistMin("");
+    setDistMax("");
+    setEffEnabled(false);
+    setEffMin("");
+    setEffMax("");
+    setTripsEnabled(false);
+    setTripsMin("");
+    setTripsMax("");
     setFuelFilterOpen(false);
   };
   const fuelActiveFilters = [
@@ -1579,30 +1576,6 @@ function FuelConsumptionReport({
     0,
   );
   const avgEfficiency = totalLiters > 0 ? (totalKm / totalLiters).toFixed(1) : "—";
-
-  const handleExport = () => {
-    exportToCSV(
-      "fuel_consumption_report",
-      [
-        "Vehicle",
-        "Type",
-        "Distance (km)",
-        "Fuel (L)",
-        "Cost (NGN)",
-        "Efficiency (km/L)",
-        "Trips",
-      ],
-      vehicleFuelData.map(v => [
-        v.vehicle,
-        v.type,
-        v.totalKm,
-        v.liters,
-        v.cost,
-        v.efficiency,
-        v.trips,
-      ]),
-    );
-  };
 
   // Top 5 consumers chart
   const demoFuelData = [
@@ -1792,7 +1765,7 @@ function FuelConsumptionReport({
           }
           if (effEnabled) {
             const eff = Number.parseFloat(v.efficiency as any);
-            if (!isNaN(eff)) {
+            if (!Number.isNaN(eff)) {
               if (effMin && eff < Number(effMin))
                 return false;
               if (effMax && eff > Number(effMax))
@@ -1807,29 +1780,6 @@ function FuelConsumptionReport({
           }
           return true;
         });
-        const handleFuelExport = () => {
-          exportToCSV(
-            "vehicle_fuel_breakdown",
-            [
-              "Vehicle",
-              "Type",
-              "Distance (km)",
-              "Fuel (L)",
-              "Cost (NGN)",
-              "Efficiency (km/L)",
-              "Trips",
-            ],
-            filteredFuel.map(v => [
-              v.vehicle,
-              v.type,
-              v.totalKm,
-              v.liters,
-              v.cost,
-              v.efficiency,
-              v.trips,
-            ]),
-          );
-        };
         return (
           <Card className="border-border/50">
             <CardHeader>
@@ -2181,18 +2131,30 @@ function FleetUtilizationReport({
     setDRevMax,
   ] = useState("");
   const openUtilFilter = () => {
-    setDJobsEnabled(jobsEnabled); setDJobsMin(jobsMin); setDJobsMax(jobsMax);
-    setDRevEnabled(revEnabled); setDRevMin(revMin); setDRevMax(revMax);
+    setDJobsEnabled(jobsEnabled);
+    setDJobsMin(jobsMin);
+    setDJobsMax(jobsMax);
+    setDRevEnabled(revEnabled);
+    setDRevMin(revMin);
+    setDRevMax(revMax);
     setUtilFilterOpen(true);
   };
   const applyUtilFilter = () => {
-    setJobsEnabled(dJobsEnabled); setJobsMin(dJobsMin); setJobsMax(dJobsMax);
-    setRevEnabled(dRevEnabled); setRevMin(dRevMin); setRevMax(dRevMax);
+    setJobsEnabled(dJobsEnabled);
+    setJobsMin(dJobsMin);
+    setJobsMax(dJobsMax);
+    setRevEnabled(dRevEnabled);
+    setRevMin(dRevMin);
+    setRevMax(dRevMax);
     setUtilFilterOpen(false);
   };
   const clearUtilFilter = () => {
-    setJobsEnabled(false); setJobsMin(""); setJobsMax("");
-    setRevEnabled(false); setRevMin(""); setRevMax("");
+    setJobsEnabled(false);
+    setJobsMin("");
+    setJobsMax("");
+    setRevEnabled(false);
+    setRevMin("");
+    setRevMax("");
     setUtilFilterOpen(false);
   };
   const utilActiveFilters = [
@@ -2245,30 +2207,6 @@ function FleetUtilizationReport({
         0,
       )
     : 5_260_000;
-
-  const handleExport = () => {
-    exportToCSV(
-      "fleet_utilization_report",
-      [
-        "Vehicle",
-        "Type",
-        "Status",
-        "Completed Jobs",
-        "Active Jobs",
-        "Revenue (NGN)",
-        "Utilization (%)",
-      ],
-      vehicleUtilization.map(v => [
-        v.vehicle,
-        v.type,
-        v.status,
-        v.completedJobs,
-        v.activeJobs,
-        v.revenue,
-        v.utilization,
-      ]),
-    );
-  };
 
   const demoVehicleUtilization = [
     {
@@ -2449,29 +2387,6 @@ function FleetUtilizationReport({
             }
             return true;
           });
-          const handleUtilExport = () => {
-            exportToCSV(
-              "per_vehicle_utilization",
-              [
-                "Vehicle",
-                "Type",
-                "Status",
-                "Completed Jobs",
-                "Active Jobs",
-                "Revenue (NGN)",
-                "Utilization (%)",
-              ],
-              filteredUtil.map(v => [
-                v.vehicle,
-                v.type,
-                v.status,
-                v.completedJobs,
-                v.activeJobs,
-                v.revenue,
-                v.utilization,
-              ]),
-            );
-          };
           return (
             <Card className="border-border/50 lg:col-span-2">
               <CardHeader>
@@ -2692,10 +2607,7 @@ function FleetUtilizationReport({
 
 // ─── Main Reports Page ──────────────────────────────────────────────────────
 export default function Reports() {
-  const [
-    dateRange,
-    setDateRange,
-  ] = useState("this_month");
+  const [dateRange] = useState("this_month");
   const vehicles: any[] = [];
   const jobs: any[] = [];
   const { format: formatCurrency } = useCurrency();
@@ -2713,7 +2625,7 @@ export default function Reports() {
           title="No data for reports"
           description="Add vehicles, drivers, and jobs to generate reports"
           actionLabel="Go to Fleet"
-          actionHref="/admin/fleet"
+          actionHref="/fleet"
         />
       </DashboardLayout>
     );

@@ -3,7 +3,7 @@ import {
 } from "@truckmoov/app-core/utils/time-utils";
 
 import {
-  AlertCircle, CheckCircle, Clock, Delete, Download, Filter, Globe, Headphones, Loader2, MessageSquare, Mic, MicOff, MoreHorizontal, Pause, Pencil, Phone, PhoneCall, PhoneIncoming, PhoneMissed, PhoneOutgoing, Play, Plus, Search, Settings, Trash2, User, UserPlus, Volume2, XCircle,
+  CheckCircle, Clock, Download, Globe, Headphones, Loader2, MessageSquare, Mic, MicOff, MoreHorizontal, Pencil, Phone, PhoneCall, PhoneIncoming, PhoneMissed, PhoneOutgoing, Play, Plus, Settings, Trash2, XCircle,
 } from "lucide-react";
 import {
   useEffect, useState,
@@ -30,7 +30,6 @@ import {
 } from "@/components/shadcn/dropdown-menu";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Progress } from "@/components/shadcn/progress";
 import {
   Select,
   SelectContent,
@@ -310,7 +309,7 @@ export function VoiceIVRManager() {
     setCallPhoneNumber,
   ] = useState("");
   const [
-    callMessage,
+    _callMessage,
     setCallMessage,
   ] = useState("");
   const [

@@ -6,7 +6,7 @@ import {
   useMutation, useQuery, useQueryClient,
 } from "@tanstack/react-query";
 import {
-  AlertTriangle, CheckCircle, Clock, CreditCard, Download, Loader2, MoreHorizontal, Play, Receipt, Search, Settings, Shield, TrendingUp, XCircle,
+  CheckCircle, Clock, CreditCard, Download, Loader2, MoreHorizontal, Play, Receipt, Search, Settings, Shield, XCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -107,7 +107,6 @@ export function PostpaidBillingTab({
   currency, getDisplayAmount,
 }: PostpaidBillingTabProps) {
   const rawInvoices: PostpaidInvoice[] = [];
-  const isLoading = false;
   const runBillingCycle = { mutateAsync: async (_args: undefined): Promise<void> => {} } as any;
   const queryClient = useQueryClient();
   const [
@@ -988,7 +987,10 @@ export function PostpaidBillingTab({
                       // Visualise step progression while the real mutation runs
                       const tick = (i: number) =>
                         new Promise<void>(res => setTimeout(
-                          () => { setBillingCycleStepIdx(i); res(); },
+                          () => {
+                            setBillingCycleStepIdx(i);
+                            res();
+                          },
                           700,
                         ));
                       await tick(1);

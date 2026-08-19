@@ -4,7 +4,6 @@ import {
   AlertCircle, AlertTriangle,
   CheckCircle,
   Clock,
-  SlidersHorizontal as Filter,
   HardDrive,
   Link,
   Loader2,
@@ -15,7 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 import {
-  useCallback, useMemo, useState,
+  useMemo, useState,
 } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
@@ -50,7 +49,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import { useAuthStore } from "@/stores/authStore";
 import { DeviceLinkingResolver } from "./DeviceLinkingResolver";
 
 type ActivationBatch = {
@@ -189,13 +187,9 @@ const DEMO_ACTIVATION_BATCHES: ActivationBatch[] = [
 ];
 
 export function ActivationBatchesPanel() {
-  const { user } = useAuthStore();
   const [batches] = useState<ActivationBatch[]>(DEMO_ACTIVATION_BATCHES);
   const [loading] = useState(false);
-  const [
-    activating,
-    setActivating,
-  ] = useState<string | null>(null);
+  const [activating] = useState<string | null>(null);
   const [
     selectedBatch,
     setSelectedBatch,

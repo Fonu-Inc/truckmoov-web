@@ -52,7 +52,6 @@ import {
   getDummyEarningsSummary,
   getDummyEarningsTrend,
 } from "@/lib/ownerOperatorDummyData";
-import { useAuthStore } from "@/stores/authStore";
 
 /**
  * Owner-Operator Lite Portal
@@ -61,7 +60,6 @@ import { useAuthStore } from "@/stores/authStore";
  * Hides: fleet analytics, multi-user management, advanced reporting.
  */
 export default function OwnerOperatorDashboard() {
-  const { user } = useAuthStore();
   const navigate = useNavigate();
   const { format: formatCurrency } = useCurrency();
   const [
@@ -78,9 +76,9 @@ export default function OwnerOperatorDashboard() {
   ] = useState<ChartDateRange>("30d");
   const deviceRequests: any[] = [];
   const deviceRequestsLoading = false;
-  const createRequest = async (...args: any[]) => null;
-  const updateRequestStatus = async (...args: any[]) => {};
-  const uploadFile = async (...args: any[]) => null;
+  const createRequest = async (..._args: any[]) => null;
+  const updateRequestStatus = async (..._args: any[]) => {};
+  const uploadFile = async (..._args: any[]) => null;
   const jobEligible = true;
   const activeJobs = 0;
   const maxActiveJobs = 1;
@@ -105,7 +103,6 @@ export default function OwnerOperatorDashboard() {
     "arrived_pickup",
     "arrived_dropoff",
   ].includes(j.status));
-  const upcomingJob = jobs.find(j => j.status === "pending" || j.status === "offered");
   const completedJobs = jobs.filter(j => j.status === "completed");
   const totalEarnings = completedJobs.reduce(
     (sum, j) => sum + (j.revenue_ngn || j.amount_ngn || 0),

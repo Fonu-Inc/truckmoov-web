@@ -160,7 +160,7 @@ export default function SignUpPage() {
           useAuthStore.getState().syncFromSession();
           toast.success("Registration request completed.");
           navigate(
-            "/admin",
+            "/overview",
             { replace: true },
           );
         },

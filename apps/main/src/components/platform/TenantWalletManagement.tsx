@@ -3,12 +3,9 @@ import {
   AlertTriangle,
   Building2,
   CreditCard,
-  Filter,
   Plus,
   RefreshCw,
-  Search,
-  TrendingDown,
-  TrendingUp, Wallet,
+  TrendingDown, Wallet,
 } from "lucide-react";
 import {
   useEffect, useState,
@@ -30,12 +27,7 @@ import {
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import {
-  Popover, PopoverContent, PopoverTrigger,
-} from "@/components/shadcn/popover";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/shadcn/select";
+
 import { Switch } from "@/components/shadcn/switch";
 import {
   Table,
@@ -78,10 +70,7 @@ export function TenantWalletManagement() {
     topupAmount,
     setTopupAmount,
   ] = useState("");
-  const [
-    topupLoading,
-    setTopupLoading,
-  ] = useState(false);
+  const [topupLoading] = useState(false);
   const [
     searchQuery,
     setSearchQuery,
@@ -94,13 +83,6 @@ export function TenantWalletManagement() {
     walletFilters,
     setWalletFilters,
   ] = useState<FilterValues>({});
-
-  useEffect(
-    () => {
-      fetchWallets();
-    },
-    [],
-  );
 
   const fetchWallets = async () => {
     const DEMO_WALLETS: TenantWallet[] = [
@@ -132,6 +114,13 @@ export function TenantWalletManagement() {
     setWallets(DEMO_WALLETS);
     setLoading(false);
   };
+
+  useEffect(
+    () => {
+      fetchWallets();
+    },
+    [],
+  );
 
   const handleTopup = async () => {
     toast.info("Coming soon");

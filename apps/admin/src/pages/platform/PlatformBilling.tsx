@@ -625,10 +625,7 @@ export default function PlatformBilling() {
     momoPhone,
     setMomoPhone,
   ] = useState("");
-  const [
-    isProcessingPayment,
-    setIsProcessingPayment,
-  ] = useState(false);
+  const [isProcessingPayment] = useState(false);
   const [
     isMarkPaidOpen,
     setIsMarkPaidOpen,
@@ -681,12 +678,8 @@ export default function PlatformBilling() {
     setIsSubDialogOpen,
   ] = useState(false);
 
-  const isBillingLoading = false;
-  const summary: any = null;
-  const fetchBillingSummary = async (...args: any[]) => {};
-  const checkRenewals = async (...args: any[]) => {};
-  const processPayment = async (...args: any[]) => {};
-  const generateInvoice = async (...args: any[]) => null as any;
+  const fetchBillingSummary = async (..._args: any[]) => {};
+  const generateInvoice = async (..._args: any[]) => null as any;
   const [
     generatingFor,
     setGeneratingFor,
@@ -2061,7 +2054,13 @@ export default function PlatformBilling() {
             >
               Cancel
             </Button>
-            <Button onClick={() => { toast.success("MTN MoMo settings saved"); setIsMomoConfigOpen(false); }}>Save Changes</Button>
+            <Button onClick={() => {
+              toast.success("MTN MoMo settings saved");
+              setIsMomoConfigOpen(false);
+            }}
+            >
+              Save Changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2123,7 +2122,10 @@ export default function PlatformBilling() {
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6"
-                    onClick={() => { navigator.clipboard.writeText(row.value); toast.success(`${row.label} copied`); }}
+                    onClick={() => {
+                      navigator.clipboard.writeText(row.value);
+                      toast.success(`${row.label} copied`);
+                    }}
                   >
                     <FileText className="h-3.5 w-3.5" />
                   </Button>
@@ -2204,7 +2206,10 @@ export default function PlatformBilling() {
               Cancel
             </Button>
             <Button onClick={() => {
-              if (!cardSetup.publicKey || !cardSetup.secretKey) { toast.error("Both keys are required"); return; }
+              if (!cardSetup.publicKey || !cardSetup.secretKey) {
+                toast.error("Both keys are required");
+                return;
+              }
               toast.success(`${cardSetup.provider} connected for card payments`);
               setIsCardSetupOpen(false);
             }}
@@ -2265,7 +2270,10 @@ export default function PlatformBilling() {
               Cancel
             </Button>
             <Button onClick={() => {
-              if (!newProvider.name) { toast.error("Provider name is required"); return; }
+              if (!newProvider.name) {
+                toast.error("Provider name is required");
+                return;
+              }
               toast.success(`${newProvider.name} added as a payment provider`);
               setNewProvider({
                 name: "",

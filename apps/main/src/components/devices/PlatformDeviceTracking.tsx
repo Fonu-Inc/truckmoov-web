@@ -3,7 +3,7 @@ import type {
   DeviceWithTelemetry, DriverBehaviorEvent,
 } from "@/hooks/useDeviceTelemetry";
 import {
-  AlertTriangle, Download, Pause, Play, RefreshCw, Trash2,
+  AlertTriangle, Download, Pause, Play, Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { DeviceList } from "@/components/devices/DeviceList";

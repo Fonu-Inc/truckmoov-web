@@ -17,24 +17,15 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useAuthStore } from "@/stores/authStore";
 
 /**
  * Enterprise Logistics Dashboard
  * Read-only view of all jobs owned by the enterprise, grouped by executing provider.
  */
 export default function EnterpriseLogisticsDashboard() {
-  const { user } = useAuthStore();
   const { format: formatCurrency } = useCurrency();
-  const orgCtx = {
-    memberships: [], isLoading: false, hasOrgRole: () => false, hasOrgType: () => false, getByOrgType: (_type: string) => [] as any[],
-  };
 
   // Get the enterprise org IDs for filtering
-  const enterpriseOrgIds = useMemo(
-    () => orgCtx.getByOrgType("ENTERPRISE").map((m: any) => m.orgId),
-    [],
-  );
 
   const jobs: any[] = [];
   const jobsLoading = false;

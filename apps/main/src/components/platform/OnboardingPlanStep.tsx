@@ -17,7 +17,6 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import { Separator } from "@/components/shadcn/separator";
 import {
   Tooltip,
   TooltipContent,
@@ -296,7 +295,9 @@ export function OnboardingPlanStep({
             bullets = p.features;
           }
           else if (typeof p.features === "string") {
-            try { bullets = JSON.parse(p.features); }
+            try {
+              bullets = JSON.parse(p.features);
+            }
             catch { bullets = []; }
           }
 
@@ -458,16 +459,10 @@ function UsageRatesStrip() {
     expanded,
     setExpanded,
   ] = useState(false);
-  const [
-    rates,
-    setRates,
-  ] = useState<{
+  const [rates] = useState<{
     communication_type: string; rate_ngn: number; rate_unit: string; description: string | null;
   }[]>([]);
-  const [
-    loadingRates,
-    setLoadingRates,
-  ] = useState(false);
+  const [loadingRates] = useState(false);
   const [
     summaryItems,
     setSummaryItems,

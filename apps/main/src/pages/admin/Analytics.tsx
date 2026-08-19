@@ -1,13 +1,10 @@
 import {
-  AlertTriangle, BarChart3, Calendar, CheckCircle, Clock, DollarSign, Download, Fuel, Gauge, Loader2, Package, Route, Star, TrendingDown, TrendingUp, Truck, Users, Wrench,
+  BarChart3, Calendar, CheckCircle, Clock, DollarSign, Download, Loader2, Package, Route, Star, TrendingDown, TrendingUp, Truck, Users,
 } from "lucide-react";
 import { useState } from "react";
 import {
-  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line,
-  LineChart, Pie, PieChart, PolarAngleAxis, PolarGrid,
-  PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import { EmptyState } from "@/components/dashboard/EmptyState";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/shadcn/button";
 import {

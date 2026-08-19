@@ -14,7 +14,6 @@ import {
 } from "@/components/shadcn/dialog";
 import { Label } from "@/components/shadcn/label";
 import { Textarea } from "@/components/shadcn/textarea";
-import { useAuthStore } from "@/stores/authStore";
 
 type KYCRequestDialogProps = {
   open: boolean;
@@ -28,20 +27,16 @@ type KYCRequestDialogProps = {
 export function KYCRequestDialog({
   open,
   onOpenChange,
-  tenantId,
+  tenantId: _tenantId,
   tenantName,
-  requestId,
-  onComplete,
+  requestId: _requestId,
+  onComplete: _onComplete,
 }: KYCRequestDialogProps) {
-  const { user } = useAuthStore();
   const [
     reason,
     setReason,
   ] = useState("");
-  const [
-    processing,
-    setProcessing,
-  ] = useState(false);
+  const [processing] = useState(false);
 
   const handleSubmit = async () => {
     if (!reason.trim()) {

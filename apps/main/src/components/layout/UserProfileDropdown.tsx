@@ -50,7 +50,7 @@ export function UserProfileDropdown() {
       window.location.assign(`${PLATFORM_ADMIN_URL}/settings`);
     }
     else {
-      navigate("/admin/settings");
+      navigate("/settings");
     }
   };
 

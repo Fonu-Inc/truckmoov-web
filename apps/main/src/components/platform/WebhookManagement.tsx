@@ -8,7 +8,6 @@ import {
   Clock,
   Code,
   Copy,
-  Edit,
   ExternalLink,
   Eye,
   EyeOff,
@@ -19,11 +18,8 @@ import {
   Plus,
   RefreshCw,
   Send,
-  Settings,
   Trash2,
   Webhook,
-  XCircle,
-  Zap,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -50,7 +46,6 @@ import {
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
 import {
   Select,
   SelectContent,
@@ -434,7 +429,7 @@ export function WebhookManagement() {
       ]);
       toast.success(`Test webhook sent to ${webhook.name}`);
     }
-    catch (error) {
+    catch {
       toast.error("Failed to send test webhook");
     }
     finally {

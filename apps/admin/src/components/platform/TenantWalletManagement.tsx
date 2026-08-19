@@ -77,10 +77,7 @@ export function TenantWalletManagement() {
     topupAmount,
     setTopupAmount,
   ] = useState("");
-  const [
-    topupLoading,
-    setTopupLoading,
-  ] = useState(false);
+  const [topupLoading] = useState(false);
   const [
     searchQuery,
     setSearchQuery,
@@ -181,7 +178,7 @@ export function TenantWalletManagement() {
     toast.info("Coming soon");
   };
 
-  const handleToggleCredit = async (wallet: TenantWallet) => {
+  const handleToggleCredit = async (_wallet) => {
     toast.info("Coming soon");
   };
 

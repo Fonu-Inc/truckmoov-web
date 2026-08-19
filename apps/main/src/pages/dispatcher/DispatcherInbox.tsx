@@ -12,7 +12,6 @@ import {
   FileText,
   Image as ImageIcon,
   Loader2,
-  Mail,
   MessageSquare,
   Pause,
   Phone,
@@ -50,13 +49,9 @@ import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Tabs, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
-import { Textarea } from "@/components/shadcn/textarea";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
-
-type DriverMessage = any;
-type DriverCallLog = any;
 
 // Unified communication item
 type CommunicationItem = {
@@ -108,10 +103,10 @@ export default function DispatcherInbox() {
   const isLoading = false;
   const isSending = false;
   const isCalling = false;
-  const sendSMS = async (...args: any[]) => ({ success: false });
-  const sendWhatsApp = async (...args: any[]) => ({ success: false });
-  const initiateCall = async (...args: any[]) => {};
-  const refetch = async (...args: any[]) => {};
+  const sendSMS = async (..._args: any[]) => ({ success: false });
+  const sendWhatsApp = async (..._args: any[]) => ({ success: false });
+  const initiateCall = async (..._args: any[]) => {};
+  const refetch = async (..._args: any[]) => {};
 
   const [
     searchQuery,
@@ -333,7 +328,7 @@ export default function DispatcherInbox() {
         setReplyMessage("");
       }
     }
-    catch (err) {
+    catch {
       // Error toast handled in hook
     }
   };
@@ -350,7 +345,7 @@ export default function DispatcherInbox() {
         user?.name,
       );
     }
-    catch (err) {
+    catch {
       // Error toast handled in hook
     }
   };

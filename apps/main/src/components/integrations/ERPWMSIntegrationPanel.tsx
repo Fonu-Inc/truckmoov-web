@@ -1,13 +1,12 @@
 import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import {
-  AlertTriangle, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, CalendarClock, CheckCircle2, Clock,
+  AlertTriangle, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, CheckCircle2, Clock,
   Database, Layers, Link2, Play, Plus,
-  RefreshCw, Settings2, Trash2, Unlink, XCircle,
+  RefreshCw, Settings2, Trash2, XCircle,
 } from "lucide-react";
 import {
   useEffect, useState,
 } from "react";
-import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -54,7 +53,7 @@ const SCOPE_LABELS: Record<string, {
   },
 };
 
-export function ERPWMSIntegrationPanel({ tenantId }: Props) {
+export function ERPWMSIntegrationPanel({ tenantId: _tenantId }: Props) {
   const connectors: any[] = [];
   const mappings: any[] = [];
   const syncLogs: any[] = [];
@@ -66,7 +65,6 @@ export function ERPWMSIntegrationPanel({ tenantId }: Props) {
   const deleteConnector = async (..._args: any[]) => {};
   const testConnection = async (..._args: any[]) => {};
   const fetchMappings = async (..._args: any[]) => {};
-  const addMapping = async (..._args: any[]) => {};
   const deleteMapping = async (..._args: any[]) => {};
   const loadDefaultMappings = async (..._args: any[]) => {};
   const executeSync = async (..._args: any[]) => {};
@@ -330,7 +328,10 @@ export function ERPWMSIntegrationPanel({ tenantId }: Props) {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={(e) => { e.stopPropagation(); testConnection(conn.id); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                testConnection(conn.id);
+                              }}
                               disabled={isSyncing}
                             >
                               <RefreshCw className={`h-3 w-3 mr-1 ${isSyncing ? "animate-spin" : ""}`} />
@@ -339,7 +340,10 @@ export function ERPWMSIntegrationPanel({ tenantId }: Props) {
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={(e) => { e.stopPropagation(); deleteConnector(conn.id); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteConnector(conn.id);
+                              }}
                             >
                               <Trash2 className="h-3 w-3 text-destructive" />
                             </Button>

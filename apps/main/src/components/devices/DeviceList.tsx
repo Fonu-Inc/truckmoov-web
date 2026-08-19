@@ -39,23 +39,6 @@ export function DeviceList({
   statusFilter,
   onStatusFilterChange,
 }: DeviceListProps) {
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      // Lifecycle statuses
-      registered: "bg-blue-500",
-      config_pending: "bg-amber-500",
-      configured: "bg-purple-500",
-      verified_online: "bg-cyan-500",
-      assignable: "bg-green-500",
-      assigned: "bg-emerald-500",
-      faulty: "bg-red-500",
-      decommissioned: "bg-gray-500",
-      // Legacy statuses
-      active: "bg-green-500",
-    };
-    return colors[status] || "bg-gray-500";
-  };
-
   const getSignalBars = (strength?: number | null) => {
     if (!strength)
       return 0;

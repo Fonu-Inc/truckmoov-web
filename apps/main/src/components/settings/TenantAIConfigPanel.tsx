@@ -39,7 +39,7 @@ import { useAIConfigPermissions } from "@/hooks/useAIConfigPermissions";
 
 type TenantAIConfigPanelProps = { tenantId: string };
 
-export function TenantAIConfigPanel({ tenantId }: TenantAIConfigPanelProps) {
+export function TenantAIConfigPanel({ tenantId: _tenantId }: TenantAIConfigPanelProps) {
   // Hooks removed — inline defaults until data source is wired up
   const config: null = null;
   const isLoading = false;

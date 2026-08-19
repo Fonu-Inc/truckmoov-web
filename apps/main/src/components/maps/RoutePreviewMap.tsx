@@ -204,7 +204,6 @@ export function RoutePreviewMap({
         routeLayerRef.current = null;
       };
     // Map construction options are intentionally read only on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     },
     [],
   );

@@ -104,10 +104,6 @@ export default function OwnerOperatorVehicleDetail() {
     new Date(d.expiry_date),
     now,
   ));
-  const validDocs = complianceDocs.filter(d => !isBefore(
-    new Date(d.expiry_date),
-    now,
-  ));
 
   const completedTrips = recentJobs.filter(j => j.status === "completed");
   const totalRevenue = completedTrips.reduce(

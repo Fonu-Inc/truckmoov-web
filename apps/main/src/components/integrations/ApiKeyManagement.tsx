@@ -2,7 +2,7 @@ import {
   formatDate, formatDateTime,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
-  AlertTriangle, Check, Clock, Copy, Eye, EyeOff, Key, Plus, Trash2,
+  Check, Clock, Copy, Key, Plus, Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -21,7 +21,6 @@ import {
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
-import { Separator } from "@/components/shadcn/separator";
 
 const API_SCOPES: {
   value: string; label: string; description: string;
@@ -57,10 +56,7 @@ export function ApiKeyManagement() {
     isCreating,
     setIsCreating,
   ] = useState(false);
-  const [
-    showSecrets,
-    setShowSecrets,
-  ] = useState<Record<string, boolean>>({});
+  const [_showSecrets] = useState<Record<string, boolean>>({});
   const [
     copiedKeyId,
     setCopiedKeyId,

@@ -1,7 +1,6 @@
 import { formatTime } from "@truckmoov/app-core/utils/time-utils";
 import {
   CheckCircle2,
-  ExternalLink,
   Loader2,
   Mail,
   Plus,
@@ -26,7 +25,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/shadcn/dialog";
-import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import {
   Select,
@@ -97,10 +95,6 @@ export function EmailConfigurationPanel() {
     // Simulate OAuth flow
     setTimeout(
       () => {
-        const oauthUrl = provider === "gmail"
-          ? "https://accounts.google.com/o/oauth2/v2/auth"
-          : "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
-
         toast.info(`Redirecting to ${provider === "gmail" ? "Google" : "Microsoft"} for authentication...`);
 
         // In a real implementation, this would redirect to the OAuth URL

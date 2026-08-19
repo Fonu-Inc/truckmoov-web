@@ -8,7 +8,6 @@ import {
   Info,
   LinkIcon,
   Loader2,
-  MessageSquare,
   Phone,
   RefreshCw,
   Send,
@@ -57,11 +56,11 @@ export function WhatsAppBusinessSetup({ tenantId }: WhatsAppBusinessSetupProps) 
   const tenantStatus = null;
   const isConnecting = false;
   const isDisconnecting = false;
-  const refetch = async (...args: any[]) => {};
-  const startEmbeddedSignup = async (...args: any[]) => {};
-  const disconnect = async (...args: any[]) => {};
-  const setAsDefault = async (...args: any[]) => {};
-  const sendTestMessage = async (...args: any[]) => {};
+  const refetch = async (..._args: any[]) => {};
+  const startEmbeddedSignup = async (..._args: any[]) => {};
+  const disconnect = async (..._args: any[]) => {};
+  const setAsDefault = async (..._args: any[]) => {};
+  const sendTestMessage = async (..._args: any[]) => {};
 
   const [
     testDialogOpen,
@@ -545,7 +544,7 @@ function ConnectedState({
   );
 }
 
-function UsageStatsCard({ tenantId }: { tenantId: string }) {
+function UsageStatsCard({ tenantId: _tenantId }: { tenantId: string }) {
   // In a real implementation, fetch from whatsapp_messages table
   return (
     <Card className="border-border/50">

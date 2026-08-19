@@ -481,7 +481,7 @@ export function WebhookManagement() {
       ]);
       toast.success(`Test webhook sent to ${webhook.name}`);
     }
-    catch (error) {
+    catch {
       toast.error("Failed to send test webhook");
     }
     finally {

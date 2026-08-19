@@ -1,5 +1,5 @@
 import {
-  AlignmentType, BorderStyle, Document, HeadingLevel, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType,
+  AlignmentType, BorderStyle, Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType,
 } from "docx";
 import { saveAs } from "file-saver";
 

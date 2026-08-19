@@ -43,10 +43,7 @@ import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
 
 export default function TenantAdminDashboard() {
   const navigate = useNavigate();
-  const [
-    activityRange,
-    setActivityRange,
-  ] = useState<ChartDateRange>("7d");
+  const [_activityRange] = useState<ChartDateRange>("7d");
   const [
     vehicleStatusRange,
     setVehicleStatusRange,
@@ -60,7 +57,7 @@ export default function TenantAdminDashboard() {
   const jobsLoading = false;
   const alerts: any[] = [];
   const alertsLoading = false;
-  const acknowledgeAlert = async (...args: any[]) => {};
+  const acknowledgeAlert = async (..._args: any[]) => {};
 
   const isLoading = tenantLoading || vehiclesLoading || jobsLoading || alertsLoading;
 
@@ -195,8 +192,6 @@ export default function TenantAdminDashboard() {
     [jobs],
   );
 
-  const hasNoData = totalVehicles === 0 && totalDrivers === 0 && jobs.length === 0;
-
   const tripChartData = jobs.length > 0 ? tripData : [];
   const vehicleStatusChartData = vehicleStatusData;
 
@@ -218,16 +213,16 @@ export default function TenantAdminDashboard() {
             <div className="flex gap-3 overflow-x-auto pb-2 -mb-2 snap-x snap-mandatory [scrollbar-width:thin]">
               {[
                 {
-                  title: "Manage Fleet", desc: "Vehicles, schedules, maintenance and fuel.", icon: Truck, cta: "Open fleet", to: "/admin/fleet",
+                  title: "Manage Fleet", desc: "Vehicles, schedules, maintenance and fuel.", icon: Truck, cta: "Open fleet", to: "/fleet",
                 },
                 {
-                  title: "Manage Drivers", desc: "Driver roster, status, licenses and ratings.", icon: Users, cta: "Open drivers", to: "/admin/drivers",
+                  title: "Manage Drivers", desc: "Driver roster, status, licenses and ratings.", icon: Users, cta: "Open drivers", to: "/drivers",
                 },
                 {
-                  title: "Create Job", desc: "Dispatch a new shipment to your fleet.", icon: Package, cta: "Open jobs", to: "/admin/jobs",
+                  title: "Create Job", desc: "Dispatch a new shipment to your fleet.", icon: Package, cta: "Open jobs", to: "/jobs",
                 },
                 {
-                  title: "View Analytics", desc: "Performance, utilization and trends.", icon: TrendingUp, cta: "Open analytics", to: "/admin/fleet?tab=analytics",
+                  title: "View Analytics", desc: "Performance, utilization and trends.", icon: TrendingUp, cta: "Open analytics", to: "/fleet?tab=analytics",
                 },
               ].map(qa => (
                 <button
@@ -462,7 +457,7 @@ export default function TenantAdminDashboard() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate("/admin/jobs")}
+                onClick={() => navigate("/jobs")}
               >
                 View All
               </Button>
@@ -475,7 +470,7 @@ export default function TenantAdminDashboard() {
                       title="No active jobs"
                       description="All caught up! Create a new job when ready"
                       actionLabel="Create Job"
-                      onAction={() => navigate("/admin/jobs")}
+                      onAction={() => navigate("/jobs")}
                       className="py-8"
                     />
                   )

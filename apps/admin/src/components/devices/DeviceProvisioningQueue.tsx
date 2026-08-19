@@ -69,7 +69,6 @@ import {
 } from "@/components/shadcn/table";
 import { Textarea } from "@/components/shadcn/textarea";
 import { useTenants } from "@/hooks/useTenants";
-import { useAuthStore } from "@/stores/authStore";
 import { DeviceRequestDetailsDialog } from "./DeviceRequestDetailsDialog";
 
 type DeviceReq = {
@@ -203,12 +202,8 @@ function KycCell({ status }: { status: string | null }) {
 }
 
 export function DeviceProvisioningQueue() {
-  const { user } = useAuthStore();
   const { tenants } = useTenants();
-  const [
-    reqs,
-    setReqs,
-  ] = useState<DeviceReq[]>([]);
+  const [reqs] = useState<DeviceReq[]>([]);
   const [
     loading,
     setLoading,
@@ -237,10 +232,7 @@ export function DeviceProvisioningQueue() {
     actionNote,
     setActionNote,
   ] = useState("");
-  const [
-    busy,
-    setBusy,
-  ] = useState(false);
+  const [busy] = useState(false);
   const [
     detailsOpen,
     setDetailsOpen,
@@ -295,7 +287,6 @@ export function DeviceProvisioningQueue() {
   useEffect(
     () => {
       void fetchAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     },
     [],
   );

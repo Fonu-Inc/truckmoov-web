@@ -4,7 +4,6 @@ import {
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/shadcn/button";
-import { useAuthStore } from "@/stores/authStore";
 
 type TrialStatus = {
   status: string;
@@ -20,7 +19,6 @@ type TrialStatus = {
  * remaining and a clear CTA to add a payment method before expiry.
  */
 export function TrialBanner() {
-  const { user } = useAuthStore();
   const navigate = useNavigate();
   const [trial] = useState<TrialStatus | null>(null);
 
@@ -61,7 +59,7 @@ export function TrialBanner() {
       <Button
         size="sm"
         variant={urgent ? "default" : "outline"}
-        onClick={() => navigate("/admin/billing")}
+        onClick={() => navigate("/billing")}
       >
         Add payment method
       </Button>

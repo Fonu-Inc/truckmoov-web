@@ -1162,7 +1162,10 @@ export function PostpaidBillingTab({
                       // Visualise step progression while the real mutation runs
                       const tick = (i: number) =>
                         new Promise<void>(res => setTimeout(
-                          () => { setBillingCycleStepIdx(i); res(); },
+                          () => {
+                            setBillingCycleStepIdx(i);
+                            res();
+                          },
                           700,
                         ));
                       await tick(1);

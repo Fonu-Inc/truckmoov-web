@@ -1,12 +1,10 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useState,
 } from "react";
 import { toast } from "sonner";
 import { mockDrivers } from "@/data/mockData";
-import { useOrgDataScope } from "@/hooks/useOrgDataScope";
 import {
   apiDelete,
   apiGet,
@@ -97,14 +95,10 @@ export function useDrivers() {
     setError,
   ] = useState<Error | null>(null);
   const { user } = useAuthStore();
-  const orgScope = useOrgDataScope();
-  const canCreateAssets = true; const canUpdateAssets = true; const canDeleteAssets = true;
+  const canCreateAssets = true;
+  const canUpdateAssets = true;
+  const canDeleteAssets = true;
 
-  const assetOrgIdsKey = JSON.stringify(orgScope.assetOrgIds);
-  const stableAssetOrgIds = useMemo(
-    () => orgScope.assetOrgIds,
-    [assetOrgIdsKey],
-  );
   const isPlatformAdmin = user?.role === "platform_admin";
 
   const fetchDrivers = useCallback(

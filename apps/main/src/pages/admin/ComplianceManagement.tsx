@@ -2,17 +2,17 @@ import {
   addDays, daysUntil, formatDate,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
-  AlertTriangle, Bell, Calendar, CheckCircle, Clock, Download, Eye, File, FileText, Loader2, Mail, MoreHorizontal, Plus, Search, Shield, Truck, Upload, User, X,
+  AlertTriangle, Bell, Download, Eye, File, FileText, Loader2, Mail, MoreHorizontal, Plus, Search, Truck, Upload, X,
 } from "lucide-react";
 import {
-  useEffect, useRef, useState,
+  useRef, useState,
 } from "react";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
+  Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import {
   Dialog,
@@ -30,7 +30,6 @@ import {
 } from "@/components/shadcn/dropdown-menu";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { Progress } from "@/components/shadcn/progress";
 import {
   Select,
   SelectContent,
@@ -47,11 +46,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import {
-  Tabs, TabsContent, TabsList, TabsTrigger,
-} from "@/components/shadcn/tabs";
+
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
 
 type ComplianceDocument = any;
 
@@ -62,15 +58,10 @@ const statusColors: Record<string, string> = {
 };
 
 export default function ComplianceManagement() {
-  const { user } = useAuthStore();
-  const tenantId = user?.tenantId || "";
-
   const documents: any[] = [];
   const isLoading = false;
   const addDocument = async (..._args: any[]): Promise<any> => null;
   const updateDocument = async (..._args: any[]) => {};
-  const deleteDocument = async (..._args: any[]) => {};
-  const renewDocument = async (..._args: any[]) => {};
   const setReminderDays = async (..._args: any[]) => {};
   const getStats = () => ({
     total: 0, valid: 0, expiring: 0, expired: 0,
@@ -86,10 +77,7 @@ export default function ComplianceManagement() {
     statusFilter,
     setStatusFilter,
   ] = useState("all");
-  const [
-    entityFilter,
-    setEntityFilter,
-  ] = useState("all");
+  const [_entityFilter] = useState("all");
   const [
     isAddDialogOpen,
     setIsAddDialogOpen,
@@ -306,7 +294,7 @@ export default function ComplianceManagement() {
         setIsReminderDialogOpen(false);
         setSelectedDocument(null);
       }
-      catch (err) {
+      catch {
         // Error handled by hook
       }
     }
@@ -325,7 +313,7 @@ export default function ComplianceManagement() {
       setIsSendRemindersDialogOpen(false);
       setRecipientEmail("");
     }
-    catch (err) {
+    catch {
       // Error handled by hook
     }
   };

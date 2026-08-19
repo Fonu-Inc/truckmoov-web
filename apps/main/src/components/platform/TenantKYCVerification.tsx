@@ -2,7 +2,7 @@ import {
   formatDate, formatWithPattern,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
-  AlertCircle, Building2, CheckCircle2, Clock, Download, Eye, FileCheck, FileText, Loader2, Shield, Trash2, Upload, UploadCloud, XCircle,
+  AlertCircle, CheckCircle2, Clock, Download, Eye, FileCheck, FileText, Loader2, Shield, Trash2, UploadCloud, XCircle,
 } from "lucide-react";
 import {
   useEffect, useMemo, useState,
@@ -22,7 +22,6 @@ import { Progress } from "@/components/shadcn/progress";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import { Separator } from "@/components/shadcn/separator";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 
 type BusinessInfo = {
@@ -122,10 +121,7 @@ export function TenantKYCVerification({
 }: {
   tenantId: string; readOnly?: boolean;
 }) {
-  const [
-    activeTab,
-    setActiveTab,
-  ] = useState("business-info");
+  const [_activeTab] = useState("business-info");
   const [
     businessInfo,
     setBusinessInfo,
@@ -151,22 +147,13 @@ export function TenantKYCVerification({
     annual_revenue: "",
     verification_status: "pending",
   });
-  const [
-    documents,
-    setDocuments,
-  ] = useState<KYCDocument[]>([]);
+  const [documents] = useState<KYCDocument[]>([]);
   const [
     loading,
     setLoading,
   ] = useState(true);
-  const [
-    saving,
-    setSaving,
-  ] = useState(false);
-  const [
-    uploading,
-    setUploading,
-  ] = useState(false);
+  const [saving] = useState(false);
+  const [uploading] = useState(false);
   const [
     selectedDocType,
     setSelectedDocType,
@@ -184,14 +171,6 @@ export function TenantKYCVerification({
     setDocStatusFilter,
   ] = useState("all");
 
-  useEffect(
-    () => {
-      fetchBusinessInfo();
-      fetchDocuments();
-    },
-    [tenantId],
-  );
-
   const fetchBusinessInfo = async () => {
     setLoading(false);
   };
@@ -200,9 +179,13 @@ export function TenantKYCVerification({
     // no-op: documents remain empty, demo fallback will display
   };
 
-  const handleSaveBusinessInfo = async () => {
-    toast.info("Coming soon");
-  };
+  useEffect(
+    () => {
+      fetchBusinessInfo();
+      fetchDocuments();
+    },
+    [tenantId],
+  );
 
   const REQUIRED_BIZ_FIELDS: {
     key: keyof BusinessInfo; label: string;
@@ -269,16 +252,16 @@ export function TenantKYCVerification({
     toast.info("Coming soon");
   };
 
+  const uploadKycFile = async (_file: File) => {
+    toast.info("Coming soon");
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file)
       return;
     await uploadKycFile(file);
-  };
-
-  const uploadKycFile = async (_file: File) => {
-    toast.info("Coming soon");
   };
 
   const handleDeleteDocument = async (_doc: KYCDocument) => {

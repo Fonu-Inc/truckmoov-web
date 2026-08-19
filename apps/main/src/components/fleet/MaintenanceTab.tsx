@@ -141,18 +141,6 @@ function buildDefaultRecord(): MaintenanceFormState {
   };
 }
 
-function toTitleCase(value: string) {
-  return value
-    .replace(
-      /_/g,
-      " ",
-    )
-    .replace(
-      /\b\w/g,
-      letter => letter.toUpperCase(),
-    );
-}
-
 function normalizeMaintenanceType(value: string | null | undefined): MaintenanceFormState["type"] {
   const normalized = String(value ?? "").toLowerCase();
   return maintenanceTypes.includes(normalized as MaintenanceFormState["type"])

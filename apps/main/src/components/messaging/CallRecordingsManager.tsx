@@ -22,7 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
-import { Progress } from "@/components/shadcn/progress";
 import {
   Table,
   TableBody,
@@ -56,26 +55,6 @@ type TranscriptionData = {
   keyTopics: string[];
   issues?: string[];
 };
-
-const LANGUAGES: {
-  code: Language; name: string;
-}[] = [
-  {
-    code: "en", name: "English",
-  },
-  {
-    code: "ha", name: "Hausa",
-  },
-  {
-    code: "yo", name: "Yoruba",
-  },
-  {
-    code: "ig", name: "Igbo",
-  },
-  {
-    code: "pcm", name: "Nigerian Pidgin",
-  },
-];
 
 const sentimentIcons = {
   positive: <ThumbsUp className="h-4 w-4 text-success" />,

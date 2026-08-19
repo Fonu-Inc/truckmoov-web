@@ -1,33 +1,22 @@
 import type { ExportColumn } from "@/lib/exportTable";
 import {
-  AlertCircle,
   ArrowUpRight,
   CheckCircle2,
   CircleDot,
   Eye,
   Loader2,
   MessageSquare,
-  MoreHorizontal,
-  Pencil,
   Search,
   SlidersHorizontal,
   Ticket as TicketIcon,
-  Trash2,
 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/shadcn/dropdown-menu";
+
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import {
@@ -183,14 +172,8 @@ export function MyTickets() {
     statusFilter,
     setStatusFilter,
   ] = useState<string>("all");
-  const [
-    priorityFilter,
-    setPriorityFilter,
-  ] = useState<string>("all");
-  const [
-    categoryFilter,
-    setCategoryFilter,
-  ] = useState<string>("all");
+  const [priorityFilter] = useState<string>("all");
+  const [categoryFilter] = useState<string>("all");
   const [
     selectedTicket,
     setSelectedTicket,

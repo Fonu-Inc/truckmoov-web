@@ -142,12 +142,12 @@ export function DeviceRealtimeMap({
   devices,
   selectedDevice,
   onSelectDevice,
-  showTrail = false,
+  showTrail: _showTrail,
   className = "",
   trailHistory,
   geofences = [],
   showGeofences = true,
-  onGeofenceAlert,
+  onGeofenceAlert: _onGeofenceAlert,
 }: DeviceRealtimeMapProps) {
   const [
     isFullscreen,

@@ -60,12 +60,6 @@ import {
   TabsTrigger,
 } from "@/components/shadcn/tabs";
 
-type IntegrationStatus = {
-  connected: boolean;
-  lastChecked: Date;
-  status: "connected" | "disconnected" | "error" | "degraded";
-};
-
 export function IntegrationSettings() {
   const [
     showSecrets,

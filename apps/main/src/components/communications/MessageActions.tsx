@@ -1,6 +1,5 @@
 import {
-  CheckCircle, Clock, Copy, MessageSquare, MoreVertical,
-  Phone, RefreshCw, Trash2, XCircle,
+  CheckCircle, Clock, Copy, MoreVertical, RefreshCw, XCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -26,19 +25,16 @@ type MessageActionsProps = {
 };
 
 export function MessageActions({
-  messageId,
-  messageType,
+  messageId: _messageId,
+  messageType: _messageType,
   status,
   content,
-  driverPhone,
-  driverId,
-  driverName,
-  onResend,
+  driverPhone: _driverPhone,
+  driverId: _driverId,
+  driverName: _driverName,
+  onResend: _onResend,
 }: MessageActionsProps) {
-  const [
-    isResending,
-    setIsResending,
-  ] = useState(false);
+  const [isResending] = useState(false);
 
   const canResend = status === "failed" || status === "pending";
 

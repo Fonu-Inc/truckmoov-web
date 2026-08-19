@@ -20,20 +20,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
-import { useAuthStore } from "@/stores/authStore";
 // Local type aliases (hook deleted)
 type TicketCategory = "device_tracking" | "sim_connectivity" | "messaging" | "billing" | "account_access" | "other";
 type ContextType = "device" | "sim" | "vehicle" | "whatsapp" | "billing" | "none";
 type TicketPriority = "low" | "medium" | "high" | "critical";
 
 type ReportIssueProps = { onSuccess: () => void };
-
-type ContextItem = {
-  id: string;
-  label: string;
-  status?: string;
-  extra?: string;
-};
 
 const categories: {
   value: TicketCategory; label: string; icon: React.ElementType; contextType: ContextType;
@@ -59,7 +51,6 @@ const categories: {
 ];
 
 export function ReportIssue({ onSuccess }: ReportIssueProps) {
-  const { user } = useAuthStore();
   const createTicket = async (..._args: any[]): Promise<any> => null;
   const [
     step,
@@ -95,7 +86,6 @@ export function ReportIssue({ onSuccess }: ReportIssueProps) {
   ] = useState<TicketPriority>("medium");
 
   // Context options — empty stubs (no Supabase fetch)
-  const contextOptions: ContextItem[] = [];
 
   const handleSubmit = async () => {
     if (!category || !subject.trim() || !description.trim())

@@ -1,7 +1,6 @@
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Activity, AlertTriangle, Bell, Car, ChevronRight,
-  Clock, Gauge, MapPin, Minus, RefreshCw, RotateCcw, Shield, TrendingDown,
+  Activity, AlertTriangle, Bell, Car, Gauge, MapPin, Minus, RefreshCw, RotateCcw, Shield, TrendingDown,
   TrendingUp, User, Wifi, WifiOff, Zap,
 } from "lucide-react";
 import { useState } from "react";
@@ -15,7 +14,6 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import { Progress } from "@/components/shadcn/progress";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
@@ -52,7 +50,7 @@ function useGeofenceAlerts() {
 }
 
 function ScoreGauge({
-  score, label, color,
+  score, label, color: _color,
 }: {
   score: number; label: string; color: string;
 }) {

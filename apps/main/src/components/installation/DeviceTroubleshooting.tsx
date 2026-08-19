@@ -3,9 +3,7 @@ import {
   AlertTriangle,
   Copy,
   Cpu,
-  CreditCard,
   ExternalLink,
-  Radio,
   RotateCcw,
   Server,
   Wifi,
@@ -23,7 +21,16 @@ import {
 import {
   Alert, AlertDescription, AlertTitle,
 } from "@/components/shadcn/alert";
-import { Badge } from "@/components/shadcn/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/shadcn/alert-dialog";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
@@ -142,20 +149,19 @@ export function DeviceTroubleshooting({
     toast.success(`${label} copied to clipboard`);
   };
 
+  const [
+    resetConfirmOpen,
+    setResetConfirmOpen,
+  ] = useState(false);
+
   const handleReset = async () => {
+    setResetConfirmOpen(false);
     if (!selectedDevice || !onReset)
       return;
-
-    const confirmed = window.confirm(
-      "Are you sure you want to reset this device to Config Pending? This action is audited.",
+    await onReset(
+      selectedDevice.id,
+      "Reset from Troubleshooting interface",
     );
-
-    if (confirmed) {
-      await onReset(
-        selectedDevice.id,
-        "Reset from Troubleshooting interface",
-      );
-    }
   };
 
   return (
@@ -373,12 +379,30 @@ export function DeviceTroubleshooting({
                 <Button
                   variant="outline"
                   className="text-warning border-warning hover:bg-warning/10"
-                  onClick={handleReset}
+                  onClick={() => setResetConfirmOpen(true)}
                 >
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Reset to Config Pending
                 </Button>
               )}
+
+              <AlertDialog
+                open={resetConfirmOpen}
+                onOpenChange={setResetConfirmOpen}
+              >
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Reset device to Config Pending?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action is audited. The device will need to be configured again before it can come online.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleReset}>Reset device</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
 
               <Button variant="outline">
                 <ExternalLink className="h-4 w-4 mr-2" />

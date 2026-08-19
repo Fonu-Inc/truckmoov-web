@@ -9,6 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/shadcn/popover";
+import { buildDefaultFilterValue } from "./jobsFilter";
 
 export type JobsFilterValue = {
   driverId: string;
@@ -31,22 +32,6 @@ type JobsFilterDialogProps = {
   onReset: () => void;
   trigger: React.ReactNode;
 };
-
-export function buildDefaultFilterValue(_bounds: JobsFilterBounds): JobsFilterValue {
-  return {
-    driverId: "",
-    vehicleId: "",
-  };
-}
-
-export function countActiveFilters(value: JobsFilterValue): number {
-  let n = 0;
-  if (value.driverId.trim())
-    n++;
-  if (value.vehicleId.trim())
-    n++;
-  return n;
-}
 
 export function JobsFilterDialog({
   open,

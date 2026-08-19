@@ -110,14 +110,8 @@ export function TelephonySettings() {
     showApiSecret,
     setShowApiSecret,
   ] = useState(false);
-  const [
-    isTesting,
-    setIsTesting,
-  ] = useState(false);
-  const [
-    isRefreshing,
-    setIsRefreshing,
-  ] = useState(false);
+  const [isTesting] = useState(false);
+  const [_isRefreshing] = useState(false);
 
   const [
     fonuSettings,
@@ -133,19 +127,13 @@ export function TelephonySettings() {
     defaultLanguage: "en",
   });
 
-  const [
-    connectionStatus,
-    setConnectionStatus,
-  ] = useState<ConnectionStatus>({
+  const [connectionStatus] = useState<ConnectionStatus>({
     api: "connected",
     webhook: "active",
     lastCheck: new Date(),
   });
 
-  const [
-    usageStats,
-    setUsageStats,
-  ] = useState<UsageStats>({
+  const [usageStats] = useState<UsageStats>({
     totalCalls: 1247,
     successfulCalls: 1189,
     failedCalls: 58,
@@ -239,22 +227,6 @@ export function TelephonySettings() {
 
   const handleTestConnection = async () => {
     toast.info("Coming soon");
-  };
-
-  const handleRefreshStats = async () => {
-    setIsRefreshing(true);
-    // Simulate API call
-    setTimeout(
-      () => {
-        setUsageStats(prev => ({
-          ...prev,
-          apiCalls: prev.apiCalls + Math.floor(Math.random() * 100),
-        }));
-        setIsRefreshing(false);
-        toast.success("Usage statistics refreshed");
-      },
-      1000,
-    );
   };
 
   const formatCurrency = (amount: number) => {

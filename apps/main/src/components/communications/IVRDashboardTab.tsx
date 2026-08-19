@@ -141,7 +141,6 @@ const DUMMY_CALLS: IVRCall[] = [
 
 export function IVRDashboardTab() {
   const [calls] = useState<IVRCall[]>(DUMMY_CALLS);
-  const [isLoading] = useState(false);
 
   // Per-chart range filters
   const [
@@ -251,7 +250,9 @@ export function IVRDashboardTab() {
         typeRange,
       );
       const types: Record<string, number> = {};
-      scoped.forEach((c) => { types[c.call_type] = (types[c.call_type] || 0) + 1; });
+      scoped.forEach((c) => {
+        types[c.call_type] = (types[c.call_type] || 0) + 1;
+      });
       return Object.entries(types).map(([
         name,
         value,

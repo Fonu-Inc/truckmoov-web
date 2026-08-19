@@ -2,7 +2,7 @@ import type {
   FilterField, FilterValues,
 } from "@/components/shadcn/table-toolbar";
 import {
-  Bot, Clock, Cpu, Download, MessageCircle, MessageSquare, Phone,
+  Bot, Cpu, Download, MessageCircle, MessageSquare, Phone,
   Shield, TrendingUp, Zap,
 } from "lucide-react";
 import {

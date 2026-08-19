@@ -151,7 +151,7 @@ export function VehiclePLStatementBuilder({
       JSON.stringify(payload),
     );
     window.open(
-      "/admin/fleet/pl-statement",
+      "/fleet/pl-statement",
       "_blank",
     );
   };

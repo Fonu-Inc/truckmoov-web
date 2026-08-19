@@ -28,10 +28,7 @@ export function ForgotPasswordDialog({
     email,
     setEmail,
   ] = useState(defaultEmail);
-  const [
-    submitting,
-    setSubmitting,
-  ] = useState(false);
+  const [submitting] = useState(false);
   const [
     sent,
     setSent,

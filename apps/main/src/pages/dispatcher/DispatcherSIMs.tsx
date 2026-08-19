@@ -1,26 +1,17 @@
 import {
-  SlidersHorizontal as Filter, Plus, Search, ShieldAlert, Upload,
+  Plus, Upload,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import {
-  Alert, AlertDescription, AlertTitle,
-} from "@/components/shadcn/alert";
+
 import { Button } from "@/components/shadcn/button";
-import {
-  Card, CardContent,
-} from "@/components/shadcn/card";
-import { Input } from "@/components/shadcn/input";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/shadcn/select";
+
 import { AssignSIMDialog } from "@/components/sims/AssignSIMDialog";
 import { SIMBulkUploadDialog } from "@/components/sims/SIMBulkUploadDialog";
 import { SIMDetailsSheet } from "@/components/sims/SIMDetailsSheet";
 import { SIMFormDialog } from "@/components/sims/SIMFormDialog";
 import { SIMInventoryTable } from "@/components/sims/SIMInventoryTable";
-import { SIMOverviewCards } from "@/components/sims/SIMOverviewCards";
 import { SIMRequestFormDialog } from "@/components/sims/SIMRequestFormDialog";
 import { SIMRequestsTracker } from "@/components/sims/SIMRequestsTracker";
 import { useDeviceTelemetry } from "@/hooks/useDeviceTelemetry";
@@ -34,11 +25,9 @@ export default function DispatcherSIMs() {
   const { user } = useAuthStore();
   const submitRequest = async (..._args: any[]) => false;
   const isSubmitting = false;
-  const canRequestSIM = true;
 
   const tenantId = user?.tenantId || "f7f5af88-fd76-4439-aae3-0461be52f63f";
   const sims: SIMCardExtended[] = [];
-  const loading = false;
   const refetch = () => {};
   const updateSIMStatus = async (_id: string, _status: string) => {};
   const assignSIMToDevice = async (_simId: string, _deviceId: string) => {};
@@ -98,24 +87,6 @@ export default function DispatcherSIMs() {
   });
 
   const operators = [...new Set(sims.map(s => s.networkOperator))];
-
-  const statusCounts = {
-    all: sims.length,
-    registered: sims.filter(s => s.status === "registered").length,
-    active: sims.filter(s => s.status === "active").length,
-    assigned: sims.filter(s => s.status === "assigned").length,
-    suspended: sims.filter(s => s.status === "suspended").length,
-    deactivated: sims.filter(s => s.status === "deactivated").length,
-  };
-
-  const totalDataUsage = sims.reduce(
-    (sum, s) => sum + s.dataUsage,
-    0,
-  );
-  const totalDataLimit = sims.reduce(
-    (sum, s) => sum + s.dataLimit,
-    0,
-  );
 
   const getDeviceInfo = (deviceId?: string): any => {
     if (!deviceId)
@@ -194,8 +165,14 @@ export default function DispatcherSIMs() {
           operatorFilters={operatorFilters}
           onOperatorFiltersChange={setOperatorFilters}
           operators={operators}
-          onViewDetails={(sim) => { setSelectedSIM(sim); setIsDetailsOpen(true); }}
-          onEdit={(sim) => { setSelectedSIM(sim); setIsEditDialogOpen(true); }}
+          onViewDetails={(sim) => {
+            setSelectedSIM(sim);
+            setIsDetailsOpen(true);
+          }}
+          onEdit={(sim) => {
+            setSelectedSIM(sim);
+            setIsEditDialogOpen(true);
+          }}
           onActivate={id => updateSIMStatus(
             id,
             "active",
@@ -208,7 +185,10 @@ export default function DispatcherSIMs() {
             id,
             "active",
           )}
-          onAssign={(sim) => { setSelectedSIM(sim); setIsAssignDialogOpen(true); }}
+          onAssign={(sim) => {
+            setSelectedSIM(sim);
+            setIsAssignDialogOpen(true);
+          }}
           onUnassign={id => unassignSIM(id)}
           onDelete={id => deleteSIM(id)}
         />
@@ -230,7 +210,11 @@ export default function DispatcherSIMs() {
       <SIMFormDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
-        onSubmit={() => { refetch(); toast.success("SIM card registered successfully"); setIsAddDialogOpen(false); }}
+        onSubmit={() => {
+          refetch();
+          toast.success("SIM card registered successfully");
+          setIsAddDialogOpen(false);
+        }}
         sim={null}
         title="Register New SIM Card"
       />
@@ -238,7 +222,12 @@ export default function DispatcherSIMs() {
       <SIMFormDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
-        onSubmit={() => { refetch(); toast.success("SIM card updated successfully"); setIsEditDialogOpen(false); setSelectedSIM(null); }}
+        onSubmit={() => {
+          refetch();
+          toast.success("SIM card updated successfully");
+          setIsEditDialogOpen(false);
+          setSelectedSIM(null);
+        }}
         sim={selectedSIM}
         title="Edit SIM Card"
       />
@@ -253,7 +242,11 @@ export default function DispatcherSIMs() {
       <SIMBulkUploadDialog
         open={isBulkUploadOpen}
         onOpenChange={setIsBulkUploadOpen}
-        onUpload={(newSIMs) => { refetch(); toast.success(`${newSIMs.length} SIM cards imported successfully`); setIsBulkUploadOpen(false); }}
+        onUpload={(newSIMs) => {
+          refetch();
+          toast.success(`${newSIMs.length} SIM cards imported successfully`);
+          setIsBulkUploadOpen(false);
+        }}
       />
 
       <AssignSIMDialog
@@ -265,7 +258,8 @@ export default function DispatcherSIMs() {
           await assignSIMToDevice(
             simId,
             deviceId,
-          ); setIsAssignDialogOpen(false);
+          );
+          setIsAssignDialogOpen(false);
         }}
       />
     </DashboardLayout>

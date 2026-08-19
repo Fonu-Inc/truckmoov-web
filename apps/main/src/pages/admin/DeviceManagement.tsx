@@ -49,11 +49,8 @@ import { DeviceDetailsSheet } from "@/components/devices/DeviceDetailsSheet";
 import { DeviceFormDialog } from "@/components/devices/DeviceFormDialog";
 import { DeviceRequestsTracker } from "@/components/devices/DeviceRequestsTracker";
 import { DeviceSetupRequestDialog } from "@/components/devices/DeviceSetupRequestDialog";
-import { DeviceSetupRequestsQueue } from "@/components/devices/DeviceSetupRequestsQueue";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import {
-  Alert, AlertDescription, AlertTitle,
-} from "@/components/shadcn/alert";
+
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -104,9 +101,7 @@ const KNOWN_DEVICE_MANUFACTURERS = [
 
 export default function DeviceManagement() {
   const { requireSubscription } = useRequireSubscription();
-  const {
-    canView, canManage, role,
-  } = useDevicePermissions();
+  const { canManage } = useDevicePermissions();
 
   const uploadFile = async (_file: File, _requestId: string, _type: "device_photo" | "receipt") => null;
 
@@ -193,7 +188,7 @@ export default function DeviceManagement() {
   const lifecycleStatus = statusFilter === "assignable" ? statusFilter : undefined;
   const apiManufacturer = manufacturerFilters.length === 1 ? manufacturerFilters[0] : undefined;
   const {
-    data: devicesResponse, isLoading: loading, error: devicesError,
+    data: devicesResponse, isLoading: loading,
   } = useDevices({
     params: {
       query: debouncedSearch.trim() || undefined,
@@ -236,7 +231,6 @@ export default function DeviceManagement() {
   );
   const vehicles = vehiclesResponse?.data ?? [];
   const availableVehicles = availableVehiclesResponse?.data ?? [];
-  const error = devicesError?.message ?? null;
   const detailDevice = deviceResponse?.data;
 
   const filteredDevices = useMemo(
@@ -290,25 +284,6 @@ export default function DeviceManagement() {
   );
 
   // Lifecycle status counts
-  const statusCounts = useMemo(
-    () => {
-      const getLifecycleStatus = (d: DeviceWithTelemetry) => d.lifecycle_status || d.status;
-      return {
-        all: devices.length,
-        registered: devices.filter(d => getLifecycleStatus(d) === "registered").length,
-        config_pending: devices.filter(d => getLifecycleStatus(d) === "config_pending").length,
-        configured: devices.filter(d => getLifecycleStatus(d) === "configured").length,
-        verified_online: devices.filter(d => getLifecycleStatus(d) === "verified_online").length,
-        assignable: devices.filter(d => getLifecycleStatus(d) === "assignable").length,
-        // Assigned: lifecycle assigned but NOT operationally active (e.g., vehicle in maintenance)
-        assigned: devices.filter(d => getLifecycleStatus(d) === "assigned" && d.status !== "active").length,
-        faulty: devices.filter(d => getLifecycleStatus(d) === "faulty").length,
-        // Active: devices with operational status 'active' (assigned devices that are running)
-        active: devices.filter(d => d.status === "active").length,
-      };
-    },
-    [devices],
-  );
 
   // Convert DeviceWithTelemetry to IoTDevice for the details sheet
   const convertToIoTDevice = (device: DeviceWithTelemetry): IoTDevice => ({
@@ -726,7 +701,10 @@ export default function DeviceManagement() {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => { setManufacturerFilters([]); setLastSeenFilters([]); }}
+                      onClick={() => {
+                        setManufacturerFilters([]);
+                        setLastSeenFilters([]);
+                      }}
                     >
                       Show All
                     </Button>

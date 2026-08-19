@@ -36,10 +36,7 @@ const CHART_COLORS = {
 
 export default function DispatcherDashboard() {
   const navigate = useNavigate();
-  const [
-    selectedVehicle,
-    setSelectedVehicle,
-  ] = useState<string | null>(null);
+  const [selectedVehicle] = useState<string | null>(null);
   const [
     dispatchDialogOpen,
     setDispatchDialogOpen,
@@ -68,7 +65,7 @@ export default function DispatcherDashboard() {
   const jobsLoading = false;
   const alerts: any[] = [];
   const alertsLoading = false;
-  const acknowledgeAlert = async (...args: any[]) => {};
+  const acknowledgeAlert = async (..._args: any[]) => {};
 
   const isLoading = vehiclesLoading || jobsLoading || alertsLoading;
 

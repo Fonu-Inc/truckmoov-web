@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  CheckCircle, Clock, Mail, MessageSquare, Phone, Send,
+  CheckCircle, Clock, Mail, MessageSquare, Send,
   Sparkles, Users,
 } from "lucide-react";
 import {

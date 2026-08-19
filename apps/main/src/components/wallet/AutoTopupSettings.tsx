@@ -41,12 +41,9 @@ type AutoTopupConfig = {
 };
 
 export function AutoTopupSettings({
-  tenantId, onSettingsUpdated,
+  tenantId: _tenantId, onSettingsUpdated: _onSettingsUpdated,
 }: AutoTopupSettingsProps) {
-  const [
-    saving,
-    setSaving,
-  ] = useState(false);
+  const [saving] = useState(false);
   const [
     dialogOpen,
     setDialogOpen,

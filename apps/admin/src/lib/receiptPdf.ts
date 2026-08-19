@@ -1,5 +1,5 @@
 import type { Currency } from "@/lib/currency";
-import jsPDF from "jspdf";
+import JsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatCurrency } from "@/lib/currency";
 
@@ -46,8 +46,8 @@ const MUTED: [number, number, number] = [
   120,
 ];
 
-export function generateReceiptPDF(data: ReceiptData): jsPDF {
-  const doc = new jsPDF({
+export function generateReceiptPDF(data: ReceiptData): JsPDF {
+  const doc = new JsPDF({
     unit: "mm",
     format: "a4",
   });

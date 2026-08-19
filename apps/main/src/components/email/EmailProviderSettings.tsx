@@ -1,7 +1,6 @@
 import {
   AlertTriangle,
   CheckCircle2,
-  Cloud,
   Eye,
   EyeOff,
   Loader2,
@@ -10,7 +9,6 @@ import {
   Settings,
   Shield,
   TestTube,
-  XCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

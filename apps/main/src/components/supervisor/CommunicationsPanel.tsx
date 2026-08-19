@@ -1,5 +1,5 @@
 import {
-  CheckCheck, Clock, MessageSquare, Phone, PhoneCall, PhoneOff, Send, User,
+  CheckCheck, MessageSquare, Phone, PhoneCall, PhoneOff, Send,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -11,7 +11,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";

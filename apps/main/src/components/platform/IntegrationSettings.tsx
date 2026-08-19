@@ -36,7 +36,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
@@ -53,12 +52,6 @@ import { Switch } from "@/components/shadcn/switch";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
-
-type IntegrationStatus = {
-  connected: boolean;
-  lastChecked: Date;
-  status: "connected" | "disconnected" | "error" | "degraded";
-};
 
 export function IntegrationSettings() {
   const [

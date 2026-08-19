@@ -1,5 +1,5 @@
 import {
-  AlertTriangle, BarChart3, Calendar, Clock, Download, Loader2, Package, TrendingUp, Truck, Users,
+  AlertTriangle, BarChart3, Calendar, Clock, Download, Loader2, TrendingUp, Truck,
 } from "lucide-react";
 import {
   useMemo, useState,
@@ -17,7 +17,6 @@ import {
   YAxis,
 } from "recharts";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardHeader, CardTitle,
@@ -101,30 +100,6 @@ export default function DispatcherReports() {
   );
 
   // Alert severity breakdown
-  const alertsBySeverity = useMemo(
-    () => {
-      const critical = alerts.filter(a => a.severity === "critical").length;
-      const high = alerts.filter(a => a.severity === "high").length;
-      const medium = alerts.filter(a => a.severity === "medium").length;
-      const low = alerts.filter(a => a.severity === "low").length;
-
-      return [
-        {
-          name: "Critical", value: critical, color: "hsl(var(--destructive))",
-        },
-        {
-          name: "High", value: high, color: "hsl(var(--warning))",
-        },
-        {
-          name: "Medium", value: medium, color: "hsl(var(--primary))",
-        },
-        {
-          name: "Low", value: low, color: "hsl(var(--muted))",
-        },
-      ].filter(item => item.value > 0);
-    },
-    [alerts],
-  );
 
   // Top alert types
   const topAlertTypes = useMemo(

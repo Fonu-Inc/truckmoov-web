@@ -93,16 +93,13 @@ export function DeviceLinkingResolver({
   batchId,
   tenantId,
   exceptions,
-  onResolved,
+  onResolved: _onResolved,
 }: DeviceLinkingResolverProps) {
   const [
     loading,
     setLoading,
   ] = useState(true);
-  const [
-    saving,
-    setSaving,
-  ] = useState(false);
+  const [saving] = useState(false);
   const [
     unlinkedSims,
     setUnlinkedSims,
@@ -120,6 +117,12 @@ export function DeviceLinkingResolver({
     setSkippedExceptions,
   ] = useState<number[]>([]);
 
+  const fetchUnlinkedItems = async () => {
+    setUnlinkedSims([]);
+    setUnlinkedDevices([]);
+    setLoading(false);
+  };
+
   useEffect(
     () => {
       if (open) {
@@ -132,12 +135,6 @@ export function DeviceLinkingResolver({
       tenantId,
     ],
   );
-
-  const fetchUnlinkedItems = async () => {
-    setUnlinkedSims([]);
-    setUnlinkedDevices([]);
-    setLoading(false);
-  };
 
   const handleLinkSelection = (simId: string, deviceId: string) => {
     // Remove any existing link for this SIM or device

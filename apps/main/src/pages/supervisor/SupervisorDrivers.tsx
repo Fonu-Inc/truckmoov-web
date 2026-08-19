@@ -4,7 +4,6 @@ import {
 import {
   AlertCircle,
   CheckCircle,
-  Clock,
   ExternalLink,
   Loader2,
   Mail,
@@ -16,12 +15,7 @@ import {
   RefreshCw,
   RotateCcw,
   Send,
-  Sparkles,
-  Star,
   Timer,
-  TrendingUp,
-  Users,
-  UserX,
   XCircle,
 } from "lucide-react";
 import {
@@ -41,29 +35,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
-import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/shadcn/select";
+
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { Textarea } from "@/components/shadcn/textarea";
 import { useFonuCall } from "@/contexts/FonuCallContext";
 import { cn } from "@/lib/utils";
-
-const statusColors: Record<string, string> = {
-  available: "bg-success/20 text-success border-success/30",
-  active: "bg-primary/20 text-primary border-primary/30",
-  offline: "bg-muted text-muted-foreground border-muted",
-  suspended: "bg-destructive/20 text-destructive border-destructive/30",
-};
 
 export default function SupervisorDrivers() {
   const [
@@ -88,10 +68,7 @@ export default function SupervisorDrivers() {
     callStatus,
     setCallStatus,
   ] = useState<"idle" | "ringing" | "connected" | "ended">("idle");
-  const [
-    messageType,
-    setMessageType,
-  ] = useState<"sms" | "whatsapp">("whatsapp");
+  const [messageType] = useState<"sms" | "whatsapp">("whatsapp");
   const [
     messageContent,
     setMessageContent,
@@ -100,32 +77,26 @@ export default function SupervisorDrivers() {
     pendingMessage,
     setPendingMessage,
   ] = useState<string>("");
-  const [
-    selectedContactName,
-    setSelectedContactName,
-  ] = useState<string | undefined>();
-  const [
-    selectedContactPhone,
-    setSelectedContactPhone,
-  ] = useState<string | undefined>();
+  const [selectedContactName] = useState<string | undefined>();
+  const [selectedContactPhone] = useState<string | undefined>();
 
   // Use real Fonu integration
   const messages: any[] = [];
   const callLogs: any[] = [];
-  const sendSMS = async (...args: any[]) => {};
-  const sendWhatsApp = async (...args: any[]) => ({
+  const sendSMS = async (..._args: any[]) => {};
+  const sendWhatsApp = async (..._args: any[]) => ({
     success: false, queued: false,
   });
-  const openWhatsAppWeb = (...args: any[]) => {};
+  const openWhatsAppWeb = (..._args: any[]) => {};
   const isSending = false;
   const isLoading = false;
-  const refetch = async (...args: any[]) => {};
+  const refetch = async (..._args: any[]) => {};
   const getStats = () => ({
     todayMessages: 0, todayCalls: 0, totalMessages: 0, totalCalls: 0, sentMessages: 0, failedMessages: 0, completedCalls: 0, missedCalls: 0,
   });
 
   const {
-    startCall, endCall: sipEndCall, status: sipStatus, durationSeconds,
+    endCall: sipEndCall, status: sipStatus,
   } = useFonuCall();
 
   const stats = getStats();
@@ -181,7 +152,7 @@ export default function SupervisorDrivers() {
           "Supervisor",
         );
       }
-      catch (err) {
+      catch {
         toast.error("Failed to send SMS");
         return;
       }
@@ -235,10 +206,7 @@ export default function SupervisorDrivers() {
   );
 
   // Manual retry functionality
-  const [
-    isRetrying,
-    setIsRetrying,
-  ] = useState(false);
+  const [isRetrying] = useState(false);
 
   const handleManualRetry = async () => {
     toast.info("Coming soon");

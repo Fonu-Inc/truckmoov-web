@@ -9,9 +9,7 @@ import {
   Mail,
   MailCheck,
   MailX,
-  RefreshCw,
   Search,
-  Send,
   XCircle,
 } from "lucide-react";
 import {
@@ -19,7 +17,6 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
-import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
@@ -92,13 +89,6 @@ export function KYCNotificationHistory() {
     setTypeFilter,
   ] = useState<string>("all");
 
-  useEffect(
-    () => {
-      fetchLogs();
-    },
-    [],
-  );
-
   const fetchLogs = async () => {
     setLoading(true);
     try {
@@ -144,6 +134,13 @@ export function KYCNotificationHistory() {
       setLoading(false);
     }
   };
+
+  useEffect(
+    () => {
+      fetchLogs();
+    },
+    [],
+  );
 
   const getDeliveryStatusBadge = (status: string) => {
     switch (status) {

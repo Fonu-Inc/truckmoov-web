@@ -181,25 +181,25 @@ export function detectStakeholderFromEmail(email: string): DetectedStakeholder |
   ] = normalized.split("@");
   const haystack = `${local} ${domain}`;
 
-  if (/(platform|admin@truckmoov|superadmin)/.test(haystack)) {
+  if (/platform|admin@truckmoov|superadmin/.test(haystack)) {
     return {
       type: "PLATFORM_ADMIN",
       label: "Platform Admin",
     };
   }
-  if (/(aggregator|network|broker)/.test(haystack)) {
+  if (/aggregator|network|broker/.test(haystack)) {
     return {
       type: "AGGREGATOR",
       label: "Aggregator",
     };
   }
-  if (/(owner|operator|driver-owner|oo\b)/.test(haystack)) {
+  if (/owner|operator|driver-owner|oo\b/.test(haystack)) {
     return {
       type: "OWNER_OPERATOR",
       label: "Owner Operator",
     };
   }
-  if (/(fleet|provider|carrier|logistics|transport)/.test(haystack)) {
+  if (/fleet|provider|carrier|logistics|transport/.test(haystack)) {
     return {
       type: "FLEET_PROVIDER",
       label: "Fleet Provider",

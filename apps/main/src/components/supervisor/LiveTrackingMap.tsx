@@ -118,7 +118,6 @@ export function LiveTrackingMap({
   // Lagos coordinates for the map center
   const lagosLat = 6.5244;
   const lagosLng = 3.3792;
-  const zoomLevel = 12;
 
   // OpenStreetMap embed URL
   const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lagosLng - 0.15}%2C${lagosLat - 0.1}%2C${lagosLng + 0.15}%2C${lagosLat + 0.1}&layer=mapnik&marker=${lagosLat}%2C${lagosLng}`;

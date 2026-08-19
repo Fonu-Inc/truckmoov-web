@@ -71,7 +71,7 @@ export function SenderIdRequestDialog({
       });
       toast.success("Template downloaded - edit the highlighted fields and upload");
     }
-    catch (error) {
+    catch {
       toast.error("Failed to generate template");
     }
   };

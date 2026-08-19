@@ -3,8 +3,8 @@ import {
   daysUntil, formatDate, formatDayMonthTime, formatRelative,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Activity, AlertTriangle, Award, Brain, Calendar, Car, Clock,
-  Coffee, CreditCard, Fuel, Gauge, Loader2,
+  Activity, AlertTriangle, Award, Brain, Car, Clock,
+  Coffee, CreditCard, Gauge, Loader2,
   Mail, MessageSquare, Minus, Phone, Play, RefreshCw, RotateCcw, Route,
   Shield, Star, TrendingDown, TrendingUp, Truck, User, Zap,
 } from "lucide-react";
@@ -27,10 +27,6 @@ import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { mockVehicles } from "@/data/mockData";
-
-type DriverScore = any;
-type DriverBehaviorEvent = any;
-type FatigueAlert = any;
 
 type DriverDetailsSheetProps = {
   open: boolean;
@@ -184,7 +180,7 @@ export function DriverDetailsSheet({
   const events: any[] = [];
   const driverScores: any[] = [];
   const fatigueAlerts: any[] = [];
-  const analyzeFatigue = async (...args: any[]) => {};
+  const analyzeFatigue = async (..._args: any[]) => {};
   const isAnalyzing = false;
   const refetchFatigue = () => null;
   const [
@@ -287,7 +283,7 @@ export function DriverDetailsSheet({
         500,
       );
     }
-    catch (error) {
+    catch {
       // Error handled by the hook
     }
     finally {

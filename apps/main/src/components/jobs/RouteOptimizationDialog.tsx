@@ -16,8 +16,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  AlertTriangle, ArrowRight, Brain, CheckCircle, Clock, GripVertical,
-  MapPin, Navigation, Play, Plus, RotateCcw, Route, Sparkles,
+  AlertTriangle, Brain, CheckCircle, Clock, GripVertical,
+  MapPin, Navigation, RotateCcw, Route, Sparkles,
   TrendingDown, Truck, X, Zap,
 } from "lucide-react";
 import {
@@ -30,7 +30,7 @@ import {
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
-  Card, CardContent, CardHeader, CardTitle,
+  Card, CardContent,
 } from "@/components/shadcn/card";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
@@ -337,7 +337,7 @@ export function RouteOptimizationDialog({
     savings_percentage?: string;
   } | null>(null);
 
-  const aiOptimize = async (...args: any[]) => {};
+  const aiOptimize = async (..._args: any[]) => {};
   const isOptimizing = false;
 
   const sensors = useSensors(

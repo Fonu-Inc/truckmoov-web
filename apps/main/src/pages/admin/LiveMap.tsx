@@ -3,7 +3,7 @@ import { useVehicles } from "@truckmoov/api/fleet";
 import { formatTime } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle, Clock, ExternalLink, SlidersHorizontal as Filter, Fuel, Loader2,
-  Map as MapIcon, MapPin, Maximize2, MessageSquare, Navigation, Plus, RefreshCw, Route, Search, Settings2,
+  Map as MapIcon, MapPin, Maximize2, MessageSquare, Navigation, RefreshCw, Route, Search, Settings2,
   Shield, Truck,
 } from "lucide-react";
 import { useState } from "react";
@@ -20,7 +20,6 @@ import {
 } from "@/components/shadcn/card";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Switch } from "@/components/shadcn/switch";
 
 export default function LiveMap() {
@@ -172,7 +171,7 @@ export default function LiveMap() {
           title="No vehicles to track"
           description="Add vehicles to your fleet to see them on the live map"
           actionLabel="Add Vehicle"
-          actionHref="/admin/fleet"
+          actionHref="/fleet"
         />
       </DashboardLayout>
     );

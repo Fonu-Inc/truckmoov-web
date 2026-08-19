@@ -526,9 +526,12 @@ export type SystemChangePasswordPayload = {
  * call sites. Same convention as `ORG_ROLES`.
  */
 export const UserRole = {
+  // Admin roles
   SUPER_ADMIN: 'SUPER_ADMIN',
   SYSTEM_ADMIN: 'SYSTEM_ADMIN',
   PLATFORM_ADMIN: 'PLATFORM_ADMIN',
+  
+  // Main roles
   ENTERPRISE_ADMIN: 'ENTERPRISE_ADMIN',
   AGGREGATOR_ADMIN: 'AGGREGATOR_ADMIN',
   OWNER_OPERATOR: 'OWNER_OPERATOR',

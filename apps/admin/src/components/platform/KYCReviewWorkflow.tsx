@@ -164,21 +164,11 @@ export function KYCReviewWorkflow() {
     reviewAction,
     setReviewAction,
   ] = useState<"approve" | "reject">("approve");
-  const [
-    submitting,
-    setSubmitting,
-  ] = useState(false);
+  const [submitting] = useState(false);
   const [
     tenantDetailOpen,
     setTenantDetailOpen,
   ] = useState(false);
-
-  useEffect(
-    () => {
-      fetchData();
-    },
-    [],
-  );
 
   const fetchData = async () => {
     setLoading(true);
@@ -491,6 +481,13 @@ export function KYCReviewWorkflow() {
     }
   };
 
+  useEffect(
+    () => {
+      fetchData();
+    },
+    [],
+  );
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "verified":
@@ -553,7 +550,6 @@ export function KYCReviewWorkflow() {
   const approvedDocuments = documents.filter(d => d.status === "approved");
   const rejectedDocuments = documents.filter(d => d.status === "rejected");
 
-  const pendingTenants = businessInfoList.filter(b => b.verification_status === "pending" || b.verification_status === "under_review");
   const verifiedTenants = businessInfoList.filter(b => b.verification_status === "verified");
 
   const filteredBusinessInfo = businessInfoList.filter((b) => {
@@ -919,7 +915,6 @@ export function KYCReviewWorkflow() {
                         {filteredBusinessInfo.map((tenant) => {
                           const tenantDocs = getTenantDocuments(tenant.tenant_id);
                           const pendingCount = tenantDocs.filter(d => d.status === "pending").length;
-                          const approvedCount = tenantDocs.filter(d => d.status === "approved").length;
 
                           return (
                             <TableRow key={tenant.id}>

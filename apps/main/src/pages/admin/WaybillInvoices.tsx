@@ -53,7 +53,6 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 type WaybillRecord = any;
 type WaybillInvoice = any;
 type PricingRule = any;
-type InvoiceShare = any;
 type InvoiceConfig = {
   tax_enabled: boolean; tax_rate_percent: number; tax_label: string; invoice_prefix: string; company_name?: string; company_address?: string; company_phone?: string; company_email?: string; bank_name?: string; bank_account_name?: string; bank_account_number?: string; payment_terms_days: number; notes_template?: string; auto_send_enabled?: boolean;
 } & Record<string, any>;
@@ -230,7 +229,7 @@ const DEMO_PRICING_RULES: PricingRule[] = [
 export default function WaybillInvoices() {
   const {
     waybills, invoices, pricingRules, invoiceConfig,
-    isLoading, fetchWaybills, fetchInvoices, fetchPricingRules,
+    fetchWaybills, fetchInvoices, fetchPricingRules,
     fetchInvoiceConfig, createWaybill, extractWaybill, updateWaybillFields,
     generateInvoice, updateInvoice, deleteInvoice, addPricingRule, updatePricingRule,
     deletePricingRule, updateInvoiceConfig, recordInvoiceShare, generateInvoicePDF, getInvoicePdfUrl,
@@ -423,14 +422,24 @@ export default function WaybillInvoices() {
   ].filter(Boolean).length;
 
   const resetWaybillFilters = () => {
-    setWbDateEnabled(false); setWbDateFrom(""); setWbDateTo("");
-    setWbPriceEnabled(false); setWbPriceMin(""); setWbPriceMax("");
-    setWbVehicleEnabled(false); setWbVehicleType("all");
+    setWbDateEnabled(false);
+    setWbDateFrom("");
+    setWbDateTo("");
+    setWbPriceEnabled(false);
+    setWbPriceMin("");
+    setWbPriceMax("");
+    setWbVehicleEnabled(false);
+    setWbVehicleType("all");
   };
   const resetInvoiceFilters = () => {
-    setInvDueEnabled(false); setInvDueFrom(""); setInvDueTo("");
-    setInvAmountEnabled(false); setInvAmountMin(""); setInvAmountMax("");
-    setInvVehicleEnabled(false); setInvVehicleType("all");
+    setInvDueEnabled(false);
+    setInvDueFrom("");
+    setInvDueTo("");
+    setInvAmountEnabled(false);
+    setInvAmountMin("");
+    setInvAmountMax("");
+    setInvVehicleEnabled(false);
+    setInvVehicleType("all");
   };
 
   useWaybillRealtimeEvents({
@@ -2087,7 +2096,9 @@ function InvoiceDetailView({
       "_blank",
     );
     if (w) {
-      w.document.write(html); w.document.close(); setTimeout(
+      w.document.write(html);
+      w.document.close();
+      setTimeout(
         () => w.print(),
         500,
       );
@@ -2442,7 +2453,11 @@ function InvoiceDetailView({
                     ? (
                         <Button
                           variant="outline"
-                          onClick={async () => { setGeneratingPdf(true); await onGeneratePDF(); setGeneratingPdf(false); }}
+                          onClick={async () => {
+                            setGeneratingPdf(true);
+                            await onGeneratePDF();
+                            setGeneratingPdf(false);
+                          }}
                           disabled={generatingPdf}
                           className="flex-1"
                         >
@@ -2646,8 +2661,10 @@ function PricingRulesPanel({
     perUnitOnly,
   ].filter(Boolean).length;
   const resetRuleFilters = () => {
-    setVehicleTypeEnabled(false); setVehicleTypeFilter("all");
-    setPricingModeEnabled(false); setPricingModeFilter("all");
+    setVehicleTypeEnabled(false);
+    setVehicleTypeFilter("all");
+    setPricingModeEnabled(false);
+    setPricingModeFilter("all");
     setPerUnitOnly(false);
   };
 
@@ -2657,7 +2674,9 @@ function PricingRulesPanel({
         open={showDialog}
         onOpenChange={(v) => {
           if (!v)
-            handleClose(); else setShowDialog(true);
+            handleClose();
+          else
+            setShowDialog(true);
         }}
       >
         <DialogContent className="max-w-lg">
@@ -3184,7 +3203,10 @@ function PricingRulesPanel({
                                 <AlertDialogCancel onClick={() => setDeleteConfirm(null)}>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  onClick={() => { onDelete(rule.id); setDeleteConfirm(null); }}
+                                  onClick={() => {
+                                    onDelete(rule.id);
+                                    setDeleteConfirm(null);
+                                  }}
                                 >
                                   Delete
                                 </AlertDialogAction>

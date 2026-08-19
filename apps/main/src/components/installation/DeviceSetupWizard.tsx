@@ -201,7 +201,7 @@ export function DeviceSetupWizard({
           </div>
         );
 
-      case 2: // Server Settings
+      case 2: { // Server Settings
         const protocol = catalogEntry?.protocol_type || device.protocol || "http";
         const port = catalogEntry?.default_port || (protocol === "mqtt" ? 1883 : protocol === "tcp" ? 5001 : 443);
 
@@ -290,6 +290,7 @@ export function DeviceSetupWizard({
             </Card>
           </div>
         );
+      }
 
       case 3: // Vendor Instructions
         return (
@@ -376,7 +377,7 @@ export function DeviceSetupWizard({
           </div>
         );
 
-      case 5: // Verify Signal
+      case 5: { // Verify Signal
         const isVerified = device.lifecycle_status === "verified_online" || device.lifecycle_status === "assignable";
 
         return (
@@ -415,7 +416,7 @@ export function DeviceSetupWizard({
                 )}
           </div>
         );
-
+      }
       default:
         return null;
     }
