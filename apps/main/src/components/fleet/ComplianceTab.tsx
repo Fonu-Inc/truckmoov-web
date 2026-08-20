@@ -1,4 +1,6 @@
-import type { ComplianceDocument } from "@truckmoov/api/fleet";
+import type {
+  ComplianceDocument, ComplianceDocumentStatus,
+} from "@truckmoov/api/fleet";
 import { uploadMedia } from "@truckmoov/api/auth";
 import {
 
@@ -116,7 +118,7 @@ export function ComplianceTab() {
 
   const docsQuery = useComplianceDocs({
     search: debouncedSearch || undefined,
-    status: statusFilter !== "all" ? statusFilter : undefined,
+    status: statusFilter !== "all" ? (statusFilter as ComplianceDocumentStatus) : undefined,
     documentType: docTypeFilter !== "all" ? docTypeFilter : undefined,
   });
   const summaryQuery = useComplianceSummary();
@@ -411,7 +413,7 @@ export function ComplianceTab() {
         fileUrl: uploadedFile.fileUrl,
         fileSize: uploadedFile.fileSize,
       });
-      await renewMutation.mutateAsync(selectedDocument.id);
+      await renewMutation.mutateAsync({ id: selectedDocument.id });
       setIsRenewalDialogOpen(false);
       setRenewalFile(null);
       setSelectedDocument(null);
@@ -434,10 +436,7 @@ export function ComplianceTab() {
     }
 
     try {
-      await sendRemindersMutation.mutateAsync({
-        email: recipientEmail,
-        reminderDays: Number(reminderDaysValue),
-      });
+      await sendRemindersMutation.mutateAsync();
       setIsReminderDialogOpen(false);
       setSelectedDocument(null);
       setRecipientEmail("");
@@ -468,9 +467,7 @@ export function ComplianceTab() {
       return;
     }
     try {
-      await sendRemindersMutation.mutateAsync({
-        email: recipientEmail, reminderDays: Number(reminderDaysBefore),
-      });
+      await sendRemindersMutation.mutateAsync();
       setIsSendRemindersDialogOpen(false);
       setRecipientEmail("");
       toast.success("Reminders queued");

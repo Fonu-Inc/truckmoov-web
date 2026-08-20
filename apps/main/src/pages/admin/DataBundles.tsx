@@ -1540,7 +1540,7 @@ export default function DataBundles() {
                                       <DropdownMenuItem onClick={() => {
                                         const b = a.bundle ?? catalog.find(c => c.code === a.bundle_code);
                                         setAllocCarrier(b?.carrier ?? "");
-                                        setAllocCycle(b?.billingCycle ?? b?.billing_cycle ?? "");
+                                        setAllocCycle((b && ("billingCycle" in b ? b.billingCycle : b.billing_cycle)) ?? "");
                                         setAllocBundle(a.bundle_code);
                                         setAllocNumbers(formatMobile(a.msisdn));
                                         setAllocOpen(true);

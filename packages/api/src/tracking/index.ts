@@ -1,10 +1,13 @@
-import { queryOptions, useQuery } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
 import {
   getDeviceConnectivity,
   getDeviceFirmware,
   getDeviceOverview,
   getDeviceTelemetry,
+  getVehicleLocationHistory,
+  getVehicleLocations,
+  publishTrackingAlert,
 } from './requests'
 
 export type * from './types'
@@ -16,6 +19,8 @@ export const TRACKING_QUERY_KEY = {
   deviceConnectivity: (deviceId: string) => ['tracking', 'device', deviceId, 'connectivity'],
   deviceTelemetry: (deviceId: string, limit?: number) => ['tracking', 'device', deviceId, 'telemetry', limit],
   deviceFirmware: (deviceId: string) => ['tracking', 'device', deviceId, 'firmware'],
+  vehicleLocations: ['tracking', 'vehicles'],
+  vehicleLocationHistory: (vehicleId: string, limit?: number) => ['tracking', 'vehicle', vehicleId, 'history', limit],
 } as const
 
 // ─── queryOptions factories ───────────────────────────────────────────────────
@@ -52,6 +57,21 @@ export function getDeviceFirmwareQueryOptions(deviceId: string) {
   })
 }
 
+export function getVehicleLocationsQueryOptions() {
+  return queryOptions({
+    queryKey: TRACKING_QUERY_KEY.vehicleLocations,
+    queryFn: getVehicleLocations,
+  })
+}
+
+export function getVehicleLocationHistoryQueryOptions(vehicleId: string, limit?: number) {
+  return queryOptions({
+    queryKey: TRACKING_QUERY_KEY.vehicleLocationHistory(vehicleId, limit),
+    queryFn: () => getVehicleLocationHistory({ vehicleId, limit }),
+    enabled: Boolean(vehicleId),
+  })
+}
+
 // ─── useQuery hooks ────────────────────────────────────────────────────────────
 
 export function useDeviceOverview(deviceId: string) {
@@ -68,4 +88,18 @@ export function useDeviceTelemetry(deviceId: string, limit?: number) {
 
 export function useDeviceFirmware(deviceId: string) {
   return useQuery(getDeviceFirmwareQueryOptions(deviceId))
+}
+
+export function useVehicleLocations() {
+  return useQuery(getVehicleLocationsQueryOptions())
+}
+
+export function useVehicleLocationHistory(vehicleId: string, limit?: number) {
+  return useQuery(getVehicleLocationHistoryQueryOptions(vehicleId, limit))
+}
+
+// ─── useMutation hooks ────────────────────────────────────────────────────────
+
+export function usePublishTrackingAlert() {
+  return useMutation({ mutationFn: publishTrackingAlert })
 }

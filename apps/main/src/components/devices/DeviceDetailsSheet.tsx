@@ -114,10 +114,7 @@ export function DeviceDetailsSheet({
   const lastSeen = device.last_seen ?? (device.lastSeen?.toISOString() ?? null);
   const signalStrength = device.signalStrength;
   const batteryLevel = device.batteryLevel;
-  const averageIntervalSeconds = telemetry?.aggregates_24h.sample_count && telemetry.aggregates_24h.sample_count > 1
-    ? (new Date(telemetry.aggregates_24h.window_end).getTime() - new Date(telemetry.aggregates_24h.window_start).getTime())
-    / 1000 / (telemetry.aggregates_24h.sample_count - 1)
-    : null;
+  const averageIntervalSeconds = telemetry?.aggregates_24h?.avg_interval_seconds ?? null;
 
   const chartData = (telemetry?.history ?? [])
     .slice()
@@ -578,8 +575,8 @@ export function DeviceDetailsSheet({
                           )
                         : (
                             firmware.history.map((entry) => {
-                              const isCurrent = entry.is_current || entry.version === device.firmwareVersion;
-                              const seenAt = entry.installed_at || entry.first_seen || entry.last_seen;
+                              const isCurrent = entry.version === (firmware.current_version ?? device.firmwareVersion);
+                              const seenAt = entry.last_seen || entry.first_seen;
                               return (
                                 <div
                                   key={`${entry.version}-${seenAt ?? "unknown"}`}

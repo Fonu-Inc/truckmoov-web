@@ -597,12 +597,7 @@ export function MaintenanceTab() {
     }
 
     try {
-      await sendRemindersMutation.mutateAsync({
-        data: {
-          recipientEmail,
-          daysBefore: [Number(reminderDaysBefore)],
-        },
-      });
+      await sendRemindersMutation.mutateAsync();
       toast.success("Maintenance reminders queued");
       setIsSendRemindersDialogOpen(false);
       setRecipientEmail("");

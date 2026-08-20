@@ -24,29 +24,11 @@
       "@/*": [
         "./src/*"
       ],
-      "@truckmoov/api/lib/token": [
-        "../../packages/api/src/lib/token.ts"
+      "@truckmoov/api/lib/*": [
+        "../../packages/api/src/lib/*.ts"
       ],
-      "@truckmoov/api/lib/axios-instance": [
-        "../../packages/api/src/lib/axios-instance.ts"
-      ],
-      "@truckmoov/api/lib/query-client": [
-        "../../packages/api/src/lib/query-client.ts"
-      ],
-      "@truckmoov/api/lib/types": [
-        "../../packages/api/src/lib/types.ts"
-      ],
-      "@truckmoov/api/auth": [
-        "../../packages/api/src/auth/index.ts"
-      ],
-      "@truckmoov/api/fleet": [
-        "../../packages/api/src/fleet/index.ts"
-      ],
-      "@truckmoov/api/dispatch": [
-        "../../packages/api/src/dispatch/index.ts"
-      ],
-      "@truckmoov/api/tracking": [
-        "../../packages/api/src/tracking/index.ts"
+      "@truckmoov/api/*": [
+        "../../packages/api/src/*/index.ts"
       ]
     },
     "types": [

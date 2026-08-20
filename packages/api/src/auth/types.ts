@@ -443,13 +443,99 @@ export type CreateTicketMessagePayload = {
   }
 }
 
+export type SystemSupportTicketCategory =
+  | 'device_tracking'
+  | 'billing'
+  | 'sim_connectivity'
+  | 'messaging'
+  | 'compliance'
+  | 'onboarding'
+  | 'other'
+
+export type SystemSupportTicketStatus =
+  | 'open'
+  | 'in_progress'
+  | 'waiting_on_tenant'
+  | 'escalated'
+  | 'resolved'
+  | 'closed'
+
+export type SystemSupportEscalationParty =
+  | 'fleetpro_internal'
+  | 'fonu_connectivity'
+  | 'vendor_installer'
+
 export type SystemSupportTicketsQuery = {
   params?: {
     status?: string
-    category?: string
+    category?: SystemSupportTicketCategory
     search?: string
   }
 }
+
+export type SystemSupportTicket = {
+  id: string
+  tenantId: string
+  subject: string
+  category: string
+  status: string
+  priority: string
+  escalatedAt: string | null
+  resolvedAt: string | null
+  closedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type SystemSupportTicketMessage = {
+  id: string
+  ticketId: string
+  senderId: string
+  senderName: string
+  senderRole: string
+  message: string
+  isInternal: boolean
+  createdAt: string
+}
+
+export type SystemSupportTicketDetail = SystemSupportTicket & {
+  messages: SystemSupportTicketMessage[]
+}
+
+export type SystemSupportEscalatedTicket = SystemSupportTicket & {
+  escalatedTo: string | null
+  escalatedReferenceId: string | null
+  escalationNotes: string | null
+}
+
+export type SystemSupportTicketsListResponse = ServerResponse<{
+  total: number
+  tickets: SystemSupportTicket[]
+}>
+
+export type SystemSupportTicketDetailResponse = ServerResponse<SystemSupportTicketDetail>
+
+export type SystemSupportTicketStatusResponse = ServerResponse<{
+  ticketId: string
+  status: string
+}>
+
+export type SystemSupportTicketMessagesResponse = ServerResponse<{
+  ticketId: string
+  total: number
+  messages: SystemSupportTicketMessage[]
+}>
+
+export type SystemSupportTicketMessageResponse = ServerResponse<SystemSupportTicketMessage>
+
+export type SystemSupportEscalatedResponse = ServerResponse<{
+  total: number
+  parties: Array<{
+    party: string
+    count: number
+    tickets: SystemSupportEscalatedTicket[]
+  }>
+}>
 
 export type SystemDeviceSetupStatus = 'pending_review' | 'in_progress' | 'assigned' | 'rejected'
 
@@ -508,11 +594,32 @@ export type SystemSupportTicketSummary = {
   closed: number
   resolvedToday: number
   byCategory: Record<string, number>
-  topTenants: Record<string, unknown>[]
+  topTenants: Array<{
+    tenantId: string
+    count: number
+  }>
+  needsAttention: Array<{
+    id: string
+    subject: string
+    tenantId: string
+    category: string
+    status: string
+    priority: string
+  }>
+  recentlyResolved: Array<{
+    id: string
+    subject: string
+    tenantId: string
+    category: string
+    resolvedAt: string
+  }>
 }
 
 export type SystemChangePasswordPayload = {
-  data: Record<string, unknown>
+  data: {
+    currentPassword: string
+    newPassword: string
+  }
 }
 
 // ─── Response entity types ────────────────────────────────────────────────────
@@ -678,7 +785,8 @@ import type { ServerResponse } from '../lib/types'
 // ─── Entity types ─────────────────────────────────────────────────────────────
 
 export type SubscriptionPlan = {
-  id: string
+  /** ponytail: not in the published schema — drop it if the server never sends it. */
+  id?: string
   code: string
   tier: 'starter' | 'professional' | 'enterprise'
   name: string
@@ -963,36 +1071,69 @@ export type DataBundleAllocationsQuery = {
   }
 }
 
+export type DataBundleAllocationBundle = {
+  id: string
+  code: string
+  name: string
+  carrier: string
+  dataAmountGb: number
+  billingCycle: string
+  price: number
+}
+
 export type DataBundleAllocation = {
   id: string
   mobileNumber: string
-  bundle: {
-    id: string
-    code: string
-    name: string
-    carrier: string
-    dataAmountGb: number
-    billingCycle: string
-    price: number
-  }
+  bundle: DataBundleAllocationBundle | null
   dataUsedMb: number
   dataTotalMb: number
   dataUsedGb: number
   dataTotalGb: number
-  dataRemainingMb: number
-  dataRemainingGb: number
   usagePercentage: number
-  activatedAt: string
-  expiresAt: string
+  activatedAt: string | null
+  expiresAt: string | null
   daysLeft: number
   status: string
+}
+
+/** The detail route adds the remaining-data fields the list route omits. */
+export type DataBundleAllocationDetail = DataBundleAllocation & {
+  dataRemainingMb: number
+  dataRemainingGb: number
+}
+
+export type GetDataBundleAllocationPayload = { id: string }
+
+export type AllocateDataBundlePayload = {
+  data: {
+    carrierId: string
+    planType: string
+    bundleId: string
+    mobileNumbers: string[]
+  }
+}
+
+export type DataBundleAllocationResult = {
+  allocationIds: string[]
+  totalAmount: number
+  successfulCount: number
+  failedCount: number
+  failures?: Array<{
+    mobileNumber: string
+    reason: string
+  }>
+}
+
+export type AllocatableSimsQuery = {
+  params: {
+    search: string
+    carrierId: string
+  }
 }
 
 export type DataBundleAllocationsList = {
   items: DataBundleAllocation[]
   total: number
-  page: number
-  limit: number
 }
 
 export type DataBundleTransactionsQuery = {
@@ -1115,6 +1256,51 @@ export type DataBundleCarriersList = {
   carriers: DataBundleCarrier[]
 }
 
+export type CreateSystemCarrierPayload = {
+  data: {
+    id: string
+    name: string
+    displayName: string
+  }
+}
+
+export type UpdateSystemCarrierPayload = {
+  id: string
+  data: {
+    name?: string
+    displayName?: string
+    active?: boolean
+  }
+}
+
+export type CreateSystemBundlePayload = {
+  data: {
+    id: string
+    code: string
+    name: string
+    carrierId: string
+    dataAmountGb: number
+    validityDays: number
+    billingCycle: string
+    priceNaira: number
+    currency?: string
+  }
+}
+
+export type UpdateSystemBundlePayload = {
+  id: string
+  data: {
+    name?: string
+    dataAmountGb?: number
+    validityDays?: number
+    billingCycle?: string
+    priceNaira?: number
+    active?: boolean
+  }
+}
+
+export type DeleteSystemBundlePayload = { id: string }
+
 export type SystemSimItem = {
   id: string
   iccid: string
@@ -1142,6 +1328,20 @@ export type SystemSimItem = {
 export type SystemSimsList = {
   total: number
   sims: SystemSimItem[]
+}
+
+export type SystemSimRequestActionResult = {
+  requestId: string
+  batchId: string
+  tenantName: string
+  quantity: number
+  operator: string
+}
+
+export type SystemSimBatchRetryResult = {
+  batchId: string
+  tenantName: string
+  quantity: number
 }
 
 export type SystemSimRequest = {
@@ -1295,7 +1495,32 @@ export type NotificationPreferencesResponse = ServerResponse<NotificationPrefere
 export type DispatcherPreferencesResponse = ServerResponse<Record<string, unknown>>
 export type ActivityLogResponse = ServerResponse<ActivityLog[]>
 export type UploadedMediaResponse = ServerResponse<UploadedMedia>
+/**
+ * Only for routes whose spec really does declare a bare envelope.
+ * Prefer one of the typed aliases below.
+ */
 export type StandardApiResponse = ServerResponse<unknown>
+
+/** Routes whose `data` is just `{ message }`. */
+export type MessageResponse = ServerResponse<{ message: string }>
+/** Routes whose `data` is just `{ id }`. */
+export type IdResponse = ServerResponse<{ id: string }>
+
+export type InviteValidationResponse = ServerResponse<{
+  email: string
+  role: string
+  tenantId: string
+}>
+
+export type ChangeSystemPasswordResponse = ServerResponse<{
+  accessToken: string
+  refreshToken: string
+}>
+
+export type AuthHealthResponse = ServerResponse<{
+  status?: string
+  service?: string
+}>
 export type InviteActionResponse = ServerResponse<Record<string, unknown>>
 export type AuthSystemSettingsResponse = ServerResponse<AuthSystemSettings>
 export type SystemDashboardResponse = ServerResponse<SystemDashboard>
@@ -1407,8 +1632,8 @@ export type CreateSimRequestPayload = {
     quantity: number
     carrier: string
     planType: string
-    dataBundlePlan: string
-    useCase: string
+    dataBundlePlanId: string
+    useCase?: string
     notes?: string
     deviceMappingFileId?: string
   }
@@ -1417,12 +1642,12 @@ export type CreateSimRequestPayload = {
 export type CreateSimPayload = {
   data: {
     iccid: string
-    imsi: string
     mobileNumber: string
     operator: string
     dataLimitGb: number
-    simType: string
     monthlyRentalNaira: number
+    imsi?: string
+    simType?: string
   }
 }
 
@@ -1439,6 +1664,8 @@ export type SimRequestDeviceMappingUploadResponse = ServerResponse<{
 
 // ─── Tenant — SIMs ────────────────────────────────────────────────────────────
 
+export type SimExportFormat = 'csv' | 'xlsx'
+
 export type SimsQuery = {
   params?: {
     search?: string
@@ -1446,6 +1673,7 @@ export type SimsQuery = {
     operators?: string[]
     page?: number
     limit?: number
+    format?: SimExportFormat
   }
 }
 
@@ -1454,7 +1682,7 @@ export type SimAssignedDevice = {
   name: string
   type: string
   imei: string
-  vehicleId: string
+  vehicleId: string | null
 }
 
 export type SimItem = {
@@ -1505,8 +1733,8 @@ export type UpdateSimPayload = {
 
 export type SuspendSimPayload = {
   id: string
-  data: {
-    reason: string
+  data?: {
+    reason?: string
   }
 }
 
@@ -1519,10 +1747,45 @@ export type SimCarrier = {
 
 export type SimCarriersResponse = ServerResponse<{ carriers: SimCarrier[] }>
 
+/** Create / delete / suspend / reactivate / unassign all reply with `{ id }`. */
+export type SimActionResponse = IdResponse
+
+export type SimImportResponse = ServerResponse<{
+  imported: number
+  skipped: number
+  failed: number
+}>
+
+export type SimRequestDeviceMappingProcessResponse = ServerResponse<{
+  processed: number
+  mapped: number
+  failed: number
+}>
+
+export type CreateSimRequestResponse = ServerResponse<{ requestId: string }>
+
+export type SimDataBundlePlan = {
+  id: string
+  code: string
+  name: string
+  carrier: string
+  dataAmountGb: number
+  validityDays: number
+  billingCycle: string
+  price: number
+  currency: string
+  active: boolean
+}
+
+export type SimDataBundlesResponse = ServerResponse<{
+  items: SimDataBundlePlan[]
+  total: number
+}>
+
 export type SimRequestTimelineEntry = {
   label: string
   at: string
-  by: string
+  by: string | null
 }
 
 export type SimRequestDataBundlePlan = {
@@ -1530,6 +1793,8 @@ export type SimRequestDataBundlePlan = {
   name: string
   dataLimitGb: number
 }
+
+export type SimRequestStatus = 'pending_review' | 'approved' | 'rejected' | 'fulfilled'
 
 export type SimRequestItem = {
   id: string
@@ -1540,7 +1805,7 @@ export type SimRequestItem = {
   planType: string
   dataBundlePlan: SimRequestDataBundlePlan
   useCase: string
-  status: string
+  status: SimRequestStatus
   createdAt: string
   timeline: SimRequestTimelineEntry[]
   notes?: string
@@ -1557,14 +1822,55 @@ export type GetSimRequestPayload = { id: string }
 
 export type UpdateOnboardingFeaturesPayload = {
   data: {
-    liveTracking: boolean
-    geofencing: boolean
-    routeOptimization: boolean
-    messaging: boolean
-    analytics: boolean
-    apiAccess: boolean
+    liveTracking?: boolean
+    geofencing?: boolean
+    routeOptimization?: boolean
+    messaging?: boolean
+    analytics?: boolean
+    apiAccess?: boolean
   }
 }
+
+/** Note the response key is `advancedAnalytics` where the request sends `analytics`. */
+export type OnboardingFeaturesResponse = ServerResponse<{
+  features: {
+    liveTracking?: boolean
+    geofencing?: boolean
+    routeOptimization?: boolean
+    messaging?: boolean
+    advancedAnalytics?: boolean
+    apiAccess?: boolean
+  }
+}>
+
+export type OnboardingCompleteResponse = ServerResponse<{ completedAt: string }>
+export type OnboardingEnquiryResponse = ServerResponse<{ ticketId: string }>
+export type OnboardingRequestIdResponse = ServerResponse<{ requestId: string }>
+export type OnboardingSimsRegisterResponse = ServerResponse<{ registered: number }>
+
+export type KycDocumentStatus = 'pending' | 'under_review' | 'verified' | 'rejected'
+
+export type KycDocumentType =
+  | 'certificate_of_incorporation'
+  | 'memorandum_of_association'
+  | 'tax_clearance'
+  | 'vat_certificate'
+  | 'business_license'
+  | 'insurance_certificate'
+  | 'proof_of_address'
+  | 'director_id'
+  | 'other'
+
+export type KycDocument = {
+  id: string
+  documentType: string
+  documentName: string
+  fileSize: number
+  status: KycDocumentStatus
+  createdAt: string
+}
+
+export type KycDocumentsResponse = ServerResponse<{ documents: KycDocument[] }>
 export type SystemFeatureFlagsResponse = ServerResponse<SystemFeatureFlagsList>
 export type SystemFeatureFlagResponse = ServerResponse<SystemFeatureFlag>
 export interface AdminInvite {

@@ -1,15 +1,43 @@
+import type { ServerResponse } from '../lib/types'
+
+// ponytail: the server accepts camelCase aliases alongside the snake_case body
+// fields on several routes. Only the canonical form the spec marks required is
+// typed, plus the camelCase fields that are the *only* form the spec offers
+// (the dispatch-UI create payload).
+
 // ─── Jobs — queries ───────────────────────────────────────────────────────────
+
+export type DispatchJobStatusFilter =
+  | 'all'
+  | 'pending'
+  | 'created'
+  | 'assigned'
+  | 'in_progress'
+  | 'en-route'
+  | 'arrived'
+  | 'loaded'
+  | 'completed'
+  | 'delivered'
+  | 'cancelled'
 
 export type JobsQuery = {
   params?: {
-    status?: 'all' | 'pending' | 'created' | 'assigned' | 'in_progress' | 'en-route' | 'arrived' | 'loaded' | 'completed' | 'delivered' | 'cancelled'
+    status?: DispatchJobStatusFilter
     query?: string
     driver_id?: string
     vehicle_id?: string
+    weight_from?: number
+    weight_to?: number
+    amount_from?: number
+    amount_to?: number
+    /** YYYY-MM-DD */
+    deadline?: string
   }
 }
 
-// ─── Jobs — create ────────────────────────────────────────────────────────────
+// ─── Shared body objects ──────────────────────────────────────────────────────
+
+export type DispatchJobPriority = 'low' | 'normal' | 'high' | 'urgent'
 
 export type CreateJobStopPayload = {
   address: string
@@ -20,37 +48,89 @@ export type CreateJobStopPayload = {
   notes?: string
 }
 
+export type DispatchJobTimeWindow = {
+  pickup_start?: string
+  pickup_end?: string
+  dropoff_start?: string
+  dropoff_end?: string
+}
+
+export type DispatchHeaderMedia = {
+  type?: 'image' | 'video' | 'document'
+  id?: string
+  link?: string
+  filename?: string
+}
+
+export type DispatchButtonParameter = {
+  index: number
+  type?: 'quick_reply' | 'url' | 'copy_code'
+  text?: string
+  payload?: string
+}
+
+// ─── Jobs — create ────────────────────────────────────────────────────────────
+
 export type CreateJobPayload = {
   data: {
-    pickup?: CreateJobStopPayload
-    dropoff?: CreateJobStopPayload
-    stops?: CreateJobStopPayload[]
-    amount_ngn?: number
-    cargo_description?: string
-    cargo_type?: string
-    load_weight_kg?: number
-    priority?: 'low' | 'medium' | 'normal' | 'high' | 'urgent'
-    deadline?: string
-    reference?: string
+    // Required by the dispatch-UI create contract.
+    pickupLocation: string
+    deliveryLocation: string
+    // ponytail: the spec marks this required, but the UI creates jobs unassigned
+    // and assigns a vehicle via /assign. Tighten it if the server rejects the omission.
     vehicleId?: string
-    pickupLocation?: string
-    deliveryLocation?: string
+
+    pickupAddress?: string
+    pickupLat?: number
+    pickupLng?: number
+    deliveryAddress?: string
+    deliveryLat?: number
+    deliveryLng?: number
+
     driverId?: string
     driverPhone?: string
+    driver_id?: string
+    driver_phone?: string
+    vehicle_id?: string
+
+    pickup?: CreateJobStopPayload
+    dropoff?: CreateJobStopPayload
+    // ponytail: not in the published create schema, but the UI sends multi-stop jobs.
+    stops?: CreateJobStopPayload[]
+
     amount?: number
     cargoDescription?: string
     cargoType?: string
     cargoWeight?: number
-    notes?: string
+    load_weight_kg?: number
     load_volume_m3?: number
     required_vehicle_type?: string
     estimated_service_minutes?: number
+
+    priority?: DispatchJobPriority
+    deadline?: string
+    reference?: string
+    job_id?: string
+    notes?: string
+    additionalNotes?: string
+    time_window?: DispatchJobTimeWindow
   }
 }
 
+/** PATCH / PUT /dispatch/jobs/{jobId} — a narrower body than create. */
 export type UpdateJobDetailsPayload = {
   jobId: string
-  data: CreateJobPayload['data']
+  data: {
+    pickup?: CreateJobStopPayload
+    dropoff?: CreateJobStopPayload
+    stops?: CreateJobStopPayload[]
+    amount?: number
+    cargo_description?: string
+    cargo_type?: string
+    load_weight_kg?: number
+    load_volume_m3?: number
+    deadline?: string
+  }
 }
 
 export type DeleteJobPayload = {
@@ -83,18 +163,27 @@ export type CancelJobPayload = {
   }
 }
 
+export type DispatchJobStatus =
+  | 'created'
+  | 'assigned'
+  | 'en-route'
+  | 'arrived'
+  | 'loaded'
+  | 'delivered'
+  | 'cancelled'
+
 export type UpdateJobStatusPayload = {
   jobId: string
   data: {
-    status: 'created' | 'assigned' | 'en-route' | 'arrived' | 'loaded' | 'delivered' | 'cancelled'
+    status: DispatchJobStatus
   }
 }
 
 export type UpdateJobSchedulingPayload = {
   jobId: string
   data: {
-    priority?: 'low' | 'normal' | 'high' | 'urgent'
-    time_window?: Record<string, unknown>
+    priority?: DispatchJobPriority
+    time_window?: DispatchJobTimeWindow
   }
 }
 
@@ -102,12 +191,12 @@ export type SendWhatsappInstructionPayload = {
   jobId: string
   data: {
     driver_id: string
-    template_name: string
     driver_name: string
-    header_media?: Record<string, unknown>
-    button_parameters?: Record<string, unknown>[]
-    language?: string
+    template_name: string
     to?: string
+    language?: string
+    header_media?: DispatchHeaderMedia
+    button_parameters?: DispatchButtonParameter[]
   }
 }
 
@@ -130,11 +219,13 @@ export type AddPodAttachmentPayload = {
 
 // ─── Driver status requests ───────────────────────────────────────────────────
 
+export type DriverStatusKeyword = 'ENROUTE' | 'ARRIVED' | 'LOADED' | 'DELIVERED'
+
 export type CreateDriverStatusRequestPayload = {
   jobId: string
   data: {
     driver_id: string
-    keyword: 'ENROUTE' | 'ARRIVED' | 'LOADED' | 'DELIVERED'
+    keyword: DriverStatusKeyword
     driver_phone?: string
     channel?: string
     raw_message?: string
@@ -160,13 +251,33 @@ export type LegacyStatusPayload = {
   }
 }
 
+export type OptimizeRouteOrigin = {
+  latitude: number
+  longitude: number
+  address?: string
+  label?: string
+}
+
+export type OptimizeRouteVehicle = {
+  vehicle_id?: string
+  vehicle_type?: string
+  capacity_weight_kg?: number
+  capacity_volume_m3?: number
+  average_speed_kph?: number
+}
+
+export type OptimizeRouteDriverShift = {
+  start?: string
+  end?: string
+}
+
 export type OptimizeRoutePayload = {
   data: {
     job_ids?: string[]
-    vehicle?: Record<string, unknown>
-    origin?: Record<string, unknown>
+    vehicle?: OptimizeRouteVehicle
+    origin?: OptimizeRouteOrigin
     departure_time?: string
-    driver_shift?: Record<string, unknown>
+    driver_shift?: OptimizeRouteDriverShift
   }
 }
 
@@ -179,13 +290,6 @@ export type DispatchStop = {
   contact_name?: string
   contact_phone?: string
   notes?: string
-}
-
-export type DispatchJobTimeWindow = {
-  pickup_start?: string
-  pickup_end?: string
-  dropoff_start?: string
-  dropoff_end?: string
 }
 
 export type DispatchJobNote = {
@@ -229,16 +333,14 @@ export type DispatchJobTimelineEntry = {
 export type DispatchJob = {
   id?: string
   status?: string
-  priority?: 'low' | 'normal' | 'high' | 'urgent'
+  priority?: DispatchJobPriority
   reference?: string
   amount_ngn?: number
   assigned_driver_id?: string
-  assigned_driver_name?: string
   assigned_driver_phone?: string
   assigned_vehicle_id?: string
   pickup?: DispatchStop
   dropoff?: DispatchStop
-  stops?: DispatchStop[]
   cargo_description?: string
   cargo_type?: string
   load_volume_m3?: number
@@ -255,11 +357,17 @@ export type DispatchJob = {
   created_at?: string
   updated_at?: string
   acknowledged_at?: string
+
+  // ponytail: not in the published dispatch schema, but the UI renders these.
+  // Drop them once the server confirms it never sends them.
+  assigned_driver_name?: string
+  stops?: DispatchStop[]
 }
 
 export type DispatchJobSummary = {
   total?: number
   by_status?: Record<string, number>
+  // ponytail: not in the published schema — see the DispatchJob note above.
   total_value_ngn?: number
 }
 
@@ -321,18 +429,23 @@ export type RoutePlan = {
   alternate_routes?: RouteAlternative[]
 }
 
+/** POST /dispatch/jobs/status — unenveloped event ack. */
 export type EventPublishedResponse = {
   event_id?: string
   published?: boolean
   subject?: string
 }
 
-import type { ServerResponse } from '../lib/types'
-
 // ─── Response envelopes ───────────────────────────────────────────────────────
 
 export type DispatchJobResponse = ServerResponse<DispatchJob>
 export type DispatchJobListResponse = ServerResponse<DispatchJob[]>
 export type DispatchJobSummaryResponse = ServerResponse<DispatchJobSummary>
-export type DispatchJobTimelineResponse = ServerResponse<{ job_id: string; timeline: DispatchJobTimelineEntry[] }>
-export type DriverStatusRequestActionResponse = ServerResponse<{ job: DispatchJob; request: DispatchDriverStatusRequest }>
+export type DispatchJobTimelineResponse = ServerResponse<{
+  job_id?: string
+  timeline?: DispatchJobTimelineEntry[]
+}>
+export type DriverStatusRequestActionResponse = ServerResponse<{
+  job?: DispatchJob
+  request?: DispatchDriverStatusRequest
+}>

@@ -1,4 +1,5 @@
 import { axiosInstance } from '../lib/axios-instance'
+import type { ServerResponse } from '../lib/types'
 
 import type {
   ActivityLogQuery,
@@ -91,7 +92,41 @@ import type {
   RemoveOrganizationUserResponse,
   ResetPasswordPayload,
   RetrySimBatchPayload,
+  AllocatableSimsQuery,
+  AllocateDataBundlePayload,
+  AuthHealthResponse,
+  ChangeSystemPasswordResponse,
+  CreateSimRequestResponse,
+  CreateSystemBundlePayload,
+  CreateSystemCarrierPayload,
+  DataBundleAllocationDetail,
+  DataBundleAllocationResult,
+  DeleteSystemBundlePayload,
+  GetDataBundleAllocationPayload,
+  IdResponse,
+  InviteValidationResponse,
+  KycDocumentsResponse,
+  MessageResponse,
+  OnboardingCompleteResponse,
+  OnboardingEnquiryResponse,
+  OnboardingFeaturesResponse,
+  OnboardingRequestIdResponse,
+  OnboardingSimsRegisterResponse,
+  SimActionResponse,
+  SimDataBundlesResponse,
+  SimImportResponse,
+  SimRequestDeviceMappingProcessResponse,
   StandardApiResponse,
+  SystemSimBatchRetryResult,
+  SystemSimRequestActionResult,
+  SystemSupportEscalatedResponse,
+  SystemSupportTicketDetailResponse,
+  SystemSupportTicketMessageResponse,
+  SystemSupportTicketMessagesResponse,
+  SystemSupportTicketStatusResponse,
+  SystemSupportTicketsListResponse,
+  UpdateSystemBundlePayload,
+  UpdateSystemCarrierPayload,
   SystemAdminInviteCancelResponse,
   SystemAdminInviteResponse,
   SystemAdminInvitesResponse,
@@ -183,17 +218,17 @@ export async function refresh({ data }: RefreshPayload) {
 }
 
 export async function validateInvite({ params }: ValidateInviteQuery) {
-  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/invite/validate', { params })
+  const { data } = await axiosInstance.get<InviteValidationResponse>('/auth/invite/validate', { params })
   return data
 }
 
 export async function forgotPassword({ data }: ForgotPasswordPayload) {
-  const { data: res } = await axiosInstance.post<StandardApiResponse>('/auth/forgot-password', data)
+  const { data: res } = await axiosInstance.post<MessageResponse>('/auth/forgot-password', data)
   return res
 }
 
 export async function resetPassword({ data }: ResetPasswordPayload) {
-  const { data: res } = await axiosInstance.post<StandardApiResponse>('/auth/reset-password', data)
+  const { data: res } = await axiosInstance.post<MessageResponse>('/auth/reset-password', data)
   return res
 }
 
@@ -203,12 +238,12 @@ export async function completeProfile({ data }: CompleteProfilePayload) {
 }
 
 export async function verifyEmail({ data }: VerifyEmailPayload) {
-  const { data: res } = await axiosInstance.post<StandardApiResponse>('/auth/verify-email', data)
+  const { data: res } = await axiosInstance.post<MessageResponse>('/auth/verify-email', data)
   return res
 }
 
 export async function verifyReset({ data }: VerifyResetPayload) {
-  const { data: res } = await axiosInstance.post<StandardApiResponse>('/auth/verify-reset', data)
+  const { data: res } = await axiosInstance.post<MessageResponse>('/auth/verify-reset', data)
   return res
 }
 
@@ -218,12 +253,7 @@ export async function registerInvited({ data }: RegisterInvitedPayload) {
 }
 
 export async function getAuthHealth() {
-  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/health')
-  return data
-}
-
-export async function getTestSentry() {
-  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/test-sentry')
+  const { data } = await axiosInstance.get<AuthHealthResponse>('/auth/health')
   return data
 }
 
@@ -291,7 +321,7 @@ export async function changeRole({ data }: ChangeRolePayload) {
 }
 
 export async function logout({ data }: LogoutPayload) {
-  const { data: res } = await axiosInstance.post<StandardApiResponse>('/auth/logout', data)
+  const { data: res } = await axiosInstance.post<MessageResponse>('/auth/logout', data)
   return res
 }
 
@@ -357,7 +387,7 @@ export async function deleteSystemAdmin({ id }: DeleteSystemAdminPayload) {
 }
 
 export async function systemChangePassword({ data }: SystemChangePasswordPayload) {
-  const { data: res } = await axiosInstance.patch<StandardApiResponse>('/auth/system/change-password', data)
+  const { data: res } = await axiosInstance.patch<ChangeSystemPasswordResponse>('/auth/system/change-password', data)
   return res
 }
 
@@ -395,7 +425,7 @@ export async function getSystemTenantsSummary() {
 }
 
 export async function exportSystemTenants(payload?: SystemTenantsQuery) {
-  const { data } = await axiosInstance.get('/auth/system/tenants/export', {
+  const { data } = await axiosInstance.get<Blob>('/auth/system/tenants/export', {
     responseType: 'blob',
     params: payload?.params,
   })
@@ -451,7 +481,7 @@ export async function getSystemDevice({ id }: { id: string }) {
 }
 
 export async function exportSystemDevices(payload?: SystemDevicesQuery) {
-  const { data } = await axiosInstance.get('/auth/system/devices/export', {
+  const { data } = await axiosInstance.get<Blob>('/auth/system/devices/export', {
     responseType: 'blob',
     params: payload?.params,
   })
@@ -466,7 +496,7 @@ export async function getSystemDevicesCatalog(payload?: SystemDeviceCatalogQuery
 }
 
 export async function exportSystemDevicesCatalog(payload?: SystemDeviceCatalogQuery) {
-  const { data } = await axiosInstance.get('/auth/system/devices/catalog/export', {
+  const { data } = await axiosInstance.get<Blob>('/auth/system/devices/catalog/export', {
     responseType: 'blob',
     params: payload?.params,
   })
@@ -522,7 +552,7 @@ export async function getSystemSimsSummary() {
 }
 
 export async function exportSystemSims(payload?: SystemSimsQuery) {
-  const { data } = await axiosInstance.get('/auth/system/sims/export', {
+  const { data } = await axiosInstance.get<Blob>('/auth/system/sims/export', {
     responseType: 'blob',
     params: payload?.params,
   })
@@ -542,7 +572,7 @@ export async function getSystemSimsRequestsSummary() {
 }
 
 export async function exportSystemSimsRequests(payload?: SystemSimRequestsQuery) {
-  const { data } = await axiosInstance.get('/auth/system/sims/requests/export', {
+  const { data } = await axiosInstance.get<Blob>('/auth/system/sims/requests/export', {
     responseType: 'blob',
     params: payload?.params,
   })
@@ -550,12 +580,17 @@ export async function exportSystemSimsRequests(payload?: SystemSimRequestsQuery)
 }
 
 export async function approveSIMRequest({ id }: ApproveSIMRequestPayload) {
-  const { data } = await axiosInstance.post<StandardApiResponse>(`/auth/system/sims/requests/${id}/approve`)
+  const { data } = await axiosInstance.post<ServerResponse<SystemSimRequestActionResult>>(
+    `/auth/system/sims/requests/${id}/approve`,
+  )
   return data
 }
 
 export async function rejectSIMRequest({ id, data }: RejectSIMRequestPayload) {
-  const { data: res } = await axiosInstance.post<StandardApiResponse>(`/auth/system/sims/requests/${id}/reject`, data)
+  const { data: res } = await axiosInstance.post<ServerResponse<SystemSimRequestActionResult>>(
+    `/auth/system/sims/requests/${id}/reject`,
+    data,
+  )
   return res
 }
 
@@ -572,7 +607,7 @@ export async function getSystemSimsBatchesSummary() {
 }
 
 export async function exportSystemSimsBatches(payload?: SystemSimBatchesQuery) {
-  const { data } = await axiosInstance.get('/auth/system/sims/batches/export', {
+  const { data } = await axiosInstance.get<Blob>('/auth/system/sims/batches/export', {
     responseType: 'blob',
     params: payload?.params,
   })
@@ -585,7 +620,9 @@ export async function getSystemSimBatch({ id }: GetSimBatchPayload) {
 }
 
 export async function retrySimBatch({ id }: RetrySimBatchPayload) {
-  const { data } = await axiosInstance.post<StandardApiResponse>(`/auth/system/sims/batches/${id}/retry`)
+  const { data } = await axiosInstance.post<ServerResponse<SystemSimBatchRetryResult>>(
+    `/auth/system/sims/batches/${id}/retry`,
+  )
   return data
 }
 
@@ -647,8 +684,10 @@ export async function getSystemSubscriptionPlans() {
   return data
 }
 
+// ponytail: /auth/subscription-plans is not in the spec — use
+// getSystemSubscriptionPlans (system console) or getOnboardingPlans (public).
 export async function getSubscriptionPlans() {
-  const { data } = await axiosInstance.get<SystemSubscriptionPlansResponse>('/auth/subscription-plans')
+  const { data } = await axiosInstance.get<SystemSubscriptionPlansResponse>('/auth/system/subscription-plans')
   return data
 }
 
@@ -678,7 +717,7 @@ export async function createPaymentIntent({ data }: PaymentIntentPayload) {
 }
 
 export async function submitEnterpriseEnquiry({ data }: EnterpriseEnquiryPayload) {
-  const { data: res } = await axiosInstance.post<StandardApiResponse>('/auth/onboarding/enterprise/enquiry', data)
+  const { data: res } = await axiosInstance.post<OnboardingEnquiryResponse>('/auth/onboarding/enterprise/enquiry', data)
   return res
 }
 
@@ -701,31 +740,31 @@ export async function uploadOnboardingKycDocument({ documentType, file }: Upload
   const form = new FormData()
   form.append('document_type', documentType)
   form.append('file', file)
-  const { data } = await axiosInstance.post<StandardApiResponse>('/auth/onboarding/kyc/documents', form, {
+  const { data } = await axiosInstance.post<KycDocumentsResponse>('/auth/onboarding/kyc/documents', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
   return data
 }
 
 export async function deleteOnboardingKycDocument({ id }: DeleteOnboardingKycDocumentPayload) {
-  const { data } = await axiosInstance.delete<StandardApiResponse>(`/auth/onboarding/kyc/documents/${id}`)
+  const { data } = await axiosInstance.delete<MessageResponse>(`/auth/onboarding/kyc/documents/${id}`)
   return data
 }
 
 export async function provisionDevices({ data }: ProvisionDevicesPayload) {
-  const { data: res } = await axiosInstance.post<StandardApiResponse>('/auth/onboarding/devices/provision', data)
+  const { data: res } = await axiosInstance.post<OnboardingRequestIdResponse>('/auth/onboarding/devices/provision', data)
   return res
 }
 
 export async function registerSims({ data }: RegisterSimsPayload) {
-  const { data: res } = await axiosInstance.post<StandardApiResponse>('/auth/onboarding/sims/register', data)
+  const { data: res } = await axiosInstance.post<OnboardingSimsRegisterResponse>('/auth/onboarding/sims/register', data)
   return res
 }
 
 export async function importSimsFromCsv(file: File) {
   const form = new FormData()
   form.append('file', file)
-  const { data } = await axiosInstance.post<StandardApiResponse>('/auth/onboarding/sims/import', form, {
+  const { data } = await axiosInstance.post<SimImportResponse>('/auth/onboarding/sims/import', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
   return data
@@ -741,7 +780,7 @@ export async function downloadSimImportTemplate() {
 export async function importSims(file: File) {
   const form = new FormData()
   form.append('file', file)
-  const { data } = await axiosInstance.post<StandardApiResponse>('/auth/sims/import', form, {
+  const { data } = await axiosInstance.post<SimImportResponse>('/auth/sims/import', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
   return data
@@ -766,17 +805,17 @@ export async function uploadSimRequestDeviceMapping(file: File) {
 }
 
 export async function createSimRequest({ data }: CreateSimRequestPayload) {
-  const { data: response } = await axiosInstance.post<StandardApiResponse>('/auth/sims/requests', data)
+  const { data: response } = await axiosInstance.post<CreateSimRequestResponse>('/auth/sims/requests', data)
   return response
 }
 
 export async function createSim({ data }: CreateSimPayload) {
-  const { data: response } = await axiosInstance.post<StandardApiResponse>('/auth/sims', data)
+  const { data: response } = await axiosInstance.post<SimActionResponse>('/auth/sims', data)
   return response
 }
 
 export async function getSimDataBundles({ params }: SimDataBundlesQuery) {
-  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/sims/data-bundles', { params })
+  const { data } = await axiosInstance.get<SimDataBundlesResponse>('/auth/sims/data-bundles', { params })
   return data
 }
 
@@ -800,22 +839,22 @@ export async function updateSim({ id, data: body }: UpdateSimPayload) {
 }
 
 export async function deleteSim({ id }: DeleteSimPayload) {
-  const { data } = await axiosInstance.delete<StandardApiResponse>(`/auth/sims/${id}`)
+  const { data } = await axiosInstance.delete<SimActionResponse>(`/auth/sims/${id}`)
   return data
 }
 
 export async function suspendSim({ id, data: body }: SuspendSimPayload) {
-  const { data } = await axiosInstance.post<StandardApiResponse>(`/auth/sims/${id}/suspend`, body)
+  const { data } = await axiosInstance.post<SimActionResponse>(`/auth/sims/${id}/suspend`, body)
   return data
 }
 
 export async function reactivateSim({ id }: ReactivateSimPayload) {
-  const { data } = await axiosInstance.post<StandardApiResponse>(`/auth/sims/${id}/reactivate`)
+  const { data } = await axiosInstance.post<SimActionResponse>(`/auth/sims/${id}/reactivate`)
   return data
 }
 
 export async function unassignSimDevice({ id }: UnassignSimDevicePayload) {
-  const { data } = await axiosInstance.delete<StandardApiResponse>(`/auth/sims/${id}/device`)
+  const { data } = await axiosInstance.delete<SimActionResponse>(`/auth/sims/${id}/device`)
   return data
 }
 
@@ -934,23 +973,92 @@ export async function getDataBundleRates(payload?: DataBundleRatesQuery) {
   return data
 }
 
+export async function createSystemCarrier({ data: body }: CreateSystemCarrierPayload) {
+  const { data } = await axiosInstance.post<IdResponse>('/auth/system/carriers', body)
+  return data
+}
+
+export async function updateSystemCarrier({ id, data: body }: UpdateSystemCarrierPayload) {
+  const { data } = await axiosInstance.patch<IdResponse>(`/auth/system/carriers/${id}`, body)
+  return data
+}
+
+export async function createSystemBundle({ data: body }: CreateSystemBundlePayload) {
+  const { data } = await axiosInstance.post<IdResponse>('/auth/system/bundle-catalog', body)
+  return data
+}
+
+export async function updateSystemBundle({ id, data: body }: UpdateSystemBundlePayload) {
+  const { data } = await axiosInstance.patch<IdResponse>(`/auth/system/bundle-catalog/${id}`, body)
+  return data
+}
+
+export async function deleteSystemBundle({ id }: DeleteSystemBundlePayload) {
+  const { data } = await axiosInstance.delete<MessageResponse>(`/auth/system/bundle-catalog/${id}`)
+  return data
+}
+
+export async function allocateDataBundle({ data: body }: AllocateDataBundlePayload) {
+  const { data } = await axiosInstance.post<ServerResponse<DataBundleAllocationResult>>(
+    '/auth/data-bundles/allocations',
+    body,
+  )
+  return data
+}
+
+export async function getDataBundleAllocation({ id }: GetDataBundleAllocationPayload) {
+  const { data } = await axiosInstance.get<ServerResponse<DataBundleAllocationDetail>>(
+    `/auth/data-bundles/allocations/${id}`,
+  )
+  return data
+}
+
+export async function getAllocatableSims({ params }: AllocatableSimsQuery) {
+  const { data } = await axiosInstance.get<SimsListResponse>('/auth/data-bundles/allocations/sims', { params })
+  return data
+}
+
+export async function exportDataBundleAllocations(payload?: DataBundleAllocationsQuery) {
+  const { data } = await axiosInstance.get<Blob>('/auth/data-bundles/allocations/export', {
+    responseType: 'blob',
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function exportDataBundleTransactions(payload?: DataBundleTransactionsQuery) {
+  const { data } = await axiosInstance.get<Blob>('/auth/data-bundles/transactions/export', {
+    responseType: 'blob',
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function exportDataBundleRates(payload?: DataBundleRatesQuery) {
+  const { data } = await axiosInstance.get<Blob>('/auth/data-bundles/rates/export', {
+    responseType: 'blob',
+    params: payload?.params,
+  })
+  return data
+}
+
 export async function getDataBundleCarriers() {
   const { data } = await axiosInstance.get<DataBundleCarriersListResponse>('/auth/data-bundles/carriers')
   return data
 }
 
 export async function provisionSims({ data }: ProvisionSimsPayload) {
-  const { data: res } = await axiosInstance.post<StandardApiResponse>('/auth/onboarding/sims/provision', data)
+  const { data: res } = await axiosInstance.post<OnboardingRequestIdResponse>('/auth/onboarding/sims/provision', data)
   return res
 }
 
 export async function updateOnboardingFeatures({ data }: UpdateOnboardingFeaturesPayload) {
-  const { data: res } = await axiosInstance.put<StandardApiResponse>('/auth/onboarding/features', data)
+  const { data: res } = await axiosInstance.put<OnboardingFeaturesResponse>('/auth/onboarding/features', data)
   return res
 }
 
 export async function completeOnboarding() {
-  const { data } = await axiosInstance.post<StandardApiResponse>('/auth/onboarding/complete')
+  const { data } = await axiosInstance.post<OnboardingCompleteResponse>('/auth/onboarding/complete')
   return data
 }
 
@@ -967,14 +1075,14 @@ export async function getSystemSupportTicketSummary() {
 }
 
 export async function getSystemSupportTickets(payload?: SystemSupportTicketsQuery) {
-  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/system/support/tickets', {
+  const { data } = await axiosInstance.get<SystemSupportTicketsListResponse>('/auth/system/support/tickets', {
     params: payload?.params,
   })
   return data
 }
 
 export async function exportSystemSupportTickets(payload?: SystemSupportTicketsQuery) {
-  const { data } = await axiosInstance.get('/auth/system/support/tickets/export', {
+  const { data } = await axiosInstance.get<Blob>('/auth/system/support/tickets/export', {
     responseType: 'blob',
     params: payload?.params,
   })
@@ -982,7 +1090,7 @@ export async function exportSystemSupportTickets(payload?: SystemSupportTicketsQ
 }
 
 export async function getSystemEscalatedSupportTickets() {
-  const { data } = await axiosInstance.get<StandardApiResponse>('/auth/system/support/escalated')
+  const { data } = await axiosInstance.get<SystemSupportEscalatedResponse>('/auth/system/support/escalated')
   return data
 }
 
@@ -1009,7 +1117,7 @@ export async function rejectSystemDeviceSetupRequest({ id, data: body }: RejectS
 }
 
 export async function exportSystemDeviceSetupRequests(payload?: SystemDeviceSetupRequestsQuery) {
-  const { data } = await axiosInstance.get('/auth/system/support/device-setup/export', {
+  const { data } = await axiosInstance.get<Blob>('/auth/system/support/device-setup/export', {
     responseType: 'blob',
     params: payload?.params,
   })
@@ -1017,26 +1125,37 @@ export async function exportSystemDeviceSetupRequests(payload?: SystemDeviceSetu
 }
 
 export async function getSystemSupportTicket({ id }: { id: string }) {
-  const { data } = await axiosInstance.get<StandardApiResponse>(`/auth/system/support/tickets/${id}`)
+  const { data } = await axiosInstance.get<SystemSupportTicketDetailResponse>(`/auth/system/support/tickets/${id}`)
   return data
 }
 
 export async function updateSupportTicketStatus({ id, data }: UpdateTicketStatusPayload) {
-  const { data: res } = await axiosInstance.patch<StandardApiResponse>(`/auth/system/support/tickets/${id}/status`, data)
+  const { data: res } = await axiosInstance.patch<SystemSupportTicketStatusResponse>(
+    `/auth/system/support/tickets/${id}/status`,
+    data,
+  )
   return res
 }
 
 export async function escalateSupportTicket({ id, data: body }: EscalateTicketPayload) {
-  const { data } = await axiosInstance.patch<StandardApiResponse>(`/auth/system/support/tickets/${id}/escalate`, body)
+  const { data } = await axiosInstance.patch<SystemSupportTicketStatusResponse>(
+    `/auth/system/support/tickets/${id}/escalate`,
+    body,
+  )
   return data
 }
 
 export async function getSupportTicketMessages({ id }: { id: string }) {
-  const { data } = await axiosInstance.get<StandardApiResponse>(`/auth/system/support/tickets/${id}/messages`)
+  const { data } = await axiosInstance.get<SystemSupportTicketMessagesResponse>(
+    `/auth/system/support/tickets/${id}/messages`,
+  )
   return data
 }
 
 export async function createSupportTicketMessage({ id, data }: CreateTicketMessagePayload) {
-  const { data: res } = await axiosInstance.post<StandardApiResponse>(`/auth/system/support/tickets/${id}/messages`, data)
+  const { data: res } = await axiosInstance.post<SystemSupportTicketMessageResponse>(
+    `/auth/system/support/tickets/${id}/messages`,
+    data,
+  )
   return res
 }

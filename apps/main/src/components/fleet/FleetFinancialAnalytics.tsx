@@ -216,8 +216,9 @@ function normalizeProfitabilityRow(row: FleetProfitabilityVehicle): Profitabilit
     vehicle_id: row.vehicleId,
     plateNumber: row.plateNumber,
     name: row.name,
-    make: row.make,
-    model: row.model,
+    // The profitability payload carries only `name` — no separate make/model.
+    make: undefined,
+    model: undefined,
     period_start: "",
     period_end: "",
     revenue: {

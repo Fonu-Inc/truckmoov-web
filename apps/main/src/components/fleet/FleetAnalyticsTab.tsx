@@ -3,6 +3,7 @@ import type {
   FleetAnalyticsEvent,
   FleetAnalyticsFuelLevel,
   FleetAnalyticsPeriodDays,
+  FleetAnalyticsShortPeriodDays,
 } from "@truckmoov/api/fleet";
 import type { PeriodValue } from "./PeriodFilter";
 import {
@@ -162,6 +163,13 @@ function formatLabel(value: string) {
 function toPeriodDays(value: PeriodValue): FleetAnalyticsPeriodDays {
   const days = Number(value);
   return days === 7 || days === 30 || days === 60 || days === 90 ? days : 30;
+}
+
+// `fleet-status` and `fuel-levels` accept 1|2|7|30|90 — there is no 60-day bucket,
+// so the 60-day option falls back to 30 rather than being rejected by the server.
+function toShortPeriodDays(value: PeriodValue): FleetAnalyticsShortPeriodDays {
+  const days = Number(value);
+  return days === 1 || days === 2 || days === 7 || days === 30 || days === 90 ? days : 30;
 }
 
 function toLimit(value: LimitValue) {
@@ -387,9 +395,9 @@ export function FleetAnalyticsTab() {
   ] = useState<SeverityValue>("all");
 
   const summaryQuery = useFleetAnalyticsSummary({ params: { period_days: toPeriodDays(summaryPeriod) } });
-  const fleetStatusQuery = useFleetAnalyticsFleetStatus({ params: { period_days: toPeriodDays(fleetStatusPeriod) } });
+  const fleetStatusQuery = useFleetAnalyticsFleetStatus({ params: { period_days: toShortPeriodDays(fleetStatusPeriod) } });
   const jobPipelineQuery = useFleetAnalyticsJobPipeline({ params: { period_days: toPeriodDays(jobPipelinePeriod) } });
-  const fuelLevelsQuery = useFleetAnalyticsFuelLevels({ params: { period_days: toPeriodDays(fuelLevelsPeriod) } });
+  const fuelLevelsQuery = useFleetAnalyticsFuelLevels({ params: { period_days: toShortPeriodDays(fuelLevelsPeriod) } });
   const safetyScoresQuery = useFleetAnalyticsDriverScores({ params: { period_days: toPeriodDays(safetyRadarPeriod) } });
   const driverScoresQuery = useFleetAnalyticsDriverScores({
     params: {

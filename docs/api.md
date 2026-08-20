@@ -42,7 +42,57 @@ import { axiosInstance }                  from "@truckmoov/api/lib/axios-instanc
 import { queryClient }                    from "@truckmoov/api/lib/query-client"
 import type { ServerResponse, ServerErrorResponse } from "@truckmoov/api/lib/types"
 import { ... }                            from "@truckmoov/api/auth"
+import { ... }                            from "@truckmoov/api/fleet"
+import { ... }                            from "@truckmoov/api/dispatch"
+import { ... }                            from "@truckmoov/api/tracking"
+import { ... }                            from "@truckmoov/api/notification"
+import { ... }                            from "@truckmoov/api/console"
 ```
+
+Both apps resolve these through two wildcard `paths` entries in
+`tsconfig.app.json`, so a new service needs no per-module entry:
+
+```json
+"@truckmoov/api/lib/*": ["../../packages/api/src/lib/*.ts"],
+"@truckmoov/api/*":     ["../../packages/api/src/*/index.ts"]
+```
+
+## Keeping types in sync with the server
+
+The service types are hand-written against the published OpenAPI documents:
+
+| Service | Swagger UI | OpenAPI JSON |
+|---|---|---|
+| auth | `/docs/auth` | `/openapi/auth.json` |
+| fleet | `/docs/fleet` | `/openapi/fleet.json` |
+| dispatch | — | `/openapi/dispatch.json` |
+| tracking | — | `/openapi/tracking.json` |
+| notification | — | `/openapi/notification.json` |
+| console | `/docs/console` | `/openapi/console.json` |
+
+All served from `https://dev-api.truckmoov.com`.
+
+Two conventions fall out of those documents:
+
+- **Envelope.** Every service wraps responses in `ServerResponse<T>` **except
+  `tracking`**, and except `POST /notify/messages/send` and
+  `POST /notify/messages/retry/{id}` — those return the record unwrapped. Type
+  them as bare payloads, not `ServerResponse<T>`.
+- **Casing.** Several `notification` and `dispatch` bodies accept both a
+  snake_case and a camelCase spelling of the same field. Only the canonical
+  (documented-required) form is typed — adding both doubles every payload type
+  for no gain.
+
+Endpoints deliberately left out of this package, because a browser client is not
+the caller: liveness/readiness probes (`/health`, `/ready`, `/metrics`,
+`/test-sentry`), device-side telemetry ingest (`/tracking/ingest*`), provider
+webhooks (Paystack, Meta/WhatsApp), the SSE and WebSocket bridges
+(`/auth/onboarding/payment/events`, `/tracking/ws` — neither is an Axios call),
+and pure aliases of routes already covered (`GET /fleet/fuel/transactions`,
+`PUT /dispatch/jobs/{jobId}`).
+
+Deliberate simplifications and fields kept despite being absent from the current
+spec are marked with a `ponytail:` comment naming what to do about them.
 
 ## Auth session
 
@@ -134,7 +184,10 @@ export type DeleteUserPayload = {
 
 ### Response types
 
-All API responses share the envelope shape `{ status, message, data }`. Use the `ServerResponse<T>` generic from `@truckmoov/api/lib/types` to define response envelope types:
+Most API responses share the envelope shape `{ status, message, data }` — see
+[Keeping types in sync with the server](#keeping-types-in-sync-with-the-server)
+for the services that do not. Use the `ServerResponse<T>` generic from
+`@truckmoov/api/lib/types` to define response envelope types:
 
 ```ts
 import type { ServerResponse } from '../lib/types'
@@ -255,6 +308,9 @@ export function useUpdateInvitedUser() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.invitedUsers })
     },
+    onError: () => {
+      toast.error("some error")
+    }
   })
 }
 ```
@@ -316,7 +372,11 @@ See [forms.md](forms.md) for the full form pattern.
    ```json
    "./[service-name]": "./src/[service-name]/index.ts"
    ```
-3. Add a TypeScript path in `tsconfig.app.json` for each consuming app:
-   ```json
-   "@truckmoov/api/[service-name]": ["../../packages/api/src/[service-name]/index.ts"]
+3. Re-export the service's types from its `index.ts` so consumers get them from
+   the barrel:
+   ```ts
+   export type * from './types'
    ```
+
+No `tsconfig.app.json` change is needed — the `@truckmoov/api/*` wildcard path
+already covers any `src/[service-name]/index.ts`.

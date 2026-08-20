@@ -28,6 +28,7 @@ import {
   exportFuelTransactions,
   exportMaintenanceProfiles,
   exportMaintenanceRecords,
+  exportVehiclePL,
   exportVehicles,
   exportReport,
   getAlertStats,
@@ -52,7 +53,11 @@ import {
   getFleetAnalyticsJobPipeline,
   getFleetAnalyticsSummary,
   getFleetFinancialConfig,
+  getFleetFinancialConfigs,
+  getIntegrationHealth,
+  getFleetFinancialStatement,
   getFleetFinancialSummary,
+  getFuelBudgets,
   getFuelBudgetVsActual,
   getFuelEfficiency,
   getFuelMetrics,
@@ -62,7 +67,6 @@ import {
   getGeofence,
   getGeofences,
   getGeofenceZone,
-  getJobs,
   getLegacyGpsDevices,
   getMaintenanceProfiles,
   getMaintenanceProfilesSummary,
@@ -72,6 +76,13 @@ import {
   getMaintenanceServiceCategories,
   getNearestVehicles,
   getReportsDashboard,
+  getSimCarriers,
+  getSimDataBundles,
+  getVehicleSafetyRadar,
+  recommendDrivers,
+  setGeofenceVehicles,
+  updateDeviceSetupRequestStatus,
+  upsertFuelBudget,
   getVehicle,
   getVehicleHealth,
   getVehicles,
@@ -130,13 +141,18 @@ import type {
   FleetAnalyticsDriverScoresQuery,
   FleetAnalyticsEventsQuery,
   FleetAnalyticsPeriodQuery,
+  FleetAnalyticsShortPeriodQuery,
   FleetFinancialConfigActionPayload,
+  FleetFinancialStatementQuery,
   FleetFinancialSummaryQuery,
   FleetProfitabilityPayload,
   FuelBudgetVsActualQuery,
   FuelMetricsQuery,
   FuelQuery,
-  JobsQuery,
+  DataBundlesQuery,
+  DocumentDownloadUrlQuery,
+  RecommendDriversQuery,
+  RenewComplianceDocumentPayload,
   LegacyGpsDevicesQuery,
   MaintenanceProfilesQuery,
   MaintenanceRecordsQuery,
@@ -165,24 +181,31 @@ export const FLEET_QUERY_KEY = {
   legacyGpsDevices: (payload?: LegacyGpsDevicesQuery) => ['fleet', 'legacyGpsDevices', payload],
   drivers: (payload?: DriversQuery) => ['fleet', 'drivers', payload],
   driver: (id: string) => ['fleet', 'driver', id],
-  jobs: (payload?: JobsQuery) => ['fleet', 'jobs', payload],
   dispatchSearch: (payload?: DispatchSearchQuery) => ['fleet', 'dispatchSearch', payload],
+  recommendDrivers: (payload?: RecommendDriversQuery) => ['fleet', 'recommendDrivers', payload],
+  carriers: ['fleet', 'carriers'],
+  dataBundles: (payload?: DataBundlesQuery) => ['fleet', 'dataBundles', payload],
   alertStats: ['fleet', 'alertStats'],
   alerts: (payload?: AlertsQuery) => ['fleet', 'alerts', payload],
   reportsDashboard: ['fleet', 'reportsDashboard'],
   deliveryMetrics: ['fleet', 'deliveryMetrics'],
   analyticsSummary: (payload?: FleetAnalyticsPeriodQuery) => ['fleet', 'analytics', 'summary', payload],
-  analyticsFleetStatus: (payload?: FleetAnalyticsPeriodQuery) => ['fleet', 'analytics', 'fleetStatus', payload],
+  analyticsFleetStatus: (payload?: FleetAnalyticsShortPeriodQuery) => ['fleet', 'analytics', 'fleetStatus', payload],
   analyticsJobPipeline: (payload?: FleetAnalyticsPeriodQuery) => ['fleet', 'analytics', 'jobPipeline', payload],
-  analyticsFuelLevels: (payload?: FleetAnalyticsPeriodQuery) => ['fleet', 'analytics', 'fuelLevels', payload],
+  analyticsFuelLevels: (payload?: FleetAnalyticsShortPeriodQuery) => ['fleet', 'analytics', 'fuelLevels', payload],
+  analyticsSafetyRadar: (payload?: FleetAnalyticsShortPeriodQuery) => ['fleet', 'analytics', 'safetyRadar', payload],
   analyticsDriverScores: (payload?: FleetAnalyticsDriverScoresQuery) => ['fleet', 'analytics', 'driverScores', payload],
   analyticsEvents: (payload?: FleetAnalyticsEventsQuery) => ['fleet', 'analytics', 'events', payload],
   financialSummary: (payload?: FleetFinancialSummaryQuery) => ['fleet', 'financials', 'summary', payload],
+  financialStatement: (payload?: FleetFinancialStatementQuery) => ['fleet', 'financials', 'statement', payload],
+  financialConfigs: ['fleet', 'financials', 'configs'],
   financialConfig: (vehicleId: string) => ['fleet', 'financials', 'config', vehicleId],
   profitability: (payload: FleetProfitabilityPayload) => ['fleet', 'financials', 'profitability', payload],
   fuelTransactions: (payload?: FuelQuery) => ['fleet', 'fuelTransactions', payload],
   fuelSummary: ['fleet', 'fuelSummary'],
   fuelMetrics: (payload?: FuelMetricsQuery) => ['fleet', 'fuelMetrics', payload],
+  fuelBudgets: ['fleet', 'fuelBudgets'],
+  integrationHealth: ['fleet', 'integrationHealth'],
   fuelBudgetVsActual: (payload?: FuelBudgetVsActualQuery) => ['fleet', 'fuelBudgetVsActual', payload],
   fuelEfficiency: ['fleet', 'fuelEfficiency'],
   fuelThresholds: ['fleet', 'fuelThresholds'],
@@ -331,10 +354,24 @@ export function getDriverQueryOptions(id: string) {
   })
 }
 
-export function getJobsQueryOptions(payload?: JobsQuery) {
+export function getRecommendDriversQueryOptions(payload?: RecommendDriversQuery) {
   return queryOptions({
-    queryKey: FLEET_QUERY_KEY.jobs(payload),
-    queryFn: () => getJobs(payload),
+    queryKey: FLEET_QUERY_KEY.recommendDrivers(payload),
+    queryFn: () => recommendDrivers(payload),
+  })
+}
+
+export function getSimCarriersQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.carriers,
+    queryFn: getSimCarriers,
+  })
+}
+
+export function getSimDataBundlesQueryOptions(payload?: DataBundlesQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.dataBundles(payload),
+    queryFn: () => getSimDataBundles(payload),
   })
 }
 
@@ -380,7 +417,7 @@ export function getFleetAnalyticsSummaryQueryOptions(payload?: FleetAnalyticsPer
   })
 }
 
-export function getFleetAnalyticsFleetStatusQueryOptions(payload?: FleetAnalyticsPeriodQuery) {
+export function getFleetAnalyticsFleetStatusQueryOptions(payload?: FleetAnalyticsShortPeriodQuery) {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.analyticsFleetStatus(payload),
     queryFn: () => getFleetAnalyticsFleetStatus(payload),
@@ -394,10 +431,45 @@ export function getFleetAnalyticsJobPipelineQueryOptions(payload?: FleetAnalytic
   })
 }
 
-export function getFleetAnalyticsFuelLevelsQueryOptions(payload?: FleetAnalyticsPeriodQuery) {
+export function getFleetAnalyticsFuelLevelsQueryOptions(payload?: FleetAnalyticsShortPeriodQuery) {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.analyticsFuelLevels(payload),
     queryFn: () => getFleetAnalyticsFuelLevels(payload),
+  })
+}
+
+export function getVehicleSafetyRadarQueryOptions(payload?: FleetAnalyticsShortPeriodQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.analyticsSafetyRadar(payload),
+    queryFn: () => getVehicleSafetyRadar(payload),
+  })
+}
+
+export function getFleetFinancialStatementQueryOptions(payload?: FleetFinancialStatementQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.financialStatement(payload),
+    queryFn: () => getFleetFinancialStatement(payload),
+  })
+}
+
+export function getFleetFinancialConfigsQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.financialConfigs,
+    queryFn: getFleetFinancialConfigs,
+  })
+}
+
+export function getFuelBudgetsQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.fuelBudgets,
+    queryFn: getFuelBudgets,
+  })
+}
+
+export function getIntegrationHealthQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.integrationHealth,
+    queryFn: getIntegrationHealth,
   })
 }
 
@@ -636,12 +708,20 @@ export function useDriver(id: string) {
   return useQuery(getDriverQueryOptions(id))
 }
 
-export function useJobs(payload?: JobsQuery) {
-  return useQuery(getJobsQueryOptions(payload))
-}
-
 export function useDispatchSearch(payload?: DispatchSearchQuery) {
   return useQuery(getDispatchSearchQueryOptions(payload))
+}
+
+export function useRecommendDrivers(payload?: RecommendDriversQuery) {
+  return useQuery(getRecommendDriversQueryOptions(payload))
+}
+
+export function useSimCarriers() {
+  return useQuery(getSimCarriersQueryOptions())
+}
+
+export function useSimDataBundles(payload?: DataBundlesQuery) {
+  return useQuery(getSimDataBundlesQueryOptions(payload))
 }
 
 export function useAlertStats() {
@@ -664,7 +744,7 @@ export function useFleetAnalyticsSummary(payload?: FleetAnalyticsPeriodQuery) {
   return useQuery(getFleetAnalyticsSummaryQueryOptions(payload))
 }
 
-export function useFleetAnalyticsFleetStatus(payload?: FleetAnalyticsPeriodQuery) {
+export function useFleetAnalyticsFleetStatus(payload?: FleetAnalyticsShortPeriodQuery) {
   return useQuery(getFleetAnalyticsFleetStatusQueryOptions(payload))
 }
 
@@ -672,8 +752,28 @@ export function useFleetAnalyticsJobPipeline(payload?: FleetAnalyticsPeriodQuery
   return useQuery(getFleetAnalyticsJobPipelineQueryOptions(payload))
 }
 
-export function useFleetAnalyticsFuelLevels(payload?: FleetAnalyticsPeriodQuery) {
+export function useFleetAnalyticsFuelLevels(payload?: FleetAnalyticsShortPeriodQuery) {
   return useQuery(getFleetAnalyticsFuelLevelsQueryOptions(payload))
+}
+
+export function useVehicleSafetyRadar(payload?: FleetAnalyticsShortPeriodQuery) {
+  return useQuery(getVehicleSafetyRadarQueryOptions(payload))
+}
+
+export function useFleetFinancialStatement(payload?: FleetFinancialStatementQuery) {
+  return useQuery(getFleetFinancialStatementQueryOptions(payload))
+}
+
+export function useFleetFinancialConfigs() {
+  return useQuery(getFleetFinancialConfigsQueryOptions())
+}
+
+export function useFuelBudgets() {
+  return useQuery(getFuelBudgetsQueryOptions())
+}
+
+export function useIntegrationHealth() {
+  return useQuery(getIntegrationHealthQueryOptions())
 }
 
 export function useFleetAnalyticsDriverScores(payload?: FleetAnalyticsDriverScoresQuery) {
@@ -1266,7 +1366,8 @@ export function useSetComplianceDocFileUrl() {
 
 export function useRenewComplianceDoc() {
   return useMutation({
-    mutationFn: renewComplianceDoc,
+    mutationFn: ({ id, data }: { id: string; data?: RenewComplianceDocumentPayload }) =>
+      renewComplianceDoc(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fleet', 'complianceDocs'] })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.complianceSummary })
@@ -1288,6 +1389,36 @@ export function useSendComplianceReminders() {
   return useMutation({ mutationFn: sendComplianceReminders })
 }
 
+export function useUpdateDeviceSetupRequestStatus() {
+  return useMutation({
+    mutationFn: updateDeviceSetupRequestStatus,
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'deviceSetupRequests'] })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.deviceSetupRequest(id) })
+    },
+  })
+}
+
+export function useSetGeofenceVehicles() {
+  return useMutation({
+    mutationFn: setGeofenceVehicles,
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'geofences'] })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.geofenceZone(id) })
+    },
+  })
+}
+
+export function useUpsertFuelBudget() {
+  return useMutation({
+    mutationFn: upsertFuelBudget,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelBudgets })
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelBudgetVsActual'] })
+    },
+  })
+}
+
 // ─── Re-export plain request functions for imperative use ─────────────────────
 
 export {
@@ -1300,6 +1431,7 @@ export {
   exportMaintenanceProfiles,
   exportMaintenanceRecords,
   exportReport,
+  exportVehiclePL,
   exportVehicles,
   getDocumentDownloadUrl,
   uploadDocument,

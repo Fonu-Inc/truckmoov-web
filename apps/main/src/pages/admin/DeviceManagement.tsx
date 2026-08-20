@@ -1,4 +1,6 @@
-import type { FleetDevice } from "@truckmoov/api/fleet";
+import type {
+  DeviceTrackerType, FleetDevice,
+} from "@truckmoov/api/fleet";
 import type { DeviceWithTelemetry } from "@/hooks/useDeviceTelemetry";
 import type { IoTDevice } from "@/types";
 import {
@@ -449,7 +451,7 @@ export default function DeviceManagement() {
   const handleCreateDeviceSetupRequest = async (data: {
     manufacturer: string;
     model?: string;
-    trackerType: string;
+    trackerType: DeviceTrackerType;
     quantity: number;
     simRequired: boolean;
     carrierId?: string;

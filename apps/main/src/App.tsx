@@ -55,6 +55,7 @@ import DispatcherReports from "./pages/dispatcher/DispatcherReports";
 import DispatcherSIMs from "./pages/dispatcher/DispatcherSIMs";
 import EnterpriseLogisticsDashboard from "./pages/enterprise/EnterpriseLogisticsDashboard";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import InvitePage from "./pages/InvitePage";
 import NotAuthorized from "./pages/NotAuthorized";
 import NotFound from "./pages/NotFound";
 import ActivationOnboarding from "./pages/onboarding/ActivationOnboarding";
@@ -152,6 +153,10 @@ function App() {
                     <Route
                       path="/auth/reset-password"
                       element={<ResetPassword />}
+                    />
+                    <Route
+                      path="/auth/invite"
+                      element={<InvitePage />}
                     />
 
                     <Route element={<ProtectedRoute />}>

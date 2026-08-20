@@ -322,7 +322,7 @@ export default function SIMManagement() {
           quantity: data.numberOfSims,
           carrier: data.preferredOperator,
           planType: data.planCycle,
-          dataBundlePlan: data.bundleCode,
+          dataBundlePlanId: data.bundleCode,
           useCase: data.useCase,
           notes: data.notes || undefined,
           deviceMappingFileId,

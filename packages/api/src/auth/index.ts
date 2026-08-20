@@ -1,4 +1,4 @@
-import { queryOptions, useMutation } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
 import { useAuthStore } from '../lib/auth-store'
 import { queryClient } from '../lib/query-client'
@@ -80,7 +80,6 @@ import {
   getSystemTenant,
   getSystemTenants,
   getSystemTenantsSummary,
-  getTestSentry,
   inviteUser,
   login,
   logout,
@@ -139,7 +138,18 @@ import {
   getSimCarriers,
   getSimRequests,
   getSimRequest,
+  allocateDataBundle,
+  createSystemBundle,
+  createSystemCarrier,
+  deleteSystemBundle,
+  exportDataBundleAllocations,
+  exportDataBundleRates,
+  exportDataBundleTransactions,
+  getAllocatableSims,
+  getDataBundleAllocation,
   getDataBundleAllocations,
+  updateSystemBundle,
+  updateSystemCarrier,
   getDataBundleCarrierDistribution,
   getDataBundleSpendBreakdown,
   getDataBundleSpendTrend,
@@ -172,6 +182,7 @@ import type {
   SystemTenantsQuery,
   DataBundleAnalyticsRangeQuery,
   DataBundleAllocationsQuery,
+  AllocatableSimsQuery,
   DataBundleRatesQuery,
   DataBundleTransactionsQuery,
   SimDataBundlesQuery,
@@ -185,160 +196,8 @@ import type {
   GetSimRequestPayload,
 } from './types'
 
-export type {
-  ActivityLog,
-  ActivityLogQuery,
-  AdminInvite,
-  ApproveSIMRequestPayload,
-  AuthSession,
-  AuthUser,
-  ChangeRolePayload,
-  CompleteProfilePayload,
-  CreateDeviceCatalogPayload,
-  CreateSystemAdminInvitePayload,
-  CreateSystemAdminPayload,
-  CreateTenantPayload,
-  CreateTicketMessagePayload,
-  DeleteSystemAdminPayload,
-  EnterpriseEnquiryPayload,
-  PaymentIntentPayload,
-  ProvisionDevicesPayload,
-  RegisterSimsPayload,
-  ProvisionSimsPayload,
-  CreateSimRequestPayload,
-  CreateSimPayload,
-  SimsQuery,
-  SimItem,
-  SimAssignedDevice,
-  SimsList,
-  SimsListResponse,
-  SimResponse,
-  UpdateSimPayload,
-  SuspendSimPayload,
-  SimCarrier,
-  SimCarriersResponse,
-  SimRequestItem,
-  SimRequestTimelineEntry,
-  SimRequestDataBundlePlan,
-  SimRequestsList,
-  SimRequestsListResponse,
-  DataBundleAllocation,
-  DataBundleAllocationsQuery,
-  DataBundleAnalyticsRangeQuery,
-  DataBundleAutoTopup,
-  DataBundleCarrier,
-  DataBundleCarrierDistribution,
-  DataBundleDashboardSummary,
-  DataBundleSpendBreakdown,
-  DataBundleSpendTrend,
-  DataBundleSpendingLimit,
-  DataBundleSubscriptionUsage,
-  DataBundleRate,
-  DataBundleRatesQuery,
-  DataBundleTransaction,
-  DataBundleTransactionsQuery,
-  DataBundleWalletTopup,
-  DataBundleWalletTopupPayload,
-  DataBundleWalletBalance,
-  SaveDataBundleAutoTopupPayload,
-  SaveDataBundleSpendingLimitPayload,
-  DeleteOnboardingKycDocumentPayload,
-  SimDataBundlesQuery,
-  UpdateOnboardingFeaturesPayload,
-  PaymentIntentData,
-  EscalateTicketPayload,
-  ForgotPasswordPayload,
-  InviteUserPayload,
-  LoginPayload,
-  LogoutPayload,
-  NotificationPreferences,
-  NotificationPreferencesData,
-  OnboardingBusinessInfo,
-  OnboardingKycDocument,
-  OnboardingKycDocumentsData,
-  OnboardingExchangeRate,
-  OnboardingStatus,
-  OnboardingStatusValue,
-  OnboardingSubscriptionCaps,
-  UploadOnboardingKycDocumentPayload,
-  OrganizationBrandingSettings,
-  OrganizationDefaultSettings,
-  OrganizationUser,
-  OrganizationUserMutationData,
-  OrganizationUsersData,
-  OrgSettingsData,
-  RefreshPayload,
-  RegisterInvitedPayload,
-  RegisterPayload,
-  ReassignSystemSimPayload,
-  RejectSystemDeviceSetupRequestPayload,
-  RejectSIMRequestPayload,
-  RemoveOrganizationUserData,
-  ResendOrgInvitePayload,
-  ResetPasswordPayload,
-  RetrySimBatchPayload,
-  SuspendSystemSimPayload,
-  SubscriptionPlan,
-  SystemChangePasswordPayload,
-  SystemDashboard,
-  SystemDeviceCatalogModel,
-  SystemDeviceCatalogQuery,
-  SystemDeviceDetail,
-  SystemDeviceDetailResponse,
-  SystemDeviceSetupRequestPayload,
-  SystemDeviceSetupRequestResponse,
-  SystemDeviceSetupRequest,
-  SystemDeviceSetupRequestsList,
-  SystemDeviceSetupRequestsQuery,
-  SystemDeviceSetupStatus,
-  SystemDeviceInventoryItem,
-  SystemDeviceInventoryList,
-  SystemDevicesQuery,
-  SystemDevicesSummary,
-  SystemFeatureFlag,
-  SystemFeatureFlagsList,
-  SystemHealth,
-  SystemHealthService,
-  SystemLoginPayload,
-  SystemSimBatch,
-  SystemSimBatchesList,
-  SystemSimBatchesQuery,
-  SystemSimBatchesSummary,
-  SystemSimItem,
-  SystemSimResponse,
-  SystemSimRequest,
-  SystemSimRequestsList,
-  SystemSimRequestsQuery,
-  SystemSimRequestsSummary,
-  SystemSimsList,
-  SystemSimsQuery,
-  SystemSimsSummary,
-  SystemSupportDashboard,
-  SystemSupportTicketSummary,
-  SystemSupportTicketsQuery,
-  SystemTenant,
-  SystemTenantsQuery,
-  SystemTenantsSummary,
-  UpdateAdminStatusPayload,
-  UpdateDeviceCatalogPayload,
-  UpdateDispatchPrefsPayload,
-  UpdateFeatureFlagPayload,
-  UpdateNotifPrefsPayload,
-  UpdateOnboardingBusinessInfoPayload,
-  UpdateOrgSettingsPayload,
-  UpdateOrgUserPayload,
-  UpdateProfilePayload,
-  UpdateSystemSettingsPayload,
-  UpdateSystemSimPayload,
-  UpdateTenantPayload,
-  UpdateTenantStatusPayload,
-  UpdateTicketStatusPayload,
-  UpdateUserStatusPayload,
-  ValidateInviteQuery,
-  VerifyEmailPayload,
-  VerifyResetPayload,
-  VerificationStatus,
-} from './types'
+// Every type in ./types is public — no hand-maintained list to fall out of date.
+export type * from './types'
 
 // Value + type export: UserRole is a const object, so it must not be type-only.
 export { UserRole } from './types'
@@ -404,6 +263,8 @@ export const AUTH_QUERY_KEY = {
   simRequests: ['simRequests'],
   simRequest: (id: string) => ['simRequest', id],
   dataBundleAllocations: (payload?: DataBundleAllocationsQuery) => ['dataBundleAllocations', payload],
+  dataBundleAllocation: (id: string) => ['dataBundleAllocation', id],
+  allocatableSims: (payload: AllocatableSimsQuery) => ['allocatableSims', payload],
   dataBundleTransactions: (payload?: DataBundleTransactionsQuery) => ['dataBundleTransactions', payload],
   dataBundleSpendTrend: (payload?: DataBundleAnalyticsRangeQuery) => ['dataBundleSpendTrend', payload],
   dataBundleSpendBreakdown: (payload?: DataBundleAnalyticsRangeQuery) => ['dataBundleSpendBreakdown', payload],
@@ -428,7 +289,6 @@ export const AUTH_QUERY_KEY = {
   systemSupportTicketMessages: (id: string) => ['systemSupportTicketMessages', id],
 
   authHealth: ['authHealth'],
-  testSentry: ['testSentry'],
 } as const
 
 // Public auth/session
@@ -1326,6 +1186,22 @@ export function getDataBundleRatesQueryOptions(payload?: DataBundleRatesQuery) {
   })
 }
 
+export function getDataBundleAllocationQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.dataBundleAllocation(id),
+    queryFn: () => getDataBundleAllocation({ id }),
+    enabled: Boolean(id),
+  })
+}
+
+export function getAllocatableSimsQueryOptions(payload: AllocatableSimsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.allocatableSims(payload),
+    queryFn: () => getAllocatableSims(payload),
+    enabled: Boolean(payload.params.carrierId),
+  })
+}
+
 export function getDataBundleCarriersQueryOptions() {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.dataBundleCarriers,
@@ -1359,6 +1235,76 @@ export function getDataBundleAutoTopupQueryOptions() {
     queryKey: AUTH_QUERY_KEY.dataBundleAutoTopup,
     queryFn: getDataBundleAutoTopup,
   })
+}
+
+export function useDataBundleAllocation(id: string) {
+  return useQuery(getDataBundleAllocationQueryOptions(id))
+}
+
+export function useAllocatableSims(payload: AllocatableSimsQuery) {
+  return useQuery(getAllocatableSimsQueryOptions(payload))
+}
+
+export function useAllocateDataBundle() {
+  return useMutation({
+    mutationFn: allocateDataBundle,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dataBundleAllocations'] })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.dataBundleWalletBalance })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.dataBundleDashboardSummary })
+    },
+  })
+}
+
+export function useCreateSystemCarrier() {
+  return useMutation({
+    mutationFn: createSystemCarrier,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.dataBundleCarriers })
+    },
+  })
+}
+
+export function useUpdateSystemCarrier() {
+  return useMutation({
+    mutationFn: updateSystemCarrier,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.dataBundleCarriers })
+    },
+  })
+}
+
+export function useCreateSystemBundle() {
+  return useMutation({
+    mutationFn: createSystemBundle,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dataBundleRates'] })
+    },
+  })
+}
+
+export function useUpdateSystemBundle() {
+  return useMutation({
+    mutationFn: updateSystemBundle,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dataBundleRates'] })
+    },
+  })
+}
+
+export function useDeleteSystemBundle() {
+  return useMutation({
+    mutationFn: deleteSystemBundle,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dataBundleRates'] })
+    },
+  })
+}
+
+export {
+  exportDataBundleAllocations,
+  exportDataBundleRates,
+  exportDataBundleTransactions,
 }
 
 export function useTopUpDataBundleWallet() {
@@ -1550,6 +1496,3 @@ export function getAuthHealthQueryOptions() {
   return queryOptions({ queryKey: AUTH_QUERY_KEY.authHealth, queryFn: getAuthHealth })
 }
 
-export function getTestSentryQueryOptions() {
-  return queryOptions({ queryKey: AUTH_QUERY_KEY.testSentry, queryFn: getTestSentry })
-}

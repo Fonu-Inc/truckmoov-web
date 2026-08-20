@@ -1,4 +1,4 @@
-import type { SystemSupportTicketsQuery } from "@truckmoov/api/auth";
+import type { SystemSupportTicketCategory, SystemSupportTicketsQuery } from "@truckmoov/api/auth";
 import type { ReactNode } from "react";
 import type { SupportTicket } from "./AdminTicketSheet";
 import {
@@ -473,7 +473,7 @@ export function AllTickets() {
       if (statusFilter !== "all")
         params.status = statusFilter;
       if (categoryFilter !== "all")
-        params.category = categoryFilter;
+        params.category = categoryFilter as SystemSupportTicketCategory;
       return { params };
     },
     [

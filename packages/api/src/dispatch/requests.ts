@@ -61,8 +61,7 @@ export async function updateJobDetails({ jobId, data }: UpdateJobDetailsPayload)
 }
 
 export async function deleteJob({ jobId }: DeleteJobPayload) {
-  const { data } = await axiosInstance.delete<DispatchJobResponse>(`/dispatch/jobs/${jobId}`)
-  return data
+  await axiosInstance.delete(`/dispatch/jobs/${jobId}`)
 }
 
 export async function acknowledgeJob({ jobId, data }: AcknowledgeJobPayload) {

@@ -2,6 +2,7 @@ import { axiosInstance } from '../lib/axios-instance'
 
 import type {
   AccessLogListResponse,
+  AlertActionPayload,
   AlertStatsResponse,
   AlertsQuery,
   AssignDevicePayload,
@@ -23,6 +24,8 @@ import type {
   DeviceSetupRequestsQuery,
   DevicesQuery,
   DispatchSearchQuery,
+  DataBundlesQuery,
+  DocumentDownloadUrlQuery,
   DispatchSearchResponse,
   DocumentsQuery,
   DownloadUrlResponse,
@@ -38,10 +41,17 @@ import type {
   FleetAnalyticsFuelLevelsResponse,
   FleetAnalyticsJobPipelineResponse,
   FleetAnalyticsPeriodQuery,
+  FleetAnalyticsShortPeriodQuery,
   FleetAnalyticsSummaryResponse,
+  FleetArchiveResponse,
+  FleetAuditLogResponse,
+  IntegrationHealthResponse,
   FleetFinancialConfigActionPayload,
+  FleetFinancialConfigListResponse,
   FleetFinancialConfigResponse,
   FleetFinancialStatementExportQuery,
+  FleetFinancialStatementQuery,
+  FleetFinancialStatementResponse,
   FleetFinancialSummaryQuery,
   FleetFinancialSummaryResponse,
   FleetProfitabilityPayload,
@@ -53,10 +63,11 @@ import type {
   FleetDocumentResponse,
   FleetDriverListResponse,
   FleetDriverResponse,
-  FleetJobListResponse,
   GeofenceListResponse,
   GeofenceResponse,
   GeofencesQuery,
+  FuelBudgetListResponse,
+  FuelBudgetResponse,
   FuelBudgetVsActualQuery,
   FuelBudgetVsActualResponse,
   FuelConsumptionResponse,
@@ -72,7 +83,6 @@ import type {
   ImportDevicesPayload,
   ImportDriversPayload,
   ImportVehiclesPayload,
-  JobsQuery,
   LegacyGpsDevicesQuery,
   MaintenanceRecordActionPayload,
   MaintenanceRecordListResponse,
@@ -88,13 +98,20 @@ import type {
   MaintenanceStatusResponse,
   NearestVehicleListResponse,
   NearestVehiclesQuery,
+  RecommendDriversQuery,
+  RecommendedDriverListResponse,
   RecordFuelTransactionPayload,
   RegisterGeofencePayload,
   RegisterGpsDevicePayload,
+  ReminderSendResponse,
+  RenewComplianceDocumentPayload,
   ReportLocationPayload,
-  SendMaintenanceRemindersPayload,
+  SetGeofenceVehiclesPayload,
   SetFuelThresholdPayload,
+  SimCarrierListResponse,
+  SimDataBundleListResponse,
   UpdateDeviceLifecyclePayload,
+  UpdateDeviceSetupRequestStatusPayload,
   UpdateDeviceFirmwarePayload,
   UpdateDevicePayload,
   UpdateDriverContactChannelsPayload,
@@ -107,9 +124,13 @@ import type {
   UpdateVehicleStatusPayload,
   UpdateGeofencePayload,
   UploadDocumentQuery,
+  UpsertFuelBudgetPayload,
   ValidateDeviceAssignmentQuery,
   VehicleDriverAssignmentResponse,
+  VehicleHealthListResponse,
+  VehicleHealthResponse,
   VehicleListResponse,
+  VehicleSafetyRadarResponse,
   VehicleResponse,
   VehicleSummaryResponse,
   VehiclesQuery,
@@ -151,8 +172,9 @@ export async function getVehiclesSummary() {
   return data
 }
 
-export async function exportVehicles() {
-  const { data } = await axiosInstance.get('/fleet/vehicles/export', {
+export async function exportVehicles(payload?: VehiclesQuery) {
+  const { data } = await axiosInstance.get<Blob>('/fleet/vehicles/export', {
+    params: payload?.params,
     responseType: 'blob',
   })
   return data
@@ -174,7 +196,8 @@ export async function updateVehicle({ id, data }: UpdateVehiclePayload) {
 }
 
 export async function deleteVehicle({ id }: { id: string }) {
-  await axiosInstance.delete<VehicleResponse>(`/fleet/vehicles/${id}`)
+  const { data } = await axiosInstance.delete<VehicleResponse>(`/fleet/vehicles/${id}`)
+  return data
 }
 
 export async function importVehicles({ data }: ImportVehiclesPayload) {
@@ -195,7 +218,8 @@ export async function assignDriverToVehicle({ id, data }: AssignDriverPayload) {
 }
 
 export async function unassignDriverFromVehicle({ id }: { id: string }) {
-  await axiosInstance.delete<VehicleResponse>(`/fleet/vehicles/${id}/assignment`)
+  const { data } = await axiosInstance.delete<VehicleResponse>(`/fleet/vehicles/${id}/assignment`)
+  return data
 }
 
 export async function registerGpsDevice({ id, data }: RegisterGpsDevicePayload) {
@@ -206,12 +230,12 @@ export async function registerGpsDevice({ id, data }: RegisterGpsDevicePayload) 
 // ─── Vehicles — health ────────────────────────────────────────────────────────
 
 export async function getVehicleHealth({ vehicleId }: { vehicleId: string }) {
-  const { data } = await axiosInstance.get(`/fleet/vehicles/${vehicleId}/health`)
+  const { data } = await axiosInstance.get<VehicleHealthResponse>(`/fleet/vehicles/${vehicleId}/health`)
   return data
 }
 
 export async function getAllVehicleHealth() {
-  const { data } = await axiosInstance.get('/fleet/vehicles/health')
+  const { data } = await axiosInstance.get<VehicleHealthListResponse>('/fleet/vehicles/health')
   return data
 }
 
@@ -248,22 +272,28 @@ export async function updateGeofence({ id, data: body }: UpdateGeofencePayload) 
 }
 
 export async function archiveGeofence({ id }: { id: string }) {
-  const { data } = await axiosInstance.delete(`/fleet/geofences/${id}`)
+  const { data } = await axiosInstance.delete<FleetArchiveResponse>(`/fleet/geofences/${id}`)
   return data
 }
 
-export async function exportDevices() {
-  const { data } = await axiosInstance.get('/fleet/devices/export', {
+export async function setGeofenceVehicles({ id, data: body }: SetGeofenceVehiclesPayload) {
+  const { data } = await axiosInstance.put<GeofenceResponse>(`/fleet/geofences/${id}/vehicles`, body)
+  return data
+}
+
+export async function exportDevices(payload?: DevicesQuery) {
+  const { data } = await axiosInstance.get<Blob>('/fleet/devices/export', {
+    params: payload?.params,
     responseType: 'blob',
   })
-  return data as Blob
+  return data
 }
 
 export async function downloadDeviceImportTemplate() {
-  const { data } = await axiosInstance.get('/fleet/devices/import-template', {
+  const { data } = await axiosInstance.get<Blob>('/fleet/devices/import-template', {
     responseType: 'blob',
   })
-  return data as Blob
+  return data
 }
 
 export async function createDevice({ data }: CreateDevicePayload) {
@@ -287,7 +317,8 @@ export async function updateDeviceFirmware({ id, data }: UpdateDeviceFirmwarePay
 }
 
 export async function deleteDevice({ id }: { id: string }) {
-  await axiosInstance.delete<FleetDeviceResponse>(`/fleet/devices/${id}`)
+  const { data } = await axiosInstance.delete<FleetDeviceResponse>(`/fleet/devices/${id}`)
+  return data
 }
 
 export async function importDevices({ data }: ImportDevicesPayload) {
@@ -311,7 +342,8 @@ export async function assignDevice({ id, data }: AssignDevicePayload) {
 }
 
 export async function unassignDevice({ id }: { id: string }) {
-  await axiosInstance.delete<FleetDeviceResponse>(`/fleet/devices/${id}/assignment`)
+  const { data } = await axiosInstance.delete<FleetDeviceResponse>(`/fleet/devices/${id}/assignment`)
+  return data
 }
 
 // ─── Legacy GPS ───────────────────────────────────────────────────────────────
@@ -330,6 +362,28 @@ export async function createDeviceSetupRequest({ data: body }: CreateDeviceSetup
 
 export async function getDeviceSetupRequest({ id }: { id: string }) {
   const { data } = await axiosInstance.get<DeviceSetupRequestResponse>(`/fleet/device-setup-requests/${id}`)
+  return data
+}
+
+export async function updateDeviceSetupRequestStatus({ id, data: body }: UpdateDeviceSetupRequestStatusPayload) {
+  const { data } = await axiosInstance.patch<DeviceSetupRequestResponse>(
+    `/fleet/device-setup-requests/${id}/status`,
+    body,
+  )
+  return data
+}
+
+// ─── SIM catalog ──────────────────────────────────────────────────────────────
+
+export async function getSimCarriers() {
+  const { data } = await axiosInstance.get<SimCarrierListResponse>('/fleet/carriers')
+  return data
+}
+
+export async function getSimDataBundles(payload?: DataBundlesQuery) {
+  const { data } = await axiosInstance.get<SimDataBundleListResponse>('/fleet/data-bundles', {
+    params: payload?.params,
+  })
   return data
 }
 
@@ -361,7 +415,8 @@ export async function updateDriver({ id, data }: UpdateDriverPayload) {
 }
 
 export async function deleteDriver({ id }: { id: string }) {
-  await axiosInstance.delete<FleetDriverResponse>(`/fleet/drivers/${id}`)
+  const { data } = await axiosInstance.delete<FleetDriverResponse>(`/fleet/drivers/${id}`)
+  return data
 }
 
 export async function importDrivers({ data }: ImportDriversPayload) {
@@ -381,15 +436,17 @@ export async function updateDriverContactChannels({ id, data }: UpdateDriverCont
   return res
 }
 
-// ─── Jobs & dispatch ──────────────────────────────────────────────────────────
-
-export async function getJobs(payload?: JobsQuery) {
-  const { data } = await axiosInstance.get<FleetJobListResponse>('/fleet/jobs', { params: payload?.params })
-  return data
-}
+// ─── Dispatch ─────────────────────────────────────────────────────────────────
 
 export async function getDispatchSearch(payload?: DispatchSearchQuery) {
   const { data } = await axiosInstance.get<DispatchSearchResponse>('/fleet/dispatch/search', { params: payload?.params })
+  return data
+}
+
+export async function recommendDrivers(payload?: RecommendDriversQuery) {
+  const { data } = await axiosInstance.get<RecommendedDriverListResponse>('/fleet/dispatch/recommend-drivers', {
+    params: payload?.params,
+  })
   return data
 }
 
@@ -405,13 +462,13 @@ export async function getAlerts(payload?: AlertsQuery) {
   return data
 }
 
-export async function acknowledgeAlert({ id }: { id: string }) {
-  const { data } = await axiosInstance.post<FleetAlertResponse>(`/fleet/alerts/${id}/acknowledge`)
+export async function acknowledgeAlert({ id, params }: AlertActionPayload) {
+  const { data } = await axiosInstance.post<FleetAlertResponse>(`/fleet/alerts/${id}/acknowledge`, null, { params })
   return data
 }
 
-export async function resolveAlert({ id }: { id: string }) {
-  const { data } = await axiosInstance.post<FleetAlertResponse>(`/fleet/alerts/${id}/resolve`)
+export async function resolveAlert({ id, params }: AlertActionPayload) {
+  const { data } = await axiosInstance.post<FleetAlertResponse>(`/fleet/alerts/${id}/resolve`, null, { params })
   return data
 }
 
@@ -434,7 +491,7 @@ export async function getFleetAnalyticsSummary(payload?: FleetAnalyticsPeriodQue
   return data
 }
 
-export async function getFleetAnalyticsFleetStatus(payload?: FleetAnalyticsPeriodQuery) {
+export async function getFleetAnalyticsFleetStatus(payload?: FleetAnalyticsShortPeriodQuery) {
   const { data } = await axiosInstance.get<FleetAnalyticsFleetStatusResponse>('/fleet/analytics/fleet-status', {
     params: payload?.params,
   })
@@ -448,8 +505,15 @@ export async function getFleetAnalyticsJobPipeline(payload?: FleetAnalyticsPerio
   return data
 }
 
-export async function getFleetAnalyticsFuelLevels(payload?: FleetAnalyticsPeriodQuery) {
+export async function getFleetAnalyticsFuelLevels(payload?: FleetAnalyticsShortPeriodQuery) {
   const { data } = await axiosInstance.get<FleetAnalyticsFuelLevelsResponse>('/fleet/analytics/fuel-levels', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getVehicleSafetyRadar(payload?: FleetAnalyticsShortPeriodQuery) {
+  const { data } = await axiosInstance.get<VehicleSafetyRadarResponse>('/fleet/analytics/vehicle-safety-radar', {
     params: payload?.params,
   })
   return data
@@ -481,9 +545,9 @@ export async function computeFleetProfitability({ data: body }: FleetProfitabili
   return data
 }
 
-export async function exportFleetFinancialStatement(payload: FleetFinancialStatementExportQuery) {
+export async function exportFleetFinancialStatement(payload?: FleetFinancialStatementExportQuery) {
   const response = await axiosInstance.get<Blob>('/fleet/financials/statement/export', {
-    params: payload.params,
+    params: payload?.params,
     responseType: 'blob',
   })
   return {
@@ -504,6 +568,29 @@ export async function exportFleetCostBreakdown() {
   }
 }
 
+export async function getFleetFinancialStatement(payload?: FleetFinancialStatementQuery) {
+  const { data } = await axiosInstance.get<FleetFinancialStatementResponse>('/fleet/financials/statement', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getFleetFinancialConfigs() {
+  const { data } = await axiosInstance.get<FleetFinancialConfigListResponse>('/fleet/financials/configs')
+  return data
+}
+
+export async function exportVehiclePL() {
+  const response = await axiosInstance.get<Blob>('/fleet/financials/vehicle-pl/export', {
+    responseType: 'blob',
+  })
+  return {
+    blob: response.data,
+    contentType: response.headers['content-type'] as string | undefined,
+    contentDisposition: response.headers['content-disposition'] as string | undefined,
+  }
+}
+
 export async function getFleetFinancialConfig({ vehicleId }: FleetFinancialConfigActionPayload) {
   const { data } = await axiosInstance.get<FleetFinancialConfigResponse>(`/fleet/financials/configs/${vehicleId}`)
   return data
@@ -515,7 +602,7 @@ export async function updateFleetFinancialConfig({ vehicleId, data: body }: Upda
 }
 
 export async function exportReport({ entity }: ExportReportPayload) {
-  const { data } = await axiosInstance.get(`/fleet/reports/export/${entity}`, {
+  const { data } = await axiosInstance.get<Blob>(`/fleet/reports/export/${entity}`, {
     responseType: 'blob',
   })
   return data
@@ -539,7 +626,8 @@ export async function updateFuelTransaction({ id, data }: UpdateFuelTransactionP
 }
 
 export async function deleteFuelTransaction({ id }: { id: string }) {
-  await axiosInstance.delete<FuelRecordResponse>(`/fleet/fuel/${id}`)
+  const { data } = await axiosInstance.delete<FleetArchiveResponse>(`/fleet/fuel/${id}`)
+  return data
 }
 
 export async function getFuelSummary() {
@@ -561,6 +649,16 @@ export async function getFuelBudgetVsActual(payload?: FuelBudgetVsActualQuery) {
   const { data } = await axiosInstance.get<FuelBudgetVsActualResponse>('/fleet/fuel/budget-vs-actual', {
     params: payload?.params,
   })
+  return data
+}
+
+export async function getFuelBudgets() {
+  const { data } = await axiosInstance.get<FuelBudgetListResponse>('/fleet/fuel/budgets')
+  return data
+}
+
+export async function upsertFuelBudget({ vehicleId, data: body }: UpsertFuelBudgetPayload) {
+  const { data } = await axiosInstance.put<FuelBudgetResponse>(`/fleet/fuel/budgets/${vehicleId}`, body)
   return data
 }
 
@@ -594,7 +692,7 @@ export async function getMaintenanceRecordsSummary() {
 }
 
 export async function exportMaintenanceRecords() {
-  const { data } = await axiosInstance.get('/fleet/maintenance/records/export', {
+  const { data } = await axiosInstance.get<Blob>('/fleet/maintenance/records/export', {
     responseType: 'blob',
   })
   return data
@@ -630,9 +728,9 @@ export async function completeMaintenanceRecord({ id }: MaintenanceRecordActionP
   return data
 }
 
-export async function sendMaintenanceReminders({ data }: SendMaintenanceRemindersPayload) {
-  const { data: res } = await axiosInstance.post<MaintenanceStatusResponse>('/fleet/maintenance/reminders/send', data)
-  return res
+export async function sendMaintenanceReminders() {
+  const { data } = await axiosInstance.post<ReminderSendResponse>('/fleet/maintenance/reminders/send')
+  return data
 }
 
 export async function getMaintenanceProfiles(payload?: MaintenanceProfilesQuery) {
@@ -668,7 +766,7 @@ export async function getMaintenanceServiceCategories() {
 }
 
 export async function exportMaintenanceProfiles() {
-  const { data } = await axiosInstance.get('/fleet/maintenance/profiles/export', {
+  const { data } = await axiosInstance.get<Blob>('/fleet/maintenance/profiles/export', {
     responseType: 'blob',
   })
   return data
@@ -691,8 +789,8 @@ export async function getDocuments({ params }: DocumentsQuery) {
   return data
 }
 
-export async function getDocumentDownloadUrl({ id }: { id: string }) {
-  const { data } = await axiosInstance.get<DownloadUrlResponse>(`/fleet/documents/${id}/download-url`)
+export async function getDocumentDownloadUrl({ id, params }: DocumentDownloadUrlQuery) {
+  const { data } = await axiosInstance.get<DownloadUrlResponse>(`/fleet/documents/${id}/download-url`, { params })
   return data
 }
 
@@ -724,38 +822,55 @@ export async function updateComplianceDoc(id: string, payload: UpdateComplianceD
 }
 
 export async function deleteComplianceDoc(id: string) {
-  const { data } = await axiosInstance.delete<{ status: boolean; message: string }>(`/fleet/compliance/documents/${id}`)
+  const { data } = await axiosInstance.delete<FleetArchiveResponse>(`/fleet/compliance/documents/${id}`)
   return data
 }
 
-export async function setComplianceDocFileUrl(id: string, payload: { fileUrl: string; fileSize?: number | null }) {
-  const { data } = await axiosInstance.post(`/fleet/compliance/documents/${id}/upload`, payload)
+export async function setComplianceDocFileUrl(id: string, payload: { fileUrl: string; fileSize?: number }) {
+  const { data } = await axiosInstance.post<ComplianceDocumentResponse>(
+    `/fleet/compliance/documents/${id}/upload`,
+    payload,
+  )
   return data
 }
 
-export async function renewComplianceDoc(id: string) {
-  const { data } = await axiosInstance.post(`/fleet/compliance/documents/${id}/renew`)
+export async function renewComplianceDoc(id: string, payload?: RenewComplianceDocumentPayload) {
+  const { data } = await axiosInstance.post<ComplianceDocumentResponse>(
+    `/fleet/compliance/documents/${id}/renew`,
+    payload,
+  )
   return data
 }
 
 export async function setComplianceDocReminder(id: string, reminderDays: number) {
-  const { data } = await axiosInstance.patch(`/fleet/compliance/documents/${id}/reminder`, { reminderDays })
+  const { data } = await axiosInstance.patch<ComplianceDocumentResponse>(
+    `/fleet/compliance/documents/${id}/reminder`,
+    { reminderDays },
+  )
   return data
 }
 
-export async function sendComplianceReminders(payload: { email: string; reminderDays: number }) {
-  const { data } = await axiosInstance.post('/fleet/compliance/reminders/send', payload)
+export async function sendComplianceReminders() {
+  const { data } = await axiosInstance.post<ReminderSendResponse>('/fleet/compliance/reminders/send')
   return data
 }
 
 export async function exportComplianceDocs() {
-  const { data } = await axiosInstance.get('/fleet/compliance/documents/export', { responseType: 'blob' })
-  return data as Blob
+  const { data } = await axiosInstance.get<Blob>('/fleet/compliance/documents/export', { responseType: 'blob' })
+  return data
+}
+
+// ─── Integrations ─────────────────────────────────────────────────────────────
+
+// Not under the /fleet prefix — the webhook receiver is mounted at the root.
+export async function getIntegrationHealth() {
+  const { data } = await axiosInstance.get<IntegrationHealthResponse>('/webhooks/health')
+  return data
 }
 
 // ─── Audit ────────────────────────────────────────────────────────────────────
 
 export async function getAuditLog(payload?: AuditLogQuery) {
-  const { data } = await axiosInstance.get('/fleet/audit', { params: payload?.params })
+  const { data } = await axiosInstance.get<FleetAuditLogResponse>('/fleet/audit', { params: payload?.params })
   return data
 }

@@ -89,7 +89,7 @@ const jobSchema = z.object({
   ),
   priority: z.enum([
     "low",
-    "medium",
+    "normal",
     "high",
     "urgent",
   ]),
@@ -178,7 +178,7 @@ export function JobFormDialog({
       cargoDescription: "",
       amount: 0,
       deadline: "",
-      priority: "medium",
+      priority: "normal",
     },
   });
 
@@ -213,7 +213,7 @@ export function JobFormDialog({
           cargoDescription: job.cargo.description,
           amount: job.amount,
           deadline: toDateTimeInputValue(job.deadline),
-          priority: "medium",
+          priority: "normal",
         });
         setStops(
           jobStops.map(stop => ({
@@ -238,7 +238,7 @@ export function JobFormDialog({
           cargoDescription: "",
           amount: 0,
           deadline: "",
-          priority: "medium",
+          priority: "normal",
         });
       }
     },
@@ -718,7 +718,7 @@ export function JobFormDialog({
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="low">Low</SelectItem>
-                              <SelectItem value="medium">Medium</SelectItem>
+                              <SelectItem value="normal">Normal</SelectItem>
                               <SelectItem value="high">High</SelectItem>
                               <SelectItem value="urgent">Urgent</SelectItem>
                             </SelectContent>

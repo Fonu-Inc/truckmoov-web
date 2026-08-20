@@ -5,6 +5,42 @@ export type LatLng = {
   lng: number
 }
 
+export type VehicleStatus = 'active' | 'inactive' | 'maintenance' | 'decommissioned'
+export type VehicleType = 'truck' | 'van' | 'trailer'
+export type FuelType = 'diesel' | 'petrol' | 'ev' | 'hybrid'
+
+export type DeviceStatus =
+  | 'registered'
+  | 'configured'
+  | 'assigned'
+  | 'active'
+  | 'faulty'
+  | 'decommissioned'
+
+export type DeviceLifecycleStatus =
+  | 'registered'
+  | 'config_pending'
+  | 'configured'
+  | 'verified_online'
+  | 'assignable'
+  | 'assigned'
+  | 'faulty'
+  | 'decommissioned'
+
+export type DeviceLastSeenBucket = '5min' | '1hr' | '24hr' | '7day' | 'never'
+
+export type DriverStatus = 'active' | 'available' | 'offline' | 'suspended' | 'inactive'
+export type DriverCommunicationPreference = 'whatsapp' | 'sms' | 'email' | 'voice'
+
+export type DeviceSetupRequestStatus =
+  | 'pending_review'
+  | 'in_progress'
+  | 'provisioned'
+  | 'assigned'
+  | 'cancelled'
+
+export type DeviceTrackerType = 'hardwired' | 'obd' | 'asset'
+
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
 export type RegisterGeofencePayload = {
@@ -28,9 +64,9 @@ export type ReportLocationPayload = {
 export type VehiclesQuery = {
   params?: {
     query?: string
-    status?: 'active' | 'inactive' | 'maintenance' | 'decommissioned'
+    status?: VehicleStatus
     assigned?: boolean
-    type?: 'truck' | 'van' | 'trailer'
+    type?: VehicleType
     yearFrom?: number
     yearTo?: number
   }
@@ -44,35 +80,38 @@ export type NearestVehiclesQuery = {
   }
 }
 
+export type VehicleInput = {
+  model: string
+  plateNumber?: string
+  registrationNumber?: string
+  vin?: string
+  make?: string
+  year?: number
+  type?: VehicleType
+  fuelType?: FuelType
+  capacity?: number
+  status?: VehicleStatus
+}
+
 export type CreateVehiclePayload = {
-  data: {
-    plateNumber: string
-    registrationNumber: string
-    vin: string
-    make: string
-    model: string
-    year: number
-    type: string
-    capacity?: unknown
-    status?: string
-  }
+  data: VehicleInput
 }
 
 export type UpdateVehiclePayload = {
   id: string
-  data: Record<string, unknown>
+  data: Partial<VehicleInput>
 }
 
 export type ImportVehiclesPayload = {
   data: {
-    items: Record<string, unknown>[]
+    items: VehicleInput[]
   }
 }
 
 export type UpdateVehicleStatusPayload = {
   id: string
   data: {
-    status: 'active' | 'inactive'
+    status: VehicleStatus
   }
 }
 
@@ -89,7 +128,7 @@ export type RegisterGpsDevicePayload = {
     imei: string
     manufacturer: string
     model: string
-    firmwareVersion?: string
+    firmwareVersion: string
     installedAt?: string
   }
 }
@@ -100,53 +139,74 @@ export type DevicesQuery = {
   params?: {
     query?: string
     manufacturer?: string
-    status?: 'registered' | 'configured' | 'assigned' | 'active' | 'faulty' | 'decommissioned'
-    lifecycleStatus?: string
+    status?: DeviceStatus
+    lifecycleStatus?: DeviceLifecycleStatus
     assigned?: boolean
+    lastSeenBucket?: DeviceLastSeenBucket
   }
 }
 
+export type DeviceInput = {
+  imei: string
+  manufacturer: string
+  model: string
+  firmwareVersion: string
+  lifecycleStatus?: DeviceLifecycleStatus
+}
+
 export type CreateDevicePayload = {
-  data: {
-    imei: string
-    manufacturer: string
-    model: string
-    firmwareVersion?: string
-    lifecycleStatus?: string
-  }
+  data: DeviceInput
 }
 
 export type UpdateDevicePayload = {
   id: string
-  data: Record<string, unknown>
+  data: {
+    manufacturer?: string
+    model?: string
+    firmwareVersion?: string
+    lifecycleStatus?: DeviceLifecycleStatus
+    signalStrength?: number | null
+    batteryLevel?: number | null
+    lastSeen?: string | null
+  }
 }
 
 export type GeofenceShape = 'CIRCLE' | 'POLYGON'
 
 export type GeofenceSchedule = {
   enabled: boolean
-  timezone: string
+  timezone: string | null
   days: string[]
-  startTime: string
-  endTime: string
+  startTime: string | null
+  endTime: string | null
+}
+
+export type GeofenceSpeedLimit = {
+  enabled?: boolean
+  limitKph?: number | null
+}
+
+export type GeofenceCenter = {
+  latitude: number
+  longitude: number
 }
 
 export type GeofencePayload = {
   name: string
-  description: string
-  zoneType: string
-  shape: GeofenceShape
-  center: { latitude: number; longitude: number }
   coordinates: number[][]
-  radiusMeters: number
-  category: string
-  entryAlertsEnabled: boolean
-  exitAlertsEnabled: boolean
-  dwellAlertsEnabled: boolean
-  dwellMinutes: number
-  speedLimit: { enabled: boolean; limitKph: number }
-  schedule: GeofenceSchedule
-  assignedVehicleIds: string[]
+  description?: string | null
+  zoneType?: string
+  shape?: GeofenceShape
+  center?: GeofenceCenter | null
+  radiusMeters?: number | null
+  category?: string
+  entryAlertsEnabled?: boolean
+  exitAlertsEnabled?: boolean
+  dwellAlertsEnabled?: boolean
+  dwellMinutes?: number | null
+  speedLimit?: GeofenceSpeedLimit
+  schedule?: Partial<GeofenceSchedule>
+  assignedVehicleIds?: string[]
 }
 
 export type Geofence = {
@@ -156,17 +216,17 @@ export type Geofence = {
   description: string
   zoneType: string
   shape: GeofenceShape
-  center: { latitude: number; longitude: number }
+  center: GeofenceCenter | null
   coordinates: number[][]
-  radiusMeters: number
-  status: 'ACTIVE' | 'ARCHIVED' | string
+  radiusMeters: number | null
+  status: GeofenceStatus
   category: string
   alerts: {
     entry: boolean
     exit: boolean
     dwell: boolean
-    dwellMinutes: number
-    speedLimit: { enabled: boolean; limitKph: number }
+    dwellMinutes: number | null
+    speedLimit: GeofenceSpeedLimit
   }
   schedule: GeofenceSchedule
   assignedVehicleIds: string[]
@@ -174,17 +234,26 @@ export type Geofence = {
   updatedAt: string
 }
 
-export type GeofencesQuery = { params?: { status?: 'ACTIVE' | 'ARCHIVED' } }
+export type GeofenceStatus = 'ACTIVE' | 'ARCHIVED'
+
+export type GeofencesQuery = { params?: { status?: GeofenceStatus } }
 export type CreateGeofencePayload = { data: GeofencePayload }
-export type UpdateGeofencePayload = { id: string; data: GeofencePayload }
+export type UpdateGeofencePayload = {
+  id: string
+  data: Partial<GeofencePayload> & { status?: GeofenceStatus }
+}
+export type SetGeofenceVehiclesPayload = {
+  id: string
+  data: { vehicleIds: string[] }
+}
 
 export type CreateDeviceSetupRequestPayload = {
   data: {
     manufacturer: string
     model?: string
-    trackerType: string
-    quantity: number
-    simRequired: boolean
+    trackerType: DeviceTrackerType
+    quantity?: number
+    simRequired?: boolean
     carrierId?: string
     planType?: string
     bundleId?: string
@@ -209,14 +278,14 @@ export type UpdateDeviceFirmwarePayload = {
 
 export type ImportDevicesPayload = {
   data: {
-    items: Record<string, unknown>[]
+    items: Array<Omit<DeviceInput, 'firmwareVersion'> & { firmwareVersion?: string }>
   }
 }
 
 export type UpdateDeviceLifecyclePayload = {
   id: string
   data: {
-    lifecycleStatus: string
+    lifecycleStatus: DeviceLifecycleStatus
   }
 }
 
@@ -237,7 +306,40 @@ export type ValidateDeviceAssignmentQuery = {
 export type DeviceSetupRequestsQuery = {
   params?: {
     query?: string
-    status?: 'pending_review' | 'in_progress' | 'provisioned' | 'assigned' | 'cancelled' | string
+    status?: DeviceSetupRequestStatus
+  }
+}
+
+export type UpdateDeviceSetupRequestStatusPayload = {
+  id: string
+  data: {
+    status: DeviceSetupRequestStatus
+    note?: string
+  }
+}
+
+// ─── SIM catalog ──────────────────────────────────────────────────────────────
+
+export type SimCarrier = {
+  id: string
+  name: string
+  code: string
+  status: string
+}
+
+export type SimDataBundle = {
+  id: string
+  carrierId: string
+  name: string
+  planType: string
+  dataAllowanceMb: number | null
+  priceNgn: number
+  status: string
+}
+
+export type DataBundlesQuery = {
+  params?: {
+    carrierId?: string
   }
 }
 
@@ -253,69 +355,97 @@ export type LegacyGpsDevicesQuery = {
 export type DriversQuery = {
   params?: {
     query?: string
-    status?: 'active' | 'available' | 'offline' | 'suspended' | 'inactive'
+    status?: DriverStatus
     assigned?: boolean
   }
 }
 
+export type DriverInput = {
+  licenseNumber: string
+  name?: string
+  firstName?: string
+  lastName?: string
+  phone?: string
+  email?: string
+  licenseExpiryDate?: string
+  status?: DriverStatus
+  communicationPreference?: DriverCommunicationPreference
+}
+
 export type CreateDriverPayload = {
-  data: {
-    firstName?: string
-    lastName?: string
-    name?: string
-    phone: string
-    email?: string
-    licenseNumber: string
-    licenseExpiryDate?: string
-    status?: string
-    communicationPreference?: string
-  }
+  data: DriverInput
 }
 
 export type UpdateDriverPayload = {
   id: string
-  data: Record<string, unknown>
+  data: Partial<DriverInput>
 }
 
 export type ImportDriversPayload = {
   data: {
-    items: Record<string, unknown>[]
+    items: Array<DriverInput & {
+      contactChannels?: {
+        whatsappNumber?: string | null
+        smsNumber?: string | null
+        voiceNumber?: string | null
+      }
+    }>
   }
 }
 
 export type UpdateDriverStatusPayload = {
   id: string
   data: {
-    status: string
+    status: DriverStatus
   }
 }
 
 export type UpdateDriverContactChannelsPayload = {
   id: string
   data: {
-    whatsappNumber?: string
-    smsNumber?: string
-    voiceNumber?: string
+    whatsappNumber?: string | null
+    smsNumber?: string | null
+    voiceNumber?: string | null
   }
 }
 
-// ─── Jobs & Dispatch ──────────────────────────────────────────────────────────
-
-export type JobsQuery = {
-  params?: {
-    query?: string
-    status?: string
-  }
-}
+// ─── Dispatch ─────────────────────────────────────────────────────────────────
 
 export type DispatchSearchQuery = {
   params?: {
     query?: string
-    vehicleStatus?: string
-    driverStatus?: string
+    vehicleStatus?: 'active' | 'inactive'
+    driverStatus?: DriverStatus
     jobStatus?: string
     assignedOnly?: boolean
   }
+}
+
+export type RecommendDriversQuery = {
+  params?: {
+    requiredCapacity?: number
+    vehicleType?: VehicleType
+    pickupLat?: number
+    pickupLng?: number
+    limit?: number
+  }
+}
+
+export type RecommendedDriver = {
+  driverId: string
+  driverName: string
+  status: string
+  assignedVehicleId: string | null
+  vehicle: {
+    id: string
+    plateNumber: string
+    type: string | null
+    capacity: number | null
+    status: string
+  } | null
+  score: number
+  distanceKm: number | null
+  reasons: string[]
 }
 
 // ─── Alerts ───────────────────────────────────────────────────────────────────
@@ -328,6 +458,13 @@ export type AlertsQuery = {
   }
 }
 
+export type AlertActionPayload = {
+  id: string
+  params?: {
+    by?: string
+  }
+}
+
 // ─── Reports ──────────────────────────────────────────────────────────────────
 
 export type ExportReportPayload = {
@@ -336,17 +473,19 @@ export type ExportReportPayload = {
 
 // ─── Fuel ─────────────────────────────────────────────────────────────────────
 
+export type FuelTransactionInput = {
+  vehicleId: string
+  liters: number
+  pricePerLiter: number
+  driverId?: string | null
+  vehicleType?: string | null
+  fuelType?: FuelType | null
+  station?: string | null
+  odometer?: number | null
+}
+
 export type RecordFuelTransactionPayload = {
-  data: {
-    vehicleId: string
-    driverId?: string
-    vehicleType?: string
-    fuelType: 'diesel' | 'petrol'
-    liters: number
-    pricePerLiter: number
-    station?: string
-    odometer?: number
-  }
+  data: FuelTransactionInput
 }
 
 export type FuelQuery = {
@@ -361,12 +500,16 @@ export type FuelQuery = {
 
 export type UpdateFuelTransactionPayload = {
   id: string
-  data: Record<string, unknown>
+  data: Partial<FuelTransactionInput>
 }
+
+export type FuelBudgetPeriodType = 'daily' | 'weekly' | 'monthly'
 
 export type FuelMetricsQuery = {
   params?: {
-    period?: 'weekly' | 'monthly'
+    period?: FuelBudgetPeriodType
+    from?: string
+    to?: string
   }
 }
 
@@ -374,6 +517,23 @@ export type FuelBudgetVsActualQuery = {
   params?: {
     from?: string
     to?: string
+  }
+}
+
+export type FuelBudget = {
+  id: string
+  vehicleId: string
+  scope: 'vehicle' | 'fleet'
+  periodType: FuelBudgetPeriodType
+  amountNgn: number
+}
+
+/** Use `vehicleId: 'all'` for the fleet-wide budget. */
+export type UpsertFuelBudgetPayload = {
+  vehicleId: string
+  data: {
+    periodType: FuelBudgetPeriodType
+    amountNgn: number
   }
 }
 
@@ -426,16 +586,11 @@ export type MaintenanceRecordActionPayload = {
   id: string
 }
 
-export type SendMaintenanceRemindersPayload = {
-  data: {
-    recipientEmail: string
-    daysBefore: number[]
-  }
-}
+// `POST /fleet/maintenance/reminders/send` takes no body.
 
 export type MaintenanceProfileLifecycleStatus = 'overdue' | 'due' | 'upcoming' | 'completed'
 export type MaintenanceProfileIntervalType = 'date' | 'mileage' | 'both' | 'months'
-export type MaintenanceProfileMileageSource = 'telemetry' | 'manual' | string
+export type MaintenanceProfileMileageSource = 'telemetry' | 'manual'
 
 export type MaintenanceProfilesQuery = {
   params?: {
@@ -443,7 +598,8 @@ export type MaintenanceProfilesQuery = {
     lifecycleStatus?: MaintenanceProfileLifecycleStatus
     nextDueDateFrom?: string
     nextDueDateTo?: string
-    search?: string
+    currentMileageMin?: number
+    currentMileageMax?: number
   }
 }
 
@@ -451,15 +607,15 @@ export type CreateMaintenanceProfilePayload = {
   data: {
     vehicleId: string
     serviceType: string
-    serviceLabel?: string | null
+    serviceLabel: string
     intervalType: MaintenanceProfileIntervalType
+    mileageSource: MaintenanceProfileMileageSource
     intervalDays?: number | null
     intervalMonths?: number | null
     intervalKm?: number | null
     lastServiceDate?: string | null
     lastServiceMileage?: number | null
     currentMileage?: number | null
-    mileageSource?: MaintenanceProfileMileageSource
     nextDueDate?: string | null
     nextDueMileage?: number | null
   }
@@ -473,9 +629,17 @@ export type MaintenanceProfileActionPayload = {
 
 export type UploadDocumentQuery = {
   params: {
-    entityType: string
+    entityType: 'job' | 'vehicle' | 'driver'
     entityId: string
     docType: 'pod' | 'invoice' | 'permit' | 'other'
+    uploadedBy?: string
+  }
+}
+
+export type DocumentDownloadUrlQuery = {
+  id: string
+  params?: {
+    userId?: string
   }
 }
 
@@ -501,10 +665,27 @@ export type AuditLogQuery = {
 
 export type FleetAnalyticsPeriodDays = 7 | 30 | 60 | 90
 
+/** `fleet-status`, `fuel-levels` and `vehicle-safety-radar` accept a different set. */
+export type FleetAnalyticsShortPeriodDays = 1 | 2 | 7 | 30 | 90
+
 export type FleetAnalyticsPeriodQuery = {
   params?: {
     period_days?: FleetAnalyticsPeriodDays
   }
+}
+
+export type FleetAnalyticsShortPeriodQuery = {
+  params?: {
+    period_days?: FleetAnalyticsShortPeriodDays
+  }
+}
+
+export type VehicleSafetyRadar = {
+  braking: number
+  acceleration: number
+  speedControl: number
+  cornering: number
+  periodDays: number
 }
 
 export type FleetAnalyticsDriverScoresQuery = {
@@ -524,9 +705,10 @@ export type FleetAnalyticsEventsQuery = {
 
 export type FleetProfitabilityPayload = {
   data: {
-    periodMonths: number
+    periodMonths?: number
+    from?: string
+    to?: string
     search?: string
-    status?: FleetProfitabilityTier
     marginFrom?: number
     marginTo?: number
     revenueFrom?: number
@@ -540,20 +722,17 @@ export type FleetProfitabilityPayload = {
 
 export type FleetFinancialSummaryQuery = {
   params?: {
+    periodMonths?: number
     from?: string
     to?: string
   }
 }
 
-export type FleetFinancialStatementExportFormat = 'pdf' | 'csv' | 'xlsx'
-
-export type FleetFinancialStatementExportQuery = {
-  params: {
-    periodMonths: number
-    format: FleetFinancialStatementExportFormat
+export type FleetFinancialStatementQuery = {
+  params?: {
+    periodMonths?: number
     title?: string
     companyName?: string
-    period?: string
     preparedBy?: string
     notes?: string
     accentColor?: string
@@ -563,19 +742,38 @@ export type FleetFinancialStatementExportQuery = {
   }
 }
 
+export type FleetFinancialStatementExportFormat = 'pdf' | 'csv' | 'xlsx'
+
+export type FleetFinancialStatementExportQuery = {
+  params?: FleetFinancialStatementQuery['params'] & {
+    format?: FleetFinancialStatementExportFormat
+  }
+}
+
 export type FleetFinancialConfigActionPayload = {
   vehicleId: string
 }
 
+export type DriverWageAllocationMethod = 'fixed_monthly' | 'per_trip' | 'per_kilometer' | 'hybrid'
+export type DepreciationMethod = 'straight_line' | 'declining_balance'
+
 export type UpdateFleetFinancialConfigPayload = {
   vehicleId: string
   data: {
-    fuelEstimateNgnPerMonth?: number
-    maintenanceEstimateNgnPerMonth?: number
-    monthlyWagesNgn?: number
-    monthlyInsuranceNgn?: number
-    monthlyDepreciationNgn?: number
-    monthlyOtherNgn?: number
+    monthlyWagesNgn?: number | null
+    monthlyInsuranceNgn?: number | null
+    monthlyDepreciationNgn?: number | null
+    monthlyParkingNgn?: number | null
+    monthlyOtherNgn?: number | null
+    fuelEstimateNgnPerMonth?: number | null
+    maintenanceEstimateNgnPerMonth?: number | null
+    driverWageAllocationMethod?: DriverWageAllocationMethod | null
+    monthlyDriverWageNgn?: number | null
+    assetPurchasePriceNgn?: number | null
+    assetPurchaseDate?: string | null
+    assetUsefulLifeMonths?: number | null
+    assetSalvageValueNgn?: number | null
+    depreciationMethod?: DepreciationMethod | null
   }
 }
 
@@ -589,6 +787,15 @@ export type VehicleGpsDevice = {
   installedAt: string
 }
 
+export type VehicleTrip = {
+  from?: string
+  to?: string
+  date?: string
+  distanceKm?: number
+  durationMinutes?: number
+  status?: string
+}
+
 export type Vehicle = {
   id: string
   registrationNumber: string
@@ -597,14 +804,29 @@ export type Vehicle = {
   make: string | null
   model: string
   year: number | null
-  type: 'truck' | 'van' | 'trailer' | string
+  type: VehicleType | null
+  fuelType?: FuelType | null
   capacity: number | null
   tenantId: string
-  status: 'active' | 'inactive' | 'maintenance' | 'decommissioned' | string
+  status: VehicleStatus
   assignedDriverId: string | null
   assignedDriverName?: string | null
   fuelLevelPercent?: number | null
   gpsDevice: VehicleGpsDevice | null
+  devices?: FleetDevice[]
+  maintenanceRecords?: MaintenanceRecord[]
+  trips?: VehicleTrip[]
+}
+
+export type VehicleHealth = {
+  vehicleId: string
+  plateNumber: string
+  model: string
+  assignedDriverId: string | null
+  deviceId: string | null
+  /** Unix millis. */
+  lastSeen: number | null
+  healthy: boolean
 }
 
 export type VehicleSummary = {
@@ -639,6 +861,8 @@ export type FleetDriver = {
   updatedAt: string
 }
 
+export type DeviceProvisionStatus = 'pending' | 'registered' | 'failed'
+
 export type FleetDevice = {
   id: string
   imei: string
@@ -646,13 +870,15 @@ export type FleetDevice = {
   model: string
   firmwareVersion: string
   tenantId: string
-  status: 'registered' | 'configured' | 'assigned' | 'active' | 'faulty' | 'decommissioned'
-  lifecycleStatus: 'registered' | 'config_pending' | 'configured' | 'verified_online' | 'assignable' | 'assigned' | 'faulty' | 'decommissioned'
+  status: DeviceStatus
+  lifecycleStatus: DeviceLifecycleStatus
   vehicleId: string | null
   signalStrength: number | null
   batteryLevel: number | null
   lastSeen: string | null
   assignedAt: string | null
+  traccarDeviceId: string | null
+  provisionStatus: DeviceProvisionStatus
   createdAt: string
   updatedAt: string
 }
@@ -665,8 +891,8 @@ export type GpsDevice = {
   firmwareVersion: string
   installedAt: string | null
   tenantId: string
-  status: 'registered' | 'configured' | 'assigned' | 'active' | 'faulty' | 'decommissioned'
-  lifecycleStatus: 'registered' | 'config_pending' | 'configured' | 'verified_online' | 'assignable' | 'assigned' | 'faulty' | 'decommissioned'
+  status: DeviceStatus
+  lifecycleStatus: DeviceLifecycleStatus
   vehicleId: string | null
   vehicleRegistrationNumber: string | null
   vehicleStatus: 'active' | 'inactive' | null
@@ -674,13 +900,6 @@ export type GpsDevice = {
   batteryLevel: number | null
   lastSeen: string | null
   assignedAt: string | null
-}
-
-export type FleetJob = {
-  jobId: string
-  tenantId: string
-  status: string
-  updatedAt: string
 }
 
 export type FleetAlert = {
@@ -698,6 +917,14 @@ export type FleetAlert = {
   escalatedAt: string | null
   acknowledgedBy: string | null
   resolvedBy: string | null
+}
+
+export type FleetAlertStats = {
+  total: number
+  byStatus: Record<string, number>
+  byType: Record<string, number>
+  bySeverity: Record<string, number>
+  meanTimeToResolveMs: number | null
 }
 
 export type FuelRecord = {
@@ -725,7 +952,7 @@ export type FuelConsumptionBucket = {
   liters: number
   totalCost: number
   records: number
-  byFuelType?: Record<string, {
+  byFuelType: Record<string, {
     liters: number
     totalCost: number
     records: number
@@ -772,6 +999,7 @@ export type MaintenanceRecord = {
   id: string
   tenantId: string
   vehicleId: string
+  vehicleRegistrationNumber?: string | null
   maintenanceType: string
   description: string | null
   status: MaintenanceRecordStatus
@@ -800,7 +1028,7 @@ export type MaintenanceProfile = {
   tenantId: string
   vehicleId: string
   serviceType: string
-  serviceLabel: string | null
+  serviceLabel: string
   intervalType: MaintenanceProfileIntervalType
   intervalDays: number | null
   intervalMonths: number | null
@@ -841,6 +1069,26 @@ export type FleetDocument = {
 export type FleetDownloadUrl = {
   url: string
   expiresIn: number
+}
+
+export type FleetDocumentAccessLogEntry = {
+  id: string
+  docId: string
+  action: 'upload' | 'download'
+  userId: string
+  ip: string
+  at: string
+}
+
+export type FleetAuditLogEntry = {
+  id: string
+  tenantId: string
+  entityType: 'job' | 'vehicle' | 'driver' | 'device' | 'fuel' | 'alert' | 'document' | 'geofence'
+  entityId: string
+  action: string
+  actorId: string
+  metadata: Record<string, unknown>
+  occurredAt: string
 }
 
 export type NearestVehicle = {
@@ -904,10 +1152,27 @@ export type BulkImportResult<T> = {
 }
 
 export type FleetDashboard = {
-  vehicles: Record<string, unknown>
-  drivers: Record<string, unknown>
-  jobs: Record<string, unknown>
-  alerts: Record<string, unknown>
+  vehicles: {
+    total: number
+    active: number
+    inactive: number
+    assigned: number
+    seenInLastHour: number
+  }
+  drivers: {
+    total: number
+    active: number
+    inactive: number
+    assigned: number
+  }
+  jobs: {
+    total: number
+    byStatus: Record<string, number>
+  }
+  alerts: {
+    open: number
+    escalated: number
+  }
   generatedAt: string
 }
 
@@ -959,16 +1224,12 @@ export type FleetAnalyticsFleetStatus = {
     type: string
     assignedDriverId: string | null
   }>
+  periodDays: number
 }
 
 export type FleetAnalyticsJobPipeline = {
   total: number
-  byStatus: {
-    pending: number
-    in_progress: number
-    delivered: number
-    [status: string]: number
-  }
+  byStatus: Record<string, number>
   periodDays: number
 }
 
@@ -977,6 +1238,12 @@ export type FleetAnalyticsFuelLevel = {
   plateNumber: string
   fuelLevelPercent: number | null
   lastUpdated: string | null
+}
+
+/** `/fleet/analytics/fuel-levels` wraps the list — it is not a bare array. */
+export type FleetAnalyticsFuelLevels = {
+  periodDays: number
+  vehicles: FleetAnalyticsFuelLevel[]
 }
 
 export type FleetAnalyticsDriverScore = {
@@ -999,32 +1266,34 @@ export type FleetAnalyticsEvent = {
   triggeredAt: string
 }
 
+export type FleetCostBreakdown = {
+  fuel: number
+  maintenance: number
+  wages: number
+  insurance: number
+  depreciation: number
+  other: number
+}
+
+export type FleetProfitabilityTier = 'excellent' | 'good' | 'marginal' | 'loss_making'
+
+export type FleetTierDistribution = Record<FleetProfitabilityTier, number>
+
 export type FleetFinancialSummary = {
   totalRevenue: number
   totalCost: number
   totalProfit: number
   avgMarginPercent: number
-  avgScore?: number
+  avgScore: number
   vehicleCount: number
-  costBreakdown?: {
-    fuel: number
-    maintenance: number
-    wages: number
-    insurance: number
-    depreciation: number
-    other?: number
-  }
+  costBreakdown: FleetCostBreakdown
+  tierDistribution: FleetTierDistribution
 }
-
-export type FleetProfitabilityTier = 'excellent' | 'good' | 'marginal' | 'loss-making' | string
 
 export type FleetProfitabilityVehicle = {
   vehicleId: string
   plateNumber: string
-  name?: string
-  make?: string | null
-  model?: string | null
-  kmDriven?: number
+  name: string
   revenue: number
   fuelCost: number
   maintenanceCost: number
@@ -1033,29 +1302,38 @@ export type FleetProfitabilityVehicle = {
   profit: number
   marginPercent: number
   tier: FleetProfitabilityTier
+  status: FleetProfitabilityTier
   score: number
-  costBreakdown: {
-    fuel?: number
-    maintenance?: number
-    wages?: number
-    insurance?: number
-    depreciation?: number
-    other?: number
-    [key: string]: number | undefined
-  }
+  costBreakdown: FleetCostBreakdown
   jobCount: number
+  kmDriven: number
+}
+
+export type FleetFinancialStatement = {
+  generatedAt: string
+  periodMonths: number
+  summary: FleetFinancialSummary
+  vehicles: FleetProfitabilityVehicle[]
 }
 
 export type FleetFinancialConfig = {
   id: string
   tenantId: string
   vehicleId: string
-  fuelEstimateNgnPerMonth?: number
-  maintenanceEstimateNgnPerMonth?: number
-  monthlyWagesNgn: number
-  monthlyInsuranceNgn: number
-  monthlyDepreciationNgn: number
-  monthlyOtherNgn: number
+  monthlyWagesNgn: number | null
+  monthlyInsuranceNgn: number | null
+  monthlyDepreciationNgn: number | null
+  monthlyParkingNgn: number | null
+  monthlyOtherNgn: number | null
+  fuelEstimateNgnPerMonth: number | null
+  maintenanceEstimateNgnPerMonth: number | null
+  driverWageAllocationMethod: DriverWageAllocationMethod | null
+  monthlyDriverWageNgn: number | null
+  assetPurchasePriceNgn: number | null
+  assetPurchaseDate: string | null
+  assetUsefulLifeMonths: number | null
+  assetSalvageValueNgn: number | null
+  depreciationMethod: DepreciationMethod | null
   createdAt: string
   updatedAt: string
 }
@@ -1074,10 +1352,9 @@ export type FleetDriverListResponse = ServerResponse<FleetDriver[]>
 export type FleetDeviceResponse = ServerResponse<FleetDevice>
 export type FleetDeviceListResponse = ServerResponse<FleetDevice[]>
 export type GpsDeviceListResponse = ServerResponse<GpsDevice[]>
-export type FleetJobListResponse = ServerResponse<FleetJob[]>
 export type FleetAlertResponse = ServerResponse<FleetAlert>
 export type FleetAlertListResponse = ServerResponse<FleetAlert[]>
-export type AlertStatsResponse = ServerResponse<Record<string, unknown>>
+export type AlertStatsResponse = ServerResponse<FleetAlertStats>
 export type FuelRecordResponse = ServerResponse<FuelRecord>
 export type FuelRecordListResponse = ServerResponse<FuelRecord[]>
 export type FuelConsumptionResponse = ServerResponse<FuelConsumptionBucket[]>
@@ -1093,14 +1370,13 @@ export type MaintenanceProfileResponse = ServerResponse<MaintenanceProfile>
 export type MaintenanceProfileListResponse = ServerResponse<MaintenanceProfile[]>
 export type MaintenanceProfilesSummaryResponse = ServerResponse<MaintenanceProfilesSummary>
 export type MaintenanceServiceCategoriesResponse = ServerResponse<string[]>
-export type MaintenanceStatusResponse = {
-  status: boolean
-  message: string
-}
+/** Deletes and "send reminders" routes reply with the standard envelope. */
+export type MaintenanceStatusResponse = ServerResponse<Record<string, unknown> | null>
+export type ReminderSendResponse = ServerResponse<{ queued: number; message: string }>
 export type FleetDocumentResponse = ServerResponse<FleetDocument>
 export type FleetDocumentListResponse = ServerResponse<FleetDocument[]>
 export type DownloadUrlResponse = ServerResponse<FleetDownloadUrl>
-export type AccessLogListResponse = ServerResponse<Record<string, unknown>[]>
+export type AccessLogListResponse = ServerResponse<FleetDocumentAccessLogEntry[]>
 export type NearestVehicleListResponse = ServerResponse<NearestVehicle[]>
 export type VehicleDriverAssignmentResponse = ServerResponse<VehicleDriverAssignment>
 export type DeviceAssignmentValidationResponse = ServerResponse<DeviceAssignmentValidation>
@@ -1111,17 +1387,42 @@ export type BulkDriverImportResponse = ServerResponse<BulkImportResult<FleetDriv
 export type BulkDeviceImportResponse = ServerResponse<BulkImportResult<FleetDevice>>
 export type FleetDashboardResponse = ServerResponse<FleetDashboard>
 export type DeliveryMetricsResponse = ServerResponse<DeliveryMetrics>
-export type DispatchSearchResponse = ServerResponse<Record<string, unknown>>
-export type FleetJobStatusResponse = ServerResponse<unknown>
+export type DispatchSearchResult = {
+  vehicles: Vehicle[]
+  drivers: FleetDriver[]
+}
+export type DispatchSearchResponse = ServerResponse<DispatchSearchResult>
 export type FleetAnalyticsSummaryResponse = ServerResponse<FleetAnalyticsSummary>
 export type FleetAnalyticsFleetStatusResponse = ServerResponse<FleetAnalyticsFleetStatus>
 export type FleetAnalyticsJobPipelineResponse = ServerResponse<FleetAnalyticsJobPipeline>
-export type FleetAnalyticsFuelLevelsResponse = ServerResponse<FleetAnalyticsFuelLevel[]>
+export type FleetAnalyticsFuelLevelsResponse = ServerResponse<FleetAnalyticsFuelLevels>
 export type FleetAnalyticsDriverScoresResponse = ServerResponse<FleetAnalyticsDriverScore[]>
 export type FleetAnalyticsEventsResponse = ServerResponse<FleetAnalyticsEvent[]>
 export type FleetFinancialSummaryResponse = ServerResponse<FleetFinancialSummary>
 export type FleetProfitabilityResponse = ServerResponse<FleetProfitabilityVehicle[]>
 export type FleetFinancialConfigResponse = ServerResponse<FleetFinancialConfig>
+export type FleetFinancialConfigListResponse = ServerResponse<FleetFinancialConfig[]>
+export type FleetFinancialStatementResponse = ServerResponse<FleetFinancialStatement>
+export type SimCarrierListResponse = ServerResponse<SimCarrier[]>
+export type SimDataBundleListResponse = ServerResponse<SimDataBundle[]>
+export type RecommendedDriverListResponse = ServerResponse<RecommendedDriver[]>
+export type VehicleSafetyRadarResponse = ServerResponse<VehicleSafetyRadar>
+export type FuelBudgetListResponse = ServerResponse<FuelBudget[]>
+export type FuelBudgetResponse = ServerResponse<FuelBudget>
+export type VehicleHealthResponse = ServerResponse<VehicleHealth>
+export type VehicleHealthListResponse = ServerResponse<VehicleHealth[]>
+export type FleetAuditLogResponse = ServerResponse<FleetAuditLogEntry[]>
+
+export type IntegrationHealthEntry = {
+  source: string
+  lastReceived: string | null
+  successCount: number
+  failureCount: number
+  healthy: boolean
+}
+export type IntegrationHealthResponse = ServerResponse<IntegrationHealthEntry[]>
+/** Archive / soft-delete routes reply with an envelope whose `data` may be null. */
+export type FleetArchiveResponse = ServerResponse<Record<string, unknown> | null>
 
 // ─── Compliance ───────────────────────────────────────────────────────────────
 
@@ -1131,14 +1432,13 @@ export type ComplianceDocument = {
   vehicleId: string | null
   documentType: string
   documentName: string
-  documentNumber?: string
   issueDate: string | null
   expiryDate: string | null
   reminderDays: number
   fileUrl: string | null
   fileSize: number | null
   notes: string | null
-  status: 'valid' | 'expiring' | 'expired'
+  status: ComplianceDocumentStatus
   createdAt: string
   updatedAt: string
 }
@@ -1151,15 +1451,21 @@ export type ComplianceDocumentSummary = {
   complianceRatePercent: number
 }
 
+export type ComplianceDocumentStatus = 'valid' | 'expiring' | 'expired'
+
 export type ComplianceDocumentsQuery = {
-  params?: { vehicleId?: string; documentType?: string; status?: string; search?: string }
+  params?: {
+    vehicleId?: string
+    documentType?: string
+    status?: ComplianceDocumentStatus
+    search?: string
+  }
 }
 
 export type CreateComplianceDocumentPayload = {
   vehicleId?: string | null
   documentName: string
   documentType: string
-  documentNumber?: string
   issueDate?: string | null
   expiryDate?: string | null
   reminderDays?: number
@@ -1169,6 +1475,12 @@ export type CreateComplianceDocumentPayload = {
 }
 
 export type UpdateComplianceDocumentPayload = Partial<CreateComplianceDocumentPayload>
+
+export type RenewComplianceDocumentPayload = {
+  expiryDate?: string
+  fileUrl?: string
+  fileSize?: number
+}
 
 export type ComplianceDocumentResponse = ServerResponse<ComplianceDocument>
 export type ComplianceDocumentListResponse = ServerResponse<ComplianceDocument[]>

@@ -12,7 +12,9 @@
     "./auth": "./src/auth/index.ts",
     "./fleet": "./src/fleet/index.ts",
     "./dispatch": "./src/dispatch/index.ts",
-    "./tracking": "./src/tracking/index.ts"
+    "./tracking": "./src/tracking/index.ts",
+    "./notification": "./src/notification/index.ts",
+    "./console": "./src/console/index.ts"
   },
   "dependencies": {
     "axios": "^1.7.0",

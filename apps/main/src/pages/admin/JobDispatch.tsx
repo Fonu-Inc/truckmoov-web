@@ -14,6 +14,7 @@ import {
   useJobs,
   useJobsSummary,
   useUpdateJobDetails,
+  useUpdateJobScheduling,
 } from "@truckmoov/api/dispatch";
 import {
   CheckCircle,
@@ -277,6 +278,7 @@ export default function JobDispatch() {
     }));
   const createJobMutation = useCreateJob();
   const updateJobDetailsMutation = useUpdateJobDetails();
+  const updateJobSchedulingMutation = useUpdateJobScheduling();
   const deleteJobMutation = useDeleteJob();
   const assignJobMutation = useAssignJob();
 
@@ -347,6 +349,9 @@ export default function JobDispatch() {
     createJobMutation.mutate(
       {
         data: {
+          // The server reads the flat *Location strings as well as the nested stops.
+          pickupLocation: data.pickupAddress,
+          deliveryLocation: data.deliveryAddress,
           reference: data.reference,
           pickup: {
             address: data.pickupAddress,
@@ -389,7 +394,6 @@ export default function JobDispatch() {
       {
         jobId: selectedJob.id,
         data: {
-          reference: data.reference,
           pickup: {
             address: data.pickupAddress,
             latitude: data.pickupLat,
@@ -401,16 +405,20 @@ export default function JobDispatch() {
             longitude: data.deliveryLng,
           },
           stops: data.stops,
-          cargoType: data.cargoType,
-          cargoDescription: data.cargoDescription,
-          cargoWeight: data.cargoWeight,
+          cargo_type: data.cargoType,
+          cargo_description: data.cargoDescription,
+          load_weight_kg: data.cargoWeight,
           amount: data.amount,
           deadline: new Date(data.deadline).toISOString(),
-          priority: data.priority,
         },
       },
       {
         onSuccess: () => {
+          // Priority lives on the scheduling route, not the details body.
+          updateJobSchedulingMutation.mutate({
+            jobId: selectedJob.id,
+            data: { priority: data.priority },
+          });
           toast.success("Job updated");
           setIsFormOpen(false);
         },

@@ -165,7 +165,6 @@ export function VehiclePLStatementBuilder({
           format,
           title,
           companyName: companyName || undefined,
-          period: periodLabel || undefined,
           preparedBy: preparedBy || undefined,
           notes: notes || undefined,
           accentColor: accent,
