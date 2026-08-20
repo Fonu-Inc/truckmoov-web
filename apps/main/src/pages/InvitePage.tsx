@@ -1,16 +1,14 @@
-import type { ChangeEvent } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useCompleteProfile } from "@truckmoov/api/auth";
+import { PasswordFieldControl } from "@truckmoov/reusables/components/app/PasswordFieldControl";
 import {
-  useLogin, useSystemChangePassword,
-} from "@truckmoov/api/auth";
-import {
-  ArrowLeft, Eye, EyeOff, Lock, Mail, ShieldCheck,
+  ArrowLeft, Mail, ShieldCheck, User,
 } from "lucide-react";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
-  Link, useSearchParams,
+  Link, useNavigate, useSearchParams,
 } from "react-router-dom";
+import { toast } from "sonner";
 
 import * as z from "zod";
 import { Button } from "@/components/shadcn/button";
@@ -29,6 +27,10 @@ import { Input } from "@/components/shadcn/input";
 
 const invitePasswordSchema = z
   .object({
+    fullName: z.string().min(
+      2,
+      "Enter your full name.",
+    ),
     newPassword: z.string().min(
       8,
       "Password must be at least 8 characters.",
@@ -50,81 +52,46 @@ type InvitePasswordFormValues = z.infer<typeof invitePasswordSchema>;
 
 export const INVITE_PASSWORD_FORM_ID = "main-invite-password-form";
 
-function PasswordFieldControl({
-  value,
-  onChange,
-  onBlur,
-  name,
-  placeholder,
-  inputRef,
-}: {
-  value: string;
-  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onBlur: () => void;
-  name: string;
-  placeholder: string;
-  inputRef?: (instance: HTMLInputElement | null) => void;
-}) {
-  const [
-    showPassword,
-    setShowPassword,
-  ] = useState(false);
-
-  return (
-    <div className="relative">
-      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      <FormControl>
-        <Input
-          type={showPassword ? "text" : "password"}
-          placeholder={placeholder}
-          value={value}
-          onChange={onChange}
-          onBlur={onBlur}
-          name={name}
-          ref={inputRef}
-          className="pl-10 pr-10"
-          autoComplete="new-password"
-        />
-      </FormControl>
-      <button
-        type="button"
-        onClick={() => setShowPassword(current => !current)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-        tabIndex={-1}
-        aria-label={showPassword ? "Hide password" : "Show password"}
-      >
-        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-      </button>
-    </div>
-  );
-}
-
 export default function InvitePage() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const login = useLogin();
-  const changePassword = useSystemChangePassword();
+  const completeProfile = useCompleteProfile();
 
   const inviteToken = searchParams.get("invite")?.trim() ?? "";
   const email = searchParams.get("email")?.trim() ?? "";
   const hasInvite = inviteToken.length > 0 && email.length > 0;
 
-  const isSubmitting = login.isPending || changePassword.isPending;
-
   const form = useForm<InvitePasswordFormValues>({
     resolver: zodResolver(invitePasswordSchema),
     defaultValues: {
+      fullName: "",
       newPassword: "",
       confirmPassword: "",
     },
   });
 
-  async function onSubmit(values: InvitePasswordFormValues) {
-    await changePassword.mutateAsync({
-      data: {
-        currentPassword: inviteToken,
-        newPassword: values.newPassword,
+  function onSubmit(values: InvitePasswordFormValues) {
+    completeProfile.mutate(
+      {
+        data: {
+          token: inviteToken,
+          fullName: values.fullName.trim(),
+          password: values.newPassword,
+        },
       },
-    });
+      {
+        onSuccess: () => {
+          toast.success("Account activated. Sign in to continue.");
+          navigate(
+            "/auth",
+            { replace: true },
+          );
+        },
+        onError: (error) => {
+          toast.error(error.message);
+        },
+      },
+    );
   }
 
   return (
@@ -134,9 +101,9 @@ export default function InvitePage() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <ShieldCheck className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle>Set your password</CardTitle>
+          <CardTitle>Complete your profile</CardTitle>
           <CardDescription>
-            Choose a password to finish activating your FleetPro account.
+            Add your name and choose a password to finish activating your FleetPro account.
           </CardDescription>
         </CardHeader>
 
@@ -174,12 +141,35 @@ export default function InvitePage() {
 
                     <FormField
                       control={form.control}
+                      name="fullName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full name</FormLabel>
+                          <div className="relative">
+                            <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <FormControl>
+                              <Input
+                                placeholder="Jane Doe"
+                                autoComplete="name"
+                                className="pl-10"
+                                {...field}
+                              />
+                            </FormControl>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
                       name="newPassword"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Password</FormLabel>
                           <PasswordFieldControl
                             placeholder="At least 8 characters"
+                            autoComplete="new-password"
                             value={field.value}
                             onChange={field.onChange}
                             onBlur={field.onBlur}
@@ -199,6 +189,7 @@ export default function InvitePage() {
                           <FormLabel>Confirm password</FormLabel>
                           <PasswordFieldControl
                             placeholder="Repeat your password"
+                            autoComplete="new-password"
                             value={field.value}
                             onChange={field.onChange}
                             onBlur={field.onBlur}
@@ -214,9 +205,9 @@ export default function InvitePage() {
                       type="submit"
                       form={INVITE_PASSWORD_FORM_ID}
                       className="w-full"
-                      loading={isSubmitting}
+                      loading={completeProfile.isPending}
                     >
-                      Set password and sign in
+                      Activate account
                     </Button>
                   </form>
                 </Form>

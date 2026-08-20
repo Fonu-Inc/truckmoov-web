@@ -1,17 +1,13 @@
-import type { ChangeEvent } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSystemLogin } from "@truckmoov/api/auth";
+import { PasswordFieldControl } from "@truckmoov/reusables/components/app/PasswordFieldControl";
 import { AuthBrandingPanel } from "@truckmoov/reusables/components/layouts/AuthBrandingPanel";
 import {
   ArrowRight,
-  Eye,
-  EyeOff,
-  Lock,
   Mail,
   ShieldCheck,
   Truck,
 } from "lucide-react";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
@@ -51,50 +47,6 @@ function MobileLogo() {
         <span className="text-xl font-bold text-foreground">FleetPro</span>
         <span className="text-[9px] font-semibold uppercase tracking-wider text-primary">Platform Admin</span>
       </div>
-    </div>
-  );
-}
-
-function PasswordFieldControl({
-  value,
-  onChange,
-  onBlur,
-  name,
-}: {
-  value: string;
-  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onBlur: () => void;
-  name: string;
-}) {
-  const [
-    showPassword,
-    setShowPassword,
-  ] = useState(false);
-
-  return (
-    <div className="relative">
-      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      <FormControl>
-        <Input
-          type={showPassword ? "text" : "password"}
-          placeholder="Password"
-          value={value}
-          onChange={onChange}
-          onBlur={onBlur}
-          name={name}
-          className="pl-10 pr-10"
-          autoComplete="current-password"
-        />
-      </FormControl>
-      <button
-        type="button"
-        onClick={() => setShowPassword(current => !current)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-        tabIndex={-1}
-        aria-label={showPassword ? "Hide password" : "Show password"}
-      >
-        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-      </button>
     </div>
   );
 }
@@ -183,7 +135,13 @@ export default function AuthPage() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Password</FormLabel>
-                  <PasswordFieldControl {...field} />
+                  <PasswordFieldControl
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    inputRef={field.ref}
+                  />
                   <FormMessage />
                 </FormItem>
               )}

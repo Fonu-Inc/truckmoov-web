@@ -586,7 +586,7 @@ export type MaintenanceRecordActionPayload = {
   id: string
 }
 
-// `POST /fleet/maintenance/reminders/send` takes no body.
+// `POST /maintenance/reminders/send` takes no body.
 
 export type MaintenanceProfileLifecycleStatus = 'overdue' | 'due' | 'upcoming' | 'completed'
 export type MaintenanceProfileIntervalType = 'date' | 'mileage' | 'both' | 'months'
@@ -1240,7 +1240,7 @@ export type FleetAnalyticsFuelLevel = {
   lastUpdated: string | null
 }
 
-/** `/fleet/analytics/fuel-levels` wraps the list — it is not a bare array. */
+/** `/analytics/fuel-levels` wraps the list — it is not a bare array. */
 export type FleetAnalyticsFuelLevels = {
   periodDays: number
   vehicles: FleetAnalyticsFuelLevel[]

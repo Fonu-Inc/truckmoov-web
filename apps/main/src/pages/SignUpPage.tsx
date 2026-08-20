@@ -1,12 +1,11 @@
-import type { ChangeEvent } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRegister } from "@truckmoov/api/auth";
 import { useAuthStore as useApiAuthStore } from "@truckmoov/api/lib/auth-store";
+import { PasswordFieldControl } from "@truckmoov/reusables/components/app/PasswordFieldControl";
 import { AuthBrandingPanel } from "@truckmoov/reusables/components/layouts/AuthBrandingPanel";
 import {
-  ArrowRight, Building2, Eye, EyeOff, Lock, Mail, Truck, User,
+  ArrowRight, Building2, Mail, Truck, User,
 } from "lucide-react";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -72,57 +71,6 @@ function MobileLogo() {
         <span className="text-xl font-bold text-foreground">FleetPro</span>
         <span className="text-[9px] font-semibold uppercase tracking-wider text-primary">Enterprise Fleet</span>
       </div>
-    </div>
-  );
-}
-
-function PasswordFieldControl({
-  value,
-  onChange,
-  onBlur,
-  name,
-  placeholder,
-  autoComplete,
-  inputRef,
-}: {
-  value: string;
-  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onBlur: () => void;
-  name: string;
-  placeholder: string;
-  autoComplete: string;
-  inputRef?: (instance: HTMLInputElement | null) => void;
-}) {
-  const [
-    showPassword,
-    setShowPassword,
-  ] = useState(false);
-
-  return (
-    <div className="relative">
-      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      <FormControl>
-        <Input
-          type={showPassword ? "text" : "password"}
-          placeholder={placeholder}
-          value={value}
-          onChange={onChange}
-          onBlur={onBlur}
-          name={name}
-          ref={inputRef}
-          className="pl-10 pr-10"
-          autoComplete={autoComplete}
-        />
-      </FormControl>
-      <button
-        type="button"
-        onClick={() => setShowPassword(current => !current)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-        tabIndex={-1}
-        aria-label={showPassword ? "Hide password" : "Show password"}
-      >
-        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-      </button>
     </div>
   );
 }

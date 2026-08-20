@@ -82,19 +82,26 @@ Three conventions fall out of those documents:
   snake_case and a camelCase spelling of the same field. Only the canonical
   (documented-required) form is typed — adding both doubles every payload type
   for no gain.
-- **Auth route groups.** The auth service is split into groups that are *not*
-  all under `/auth`: only the `Auth` group keeps that prefix (`/auth/login`,
-  `/auth/me`, `/auth/invite`, …). The other groups are mounted at the root —
-  `/profile`, `/organization`, `/system`, `/onboarding`, `/sims`,
-  `/data-bundles`. They all still live in `src/auth/` because they share the
-  session; do not re-add an `/auth` prefix to them.
+- **Route groups without the service prefix.** `auth` and `fleet` are split
+  into groups that are *not* all mounted under the service name. In `auth`
+  only the `Auth` group keeps it (`/auth/login`, `/auth/me`, `/auth/invite`,
+  …) — the rest sit at the root: `/profile`, `/organization`, `/system`,
+  `/onboarding`, `/sims`, `/data-bundles`. In `fleet` only the probes keep
+  it, so every real route is at the root: `/vehicles`, `/devices`,
+  `/drivers`, `/geofences`, `/alerts`, `/analytics`, `/reports`,
+  `/maintenance`, `/compliance`, `/financials`, `/fuel`, `/documents`,
+  `/routes`, `/carriers`, `/data-bundles`, `/gps-devices`, `/audit`,
+  `/device-setup-requests`, and `/dispatch/{search,recommend-drivers}`.
+  `dispatch`, `notification` and `tracking` still prefix everything. Keep
+  each service's routes in its own `src/[service]/` folder regardless, and do
+  not re-add a prefix the document does not show.
 
 Endpoints deliberately left out of this package, because a browser client is not
 the caller: liveness/readiness probes (`/health`, `/ready`, `/metrics`,
 `/test-sentry`), device-side telemetry ingest (`/tracking/ingest*`), provider
 webhooks (Paystack, Meta/WhatsApp), the SSE and WebSocket bridges
 (`/onboarding/payment/events`, `/tracking/ws` — neither is an Axios call),
-and pure aliases of routes already covered (`GET /fleet/fuel/transactions`,
+and pure aliases of routes already covered (`GET /fuel/transactions`,
 `PUT /dispatch/jobs/{jobId}`).
 
 Deliberate simplifications and fields kept despite being absent from the current

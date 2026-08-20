@@ -1,10 +1,9 @@
-import type { ChangeEvent } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useResetPassword } from "@truckmoov/api/auth";
+import { PasswordFieldControl } from "@truckmoov/reusables/components/app/PasswordFieldControl";
 import {
-  ArrowLeft, Eye, EyeOff, Lock, ShieldCheck,
+  ArrowLeft, ShieldCheck,
 } from "lucide-react";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Link, useNavigate, useSearchParams,
@@ -18,13 +17,11 @@ import {
 } from "@/components/shadcn/card";
 import {
   Form,
-  FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/shadcn/form";
-import { Input } from "@/components/shadcn/input";
 
 const resetPasswordSchema = z
   .object({
@@ -48,57 +45,6 @@ const resetPasswordSchema = z
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 export const RESET_PASSWORD_FORM_ID = "main-reset-password-form";
-
-function PasswordFieldControl({
-  value,
-  onChange,
-  onBlur,
-  name,
-  placeholder,
-  autoComplete,
-  inputRef,
-}: {
-  value: string;
-  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onBlur: () => void;
-  name: string;
-  placeholder: string;
-  autoComplete: string;
-  inputRef?: (instance: HTMLInputElement | null) => void;
-}) {
-  const [
-    showPassword,
-    setShowPassword,
-  ] = useState(false);
-
-  return (
-    <div className="relative">
-      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      <FormControl>
-        <Input
-          type={showPassword ? "text" : "password"}
-          placeholder={placeholder}
-          value={value}
-          onChange={onChange}
-          onBlur={onBlur}
-          name={name}
-          ref={inputRef}
-          className="pl-10 pr-10"
-          autoComplete={autoComplete}
-        />
-      </FormControl>
-      <button
-        type="button"
-        onClick={() => setShowPassword(current => !current)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-        tabIndex={-1}
-        aria-label={showPassword ? "Hide password" : "Show password"}
-      >
-        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-      </button>
-    </div>
-  );
-}
 
 export default function ResetPassword() {
   const navigate = useNavigate();
