@@ -72,7 +72,7 @@ The service types are hand-written against the published OpenAPI documents:
 
 All served from `https://dev-api.truckmoov.com`.
 
-Two conventions fall out of those documents:
+Three conventions fall out of those documents:
 
 - **Envelope.** Every service wraps responses in `ServerResponse<T>` **except
   `tracking`**, and except `POST /notify/messages/send` and
@@ -82,12 +82,18 @@ Two conventions fall out of those documents:
   snake_case and a camelCase spelling of the same field. Only the canonical
   (documented-required) form is typed — adding both doubles every payload type
   for no gain.
+- **Auth route groups.** The auth service is split into groups that are *not*
+  all under `/auth`: only the `Auth` group keeps that prefix (`/auth/login`,
+  `/auth/me`, `/auth/invite`, …). The other groups are mounted at the root —
+  `/profile`, `/organization`, `/system`, `/onboarding`, `/sims`,
+  `/data-bundles`. They all still live in `src/auth/` because they share the
+  session; do not re-add an `/auth` prefix to them.
 
 Endpoints deliberately left out of this package, because a browser client is not
 the caller: liveness/readiness probes (`/health`, `/ready`, `/metrics`,
 `/test-sentry`), device-side telemetry ingest (`/tracking/ingest*`), provider
 webhooks (Paystack, Meta/WhatsApp), the SSE and WebSocket bridges
-(`/auth/onboarding/payment/events`, `/tracking/ws` — neither is an Axios call),
+(`/onboarding/payment/events`, `/tracking/ws` — neither is an Axios call),
 and pure aliases of routes already covered (`GET /fleet/fuel/transactions`,
 `PUT /dispatch/jobs/{jobId}`).
 

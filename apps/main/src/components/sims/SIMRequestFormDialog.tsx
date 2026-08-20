@@ -27,7 +27,7 @@ import { Switch } from "@/components/shadcn/switch";
 import { Textarea } from "@/components/shadcn/textarea";
 import { DeviceMappingUpload } from "./DeviceMappingUpload";
 
-// Tenant data-bundle plan (GET /auth/sims/data-bundles → data.items[])
+// Tenant data-bundle plan (GET /sims/data-bundles → data.items[])
 type BundleItem = {
   id: string;
   code: string;

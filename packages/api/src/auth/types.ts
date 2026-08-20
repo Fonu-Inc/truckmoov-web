@@ -81,12 +81,15 @@ export type UpdateProfilePayload = {
 }
 
 export type NotificationPreferences = {
-  emailAlerts: boolean
   smsAlerts: boolean
   pushAlerts: boolean
   incidentAlerts: boolean
-  jobUpdates: boolean
-  marketingAnnouncements: boolean
+  jobAssignment: boolean
+  jobCompletion: boolean
+  maintenanceReminders: boolean
+  fuelAlerts: boolean
+  geofenceAlerts: boolean
+  emailDigest: boolean
 }
 
 export type NotificationPreferencesData = {
@@ -98,8 +101,23 @@ export type UpdateNotifPrefsPayload = {
   data: Partial<NotificationPreferences>
 }
 
+export type DispatcherPreferences = {
+  timezone: string
+  /** "HH:mm" */
+  shiftStart: string
+  /** "HH:mm" */
+  shiftEnd: string
+  /** 0 = Sunday, 6 = Saturday */
+  workDays: number[]
+}
+
+export type DispatcherPreferencesData = {
+  userId: string
+  dispatcherPreferences: DispatcherPreferences
+}
+
 export type UpdateDispatchPrefsPayload = {
-  data: Record<string, unknown>
+  data: Partial<DispatcherPreferences>
 }
 
 // ─── Organization admin ───────────────────────────────────────────────────────
@@ -309,26 +327,50 @@ export type SystemTenantsQuery = {
   }
 }
 
-export type CreateTenantPayload = {
-  data: {
-    company: {
-      "companyName": string,
-      "contactName": string
-      "email": string,
-      "phoneNumber": string,
-      "billingEmail": string,
-      "organizationType": string
-    }
-    subscription?: {
-      planCode: string
-      billingCycle: 'monthly' | 'yearly'
-    }
+export type TenantOnboardingInput = {
+  company: {
+    companyName: string
+    contactName: string
+    email: string
+    phoneNumber?: string
+    billingEmail?: string
+    businessAddress?: string
+    organizationType: 'fleet_provider' | 'enterprise' | 'aggregator' | 'owner_operator'
   }
+  subscription: {
+    planCode: string
+    billingCycle: 'monthly' | 'yearly'
+  }
+  deviceProvisioning?: {
+    provisionNow: boolean
+    numberOfDevices?: number
+    deviceManufacturer?: string
+    deviceModel?: string
+  }
+  simAssignment?: {
+    provisionNow: boolean
+    numberOfSims?: number
+    carrier?: 'MTN' | 'Airtel' | 'Glo' | '9mobile'
+    dataPackage?: '250MB/month' | '500MB/month' | '1GB/month' | '2GB/month'
+  }
+  features?: {
+    liveTracking?: boolean
+    messaging?: boolean
+    geofencing?: boolean
+    routeOptimization?: boolean
+    advancedAnalytics?: boolean
+    apiAccess?: boolean
+  }
+}
+
+export type CreateTenantPayload = {
+  data: TenantOnboardingInput
 }
 
 export type UpdateTenantPayload = {
   id: string
-  data: Record<string, unknown>
+  /** PATCH accepts any subset of any group — see UpdateSystemTenantDto */
+  data: { [K in keyof TenantOnboardingInput]?: Partial<TenantOnboardingInput[K]> }
 }
 
 export type UpdateTenantStatusPayload = {
@@ -1492,7 +1534,7 @@ export type OrgSettingsData = {
 
 export type OrganizationSettingsResponse = ServerResponse<OrgSettingsData>
 export type NotificationPreferencesResponse = ServerResponse<NotificationPreferencesData>
-export type DispatcherPreferencesResponse = ServerResponse<Record<string, unknown>>
+export type DispatcherPreferencesResponse = ServerResponse<DispatcherPreferencesData>
 export type ActivityLogResponse = ServerResponse<ActivityLog[]>
 export type UploadedMediaResponse = ServerResponse<UploadedMedia>
 /**
@@ -1580,6 +1622,7 @@ export type PaymentIntentPayload = {
     billingCycle: 'monthly' | 'yearly'
     gateway: 'paystack' | 'momo'
     phone?: string
+    redirectUrl?: string
   }
 }
 

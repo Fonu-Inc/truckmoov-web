@@ -1,6 +1,7 @@
 import type {
   SubscriptionPlan,
   SystemTenant,
+  TenantOnboardingInput,
 } from "@truckmoov/api/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useUpdateTenant } from "@truckmoov/api/auth";
@@ -174,7 +175,7 @@ export function TenantEditDialog({
           phoneNumber: values.phone || null,
           businessAddress: values.address || null,
           billingEmail: values.billingEmail || null,
-          organizationType: values.organizationType,
+          organizationType: values.organizationType.toLowerCase() as TenantOnboardingInput["company"]["organizationType"],
         },
         subscription: { planCode: values.planCode },
       },

@@ -1,4 +1,7 @@
-import type { SubscriptionPlan } from "@truckmoov/api/auth";
+import type {
+  SubscriptionPlan,
+  TenantOnboardingInput,
+} from "@truckmoov/api/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateTenant } from "@truckmoov/api/auth";
 import {
@@ -182,7 +185,7 @@ const COMPANY_PLACEHOLDER: Record<OrgType, string> = {
   OWNER_OPERATOR: "e.g. Musa's Haulage",
 };
 
-const API_ORG_TYPE: Record<OrgType, string> = {
+const API_ORG_TYPE: Record<OrgType, TenantOnboardingInput["company"]["organizationType"]> = {
   ENTERPRISE: "enterprise",
   FLEET_PROVIDER: "fleet_provider",
   AGGREGATOR: "aggregator",

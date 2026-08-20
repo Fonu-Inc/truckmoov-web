@@ -16,20 +16,16 @@ import { toast } from "sonner";
 import {
   Alert, AlertDescription, AlertTitle,
 } from "@/components/shadcn/alert";
-import { Badge } from "@/components/shadcn/badge";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { Switch } from "@/components/shadcn/switch";
 
-type SupportedPreferenceKey = "incidentAlerts" | "smsAlerts" | "pushAlerts";
-
 type PreferenceRow = {
-  key: string;
+  key: keyof NotificationPreferences;
   label: string;
   description: string;
-  apiKey?: SupportedPreferenceKey;
   icon?: typeof Bell;
 };
 
@@ -41,7 +37,7 @@ const ALERT_PREFERENCES: PreferenceRow[] = [
     key: "jobCompletion", label: "Job Completions", description: "When jobs are marked as completed",
   },
   {
-    key: "driverAlerts", apiKey: "incidentAlerts", label: "Driver Alerts", description: "SOS signals and emergency notifications",
+    key: "incidentAlerts", label: "Driver Alerts", description: "SOS signals and emergency notifications",
   },
   {
     key: "maintenanceReminders", label: "Maintenance Reminders", description: "Upcoming vehicle maintenance schedules",
@@ -59,10 +55,10 @@ const DELIVERY_CHANNELS: PreferenceRow[] = [
     key: "emailDigest", label: "Email Digest", description: "Daily summary of all activities", icon: Mail,
   },
   {
-    key: "smsAlerts", apiKey: "smsAlerts", label: "SMS Alerts", description: "Critical alerts via SMS", icon: Phone,
+    key: "smsAlerts", label: "SMS Alerts", description: "Critical alerts via SMS", icon: Phone,
   },
   {
-    key: "pushNotifications", apiKey: "pushAlerts", label: "Push Notifications", description: "Real-time browser notifications", icon: Bell,
+    key: "pushAlerts", label: "Push Notifications", description: "Real-time browser notifications", icon: Bell,
   },
 ];
 
@@ -128,7 +124,7 @@ export function NotificationPreferencesPanel() {
     );
   }
 
-  const updatePreference = (key: SupportedPreferenceKey, checked: boolean) => {
+  const updatePreference = (key: keyof NotificationPreferences, checked: boolean) => {
     const previousValue = preferences[key];
     setPreferences(current => current
       ? {
@@ -153,7 +149,6 @@ export function NotificationPreferencesPanel() {
   };
 
   const renderRows = (rows: PreferenceRow[], showIcons = false) => rows.map((item) => {
-    const isSupported = item.apiKey !== undefined;
     const Icon = item.icon;
     return (
       <div
@@ -167,19 +162,16 @@ export function NotificationPreferencesPanel() {
             </div>
           )}
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-medium">{item.label}</p>
-              {!isSupported && <Badge variant="outline">Backend support required</Badge>}
-            </div>
+            <p className="font-medium">{item.label}</p>
             <p className="text-sm text-muted-foreground">{item.description}</p>
           </div>
         </div>
         <Switch
           aria-label={item.label}
-          checked={isSupported ? preferences[item.apiKey!] : false}
-          disabled={!isSupported || updateMutation.isPending}
-          onCheckedChange={checked => item.apiKey && updatePreference(
-            item.apiKey,
+          checked={preferences[item.key]}
+          disabled={updateMutation.isPending}
+          onCheckedChange={checked => updatePreference(
+            item.key,
             checked,
           )}
         />

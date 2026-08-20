@@ -42,12 +42,15 @@ vi.mock(
 );
 
 const notificationPreferences = {
-  emailAlerts: false,
   smsAlerts: true,
   pushAlerts: false,
   incidentAlerts: true,
-  jobUpdates: false,
-  marketingAnnouncements: false,
+  jobAssignment: false,
+  jobCompletion: false,
+  maintenanceReminders: false,
+  fuelAlerts: false,
+  geofenceAlerts: false,
+  emailDigest: false,
 };
 
 function successfulQuery() {
@@ -112,6 +115,16 @@ describe(
         "pushAlerts",
         true,
       ],
+      [
+        "Job Assignments",
+        "jobAssignment",
+        true,
+      ],
+      [
+        "Email Digest",
+        "emailDigest",
+        true,
+      ],
     ])(
       "pATCHes %s using %s",
       (label, apiKey, nextValue) => {
@@ -128,29 +141,6 @@ describe(
             onSuccess: expect.any(Function), onError: expect.any(Function),
           }),
         );
-      },
-    );
-
-    it(
-      "disables preferences that the endpoint cannot represent",
-      () => {
-        render(<NotificationPreferencesPanel />);
-
-        for (const label of [
-          "Job Assignments",
-          "Job Completions",
-          "Maintenance Reminders",
-          "Fuel Alerts",
-          "Geofence Alerts",
-          "Email Digest",
-        ]) {
-          expect(screen.getByRole(
-            "switch",
-            { name: label },
-          )).toBeDisabled();
-        }
-        expect(screen.getAllByText("Backend support required")).toHaveLength(6);
-        expect(mutateMock).not.toHaveBeenCalled();
       },
     );
 
