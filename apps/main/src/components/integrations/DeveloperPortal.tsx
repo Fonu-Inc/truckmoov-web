@@ -1,8 +1,12 @@
+import {
+  useApiKeys, useConsoleAuditLog, useConsoleWebhooks,
+} from "@truckmoov/api/console";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   Activity, BarChart3, BookOpen, Key, Webhook,
 } from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
@@ -16,13 +20,18 @@ import { ApiUsageAnalytics } from "./ApiUsageAnalytics";
 import { WebhookManagementPanel } from "./WebhookManagementPanel";
 
 export function DeveloperPortal() {
-  const apiKeys: any[] = [];
-  const subscriptions: any[] = [];
-  const auditLogs: any[] = [];
-  const auditLoading = false;
+  const { data: keysResponse } = useApiKeys();
+  const { data: webhooksResponse } = useConsoleWebhooks();
+  const {
+    data: auditResponse, isLoading: auditLoading, isError: auditError, refetch: refetchAudit,
+  } = useConsoleAuditLog();
+
+  const apiKeys = keysResponse?.data ?? [];
+  const subscriptions = webhooksResponse?.data ?? [];
+  const auditLogs = auditResponse?.data ?? [];
 
   const activeKeysCount = apiKeys.filter(k => k.status === "active").length;
-  const enabledWebhooksCount = subscriptions.filter(w => w.is_enabled).length;
+  const enabledWebhooksCount = subscriptions.filter(w => w.status === "active").length;
 
   return (
     <div className="space-y-6">
@@ -152,52 +161,68 @@ export function DeveloperPortal() {
                 ? (
                     <p className="text-muted-foreground">Loading...</p>
                   )
-                : auditLogs.length === 0
+                : auditError
                   ? (
-                      <p className="text-muted-foreground">No audit events recorded</p>
+                      <p className="text-sm text-muted-foreground">
+                        Couldn't load the audit log.
+                        {" "}
+                        <Button
+                          variant="link"
+                          className="h-auto p-0"
+                          onClick={() => refetchAudit()}
+                        >
+                          Retry
+                        </Button>
+                      </p>
                     )
-                  : (
-                      <ScrollArea className="h-96">
-                        <div className="space-y-3">
-                          {auditLogs.map(log => (
-                            <div
-                              key={log.id}
-                              className="flex items-start gap-3 p-3 border rounded-lg"
-                            >
-                              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                                {log.resource_type === "api_key"
-                                  ? (
-                                      <Key className="h-4 w-4" />
-                                    )
-                                  : (
-                                      <Webhook className="h-4 w-4" />
-                                    )}
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium text-sm">{log.actor_name || "System"}</span>
-                                  <Badge
-                                    variant="outline"
-                                    className="text-xs"
-                                  >
-                                    {log.action}
-                                  </Badge>
+                  : auditLogs.length === 0
+                    ? (
+                        <p className="text-muted-foreground">No audit events recorded</p>
+                      )
+                    : (
+                        <ScrollArea className="h-96">
+                          <div className="space-y-3">
+                            {auditLogs.map(log => (
+                              <div
+                                key={log.id}
+                                className="flex items-start gap-3 p-3 border rounded-lg"
+                              >
+                                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                                  {log.resourceType === "api_key"
+                                    ? (
+                                        <Key className="h-4 w-4" />
+                                      )
+                                    : (
+                                        <Webhook className="h-4 w-4" />
+                                      )}
                                 </div>
-                                <p className="text-xs text-muted-foreground">
-                                  {log.resource_type}
-                                  {" "}
-                                  •
-                                  {formatWithPattern(
-                                    log.created_at,
-                                    "MMM d, yyyy HH:mm:ss",
-                                  )}
-                                </p>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    {/* ponytail: the audit entry carries no actor name, only
+                                      actorId — show the id until the API resolves one. */}
+                                    <span className="font-medium text-sm">{log.actorId || "—"}</span>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      {log.action}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    {log.resourceType}
+                                    {" "}
+                                    •
+                                    {formatWithPattern(
+                                      log.occurredAt,
+                                      "MMM d, yyyy HH:mm:ss",
+                                    )}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    )}
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      )}
             </CardContent>
           </Card>
         </TabsContent>

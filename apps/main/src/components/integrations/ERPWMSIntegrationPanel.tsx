@@ -7,6 +7,7 @@ import {
 import {
   useEffect, useState,
 } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -28,11 +29,41 @@ import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
 
-type ERPProvider = string;
-type ERPAuthMethod = string;
+type ERPProvider = "sap" | "oracle" | "dynamics" | "odoo" | "zoho" | "custom";
+type ERPAuthMethod = "oauth2" | "api_key" | "basic_auth" | "custom_header";
 type ERPSyncScope = string;
-type ERPConnector = any;
-const ERP_PROVIDERS: any[] = [];
+
+type ERPConnector = {
+  id: string;
+  name: string;
+  provider: ERPProvider;
+  status: string;
+  company_name: string | null;
+  last_sync_at: string | null;
+};
+
+const ERP_PROVIDERS: {
+  id: ERPProvider; name: string; icon: string; color: string;
+}[] = [
+  {
+    id: "sap", name: "SAP S/4HANA & Business One", icon: "🏢", color: "bg-blue-600",
+  },
+  {
+    id: "oracle", name: "Oracle NetSuite / Fusion", icon: "🔴", color: "bg-red-600",
+  },
+  {
+    id: "dynamics", name: "Microsoft Dynamics 365", icon: "🟦", color: "bg-indigo-600",
+  },
+  {
+    id: "odoo", name: "Odoo ERP", icon: "🟣", color: "bg-purple-600",
+  },
+  {
+    id: "zoho", name: "Zoho", icon: "🟡", color: "bg-yellow-600",
+  },
+  {
+    id: "custom", name: "Custom ERP / WMS", icon: "⚙️", color: "bg-muted",
+  },
+];
 
 type Props = { tenantId: string };
 
@@ -53,24 +84,37 @@ const SCOPE_LABELS: Record<string, {
   },
 };
 
+// ponytail: the console API (10 routes: keys, webhooks, audit-log, analytics)
+// has nothing for ERP/WMS — no connectors, mappings, sync logs or schedules.
+// The UI below is kept intact and inert; wire these to @truckmoov/api once
+// /console (or a new service) exposes the endpoints. Because `connectors` is
+// always empty, the whole selected-connector detail section — Data Mapping,
+// Sync Dashboard, Schedules — is unreachable until then.
+const NOT_AVAILABLE = "ERP & WMS integration is not available yet.";
+
 export function ERPWMSIntegrationPanel({ tenantId: _tenantId }: Props) {
-  const connectors: any[] = [];
+  const connectors: ERPConnector[] = [];
   const mappings: any[] = [];
   const syncLogs: any[] = [];
   const schedules: any[] = [];
   const isLoading = false;
   const isSyncing = false;
+  // Accepts and ignores whatever the call sites pass — there is nothing to send.
+  const notAvailable = (..._args: unknown[]) => toast.info(NOT_AVAILABLE);
   const fetchConnectors = async () => {};
-  const createConnector = async (..._args: any[]): Promise<any> => null;
-  const deleteConnector = async (..._args: any[]) => {};
-  const testConnection = async (..._args: any[]) => {};
+  const createConnector = async (..._args: any[]): Promise<any> => {
+    notAvailable();
+    return null;
+  };
+  const deleteConnector = notAvailable;
+  const testConnection = notAvailable;
   const fetchMappings = async (..._args: any[]) => {};
-  const deleteMapping = async (..._args: any[]) => {};
-  const loadDefaultMappings = async (..._args: any[]) => {};
-  const executeSync = async (..._args: any[]) => {};
+  const deleteMapping = notAvailable;
+  const loadDefaultMappings = notAvailable;
+  const executeSync = notAvailable;
   const fetchSyncLogs = async (..._args: any[]) => {};
   const fetchSchedules = async (..._args: any[]) => {};
-  const upsertSchedule = async (..._args: any[]) => {};
+  const upsertSchedule = notAvailable;
 
   const [
     selectedConnector,
@@ -296,8 +340,12 @@ export function ERPWMSIntegrationPanel({ tenantId: _tenantId }: Props) {
               ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Database className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p className="text-sm">No ERP/WMS connectors configured yet.</p>
-                    <p className="text-xs mt-1">Add a connector to start syncing data with your enterprise systems.</p>
+                    <p className="text-sm">{NOT_AVAILABLE}</p>
+                    <p className="text-xs mt-1 max-w-sm mx-auto">
+                      Connecting SAP, Oracle, Dynamics, Odoo and Zoho needs server
+                      endpoints that don't exist yet. Connectors will appear here once
+                      they do.
+                    </p>
                   </div>
                 )
               : (

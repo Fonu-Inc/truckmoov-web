@@ -1,4 +1,7 @@
 import type { TimeRange } from "@/components/charts/TimeRangeSelect";
+import {
+  useApiKeys, useConsoleUsageAnalytics,
+} from "@truckmoov/api/console";
 import { formatDayMonth } from "@truckmoov/app-core/utils/time-utils";
 import {
   Activity, CheckCircle, Clock, TrendingDown, TrendingUp, Zap,
@@ -10,13 +13,16 @@ import {
 import { sliceByRange } from "@/components/charts/timeRange";
 import { TimeRangeSelect } from "@/components/charts/TimeRangeSelect";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
+import {
+  toApiKeyUsage, toDailyUsage, toSummary,
+} from "./usageAnalytics";
 
 export function ApiUsageAnalytics() {
-  const [daysRange] = useState(30);
   const [
     requestsRange,
     setRequestsRange,
@@ -30,12 +36,24 @@ export function ApiUsageAnalytics() {
     setLatencyRange,
   ] = useState<TimeRange>("30d");
 
-  const dailyUsage: any[] = [];
-  const endpointUsage: any[] = [];
-  const apiKeyUsage: any[] = [];
-  const summary = {
-    totalRequests: 0, successRate: 0, avgLatencyMs: 0, requestsToday: 0, errorRateToday: 0,
-  };
+  const {
+    data: usageResponse, isLoading, isError, refetch,
+  } = useConsoleUsageAnalytics();
+  const { data: keysResponse } = useApiKeys();
+
+  const buckets = usageResponse?.data ?? [];
+  const apiKeys = keysResponse?.data ?? [];
+
+  // ponytail: folded on every render — these are three passes over one query's
+  // worth of hourly buckets. Memoize if a tenant's window ever gets big enough
+  // to show up in a profile.
+  const dailyUsage = toDailyUsage(buckets);
+  const apiKeyUsage = toApiKeyUsage(
+    buckets,
+    apiKeys,
+  );
+  const summary = toSummary(dailyUsage);
+  const daysRange = dailyUsage.length;
 
   const chartData = dailyUsage.map(d => ({
     date: formatDayMonth(d.date),
@@ -61,6 +79,20 @@ export function ApiUsageAnalytics() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">API Usage Analytics</h3>
+        {isLoading && <span className="text-sm text-muted-foreground">Loading...</span>}
+        {isError && (
+          <span className="text-sm text-muted-foreground">
+            Couldn't load usage analytics.
+            {" "}
+            <Button
+              variant="link"
+              className="h-auto p-0"
+              onClick={() => refetch()}
+            >
+              Retry
+            </Button>
+          </span>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -279,44 +311,15 @@ export function ApiUsageAnalytics() {
             <CardDescription>Most frequently called API endpoints</CardDescription>
           </CardHeader>
           <CardContent>
-            {endpointUsage.length === 0
-              ? (
-                  <p className="text-muted-foreground text-sm">No endpoint data yet</p>
-                )
-              : (
-                  <ScrollArea className="h-64">
-                    <div className="space-y-3">
-                      {endpointUsage.map((endpoint, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center justify-between p-3 border rounded-lg"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Badge variant={endpoint.method === "GET" ? "default" : "secondary"}>
-                              {endpoint.method}
-                            </Badge>
-                            <code className="text-sm">{endpoint.endpoint}</code>
-                          </div>
-                          <div className="flex items-center gap-4 text-sm">
-                            <span className="text-muted-foreground">
-                              {endpoint.requests}
-                              {" "}
-                              calls
-                            </span>
-                            <Badge variant={endpoint.successRate >= 99 ? "default" : endpoint.successRate >= 95 ? "secondary" : "destructive"}>
-                              {endpoint.successRate}
-                              %
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {endpoint.avgLatencyMs}
-                              ms
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
+            {/* ponytail: /console/analytics/usage buckets by API key and hour only —
+                there is no endpoint dimension to group by. */}
+            <div className="h-64 flex flex-col items-center justify-center text-center">
+              <p className="text-muted-foreground text-sm">Per-endpoint data is not available yet</p>
+              <p className="text-xs text-muted-foreground max-w-xs mt-1">
+                Usage analytics are reported per API key and hour. A breakdown by
+                endpoint needs the server to record the route on each request.
+              </p>
+            </div>
           </CardContent>
         </Card>
 

@@ -1,8 +1,9 @@
 import {
-  formatDateTime, formatWithPattern,
-} from "@truckmoov/app-core/utils/time-utils";
+  useConsoleWebhooks, usePauseConsoleWebhook, useRegisterConsoleWebhook,
+} from "@truckmoov/api/console";
+import { formatDateTime } from "@truckmoov/app-core/utils/time-utils";
 import {
-  AlertTriangle, Clock, Copy, ExternalLink, Eye, Plus, RefreshCw, Trash2, Webhook,
+  Clock, Copy, ExternalLink, Eye, PauseCircle, Plus, RefreshCw, Webhook,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -26,22 +27,66 @@ import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
 
+// ponytail: the console OpenAPI types `eventTypes` as free-form strings and
+// enumerates none, so the pickable set lives here on the client.
 const WEBHOOK_EVENT_TYPES: {
   value: string; label: string; category: string;
-}[] = [];
-type CreateWebhookInput = {
-  name: string; url: string; event_types: string[];
-};
-type WebhookDeliveryLog = { status: "success" | "failed" | "pending" | "retrying" | "dead_letter" } & Record<string, any>;
+}[] = [
+  {
+    value: "job.created", label: "Job Created", category: "Jobs",
+  },
+  {
+    value: "job.updated", label: "Job Updated", category: "Jobs",
+  },
+  {
+    value: "job.offer.sent", label: "Job Offer Sent", category: "Jobs",
+  },
+  {
+    value: "job.offer.accepted", label: "Job Offer Accepted", category: "Jobs",
+  },
+  {
+    value: "job.offer.declined", label: "Job Offer Declined", category: "Jobs",
+  },
+  {
+    value: "job.completed", label: "Job Completed", category: "Jobs",
+  },
+  {
+    value: "job.cancelled", label: "Job Cancelled", category: "Jobs",
+  },
+  {
+    value: "geofence.enter", label: "Geofence Entry", category: "Geofencing",
+  },
+  {
+    value: "geofence.exit", label: "Geofence Exit", category: "Geofencing",
+  },
+  {
+    value: "geofence.dwell.exceeded", label: "Geofence Dwell Exceeded", category: "Geofencing",
+  },
+  {
+    value: "device.status.changed", label: "Device Status Changed", category: "Fleet",
+  },
+  {
+    value: "sla.breached", label: "SLA Breached", category: "Operations",
+  },
+  {
+    value: "maintenance.due", label: "Maintenance Due", category: "Operations",
+  },
+  {
+    value: "fuel.anomaly.detected", label: "Fuel Anomaly Detected", category: "Operations",
+  },
+  {
+    value: "alert.created", label: "Alert Created", category: "Alerts",
+  },
+];
 
 export function WebhookManagementPanel() {
-  const subscriptions: any[] = [];
-  const deliveryLogs: any[] = [];
-  const isLoading = false;
-  const createSubscription = async (_input: CreateWebhookInput): Promise<any> => null;
-  const updateSubscription = async (..._args: any[]) => {};
-  const deleteSubscription = async (..._args: any[]) => {};
-  const regenerateSecret = async (..._args: any[]) => {};
+  const {
+    data, isLoading, isError, refetch,
+  } = useConsoleWebhooks();
+  const subscriptions = data?.data ?? [];
+
+  const registerWebhook = useRegisterConsoleWebhook();
+  const pauseWebhook = usePauseConsoleWebhook();
 
   const [
     isCreateDialogOpen,
@@ -60,19 +105,17 @@ export function WebhookManagementPanel() {
     setSelectedEventTypes,
   ] = useState<string[]>([]);
   const [
-    isCreating,
-    setIsCreating,
-  ] = useState(false);
-  const [
-    selectedSubscriptionId,
-    setSelectedSubscriptionId,
-  ] = useState<string | null>(null);
-  const [
     showSecrets,
     setShowSecrets,
   ] = useState<Record<string, boolean>>({});
+  // The signing secret is returned once, on registration — the list endpoint
+  // never returns it again, so keep the ones seen this session.
+  const [
+    revealedSecrets,
+    setRevealedSecrets,
+  ] = useState<Record<string, string>>({});
 
-  const handleCreateWebhook = async () => {
+  const handleCreateWebhook = () => {
     if (!newWebhookName.trim() || !newWebhookUrl.trim()) {
       toast.error("Please fill in all required fields");
       return;
@@ -90,22 +133,40 @@ export function WebhookManagementPanel() {
       return;
     }
 
-    setIsCreating(true);
-    const input: CreateWebhookInput = {
-      name: newWebhookName.trim(),
-      url: newWebhookUrl.trim(),
-      event_types: selectedEventTypes,
-    };
+    registerWebhook.mutate(
+      {
+        data: {
+          url: newWebhookUrl.trim(),
+          eventTypes: selectedEventTypes,
+        },
+      },
+      {
+        onSuccess: (response) => {
+          const registered = response.data;
+          setIsCreateDialogOpen(false);
+          setNewWebhookName("");
+          setNewWebhookUrl("");
+          setSelectedEventTypes([]);
+          if (registered.signingSecret) {
+            setRevealedSecrets(prev => ({
+              ...prev, [registered.id]: registered.signingSecret!,
+            }));
+          }
+          toast.success("Webhook registered — copy its signing secret now, it is shown only once");
+        },
+        onError: error => toast.error(error.message),
+      },
+    );
+  };
 
-    const result = await createSubscription(input);
-    setIsCreating(false);
-
-    if (result) {
-      setIsCreateDialogOpen(false);
-      setNewWebhookName("");
-      setNewWebhookUrl("");
-      setSelectedEventTypes([]);
-    }
+  const handlePauseWebhook = (id: string) => {
+    pauseWebhook.mutate(
+      { id },
+      {
+        onSuccess: () => toast.success("Webhook paused"),
+        onError: error => toast.error(error.message),
+      },
+    );
   };
 
   const handleCopySecret = (secret: string) => {
@@ -132,27 +193,6 @@ export function WebhookManagementPanel() {
     },
     {} as Record<string, typeof WEBHOOK_EVENT_TYPES[number][]>,
   );
-
-  const getStatusBadge = (status: WebhookDeliveryLog["status"]) => {
-    switch (status) {
-      case "success":
-        return <Badge className="bg-green-500">Success</Badge>;
-      case "failed":
-        return <Badge variant="destructive">Failed</Badge>;
-      case "pending":
-        return <Badge variant="secondary">Pending</Badge>;
-      case "retrying":
-        return <Badge className="bg-yellow-500">Retrying</Badge>;
-      case "dead_letter":
-        return <Badge variant="destructive">Dead Letter</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  const filteredLogs = selectedSubscriptionId
-    ? deliveryLogs.filter(log => log.subscription_id === selectedSubscriptionId)
-    : deliveryLogs;
 
   return (
     <div className="space-y-6">
@@ -189,6 +229,9 @@ export function WebhookManagementPanel() {
                   value={newWebhookName}
                   onChange={e => setNewWebhookName(e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Used in this session only — the API stores the URL and event types, not a name.
+                </p>
               </div>
               <div>
                 <Label>Endpoint URL</Label>
@@ -243,9 +286,9 @@ export function WebhookManagementPanel() {
               </Button>
               <Button
                 onClick={handleCreateWebhook}
-                disabled={isCreating}
+                loading={registerWebhook.isPending}
               >
-                {isCreating ? "Creating..." : "Create Webhook"}
+                Create Webhook
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -260,9 +303,7 @@ export function WebhookManagementPanel() {
             )
           </TabsTrigger>
           <TabsTrigger value="logs">
-            Delivery Logs (
-            {deliveryLogs.length}
-            )
+            Delivery Logs
           </TabsTrigger>
         </TabsList>
 
@@ -274,220 +315,185 @@ export function WebhookManagementPanel() {
             ? (
                 <p className="text-muted-foreground">Loading...</p>
               )
-            : subscriptions.length === 0
+            : isError
               ? (
-                  <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-12">
-                      <Webhook className="h-12 w-12 text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground">No webhook subscriptions configured</p>
-                      <Button
-                        variant="outline"
-                        className="mt-4"
-                        onClick={() => setIsCreateDialogOpen(true)}
-                      >
-                        Create your first webhook
-                      </Button>
-                    </CardContent>
-                  </Card>
+                  <p className="text-sm text-muted-foreground">
+                    Couldn't load webhooks.
+                    {" "}
+                    <Button
+                      variant="link"
+                      className="h-auto p-0"
+                      onClick={() => refetch()}
+                    >
+                      Retry
+                    </Button>
+                  </p>
                 )
-              : (
-                  subscriptions.map(subscription => (
-                    <Card key={subscription.id}>
-                      <CardHeader className="pb-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Webhook className="h-4 w-4" />
-                            <CardTitle className="text-base">{subscription.name}</CardTitle>
-                            <Badge variant={subscription.is_enabled ? "default" : "secondary"}>
-                              {subscription.is_enabled ? "Enabled" : "Disabled"}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={subscription.is_enabled}
-                              onCheckedChange={checked => updateSubscription(
-                                subscription.id,
-                                { is_enabled: checked },
-                              )}
-                            />
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Webhook?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This will permanently delete the webhook "
-                                    {subscription.name}
-                                    " and all its delivery logs.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    className="bg-destructive text-destructive-foreground"
-                                    onClick={() => deleteSubscription(subscription.id)}
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm">
-                          <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                          <code className="text-xs bg-muted px-2 py-1 rounded">{subscription.url}</code>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Signing Secret:</span>
-                          <code className="text-xs bg-muted px-2 py-1 rounded">
-                            {showSecrets[subscription.id] ? subscription.signing_secret : "••••••••••••"}
-                          </code>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => setShowSecrets(prev => ({
-                              ...prev, [subscription.id]: !prev[subscription.id],
-                            }))}
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => handleCopySecret(subscription.signing_secret)}
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => regenerateSecret(subscription.id)}
-                          >
-                            <RefreshCw className="h-3 w-3" />
-                          </Button>
-                        </div>
-
-                        <div className="flex flex-wrap gap-1">
-                          {subscription.event_types.map(event => (
-                            <Badge
-                              key={event}
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              {event}
-                            </Badge>
-                          ))}
-                        </div>
-
-                        <div className="text-xs text-muted-foreground">
-                          Created:
-                          {" "}
-                          {formatDateTime(subscription.created_at)}
-                        </div>
+              : subscriptions.length === 0
+                ? (
+                    <Card>
+                      <CardContent className="flex flex-col items-center justify-center py-12">
+                        <Webhook className="h-12 w-12 text-muted-foreground mb-4" />
+                        <p className="text-muted-foreground">No webhook subscriptions configured</p>
+                        <Button
+                          variant="outline"
+                          className="mt-4"
+                          onClick={() => setIsCreateDialogOpen(true)}
+                        >
+                          Create your first webhook
+                        </Button>
                       </CardContent>
                     </Card>
-                  ))
-                )}
+                  )
+                : (
+                    subscriptions.map((subscription) => {
+                      const isActive = subscription.status === "active";
+                      const secret = revealedSecrets[subscription.id];
+
+                      return (
+                        <Card key={subscription.id}>
+                          <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Webhook className="h-4 w-4" />
+                                {/* ponytail: the API stores no webhook name — the URL is
+                                    the only human-readable identifier it returns. */}
+                                <CardTitle className="text-base">—</CardTitle>
+                                <Badge variant={isActive ? "default" : "secondary"}>
+                                  {isActive ? "Enabled" : "Paused"}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={isActive}
+                                  // Only pausing exists; there is no re-enable endpoint.
+                                  disabled={!isActive || pauseWebhook.isPending}
+                                  title={isActive ? "Pause this webhook" : "Re-enabling is not supported yet"}
+                                  onCheckedChange={() => handlePauseWebhook(subscription.id)}
+                                />
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-destructive"
+                                      disabled={!isActive}
+                                    >
+                                      <PauseCircle className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Pause Webhook?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This stops deliveries to
+                                        {" "}
+                                        {subscription.url}
+                                        . The console API has no endpoint to re-enable or
+                                        delete a webhook, so this cannot be undone here.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        className="bg-destructive text-destructive-foreground"
+                                        onClick={() => handlePauseWebhook(subscription.id)}
+                                      >
+                                        Pause
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm">
+                              <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                              <code className="text-xs bg-muted px-2 py-1 rounded">{subscription.url}</code>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">Signing Secret:</span>
+                              <code className="text-xs bg-muted px-2 py-1 rounded">
+                                {secret
+                                  ? (showSecrets[subscription.id] ? secret : "••••••••••••")
+                                  : "—"}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                disabled={!secret}
+                                title={secret ? "Reveal" : "Shown only once, when the webhook is registered"}
+                                onClick={() => setShowSecrets(prev => ({
+                                  ...prev, [subscription.id]: !prev[subscription.id],
+                                }))}
+                              >
+                                <Eye className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                disabled={!secret}
+                                title={secret ? "Copy" : "Shown only once, when the webhook is registered"}
+                                onClick={() => secret && handleCopySecret(secret)}
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                // ponytail: no rotate-secret endpoint on /console/webhooks yet.
+                                disabled
+                                title="Rotating the signing secret is not supported yet"
+                              >
+                                <RefreshCw className="h-3 w-3" />
+                              </Button>
+                            </div>
+
+                            <div className="flex flex-wrap gap-1">
+                              {subscription.eventTypes.map(event => (
+                                <Badge
+                                  key={event}
+                                  variant="outline"
+                                  className="text-xs"
+                                >
+                                  {event}
+                                </Badge>
+                              ))}
+                            </div>
+
+                            <div className="text-xs text-muted-foreground">
+                              Created:
+                              {" "}
+                              {formatDateTime(subscription.createdAt)}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })
+                  )}
         </TabsContent>
 
         <TabsContent
           value="logs"
           className="space-y-4 mt-4"
         >
-          <div className="flex items-center gap-2 mb-4">
-            <Label>Filter by subscription:</Label>
-            <select
-              className="border rounded px-2 py-1 text-sm"
-              value={selectedSubscriptionId || ""}
-              onChange={e => setSelectedSubscriptionId(e.target.value || null)}
-            >
-              <option value="">All subscriptions</option>
-              {subscriptions.map(sub => (
-                <option
-                  key={sub.id}
-                  value={sub.id}
-                >
-                  {sub.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {filteredLogs.length === 0
-            ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <Clock className="h-12 w-12 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">No delivery logs yet</p>
-                  </CardContent>
-                </Card>
-              )
-            : (
-                <div className="space-y-2">
-                  {filteredLogs.map(log => (
-                    <Card
-                      key={log.id}
-                      className="p-4"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {getStatusBadge(log.status)}
-                          <code className="text-xs bg-muted px-2 py-1 rounded">
-                            {log.request_url.slice(
-                              0,
-                              50,
-                            )}
-                            ...
-                          </code>
-                          <span className="text-xs text-muted-foreground">
-                            Attempt
-                            {" "}
-                            {log.attempt_number}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          {log.response_status_code && (
-                            <Badge variant="outline">{log.response_status_code}</Badge>
-                          )}
-                          {log.duration_ms && (
-                            <span>
-                              {log.duration_ms}
-                              ms
-                            </span>
-                          )}
-                          <span>
-                            {formatWithPattern(
-                              log.created_at,
-                              "MMM d HH:mm:ss",
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                      {log.error_message && (
-                        <div className="mt-2 text-xs text-destructive flex items-center gap-1">
-                          <AlertTriangle className="h-3 w-3" />
-                          {log.error_message}
-                        </div>
-                      )}
-                    </Card>
-                  ))}
-                </div>
-              )}
+          {/* ponytail: no delivery-log endpoint on /console yet — nothing to filter
+              or list until the server exposes one. */}
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <Clock className="h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">Delivery logs are not available yet</p>
+              <p className="text-sm text-muted-foreground max-w-sm mt-1">
+                The console API does not expose webhook delivery attempts. Per-event
+                delivery history will appear here once it does.
+              </p>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

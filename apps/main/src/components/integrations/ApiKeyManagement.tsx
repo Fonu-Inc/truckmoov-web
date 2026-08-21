@@ -1,5 +1,8 @@
 import {
-  formatDate, formatDateTime,
+  useApiKeys, useCreateApiKey, useRevokeApiKey,
+} from "@truckmoov/api/console";
+import {
+  addDays, formatDate, formatDateTime,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
   Check, Clock, Copy, Key, Plus, Trash2,
@@ -22,20 +25,67 @@ import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 
+// ponytail: the console OpenAPI types `scopes` as free-form "<resource>.<action>"
+// strings and enumerates none, so the pickable set lives here on the client.
+// Move it server-side once /console exposes a scope catalogue.
 const API_SCOPES: {
   value: string; label: string; description: string;
-}[] = [];
-type CreateApiKeyInput = {
-  name: string; scopes: string[]; expires_at?: string;
-};
+}[] = [
+  {
+    value: "jobs.read", label: "Read Jobs", description: "View job and dispatch data",
+  },
+  {
+    value: "jobs.write", label: "Write Jobs", description: "Create and update jobs",
+  },
+  {
+    value: "vehicles.read", label: "Read Vehicles", description: "View fleet vehicles",
+  },
+  {
+    value: "vehicles.write", label: "Write Vehicles", description: "Create and update vehicles",
+  },
+  {
+    value: "drivers.read", label: "Read Drivers", description: "View driver data",
+  },
+  {
+    value: "drivers.write", label: "Write Drivers", description: "Create and update drivers",
+  },
+  {
+    value: "devices.read", label: "Read Devices", description: "View IoT device status",
+  },
+  {
+    value: "geofences.read", label: "Read Geofences", description: "View geofence zones",
+  },
+  {
+    value: "geofences.write", label: "Write Geofences", description: "Create and update geofences",
+  },
+  {
+    value: "alerts.read", label: "Read Alerts", description: "View fleet alerts",
+  },
+  {
+    value: "maintenance.read", label: "Read Maintenance", description: "View maintenance data",
+  },
+  {
+    value: "fuel.read", label: "Read Fuel", description: "View fuel transactions",
+  },
+  {
+    value: "webhooks.manage", label: "Manage Webhooks", description: "Create and manage webhooks",
+  },
+];
 
 export function ApiKeyManagement() {
-  const apiKeys: any[] = [];
-  const isLoading = false;
-  const newlyCreatedKey: string | null = null;
-  const createApiKey = async (_input: CreateApiKeyInput): Promise<any> => null;
-  const revokeApiKey = async (..._args: any[]) => {};
-  const clearNewlyCreatedKey = () => {};
+  const {
+    data, isLoading, isError, refetch,
+  } = useApiKeys();
+  const apiKeys = data?.data ?? [];
+
+  const createKey = useCreateApiKey();
+  const revokeKey = useRevokeApiKey();
+
+  // The raw key comes back exactly once, on creation — hold it until dismissed.
+  const [
+    newlyCreatedKey,
+    setNewlyCreatedKey,
+  ] = useState<string | null>(null);
   const [
     isCreateDialogOpen,
     setIsCreateDialogOpen,
@@ -53,16 +103,11 @@ export function ApiKeyManagement() {
     setExpiresInDays,
   ] = useState<number | null>(null);
   const [
-    isCreating,
-    setIsCreating,
-  ] = useState(false);
-  const [_showSecrets] = useState<Record<string, boolean>>({});
-  const [
     copiedKeyId,
     setCopiedKeyId,
   ] = useState<string | null>(null);
 
-  const handleCreateKey = async () => {
+  const handleCreateKey = () => {
     if (!newKeyName.trim()) {
       toast.error("Please enter a name for the API key");
       return;
@@ -72,22 +117,41 @@ export function ApiKeyManagement() {
       return;
     }
 
-    setIsCreating(true);
-    const input: CreateApiKeyInput = {
-      name: newKeyName.trim(),
-      scopes: selectedScopes,
-      expires_at: expiresInDays ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString() : undefined,
-    };
+    createKey.mutate(
+      {
+        data: {
+          name: newKeyName.trim(),
+          scopes: selectedScopes,
+          expiresAt: expiresInDays
+            ? addDays(
+                new Date(),
+                expiresInDays,
+              )?.toISOString()
+            : null,
+        },
+      },
+      {
+        onSuccess: (response) => {
+          setIsCreateDialogOpen(false);
+          setNewKeyName("");
+          setSelectedScopes([]);
+          setExpiresInDays(null);
+          setNewlyCreatedKey(response.data.rawKey ?? null);
+          toast.success("API key created");
+        },
+        onError: error => toast.error(error.message),
+      },
+    );
+  };
 
-    const key = await createApiKey(input);
-    setIsCreating(false);
-
-    if (key) {
-      setIsCreateDialogOpen(false);
-      setNewKeyName("");
-      setSelectedScopes([]);
-      setExpiresInDays(null);
-    }
+  const handleRevokeKey = (id: string, name: string) => {
+    revokeKey.mutate(
+      { id },
+      {
+        onSuccess: () => toast.success(`Revoked "${name}"`),
+        onError: error => toast.error(error.message),
+      },
+    );
   };
 
   const handleCopyKey = (key: string) => {
@@ -145,7 +209,7 @@ export function ApiKeyManagement() {
               variant="ghost"
               size="sm"
               className="mt-2"
-              onClick={clearNewlyCreatedKey}
+              onClick={() => setNewlyCreatedKey(null)}
             >
               Dismiss
             </Button>
@@ -260,9 +324,9 @@ export function ApiKeyManagement() {
               </Button>
               <Button
                 onClick={handleCreateKey}
-                disabled={isCreating}
+                loading={createKey.isPending}
               >
-                {isCreating ? "Creating..." : "Create Key"}
+                Create Key
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -283,98 +347,115 @@ export function ApiKeyManagement() {
             ? (
                 <p className="text-muted-foreground">Loading...</p>
               )
-            : activeKeys.length === 0
+            : isError
               ? (
-                  <p className="text-muted-foreground">No active API keys</p>
+                  <p className="text-sm text-muted-foreground">
+                    Couldn't load API keys.
+                    {" "}
+                    <Button
+                      variant="link"
+                      className="h-auto p-0"
+                      onClick={() => refetch()}
+                    >
+                      Retry
+                    </Button>
+                  </p>
                 )
-              : (
-                  <div className="space-y-4">
-                    {activeKeys.map(key => (
-                      <div
-                        key={key.id}
-                        className="flex items-start justify-between p-4 border rounded-lg"
-                      >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Key className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{key.name}</span>
-                            <Badge
-                              variant="outline"
-                              className="text-green-600"
-                            >
-                              Active
-                            </Badge>
-                          </div>
-                          <code className="text-sm text-muted-foreground">
-                            {key.key_prefix}
-                            ...
-                          </code>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {key.scopes.map(scope => (
+              : activeKeys.length === 0
+                ? (
+                    <p className="text-muted-foreground">No active API keys</p>
+                  )
+                : (
+                    <div className="space-y-4">
+                      {activeKeys.map(key => (
+                        <div
+                          key={key.id}
+                          className="flex items-start justify-between p-4 border rounded-lg"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Key className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">{key.name}</span>
                               <Badge
-                                key={scope}
-                                variant="secondary"
-                                className="text-xs"
+                                variant="outline"
+                                className="text-green-600"
                               >
-                                {scope}
+                                Active
                               </Badge>
-                            ))}
-                          </div>
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
-                            <span>
-                              Created:
-                              {formatDate(key.created_at)}
-                            </span>
-                            {key.last_used_at && (
+                            </div>
+                            <code className="text-sm text-muted-foreground">
+                              {key.keyPrefix}
+                              ...
+                            </code>
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {key.scopes.map(scope => (
+                                <Badge
+                                  key={scope}
+                                  variant="secondary"
+                                  className="text-xs"
+                                >
+                                  {scope}
+                                </Badge>
+                              ))}
+                            </div>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
                               <span>
-                                Last used:
-                                {formatDateTime(key.last_used_at)}
+                                Created:
+                                {formatDate(key.createdAt)}
                               </span>
-                            )}
-                            {key.expires_at && (
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                Expires:
-                                {" "}
-                                {formatDate(key.expires_at)}
-                              </span>
-                            )}
+                              {key.lastUsedAt && (
+                                <span>
+                                  Last used:
+                                  {formatDateTime(key.lastUsedAt)}
+                                </span>
+                              )}
+                              {key.expiresAt && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  Expires:
+                                  {" "}
+                                  {formatDate(key.expiresAt)}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Revoke API Key?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will immediately revoke the key "
-                                {key.name}
-                                ". Any integrations using this key will stop working.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                className="bg-destructive text-destructive-foreground"
-                                onClick={() => revokeApiKey(key.id)}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive"
                               >
-                                Revoke Key
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Revoke API Key?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will immediately revoke the key "
+                                  {key.name}
+                                  ". Any integrations using this key will stop working.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground"
+                                  onClick={() => handleRevokeKey(
+                                    key.id,
+                                    key.name,
+                                  )}
+                                >
+                                  Revoke Key
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      ))}
+                    </div>
+                  )}
         </CardContent>
       </Card>
 
@@ -406,7 +487,7 @@ export function ApiKeyManagement() {
                     </Badge>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {formatDate(key.created_at)}
+                    {formatDate(key.createdAt)}
                   </span>
                 </div>
               ))}

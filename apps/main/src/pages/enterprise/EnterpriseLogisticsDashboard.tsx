@@ -1,166 +1,298 @@
-import { formatDayMonth } from "@truckmoov/app-core/utils/time-utils";
+import L from "leaflet";
 import {
-  Building2,
+  Activity,
   CheckCircle2,
-  Clock,
-  Eye,
+  Gauge,
   MapPin,
+  Maximize2,
+  Minimize2,
   Package,
   TrendingUp,
+  Truck,
+  Users,
 } from "lucide-react";
-import { useMemo } from "react";
-import { EmptyState } from "@/components/dashboard/EmptyState";
+import {
+  useEffect, useRef, useState,
+} from "react";
+import {
+  Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from "recharts";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import {
+  Dialog, DialogContent,
+} from "@/components/shadcn/dialog";
+import "leaflet/dist/leaflet.css";
+
+// ponytail: every figure below is static demo data — swap these consts for
+// @truckmoov/api queries (see docs/api.md) when there is real enterprise job data.
+const completedJobs = 3;
+const activeJobs = 6;
+const vehicleUtilization = 78;
+const onTimeRate = 92;
+
+const utilizationByRegion = [
+  {
+    region: "Lagos", utilization: 86,
+  },
+  {
+    region: "Abuja", utilization: 72,
+  },
+  {
+    region: "Port Harcourt", utilization: 64,
+  },
+  {
+    region: "Kano", utilization: 58,
+  },
+  {
+    region: "Ibadan", utilization: 45,
+  },
+];
+
+const topDrivers = [
+  {
+    name: "Emeka Okafor", jobs: 42, km: 8420, score: 96,
+  },
+  {
+    name: "Aisha Bello", jobs: 38, km: 7180, score: 93,
+  },
+  {
+    name: "Chinedu Obi", jobs: 35, km: 6890, score: 89,
+  },
+  {
+    name: "Fatima Musa", jobs: 31, km: 5940, score: 84,
+  },
+  {
+    name: "Tunde Adeyemi", jobs: 28, km: 5210, score: 78,
+  },
+];
+
+const weeklyVolume = [
+  {
+    day: "Mon", completed: 14, inProgress: 6,
+  },
+  {
+    day: "Tue", completed: 18, inProgress: 8,
+  },
+  {
+    day: "Wed", completed: 22, inProgress: 5,
+  },
+  {
+    day: "Thu", completed: 19, inProgress: 9,
+  },
+  {
+    day: "Fri", completed: 26, inProgress: 11,
+  },
+  {
+    day: "Sat", completed: 17, inProgress: 4,
+  },
+  {
+    day: "Sun", completed: 9, inProgress: 3,
+  },
+];
+
+// Delivery waypoints for the map (pickup + delivery pairs across Nigeria)
+const deliveryPoints: Array<{
+  id: string;
+  ref: string;
+  pickup: [number, number];
+  delivery: [number, number];
+  label: string;
+}> = [
+  {
+    id: "d1", ref: "JOB-2401", pickup: [
+      6.4453,
+      3.3906,
+    ], delivery: [
+      6.6018,
+      3.3515,
+    ], label: "Apapa → Ikeja",
+  },
+  {
+    id: "d2", ref: "JOB-2403", pickup: [
+      6.4478,
+      3.4723,
+    ], delivery: [
+      4.8156,
+      7.0498,
+    ], label: "Lekki → PH",
+  },
+  {
+    id: "d3", ref: "JOB-2404", pickup: [
+      6.4281,
+      3.4219,
+    ], delivery: [
+      7.3775,
+      3.9470,
+    ], label: "VI → Ibadan",
+  },
+  {
+    id: "d4", ref: "JOB-2406", pickup: [
+      4.9757,
+      8.3417,
+    ], delivery: [
+      6.4402,
+      7.4996,
+    ], label: "Calabar → Enugu",
+  },
+  {
+    id: "d5", ref: "JOB-2408", pickup: [
+      6.4380,
+      3.5710,
+    ], delivery: [
+      10.5222,
+      7.4383,
+    ], label: "Lekki FZ → Kaduna",
+  },
+  {
+    id: "d6", ref: "JOB-2402", pickup: [
+      6.4404,
+      3.3596,
+    ], delivery: [
+      9.0765,
+      7.3986,
+    ], label: "Tin Can → Abuja",
+  },
+];
+
+const pickupCount = deliveryPoints.length;
+const deliveryCount = deliveryPoints.length;
+const stopCount = pickupCount + deliveryCount;
+
+// Shared initializer so the inline and enlarged maps stay in sync visually.
+// ponytail: markers go straight on the map — no clustering. Add
+// leaflet.markercluster if the waypoint count ever outgrows a readable map.
+function initMap(container: HTMLDivElement) {
+  const map = L.map(
+    container,
+    {
+      center: [
+        9.082,
+        8.6753,
+      ],
+      zoom: 6,
+      zoomControl: true,
+      attributionControl: false,
+    },
+  );
+  L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    { maxZoom: 19 },
+  ).addTo(map);
+
+  const pickupIcon = L.divIcon({
+    className: "",
+    html: `<div style="width:14px;height:14px;border-radius:50%;background:hsl(var(--primary));border:2px solid white;box-shadow:0 0 0 1px hsl(var(--primary));"></div>`,
+    iconSize: [
+      14,
+      14,
+    ],
+    iconAnchor: [
+      7,
+      7,
+    ],
+  });
+  const deliveryIcon = L.divIcon({
+    className: "",
+    html: `<div style="width:14px;height:14px;border-radius:50%;background:hsl(var(--success));border:2px solid white;box-shadow:0 0 0 1px hsl(var(--success));"></div>`,
+    iconSize: [
+      14,
+      14,
+    ],
+    iconAnchor: [
+      7,
+      7,
+    ],
+  });
+
+  deliveryPoints.forEach((p) => {
+    L.polyline(
+      [
+        p.pickup,
+        p.delivery,
+      ],
+      {
+        color: "hsl(var(--primary))", weight: 2, opacity: 0.4, dashArray: "6,6",
+      },
+    ).addTo(map);
+
+    L.marker(
+      p.pickup,
+      { icon: pickupIcon },
+    )
+      .bindPopup(`<b>${p.ref}</b><br/>Pickup: ${p.label.split(" → ")[0]}`)
+      .addTo(map);
+    L.marker(
+      p.delivery,
+      { icon: deliveryIcon },
+    )
+      .bindPopup(`<b>${p.ref}</b><br/>Delivery: ${p.label.split(" → ")[1]}`)
+      .addTo(map);
+  });
+
+  return map;
+}
 
 /**
  * Enterprise Logistics Dashboard
- * Read-only view of all jobs owned by the enterprise, grouped by executing provider.
+ * Read-only view of enterprise-wide delivery activity and provider performance.
  */
 export default function EnterpriseLogisticsDashboard() {
-  const { format: formatCurrency } = useCurrency();
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const enlargedMapRef = useRef<HTMLDivElement>(null);
+  const enlargedMapInstanceRef = useRef<L.Map | null>(null);
+  const [
+    mapEnlarged,
+    setMapEnlarged,
+  ] = useState(false);
 
-  // Get the enterprise org IDs for filtering
-
-  const jobs: any[] = [];
-  const jobsLoading = false;
-  const organizations: any[] = [];
-  const jobOffers: any[] = [];
-
-  // Demo provider groups (used when no real data is available)
-  const demoProviderGroups = useMemo(
-    () => ([
-      {
-        orgId: "demo-fp-1",
-        orgName: "Lagos Express Logistics",
-        jobs: [
-          {
-            id: "dj1", reference: "JOB-2401", status: "in_progress", pickup_address: "Apapa Port, Lagos", delivery_address: "Ikeja, Lagos", amount_ngn: 450000, created_at: new Date(Date.now() - 2 * 86400000).toISOString(), updated_at: new Date().toISOString(), deadline: new Date(Date.now() + 86400000).toISOString(),
-          },
-          {
-            id: "dj2", reference: "JOB-2402", status: "completed", pickup_address: "Tin Can Island, Lagos", delivery_address: "Abuja CBD", amount_ngn: 1250000, created_at: new Date(Date.now() - 7 * 86400000).toISOString(), updated_at: new Date(Date.now() - 86400000).toISOString(), deadline: new Date(Date.now() - 86400000).toISOString(),
-          },
-          {
-            id: "dj3", reference: "JOB-2403", status: "assigned", pickup_address: "Lekki Phase 1", delivery_address: "Port Harcourt", amount_ngn: 980000, created_at: new Date(Date.now() - 86400000).toISOString(), updated_at: new Date().toISOString(), deadline: new Date(Date.now() + 3 * 86400000).toISOString(),
-          },
-          {
-            id: "dj4", reference: "JOB-2404", status: "in_progress", pickup_address: "Victoria Island", delivery_address: "Ibadan", amount_ngn: 320000, created_at: new Date(Date.now() - 3 * 86400000).toISOString(), updated_at: new Date().toISOString(), deadline: new Date(Date.now() + 86400000).toISOString(),
-          },
-        ],
-      },
-      {
-        orgId: "demo-agg-1",
-        orgName: "Naija Freight Network",
-        jobs: [
-          {
-            id: "dj5", reference: "JOB-2405", status: "completed", pickup_address: "Onne Port", delivery_address: "Kano", amount_ngn: 1750000, created_at: new Date(Date.now() - 10 * 86400000).toISOString(), updated_at: new Date(Date.now() - 2 * 86400000).toISOString(), deadline: new Date(Date.now() - 86400000).toISOString(),
-          },
-          {
-            id: "dj6", reference: "JOB-2406", status: "in_progress", pickup_address: "Calabar Port", delivery_address: "Enugu", amount_ngn: 620000, created_at: new Date(Date.now() - 86400000).toISOString(), updated_at: new Date().toISOString(), deadline: new Date(Date.now() + 2 * 86400000).toISOString(),
-          },
-          {
-            id: "dj7", reference: "JOB-2407", status: "created", pickup_address: "Apapa, Lagos", delivery_address: "Benin City", amount_ngn: 410000, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), deadline: new Date(Date.now() + 4 * 86400000).toISOString(),
-          },
-        ],
-      },
-      {
-        orgId: "demo-fp-2",
-        orgName: "Sahara Haulage Ltd",
-        jobs: [
-          {
-            id: "dj8", reference: "JOB-2408", status: "assigned", pickup_address: "Lekki Free Zone", delivery_address: "Kaduna", amount_ngn: 890000, created_at: new Date(Date.now() - 86400000).toISOString(), updated_at: new Date().toISOString(), deadline: new Date(Date.now() + 3 * 86400000).toISOString(),
-          },
-          {
-            id: "dj9", reference: "JOB-2409", status: "completed", pickup_address: "Apapa Port", delivery_address: "Jos", amount_ngn: 1320000, created_at: new Date(Date.now() - 9 * 86400000).toISOString(), updated_at: new Date(Date.now() - 86400000).toISOString(), deadline: new Date(Date.now() - 2 * 86400000).toISOString(),
-          },
-        ],
-      },
-    ]),
+  // Inline map
+  useEffect(
+    () => {
+      if (!mapRef.current || mapInstanceRef.current)
+        return;
+      mapInstanceRef.current = initMap(mapRef.current);
+      return () => {
+        mapInstanceRef.current?.remove();
+        mapInstanceRef.current = null;
+      };
+    },
     [],
   );
 
-  const realProviderGroups = useMemo(
+  // Enlarged map — created lazily when the dialog opens
+  useEffect(
     () => {
-      const grouped: Record<string, {
-        orgName: string; orgId: string; jobs: typeof jobs;
-      }> = {};
-      jobs.forEach((job) => {
-        const execOrgId = job.executing_org_id || "unassigned";
-        if (!grouped[execOrgId]) {
-          const org = organizations.find(o => o.id === execOrgId);
-          grouped[execOrgId] = {
-            orgName: org?.name || (execOrgId === "unassigned" ? "Unassigned" : "Unknown Provider"),
-            orgId: execOrgId,
-            jobs: [],
-          };
+      if (!mapEnlarged)
+        return;
+      // Wait for the dialog container to mount
+      const t = setTimeout(
+        () => {
+          if (enlargedMapRef.current && !enlargedMapInstanceRef.current) {
+            enlargedMapInstanceRef.current = initMap(enlargedMapRef.current);
+          }
+          else if (enlargedMapInstanceRef.current) {
+            enlargedMapInstanceRef.current.invalidateSize();
+          }
+        },
+        80,
+      );
+      return () => {
+        clearTimeout(t);
+        if (enlargedMapInstanceRef.current) {
+          enlargedMapInstanceRef.current.remove();
+          enlargedMapInstanceRef.current = null;
         }
-        grouped[execOrgId].jobs.push(job);
-      });
-      return Object.values(grouped);
+      };
     },
-    [
-      jobs,
-      organizations,
-    ],
+    [mapEnlarged],
   );
-
-  const jobsByProvider = realProviderGroups.length > 0 ? realProviderGroups : demoProviderGroups;
-
-  const isDemo = realProviderGroups.length === 0;
-  const totalJobs = isDemo
-    ? demoProviderGroups.reduce(
-        (s, g) => s + g.jobs.length,
-        0,
-      )
-    : jobs.length;
-  const activeJobs = isDemo
-    ? demoProviderGroups.reduce(
-        (s, g) => s + g.jobs.filter(j => ![
-          "completed",
-          "cancelled",
-        ].includes(j.status)).length,
-        0,
-      )
-    : jobs.filter(j => ![
-      "completed",
-      "cancelled",
-    ].includes(j.status)).length;
-  const pendingOffers = isDemo ? 4 : jobOffers.filter(o => o.status === "PENDING").length;
-
-  const onTimeRate = useMemo(
-    () => {
-      if (isDemo)
-        return 92;
-      const completed = jobs.filter(j => j.status === "completed");
-      if (completed.length === 0)
-        return null;
-      const onTime = completed.filter((j) => {
-        if (!j.deadline)
-          return true;
-        return new Date(j.updated_at) <= new Date(j.deadline);
-      }).length;
-      return Math.round((onTime / completed.length) * 100);
-    },
-    [
-      jobs,
-      isDemo,
-    ],
-  );
-
-  const getStatusColor = (status: string): "default" | "secondary" | "outline" | "destructive" => {
-    switch (status) {
-      case "completed": return "default";
-      case "in_progress": return "secondary";
-      case "assigned": case "accepted": return "outline";
-      case "cancelled": return "destructive";
-      default: return "outline";
-    }
-  };
 
   return (
     <DashboardLayout
@@ -170,260 +302,341 @@ export default function EnterpriseLogisticsDashboard() {
       <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title="Total Jobs"
-            value={jobsLoading ? "..." : totalJobs}
-            icon={Package}
+            title="Total Jobs Completed"
+            value={completedJobs}
+            icon={CheckCircle2}
+            variant="success"
+            change={12}
+            changeLabel="vs last month"
           />
           <StatCard
-            title="Active Jobs"
-            value={jobsLoading ? "..." : activeJobs}
-            icon={TrendingUp}
+            title="Active Deliveries"
+            value={activeJobs}
+            icon={Truck}
             variant={activeJobs > 0 ? "success" : "default"}
           />
           <StatCard
-            title="Pending Offers"
-            value={jobsLoading ? "..." : pendingOffers}
-            icon={Clock}
-            variant={pendingOffers > 3 ? "warning" : "default"}
+            title="Vehicle Utilization"
+            value={`${vehicleUtilization}%`}
+            icon={Gauge}
+            variant={vehicleUtilization >= 70 ? "success" : "warning"}
+            change={5}
+            changeLabel="7d"
           />
           <StatCard
             title="On-Time Delivery"
-            value={jobsLoading ? "..." : onTimeRate !== null ? `${onTimeRate}%` : "N/A"}
-            icon={CheckCircle2}
-            variant={onTimeRate !== null && onTimeRate >= 90 ? "success" : "default"}
+            value={`${onTimeRate}%`}
+            icon={TrendingUp}
+            variant={onTimeRate >= 90 ? "success" : "default"}
           />
         </div>
 
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-primary" />
-            Jobs by Executing Provider
-          </h2>
-
-          {jobsByProvider.length === 0
-            ? (
-                <EmptyState
-                  icon={Package}
-                  title="No jobs yet"
-                  description="Jobs created by your enterprise will appear here, grouped by provider."
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Geo Map */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-primary" />
+                Active Deliveries Map
+              </CardTitle>
+              <CardDescription>Live view of pickups and drop-offs across the network</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className={`relative ${mapEnlarged ? "invisible" : ""}`}>
+                <div
+                  ref={mapRef}
+                  className="h-[380px] w-full rounded-lg overflow-hidden border border-border"
                 />
-              )
-            : (
-                jobsByProvider.map(group => (
-                  <Card key={group.orgId}>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-base">{group.orgName}</span>
-                        </div>
-                        <Badge variant="outline">
-                          {group.jobs.length}
-                          {" "}
-                          jobs
-                        </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-4 gap-4 mb-4 p-3 rounded-lg bg-muted/50">
-                        <div className="text-center">
-                          <p className="text-2xl font-bold">{group.jobs.filter(j => j.status === "in_progress").length}</p>
-                          <p className="text-xs text-muted-foreground">In Progress</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-2xl font-bold">{group.jobs.filter(j => j.status === "completed").length}</p>
-                          <p className="text-xs text-muted-foreground">Completed</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-2xl font-bold">{group.jobs.filter(j => j.status === "assigned" || j.status === "accepted").length}</p>
-                          <p className="text-xs text-muted-foreground">Assigned</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-2xl font-bold">{group.jobs.filter(j => j.status === "created").length}</p>
-                          <p className="text-xs text-muted-foreground">Pending</p>
-                        </div>
-                      </div>
 
-                      <div className="space-y-2">
-                        {group.jobs.slice(
-                          0,
-                          5,
-                        ).map(job => (
-                          <div
-                            key={job.id}
-                            className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-secondary/30"
-                          >
-                            <div className="space-y-1 min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-sm">{job.reference}</span>
-                                <Badge variant={getStatusColor(job.status)}>
-                                  {job.status.replace(
-                                    /_/g,
-                                    " ",
-                                  )}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <MapPin className="h-3 w-3 shrink-0" />
-                                <span className="truncate">
-                                  {job.pickup_address?.split(",")[0] || "Pickup"}
-                                  {" "}
-                                  →
-                                  {job.delivery_address?.split(",")[0] || "Delivery"}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="text-right shrink-0 ml-4">
-                              <p className="font-medium text-sm">{formatCurrency(job.amount_ngn || 0)}</p>
-                              <p className="text-xs text-muted-foreground">{formatDayMonth(job.created_at)}</p>
-                            </div>
-                          </div>
-                        ))}
-                        {group.jobs.length > 5 && (
-                          <p className="text-xs text-muted-foreground text-center pt-1">
-                            +
-                            {group.jobs.length - 5}
-                            {" "}
-                            more jobs
-                          </p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
+                {/* Stops / active deliveries indicator overlay — top-right */}
+                <div className="absolute top-3 right-3 z-[400] rounded-md bg-background/90 backdrop-blur border border-border px-2.5 py-1.5 text-[11px] shadow-sm">
+                  <div className="flex items-center gap-1.5 font-medium">
+                    <Truck className="h-3 w-3 text-primary" />
+                    {deliveryPoints.length}
+                    {" "}
+                    active deliveries
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                    {stopCount}
+                    {" "}
+                    stops ·
+                    {" "}
+                    {pickupCount}
+                    {" "}
+                    pickups ·
+                    {" "}
+                    {deliveryCount}
+                    {" "}
+                    drop-offs
+                  </div>
+                </div>
+
+                {/* Enlarge button — bottom-right */}
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  onClick={() => setMapEnlarged(true)}
+                  className="absolute bottom-3 right-3 z-[400] h-9 w-9 rounded-full shadow-lg"
+                  title="Enlarge map"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+                  {" "}
+                  Pickup
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-success" />
+                  {" "}
+                  Delivery
+                </div>
+                <div className="ml-auto">
+                  {deliveryPoints.length}
+                  {" "}
+                  active waypoints
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Enlarged map dialog */}
+          <Dialog
+            open={mapEnlarged}
+            onOpenChange={setMapEnlarged}
+          >
+            <DialogContent className="max-w-[95vw] w-[95vw] h-[92vh] p-0 bg-card border-border flex flex-col z-[1200]">
+              <div className="flex-1 p-3 min-h-0 relative">
+                <div
+                  ref={enlargedMapRef}
+                  className="h-full w-full rounded-lg overflow-hidden border border-border"
+                />
+
+                {/* Stops indicator on enlarged view — top-right */}
+                <div className="absolute top-6 right-6 z-[400] rounded-md bg-background/90 backdrop-blur border border-border px-3 py-2 text-xs shadow-sm">
+                  <div className="flex items-center gap-2 font-medium">
+                    <Truck className="h-3.5 w-3.5 text-primary" />
+                    {deliveryPoints.length}
+                    {" "}
+                    active deliveries
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">
+                    {stopCount}
+                    {" "}
+                    stops ·
+                    {" "}
+                    {pickupCount}
+                    {" "}
+                    pickups ·
+                    {" "}
+                    {deliveryCount}
+                    {" "}
+                    drop-offs
+                  </div>
+                </div>
+
+                {/* Collapse button */}
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  onClick={() => setMapEnlarged(false)}
+                  className="absolute bottom-6 right-6 z-[400] h-10 w-10 rounded-full shadow-lg"
+                  title="Collapse map"
+                >
+                  <Minimize2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Vehicle Utilization */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-primary" />
+                Fleet Utilization
+              </CardTitle>
+              <CardDescription>Vehicles in-use vs idle by region</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer
+                width="100%"
+                height={260}
+              >
+                <BarChart
+                  data={utilizationByRegion}
+                  layout="vertical"
+                  margin={{
+                    left: 8, right: 8,
+                  }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                    horizontal={false}
+                  />
+                  <XAxis
+                    type="number"
+                    domain={[
+                      0,
+                      100,
+                    ]}
+                    tick={{ fontSize: 11 }}
+                    stroke="hsl(var(--muted-foreground))"
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="region"
+                    tick={{ fontSize: 11 }}
+                    width={70}
+                    stroke="hsl(var(--muted-foreground))"
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12,
+                    }}
+                    formatter={(v: number) => [
+                      `${v}%`,
+                      "Utilization",
+                    ]}
+                  />
+                  <Bar
+                    dataKey="utilization"
+                    radius={[
+                      0,
+                      4,
+                      4,
+                      0,
+                    ]}
+                  >
+                    {utilizationByRegion.map(r => (
+                      <Cell
+                        key={r.region}
+                        fill={r.utilization >= 75 ? "hsl(var(--success))" : r.utilization >= 50 ? "hsl(var(--primary))" : "hsl(var(--warning))"}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Provider Fleet Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5 text-primary" />
-              Fleet Provider Summary
-              <Badge
-                variant="secondary"
-                className="ml-2"
-              >
-                Read-only
-              </Badge>
-            </CardTitle>
-            <CardDescription>Summary of fleet provider activity — total vehicles, drivers, and active jobs across each connected provider.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {(() => {
-              const demoProviders = [
-                {
-                  id: "demo-fp-1", name: "Lagos Express Logistics", organization_type: "FLEET_PROVIDER", vehicles: 24, drivers: 31, jobs: 4, completed: 1,
-                },
-                {
-                  id: "demo-agg-1", name: "Naija Freight Network", organization_type: "AGGREGATOR", vehicles: 87, drivers: 102, jobs: 3, completed: 1,
-                },
-                {
-                  id: "demo-fp-2", name: "Sahara Haulage Ltd", organization_type: "FLEET_PROVIDER", vehicles: 18, drivers: 22, jobs: 2, completed: 1,
-                },
-                {
-                  id: "demo-fp-3", name: "Niger Delta Movers", organization_type: "FLEET_PROVIDER", vehicles: 12, drivers: 15, jobs: 0, completed: 0,
-                },
-                {
-                  id: "demo-agg-2", name: "Westlink Cargo Hub", organization_type: "AGGREGATOR", vehicles: 56, drivers: 68, jobs: 0, completed: 0,
-                },
-                {
-                  id: "demo-fp-4", name: "Greenline Logistics", organization_type: "FLEET_PROVIDER", vehicles: 9, drivers: 11, jobs: 0, completed: 0,
-                },
-              ];
-
-              const realProviders = organizations
-                .filter(o => o.organization_type === "FLEET_PROVIDER" || o.organization_type === "AGGREGATOR");
-
-              // Deterministic dummy generator so numbers stay stable per org
-              const seedNum = (s: string, min: number, max: number) => {
-                let h = 0;
-                for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) & 0xFFFFFFFF;
-                return min + (Math.abs(h) % (max - min + 1));
-              };
-
-              const realItems = realProviders.slice(
-                0,
-                6,
-              ).map((org) => {
-                const orgJobs = jobs.filter(j => j.executing_org_id === org.id);
-                const completedReal = orgJobs.filter(j => j.status === "completed").length;
-                return {
-                  id: org.id,
-                  name: org.name,
-                  organization_type: org.organization_type,
-                  vehicles: seedNum(
-                    `${org.id}v`,
-                    8,
-                    90,
-                  ),
-                  drivers: seedNum(
-                    `${org.id}d`,
-                    10,
-                    110,
-                  ),
-                  jobs: orgJobs.length || seedNum(
-                    `${org.id}j`,
-                    1,
-                    6,
-                  ),
-                  completed: completedReal || seedNum(
-                    `${org.id}c`,
-                    0,
-                    4,
-                  ),
-                };
-              });
-
-              const items = realItems.length > 0 ? realItems : demoProviders;
-
-              return (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {items.map(p => (
-                    <div
-                      key={p.id}
-                      className="rounded-lg border border-border p-4 space-y-3"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium text-sm">{p.name}</span>
-                        <Badge
-                          variant="outline"
-                          className="text-[10px]"
-                        >
-                          {p.organization_type?.replace(
-                            "_",
-                            " ",
-                          )}
-                        </Badge>
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Driver Performance */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                Top Driver Performance
+              </CardTitle>
+              <CardDescription>Ranked by completed jobs and on-time score</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {topDrivers.map((d, i) => (
+                  <div
+                    key={d.name}
+                    className="flex items-center justify-between rounded-lg border border-border p-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold shrink-0">
+                        {i + 1}
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-center">
-                        <div className="rounded bg-muted/50 p-2">
-                          <Package className="h-3 w-3 mx-auto mb-1 text-muted-foreground" />
-                          <p className="text-lg font-bold">{p.jobs}</p>
-                          <p className="text-[10px] text-muted-foreground">Jobs</p>
-                        </div>
-                        <div className="rounded bg-muted/50 p-2">
-                          <CheckCircle2 className="h-3 w-3 mx-auto mb-1 text-muted-foreground" />
-                          <p className="text-lg font-bold">{p.completed}</p>
-                          <p className="text-[10px] text-muted-foreground">Completed</p>
-                        </div>
-                        <div className="rounded bg-muted/50 p-2">
-                          <p className="text-lg font-bold">{p.vehicles}</p>
-                          <p className="text-[10px] text-muted-foreground">Vehicles</p>
-                        </div>
-                        <div className="rounded bg-muted/50 p-2">
-                          <p className="text-lg font-bold">{p.drivers}</p>
-                          <p className="text-[10px] text-muted-foreground">Drivers</p>
-                        </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{d.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {d.jobs}
+                          {" "}
+                          jobs ·
+                          {" "}
+                          {d.km.toLocaleString()}
+                          {" "}
+                          km
+                        </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              );
-            })()}
-          </CardContent>
-        </Card>
+                    <div className="text-right shrink-0 ml-3">
+                      <p className="text-sm font-semibold">
+                        {d.score}
+                        %
+                      </p>
+                      <Badge
+                        variant="outline"
+                        className={d.score >= 90 ? "text-success border-success/30" : d.score >= 75 ? "text-primary border-primary/30" : "text-warning border-warning/30"}
+                      >
+                        {d.score >= 90 ? "Excellent" : d.score >= 75 ? "Good" : "Fair"}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Delivery volume */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-primary" />
+                Weekly Delivery Volume
+              </CardTitle>
+              <CardDescription>Jobs completed per day this week</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer
+                width="100%"
+                height={260}
+              >
+                <BarChart data={weeklyVolume}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="day"
+                    tick={{ fontSize: 11 }}
+                    stroke="hsl(var(--muted-foreground))"
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11 }}
+                    stroke="hsl(var(--muted-foreground))"
+                  />
+                  <Tooltip contentStyle={{
+                    backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12,
+                  }}
+                  />
+                  <Bar
+                    dataKey="completed"
+                    fill="hsl(var(--success))"
+                    radius={[
+                      4,
+                      4,
+                      0,
+                      0,
+                    ]}
+                    name="Completed"
+                  />
+                  <Bar
+                    dataKey="inProgress"
+                    fill="hsl(var(--primary))"
+                    radius={[
+                      4,
+                      4,
+                      0,
+                      0,
+                    ]}
+                    name="In Progress"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </DashboardLayout>
   );
