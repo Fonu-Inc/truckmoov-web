@@ -1564,8 +1564,8 @@ export function TenantDetailsSheet({
                   },
                   {
                     id: "demo-a3",
-                    event_type: "DRIVER_INVITED",
-                    description: "Invitation sent to chinedu.okafor@gmail.com (role: driver).",
+                    event_type: "USER_INVITED",
+                    description: "Invitation sent to chinedu.okafor@gmail.com (role: dispatcher).",
                     severity: "info",
                     created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
                     user_name: `hr@${tenant.email?.split("@")[1] ?? "tenant.com"}`,

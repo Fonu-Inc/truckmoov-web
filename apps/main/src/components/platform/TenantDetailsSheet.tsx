@@ -1510,7 +1510,7 @@ export function TenantDetailsSheet({
                     id: "demo-a2", event_type: "VEHICLE_CREATED", description: "New vehicle LSR-482-XK registered (MAN TGS 33.480).", severity: "info", created_at: new Date(Date.now() - 1000 * 60 * 47).toISOString(), user_name: `fleet.manager@${tenant.email?.split("@")[1] ?? "tenant.com"}`,
                   },
                   {
-                    id: "demo-a3", event_type: "DRIVER_INVITED", description: "Invitation sent to chinedu.okafor@gmail.com (role: driver).", severity: "info", created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), user_name: `hr@${tenant.email?.split("@")[1] ?? "tenant.com"}`,
+                    id: "demo-a3", event_type: "USER_INVITED", description: "Invitation sent to chinedu.okafor@gmail.com (role: dispatcher).", severity: "info", created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), user_name: `hr@${tenant.email?.split("@")[1] ?? "tenant.com"}`,
                   },
                   {
                     id: "demo-a4", event_type: "PAYMENT_SUCCEEDED", description: "Wallet top-up of ₦250,000 via MTN MoMo (ref: MTN-9F2A1B).", severity: "info", created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), user_name: `billing@${tenant.email?.split("@")[1] ?? "tenant.com"}`,

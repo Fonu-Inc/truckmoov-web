@@ -1,24 +1,9 @@
 // User Roles
 // Legacy roles kept for DB enum compatibility; frontend permission checks now use org-scoped roles.
-export type UserRole = "platform_admin" | "tenant_admin" | "operations_manager" | "supervisor" | "dispatcher" | "viewer_finance" | "driver" | "installer";
+export type UserRole = "platform_admin" | "tenant_admin" | "operations_manager" | "supervisor" | "dispatcher" | "viewer_finance" | "installer";
 
 // ── Org-scoped role key (canonical) ──
 export type OrgRoleKey = "ADMIN" | "OPERATIONS_MANAGER" | "DISPATCHER" | "FINANCE" | "VIEWER";
-
-// Legacy role → org role key mapping (used during transition)
-export function legacyRoleToOrgRoleKey(role: UserRole): OrgRoleKey {
-  switch (role) {
-    case "platform_admin": return "ADMIN";
-    case "tenant_admin": return "ADMIN";
-    case "operations_manager": return "OPERATIONS_MANAGER";
-    case "supervisor": return "DISPATCHER";
-    case "dispatcher": return "DISPATCHER";
-    case "viewer_finance": return "FINANCE";
-    case "driver": return "VIEWER";
-    case "installer": return "VIEWER";
-    default: return "VIEWER";
-  }
-}
 
 // Device permission roles (org-scoped: ADMIN, OPERATIONS_MANAGER can manage; DISPATCHER, FINANCE can view)
 export type DeviceManageRole = "tenant_admin" | "operations_manager" | "platform_admin";
