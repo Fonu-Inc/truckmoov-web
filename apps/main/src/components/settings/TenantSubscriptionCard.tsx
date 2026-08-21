@@ -1,3 +1,18 @@
+import type {
+  OnboardingSubscriptionCaps, SubscriptionPlan,
+} from "@truckmoov/api/auth";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getOnboardingPlansQueryOptions,
+  getOnboardingStatusQueryOptions,
+  getOnboardingSubscriptionCapsQueryOptions,
+  getOrganizationUsersQueryOptions,
+  getSimsQueryOptions,
+} from "@truckmoov/api/auth";
+import {
+  getDevicesQueryOptions, getVehiclesSummaryQueryOptions,
+} from "@truckmoov/api/fleet";
+import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle,
   Check,
@@ -14,7 +29,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import {
-  Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ReferenceLine,
+  Bar, BarChart, CartesianGrid, Legend,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { toast } from "sonner";
@@ -36,58 +51,103 @@ import { Skeleton } from "@/components/shadcn/skeleton";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
 
-type TenantPlan = any;
+// Tier order drives the upgrade/downgrade lists and locked-feature discovery.
+const TIER_ORDER: SubscriptionPlan["tier"][] = [
+  "starter",
+  "professional",
+  "enterprise",
+];
 
-// Dummy fallback plan used when no real subscription is found yet.
-// This lets users preview what their chosen plan would look like
-// inside Organisation Settings → Subscription.
-const DEMO_PLAN: TenantPlan = {
-  id: "demo-professional",
-  name: "Professional",
-  tier: "Standard",
-  price_ngn: 150_000,
-  billing_cycle: "monthly",
-  max_vehicles: 100,
-  max_drivers: 120,
-  max_devices: 100,
-  storage_gb: 50,
-  features: [
-    "Full fleet management",
-    "AI load matching",
-    "WhatsApp + SMS messaging",
-    "Priority support",
-  ],
-  is_popular: true,
-  trial_days: 14,
-  yearly_discount_percent: 10,
-  tier_badge_color: "hsl(var(--primary))",
+type UsageKey = "vehicles" | "users" | "devices" | "sims";
+
+type UsageStat = {
+  current: number;
+  limit: number | null;
+  percentage: number;
 };
 
-export function TenantSubscriptionCard() {
-  const tenant = null;
-  const realCurrentPlan: TenantPlan | null = null;
-  const planFeatures: any[] = [];
-  const usageStats = {
-    vehicles: {
-      current: 0, limit: null as number | null, percentage: 0,
-    },
-    drivers: {
-      current: 0, limit: null as number | null, percentage: 0,
-    },
-    devices: {
-      current: 0, limit: null as number | null, percentage: 0,
-    },
-    sims: {
-      current: 0, limit: null as number | null, percentage: 0,
-    },
+// ponytail: the markup below reads a snake_case plan shape. Map the API's
+// SubscriptionPlan into it once instead of rewriting ~700 lines of JSX.
+type CardPlan = {
+  id: string;
+  name: string;
+  tier: string;
+  price_ngn: number;
+  custom_pricing: boolean;
+  billing_cycle: "monthly" | "yearly";
+  max_vehicles: number | null;
+  max_users: number | null;
+  max_devices: number | null;
+  max_sims: number | null;
+  features: string[];
+  is_popular: boolean;
+  trial_days: number;
+  yearly_discount_percent: number;
+  tier_badge_color: string;
+};
+
+/**
+ * `caps` is the tenant's own subscription — pass it only for the active plan.
+ * Other plans in the catalogue have no device/SIM figures of their own.
+ */
+function toCardPlan(plan: SubscriptionPlan, caps: OnboardingSubscriptionCaps | null): CardPlan {
+  return {
+    id: plan.id ?? plan.code,
+    name: plan.name,
+    tier: plan.tier,
+    // ponytail: no endpoint returns the tenant's billing cycle, so everything
+    // is priced monthly. Read it off the subscription once the server sends it.
+    price_ngn: plan.monthlyPriceNgn ?? 0,
+    custom_pricing: plan.customPricing,
+    billing_cycle: "monthly",
+    max_vehicles: plan.maxActiveVehicles,
+    max_users: caps?.maxUsers ?? plan.maxUsers,
+    max_devices: caps?.maxDevices ?? null,
+    max_sims: caps?.maxSims ?? null,
+    features: plan.features,
+    is_popular: Boolean(plan.badge),
+    trial_days: plan.trialDays ?? 0,
+    yearly_discount_percent: plan.yearlyDiscountPercent ?? 0,
+    tier_badge_color: "hsl(var(--primary))",
   };
-  const upgradeOptions: TenantPlan[] = [];
-  const downgradeOptions: TenantPlan[] = [];
-  const isLoading = false;
-  const isApproachingLimit = (_key: string) => false;
-  const isAtLimit = (_key: string) => false;
-  const currentPlan = realCurrentPlan ?? DEMO_PLAN;
-  const { currency } = useCurrency();
+}
+
+function toUsageStat(current: number, limit: number | null): UsageStat {
+  return {
+    current,
+    limit,
+    percentage: limit ? Math.min(
+      100,
+      Math.round((current / limit) * 100),
+    ) : 0,
+  };
+}
+
+function toFeature(name: string, isIncluded: boolean) {
+  return {
+    feature_key: name,
+    feature_name: name,
+    is_included: isIncluded,
+    usage_limit: null as number | null,
+  };
+}
+
+export function TenantSubscriptionCard() {
+  const { format } = useCurrency();
+  const plansQuery = useQuery(getOnboardingPlansQueryOptions());
+  const capsQuery = useQuery(getOnboardingSubscriptionCapsQueryOptions());
+  const statusQuery = useQuery(getOnboardingStatusQueryOptions());
+  const vehiclesQuery = useQuery(getVehiclesSummaryQueryOptions());
+  const usersQuery = useQuery(getOrganizationUsersQueryOptions());
+  // ponytail: GET /devices returns a bare array with no total, so the count is
+  // the list length. Switch to a /devices/summary total if one is ever added.
+  const devicesQuery = useQuery(getDevicesQueryOptions());
+  const simsQuery = useQuery(getSimsQueryOptions({
+    params: {
+      page: 1, limit: 1,
+    },
+  }));
+
   const [
     upgradeDialogOpen,
     setUpgradeDialogOpen,
@@ -98,9 +158,70 @@ export function TenantSubscriptionCard() {
   ] = useState(false);
   const [isSubmitting] = useState<string | null>(null);
 
-  const handleContactSales = async (_plan: TenantPlan, _action: "upgrade" | "downgrade") => {
+  // ponytail: plan changes still stop at a toast. Wire the buttons to
+  // POST /onboarding/payment/intent (priced plans) and
+  // POST /onboarding/enterprise/enquiry (customPricing) when self-serve lands.
+  const handleContactSales = async (_plan: CardPlan, _action: "upgrade" | "downgrade") => {
     toast.info("Coming soon");
   };
+
+  const caps = capsQuery.data?.data ?? null;
+  const plans = plansQuery.data?.data.plans ?? [];
+  const planCode = caps?.planCode ?? statusQuery.data?.data.planCode ?? null;
+  const activePlan = plans.find(plan => plan.code === planCode) ?? null;
+  const currentPlan = activePlan
+    ? toCardPlan(
+        activePlan,
+        caps,
+      )
+    : null;
+
+  const currentTier = activePlan ? TIER_ORDER.indexOf(activePlan.tier) : -1;
+  const higherPlans = activePlan
+    ? plans.filter(plan => TIER_ORDER.indexOf(plan.tier) > currentTier)
+    : [];
+  const upgradeOptions = higherPlans.map(plan => toCardPlan(
+    plan,
+    null,
+  ));
+  const downgradeOptions = activePlan
+    ? plans
+        .filter(plan => TIER_ORDER.indexOf(plan.tier) < currentTier)
+        .map(plan => toCardPlan(
+          plan,
+          null,
+        ))
+    : [];
+
+  const usageStats: Record<UsageKey, UsageStat> = {
+    vehicles: toUsageStat(
+      vehiclesQuery.data?.data.total ?? 0,
+      currentPlan?.max_vehicles ?? null,
+    ),
+    users: toUsageStat(
+      usersQuery.data?.data.users.length ?? 0,
+      currentPlan?.max_users ?? null,
+    ),
+    devices: toUsageStat(
+      devicesQuery.data?.data.length ?? 0,
+      currentPlan?.max_devices ?? null,
+    ),
+    sims: toUsageStat(
+      simsQuery.data?.data.total ?? 0,
+      currentPlan?.max_sims ?? null,
+    ),
+  };
+
+  const isAtLimit = (key: UsageKey) => {
+    const stat = usageStats[key];
+    return stat.limit !== null && stat.current >= stat.limit;
+  };
+  const isApproachingLimit = (key: UsageKey) => {
+    const stat = usageStats[key];
+    return stat.limit !== null && stat.percentage >= 80;
+  };
+
+  const isLoading = plansQuery.isPending || capsQuery.isPending;
 
   if (isLoading) {
     return (
@@ -121,11 +242,56 @@ export function TenantSubscriptionCard() {
     );
   }
 
-  // currentPlan always defined — falls back to DEMO_PLAN above when none is set.
+  if (!currentPlan) {
+    const failed = plansQuery.isError || capsQuery.isError;
+    return (
+      <Card className="bg-card/50 border-border/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Subscription
+          </CardTitle>
+          <CardDescription>Your current plan and resource usage</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-border/60 p-8 text-center">
+            <AlertTriangle className="h-5 w-5 text-muted-foreground" />
+            <p className="font-medium">
+              {failed ? "Couldn't load your subscription" : "No active subscription"}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {failed
+                ? "The subscription service didn't respond. Try again in a moment."
+                : "Choose a plan to activate your organisation's subscription."}
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                void plansQuery.refetch();
+                void capsQuery.refetch();
+              }}
+            >
+              Reload
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
-  const includedFeatures = planFeatures?.filter(f => f.is_included) || [];
-  const lockedFeatures = planFeatures?.filter(f => !f.is_included) || [];
-  const hasWarnings = isApproachingLimit("vehicles") || isApproachingLimit("drivers") || isApproachingLimit("devices") || isApproachingLimit("sims");
+  const subscriptionStatus = statusQuery.data?.data.subscriptionStatus ?? null;
+  const isActive = subscriptionStatus === null || subscriptionStatus === "active";
+  const includedFeatures = currentPlan.features.map(name => toFeature(
+    name,
+    true,
+  ));
+  const lockedFeatures = [...new Set(higherPlans.flatMap(plan => plan.features))]
+    .filter(name => !currentPlan.features.includes(name))
+    .map(name => toFeature(
+      name,
+      false,
+    ));
+  const hasWarnings = isApproachingLimit("vehicles") || isApproachingLimit("users") || isApproachingLimit("devices") || isApproachingLimit("sims");
 
   return (
     <Card className="bg-card/50 border-border/50">
@@ -156,7 +322,19 @@ export function TenantSubscriptionCard() {
                   {" "}
                   Plan
                 </h4>
-                <Badge className="bg-success/20 text-success border-success/30">Active</Badge>
+                <Badge
+                  className={cn(
+                    "capitalize",
+                    isActive
+                      ? "bg-success/20 text-success border-success/30"
+                      : "bg-warning/20 text-warning border-warning/30",
+                  )}
+                >
+                  {subscriptionStatus?.replace(
+                    /_/g,
+                    " ",
+                  ) ?? "Active"}
+                </Badge>
                 {currentPlan.is_popular && (
                   <Badge
                     variant="secondary"
@@ -177,23 +355,20 @@ export function TenantSubscriptionCard() {
                   {" "}
                   Plan
                 </Badge>
-                <Badge
-                  variant="outline"
-                  className="text-xs"
-                >
-                  Billing:
-                  {" "}
-                  {(tenant as { billing_model?: string } | null)?.billing_model
-                    ? String((tenant as { billing_model?: string }).billing_model).replace(
-                        /_/g,
-                        " ",
-                      )
-                    : "Subscription"}
-                </Badge>
+                {caps?.subscriptionActivatedAt && (
+                  <Badge
+                    variant="outline"
+                    className="text-xs"
+                  >
+                    Active since
+                    {" "}
+                    {formatDate(caps.subscriptionActivatedAt)}
+                  </Badge>
+                )}
               </div>
               <p className="text-sm text-muted-foreground mt-2">
                 {currentPlan.max_vehicles ? `Up to ${currentPlan.max_vehicles} vehicles` : "Unlimited vehicles"}
-                {currentPlan.max_drivers ? `, ${currentPlan.max_drivers} drivers` : ", unlimited drivers"}
+                {currentPlan.max_users ? `, ${currentPlan.max_users} users` : ", unlimited users"}
               </p>
               {currentPlan.trial_days > 0 && (
                 <p className="text-xs text-primary mt-1">
@@ -205,13 +380,18 @@ export function TenantSubscriptionCard() {
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold">
-              {currency === "NGN"
-                ? `₦${currentPlan.price_ngn.toLocaleString()}`
-                : `$${Math.round(currentPlan.price_ngn / 1550).toLocaleString()}`}
-              <span className="text-sm font-normal text-muted-foreground">
-                /
-                {currentPlan.billing_cycle}
-              </span>
+              {currentPlan.custom_pricing
+                ? "Custom"
+                : format(
+                    currentPlan.price_ngn,
+                    "NGN",
+                  )}
+              {!currentPlan.custom_pricing && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  /
+                  {currentPlan.billing_cycle}
+                </span>
+              )}
             </p>
             {currentPlan.yearly_discount_percent > 0 && (
               <p className="text-xs text-primary">
@@ -267,35 +447,34 @@ export function TenantSubscriptionCard() {
                             </CardTitle>
                             <CardDescription>
                               <span className="text-xl font-bold text-foreground">
-                                {currency === "NGN"
-                                  ? `₦${plan.price_ngn.toLocaleString()}`
-                                  : `$${Math.round(plan.price_ngn / 1550).toLocaleString()}`}
+                                {plan.custom_pricing
+                                  ? "Custom"
+                                  : format(
+                                      plan.price_ngn,
+                                      "NGN",
+                                    )}
                               </span>
-                              <span className="text-muted-foreground">
-                                /
-                                {plan.billing_cycle}
-                              </span>
+                              {!plan.custom_pricing && (
+                                <span className="text-muted-foreground">
+                                  /
+                                  {plan.billing_cycle}
+                                </span>
+                              )}
                             </CardDescription>
                           </CardHeader>
                           <CardContent className="space-y-2">
                             <div className="text-sm space-y-1">
                               <p>
                                 •
-                                {plan.max_vehicles || "Unlimited"}
+                                {plan.max_vehicles ?? "Unlimited"}
                                 {" "}
                                 vehicles
                               </p>
                               <p>
                                 •
-                                {plan.max_drivers || "Unlimited"}
+                                {plan.max_users ?? "Unlimited"}
                                 {" "}
-                                drivers
-                              </p>
-                              <p>
-                                •
-                                {plan.max_devices || "Unlimited"}
-                                {" "}
-                                devices
+                                users
                               </p>
                             </div>
                             <Button
@@ -368,41 +547,39 @@ export function TenantSubscriptionCard() {
                             </CardTitle>
                             <CardDescription>
                               <span className="text-xl font-bold text-foreground">
-                                {currency === "NGN"
-                                  ? `₦${plan.price_ngn.toLocaleString()}`
-                                  : `$${Math.round(plan.price_ngn / 1550).toLocaleString()}`}
+                                {plan.custom_pricing
+                                  ? "Custom"
+                                  : format(
+                                      plan.price_ngn,
+                                      "NGN",
+                                    )}
                               </span>
-                              <span className="text-muted-foreground">
-                                /
-                                {plan.billing_cycle}
-                              </span>
+                              {!plan.custom_pricing && (
+                                <span className="text-muted-foreground">
+                                  /
+                                  {plan.billing_cycle}
+                                </span>
+                              )}
                             </CardDescription>
                           </CardHeader>
                           <CardContent className="space-y-2">
                             <div className="text-sm space-y-1 text-muted-foreground">
                               <p>
                                 •
-                                {plan.max_vehicles || "Unlimited"}
+                                {plan.max_vehicles ?? "Unlimited"}
                                 {" "}
                                 vehicles
                               </p>
                               <p>
                                 •
-                                {plan.max_drivers || "Unlimited"}
+                                {plan.max_users ?? "Unlimited"}
                                 {" "}
-                                drivers
-                              </p>
-                              <p>
-                                •
-                                {plan.max_devices || "Unlimited"}
-                                {" "}
-                                devices
+                                users
                               </p>
                             </div>
                             {/* Warning if current usage exceeds plan limits */}
                             {((plan.max_vehicles && usageStats.vehicles.current > plan.max_vehicles)
-                              || (plan.max_drivers && usageStats.drivers.current > plan.max_drivers)
-                              || (plan.max_devices && usageStats.devices.current > plan.max_devices)) && (
+                              || (plan.max_users && usageStats.users.current > plan.max_users)) && (
                               <div className="flex items-center gap-2 p-2 rounded bg-warning/10 border border-warning/20 text-warning text-xs">
                                 <AlertTriangle className="h-3 w-3 flex-shrink-0" />
                                 <span>Current usage exceeds this plan's limits</span>
@@ -459,7 +636,7 @@ export function TenantSubscriptionCard() {
                 key: "vehicles" as const, label: "Vehicles", Icon: Truck,
               },
               {
-                key: "drivers" as const, label: "Drivers", Icon: Users,
+                key: "users" as const, label: "Users", Icon: Users,
               },
               {
                 key: "devices" as const, label: "Devices", Icon: Cpu,
@@ -549,15 +726,9 @@ export function TenantSubscriptionCard() {
         {/* Plan Usage Charts */}
         <PlanUsageCharts
           planName={currentPlan.name}
-          vehicles={{
-            used: usageStats.vehicles.current, limit: usageStats.vehicles.limit,
-          }}
-          drivers={{
-            used: usageStats.drivers.current, limit: usageStats.drivers.limit,
-          }}
-          devices={{
-            used: usageStats.devices.current, limit: usageStats.devices.limit,
-          }}
+          vehicles={usageStats.vehicles}
+          users={usageStats.users}
+          devices={usageStats.devices}
         />
 
         {/* Feature Access */}
@@ -653,85 +824,42 @@ export function TenantSubscriptionCard() {
   );
 }
 
-// Stable pseudo-random for demo trend
-function rand(seed: number) {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
-
 type PlanUsageChartsProps = {
   planName: string;
-  vehicles: {
-    used: number; limit: number | null;
-  };
-  drivers: {
-    used: number; limit: number | null;
-  };
-  devices: {
-    used: number; limit: number | null;
-  };
+  vehicles: UsageStat;
+  users: UsageStat;
+  devices: UsageStat;
 };
 
+// ponytail: allocation only. There is no historical-usage endpoint, so no trend
+// chart — add one when the server can report usage over time.
 function PlanUsageCharts({
-  planName, vehicles, drivers, devices,
+  planName, vehicles, users, devices,
 }: PlanUsageChartsProps) {
-  const usageVsLimit = [
+  const usageVsLimit = ([
     {
-      name: "Vehicles",
-      Used: vehicles.used,
-      Remaining: Math.max(
-        0,
-        (vehicles.limit ?? vehicles.used) - vehicles.used,
-      ),
-      limit: vehicles.limit,
+      name: "Vehicles", stat: vehicles,
     },
     {
-      name: "Drivers",
-      Used: drivers.used,
-      Remaining: Math.max(
-        0,
-        (drivers.limit ?? drivers.used) - drivers.used,
-      ),
-      limit: drivers.limit,
+      name: "Users", stat: users,
     },
     {
-      name: "Devices",
-      Used: devices.used,
-      Remaining: Math.max(
-        0,
-        (devices.limit ?? devices.used) - devices.used,
-      ),
-      limit: devices.limit,
+      name: "Devices", stat: devices,
     },
-  ];
-
-  const trendData = Array.from({ length: 14 }).map((_, i) => {
-    const dayIdx = i + 1;
-    const progress = dayIdx / 14;
-    const noise = (s: number) => 1 + (rand(s + dayIdx) - 0.5) * 0.08;
-    const date = new Date();
-    date.setDate(date.getDate() - (14 - dayIdx));
-    return {
-      label: `${date.getMonth() + 1}/${date.getDate()}`,
-      Vehicles: Math.max(
-        0,
-        Math.round(vehicles.used * progress * noise(1)),
-      ),
-      Drivers: Math.max(
-        0,
-        Math.round(drivers.used * progress * noise(2)),
-      ),
-      Devices: Math.max(
-        0,
-        Math.round(devices.used * progress * noise(3)),
-      ),
-    };
-  });
-
-  const planLimitLine = vehicles.limit ?? null;
+  ]).map(({
+    name, stat,
+  }) => ({
+    name,
+    Used: stat.current,
+    Remaining: Math.max(
+      0,
+      (stat.limit ?? stat.current) - stat.current,
+    ),
+    limit: stat.limit,
+  }));
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 gap-4">
       <Card className="bg-card/50 border-border/50">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Plan Allocation</CardTitle>
@@ -812,80 +940,6 @@ function PlanUsageCharts({
                 ]}
               />
             </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-card/50 border-border/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Last 14 Days Usage</CardTitle>
-          <CardDescription>
-            Resource growth toward your
-            {planName}
-            {" "}
-            plan limits
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer
-            width="100%"
-            height={220}
-          >
-            <LineChart data={trendData}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                className="stroke-border/30"
-              />
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 11 }}
-                className="fill-muted-foreground"
-              />
-              <YAxis
-                tick={{ fontSize: 11 }}
-                className="fill-muted-foreground"
-                allowDecimals={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: 8,
-                }}
-              />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              {planLimitLine && (
-                <ReferenceLine
-                  y={planLimitLine}
-                  stroke="hsl(var(--warning))"
-                  strokeDasharray="4 4"
-                  label={{
-                    value: `Vehicle limit (${planLimitLine})`, fontSize: 10, fill: "hsl(var(--warning))", position: "insideTopRight",
-                  }}
-                />
-              )}
-              <Line
-                type="monotone"
-                dataKey="Vehicles"
-                stroke="hsl(var(--primary))"
-                strokeWidth={2}
-                dot={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="Drivers"
-                stroke="hsl(var(--accent))"
-                strokeWidth={2}
-                dot={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="Devices"
-                stroke="hsl(var(--success))"
-                strokeWidth={2}
-                dot={false}
-              />
-            </LineChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
