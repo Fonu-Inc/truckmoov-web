@@ -1,6 +1,16 @@
-import type { Vehicle } from "@/types";
-import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
+import type {
+  FleetDevice, Vehicle,
+} from "@truckmoov/api/fleet";
+import type { VehicleLocation } from "@truckmoov/api/tracking";
+import type { LucideIcon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useVehicle } from "@truckmoov/api/fleet";
+import { getVehicleLocationHistoryQueryOptions } from "@truckmoov/api/tracking";
 import {
+  formatRelative, formatWithPattern, toDate,
+} from "@truckmoov/app-core/utils/time-utils";
+import {
+  Battery,
   Calendar,
   CheckCircle,
   Clock,
@@ -8,14 +18,16 @@ import {
   FileText,
   Fuel,
   Gauge,
+  Loader2,
   Map as MapIcon,
   MapPin,
-  Radio,
   Signal,
   Truck,
+  User,
   Wrench,
 } from "lucide-react";
 import { useState } from "react";
+import { EmptyState } from "@/components/dashboard/EmptyState";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -41,76 +53,64 @@ type VehicleDetailsSheetProps = {
   driverName: string | null;
 };
 
-// Mock maintenance history
-const mockMaintenanceHistory = [
-  {
-    id: "m1",
-    type: "Oil Change",
-    date: new Date("2024-11-15"),
-    mileage: 45230,
-    cost: 25000,
-    status: "completed",
-    notes: "Synthetic oil, filter replaced",
-  },
-  {
-    id: "m2",
-    type: "Tire Rotation",
-    date: new Date("2024-10-28"),
-    mileage: 42100,
-    cost: 15000,
-    status: "completed",
-    notes: "All tires rotated, pressure checked",
-  },
-  {
-    id: "m3",
-    type: "Brake Inspection",
-    date: new Date("2024-10-10"),
-    mileage: 40500,
-    cost: 8000,
-    status: "completed",
-    notes: "Brake pads at 60%, good condition",
-  },
-  {
-    id: "m4",
-    type: "Scheduled Service",
-    date: new Date("2024-12-20"),
-    mileage: null,
-    cost: null,
-    status: "scheduled",
-    notes: "60,000 km major service",
-  },
+type SectionState = "loading" | "error" | "ready";
+
+function SectionLoading() {
+  return (
+    <div className="flex justify-center py-8">
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
+function SectionError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="py-8 text-center">
+      <p className="text-sm text-muted-foreground">We couldn't load this section.</p>
+      <Button
+        variant="link"
+        onClick={onRetry}
+      >
+        Try again
+      </Button>
+    </div>
+  );
+}
+
+function SectionEmpty({
+  icon, title, description,
+}: {
+  icon: LucideIcon; title: string; description: string;
+}) {
+  return (
+    <EmptyState
+      icon={icon}
+      title={title}
+      description={description}
+      className="py-8"
+    />
+  );
+}
+
+const DEVICE_OK: FleetDevice["status"][] = [
+  "active",
+  "assigned",
+  "configured",
 ];
 
-// Mock trip history
-const mockTripHistory = [
-  {
-    id: "t1",
-    date: new Date("2024-12-11"),
-    from: "Apapa Port",
-    to: "Ikeja Industrial",
-    distance: 42,
-    duration: "1h 15m",
-    status: "completed",
-  },
-  {
-    id: "t2",
-    date: new Date("2024-12-10"),
-    from: "Lekki Free Zone",
-    to: "Victoria Island",
-    distance: 28,
-    duration: "45m",
-    status: "completed",
-  },
-  {
-    id: "t3",
-    date: new Date("2024-12-09"),
-    from: "Oshodi",
-    to: "Ikorodu",
-    distance: 35,
-    duration: "1h 05m",
-    status: "completed",
-  },
-];
+// The newest fix wins — the history endpoint does not promise an order.
+function latestFix(history: VehicleLocation[]): VehicleLocation | null {
+  return history.reduce<VehicleLocation | null>(
+    (newest, fix) => {
+      const at = toDate(fix.fix_time ?? fix.observed_at);
+      if (!at)
+        return newest;
+      const newestAt = newest ? toDate(newest.fix_time ?? newest.observed_at) : null;
+      return !newestAt || at > newestAt ? fix : newest;
+    },
+    null,
+  );
+}
 
 export function VehicleDetailsSheet({
   open,
@@ -122,8 +122,30 @@ export function VehicleDetailsSheet({
     isGeofenceOpen,
     setIsGeofenceOpen,
   ] = useState(false);
+
+  // Same query key as the fleet list's useVehicle call, so this is a cache hit
+  // rather than a second request.
+  const detailsQuery = useVehicle(open ? vehicle?.id ?? "" : "");
+  const locationQuery = useQuery(getVehicleLocationHistoryQueryOptions(
+    open ? vehicle?.id ?? "" : "",
+    1,
+  ));
+
   if (!vehicle)
     return null;
+
+  const details = detailsQuery.data?.data ?? vehicle;
+  const devices = details.devices ?? [];
+  const maintenanceRecords = details.maintenanceRecords ?? [];
+  const trips = details.trips ?? [];
+
+  const detailsState: SectionState = detailsQuery.isPending
+    ? "loading"
+    : detailsQuery.isError ? "error" : "ready";
+  const locationState: SectionState = locationQuery.isPending
+    ? "loading"
+    : locationQuery.isError ? "error" : "ready";
+  const location = latestFix(locationQuery.data?.history ?? []);
 
   return (
     <>
@@ -138,15 +160,12 @@ export function VehicleDetailsSheet({
                 <Truck className="h-6 w-6 text-primary" />
               </div>
               <div className="flex-1">
-                <span className="block">{vehicle.registrationNumber}</span>
+                <span className="block">{details.registrationNumber}</span>
                 <span className="text-sm font-normal text-muted-foreground">
-                  {vehicle.make}
+                  {details.make}
                   {" "}
-                  {vehicle.model}
-                  {" "}
-                  (
-                  {vehicle.year}
-                  )
+                  {details.model}
+                  {details.year ? ` (${details.year})` : ""}
                 </span>
               </div>
             </DialogTitle>
@@ -188,21 +207,21 @@ export function VehicleDetailsSheet({
                         <Badge
                           className={cn(
                             "mt-1",
-                            vehicle.status === "active" && "bg-success hover:bg-success",
-                            vehicle.status === "maintenance" && "bg-warning hover:bg-warning",
-                            vehicle.status === "inactive" && "bg-muted hover:bg-muted",
+                            details.status === "active" && "bg-success hover:bg-success",
+                            details.status === "maintenance" && "bg-warning hover:bg-warning",
+                            details.status === "inactive" && "bg-muted hover:bg-muted",
                           )}
                         >
-                          {vehicle.status}
+                          {details.status}
                         </Badge>
                       </div>
-                      {vehicle.fuelLevel !== undefined && (
+                      {details.fuelLevelPercent !== null && details.fuelLevelPercent !== undefined && (
                         <div className="text-right">
                           <p className="text-sm text-muted-foreground">Fuel Level</p>
                           <div className="flex items-center gap-2 mt-1">
                             <Fuel className="h-4 w-4 text-muted-foreground" />
                             <span className="font-medium">
-                              {vehicle.fuelLevel}
+                              {details.fuelLevelPercent}
                               %
                             </span>
                           </div>
@@ -220,66 +239,77 @@ export function VehicleDetailsSheet({
                   <CardContent className="space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">VIN</span>
-                      <span className="font-mono">{vehicle.vin}</span>
+                      <span className="font-mono">{details.vin ?? "—"}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Type</span>
-                      <span className="capitalize">{vehicle.type}</span>
+                      <span className="capitalize">{details.type ?? "—"}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Capacity</span>
                       <span>
-                        {vehicle.capacity}
-                        {" "}
-                        tons
+                        {details.capacity === null ? "—" : `${details.capacity} tons`}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Assigned Driver</span>
-                      <span>{driverName || "Unassigned"}</span>
+                      <span>{driverName || details.assignedDriverName || "Unassigned"}</span>
                     </div>
                   </CardContent>
                 </Card>
 
                 {/* Location Info */}
-                {vehicle.location && (
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-primary" />
-                        Current Location
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Coordinates</span>
-                        <span className="font-mono text-xs">
-                          {vehicle.location.lat.toFixed(4)}
-                          ,
-                          {vehicle.location.lng.toFixed(4)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Speed</span>
-                        <span className="flex items-center gap-1">
-                          <Gauge className="h-3 w-3" />
-                          {vehicle.location.speed}
-                          {" "}
-                          km/h
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Last Update</span>
-                        <span>
-                          {formatWithPattern(
-                            vehicle.location.lastUpdate,
-                            "PPp",
-                          )}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      Current Location
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {locationState === "loading" && <SectionLoading />}
+                    {locationState === "error" && (
+                      <SectionError onRetry={() => void locationQuery.refetch()} />
+                    )}
+                    {locationState === "ready" && !location && (
+                      <SectionEmpty
+                        icon={MapPin}
+                        title="No location reported"
+                        description="This vehicle hasn't sent a GPS fix yet."
+                      />
+                    )}
+                    {locationState === "ready" && location && (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Coordinates</span>
+                          <span className="font-mono text-xs">
+                            {location.latitude?.toFixed(4) ?? "—"}
+                            ,
+                            {location.longitude?.toFixed(4) ?? "—"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Speed</span>
+                          <span className="flex items-center gap-1">
+                            <Gauge className="h-3 w-3" />
+                            {location.speed_kph ?? 0}
+                            {" "}
+                            km/h
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Last Update</span>
+                          <span>
+                            {formatWithPattern(
+                              location.fix_time ?? location.observed_at,
+                              "PPp",
+                            )}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent
@@ -294,50 +324,81 @@ export function VehicleDetailsSheet({
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {[
-                      {
-                        id: "dev-1", name: "GPS Tracker", model: "Teltonika FMB920", serial: "IMEI 352093085422318", status: "online", lastSeen: "2 mins ago", icon: Radio,
-                      },
-                      {
-                        id: "dev-2", name: "OBD-II Reader", model: "Calamp LMU-3030", serial: "SN A4F2-9821", status: "online", lastSeen: "5 mins ago", icon: Cpu,
-                      },
-                      {
-                        id: "dev-3", name: "SIM Card", model: "MTN M2M (10GB/mo)", serial: "ICCID 8923440100123456789", status: "active", lastSeen: "Live", icon: Signal,
-                      },
-                    ].map((device) => {
-                      const Icon = device.icon;
-                      return (
-                        <div
-                          key={device.id}
-                          className="rounded-lg border border-border p-3"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-start gap-3">
-                              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                                <Icon className="h-4 w-4 text-primary" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-medium text-sm">{device.name}</p>
-                                <p className="text-xs text-muted-foreground">{device.model}</p>
-                                <p className="text-xs font-mono text-muted-foreground mt-1 truncate">{device.serial}</p>
-                              </div>
+                    {detailsState === "loading" && <SectionLoading />}
+                    {detailsState === "error" && (
+                      <SectionError onRetry={() => void detailsQuery.refetch()} />
+                    )}
+                    {detailsState === "ready" && devices.length === 0 && (
+                      <SectionEmpty
+                        icon={Cpu}
+                        title="No devices attached"
+                        description="Assign a tracker to this vehicle to see it here."
+                      />
+                    )}
+                    {detailsState === "ready" && devices.map(device => (
+                      <div
+                        key={device.id}
+                        className="rounded-lg border border-border p-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                              <Cpu className="h-4 w-4 text-primary" />
                             </div>
-                            <div className="text-right shrink-0">
-                              <Badge
-                                className={cn(
-                                  device.status === "online" || device.status === "active"
-                                    ? "bg-success hover:bg-success"
-                                    : "bg-muted hover:bg-muted",
+                            <div className="min-w-0">
+                              <p className="font-medium text-sm">
+                                {device.manufacturer}
+                                {" "}
+                                {device.model}
+                              </p>
+                              <p className="text-xs text-muted-foreground capitalize">
+                                {device.lifecycleStatus.replace(
+                                  /_/g,
+                                  " ",
                                 )}
-                              >
-                                {device.status}
-                              </Badge>
-                              <p className="text-xs text-muted-foreground mt-1">{device.lastSeen}</p>
+                              </p>
+                              <p className="text-xs font-mono text-muted-foreground mt-1 truncate">
+                                IMEI
+                                {" "}
+                                {device.imei}
+                              </p>
+                              {(device.signalStrength !== null || device.batteryLevel !== null) && (
+                                <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                                  {device.signalStrength !== null && (
+                                    <span className="flex items-center gap-1">
+                                      <Signal className="h-3 w-3" />
+                                      {device.signalStrength}
+                                    </span>
+                                  )}
+                                  {device.batteryLevel !== null && (
+                                    <span className="flex items-center gap-1">
+                                      <Battery className="h-3 w-3" />
+                                      {device.batteryLevel}
+                                      %
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
+                          <div className="text-right shrink-0">
+                            <Badge
+                              className={cn(
+                                "capitalize",
+                                device.status === "faulty" && "bg-destructive hover:bg-destructive",
+                                DEVICE_OK.includes(device.status) && "bg-success hover:bg-success",
+                                !DEVICE_OK.includes(device.status) && device.status !== "faulty" && "bg-muted hover:bg-muted",
+                              )}
+                            >
+                              {device.status}
+                            </Badge>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {device.lastSeen ? formatRelative(device.lastSeen) : "Never seen"}
+                            </p>
+                          </div>
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -354,7 +415,18 @@ export function VehicleDetailsSheet({
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {mockMaintenanceHistory.map(record => (
+                    {detailsState === "loading" && <SectionLoading />}
+                    {detailsState === "error" && (
+                      <SectionError onRetry={() => void detailsQuery.refetch()} />
+                    )}
+                    {detailsState === "ready" && maintenanceRecords.length === 0 && (
+                      <SectionEmpty
+                        icon={Wrench}
+                        title="No maintenance records"
+                        description="Servicing logged against this vehicle will appear here."
+                      />
+                    )}
+                    {detailsState === "ready" && maintenanceRecords.map(record => (
                       <div
                         key={record.id}
                         className={cn(
@@ -371,38 +443,45 @@ export function VehicleDetailsSheet({
                               : (
                                   <Clock className="h-4 w-4 text-primary" />
                                 )}
-                            <span className="font-medium">{record.type}</span>
+                            <span className="font-medium">{record.maintenanceType}</span>
                           </div>
-                          <Badge variant={record.status === "scheduled" ? "default" : "secondary"}>
-                            {record.status}
+                          <Badge
+                            variant={record.status === "scheduled" ? "default" : "secondary"}
+                            className="capitalize"
+                          >
+                            {record.status.replace(
+                              /_/g,
+                              " ",
+                            )}
                           </Badge>
                         </div>
                         <div className="mt-2 space-y-1 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             {formatWithPattern(
-                              record.date,
+                              record.completedDate ?? record.scheduledDate,
                               "PPP",
                             )}
                           </div>
-                          {record.mileage && (
+                          {record.cost !== null && (
                             <div>
-                              Mileage:
-                              {record.mileage.toLocaleString()}
+                              Cost:
                               {" "}
-                              km
-                            </div>
-                          )}
-                          {record.cost && (
-                            <div>
-                              Cost: ₦
+                              {record.currency}
+                              {" "}
                               {record.cost.toLocaleString()}
                             </div>
                           )}
-                          {record.notes && (
+                          {record.technician && (
+                            <div className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {record.technician}
+                            </div>
+                          )}
+                          {(record.notes ?? record.description) && (
                             <div className="flex items-start gap-1 mt-2">
                               <FileText className="h-3 w-3 mt-0.5" />
-                              {record.notes}
+                              {record.notes ?? record.description}
                             </div>
                           )}
                         </div>
@@ -424,18 +503,31 @@ export function VehicleDetailsSheet({
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {mockTripHistory.map(trip => (
+                    {detailsState === "loading" && <SectionLoading />}
+                    {detailsState === "error" && (
+                      <SectionError onRetry={() => void detailsQuery.refetch()} />
+                    )}
+                    {detailsState === "ready" && trips.length === 0 && (
+                      <SectionEmpty
+                        icon={MapPin}
+                        title="No trips recorded"
+                        description="Completed journeys for this vehicle will appear here."
+                      />
+                    )}
+                    {detailsState === "ready" && trips.map((trip, index) => (
                       <div
-                        key={trip.id}
+                        // ponytail: VehicleTrip carries no id and the list is
+                        // read-only, so the index is a legitimate key here.
+                        // eslint-disable-next-line react/no-array-index-key
+                        key={`${trip.date ?? "trip"}-${index}`}
                         className="rounded-lg border border-border p-3"
                       >
                         <div className="flex items-start justify-between">
                           <div>
                             <p className="font-medium text-sm">
-                              {trip.from}
-                              {" "}
-                              →
-                              {trip.to}
+                              {trip.from ?? "Unknown"}
+                              {" → "}
+                              {trip.to ?? "Unknown"}
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">
                               {formatWithPattern(
@@ -444,16 +536,33 @@ export function VehicleDetailsSheet({
                               )}
                             </p>
                           </div>
-                          <Badge variant="secondary">{trip.status}</Badge>
+                          {trip.status && (
+                            <Badge
+                              variant="secondary"
+                              className="capitalize"
+                            >
+                              {trip.status}
+                            </Badge>
+                          )}
                         </div>
                         <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-                          <span>
-                            {trip.distance}
-                            {" "}
-                            km
-                          </span>
-                          <span>•</span>
-                          <span>{trip.duration}</span>
+                          {trip.distanceKm !== undefined && (
+                            <span>
+                              {trip.distanceKm}
+                              {" "}
+                              km
+                            </span>
+                          )}
+                          {trip.distanceKm !== undefined && trip.durationMinutes !== undefined && (
+                            <span>•</span>
+                          )}
+                          {trip.durationMinutes !== undefined && (
+                            <span>
+                              {trip.durationMinutes}
+                              {" "}
+                              min
+                            </span>
+                          )}
                         </div>
                       </div>
                     ))}

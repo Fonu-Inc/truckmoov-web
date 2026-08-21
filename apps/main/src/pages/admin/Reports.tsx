@@ -1,9 +1,14 @@
+import { useQuery } from "@tanstack/react-query";
+import { getJobsQueryOptions } from "@truckmoov/api/dispatch";
+import {
+  getDriversQueryOptions, getVehiclesQueryOptions,
+} from "@truckmoov/api/fleet";
 import {
   endOfMonth, formatMonthYear, getDateRange, isWithinRange, startOfMonth, subMonths,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle, Calendar, CheckCircle, ChevronDown, Clock,
-  DollarSign, FileText, Fuel, Percent,
+  DollarSign, FileText, Fuel, Loader2, Percent,
   Search, Shield, SlidersHorizontal, TrendingDown, TrendingUp, Truck,
 } from "lucide-react";
 import { useState } from "react";
@@ -2608,11 +2613,30 @@ function FleetUtilizationReport({
 // ─── Main Reports Page ──────────────────────────────────────────────────────
 export default function Reports() {
   const [dateRange] = useState("this_month");
-  const vehicles: any[] = [];
-  const jobs: any[] = [];
   const { format: formatCurrency } = useCurrency();
+  const vehiclesQuery = useQuery(getVehiclesQueryOptions());
+  const jobsQuery = useQuery(getJobsQueryOptions());
+  const driversQuery = useQuery(getDriversQueryOptions());
 
+  const vehicles = vehiclesQuery.data?.data ?? [];
+  const jobs = jobsQuery.data?.data ?? [];
+  const drivers = driversQuery.data?.data ?? [];
+
+  const isLoading = vehiclesQuery.isPending || jobsQuery.isPending;
   const hasData = vehicles.length > 0 || jobs.length > 0;
+
+  if (isLoading) {
+    return (
+      <DashboardLayout
+        title="Reports"
+        subtitle="Exportable historical summaries and audits"
+      >
+        <div className="flex min-h-64 items-center justify-center text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (!hasData) {
     return (
@@ -2687,7 +2711,7 @@ export default function Reports() {
           <TabsContent value="compliance">
             <ComplianceAuditReport
               vehicles={vehicles}
-              drivers={[]}
+              drivers={drivers}
             />
           </TabsContent>
 

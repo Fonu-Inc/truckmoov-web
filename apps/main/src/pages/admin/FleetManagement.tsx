@@ -8,7 +8,6 @@ import {
   useDeleteVehicle,
   useImportVehicles,
   useUpdateVehicle,
-  useVehicle,
   useVehicles,
   useVehiclesSummary,
 } from "@truckmoov/api/fleet";
@@ -84,23 +83,6 @@ type FleetManagementProps = {
   title?: string;
   subtitle?: string;
 };
-
-function mapApiVehicleToVehicle(vehicle: FleetApiVehicle): Vehicle {
-  return {
-    id: vehicle.id,
-    plateNumber: vehicle.plateNumber,
-    vin: vehicle.vin ?? "",
-    registrationNumber: vehicle.registrationNumber,
-    make: vehicle.make ?? "",
-    model: vehicle.model,
-    year: vehicle.year ?? new Date().getFullYear(),
-    type: (String(vehicle.type) as Vehicle["type"]) || "truck",
-    status: (String(vehicle.status) as Vehicle["status"]) || "active",
-    capacity: vehicle.capacity ?? 0,
-    currentDriver: vehicle.assignedDriverName ?? vehicle.assignedDriverId ?? undefined,
-    fuelLevel: vehicle.fuelLevelPercent ?? undefined,
-  };
-}
 
 export default function FleetManagement({
   vehiclesOnly = false, title, subtitle,
@@ -220,17 +202,14 @@ export default function FleetManagement({
     data: vehiclesResp, isLoading,
   } = useVehicles({ params: vehicleQueryParams });
   const { data: vehiclesSummaryResp } = useVehiclesSummary();
-  const selectedVehicleDetailsQuery = useVehicle(isDetailsOpen ? selectedVehicle?.id ?? "" : "");
   const createVehicleMutation = useCreateVehicle();
   const updateVehicleMutation = useUpdateVehicle();
   const deleteVehicleMutation = useDeleteVehicle();
   const importVehiclesMutation = useImportVehicles();
 
-  const dbVehicles = vehiclesResp?.data ?? [];
+  const vehicles = vehiclesResp?.data ?? [];
 
-  // Convert API vehicles to the local Vehicle shape used by child components
-  const vehicles: Vehicle[] = dbVehicles.map(mapApiVehicleToVehicle);
-  const selectedVehicleDetails = selectedVehicleDetailsQuery.data?.data ?? selectedVehicle;
+  // VehicleFormDialog and BulkUploadDialog still speak the local Vehicle shape.
   const selectedVehicleFormValue = useMemo<Vehicle | null>(
     () => {
       if (!selectedVehicle)
@@ -644,8 +623,12 @@ export default function FleetManagement({
                         <td className="py-4 pr-6 capitalize">{vehicle.type}</td>
                         <td className="py-4 pr-6">{vehicle.year}</td>
                         <td className="py-4 pr-6">
-                          <span className={cn(!vehicle.currentDriver && "text-muted-foreground")}>
-                            {vehicle.currentDriver ?? "Unassigned"}
+                          <span
+                            className={cn(
+                              !vehicle.assignedDriverName && !vehicle.assignedDriverId && "text-muted-foreground",
+                            )}
+                          >
+                            {vehicle.assignedDriverName ?? vehicle.assignedDriverId ?? "Unassigned"}
                           </span>
                         </td>
                         <td className="py-4 pr-6">
@@ -662,24 +645,24 @@ export default function FleetManagement({
                           </span>
                         </td>
                         <td className="py-4 pr-6">
-                          {vehicle.fuelLevel !== undefined
+                          {vehicle.fuelLevelPercent !== null && vehicle.fuelLevelPercent !== undefined
                             ? (
                                 <div className="flex items-center gap-2">
                                   <div className="h-2 w-14 rounded-full bg-secondary">
                                     <div
                                       className={cn(
                                         "h-full rounded-full",
-                                        vehicle.fuelLevel > 50
+                                        vehicle.fuelLevelPercent > 50
                                           ? "bg-success"
-                                          : vehicle.fuelLevel > 25
+                                          : vehicle.fuelLevelPercent > 25
                                             ? "bg-warning"
                                             : "bg-destructive",
                                       )}
-                                      style={{ width: `${vehicle.fuelLevel}%` }}
+                                      style={{ width: `${vehicle.fuelLevelPercent}%` }}
                                     />
                                   </div>
                                   <span className="text-[11px] text-muted-foreground">
-                                    {vehicle.fuelLevel}
+                                    {vehicle.fuelLevelPercent}
                                     %
                                   </span>
                                 </div>
@@ -701,24 +684,7 @@ export default function FleetManagement({
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
                                 onClick={() => {
-                                  const dbVehicle = dbVehicles.find(v => v.id === vehicle.id);
-                                  setSelectedVehicle(dbVehicle ?? {
-                                    id: vehicle.id,
-                                    vin: vehicle.vin,
-                                    registrationNumber: vehicle.registrationNumber,
-                                    make: vehicle.make,
-                                    model: vehicle.model,
-                                    year: vehicle.year,
-                                    type: vehicle.type,
-                                    status: vehicle.status,
-                                    capacity: vehicle.capacity ?? 0,
-                                    assignedDriverId: vehicle.currentDriver ?? null,
-                                    assignedDriverName: vehicle.currentDriver ?? null,
-                                    fuelLevelPercent: vehicle.fuelLevel ?? null,
-                                    gpsDevice: null,
-                                    tenantId: "",
-                                    plateNumber: vehicle.plateNumber ?? vehicle.registrationNumber,
-                                  } as FleetApiVehicle);
+                                  setSelectedVehicle(vehicle);
                                   setIsDetailsOpen(true);
                                 }}
                               >
@@ -727,24 +693,7 @@ export default function FleetManagement({
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => {
-                                  const dbVehicle = dbVehicles.find(v => v.id === vehicle.id);
-                                  setSelectedVehicle(dbVehicle ?? {
-                                    id: vehicle.id,
-                                    vin: vehicle.vin,
-                                    registrationNumber: vehicle.registrationNumber,
-                                    make: vehicle.make,
-                                    model: vehicle.model,
-                                    year: vehicle.year,
-                                    type: vehicle.type,
-                                    status: vehicle.status,
-                                    capacity: vehicle.capacity ?? 0,
-                                    assignedDriverId: vehicle.currentDriver ?? null,
-                                    assignedDriverName: vehicle.currentDriver ?? null,
-                                    fuelLevelPercent: vehicle.fuelLevel ?? null,
-                                    gpsDevice: null,
-                                    tenantId: "",
-                                    plateNumber: vehicle.plateNumber ?? vehicle.registrationNumber,
-                                  } as FleetApiVehicle);
+                                  setSelectedVehicle(vehicle);
                                   setIsEditDialogOpen(true);
                                 }}
                               >
@@ -828,8 +777,8 @@ export default function FleetManagement({
       <VehicleDetailsSheet
         open={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}
-        vehicle={selectedVehicleDetails ? mapApiVehicleToVehicle(selectedVehicleDetails) : null}
-        driverName={selectedVehicleDetails?.assignedDriverName ?? null}
+        vehicle={selectedVehicle}
+        driverName={selectedVehicle?.assignedDriverName ?? null}
       />
 
       <BulkUploadDialog
