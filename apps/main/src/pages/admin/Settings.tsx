@@ -2,7 +2,6 @@ import type { OrganizationUser } from "@truckmoov/api/auth";
 import type {
   FilterField, FilterValues,
 } from "@/components/shadcn/table-toolbar";
-import type { OrgMembership } from "@/types/orgRoles";
 import { useQuery } from "@tanstack/react-query";
 import {
   getOrganizationUsersQueryOptions,
@@ -86,7 +85,6 @@ import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
-import { useActiveOrgStore } from "@/stores/activeOrgStore";
 import { useAuthStore } from "@/stores/authStore";
 
 /** Human labels for the backend roles. */
@@ -103,43 +101,36 @@ const ROLE_LABELS: Record<UserRole, string> = {
   FINANCE_VIEWER: "Finance Viewer",
 };
 
+type RoleOption = {
+  value: UserRole; label: string;
+};
+
+/** The standard team roles a fleet or enterprise admin can hand out. */
+const TEAM_ROLES: RoleOption[] = [
+  {
+    value: UserRole.OPERATIONS_MANAGER, label: "Operations Manager - Run day-to-day operations",
+  },
+  {
+    value: UserRole.DISPATCHER, label: "Dispatcher - Assign jobs & track drivers",
+  },
+  {
+    value: UserRole.FINANCE_VIEWER, label: "Finance Viewer - Billing, invoices & wallet",
+  },
+];
+
 /**
- * Invite role options scoped per organization type. Values are `UserRole` so
- * whatever the admin picks is exactly what the backend receives.
+ * Who each admin role may invite. `/settings` is admin-only (see sidebarConfig),
+ * so the signed-in role is the whole org context — no separate org-type axis.
+ * OWNER_OPERATOR is absent: those accounts are single-user.
  *
  * ponytail: the old "Maintenance Supervisor" and "Analyst" options are gone —
  * the backend has no matching role, so those invites silently landed as
  * something else. Add them back when `UserRole` gains SUPERVISOR / ANALYST.
  */
-const INVITE_ROLES_BY_ORG_TYPE: Record<
-  string,
-  Array<{
-    value: UserRole; label: string;
-  }>
-> = {
-  ENTERPRISE: [
-    {
-      value: UserRole.OPERATIONS_MANAGER, label: "Operations Manager - Run day-to-day operations",
-    },
-    {
-      value: UserRole.DISPATCHER, label: "Dispatcher - Assign jobs & track drivers",
-    },
-    {
-      value: UserRole.FINANCE_VIEWER, label: "Finance Viewer - Billing, invoices & wallet",
-    },
-  ],
-  FLEET_PROVIDER: [
-    {
-      value: UserRole.OPERATIONS_MANAGER, label: "Operations Manager - Run day-to-day operations",
-    },
-    {
-      value: UserRole.DISPATCHER, label: "Dispatcher - Assign jobs & track drivers",
-    },
-    {
-      value: UserRole.FINANCE_VIEWER, label: "Finance Viewer - Billing, invoices & wallet",
-    },
-  ],
-  AGGREGATOR: [
+const INVITE_ROLES_BY_ADMIN_ROLE: Partial<Record<UserRole, RoleOption[]>> = {
+  ENTERPRISE_ADMIN: TEAM_ROLES,
+  FLEET_ADMIN: TEAM_ROLES,
+  AGGREGATOR_ADMIN: [
     {
       value: UserRole.OPERATIONS_MANAGER, label: "Operations Manager - Cross-fleet coordination",
     },
@@ -147,15 +138,6 @@ const INVITE_ROLES_BY_ORG_TYPE: Record<
       value: UserRole.FINANCE_VIEWER, label: "Finance Viewer - Reporting & insights",
     },
   ],
-  OWNER_OPERATOR: [],
-};
-
-/** The owner/overview role for each organization type. */
-const ADMIN_ROLE_BY_ORG_TYPE: Record<string, UserRole> = {
-  ENTERPRISE: UserRole.ENTERPRISE_ADMIN,
-  FLEET_PROVIDER: UserRole.FLEET_ADMIN,
-  AGGREGATOR: UserRole.AGGREGATOR_ADMIN,
-  OWNER_OPERATOR: UserRole.OWNER_OPERATOR,
 };
 
 type TenantUser = {
@@ -197,14 +179,12 @@ export default function Settings() {
     setActiveTab(value);
     setSearchParams({ tab: value });
   };
-  const memberships: OrgMembership[] = [];
-  const { resolveActiveOrg } = useActiveOrgStore();
-  const activeOrg = resolveActiveOrg(memberships);
-  const activeOrgType = activeOrg?.orgType || "FLEET_PROVIDER";
-  const inviteRoleOptions = INVITE_ROLES_BY_ORG_TYPE[activeOrgType] ?? [];
+  // ponytail: the signed-in role IS the org context here — /settings is admin-only
+  // and each admin role maps 1:1 to an org type, so there is nothing to look up.
+  const currentRole = user?.role;
+  const inviteRoleOptions = (currentRole && INVITE_ROLES_BY_ADMIN_ROLE[currentRole]) || [];
   const canInviteUsers = inviteRoleOptions.length > 0;
   const defaultInviteRole: UserRole = inviteRoleOptions[0]?.value ?? UserRole.FINANCE_VIEWER;
-  const orgAdminRole = ADMIN_ROLE_BY_ORG_TYPE[activeOrgType] ?? UserRole.FLEET_ADMIN;
 
   const [
     isInviteDialogOpen,
@@ -219,14 +199,14 @@ export default function Settings() {
     setInviteRole,
   ] = useState(defaultInviteRole);
 
-  // Keep inviteRole valid when the active org type changes
+  // Keep inviteRole valid when the signed-in role changes
   useEffect(
     () => {
       if (!inviteRoleOptions.some(r => r.value === inviteRole)) {
         setInviteRole(defaultInviteRole);
       }
     },
-    [activeOrgType],
+    [currentRole],
   );
   const [_showApiKey] = useState(false);
   // Edit user state
@@ -248,15 +228,19 @@ export default function Settings() {
   ] = useState<UserRole>(UserRole.FINANCE_VIEWER);
 
   /**
-   * Roles offered when editing a member: the org's admin role + the invitable
-   * roles, plus the member's current role so it always has a matching option.
+   * Roles offered when editing a member: the signed-in admin's own role + the
+   * invitable roles, plus the member's current role so it always has a matching
+   * option. The admin entry is omitted for anyone who can't invite, so a
+   * non-admin reaching this page doesn't see e.g. "Dispatcher - Full access".
    */
-  const editRoleOptions: Array<{
-    value: UserRole; label: string;
-  }> = [
-    {
-      value: orgAdminRole, label: `${ROLE_LABELS[orgAdminRole]} - Full access`,
-    },
+  const editRoleOptions: RoleOption[] = [
+    ...(canInviteUsers && currentRole
+      ? [
+          {
+            value: currentRole, label: `${ROLE_LABELS[currentRole]} - Full access`,
+          },
+        ]
+      : []),
     ...inviteRoleOptions,
   ];
   if (!editRoleOptions.some(o => o.value === editRole)) {
@@ -277,7 +261,7 @@ export default function Settings() {
 
   const organizationUsersQuery = useQuery({
     ...getOrganizationUsersQueryOptions(),
-    enabled: activeTab === "users" && activeOrgType !== "OWNER_OPERATOR",
+    enabled: activeTab === "users",
   });
   const inviteUserMutation = useInviteUser();
   const updateUserMutation = useUpdateOrganizationUser();
@@ -585,15 +569,13 @@ export default function Settings() {
             <Bell className="h-4 w-4" />
             <span className="hidden sm:inline">Communication</span>
           </TabsTrigger>
-          {activeOrgType !== "OWNER_OPERATOR" && (
-            <TabsTrigger
-              value="users"
-              className="flex items-center gap-2"
-            >
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Users</span>
-            </TabsTrigger>
-          )}
+          <TabsTrigger
+            value="users"
+            className="flex items-center gap-2"
+          >
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Users</span>
+          </TabsTrigger>
           <TabsTrigger
             value="branding"
             className="flex items-center gap-2"
@@ -674,373 +656,371 @@ export default function Settings() {
         </TabsContent>
 
         {/* Users Tab */}
-        {activeOrgType !== "OWNER_OPERATOR" && (
-          <TabsContent
-            value="users"
-            className="space-y-6"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold">Team Members</h3>
-                <p className="text-sm text-muted-foreground">Manage who has access to your organization</p>
-              </div>
-              {canInviteUsers
-                ? (
-                    <Dialog
-                      open={isInviteDialogOpen}
-                      onOpenChange={setIsInviteDialogOpen}
-                    >
-                      <DialogTrigger asChild>
-                        <Button variant="gradient">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Invite User
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="bg-card border-border">
-                        <DialogHeader>
-                          <DialogTitle>Invite Team Member</DialogTitle>
-                          <DialogDescription>Send an invitation to join your organization</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="inviteEmail">Email Address</Label>
-                            <Input
-                              id="inviteEmail"
-                              type="email"
-                              placeholder="colleague@company.com"
-                              value={inviteEmail}
-                              onChange={e => setInviteEmail(e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="inviteRole">Role</Label>
-                            <Select
-                              value={inviteRole}
-                              onValueChange={v => setInviteRole(v as UserRole)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {inviteRoleOptions.map(opt => (
-                                  <SelectItem
-                                    key={opt.value}
-                                    value={opt.value}
-                                  >
-                                    {opt.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="flex justify-end gap-3">
-                          <Button
-                            variant="outline"
-                            onClick={() => setIsInviteDialogOpen(false)}
-                            disabled={isInviting}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            variant="gradient"
-                            onClick={handleInviteUser}
-                            disabled={isInviting}
-                          >
-                            {isInviting ? "Sending..." : "Send Invitation"}
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  )
-                : (
-                    <span className="text-xs text-muted-foreground">
-                      Owner-operator accounts are single-user. Inviting additional team
-                      members isn't available on this plan.
-                    </span>
-                  )}
+        <TabsContent
+          value="users"
+          className="space-y-6"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Team Members</h3>
+              <p className="text-sm text-muted-foreground">Manage who has access to your organization</p>
             </div>
+            {canInviteUsers
+              ? (
+                  <Dialog
+                    open={isInviteDialogOpen}
+                    onOpenChange={setIsInviteDialogOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <Button variant="gradient">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Invite User
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-card border-border">
+                      <DialogHeader>
+                        <DialogTitle>Invite Team Member</DialogTitle>
+                        <DialogDescription>Send an invitation to join your organization</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="inviteEmail">Email Address</Label>
+                          <Input
+                            id="inviteEmail"
+                            type="email"
+                            placeholder="colleague@company.com"
+                            value={inviteEmail}
+                            onChange={e => setInviteEmail(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="inviteRole">Role</Label>
+                          <Select
+                            value={inviteRole}
+                            onValueChange={v => setInviteRole(v as UserRole)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {inviteRoleOptions.map(opt => (
+                                <SelectItem
+                                  key={opt.value}
+                                  value={opt.value}
+                                >
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-3">
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsInviteDialogOpen(false)}
+                          disabled={isInviting}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="gradient"
+                          onClick={handleInviteUser}
+                          disabled={isInviting}
+                        >
+                          {isInviting ? "Sending..." : "Send Invitation"}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )
+              : (
+                  <span className="text-xs text-muted-foreground">
+                    Owner-operator accounts are single-user. Inviting additional team
+                    members isn't available on this plan.
+                  </span>
+                )}
+          </div>
 
-            <Card className="bg-card/50 border-border/50">
-              <CardHeader>
-                <TableToolbar
-                  search={teamSearch}
-                  onSearchChange={setTeamSearch}
-                  searchPlaceholder="Search by name or email..."
-                  status={teamStatus}
-                  onStatusChange={setTeamStatus}
-                  statusOptions={[
-                    {
-                      value: "all", label: "All statuses",
-                    },
-                    {
-                      value: "active", label: "Active",
-                    },
-                    {
-                      value: "invited", label: "Invited",
-                    },
-                    {
-                      value: "disabled", label: "Disabled",
-                    },
-                  ]}
-                  filterEntity="team members"
-                  filterFields={teamFilterFields}
-                  filterValues={teamFilters}
-                  onFiltersApply={setTeamFilters}
-                />
-              </CardHeader>
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border/50 hover:bg-transparent">
-                    <TableHead>User</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Active</TableHead>
-                    <TableHead className="w-[60px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoadingUsers
+          <Card className="bg-card/50 border-border/50">
+            <CardHeader>
+              <TableToolbar
+                search={teamSearch}
+                onSearchChange={setTeamSearch}
+                searchPlaceholder="Search by name or email..."
+                status={teamStatus}
+                onStatusChange={setTeamStatus}
+                statusOptions={[
+                  {
+                    value: "all", label: "All statuses",
+                  },
+                  {
+                    value: "active", label: "Active",
+                  },
+                  {
+                    value: "invited", label: "Invited",
+                  },
+                  {
+                    value: "disabled", label: "Disabled",
+                  },
+                ]}
+                filterEntity="team members"
+                filterFields={teamFilterFields}
+                filterValues={teamFilters}
+                onFiltersApply={setTeamFilters}
+              />
+            </CardHeader>
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border/50 hover:bg-transparent">
+                  <TableHead>User</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Last Active</TableHead>
+                  <TableHead className="w-[60px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoadingUsers
+                  ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={5}
+                          className="text-center py-8 text-muted-foreground"
+                        >
+                          Loading users...
+                        </TableCell>
+                      </TableRow>
+                    )
+                  : organizationUsersQuery.isError
                     ? (
                         <TableRow>
                           <TableCell
                             colSpan={5}
-                            className="text-center py-8 text-muted-foreground"
+                            className="text-center py-8"
                           >
-                            Loading users...
+                            <p className="text-destructive">Unable to load team members.</p>
+                            <Button
+                              variant="link"
+                              className="mt-1"
+                              onClick={() => organizationUsersQuery.refetch()}
+                            >
+                              Try again
+                            </Button>
                           </TableCell>
                         </TableRow>
                       )
-                    : organizationUsersQuery.isError
+                    : filteredTenantUsers.length === 0
                       ? (
                           <TableRow>
                             <TableCell
                               colSpan={5}
-                              className="text-center py-8"
+                              className="text-center py-8 text-muted-foreground"
                             >
-                              <p className="text-destructive">Unable to load team members.</p>
-                              <Button
-                                variant="link"
-                                className="mt-1"
-                                onClick={() => organizationUsersQuery.refetch()}
-                              >
-                                Try again
-                              </Button>
+                              {tenantUsers.length === 0 ? "No team members yet. Invite someone to get started." : "No team members match your filters."}
                             </TableCell>
                           </TableRow>
                         )
-                      : filteredTenantUsers.length === 0
-                        ? (
-                            <TableRow>
-                              <TableCell
-                                colSpan={5}
-                                className="text-center py-8 text-muted-foreground"
-                              >
-                                {tenantUsers.length === 0 ? "No team members yet. Invite someone to get started." : "No team members match your filters."}
-                              </TableCell>
-                            </TableRow>
-                          )
-                        : filteredTenantUsers.map(tenantUser => (
-                            <TableRow
-                              key={tenantUser.id}
-                              className="border-border/50"
-                            >
-                              <TableCell>
-                                <div className="flex items-center gap-3">
-                                  <Avatar className="h-8 w-8">
-                                    <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-xs">
-                                      {tenantUser.name.split(" ").map(n => n[0]).join("")}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div>
-                                    <p className="font-medium">{tenantUser.name}</p>
-                                    <p className="text-sm text-muted-foreground">{tenantUser.email}</p>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge className={roleColors[tenantUser.role]}>
-                                  {ROLE_LABELS[tenantUser.role] ?? tenantUser.role}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge className={statusColors[tenantUser.status]}>{tenantUser.status}</Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                  <Clock className="h-3 w-3" />
-                                  {tenantUser.lastActive}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                    >
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleEditUser(tenantUser)}>
-                                      <Pencil className="h-4 w-4 mr-2" />
-                                      Edit User
-                                    </DropdownMenuItem>
-                                    {tenantUser.status === "invited" && (
-                                      <DropdownMenuItem
-                                        onClick={() => handleResendInvite(tenantUser)}
-                                        disabled={resendInviteMutation.isPending}
-                                      >
-                                        <Mail className="h-4 w-4 mr-2" />
-                                        Resend Invite
-                                      </DropdownMenuItem>
-                                    )}
-                                    <DropdownMenuItem
-                                      onClick={() => handleToggleUserStatus(tenantUser)}
-                                      disabled={updateStatusMutation.isPending}
-                                    >
-                                      {tenantUser.accountStatus === "disabled"
-                                        ? (
-                                            <UserCheck className="h-4 w-4 mr-2" />
-                                          )
-                                        : (
-                                            <UserX className="h-4 w-4 mr-2" />
-                                          )}
-                                      {tenantUser.accountStatus === "disabled" ? "Enable User" : "Disable User"}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="text-destructive"
-                                      onClick={() => handleOpenRemoveDialog(tenantUser)}
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Remove
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                </TableBody>
-              </Table>
-            </Card>
-
-            {/* Edit User Dialog */}
-            <Dialog
-              open={isEditDialogOpen}
-              onOpenChange={setIsEditDialogOpen}
-            >
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Edit User</DialogTitle>
-                  <DialogDescription>
-                    Update user details and permissions
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="editName">Full Name</Label>
-                    <Input
-                      id="editName"
-                      placeholder="Enter full name"
-                      value={editName}
-                      onChange={e => setEditName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="editEmail">Email</Label>
-                    <Input
-                      id="editEmail"
-                      value={editingUser?.email || ""}
-                      disabled
-                      className="bg-muted"
-                    />
-                    <p className="text-xs text-muted-foreground">Email cannot be changed</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="editRole">Role</Label>
-                    <Select
-                      value={editRole}
-                      onValueChange={v => setEditRole(v as UserRole)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {editRoleOptions.map(opt => (
-                          <SelectItem
-                            key={opt.value}
-                            value={opt.value}
+                      : filteredTenantUsers.map(tenantUser => (
+                          <TableRow
+                            key={tenantUser.id}
+                            className="border-border/50"
                           >
-                            {opt.label}
-                          </SelectItem>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-xs">
+                                    {tenantUser.name.split(" ").map(n => n[0]).join("")}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium">{tenantUser.name}</p>
+                                  <p className="text-sm text-muted-foreground">{tenantUser.email}</p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={roleColors[tenantUser.role]}>
+                                {ROLE_LABELS[tenantUser.role] ?? tenantUser.role}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={statusColors[tenantUser.status]}>{tenantUser.status}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                {tenantUser.lastActive}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleEditUser(tenantUser)}>
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Edit User
+                                  </DropdownMenuItem>
+                                  {tenantUser.status === "invited" && (
+                                    <DropdownMenuItem
+                                      onClick={() => handleResendInvite(tenantUser)}
+                                      disabled={resendInviteMutation.isPending}
+                                    >
+                                      <Mail className="h-4 w-4 mr-2" />
+                                      Resend Invite
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem
+                                    onClick={() => handleToggleUserStatus(tenantUser)}
+                                    disabled={updateStatusMutation.isPending}
+                                  >
+                                    {tenantUser.accountStatus === "disabled"
+                                      ? (
+                                          <UserCheck className="h-4 w-4 mr-2" />
+                                        )
+                                      : (
+                                          <UserX className="h-4 w-4 mr-2" />
+                                        )}
+                                    {tenantUser.accountStatus === "disabled" ? "Enable User" : "Disable User"}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="text-destructive"
+                                    onClick={() => handleOpenRemoveDialog(tenantUser)}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Remove
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="flex justify-end gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsEditDialogOpen(false)}
-                    disabled={isUpdatingUser}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="gradient"
-                    onClick={handleSaveUser}
-                    disabled={isUpdatingUser}
-                  >
-                    {isUpdatingUser ? "Saving..." : "Save Changes"}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+              </TableBody>
+            </Table>
+          </Card>
 
-            {/* Remove User Confirmation Dialog */}
-            <Dialog
-              open={isRemoveDialogOpen}
-              onOpenChange={setIsRemoveDialogOpen}
-            >
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Remove User</DialogTitle>
-                  <DialogDescription>
-                    Are you sure you want to remove
-                    {" "}
-                    {removingUser?.name}
-                    {" "}
-                    from your organization?
-                    They will lose access to all resources.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="flex justify-end gap-3 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setIsRemoveDialogOpen(false);
-                      setRemovingUser(null);
-                    }}
-                    disabled={isRemovingUser}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={handleRemoveUser}
-                    disabled={isRemovingUser}
-                  >
-                    {isRemovingUser ? "Removing..." : "Remove User"}
-                  </Button>
+          {/* Edit User Dialog */}
+          <Dialog
+            open={isEditDialogOpen}
+            onOpenChange={setIsEditDialogOpen}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit User</DialogTitle>
+                <DialogDescription>
+                  Update user details and permissions
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editName">Full Name</Label>
+                  <Input
+                    id="editName"
+                    placeholder="Enter full name"
+                    value={editName}
+                    onChange={e => setEditName(e.target.value)}
+                  />
                 </div>
-              </DialogContent>
-            </Dialog>
+                <div className="space-y-2">
+                  <Label htmlFor="editEmail">Email</Label>
+                  <Input
+                    id="editEmail"
+                    value={editingUser?.email || ""}
+                    disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editRole">Role</Label>
+                  <Select
+                    value={editRole}
+                    onValueChange={v => setEditRole(v as UserRole)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {editRoleOptions.map(opt => (
+                        <SelectItem
+                          key={opt.value}
+                          value={opt.value}
+                        >
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                  disabled={isUpdatingUser}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="gradient"
+                  onClick={handleSaveUser}
+                  disabled={isUpdatingUser}
+                >
+                  {isUpdatingUser ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
 
-            {/* Role Permissions Summary — US-E02-002 */}
-            <RolePermissionsMatrix />
-          </TabsContent>
-        )}
+          {/* Remove User Confirmation Dialog */}
+          <Dialog
+            open={isRemoveDialogOpen}
+            onOpenChange={setIsRemoveDialogOpen}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Remove User</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to remove
+                  {" "}
+                  {removingUser?.name}
+                  {" "}
+                  from your organization?
+                  They will lose access to all resources.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsRemoveDialogOpen(false);
+                    setRemovingUser(null);
+                  }}
+                  disabled={isRemovingUser}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleRemoveUser}
+                  disabled={isRemovingUser}
+                >
+                  {isRemovingUser ? "Removing..." : "Remove User"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Role Permissions Summary — US-E02-002 */}
+          <RolePermissionsMatrix />
+        </TabsContent>
 
         {/* Branding Tab */}
         <TabsContent
