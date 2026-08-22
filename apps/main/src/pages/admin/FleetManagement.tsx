@@ -50,7 +50,6 @@ import {
   countActiveVehicleFilters,
 } from "@/components/fleet/vehiclesFilter";
 import { VehiclesFilterDialog } from "@/components/fleet/VehiclesFilterDialog";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -78,15 +77,9 @@ import {
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 import { cn } from "@/lib/utils";
 
-type FleetManagementProps = {
-  vehiclesOnly?: boolean;
-  title?: string;
-  subtitle?: string;
-};
+type FleetManagementProps = { vehiclesOnly?: boolean };
 
-export default function FleetManagement({
-  vehiclesOnly = false, title, subtitle,
-}: FleetManagementProps = {}) {
+export default function FleetManagement({ vehiclesOnly = false }: FleetManagementProps = {}) {
   const { requireSubscription } = useRequireSubscription();
   const isAggregator = false;
   const [
@@ -364,10 +357,7 @@ export default function FleetManagement({
   };
 
   return (
-    <DashboardLayout
-      title={title ?? "Fleet Management"}
-      subtitle={subtitle ?? "Manage your vehicles, maintenance, and fuel"}
-    >
+    <>
       <Tabs
         value={activeTab}
         onValueChange={handleTabChange}
@@ -821,6 +811,6 @@ export default function FleetManagement({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </DashboardLayout>
+    </>
   );
 }

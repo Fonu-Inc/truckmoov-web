@@ -30,7 +30,6 @@ import { DeviceFormDialog } from "@/components/devices/DeviceFormDialog";
 import { DeviceRequestsTracker } from "@/components/devices/DeviceRequestsTracker";
 import { DeviceSetupRequestDialog } from "@/components/devices/DeviceSetupRequestDialog";
 import { DeviceSetupRequestsQueue } from "@/components/devices/DeviceSetupRequestsQueue";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
   Alert, AlertDescription, AlertTitle,
 } from "@/components/shadcn/alert";
@@ -239,65 +238,47 @@ export default function DispatcherDevices() {
   // Access control - redirect if no view access
   if (!canView) {
     return (
-      <DashboardLayout
-        title="Access Denied"
-        subtitle="You don't have permission to view devices"
-      >
-        <Alert variant="destructive">
-          <ShieldAlert className="h-4 w-4" />
-          <AlertTitle>Access Denied</AlertTitle>
-          <AlertDescription>
-            Your role (
-            {role}
-            ) does not have permission to access device management.
-            Contact your administrator if you believe this is an error.
-          </AlertDescription>
-        </Alert>
-      </DashboardLayout>
+      <Alert variant="destructive">
+        <ShieldAlert className="h-4 w-4" />
+        <AlertTitle>Access Denied</AlertTitle>
+        <AlertDescription>
+          Your role (
+          {role}
+          ) does not have permission to access device management.
+          Contact your administrator if you believe this is an error.
+        </AlertDescription>
+      </Alert>
     );
   }
 
   // Aggregator view: show only Device Setup Requests queue
   if (isAggregator) {
     return (
-      <DashboardLayout
-        title="Device Setup Requests"
-        subtitle="Review and fulfill setup requests from your linked owner-operators"
-      >
-        <DeviceSetupRequestsQueue
-          requests={setupRequests}
-          loading={setupLoading}
-          onRefresh={refetchSetup}
-          onUpdateStatus={updateRequestStatus}
-          isConfigurator={true}
-        />
-      </DashboardLayout>
+      <DeviceSetupRequestsQueue
+        requests={setupRequests}
+        loading={setupLoading}
+        onRefresh={refetchSetup}
+        onUpdateStatus={updateRequestStatus}
+        isConfigurator={true}
+      />
     );
   }
 
   if (error) {
     return (
-      <DashboardLayout
-        title="IoT Device Management"
-        subtitle="Provision and manage GPS tracking devices"
-      >
-        <Alert variant="destructive">
-          <ShieldAlert className="h-4 w-4" />
-          <AlertTitle>Error Loading Devices</AlertTitle>
-          <AlertDescription>
-            {error}
-            . Please try refreshing the page.
-          </AlertDescription>
-        </Alert>
-      </DashboardLayout>
+      <Alert variant="destructive">
+        <ShieldAlert className="h-4 w-4" />
+        <AlertTitle>Error Loading Devices</AlertTitle>
+        <AlertDescription>
+          {error}
+          . Please try refreshing the page.
+        </AlertDescription>
+      </Alert>
     );
   }
 
   return (
-    <DashboardLayout
-      title="IoT Device Management"
-      subtitle="Provision and manage GPS tracking devices"
-    >
+    <>
       <div className="space-y-6">
         {/* Top-right actions */}
         {canManage && (
@@ -762,6 +743,6 @@ export default function DispatcherDevices() {
           />
         );
       })()}
-    </DashboardLayout>
+    </>
   );
 }

@@ -7,11 +7,9 @@ import {
 } from "lucide-react";
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
-import { useLocation } from "react-router";
 import { KeyboardShortcutsDialog } from "@/components/KeyboardShortcutsDialog";
 import { NotificationCenter } from "@/components/platform/NotificationCenter";
 import { Button } from "@/components/shadcn/button";
@@ -22,16 +20,12 @@ import {
   useGlobalShortcuts,
 } from "@/hooks/useKeyboardShortcuts";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
-import {
-  getSidebarConfig,
-  isNavGroup,
-} from "@/lib/sidebarConfig";
 import { useSidebarStore } from "@/stores/sidebarStore";
 import { UserProfileDropdown } from "./UserProfileDropdown";
 
 type DashboardHeaderProps = {
+  /** The page's name, resolved from `sidebarNav.ts` by DashboardLayout. */
   title: string;
-  subtitle?: string;
   onRefresh?: () => void;
 };
 
@@ -64,52 +58,6 @@ export function DashboardHeader({
     collapsed,
     toggle,
   } = useSidebarStore();
-
-  // ── Sync top-bar title with the active sidebar entry's label ──
-  const location = useLocation();
-
-  const sidebarTitle = useMemo(
-    () => {
-      const config = getSidebarConfig();
-      const path = location.pathname;
-      // Find the deepest matching entry (prefer exact, then longest-prefix)
-      let best: {
-        label: string;
-        len: number;
-      } | null = null;
-      const consider = (label: string, href: string) => {
-        if (path === href || path.startsWith(`${href}/`)) {
-          if (!best || href.length > best.len) {
-            best = {
-              label,
-              len: href.length,
-            };
-          }
-        }
-      };
-      for (const entry of config.entries) {
-        if (isNavGroup(entry)) {
-          for (const child of entry.items) {
-            consider(
-              child.label,
-              child.href,
-            );
-          }
-        }
-        else {
-          consider(
-            entry.label,
-            entry.href,
-          );
-        }
-      }
-      return best?.label ?? title;
-    },
-    [
-      location.pathname,
-      title,
-    ],
-  );
 
   useGlobalShortcuts({
     onSearch: () => {
@@ -151,7 +99,7 @@ export function DashboardHeader({
                 <PanelLeftClose className="h-4 w-4" />
               )}
         </button>
-        <h1 className="text-base font-semibold text-foreground ml-1">{sidebarTitle}</h1>
+        <h1 className="text-base font-semibold text-foreground ml-1">{title}</h1>
       </div>
 
       <div className="flex items-center gap-1.5">

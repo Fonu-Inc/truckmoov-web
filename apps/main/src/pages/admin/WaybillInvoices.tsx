@@ -9,7 +9,6 @@ import React, {
 } from "react";
 import { toast } from "sonner";
 import { SendInvoiceEmailDialog } from "@/components/invoices/SendInvoiceEmailDialog";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -629,967 +628,965 @@ export default function WaybillInvoices() {
   ];
 
   return (
-    <DashboardLayout title="Waybill & Invoicing">
-      <div className="space-y-6 p-6">
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-        >
-          <div className="flex justify-center">
-            <TabsList>
-              <TabsTrigger value="waybills">
-                <FileText className="h-4 w-4 mr-1.5" />
-                Waybills
-              </TabsTrigger>
-              <TabsTrigger value="invoices">
-                <Download className="h-4 w-4 mr-1.5" />
-                Invoices
-              </TabsTrigger>
-              <TabsTrigger value="pricing">
-                <DollarSign className="h-4 w-4 mr-1.5" />
-                Pricing Rules
-              </TabsTrigger>
-              <TabsTrigger value="settings">
-                <Settings2 className="h-4 w-4 mr-1.5" />
-                Settings
-              </TabsTrigger>
-            </TabsList>
-          </div>
+    <div className="space-y-6 p-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+      >
+        <div className="flex justify-center">
+          <TabsList>
+            <TabsTrigger value="waybills">
+              <FileText className="h-4 w-4 mr-1.5" />
+              Waybills
+            </TabsTrigger>
+            <TabsTrigger value="invoices">
+              <Download className="h-4 w-4 mr-1.5" />
+              Invoices
+            </TabsTrigger>
+            <TabsTrigger value="pricing">
+              <DollarSign className="h-4 w-4 mr-1.5" />
+              Pricing Rules
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              <Settings2 className="h-4 w-4 mr-1.5" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-          {activeTab === "waybills" && (
-            <div className="flex items-center justify-end mt-6">
-              <Dialog
-                open={showUploadDialog}
-                onOpenChange={setShowUploadDialog}
-              >
-                <DialogTrigger asChild>
-                  <Button>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Waybill
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Upload Waybill Image</DialogTitle>
-                    <DialogDescription>Upload a photo of a waybill. AI will extract the key fields automatically.</DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div
-                      className="border-2 border-dashed border-muted rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                      <p className="text-sm font-medium">Click to upload waybill photo</p>
-                      <p className="text-xs text-muted-foreground mt-1">JPG, PNG up to 10MB</p>
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleFileUpload}
-                    />
+        {activeTab === "waybills" && (
+          <div className="flex items-center justify-end mt-6">
+            <Dialog
+              open={showUploadDialog}
+              onOpenChange={setShowUploadDialog}
+            >
+              <DialogTrigger asChild>
+                <Button>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Waybill
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Upload Waybill Image</DialogTitle>
+                  <DialogDescription>Upload a photo of a waybill. AI will extract the key fields automatically.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div
+                    className="border-2 border-dashed border-muted rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-sm font-medium">Click to upload waybill photo</p>
+                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG up to 10MB</p>
                   </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          )}
-
-          {activeTab === "pricing" && (
-            <div className="flex items-center justify-end mt-6">
-              <Button onClick={() => setShowPricingDialog(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Rule
-              </Button>
-            </div>
-          )}
-
-          {activeTab === "settings" && (
-            <div className="space-y-1 mt-6">
-              <h2 className="text-xl font-semibold tracking-tight">Invoice Settings</h2>
-              <p className="text-sm text-muted-foreground">
-                Configure your company details, tax, banking and invoice defaults shown on every generated invoice.
-              </p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-            {tabKpis.map((stat, i) => (
-              <Card
-                key={i}
-                className="p-4"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-11 w-11 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <stat.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                    <p className="text-xl font-bold truncate">{stat.value}</p>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-
-          <TabsContent
-            value="waybills"
-            className="mt-4"
-          >
-            <Card>
-              <CardHeader className="space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      Waybills
-                    </CardTitle>
-                    <CardDescription>All captured waybills from drivers, WhatsApp uploads and manual entries.</CardDescription>
-                  </div>
-                  <ExportButton
-                    filename="waybills"
-                    rows={filteredWaybills}
-                    columns={[
-                      {
-                        header: "Status", accessor: w => w.status,
-                      },
-                      {
-                        header: "Source", accessor: w => w.source_type,
-                      },
-                      {
-                        header: "Waybill #", accessor: w => w.waybill_number || "",
-                      },
-                      {
-                        header: "Destination", accessor: w => w.destination || "",
-                      },
-                      {
-                        header: "Vehicle", accessor: w => w.vehicle_number || "",
-                      },
-                      {
-                        header: "Customer", accessor: w => w.customer_name || "",
-                      },
-                      {
-                        header: "Price", accessor: w => w.calculated_price_ngn ?? "",
-                      },
-                      {
-                        header: "Date", accessor: w => toDateParam(w.created_at),
-                      },
-                    ]}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileUpload}
                   />
                 </div>
-                <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by waybill #, destination, vehicle, customer..."
-                      value={waybillSearch}
-                      onChange={e => setWaybillSearch(e.target.value)}
-                      className="pl-10 bg-card/50 border-border/50"
-                    />
-                  </div>
-                  <Select
-                    value={waybillStatus}
-                    onValueChange={setWaybillStatus}
-                  >
-                    <SelectTrigger className="w-full md:w-[180px] bg-card/50 border-border/50">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All statuses</SelectItem>
-                      {Object.entries(statusConfig).map(([
-                        k,
-                        v,
-                      ]) => (
-                        <SelectItem
-                          key={k}
-                          value={k}
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
+
+        {activeTab === "pricing" && (
+          <div className="flex items-center justify-end mt-6">
+            <Button onClick={() => setShowPricingDialog(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Rule
+            </Button>
+          </div>
+        )}
+
+        {activeTab === "settings" && (
+          <div className="space-y-1 mt-6">
+            <h2 className="text-xl font-semibold tracking-tight">Invoice Settings</h2>
+            <p className="text-sm text-muted-foreground">
+              Configure your company details, tax, banking and invoice defaults shown on every generated invoice.
+            </p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+          {tabKpis.map((stat, i) => (
+            <Card
+              key={i}
+              className="p-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <stat.icon className="h-5 w-5 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  <p className="text-xl font-bold truncate">{stat.value}</p>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        <TabsContent
+          value="waybills"
+          className="mt-4"
+        >
+          <Card>
+            <CardHeader className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Waybills
+                  </CardTitle>
+                  <CardDescription>All captured waybills from drivers, WhatsApp uploads and manual entries.</CardDescription>
+                </div>
+                <ExportButton
+                  filename="waybills"
+                  rows={filteredWaybills}
+                  columns={[
+                    {
+                      header: "Status", accessor: w => w.status,
+                    },
+                    {
+                      header: "Source", accessor: w => w.source_type,
+                    },
+                    {
+                      header: "Waybill #", accessor: w => w.waybill_number || "",
+                    },
+                    {
+                      header: "Destination", accessor: w => w.destination || "",
+                    },
+                    {
+                      header: "Vehicle", accessor: w => w.vehicle_number || "",
+                    },
+                    {
+                      header: "Customer", accessor: w => w.customer_name || "",
+                    },
+                    {
+                      header: "Price", accessor: w => w.calculated_price_ngn ?? "",
+                    },
+                    {
+                      header: "Date", accessor: w => toDateParam(w.created_at),
+                    },
+                  ]}
+                />
+              </div>
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by waybill #, destination, vehicle, customer..."
+                    value={waybillSearch}
+                    onChange={e => setWaybillSearch(e.target.value)}
+                    className="pl-10 bg-card/50 border-border/50"
+                  />
+                </div>
+                <Select
+                  value={waybillStatus}
+                  onValueChange={setWaybillStatus}
+                >
+                  <SelectTrigger className="w-full md:w-[180px] bg-card/50 border-border/50">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    {Object.entries(statusConfig).map(([
+                      k,
+                      v,
+                    ]) => (
+                      <SelectItem
+                        key={k}
+                        value={k}
+                      >
+                        {v.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="bg-card/50 border-border/50 h-9 gap-2"
+                    >
+                      <SlidersHorizontal className="h-4 w-4" />
+                      {" "}
+                      Filter
+                      {wbActiveFilters > 0 && (
+                        <Badge
+                          variant="secondary"
+                          className="ml-1 h-5 px-1.5"
                         >
-                          {v.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Popover>
-                    <PopoverTrigger asChild>
+                          {wbActiveFilters}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-80 p-4 space-y-4 max-h-[70vh] overflow-y-auto"
+                    align="end"
+                  >
+                    <h4 className="text-xs font-medium text-foreground px-0.5">Only show waybills by...</h4>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="wb-flt-date"
+                            checked={wbDateEnabled}
+                            onCheckedChange={c => setWbDateEnabled(c === true)}
+                          />
+                          <Label
+                            htmlFor="wb-flt-date"
+                            className="text-sm cursor-pointer"
+                          >
+                            Date
+                          </Label>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input
+                            type="date"
+                            disabled={!wbDateEnabled}
+                            value={wbDateFrom}
+                            onChange={e => setWbDateFrom(e.target.value)}
+                            className="h-9"
+                          />
+                          <Input
+                            type="date"
+                            disabled={!wbDateEnabled}
+                            value={wbDateTo}
+                            onChange={e => setWbDateTo(e.target.value)}
+                            className="h-9"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="wb-flt-price"
+                            checked={wbPriceEnabled}
+                            onCheckedChange={c => setWbPriceEnabled(c === true)}
+                          />
+                          <Label
+                            htmlFor="wb-flt-price"
+                            className="text-sm cursor-pointer"
+                          >
+                            Price (₦)
+                          </Label>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input
+                            type="number"
+                            placeholder="From"
+                            disabled={!wbPriceEnabled}
+                            value={wbPriceMin}
+                            onChange={e => setWbPriceMin(e.target.value)}
+                            className="h-9"
+                          />
+                          <Input
+                            type="number"
+                            placeholder="To"
+                            disabled={!wbPriceEnabled}
+                            value={wbPriceMax}
+                            onChange={e => setWbPriceMax(e.target.value)}
+                            className="h-9"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="wb-flt-veh"
+                            checked={wbVehicleEnabled}
+                            onCheckedChange={c => setWbVehicleEnabled(c === true)}
+                          />
+                          <Label
+                            htmlFor="wb-flt-veh"
+                            className="text-sm cursor-pointer"
+                          >
+                            Vehicle type
+                          </Label>
+                        </div>
+                        <Select
+                          value={wbVehicleType}
+                          onValueChange={setWbVehicleType}
+                          disabled={!wbVehicleEnabled}
+                        >
+                          <SelectTrigger className="h-9"><SelectValue placeholder="Select vehicle type" /></SelectTrigger>
+                          <SelectContent>
+                            {VEHICLE_TYPE_OPTIONS.map(o => (
+                              <SelectItem
+                                key={o.value}
+                                value={o.value}
+                              >
+                                {o.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-2 border-t border-border">
+                      <Button className="flex-1">Apply</Button>
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="bg-card/50 border-border/50 h-9 gap-2"
+                        onClick={resetWaybillFilters}
+                        className="flex-1"
                       >
-                        <SlidersHorizontal className="h-4 w-4" />
-                        {" "}
-                        Filter
-                        {wbActiveFilters > 0 && (
-                          <Badge
-                            variant="secondary"
-                            className="ml-1 h-5 px-1.5"
-                          >
-                            {wbActiveFilters}
-                          </Badge>
-                        )}
+                        Show All
                       </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-80 p-4 space-y-4 max-h-[70vh] overflow-y-auto"
-                      align="end"
-                    >
-                      <h4 className="text-xs font-medium text-foreground px-0.5">Only show waybills by...</h4>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id="wb-flt-date"
-                              checked={wbDateEnabled}
-                              onCheckedChange={c => setWbDateEnabled(c === true)}
-                            />
-                            <Label
-                              htmlFor="wb-flt-date"
-                              className="text-sm cursor-pointer"
-                            >
-                              Date
-                            </Label>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Input
-                              type="date"
-                              disabled={!wbDateEnabled}
-                              value={wbDateFrom}
-                              onChange={e => setWbDateFrom(e.target.value)}
-                              className="h-9"
-                            />
-                            <Input
-                              type="date"
-                              disabled={!wbDateEnabled}
-                              value={wbDateTo}
-                              onChange={e => setWbDateTo(e.target.value)}
-                              className="h-9"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id="wb-flt-price"
-                              checked={wbPriceEnabled}
-                              onCheckedChange={c => setWbPriceEnabled(c === true)}
-                            />
-                            <Label
-                              htmlFor="wb-flt-price"
-                              className="text-sm cursor-pointer"
-                            >
-                              Price (₦)
-                            </Label>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Input
-                              type="number"
-                              placeholder="From"
-                              disabled={!wbPriceEnabled}
-                              value={wbPriceMin}
-                              onChange={e => setWbPriceMin(e.target.value)}
-                              className="h-9"
-                            />
-                            <Input
-                              type="number"
-                              placeholder="To"
-                              disabled={!wbPriceEnabled}
-                              value={wbPriceMax}
-                              onChange={e => setWbPriceMax(e.target.value)}
-                              className="h-9"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id="wb-flt-veh"
-                              checked={wbVehicleEnabled}
-                              onCheckedChange={c => setWbVehicleEnabled(c === true)}
-                            />
-                            <Label
-                              htmlFor="wb-flt-veh"
-                              className="text-sm cursor-pointer"
-                            >
-                              Vehicle type
-                            </Label>
-                          </div>
-                          <Select
-                            value={wbVehicleType}
-                            onValueChange={setWbVehicleType}
-                            disabled={!wbVehicleEnabled}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Source</TableHead>
+                    <TableHead>Waybill #</TableHead>
+                    <TableHead>Destination</TableHead>
+                    <TableHead>Vehicle</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredWaybills.length === 0
+                    ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={9}
+                            className="text-center py-12 text-muted-foreground"
                           >
-                            <SelectTrigger className="h-9"><SelectValue placeholder="Select vehicle type" /></SelectTrigger>
-                            <SelectContent>
-                              {VEHICLE_TYPE_OPTIONS.map(o => (
-                                <SelectItem
-                                  key={o.value}
-                                  value={o.value}
-                                >
-                                  {o.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 pt-2 border-t border-border">
-                        <Button className="flex-1">Apply</Button>
-                        <Button
-                          variant="outline"
-                          onClick={resetWaybillFilters}
-                          className="flex-1"
-                        >
-                          Show All
-                        </Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Source</TableHead>
-                      <TableHead>Waybill #</TableHead>
-                      <TableHead>Destination</TableHead>
-                      <TableHead>Vehicle</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredWaybills.length === 0
-                      ? (
-                          <TableRow>
-                            <TableCell
-                              colSpan={9}
-                              className="text-center py-12 text-muted-foreground"
-                            >
-                              <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                              <p className="font-medium">No waybills found</p>
-                              <p className="text-sm">Upload a waybill image or adjust filters</p>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      : filteredWaybills.map((wb) => {
-                          const sc = statusConfig[wb.status] || statusConfig.received;
-                          return (
-                            <TableRow
-                              key={wb.id}
-                              className="cursor-pointer hover:bg-muted/50"
-                              onClick={() => setSelectedWaybill(wb)}
-                            >
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className={sc.color}
-                                >
-                                  <sc.icon className="h-3 w-3 mr-1" />
-                                  {sc.label}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  {wb.image_url || wb.image_storage_path
-                                    ? (
-                                        <div className="h-8 w-8 rounded border overflow-hidden bg-muted flex-shrink-0">
-                                          <WaybillThumbnail waybill={wb} />
-                                        </div>
-                                      )
-                                    : (
-                                        <div className="h-8 w-8 rounded border bg-muted flex items-center justify-center flex-shrink-0">
-                                          <ImageIcon className="h-4 w-4 text-muted-foreground/50" />
-                                        </div>
-                                      )}
-                                  <span className="capitalize">{wb.source_type}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="font-mono text-sm">{wb.waybill_number || "—"}</TableCell>
-                              <TableCell>{wb.destination || "—"}</TableCell>
-                              <TableCell>{wb.vehicle_number || "—"}</TableCell>
-                              <TableCell>{wb.customer_name || "—"}</TableCell>
-                              <TableCell>{wb.calculated_price_ngn ? formatAmount(wb.calculated_price_ngn) : "—"}</TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {formatWithPattern(
-                                  wb.created_at,
-                                  "dd MMM yyyy",
-                                )}
-                              </TableCell>
-                              <TableCell
-                                className="text-right"
-                                onClick={e => e.stopPropagation()}
+                            <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                            <p className="font-medium">No waybills found</p>
+                            <p className="text-sm">Upload a waybill image or adjust filters</p>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    : filteredWaybills.map((wb) => {
+                        const sc = statusConfig[wb.status] || statusConfig.received;
+                        return (
+                          <TableRow
+                            key={wb.id}
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => setSelectedWaybill(wb)}
+                          >
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={sc.color}
                               >
-                                <div className="flex gap-1 justify-end items-center">
-                                  {[
-                                    "received",
-                                    "extraction_failed",
-                                  ].includes(wb.status) && (
+                                <sc.icon className="h-3 w-3 mr-1" />
+                                {sc.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {wb.image_url || wb.image_storage_path
+                                  ? (
+                                      <div className="h-8 w-8 rounded border overflow-hidden bg-muted flex-shrink-0">
+                                        <WaybillThumbnail waybill={wb} />
+                                      </div>
+                                    )
+                                  : (
+                                      <div className="h-8 w-8 rounded border bg-muted flex items-center justify-center flex-shrink-0">
+                                        <ImageIcon className="h-4 w-4 text-muted-foreground/50" />
+                                      </div>
+                                    )}
+                                <span className="capitalize">{wb.source_type}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">{wb.waybill_number || "—"}</TableCell>
+                            <TableCell>{wb.destination || "—"}</TableCell>
+                            <TableCell>{wb.vehicle_number || "—"}</TableCell>
+                            <TableCell>{wb.customer_name || "—"}</TableCell>
+                            <TableCell>{wb.calculated_price_ngn ? formatAmount(wb.calculated_price_ngn) : "—"}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {formatWithPattern(
+                                wb.created_at,
+                                "dd MMM yyyy",
+                              )}
+                            </TableCell>
+                            <TableCell
+                              className="text-right"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <div className="flex gap-1 justify-end items-center">
+                                {[
+                                  "received",
+                                  "extraction_failed",
+                                ].includes(wb.status) && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={extracting === wb.id}
+                                    onClick={() => handleExtract(wb)}
+                                  >
+                                    {extracting === wb.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Scan className="h-3.5 w-3.5" />}
+                                  </Button>
+                                )}
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
                                     <Button
                                       size="sm"
-                                      variant="outline"
-                                      disabled={extracting === wb.id}
-                                      onClick={() => handleExtract(wb)}
+                                      variant="ghost"
+                                      className="h-8 w-8 p-0"
+                                      aria-label="Waybill actions"
                                     >
-                                      {extracting === wb.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Scan className="h-3.5 w-3.5" />}
+                                      <MoreHorizontal className="h-4 w-4" />
                                     </Button>
-                                  )}
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-8 w-8 p-0"
-                                        aria-label="Waybill actions"
-                                      >
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                      align="end"
-                                      className="w-52"
-                                    >
-                                      <DropdownMenuItem onClick={() => setSelectedWaybill(wb)}>
-                                        <Eye className="h-4 w-4 mr-2" />
-                                        View Details
-                                      </DropdownMenuItem>
-                                      {[
-                                        "received",
-                                        "extraction_failed",
-                                      ].includes(wb.status) && (
-                                        <DropdownMenuItem
-                                          disabled={extracting === wb.id}
-                                          onClick={() => handleExtract(wb)}
-                                        >
-                                          <Scan className="h-4 w-4 mr-2" />
-                                          Extract Fields
-                                        </DropdownMenuItem>
-                                      )}
-                                      {[
-                                        "extracted",
-                                        "needs_review",
-                                        "approved",
-                                      ].includes(wb.status) && (
-                                        <DropdownMenuItem
-                                          disabled={generating === wb.id}
-                                          onClick={() => handleGenerateInvoice(wb.id)}
-                                        >
-                                          <Download className="h-4 w-4 mr-2" />
-                                          Generate Invoice
-                                        </DropdownMenuItem>
-                                      )}
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent
-            value="invoices"
-            className="mt-4"
-          >
-            <Card>
-              <CardHeader className="space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <CardTitle className="flex items-center gap-2">
-                      <Download className="h-5 w-5" />
-                      Invoices
-                    </CardTitle>
-                    <CardDescription>Customer invoices generated from waybills with status, amounts and due dates.</CardDescription>
-                  </div>
-                  <ExportButton
-                    filename="invoices"
-                    rows={filteredInvoices}
-                    columns={[
-                      {
-                        header: "Invoice #", accessor: i => i.invoice_number,
-                      },
-                      {
-                        header: "Status", accessor: i => i.status,
-                      },
-                      {
-                        header: "Customer", accessor: i => i.customer_name || "",
-                      },
-                      {
-                        header: "Origin", accessor: i => i.origin || "",
-                      },
-                      {
-                        header: "Destination", accessor: i => i.destination || "",
-                      },
-                      {
-                        header: "Vehicle", accessor: i => i.vehicle_number || "",
-                      },
-                      {
-                        header: "Amount", accessor: i => i.total_ngn ?? "",
-                      },
-                      {
-                        header: "Due Date", accessor: i => i.due_date || "",
-                      },
-                    ]}
-                  />
-                </div>
-                <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by invoice #, customer, route..."
-                      value={invoiceSearch}
-                      onChange={e => setInvoiceSearch(e.target.value)}
-                      className="pl-10 bg-card/50 border-border/50"
-                    />
-                  </div>
-                  <Select
-                    value={invoiceStatus}
-                    onValueChange={setInvoiceStatus}
-                  >
-                    <SelectTrigger className="w-full md:w-[180px] bg-card/50 border-border/50">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All statuses</SelectItem>
-                      {Object.entries(invoiceStatusConfig).map(([
-                        k,
-                        v,
-                      ]) => (
-                        <SelectItem
-                          key={k}
-                          value={k}
-                        >
-                          {v.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="bg-card/50 border-border/50 h-9 gap-2"
-                      >
-                        <SlidersHorizontal className="h-4 w-4" />
-                        {" "}
-                        Filter
-                        {invActiveFilters > 0 && (
-                          <Badge
-                            variant="secondary"
-                            className="ml-1 h-5 px-1.5"
-                          >
-                            {invActiveFilters}
-                          </Badge>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-80 p-4 space-y-4 max-h-[70vh] overflow-y-auto"
-                      align="end"
-                    >
-                      <h4 className="text-xs font-medium text-foreground px-0.5">Only show invoices by...</h4>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id="inv-flt-veh"
-                              checked={invVehicleEnabled}
-                              onCheckedChange={c => setInvVehicleEnabled(c === true)}
-                            />
-                            <Label
-                              htmlFor="inv-flt-veh"
-                              className="text-sm cursor-pointer"
-                            >
-                              Vehicle type
-                            </Label>
-                          </div>
-                          <Select
-                            value={invVehicleType}
-                            onValueChange={setInvVehicleType}
-                            disabled={!invVehicleEnabled}
-                          >
-                            <SelectTrigger className="h-9"><SelectValue placeholder="Select vehicle type" /></SelectTrigger>
-                            <SelectContent>
-                              {VEHICLE_TYPE_OPTIONS.map(o => (
-                                <SelectItem
-                                  key={o.value}
-                                  value={o.value}
-                                >
-                                  {o.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id="inv-flt-due"
-                              checked={invDueEnabled}
-                              onCheckedChange={c => setInvDueEnabled(c === true)}
-                            />
-                            <Label
-                              htmlFor="inv-flt-due"
-                              className="text-sm cursor-pointer"
-                            >
-                              Due date
-                            </Label>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Input
-                              type="date"
-                              disabled={!invDueEnabled}
-                              value={invDueFrom}
-                              onChange={e => setInvDueFrom(e.target.value)}
-                              className="h-9"
-                            />
-                            <Input
-                              type="date"
-                              disabled={!invDueEnabled}
-                              value={invDueTo}
-                              onChange={e => setInvDueTo(e.target.value)}
-                              className="h-9"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id="inv-flt-amt"
-                              checked={invAmountEnabled}
-                              onCheckedChange={c => setInvAmountEnabled(c === true)}
-                            />
-                            <Label
-                              htmlFor="inv-flt-amt"
-                              className="text-sm cursor-pointer"
-                            >
-                              Amount (₦)
-                            </Label>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Input
-                              type="number"
-                              placeholder="From"
-                              disabled={!invAmountEnabled}
-                              value={invAmountMin}
-                              onChange={e => setInvAmountMin(e.target.value)}
-                              className="h-9"
-                            />
-                            <Input
-                              type="number"
-                              placeholder="To"
-                              disabled={!invAmountEnabled}
-                              value={invAmountMax}
-                              onChange={e => setInvAmountMax(e.target.value)}
-                              className="h-9"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 pt-2 border-t border-border">
-                        <Button className="flex-1">Apply</Button>
-                        <Button
-                          variant="outline"
-                          onClick={resetInvoiceFilters}
-                          className="flex-1"
-                        >
-                          Show All
-                        </Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Invoice #</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Route</TableHead>
-                      <TableHead>Vehicle</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead>Due Date</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredInvoices.length === 0
-                      ? (
-                          <TableRow>
-                            <TableCell
-                              colSpan={8}
-                              className="text-center py-12 text-muted-foreground"
-                            >
-                              <Download className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                              <p className="font-medium">No invoices found</p>
-                              <p className="text-sm">Generate invoices from extracted waybills</p>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      : filteredInvoices.map((inv) => {
-                          const ic = invoiceStatusConfig[inv.status] || invoiceStatusConfig.draft;
-                          return (
-                            <TableRow
-                              key={inv.id}
-                              className="cursor-pointer hover:bg-muted/50"
-                              onClick={() => setSelectedInvoice(inv)}
-                            >
-                              <TableCell className="font-mono font-medium">{inv.invoice_number}</TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className={ic.color}
-                                >
-                                  {ic.label}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>{inv.customer_name}</TableCell>
-                              <TableCell className="text-sm">
-                                {inv.origin && inv.destination
-                                  ? (
-                                      <span className="flex items-center gap-1">
-                                        {inv.origin}
-                                        {" "}
-                                        <ArrowRight className="h-3 w-3" />
-                                        {" "}
-                                        {inv.destination}
-                                      </span>
-                                    )
-                                  : inv.destination || "—"}
-                              </TableCell>
-                              <TableCell>{inv.vehicle_number || "—"}</TableCell>
-                              <TableCell className="text-right font-medium">{formatAmount(inv.total_ngn)}</TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {inv.due_date
-                                  ? formatWithPattern(
-                                      inv.due_date,
-                                      "dd MMM yyyy",
-                                    )
-                                  : "—"}
-                              </TableCell>
-                              <TableCell
-                                className="text-right"
-                                onClick={e => e.stopPropagation()}
-                              >
-                                <div className="flex gap-1 justify-end items-center">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-8 w-8 p-0"
-                                        aria-label="Invoice actions"
-                                      >
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                      align="end"
-                                      className="w-52"
-                                    >
-                                      <DropdownMenuItem onClick={() => setSelectedInvoice(inv)}>
-                                        <Eye className="h-4 w-4 mr-2" />
-                                        View Invoice
-                                      </DropdownMenuItem>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent
+                                    align="end"
+                                    className="w-52"
+                                  >
+                                    <DropdownMenuItem onClick={() => setSelectedWaybill(wb)}>
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      View Details
+                                    </DropdownMenuItem>
+                                    {[
+                                      "received",
+                                      "extraction_failed",
+                                    ].includes(wb.status) && (
                                       <DropdownMenuItem
-                                        onClick={async () => {
-                                          if (inv.id.startsWith("demo-")) {
-                                            toast.success("Download downloaded");
-                                            return;
-                                          }
-                                          let path = inv.pdf_storage_path;
-                                          if (!path) {
-                                            const res = await generateInvoicePDF(inv.id);
-                                            path = res?.storage_path ?? null;
-                                          }
-                                          if (!path)
-                                            return;
-                                          const url = await getInvoicePdfUrl(path);
-                                          if (url) {
-                                            window.open(
-                                              url,
-                                              "_blank",
-                                            );
-                                            toast.success("Download download started");
-                                          }
-                                        }}
+                                        disabled={extracting === wb.id}
+                                        onClick={() => handleExtract(wb)}
+                                      >
+                                        <Scan className="h-4 w-4 mr-2" />
+                                        Extract Fields
+                                      </DropdownMenuItem>
+                                    )}
+                                    {[
+                                      "extracted",
+                                      "needs_review",
+                                      "approved",
+                                    ].includes(wb.status) && (
+                                      <DropdownMenuItem
+                                        disabled={generating === wb.id}
+                                        onClick={() => handleGenerateInvoice(wb.id)}
                                       >
                                         <Download className="h-4 w-4 mr-2" />
-                                        Download Receipt
+                                        Generate Invoice
                                       </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        disabled={![
-                                          "approved",
-                                          "sent",
-                                          "paid",
-                                        ].includes(inv.status)}
-                                        onClick={() => setSelectedInvoice(inv)}
-                                      >
-                                        <Share2 className="h-4 w-4 mr-2" />
-                                        Share Receipt
-                                      </DropdownMenuItem>
-                                      {canDeleteAssets && (
-                                        <>
-                                          <DropdownMenuSeparator />
-                                          <DropdownMenuItem
-                                            className="text-destructive focus:text-destructive"
-                                            onClick={() => setInvoiceToDelete(inv)}
-                                          >
-                                            <Trash2 className="h-4 w-4 mr-2" />
-                                            Delete Invoice
-                                          </DropdownMenuItem>
-                                        </>
-                                      )}
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent
-            value="pricing"
-            className="mt-4"
-          >
-            <PricingRulesPanel
-              rules={displayPricingRules}
-              onAdd={addPricingRule}
-              onUpdate={updatePricingRule}
-              onDelete={deletePricingRule}
-              formatAmount={formatAmount}
-              showDialog={showPricingDialog}
-              setShowDialog={setShowPricingDialog}
-            />
-          </TabsContent>
-
-          <TabsContent
-            value="settings"
-            className="mt-4"
-          >
-            <InvoiceSettingsPanel
-              config={invoiceConfig}
-              onSave={updateInvoiceConfig}
-            />
-          </TabsContent>
-        </Tabs>
-
-        <Sheet
-          open={!!selectedWaybill}
-          onOpenChange={open => !open && setSelectedWaybill(null)}
+        <TabsContent
+          value="invoices"
+          className="mt-4"
         >
-          <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
-            {selectedWaybill && (
-              <WaybillDetailView
-                waybill={selectedWaybill}
-                onExtract={() => handleExtract(selectedWaybill)}
-                onGenerateInvoice={() => handleGenerateInvoice(selectedWaybill.id)}
-                onApprove={async () => {
-                  const updated = await updateWaybillFields(
-                    selectedWaybill.id,
-                    { status: "approved" },
-                  );
-                  if (updated)
-                    setSelectedWaybill(updated);
-                }}
-                onUpdateFields={async (updates) => {
-                  const updated = await updateWaybillFields(
-                    selectedWaybill.id,
-                    updates,
-                  );
-                  if (updated)
-                    setSelectedWaybill(updated);
-                }}
-                extracting={extracting === selectedWaybill.id}
-                generating={generating === selectedWaybill.id}
-                formatAmount={formatAmount}
-              />
-            )}
-          </SheetContent>
-        </Sheet>
+          <Card>
+            <CardHeader className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2">
+                    <Download className="h-5 w-5" />
+                    Invoices
+                  </CardTitle>
+                  <CardDescription>Customer invoices generated from waybills with status, amounts and due dates.</CardDescription>
+                </div>
+                <ExportButton
+                  filename="invoices"
+                  rows={filteredInvoices}
+                  columns={[
+                    {
+                      header: "Invoice #", accessor: i => i.invoice_number,
+                    },
+                    {
+                      header: "Status", accessor: i => i.status,
+                    },
+                    {
+                      header: "Customer", accessor: i => i.customer_name || "",
+                    },
+                    {
+                      header: "Origin", accessor: i => i.origin || "",
+                    },
+                    {
+                      header: "Destination", accessor: i => i.destination || "",
+                    },
+                    {
+                      header: "Vehicle", accessor: i => i.vehicle_number || "",
+                    },
+                    {
+                      header: "Amount", accessor: i => i.total_ngn ?? "",
+                    },
+                    {
+                      header: "Due Date", accessor: i => i.due_date || "",
+                    },
+                  ]}
+                />
+              </div>
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by invoice #, customer, route..."
+                    value={invoiceSearch}
+                    onChange={e => setInvoiceSearch(e.target.value)}
+                    className="pl-10 bg-card/50 border-border/50"
+                  />
+                </div>
+                <Select
+                  value={invoiceStatus}
+                  onValueChange={setInvoiceStatus}
+                >
+                  <SelectTrigger className="w-full md:w-[180px] bg-card/50 border-border/50">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    {Object.entries(invoiceStatusConfig).map(([
+                      k,
+                      v,
+                    ]) => (
+                      <SelectItem
+                        key={k}
+                        value={k}
+                      >
+                        {v.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="bg-card/50 border-border/50 h-9 gap-2"
+                    >
+                      <SlidersHorizontal className="h-4 w-4" />
+                      {" "}
+                      Filter
+                      {invActiveFilters > 0 && (
+                        <Badge
+                          variant="secondary"
+                          className="ml-1 h-5 px-1.5"
+                        >
+                          {invActiveFilters}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-80 p-4 space-y-4 max-h-[70vh] overflow-y-auto"
+                    align="end"
+                  >
+                    <h4 className="text-xs font-medium text-foreground px-0.5">Only show invoices by...</h4>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="inv-flt-veh"
+                            checked={invVehicleEnabled}
+                            onCheckedChange={c => setInvVehicleEnabled(c === true)}
+                          />
+                          <Label
+                            htmlFor="inv-flt-veh"
+                            className="text-sm cursor-pointer"
+                          >
+                            Vehicle type
+                          </Label>
+                        </div>
+                        <Select
+                          value={invVehicleType}
+                          onValueChange={setInvVehicleType}
+                          disabled={!invVehicleEnabled}
+                        >
+                          <SelectTrigger className="h-9"><SelectValue placeholder="Select vehicle type" /></SelectTrigger>
+                          <SelectContent>
+                            {VEHICLE_TYPE_OPTIONS.map(o => (
+                              <SelectItem
+                                key={o.value}
+                                value={o.value}
+                              >
+                                {o.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="inv-flt-due"
+                            checked={invDueEnabled}
+                            onCheckedChange={c => setInvDueEnabled(c === true)}
+                          />
+                          <Label
+                            htmlFor="inv-flt-due"
+                            className="text-sm cursor-pointer"
+                          >
+                            Due date
+                          </Label>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input
+                            type="date"
+                            disabled={!invDueEnabled}
+                            value={invDueFrom}
+                            onChange={e => setInvDueFrom(e.target.value)}
+                            className="h-9"
+                          />
+                          <Input
+                            type="date"
+                            disabled={!invDueEnabled}
+                            value={invDueTo}
+                            onChange={e => setInvDueTo(e.target.value)}
+                            className="h-9"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="inv-flt-amt"
+                            checked={invAmountEnabled}
+                            onCheckedChange={c => setInvAmountEnabled(c === true)}
+                          />
+                          <Label
+                            htmlFor="inv-flt-amt"
+                            className="text-sm cursor-pointer"
+                          >
+                            Amount (₦)
+                          </Label>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input
+                            type="number"
+                            placeholder="From"
+                            disabled={!invAmountEnabled}
+                            value={invAmountMin}
+                            onChange={e => setInvAmountMin(e.target.value)}
+                            className="h-9"
+                          />
+                          <Input
+                            type="number"
+                            placeholder="To"
+                            disabled={!invAmountEnabled}
+                            value={invAmountMax}
+                            onChange={e => setInvAmountMax(e.target.value)}
+                            className="h-9"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-2 border-t border-border">
+                      <Button className="flex-1">Apply</Button>
+                      <Button
+                        variant="outline"
+                        onClick={resetInvoiceFilters}
+                        className="flex-1"
+                      >
+                        Show All
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Invoice #</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Route</TableHead>
+                    <TableHead>Vehicle</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredInvoices.length === 0
+                    ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={8}
+                            className="text-center py-12 text-muted-foreground"
+                          >
+                            <Download className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                            <p className="font-medium">No invoices found</p>
+                            <p className="text-sm">Generate invoices from extracted waybills</p>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    : filteredInvoices.map((inv) => {
+                        const ic = invoiceStatusConfig[inv.status] || invoiceStatusConfig.draft;
+                        return (
+                          <TableRow
+                            key={inv.id}
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => setSelectedInvoice(inv)}
+                          >
+                            <TableCell className="font-mono font-medium">{inv.invoice_number}</TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={ic.color}
+                              >
+                                {ic.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{inv.customer_name}</TableCell>
+                            <TableCell className="text-sm">
+                              {inv.origin && inv.destination
+                                ? (
+                                    <span className="flex items-center gap-1">
+                                      {inv.origin}
+                                      {" "}
+                                      <ArrowRight className="h-3 w-3" />
+                                      {" "}
+                                      {inv.destination}
+                                    </span>
+                                  )
+                                : inv.destination || "—"}
+                            </TableCell>
+                            <TableCell>{inv.vehicle_number || "—"}</TableCell>
+                            <TableCell className="text-right font-medium">{formatAmount(inv.total_ngn)}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {inv.due_date
+                                ? formatWithPattern(
+                                    inv.due_date,
+                                    "dd MMM yyyy",
+                                  )
+                                : "—"}
+                            </TableCell>
+                            <TableCell
+                              className="text-right"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <div className="flex gap-1 justify-end items-center">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-8 w-8 p-0"
+                                      aria-label="Invoice actions"
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent
+                                    align="end"
+                                    className="w-52"
+                                  >
+                                    <DropdownMenuItem onClick={() => setSelectedInvoice(inv)}>
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      View Invoice
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={async () => {
+                                        if (inv.id.startsWith("demo-")) {
+                                          toast.success("Download downloaded");
+                                          return;
+                                        }
+                                        let path = inv.pdf_storage_path;
+                                        if (!path) {
+                                          const res = await generateInvoicePDF(inv.id);
+                                          path = res?.storage_path ?? null;
+                                        }
+                                        if (!path)
+                                          return;
+                                        const url = await getInvoicePdfUrl(path);
+                                        if (url) {
+                                          window.open(
+                                            url,
+                                            "_blank",
+                                          );
+                                          toast.success("Download download started");
+                                        }
+                                      }}
+                                    >
+                                      <Download className="h-4 w-4 mr-2" />
+                                      Download Receipt
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      disabled={![
+                                        "approved",
+                                        "sent",
+                                        "paid",
+                                      ].includes(inv.status)}
+                                      onClick={() => setSelectedInvoice(inv)}
+                                    >
+                                      <Share2 className="h-4 w-4 mr-2" />
+                                      Share Receipt
+                                    </DropdownMenuItem>
+                                    {canDeleteAssets && (
+                                      <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          className="text-destructive focus:text-destructive"
+                                          onClick={() => setInvoiceToDelete(inv)}
+                                        >
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          Delete Invoice
+                                        </DropdownMenuItem>
+                                      </>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        <Sheet
-          open={!!selectedInvoice}
-          onOpenChange={open => !open && setSelectedInvoice(null)}
+        <TabsContent
+          value="pricing"
+          className="mt-4"
         >
-          <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-            {selectedInvoice && (
-              <InvoiceDetailView
-                invoice={selectedInvoice}
-                config={invoiceConfig}
-                formatAmount={formatAmount}
-                onUpdate={updates => updateInvoice(
-                  selectedInvoice.id,
+          <PricingRulesPanel
+            rules={displayPricingRules}
+            onAdd={addPricingRule}
+            onUpdate={updatePricingRule}
+            onDelete={deletePricingRule}
+            formatAmount={formatAmount}
+            showDialog={showPricingDialog}
+            setShowDialog={setShowPricingDialog}
+          />
+        </TabsContent>
+
+        <TabsContent
+          value="settings"
+          className="mt-4"
+        >
+          <InvoiceSettingsPanel
+            config={invoiceConfig}
+            onSave={updateInvoiceConfig}
+          />
+        </TabsContent>
+      </Tabs>
+
+      <Sheet
+        open={!!selectedWaybill}
+        onOpenChange={open => !open && setSelectedWaybill(null)}
+      >
+        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+          {selectedWaybill && (
+            <WaybillDetailView
+              waybill={selectedWaybill}
+              onExtract={() => handleExtract(selectedWaybill)}
+              onGenerateInvoice={() => handleGenerateInvoice(selectedWaybill.id)}
+              onApprove={async () => {
+                const updated = await updateWaybillFields(
+                  selectedWaybill.id,
+                  { status: "approved" },
+                );
+                if (updated)
+                  setSelectedWaybill(updated);
+              }}
+              onUpdateFields={async (updates) => {
+                const updated = await updateWaybillFields(
+                  selectedWaybill.id,
                   updates,
-                )}
-                onRecordShare={(channel, recipient) => recordInvoiceShare(
-                  selectedInvoice.id,
-                  channel,
-                  recipient,
-                )}
-                onGeneratePDF={() => generateInvoicePDF(selectedInvoice.id)}
-                onGetPdfUrl={path => getInvoicePdfUrl(path)}
-                onSendEmail={async (_invoiceId, _data) => {
-                  toast.info("Coming soon");
-                  return false;
-                }}
-              />
-            )}
-          </SheetContent>
-        </Sheet>
+                );
+                if (updated)
+                  setSelectedWaybill(updated);
+              }}
+              extracting={extracting === selectedWaybill.id}
+              generating={generating === selectedWaybill.id}
+              formatAmount={formatAmount}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
 
-        <AlertDialog
-          open={!!invoiceToDelete}
-          onOpenChange={o => !o && setInvoiceToDelete(null)}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Delete invoice
-                {invoiceToDelete?.invoice_number}
-                ?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. The invoice will be permanently
-                removed for
-                {" "}
-                {invoiceToDelete?.customer_name || "this customer"}
-                .
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setInvoiceToDelete(null)}>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                onClick={async () => {
-                  if (invoiceToDelete) {
-                    await deleteInvoice(invoiceToDelete.id);
-                    setInvoiceToDelete(null);
-                  }
-                }}
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </DashboardLayout>
+      <Sheet
+        open={!!selectedInvoice}
+        onOpenChange={open => !open && setSelectedInvoice(null)}
+      >
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          {selectedInvoice && (
+            <InvoiceDetailView
+              invoice={selectedInvoice}
+              config={invoiceConfig}
+              formatAmount={formatAmount}
+              onUpdate={updates => updateInvoice(
+                selectedInvoice.id,
+                updates,
+              )}
+              onRecordShare={(channel, recipient) => recordInvoiceShare(
+                selectedInvoice.id,
+                channel,
+                recipient,
+              )}
+              onGeneratePDF={() => generateInvoicePDF(selectedInvoice.id)}
+              onGetPdfUrl={path => getInvoicePdfUrl(path)}
+              onSendEmail={async (_invoiceId, _data) => {
+                toast.info("Coming soon");
+                return false;
+              }}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <AlertDialog
+        open={!!invoiceToDelete}
+        onOpenChange={o => !o && setInvoiceToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete invoice
+              {invoiceToDelete?.invoice_number}
+              ?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The invoice will be permanently
+              removed for
+              {" "}
+              {invoiceToDelete?.customer_name || "this customer"}
+              .
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setInvoiceToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (invoiceToDelete) {
+                  await deleteInvoice(invoiceToDelete.id);
+                  setInvoiceToDelete(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }
 

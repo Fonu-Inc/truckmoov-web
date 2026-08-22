@@ -16,7 +16,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardHeader, CardTitle,
@@ -134,279 +133,269 @@ export default function DispatcherReports() {
 
   if (loading) {
     return (
-      <DashboardLayout
-        title="Reports & Analytics"
-        subtitle="Loading..."
-      >
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     );
   }
 
   return (
-    <DashboardLayout
-      title="Reports & Analytics"
-      subtitle="Real-time fleet performance insights"
-    >
-      <div className="space-y-6">
-        {/* Header Actions */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <Select
-              value={dateRange}
-              onValueChange={setDateRange}
-            >
-              <SelectTrigger className="w-[180px]">
-                <Calendar className="h-4 w-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7d">Last 7 Days</SelectItem>
-                <SelectItem value="30d">Last 30 Days</SelectItem>
-                <SelectItem value="90d">Last 90 Days</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <Button
-            variant="outline"
-            className="gap-2"
+    <div className="space-y-6">
+      {/* Header Actions */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <Select
+            value={dateRange}
+            onValueChange={setDateRange}
           >
-            <Download className="h-4 w-4" />
-            Export Report
-          </Button>
+            <SelectTrigger className="w-[180px]">
+              <Calendar className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">Last 7 Days</SelectItem>
+              <SelectItem value="30d">Last 30 Days</SelectItem>
+              <SelectItem value="90d">Last 90 Days</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+        <Button
+          variant="outline"
+          className="gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Export Report
+        </Button>
+      </div>
 
-        {/* Stats */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Devices</p>
-                  <p className="text-2xl font-bold">{stats.totalDevices}</p>
-                  <p className="text-xs text-success flex items-center gap-1 mt-1">
-                    <TrendingUp className="h-3 w-3" />
-                    {" "}
-                    Live data
-                  </p>
-                </div>
-                <Truck className="h-8 w-8 text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Active Devices</p>
-                  <p className="text-2xl font-bold text-success">{stats.activeDevices}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {stats.totalDevices > 0 ? ((stats.activeDevices / stats.totalDevices) * 100).toFixed(0) : 0}
-                    % utilization
-                  </p>
-                </div>
-                <Clock className="h-8 w-8 text-success" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Alerts</p>
-                  <p className="text-2xl font-bold text-primary">{stats.totalAlerts}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {stats.unacknowledgedAlerts}
-                    {" "}
-                    unacknowledged
-                  </p>
-                </div>
-                <AlertTriangle className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Critical Alerts</p>
-                  <p className="text-2xl font-bold text-destructive">{stats.criticalAlerts}</p>
-                  <p className="text-xs text-warning flex items-center gap-1 mt-1">
-                    Requires attention
-                  </p>
-                </div>
-                <AlertTriangle className="h-8 w-8 text-destructive" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Charts Row */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Weekly Alerts */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                Alerts by Day
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer
-                width="100%"
-                height={300}
-              >
-                <BarChart data={alertsByDay}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
-                  />
-                  <XAxis
-                    dataKey="day"
-                    stroke="hsl(var(--muted-foreground))"
-                  />
-                  <YAxis stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                    }}
-                  />
-                  <Bar
-                    dataKey="alerts"
-                    fill="hsl(var(--primary))"
-                    radius={[
-                      4,
-                      4,
-                      0,
-                      0,
-                    ]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Device Utilization Pie */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Truck className="h-5 w-5 text-primary" />
-                Device Utilization
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer
-                width="100%"
-                height={300}
-              >
-                <PieChart>
-                  <Pie
-                    data={deviceUtilization}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {deviceUtilization.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.color}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex justify-center gap-6 mt-4">
-                {deviceUtilization.map(item => (
-                  <div
-                    key={item.name}
-                    className="flex items-center gap-2"
-                  >
-                    <div
-                      className="h-3 w-3 rounded-full"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="text-sm">
-                      {item.name}
-                      {" "}
-                      (
-                      {item.value}
-                      %)
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Top Alert Types Table */}
+      {/* Stats */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-primary" />
-              Top Alert Types
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 font-medium">Alert Type</th>
-                    <th className="text-left py-3 px-4 font-medium">Count</th>
-                    <th className="text-left py-3 px-4 font-medium">Percentage</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {topAlertTypes.map((item, i) => (
-                    <tr
-                      key={i}
-                      className="border-b border-border last:border-0"
-                    >
-                      <td className="py-3 px-4">
-                        <span className="font-medium capitalize">{item.type}</span>
-                      </td>
-                      <td className="py-3 px-4">{item.count}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-full max-w-24 bg-muted rounded-full h-2">
-                            <div
-                              className="bg-primary h-2 rounded-full"
-                              style={{ width: `${alerts.length > 0 ? (item.count / alerts.length) * 100 : 0}%` }}
-                            />
-                          </div>
-                          <span className="text-sm text-muted-foreground">
-                            {alerts.length > 0 ? ((item.count / alerts.length) * 100).toFixed(0) : 0}
-                            %
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {topAlertTypes.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={3}
-                        className="py-8 text-center text-muted-foreground"
-                      >
-                        No alerts recorded
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Devices</p>
+                <p className="text-2xl font-bold">{stats.totalDevices}</p>
+                <p className="text-xs text-success flex items-center gap-1 mt-1">
+                  <TrendingUp className="h-3 w-3" />
+                  {" "}
+                  Live data
+                </p>
+              </div>
+              <Truck className="h-8 w-8 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Active Devices</p>
+                <p className="text-2xl font-bold text-success">{stats.activeDevices}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats.totalDevices > 0 ? ((stats.activeDevices / stats.totalDevices) * 100).toFixed(0) : 0}
+                  % utilization
+                </p>
+              </div>
+              <Clock className="h-8 w-8 text-success" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Alerts</p>
+                <p className="text-2xl font-bold text-primary">{stats.totalAlerts}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats.unacknowledgedAlerts}
+                  {" "}
+                  unacknowledged
+                </p>
+              </div>
+              <AlertTriangle className="h-8 w-8 text-primary" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Critical Alerts</p>
+                <p className="text-2xl font-bold text-destructive">{stats.criticalAlerts}</p>
+                <p className="text-xs text-warning flex items-center gap-1 mt-1">
+                  Requires attention
+                </p>
+              </div>
+              <AlertTriangle className="h-8 w-8 text-destructive" />
             </div>
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+
+      {/* Charts Row */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Weekly Alerts */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Alerts by Day
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer
+              width="100%"
+              height={300}
+            >
+              <BarChart data={alertsByDay}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                />
+                <XAxis
+                  dataKey="day"
+                  stroke="hsl(var(--muted-foreground))"
+                />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                  }}
+                />
+                <Bar
+                  dataKey="alerts"
+                  fill="hsl(var(--primary))"
+                  radius={[
+                    4,
+                    4,
+                    0,
+                    0,
+                  ]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Device Utilization Pie */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5 text-primary" />
+              Device Utilization
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer
+              width="100%"
+              height={300}
+            >
+              <PieChart>
+                <Pie
+                  data={deviceUtilization}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {deviceUtilization.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.color}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex justify-center gap-6 mt-4">
+              {deviceUtilization.map(item => (
+                <div
+                  key={item.name}
+                  className="flex items-center gap-2"
+                >
+                  <div
+                    className="h-3 w-3 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="text-sm">
+                    {item.name}
+                    {" "}
+                    (
+                    {item.value}
+                    %)
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Top Alert Types Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-primary" />
+            Top Alert Types
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-4 font-medium">Alert Type</th>
+                  <th className="text-left py-3 px-4 font-medium">Count</th>
+                  <th className="text-left py-3 px-4 font-medium">Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topAlertTypes.map((item, i) => (
+                  <tr
+                    key={i}
+                    className="border-b border-border last:border-0"
+                  >
+                    <td className="py-3 px-4">
+                      <span className="font-medium capitalize">{item.type}</span>
+                    </td>
+                    <td className="py-3 px-4">{item.count}</td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-full max-w-24 bg-muted rounded-full h-2">
+                          <div
+                            className="bg-primary h-2 rounded-full"
+                            style={{ width: `${alerts.length > 0 ? (item.count / alerts.length) * 100 : 0}%` }}
+                          />
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          {alerts.length > 0 ? ((item.count / alerts.length) * 100).toFixed(0) : 0}
+                          %
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {topAlertTypes.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="py-8 text-center text-muted-foreground"
+                    >
+                      No alerts recorded
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

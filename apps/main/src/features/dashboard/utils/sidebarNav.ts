@@ -1,6 +1,4 @@
-import type {
-  AuthUser, UserRole,
-} from "@truckmoov/api/auth";
+import type { UserRole } from "@truckmoov/api/auth";
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
@@ -25,14 +23,16 @@ import {
   Wifi,
   Wrench,
 } from "lucide-react";
-import { ROLE_REDIRECT_MAP } from "@/features/auth/utils/authRedirect";
 
 export type SidebarNavItem = {
+  /** Nav link text. Doubles as the top-bar title — a route is called one thing. */
   label: string;
   href: string;
   icon: LucideIcon;
   badge?: number;
   badgeKey?: string;
+  /** Page owns its own padding — DashboardLayout drops the `p-6` on `<main>`. */
+  fullWidth?: boolean;
   /** Roles allowed to see this entry. On a group child, omit to inherit the group's roles. */
   hasPermission?: UserRole[];
 };
@@ -47,11 +47,6 @@ export type SidebarNavGroup = {
 
 export type SidebarEntry = SidebarNavItem | SidebarNavGroup;
 
-export type SidebarConfig = {
-  homeRoute: string;
-  entries: SidebarEntry[];
-};
-
 export function isNavGroup(entry: SidebarEntry): entry is SidebarNavGroup {
   return "items" in entry;
 }
@@ -64,29 +59,34 @@ export function isNavGroup(entry: SidebarEntry): entry is SidebarNavGroup {
  * thing for everybody who can reach it, so `/fleet` is "Fleet" whether you
  * are a fleet provider or an aggregator.
  *
+ * The label is also the top-bar title (see `matchNavEntry`). A route with no
+ * entry here therefore has no top-bar title — that is deliberate: this list is
+ * the nav, and pages off the nav (`/help`, `/architecture`, the onboarding
+ * steps, the legacy `/supervisor/*` portal) name themselves in their own body.
+ *
  * ponytail: `hasPermission` is required here (optional on the type only so group
  * children can inherit) — a new entry that forgets it fails to compile instead
  * of silently showing up for every role.
  */
-const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] = [
+export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] = [
   // ─── Overview ──────────────────────────────────────────────────
   {
-    label: "Logistics Overview", href: "/enterprise", icon: LayoutDashboard, hasPermission: ["ENTERPRISE_ADMIN"],
+    label: "Overview", href: "/enterprise", icon: LayoutDashboard, hasPermission: ["ENTERPRISE_ADMIN"],
   },
   {
-    label: "Dashboard", href: "/overview", icon: LayoutDashboard, hasPermission: [
+    label: "Overview", href: "/overview", icon: LayoutDashboard, hasPermission: [
       "FLEET_ADMIN",
       "OPERATIONS_MANAGER",
     ],
   },
   {
-    label: "Network Overview", href: "/aggregator", icon: LayoutDashboard, hasPermission: ["AGGREGATOR_ADMIN"],
+    label: "Overview", href: "/aggregator", icon: LayoutDashboard, hasPermission: ["AGGREGATOR_ADMIN"],
   },
   {
-    label: "My Overview", href: "/owner-operator", icon: LayoutDashboard, hasPermission: ["OWNER_OPERATOR"],
+    label: "Overview", href: "/owner-operator", icon: LayoutDashboard, hasPermission: ["OWNER_OPERATOR"],
   },
   {
-    label: "Operations Center", href: "/dispatcher", icon: LayoutDashboard, hasPermission: ["DISPATCHER"],
+    label: "Overview", href: "/dispatcher", icon: LayoutDashboard, hasPermission: ["DISPATCHER"],
   },
 
   // ─── Jobs & dispatch ───────────────────────────────────────────
@@ -183,7 +183,7 @@ const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] = [
 
   // ─── Map ───────────────────────────────────────────────────────
   {
-    label: "Live Map", href: "/map", icon: MapPin,
+    label: "Live Map", href: "/map", icon: MapPin, fullWidth: true,
     hasPermission: [
       "ENTERPRISE_ADMIN",
       "FLEET_ADMIN",
@@ -303,31 +303,30 @@ const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] = [
   },
 ];
 
-/** Entries this role may see. Groups whose children are all hidden drop out. */
-export function getEntriesForRole(role: UserRole): SidebarEntry[] {
-  const visible: SidebarEntry[] = [];
-  for (const entry of SIDEBAR_ENTRIES) {
-    if (!entry.hasPermission.includes(role))
-      continue;
-    if (!isNavGroup(entry)) {
-      visible.push(entry);
-      continue;
+/**
+ * Deepest entry whose href matches this pathname — exact match wins, else the
+ * longest href prefix. Group children are matched, groups themselves are not
+ * (a group has no route of its own).
+ *
+ * Permissions are deliberately ignored: this names the page you are on, and
+ * whether you may be there is AuthGuard's call, not the top bar's.
+ *
+ * ponytail: raw href comparison, so the two `?tab=` entries never win and
+ * `/fleet` names those pages. Same as before this list owned the title.
+ */
+export function matchNavEntry(pathname: string): SidebarNavItem | undefined {
+  let best: SidebarNavItem | undefined;
+  const consider = (item: SidebarNavItem) => {
+    if (pathname === item.href || pathname.startsWith(`${item.href}/`)) {
+      if (!best || item.href.length > best.href.length)
+        best = item;
     }
-    const items = entry.items.filter(i => i.hasPermission?.includes(role) ?? true);
-    if (items.length > 0) {
-      visible.push({
-        ...entry, items,
-      });
-    }
-  }
-  return visible;
-}
-
-export function getSidebarConfig(user: AuthUser | null): SidebarConfig | null {
-  const homeRoute = user ? ROLE_REDIRECT_MAP[user.role] : undefined;
-  if (!homeRoute)
-    return null;
-  return {
-    homeRoute, entries: getEntriesForRole(user!.role),
   };
+  for (const entry of SIDEBAR_ENTRIES) {
+    if (isNavGroup(entry))
+      entry.items.forEach(consider);
+    else
+      consider(entry);
+  }
+  return best;
 }

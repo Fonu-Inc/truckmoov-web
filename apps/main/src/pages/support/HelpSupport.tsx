@@ -3,7 +3,6 @@ import {
   useEffect, useState,
 } from "react";
 import { useNavigate } from "react-router";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/shadcn/button";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
@@ -50,10 +49,7 @@ export default function HelpSupport() {
   }
 
   return (
-    <DashboardLayout
-      title="Ticketing & Support"
-      subtitle="View tickets and report issues to the platform"
-    >
+    <>
       <div className="space-y-6">
         <Tabs
           value={activeTab}
@@ -118,6 +114,6 @@ export default function HelpSupport() {
         open={logTicketOpen}
         onOpenChange={setLogTicketOpen}
       />
-    </DashboardLayout>
+    </>
   );
 }

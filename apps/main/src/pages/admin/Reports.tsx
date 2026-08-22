@@ -17,7 +17,6 @@ import {
   Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -2627,111 +2626,96 @@ export default function Reports() {
 
   if (isLoading) {
     return (
-      <DashboardLayout
-        title="Reports"
-        subtitle="Exportable historical summaries and audits"
-      >
-        <div className="flex min-h-64 items-center justify-center text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin" />
-        </div>
-      </DashboardLayout>
+      <div className="flex min-h-64 items-center justify-center text-muted-foreground">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
     );
   }
 
   if (!hasData) {
     return (
-      <DashboardLayout
-        title="Reports"
-        subtitle="Exportable historical summaries and audits"
-      >
-        <EmptyState
-          icon={FileText}
-          title="No data for reports"
-          description="Add vehicles, drivers, and jobs to generate reports"
-          actionLabel="Go to Fleet"
-          actionHref="/fleet"
-        />
-      </DashboardLayout>
+      <EmptyState
+        icon={FileText}
+        title="No data for reports"
+        description="Add vehicles, drivers, and jobs to generate reports"
+        actionLabel="Go to Fleet"
+        actionHref="/fleet"
+      />
     );
   }
 
   return (
-    <DashboardLayout
-      title="Reports"
-      subtitle="Exportable historical summaries and audits"
-    >
-      <div className="space-y-4">
-        {/* Report Tabs - centered at top */}
-        <Tabs
-          defaultValue="pnl"
-          className="space-y-4"
-        >
-          <div className="flex justify-center">
-            <TabsList className="bg-muted/50 p-1 flex-wrap h-auto gap-1">
-              <TabsTrigger
-                value="pnl"
-                className="gap-2"
-              >
-                <DollarSign className="h-4 w-4" />
-                Profit & Loss
-              </TabsTrigger>
-              <TabsTrigger
-                value="compliance"
-                className="gap-2"
-              >
-                <Shield className="h-4 w-4" />
-                Compliance Audit
-              </TabsTrigger>
-              <TabsTrigger
-                value="fuel"
-                className="gap-2"
-              >
-                <Fuel className="h-4 w-4" />
-                Fuel Consumption
-              </TabsTrigger>
-              <TabsTrigger
-                value="utilization"
-                className="gap-2"
-              >
-                <Truck className="h-4 w-4" />
-                Fleet Utilization
-              </TabsTrigger>
-            </TabsList>
-          </div>
+    <div className="space-y-4">
+      {/* Report Tabs - centered at top */}
+      <Tabs
+        defaultValue="pnl"
+        className="space-y-4"
+      >
+        <div className="flex justify-center">
+          <TabsList className="bg-muted/50 p-1 flex-wrap h-auto gap-1">
+            <TabsTrigger
+              value="pnl"
+              className="gap-2"
+            >
+              <DollarSign className="h-4 w-4" />
+              Profit & Loss
+            </TabsTrigger>
+            <TabsTrigger
+              value="compliance"
+              className="gap-2"
+            >
+              <Shield className="h-4 w-4" />
+              Compliance Audit
+            </TabsTrigger>
+            <TabsTrigger
+              value="fuel"
+              className="gap-2"
+            >
+              <Fuel className="h-4 w-4" />
+              Fuel Consumption
+            </TabsTrigger>
+            <TabsTrigger
+              value="utilization"
+              className="gap-2"
+            >
+              <Truck className="h-4 w-4" />
+              Fleet Utilization
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-          <TabsContent value="pnl">
-            <ProfitLossReport
-              jobs={jobs}
-              vehicles={vehicles}
-              dateRange={dateRange}
-              formatCurrency={formatCurrency}
-            />
-          </TabsContent>
+        <TabsContent value="pnl">
+          <ProfitLossReport
+            jobs={jobs}
+            vehicles={vehicles}
+            dateRange={dateRange}
+            formatCurrency={formatCurrency}
+          />
+        </TabsContent>
 
-          <TabsContent value="compliance">
-            <ComplianceAuditReport
-              vehicles={vehicles}
-              drivers={drivers}
-            />
-          </TabsContent>
+        <TabsContent value="compliance">
+          <ComplianceAuditReport
+            vehicles={vehicles}
+            drivers={drivers}
+          />
+        </TabsContent>
 
-          <TabsContent value="fuel">
-            <FuelConsumptionReport
-              vehicles={vehicles}
-              jobs={jobs}
-              formatCurrency={formatCurrency}
-            />
-          </TabsContent>
+        <TabsContent value="fuel">
+          <FuelConsumptionReport
+            vehicles={vehicles}
+            jobs={jobs}
+            formatCurrency={formatCurrency}
+          />
+        </TabsContent>
 
-          <TabsContent value="utilization">
-            <FleetUtilizationReport
-              vehicles={vehicles}
-              jobs={jobs}
-              formatCurrency={formatCurrency}
-            />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </DashboardLayout>
+        <TabsContent value="utilization">
+          <FleetUtilizationReport
+            vehicles={vehicles}
+            jobs={jobs}
+            formatCurrency={formatCurrency}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

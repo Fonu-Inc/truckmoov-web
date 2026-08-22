@@ -15,27 +15,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
+import { getRoleLabel } from "@/features/auth/utils/role-label";
 import { useAuthStore } from "@/stores/authStore";
-
-function getRoleLabel(role?: string) {
-  switch (role) {
-    case "SUPER_ADMIN":
-      return "Super Administrator";
-    case "SYSTEM_ADMIN":
-      return "System Administrator";
-    case "PLATFORM_ADMIN":
-    case "platform_admin":
-      return "Platform Administrator";
-    default:
-      return role
-        ? role
-            .toLowerCase()
-            .split("_")
-            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-            .join(" ")
-        : "Administrator";
-  }
-}
 
 export function UserProfileDropdown() {
   const {

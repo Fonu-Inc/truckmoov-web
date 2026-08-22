@@ -17,6 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
+import { getRoleLabel } from "@/features/auth/utils/role-label";
 import { useAuthStore } from "@/stores/authStore";
 
 const PLATFORM_ADMIN_URL = (import.meta.env.VITE_PLATFORM_ADMIN_URL || "http://localhost:3002").replace(
@@ -51,22 +52,6 @@ export function UserProfileDropdown() {
     }
     else {
       navigate("/settings");
-    }
-  };
-
-  const getRoleLabel = (role?: string) => {
-    switch (role) {
-      case "SUPER_ADMIN": return "Super Admin";
-      case "SYSTEM_ADMIN": return "System Admin";
-      case "PLATFORM_ADMIN": return "Platform Admin";
-      case "ENTERPRISE_ADMIN": return "Enterprise Admin";
-      case "AGGREGATOR_ADMIN": return "Aggregator Admin";
-      case "OWNER_OPERATOR": return "Owner Operator";
-      case "FLEET_ADMIN": return "Fleet Admin";
-      case "OPERATIONS_MANAGER": return "Operations Manager";
-      case "DISPATCHER": return "Dispatcher";
-      case "FINANCE_VIEWER": return "Finance";
-      default: return role ?? "User";
     }
   };
 

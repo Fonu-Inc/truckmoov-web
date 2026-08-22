@@ -31,7 +31,6 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { NewContactDialog } from "@/components/communications/NewContactDialog";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { EmojiPicker } from "@/components/messaging/EmojiPicker";
 import {
   Avatar, AvatarFallback,
@@ -377,36 +376,28 @@ export default function OmnichannelInbox() {
 
   if (isLoading) {
     return (
-      <DashboardLayout
-        title="Omnichannel Inbox"
-        subtitle="A single, unified view of every SMS, WhatsApp message, and voice call with your drivers — across all channels."
-      >
-        <div className="grid gap-6 lg:grid-cols-3 h-[calc(100vh-12rem)]">
-          <Card className="lg:col-span-1">
-            <CardContent className="p-4 space-y-3">
-              {[...Array.from({ length: 6 })].map((_, i) => (
-                <Skeleton
-                  key={i}
-                  className="h-16 w-full"
-                />
-              ))}
-            </CardContent>
-          </Card>
-          <Card className="lg:col-span-2">
-            <CardContent className="p-4">
-              <Skeleton className="h-full w-full min-h-[400px]" />
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardLayout>
+      <div className="grid gap-6 lg:grid-cols-3 h-[calc(100vh-12rem)]">
+        <Card className="lg:col-span-1">
+          <CardContent className="p-4 space-y-3">
+            {[...Array.from({ length: 6 })].map((_, i) => (
+              <Skeleton
+                key={i}
+                className="h-16 w-full"
+              />
+            ))}
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-2">
+          <CardContent className="p-4">
+            <Skeleton className="h-full w-full min-h-[400px]" />
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout
-      title="Omnichannel Inbox"
-      subtitle="A single, unified view of every SMS, WhatsApp message, and voice call with your drivers — across all channels."
-    >
+    <>
       <div className="flex justify-end mb-4">
         <Button
           variant="default"
@@ -828,7 +819,7 @@ export default function OmnichannelInbox() {
         onOpenChange={setNewContactOpen}
         onSubmit={handleAddContact}
       />
-    </DashboardLayout>
+    </>
   );
 }
 

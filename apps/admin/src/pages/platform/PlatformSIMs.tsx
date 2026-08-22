@@ -50,7 +50,6 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -750,10 +749,7 @@ export default function PlatformSIMs() {
   };
 
   return (
-    <DashboardLayout
-      title="IoT SIM Management"
-      subtitle="Manage SIM inventory and assignments across all tenants"
-    >
+    <>
       <Tabs
         defaultValue="inventory"
         className="space-y-6"
@@ -1864,7 +1860,7 @@ export default function PlatformSIMs() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   );
 }
 

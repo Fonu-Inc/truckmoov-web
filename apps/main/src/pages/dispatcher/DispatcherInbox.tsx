@@ -30,7 +30,6 @@ import {
   useEffect, useMemo, useRef, useState,
 } from "react";
 import { toast } from "sonner";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { EmojiPicker } from "@/components/messaging/EmojiPicker";
 import {
   Avatar, AvatarFallback,
@@ -352,453 +351,443 @@ export default function DispatcherInbox() {
 
   if (isLoading) {
     return (
-      <DashboardLayout
-        title="Omnichannel Inbox"
-        subtitle="Unified messaging and calls with drivers"
-      >
-        <div className="grid gap-6 lg:grid-cols-3 h-[calc(100vh-12rem)]">
-          <Card className="lg:col-span-1">
-            <CardContent className="p-4 space-y-3">
-              {[...Array.from({ length: 6 })].map((_, i) => (
-                <Skeleton
-                  key={i}
-                  className="h-16 w-full"
-                />
-              ))}
-            </CardContent>
-          </Card>
-          <Card className="lg:col-span-2">
-            <CardContent className="p-4">
-              <Skeleton className="h-full w-full min-h-[400px]" />
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardLayout>
+      <div className="grid gap-6 lg:grid-cols-3 h-[calc(100vh-12rem)]">
+        <Card className="lg:col-span-1">
+          <CardContent className="p-4 space-y-3">
+            {[...Array.from({ length: 6 })].map((_, i) => (
+              <Skeleton
+                key={i}
+                className="h-16 w-full"
+              />
+            ))}
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-2">
+          <CardContent className="p-4">
+            <Skeleton className="h-full w-full min-h-[400px]" />
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout
-      title="Omnichannel Inbox"
-      subtitle="Unified messaging and calls with drivers"
-    >
-      <div className="grid gap-4 lg:grid-cols-3 h-[calc(100vh-12rem)]">
-        {/* Conversation List */}
-        <Card className="lg:col-span-1 flex flex-col">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-primary" />
-                Conversations
-              </CardTitle>
-              <TooltipWrapper content="Refresh">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => refetch()}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-              </TooltipWrapper>
-            </div>
-            <div className="relative mt-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search drivers..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="pl-9 h-9"
-              />
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 p-0 overflow-hidden">
-            <ScrollArea className="h-full">
-              <div className="px-2 pb-2">
-                {conversations.length === 0
-                  ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No conversations yet</p>
-                      </div>
-                    )
-                  : (
-                      conversations.map(conv => (
-                        <button
-                          key={conv.driverId}
-                          onClick={() => setSelectedDriverId(conv.driverId)}
-                          className={cn(
-                            "w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors",
-                            selectedDriverId === conv.driverId
-                              ? "bg-primary/10 border border-primary/20"
-                              : "hover:bg-muted/50",
-                          )}
-                        >
-                          <Avatar className="h-10 w-10">
-                            <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-sm">
-                              {conv.driverName?.split(" ").map(n => n[0]).join("") || "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="font-medium text-sm truncate">
-                                {conv.driverName || conv.driverPhone}
-                              </p>
-                              {conv.unreadCount > 0 && (
-                                <Badge
-                                  variant="default"
-                                  className="h-5 min-w-5 text-xs"
-                                >
-                                  {conv.unreadCount}
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {conv.items[0]?.type === "message"
-                                ? (
-                                    conv.items[0]?.messageType === "whatsapp"
-                                      ? (
-                                          <Badge
-                                            variant="outline"
-                                            className="h-4 px-1.5 text-[9px] font-medium bg-[#25D366]/10 text-[#25D366] border-[#25D366]/30 gap-0.5"
-                                          >
-                                            <WhatsAppLogo className="h-2.5 w-2.5" />
-                                            WhatsApp
-                                          </Badge>
-                                        )
-                                      : (
-                                          <Badge
-                                            variant="outline"
-                                            className="h-4 px-1.5 text-[9px] font-medium bg-primary/10 text-primary border-primary/30 gap-0.5"
-                                          >
-                                            <SMSLogo className="h-2.5 w-2.5" />
-                                            SMS
-                                          </Badge>
-                                        )
-                                  )
-                                : (
-                                    <Badge
-                                      variant="outline"
-                                      className="h-4 px-1.5 text-[9px] font-medium bg-warning/10 text-warning border-warning/30 gap-0.5"
-                                    >
-                                      <PhoneLogo className="h-2.5 w-2.5" />
-                                      Call
-                                    </Badge>
-                                  )}
-                              <p className="text-xs text-muted-foreground truncate flex-1">
-                                {conv.items[0]?.type === "message"
-                                  ? conv.items[0].content?.substring(
-                                      0,
-                                      40,
-                                    )
-                                  : (conv.items[0]?.callStatus || "Call").replace(
-                                      "_",
-                                      " ",
-                                    )}
-                              </p>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {formatRelative(conv.lastActivity)}
-                            </p>
-                          </div>
-                        </button>
-                      ))
-                    )}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-
-        {/* Conversation Detail */}
-        <Card className="lg:col-span-2 flex flex-col">
-          {!selectedConversation ? (
-            <CardContent className="flex-1 flex items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <MessageSquare className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                <p className="text-lg font-medium">Select a conversation</p>
-                <p className="text-sm">Choose a driver from the list to view their communication history</p>
-              </div>
-            </CardContent>
-          ) : (
-            <>
-              {/* Header */}
-              <CardHeader className="pb-3 border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground">
-                        {selectedConversation.driverName?.split(" ").map(n => n[0]).join("") || "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold">{selectedConversation.driverName || "Unknown Driver"}</p>
-                      <p className="text-sm text-muted-foreground">{selectedConversation.driverPhone}</p>
+    <div className="grid gap-4 lg:grid-cols-3 h-[calc(100vh-12rem)]">
+      {/* Conversation List */}
+      <Card className="lg:col-span-1 flex flex-col">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-primary" />
+              Conversations
+            </CardTitle>
+            <TooltipWrapper content="Refresh">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => refetch()}
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </TooltipWrapper>
+          </div>
+          <div className="relative mt-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search drivers..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-9 h-9"
+            />
+          </div>
+        </CardHeader>
+        <CardContent className="flex-1 p-0 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="px-2 pb-2">
+              {conversations.length === 0
+                ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No conversations yet</p>
                     </div>
-                    {/* Call Button */}
-                    <TooltipWrapper content="Call driver">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="ml-2 text-success hover:text-success hover:bg-success/10"
-                        onClick={handleInitiateCall}
-                        disabled={isCalling}
+                  )
+                : (
+                    conversations.map(conv => (
+                      <button
+                        key={conv.driverId}
+                        onClick={() => setSelectedDriverId(conv.driverId)}
+                        className={cn(
+                          "w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors",
+                          selectedDriverId === conv.driverId
+                            ? "bg-primary/10 border border-primary/20"
+                            : "hover:bg-muted/50",
+                        )}
                       >
-                        {isCalling
-                          ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            )
-                          : (
-                              <PhoneOutgoing className="h-4 w-4" />
+                        <Avatar className="h-10 w-10">
+                          <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-sm">
+                            {conv.driverName?.split(" ").map(n => n[0]).join("") || "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-medium text-sm truncate">
+                              {conv.driverName || conv.driverPhone}
+                            </p>
+                            {conv.unreadCount > 0 && (
+                              <Badge
+                                variant="default"
+                                className="h-5 min-w-5 text-xs"
+                              >
+                                {conv.unreadCount}
+                              </Badge>
                             )}
-                      </Button>
-                    </TooltipWrapper>
-                  </div>
-                  <Tabs
-                    value={filterType}
-                    onValueChange={v => setFilterType(v as typeof filterType)}
-                  >
-                    <TabsList className="h-8">
-                      <TabsTrigger
-                        value="all"
-                        className="text-xs px-3"
-                      >
-                        All
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="whatsapp"
-                        className="text-xs px-3"
-                      >
-                        <WhatsAppLogo className="h-3 w-3 mr-1 text-[#25D366]" />
-                        WhatsApp
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="sms"
-                        className="text-xs px-3"
-                      >
-                        <SMSLogo className="h-3 w-3 mr-1 text-blue-500" />
-                        SMS
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="voice"
-                        className="text-xs px-3"
-                      >
-                        <PhoneLogo className="h-3 w-3 mr-1 text-orange-500" />
-                        Voice
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
-              </CardHeader>
-
-              {/* Messages/Calls Timeline */}
-              <CardContent className="flex-1 p-0 overflow-hidden">
-                <ScrollArea
-                  className="h-full p-4"
-                  ref={scrollRef}
-                >
-                  <div className="space-y-3">
-                    {filteredItems.length === 0
-                      ? (
-                          <div className="text-center py-8 text-muted-foreground">
-                            <p className="text-sm">
-                              No
-                              {filterType === "all" ? "activity" : filterType}
-                              {" "}
-                              found
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {conv.items[0]?.type === "message"
+                              ? (
+                                  conv.items[0]?.messageType === "whatsapp"
+                                    ? (
+                                        <Badge
+                                          variant="outline"
+                                          className="h-4 px-1.5 text-[9px] font-medium bg-[#25D366]/10 text-[#25D366] border-[#25D366]/30 gap-0.5"
+                                        >
+                                          <WhatsAppLogo className="h-2.5 w-2.5" />
+                                          WhatsApp
+                                        </Badge>
+                                      )
+                                    : (
+                                        <Badge
+                                          variant="outline"
+                                          className="h-4 px-1.5 text-[9px] font-medium bg-primary/10 text-primary border-primary/30 gap-0.5"
+                                        >
+                                          <SMSLogo className="h-2.5 w-2.5" />
+                                          SMS
+                                        </Badge>
+                                      )
+                                )
+                              : (
+                                  <Badge
+                                    variant="outline"
+                                    className="h-4 px-1.5 text-[9px] font-medium bg-warning/10 text-warning border-warning/30 gap-0.5"
+                                  >
+                                    <PhoneLogo className="h-2.5 w-2.5" />
+                                    Call
+                                  </Badge>
+                                )}
+                            <p className="text-xs text-muted-foreground truncate flex-1">
+                              {conv.items[0]?.type === "message"
+                                ? conv.items[0].content?.substring(
+                                    0,
+                                    40,
+                                  )
+                                : (conv.items[0]?.callStatus || "Call").replace(
+                                    "_",
+                                    " ",
+                                  )}
                             </p>
                           </div>
-                        )
-                      : (
-                          [...filteredItems].reverse().map(item => (
-                            <CommunicationBubble
-                              key={item.id}
-                              item={item}
-                            />
-                          ))
-                        )}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-
-              {/* Reply Input */}
-              <div className="p-4 border-t">
-                {attachments.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pb-2">
-                    {attachments.map((file, idx) => {
-                      const isImage = file.type.startsWith("image/");
-                      const url = isImage ? URL.createObjectURL(file) : null;
-                      return (
-                        <div
-                          key={`${file.name}-${idx}`}
-                          className="relative flex items-center gap-2 pl-1 pr-6 py-1 rounded-md border border-border bg-muted/40 max-w-[180px]"
-                        >
-                          {isImage && url
-                            ? (
-                                <img
-                                  src={url}
-                                  alt={file.name}
-                                  className="h-7 w-7 rounded object-cover"
-                                />
-                              )
-                            : (
-                                <span className="flex h-7 w-7 items-center justify-center rounded bg-primary/15 text-foreground">
-                                  <FileText className="h-4 w-4" />
-                                </span>
-                              )}
-                          <span className="text-xs truncate">{file.name}</span>
-                          <button
-                            type="button"
-                            aria-label="Remove attachment"
-                            onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))}
-                            className="absolute top-1 right-1 text-muted-foreground hover:text-foreground"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {formatRelative(conv.lastActivity)}
+                          </p>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <Popover
-                    open={attachOpen}
-                    onOpenChange={setAttachOpen}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        aria-label="Add attachment"
-                        className="shrink-0 h-10 w-10 rounded-full bg-muted hover:bg-muted/80 text-foreground"
-                      >
-                        <Plus className={cn(
-                          "h-5 w-5 transition-transform",
-                          attachOpen && "rotate-45",
-                        )}
-                        />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      side="top"
-                      align="start"
-                      sideOffset={6}
-                      className="w-[208px] p-1.5 rounded-xl shadow-xl border-border"
-                    >
-                      <div className="px-1.5 py-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Attach
-                      </div>
-                      <div className="grid gap-0.5">
-                        <button
-                          type="button"
-                          onClick={() => photoInputRef.current?.click()}
-                          className="flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-muted text-left transition-colors"
-                        >
-                          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15 text-foreground shrink-0">
-                            <ImageIcon className="h-3.5 w-3.5" />
-                          </span>
-                          <span className="text-[12px] font-medium truncate">Photo</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => cameraInputRef.current?.click()}
-                          className="flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-muted text-left transition-colors"
-                        >
-                          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15 text-foreground shrink-0">
-                            <Camera className="h-3.5 w-3.5" />
-                          </span>
-                          <span className="text-[12px] font-medium truncate">Take a photo</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-muted text-left transition-colors"
-                        >
-                          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15 text-foreground shrink-0">
-                            <FileText className="h-3.5 w-3.5" />
-                          </span>
-                          <span className="text-[12px] font-medium truncate">Document</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCreatePoll}
-                          className="flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-muted text-left transition-colors"
-                        >
-                          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15 text-foreground shrink-0">
-                            <BarChart3 className="h-3.5 w-3.5" />
-                          </span>
-                          <span className="text-[12px] font-medium truncate">Poll</span>
-                        </button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                      </button>
+                    ))
+                  )}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
 
-                  <div className="flex-1 relative flex items-center rounded-full border border-border bg-muted/40 px-4 h-10">
-                    <input
-                      type="text"
-                      placeholder="Type a message..."
-                      value={replyMessage}
-                      onChange={e => setReplyMessage(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendReply();
-                        }
-                      }}
-                      className="flex-1 bg-transparent border-0 outline-none text-sm placeholder:text-muted-foreground"
-                    />
-                    <EmojiPicker onEmojiSelect={emoji => setReplyMessage(prev => prev + emoji)} />
+      {/* Conversation Detail */}
+      <Card className="lg:col-span-2 flex flex-col">
+        {!selectedConversation ? (
+          <CardContent className="flex-1 flex items-center justify-center">
+            <div className="text-center text-muted-foreground">
+              <MessageSquare className="h-16 w-16 mx-auto mb-4 opacity-30" />
+              <p className="text-lg font-medium">Select a conversation</p>
+              <p className="text-sm">Choose a driver from the list to view their communication history</p>
+            </div>
+          </CardContent>
+        ) : (
+          <>
+            {/* Header */}
+            <CardHeader className="pb-3 border-b">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground">
+                      {selectedConversation.driverName?.split(" ").map(n => n[0]).join("") || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-semibold">{selectedConversation.driverName || "Unknown Driver"}</p>
+                    <p className="text-sm text-muted-foreground">{selectedConversation.driverPhone}</p>
                   </div>
-
-                  <TooltipWrapper content={filterType === "whatsapp" ? "Send WhatsApp" : "Send SMS"}>
+                  {/* Call Button */}
+                  <TooltipWrapper content="Call driver">
                     <Button
+                      variant="outline"
                       size="icon"
-                      onClick={() => handleSendReply()}
-                      disabled={(!replyMessage.trim() && attachments.length === 0) || isSending}
-                      className="shrink-0 h-10 w-10 rounded-full"
+                      className="ml-2 text-success hover:text-success hover:bg-success/10"
+                      onClick={handleInitiateCall}
+                      disabled={isCalling}
                     >
-                      <Send className="h-4 w-4" />
+                      {isCalling
+                        ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          )
+                        : (
+                            <PhoneOutgoing className="h-4 w-4" />
+                          )}
                     </Button>
                   </TooltipWrapper>
-
-                  <input
-                    ref={photoInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => {
-                      handleAttachFiles(e.target.files);
-                      e.target.value = "";
-                    }}
-                  />
-                  <input
-                    ref={cameraInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={(e) => {
-                      handleAttachFiles(e.target.files);
-                      e.target.value = "";
-                    }}
-                  />
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => {
-                      handleAttachFiles(e.target.files);
-                      e.target.value = "";
-                    }}
-                  />
                 </div>
+                <Tabs
+                  value={filterType}
+                  onValueChange={v => setFilterType(v as typeof filterType)}
+                >
+                  <TabsList className="h-8">
+                    <TabsTrigger
+                      value="all"
+                      className="text-xs px-3"
+                    >
+                      All
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="whatsapp"
+                      className="text-xs px-3"
+                    >
+                      <WhatsAppLogo className="h-3 w-3 mr-1 text-[#25D366]" />
+                      WhatsApp
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="sms"
+                      className="text-xs px-3"
+                    >
+                      <SMSLogo className="h-3 w-3 mr-1 text-blue-500" />
+                      SMS
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="voice"
+                      className="text-xs px-3"
+                    >
+                      <PhoneLogo className="h-3 w-3 mr-1 text-orange-500" />
+                      Voice
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
-            </>
-          )}
-        </Card>
-      </div>
-    </DashboardLayout>
+            </CardHeader>
+
+            {/* Messages/Calls Timeline */}
+            <CardContent className="flex-1 p-0 overflow-hidden">
+              <ScrollArea
+                className="h-full p-4"
+                ref={scrollRef}
+              >
+                <div className="space-y-3">
+                  {filteredItems.length === 0
+                    ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <p className="text-sm">
+                            No
+                            {filterType === "all" ? "activity" : filterType}
+                            {" "}
+                            found
+                          </p>
+                        </div>
+                      )
+                    : (
+                        [...filteredItems].reverse().map(item => (
+                          <CommunicationBubble
+                            key={item.id}
+                            item={item}
+                          />
+                        ))
+                      )}
+                </div>
+              </ScrollArea>
+            </CardContent>
+
+            {/* Reply Input */}
+            <div className="p-4 border-t">
+              {attachments.length > 0 && (
+                <div className="flex flex-wrap gap-2 pb-2">
+                  {attachments.map((file, idx) => {
+                    const isImage = file.type.startsWith("image/");
+                    const url = isImage ? URL.createObjectURL(file) : null;
+                    return (
+                      <div
+                        key={`${file.name}-${idx}`}
+                        className="relative flex items-center gap-2 pl-1 pr-6 py-1 rounded-md border border-border bg-muted/40 max-w-[180px]"
+                      >
+                        {isImage && url
+                          ? (
+                              <img
+                                src={url}
+                                alt={file.name}
+                                className="h-7 w-7 rounded object-cover"
+                              />
+                            )
+                          : (
+                              <span className="flex h-7 w-7 items-center justify-center rounded bg-primary/15 text-foreground">
+                                <FileText className="h-4 w-4" />
+                              </span>
+                            )}
+                        <span className="text-xs truncate">{file.name}</span>
+                        <button
+                          type="button"
+                          aria-label="Remove attachment"
+                          onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))}
+                          className="absolute top-1 right-1 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <Popover
+                  open={attachOpen}
+                  onOpenChange={setAttachOpen}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Add attachment"
+                      className="shrink-0 h-10 w-10 rounded-full bg-muted hover:bg-muted/80 text-foreground"
+                    >
+                      <Plus className={cn(
+                        "h-5 w-5 transition-transform",
+                        attachOpen && "rotate-45",
+                      )}
+                      />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    side="top"
+                    align="start"
+                    sideOffset={6}
+                    className="w-[208px] p-1.5 rounded-xl shadow-xl border-border"
+                  >
+                    <div className="px-1.5 py-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Attach
+                    </div>
+                    <div className="grid gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => photoInputRef.current?.click()}
+                        className="flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-muted text-left transition-colors"
+                      >
+                        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15 text-foreground shrink-0">
+                          <ImageIcon className="h-3.5 w-3.5" />
+                        </span>
+                        <span className="text-[12px] font-medium truncate">Photo</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => cameraInputRef.current?.click()}
+                        className="flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-muted text-left transition-colors"
+                      >
+                        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15 text-foreground shrink-0">
+                          <Camera className="h-3.5 w-3.5" />
+                        </span>
+                        <span className="text-[12px] font-medium truncate">Take a photo</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-muted text-left transition-colors"
+                      >
+                        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15 text-foreground shrink-0">
+                          <FileText className="h-3.5 w-3.5" />
+                        </span>
+                        <span className="text-[12px] font-medium truncate">Document</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCreatePoll}
+                        className="flex items-center gap-2 px-1.5 py-1.5 rounded-md hover:bg-muted text-left transition-colors"
+                      >
+                        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/15 text-foreground shrink-0">
+                          <BarChart3 className="h-3.5 w-3.5" />
+                        </span>
+                        <span className="text-[12px] font-medium truncate">Poll</span>
+                      </button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                <div className="flex-1 relative flex items-center rounded-full border border-border bg-muted/40 px-4 h-10">
+                  <input
+                    type="text"
+                    placeholder="Type a message..."
+                    value={replyMessage}
+                    onChange={e => setReplyMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendReply();
+                      }
+                    }}
+                    className="flex-1 bg-transparent border-0 outline-none text-sm placeholder:text-muted-foreground"
+                  />
+                  <EmojiPicker onEmojiSelect={emoji => setReplyMessage(prev => prev + emoji)} />
+                </div>
+
+                <TooltipWrapper content={filterType === "whatsapp" ? "Send WhatsApp" : "Send SMS"}>
+                  <Button
+                    size="icon"
+                    onClick={() => handleSendReply()}
+                    disabled={(!replyMessage.trim() && attachments.length === 0) || isSending}
+                    className="shrink-0 h-10 w-10 rounded-full"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </TooltipWrapper>
+
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    handleAttachFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    handleAttachFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    handleAttachFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </Card>
+    </div>
   );
 }
 

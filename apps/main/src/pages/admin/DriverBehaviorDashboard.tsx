@@ -8,7 +8,6 @@ import {
   Bar, BarChart, CartesianGrid, Cell, Legend, Pie,
   PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -329,489 +328,484 @@ export default function DriverBehaviorDashboard() {
   };
 
   return (
-    <DashboardLayout
-      title="Driver Behavior & Geofencing"
-      subtitle="Real-time driver scoring and geofence monitoring"
-    >
-      <div className="space-y-6">
-        {/* Connection Status & Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <Card className="col-span-2 md:col-span-1">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                {behaviorConnected && geofenceConnected
-                  ? (
-                      <Wifi className="h-4 w-4 text-success" />
-                    )
-                  : (
-                      <WifiOff className="h-4 w-4 text-warning" />
-                    )}
-                <span className="text-xs font-medium">
-                  {behaviorConnected && geofenceConnected ? "Live" : "Connecting..."}
-                </span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                className="w-full"
-              >
-                <RefreshCw className="h-3 w-3 mr-1" />
-                Refresh
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Activity className="h-5 w-5 mx-auto mb-1 text-primary" />
-              <p className="text-2xl font-bold">{behaviorStats.averageScore}</p>
-              <p className="text-xs text-muted-foreground">Avg Score</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 text-center">
-              <AlertTriangle className="h-5 w-5 mx-auto mb-1 text-warning" />
-              <p className="text-2xl font-bold">{behaviorStats.last24h}</p>
-              <p className="text-xs text-muted-foreground">Events (24h)</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 text-center">
-              <User className="h-5 w-5 mx-auto mb-1 text-accent" />
-              <p className="text-2xl font-bold">{driverScores.length}</p>
-              <p className="text-xs text-muted-foreground">Drivers</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Shield className="h-5 w-5 mx-auto mb-1 text-success" />
-              <p className="text-2xl font-bold">{geofenceStats.entries}</p>
-              <p className="text-xs text-muted-foreground">Zone Entries</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 text-center">
-              <Bell className="h-5 w-5 mx-auto mb-1 text-destructive" />
-              <p className="text-2xl font-bold">{geofenceStats.exits}</p>
-              <p className="text-xs text-muted-foreground">Zone Exits</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Geofence Alert Charts */}
-        {(() => {
-          const trendData = recentAlerts.length > 0
-            ? Object.values(
-                recentAlerts.reduce<Record<string, {
-                  name: string; entries: number; exits: number; dwell: number;
-                }>>(
-                  (acc, a) => {
-                    const key = a.triggeredAt.toLocaleDateString(
-                      "en-US",
-                      { weekday: "short" },
-                    );
-                    acc[key] = acc[key] || {
-                      name: key, entries: 0, exits: 0, dwell: 0,
-                    };
-                    if (a.alertType === "entry")
-                      acc[key].entries += 1;
-                    else if (a.alertType === "exit")
-                      acc[key].exits += 1;
-                    else acc[key].dwell += 1;
-                    return acc;
-                  },
-                  {},
-                ),
-              )
-            : [];
-          const typeData = geofenceStats.entries + geofenceStats.exits > 0
-            ? [
-                {
-                  name: "Entry", value: geofenceStats.entries, fill: "hsl(142 76% 36%)",
-                },
-                {
-                  name: "Exit", value: geofenceStats.exits, fill: "hsl(220 70% 55%)",
-                },
-              ]
-            : [];
-          const zoneData = Object.values(
-            alerts.reduce<Record<string, {
-              name: string; entries: number; exits: number;
-            }>>(
-              (acc, a) => {
-                acc[a.geofenceName] = acc[a.geofenceName] || {
-                  name: a.geofenceName, entries: 0, exits: 0,
-                };
-                if (a.alertType === "entry")
-                  acc[a.geofenceName].entries += 1;
-                else if (a.alertType === "exit")
-                  acc[a.geofenceName].exits += 1;
-                return acc;
-              },
-              {},
-            ),
-          ).sort((a, b) => (b.entries + b.exits) - (a.entries + a.exits)).slice(
-            0,
-            5,
-          );
-          return (
-            <div className="grid gap-4 lg:grid-cols-3">
-              <Card className="lg:col-span-2">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-primary" />
-                    Geofence Alerts (Last 7 Days)
-                  </CardTitle>
-                  <CardDescription>Entries, exits and dwell events per day</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer
-                    width="100%"
-                    height={220}
-                  >
-                    <BarChart data={trendData}>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        className="stroke-muted"
-                      />
-                      <XAxis
-                        dataKey="name"
-                        className="text-xs"
-                      />
-                      <YAxis className="text-xs" />
-                      <Tooltip
-                        contentStyle={{
-                          background: "hsl(var(--popover))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: 8,
-                          fontSize: 12,
-                        }}
-                      />
-                      <Legend wrapperStyle={{ fontSize: 12 }} />
-                      <Bar
-                        dataKey="entries"
-                        fill="hsl(142 76% 36%)"
-                        radius={[
-                          4,
-                          4,
-                          0,
-                          0,
-                        ]}
-                      />
-                      <Bar
-                        dataKey="exits"
-                        fill="hsl(220 70% 55%)"
-                        radius={[
-                          4,
-                          4,
-                          0,
-                          0,
-                        ]}
-                      />
-                      <Bar
-                        dataKey="dwell"
-                        fill="hsl(48 96% 53%)"
-                        radius={[
-                          4,
-                          4,
-                          0,
-                          0,
-                        ]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Bell className="h-4 w-4 text-primary" />
-                    Alert Type Breakdown
-                  </CardTitle>
-                  <CardDescription>Distribution by trigger type</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer
-                    width="100%"
-                    height={220}
-                  >
-                    <PieChart>
-                      <Pie
-                        data={typeData}
-                        dataKey="value"
-                        nameKey="name"
-                        innerRadius={45}
-                        outerRadius={75}
-                        paddingAngle={2}
-                      >
-                        {typeData.map((entry, idx) => (
-                          <Cell
-                            key={idx}
-                            fill={(entry as any).fill}
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          background: "hsl(var(--popover))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: 8,
-                          fontSize: 12,
-                        }}
-                      />
-                      <Legend wrapperStyle={{ fontSize: 11 }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card className="lg:col-span-3">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    Top Geofence Zones
-                  </CardTitle>
-                  <CardDescription>Most active zones by entry/exit volume</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer
-                    width="100%"
-                    height={220}
-                  >
-                    <BarChart
-                      data={zoneData}
-                      layout="vertical"
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        className="stroke-muted"
-                      />
-                      <XAxis
-                        type="number"
-                        className="text-xs"
-                      />
-                      <YAxis
-                        dataKey="name"
-                        type="category"
-                        className="text-xs"
-                        width={110}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          background: "hsl(var(--popover))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: 8,
-                          fontSize: 12,
-                        }}
-                      />
-                      <Legend wrapperStyle={{ fontSize: 12 }} />
-                      <Bar
-                        dataKey="entries"
-                        fill="hsl(142 76% 36%)"
-                        radius={[
-                          0,
-                          4,
-                          4,
-                          0,
-                        ]}
-                      />
-                      <Bar
-                        dataKey="exits"
-                        fill="hsl(220 70% 55%)"
-                        radius={[
-                          0,
-                          4,
-                          4,
-                          0,
-                        ]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+    <div className="space-y-6">
+      {/* Connection Status & Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <Card className="col-span-2 md:col-span-1">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              {behaviorConnected && geofenceConnected
+                ? (
+                    <Wifi className="h-4 w-4 text-success" />
+                  )
+                : (
+                    <WifiOff className="h-4 w-4 text-warning" />
+                  )}
+              <span className="text-xs font-medium">
+                {behaviorConnected && geofenceConnected ? "Live" : "Connecting..."}
+              </span>
             </div>
-          );
-        })()}
-
-        {/* Main Content */}
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Driver Scores & Events */}
-          <div className="lg:col-span-2">
-            <Tabs
-              value={activeTab}
-              onValueChange={setActiveTab}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              className="w-full"
             >
-              <TabsList className="mb-4">
-                <TabsTrigger
-                  value="scores"
-                  className="gap-2"
-                >
-                  <Activity className="h-4 w-4" />
-                  Driver Scores
-                </TabsTrigger>
-                <TabsTrigger
-                  value="events"
-                  className="gap-2"
-                >
-                  <AlertTriangle className="h-4 w-4" />
-                  Behavior Events
-                  {behaviorStats.critical > 0 && (
-                    <Badge
-                      variant="destructive"
-                      className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]"
-                    >
-                      {behaviorStats.critical}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              </TabsList>
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Refresh
+            </Button>
+          </CardContent>
+        </Card>
 
-              <TabsContent
-                value="scores"
-                className="mt-0"
-              >
-                {behaviorLoading
-                  ? (
-                      <div className="grid gap-4">
-                        {[
-                          1,
-                          2,
-                          3,
-                        ].map(i => (
-                          <Card
-                            key={i}
-                            className="h-48 animate-pulse bg-muted/50"
-                          />
-                        ))}
-                      </div>
-                    )
-                  : driverScores.length > 0
-                    ? (
-                        <div className="grid gap-4">
-                          {driverScores.map((score, index) => (
-                            <DriverScoreCard
-                              key={score.driverId}
-                              score={score}
-                              rank={index + 1}
-                            />
-                          ))}
-                        </div>
-                      )
-                    : (
-                        <Card className="p-8 text-center">
-                          <Activity className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-                          <p className="font-medium">No Driver Data</p>
-                          <p className="text-sm text-muted-foreground">
-                            Driver behavior events will appear here as they're recorded
-                          </p>
-                        </Card>
-                      )}
-              </TabsContent>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Activity className="h-5 w-5 mx-auto mb-1 text-primary" />
+            <p className="text-2xl font-bold">{behaviorStats.averageScore}</p>
+            <p className="text-xs text-muted-foreground">Avg Score</p>
+          </CardContent>
+        </Card>
 
-              <TabsContent
-                value="events"
-                className="mt-0"
-              >
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Recent Behavior Events</CardTitle>
-                    <CardDescription>
-                      {behaviorStats.total}
-                      {" "}
-                      total events recorded
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-[500px] pr-4">
-                      <div className="space-y-2">
-                        {events.slice(
-                          0,
-                          50,
-                        ).map(event => (
-                          <EventItem
-                            key={event.id}
-                            event={event}
-                          />
-                        ))}
-                        {events.length === 0 && (
-                          <div className="text-center py-8">
-                            <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground">No events recorded yet</p>
-                          </div>
-                        )}
-                      </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <AlertTriangle className="h-5 w-5 mx-auto mb-1 text-warning" />
+            <p className="text-2xl font-bold">{behaviorStats.last24h}</p>
+            <p className="text-xs text-muted-foreground">Events (24h)</p>
+          </CardContent>
+        </Card>
 
-          {/* Geofence Alerts Sidebar */}
-          <div>
-            <Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <User className="h-5 w-5 mx-auto mb-1 text-accent" />
+            <p className="text-2xl font-bold">{driverScores.length}</p>
+            <p className="text-xs text-muted-foreground">Drivers</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Shield className="h-5 w-5 mx-auto mb-1 text-success" />
+            <p className="text-2xl font-bold">{geofenceStats.entries}</p>
+            <p className="text-xs text-muted-foreground">Zone Entries</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Bell className="h-5 w-5 mx-auto mb-1 text-destructive" />
+            <p className="text-2xl font-bold">{geofenceStats.exits}</p>
+            <p className="text-xs text-muted-foreground">Zone Exits</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Geofence Alert Charts */}
+      {(() => {
+        const trendData = recentAlerts.length > 0
+          ? Object.values(
+              recentAlerts.reduce<Record<string, {
+                name: string; entries: number; exits: number; dwell: number;
+              }>>(
+                (acc, a) => {
+                  const key = a.triggeredAt.toLocaleDateString(
+                    "en-US",
+                    { weekday: "short" },
+                  );
+                  acc[key] = acc[key] || {
+                    name: key, entries: 0, exits: 0, dwell: 0,
+                  };
+                  if (a.alertType === "entry")
+                    acc[key].entries += 1;
+                  else if (a.alertType === "exit")
+                    acc[key].exits += 1;
+                  else acc[key].dwell += 1;
+                  return acc;
+                },
+                {},
+              ),
+            )
+          : [];
+        const typeData = geofenceStats.entries + geofenceStats.exits > 0
+          ? [
+              {
+                name: "Entry", value: geofenceStats.entries, fill: "hsl(142 76% 36%)",
+              },
+              {
+                name: "Exit", value: geofenceStats.exits, fill: "hsl(220 70% 55%)",
+              },
+            ]
+          : [];
+        const zoneData = Object.values(
+          alerts.reduce<Record<string, {
+            name: string; entries: number; exits: number;
+          }>>(
+            (acc, a) => {
+              acc[a.geofenceName] = acc[a.geofenceName] || {
+                name: a.geofenceName, entries: 0, exits: 0,
+              };
+              if (a.alertType === "entry")
+                acc[a.geofenceName].entries += 1;
+              else if (a.alertType === "exit")
+                acc[a.geofenceName].exits += 1;
+              return acc;
+            },
+            {},
+          ),
+        ).sort((a, b) => (b.entries + b.exits) - (a.entries + a.exits)).slice(
+          0,
+          5,
+        );
+        return (
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Card className="lg:col-span-2">
               <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    Geofence Alerts
-                    {unreadCount > 0 && (
-                      <Badge
-                        variant="destructive"
-                        className="h-5 min-w-[20px] p-0 flex items-center justify-center text-[10px]"
-                      >
-                        {unreadCount}
-                      </Badge>
-                    )}
-                  </CardTitle>
-                  {unreadCount > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={markAllRead}
-                    >
-                      Mark read
-                    </Button>
-                  )}
-                </div>
-                <CardDescription>
-                  Real-time zone entry/exit notifications
-                </CardDescription>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-primary" />
+                  Geofence Alerts (Last 7 Days)
+                </CardTitle>
+                <CardDescription>Entries, exits and dwell events per day</CardDescription>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[550px] pr-4">
-                  <div className="space-y-2">
-                    {alerts.length > 0
-                      ? (
-                          alerts.map(alert => (
-                            <GeofenceAlertItem
-                              key={alert.id}
-                              alert={alert}
-                            />
-                          ))
-                        )
-                      : (
-                          <div className="text-center py-8">
-                            <MapPin className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground">No geofence alerts</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Alerts will appear when vehicles enter or exit zones
-                            </p>
-                          </div>
-                        )}
-                  </div>
-                </ScrollArea>
+                <ResponsiveContainer
+                  width="100%"
+                  height={220}
+                >
+                  <BarChart data={trendData}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="stroke-muted"
+                    />
+                    <XAxis
+                      dataKey="name"
+                      className="text-xs"
+                    />
+                    <YAxis className="text-xs" />
+                    <Tooltip
+                      contentStyle={{
+                        background: "hsl(var(--popover))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: 8,
+                        fontSize: 12,
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar
+                      dataKey="entries"
+                      fill="hsl(142 76% 36%)"
+                      radius={[
+                        4,
+                        4,
+                        0,
+                        0,
+                      ]}
+                    />
+                    <Bar
+                      dataKey="exits"
+                      fill="hsl(220 70% 55%)"
+                      radius={[
+                        4,
+                        4,
+                        0,
+                        0,
+                      ]}
+                    />
+                    <Bar
+                      dataKey="dwell"
+                      fill="hsl(48 96% 53%)"
+                      radius={[
+                        4,
+                        4,
+                        0,
+                        0,
+                      ]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Bell className="h-4 w-4 text-primary" />
+                  Alert Type Breakdown
+                </CardTitle>
+                <CardDescription>Distribution by trigger type</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer
+                  width="100%"
+                  height={220}
+                >
+                  <PieChart>
+                    <Pie
+                      data={typeData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={45}
+                      outerRadius={75}
+                      paddingAngle={2}
+                    >
+                      {typeData.map((entry, idx) => (
+                        <Cell
+                          key={idx}
+                          fill={(entry as any).fill}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        background: "hsl(var(--popover))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: 8,
+                        fontSize: 12,
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-3">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  Top Geofence Zones
+                </CardTitle>
+                <CardDescription>Most active zones by entry/exit volume</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer
+                  width="100%"
+                  height={220}
+                >
+                  <BarChart
+                    data={zoneData}
+                    layout="vertical"
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="stroke-muted"
+                    />
+                    <XAxis
+                      type="number"
+                      className="text-xs"
+                    />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      className="text-xs"
+                      width={110}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: "hsl(var(--popover))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: 8,
+                        fontSize: 12,
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar
+                      dataKey="entries"
+                      fill="hsl(142 76% 36%)"
+                      radius={[
+                        0,
+                        4,
+                        4,
+                        0,
+                      ]}
+                    />
+                    <Bar
+                      dataKey="exits"
+                      fill="hsl(220 70% 55%)"
+                      radius={[
+                        0,
+                        4,
+                        4,
+                        0,
+                      ]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
           </div>
+        );
+      })()}
+
+      {/* Main Content */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Driver Scores & Events */}
+        <div className="lg:col-span-2">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+          >
+            <TabsList className="mb-4">
+              <TabsTrigger
+                value="scores"
+                className="gap-2"
+              >
+                <Activity className="h-4 w-4" />
+                Driver Scores
+              </TabsTrigger>
+              <TabsTrigger
+                value="events"
+                className="gap-2"
+              >
+                <AlertTriangle className="h-4 w-4" />
+                Behavior Events
+                {behaviorStats.critical > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]"
+                  >
+                    {behaviorStats.critical}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent
+              value="scores"
+              className="mt-0"
+            >
+              {behaviorLoading
+                ? (
+                    <div className="grid gap-4">
+                      {[
+                        1,
+                        2,
+                        3,
+                      ].map(i => (
+                        <Card
+                          key={i}
+                          className="h-48 animate-pulse bg-muted/50"
+                        />
+                      ))}
+                    </div>
+                  )
+                : driverScores.length > 0
+                  ? (
+                      <div className="grid gap-4">
+                        {driverScores.map((score, index) => (
+                          <DriverScoreCard
+                            key={score.driverId}
+                            score={score}
+                            rank={index + 1}
+                          />
+                        ))}
+                      </div>
+                    )
+                  : (
+                      <Card className="p-8 text-center">
+                        <Activity className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
+                        <p className="font-medium">No Driver Data</p>
+                        <p className="text-sm text-muted-foreground">
+                          Driver behavior events will appear here as they're recorded
+                        </p>
+                      </Card>
+                    )}
+            </TabsContent>
+
+            <TabsContent
+              value="events"
+              className="mt-0"
+            >
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Recent Behavior Events</CardTitle>
+                  <CardDescription>
+                    {behaviorStats.total}
+                    {" "}
+                    total events recorded
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[500px] pr-4">
+                    <div className="space-y-2">
+                      {events.slice(
+                        0,
+                        50,
+                      ).map(event => (
+                        <EventItem
+                          key={event.id}
+                          event={event}
+                        />
+                      ))}
+                      {events.length === 0 && (
+                        <div className="text-center py-8">
+                          <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">No events recorded yet</p>
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Geofence Alerts Sidebar */}
+        <div>
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Geofence Alerts
+                  {unreadCount > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="h-5 min-w-[20px] p-0 flex items-center justify-center text-[10px]"
+                    >
+                      {unreadCount}
+                    </Badge>
+                  )}
+                </CardTitle>
+                {unreadCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={markAllRead}
+                  >
+                    Mark read
+                  </Button>
+                )}
+              </div>
+              <CardDescription>
+                Real-time zone entry/exit notifications
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[550px] pr-4">
+                <div className="space-y-2">
+                  {alerts.length > 0
+                    ? (
+                        alerts.map(alert => (
+                          <GeofenceAlertItem
+                            key={alert.id}
+                            alert={alert}
+                          />
+                        ))
+                      )
+                    : (
+                        <div className="text-center py-8">
+                          <MapPin className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">No geofence alerts</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Alerts will appear when vehicles enter or exit zones
+                          </p>
+                        </div>
+                      )}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

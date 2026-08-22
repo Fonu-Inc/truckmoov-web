@@ -29,7 +29,6 @@ import { toast } from "sonner";
 import { SubscriptionInvoicesPanel } from "@/components/billing/SubscriptionInvoicesPanel";
 import { MaintenanceConfigPanel } from "@/components/fleet/MaintenanceConfigPanel";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TenantKYCVerification } from "@/components/platform/TenantKYCVerification";
 import { AccountingIntegrationPanel } from "@/components/settings/AccountingIntegrationPanel";
 import { AIUsageAnalyticsPanel } from "@/components/settings/AIUsageAnalyticsPanel";
@@ -85,21 +84,8 @@ import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
+import { getRoleLabel } from "@/features/auth/utils/role-label";
 import { useAuthStore } from "@/stores/authStore";
-
-/** Human labels for the backend roles. */
-const ROLE_LABELS: Record<UserRole, string> = {
-  SUPER_ADMIN: "Super Admin",
-  SYSTEM_ADMIN: "System Admin",
-  PLATFORM_ADMIN: "Platform Admin",
-  ENTERPRISE_ADMIN: "Enterprise Admin",
-  AGGREGATOR_ADMIN: "Aggregator Admin",
-  OWNER_OPERATOR: "Owner Operator",
-  FLEET_ADMIN: "Fleet Admin",
-  OPERATIONS_MANAGER: "Operations Manager",
-  DISPATCHER: "Dispatcher",
-  FINANCE_VIEWER: "Finance Viewer",
-};
 
 type RoleOption = {
   value: UserRole; label: string;
@@ -237,7 +223,7 @@ export default function Settings() {
     ...(canInviteUsers && currentRole
       ? [
           {
-            value: currentRole, label: `${ROLE_LABELS[currentRole]} - Full access`,
+            value: currentRole, label: `${getRoleLabel(currentRole)} - Full access`,
           },
         ]
       : []),
@@ -245,7 +231,7 @@ export default function Settings() {
   ];
   if (!editRoleOptions.some(o => o.value === editRole)) {
     editRoleOptions.push({
-      value: editRole, label: ROLE_LABELS[editRole] ?? editRole,
+      value: editRole, label: getRoleLabel(editRole),
     });
   }
 
@@ -446,7 +432,7 @@ export default function Settings() {
       // ponytail: offer only the roles actually present in this org
       options: [...new Set(tenantUsers.map(u => u.role))].map(role => ({
         value: role,
-        label: ROLE_LABELS[role] ?? role,
+        label: getRoleLabel(role),
       })),
     },
     {
@@ -492,647 +478,645 @@ export default function Settings() {
   });
 
   return (
-    <DashboardLayout title="Settings">
-      <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
+    <Tabs
+      value={activeTab}
+      onValueChange={handleTabChange}
+      className="space-y-6"
+    >
+      <TabsList className="bg-muted/50 flex flex-wrap gap-1 h-auto p-1">
+        <TabsTrigger
+          value="organization"
+          className="flex items-center gap-2"
+        >
+          <Building2 className="h-4 w-4" />
+          <span className="hidden sm:inline">Organization</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="subscription"
+          className="flex items-center gap-2"
+        >
+          <CreditCard className="h-4 w-4" />
+          <span className="hidden sm:inline">Subscription</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="storage"
+          className="flex items-center gap-2"
+        >
+          <HardDrive className="h-4 w-4" />
+          <span className="hidden sm:inline">Storage</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="invoicing"
+          className="flex items-center gap-2"
+        >
+          <Receipt className="h-4 w-4" />
+          <span className="hidden sm:inline">Invoicing</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="kyc"
+          className="flex items-center gap-2"
+        >
+          <FileCheck className="h-4 w-4" />
+          <span className="hidden sm:inline">KYC</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="fleet"
+          className="flex items-center gap-2"
+        >
+          <Wrench className="h-4 w-4" />
+          <span className="hidden sm:inline">Fleet</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="ai"
+          className="flex items-center gap-2"
+        >
+          <Bot className="h-4 w-4" />
+          <span className="hidden sm:inline">AI Matching</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="ai-usage"
+          className="flex items-center gap-2"
+        >
+          <BarChart3 className="h-4 w-4" />
+          <span className="hidden sm:inline">AI Usage</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="notifications"
+          className="flex items-center gap-2"
+        >
+          <Bell className="h-4 w-4" />
+          <span className="hidden sm:inline">Notifications</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="communication"
+          className="flex items-center gap-2"
+        >
+          <Bell className="h-4 w-4" />
+          <span className="hidden sm:inline">Communication</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="users"
+          className="flex items-center gap-2"
+        >
+          <Users className="h-4 w-4" />
+          <span className="hidden sm:inline">Users</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="branding"
+          className="flex items-center gap-2"
+        >
+          <Palette className="h-4 w-4" />
+          <span className="hidden sm:inline">Branding</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="integrations"
+          className="flex items-center gap-2"
+        >
+          <Plug className="h-4 w-4" />
+          <span className="hidden sm:inline">Connections</span>
+        </TabsTrigger>
+      </TabsList>
+
+      {/* Organization Tab */}
+      <TabsContent
+        value="organization"
         className="space-y-6"
       >
-        <TabsList className="bg-muted/50 flex flex-wrap gap-1 h-auto p-1">
-          <TabsTrigger
-            value="organization"
-            className="flex items-center gap-2"
-          >
-            <Building2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Organization</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="subscription"
-            className="flex items-center gap-2"
-          >
-            <CreditCard className="h-4 w-4" />
-            <span className="hidden sm:inline">Subscription</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="storage"
-            className="flex items-center gap-2"
-          >
-            <HardDrive className="h-4 w-4" />
-            <span className="hidden sm:inline">Storage</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="invoicing"
-            className="flex items-center gap-2"
-          >
-            <Receipt className="h-4 w-4" />
-            <span className="hidden sm:inline">Invoicing</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="kyc"
-            className="flex items-center gap-2"
-          >
-            <FileCheck className="h-4 w-4" />
-            <span className="hidden sm:inline">KYC</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="fleet"
-            className="flex items-center gap-2"
-          >
-            <Wrench className="h-4 w-4" />
-            <span className="hidden sm:inline">Fleet</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="ai"
-            className="flex items-center gap-2"
-          >
-            <Bot className="h-4 w-4" />
-            <span className="hidden sm:inline">AI Matching</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="ai-usage"
-            className="flex items-center gap-2"
-          >
-            <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">AI Usage</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="notifications"
-            className="flex items-center gap-2"
-          >
-            <Bell className="h-4 w-4" />
-            <span className="hidden sm:inline">Notifications</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="communication"
-            className="flex items-center gap-2"
-          >
-            <Bell className="h-4 w-4" />
-            <span className="hidden sm:inline">Communication</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="users"
-            className="flex items-center gap-2"
-          >
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Users</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="branding"
-            className="flex items-center gap-2"
-          >
-            <Palette className="h-4 w-4" />
-            <span className="hidden sm:inline">Branding</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="integrations"
-            className="flex items-center gap-2"
-          >
-            <Plug className="h-4 w-4" />
-            <span className="hidden sm:inline">Connections</span>
-          </TabsTrigger>
-        </TabsList>
+        <OrganizationSettingsForm />
+      </TabsContent>
 
-        {/* Organization Tab */}
-        <TabsContent
-          value="organization"
-          className="space-y-6"
-        >
-          <OrganizationSettingsForm />
-        </TabsContent>
+      {/* KYC Verification Tab */}
+      <TabsContent
+        value="kyc"
+        className="space-y-6"
+      >
+        <TenantKYCVerification tenantId={user?.tenantId || ""} />
+      </TabsContent>
 
-        {/* KYC Verification Tab */}
-        <TabsContent
-          value="kyc"
-          className="space-y-6"
-        >
-          <TenantKYCVerification tenantId={user?.tenantId || ""} />
-        </TabsContent>
+      <TabsContent
+        value="invoicing"
+        className="space-y-6"
+      >
+        <TenantInvoiceConfigPanel />
+      </TabsContent>
 
-        <TabsContent
-          value="invoicing"
-          className="space-y-6"
-        >
-          <TenantInvoiceConfigPanel />
-        </TabsContent>
+      {/* Fleet Tab */}
+      <TabsContent
+        value="fleet"
+        className="space-y-6"
+      >
+        <MaintenanceConfigPanel />
+      </TabsContent>
 
-        {/* Fleet Tab */}
-        <TabsContent
-          value="fleet"
-          className="space-y-6"
-        >
-          <MaintenanceConfigPanel />
-        </TabsContent>
+      {/* AI Matching Tab */}
+      <TabsContent
+        value="ai"
+        className="space-y-6"
+      >
+        <TenantAIConfigPanel tenantId={user?.tenantId || ""} />
+      </TabsContent>
 
-        {/* AI Matching Tab */}
-        <TabsContent
-          value="ai"
-          className="space-y-6"
-        >
-          <TenantAIConfigPanel tenantId={user?.tenantId || ""} />
-        </TabsContent>
+      {/* AI Usage Tab */}
+      <TabsContent
+        value="ai-usage"
+        className="space-y-6"
+      >
+        <AIUsageAnalyticsPanel />
+      </TabsContent>
 
-        {/* AI Usage Tab */}
-        <TabsContent
-          value="ai-usage"
-          className="space-y-6"
-        >
-          <AIUsageAnalyticsPanel />
-        </TabsContent>
+      {/* Notifications Tab */}
+      <TabsContent
+        value="notifications"
+        className="space-y-6"
+      >
+        <NotificationPreferencesPanel />
+      </TabsContent>
 
-        {/* Notifications Tab */}
-        <TabsContent
-          value="notifications"
-          className="space-y-6"
-        >
-          <NotificationPreferencesPanel />
-        </TabsContent>
+      {/* Communication Settings Tab */}
+      <TabsContent
+        value="communication"
+        className="space-y-6"
+      >
+        <TenantCommunicationSettings />
+      </TabsContent>
 
-        {/* Communication Settings Tab */}
-        <TabsContent
-          value="communication"
-          className="space-y-6"
-        >
-          <TenantCommunicationSettings />
-        </TabsContent>
-
-        {/* Users Tab */}
-        <TabsContent
-          value="users"
-          className="space-y-6"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold">Team Members</h3>
-              <p className="text-sm text-muted-foreground">Manage who has access to your organization</p>
-            </div>
-            {canInviteUsers
-              ? (
-                  <Dialog
-                    open={isInviteDialogOpen}
-                    onOpenChange={setIsInviteDialogOpen}
-                  >
-                    <DialogTrigger asChild>
-                      <Button variant="gradient">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Invite User
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="bg-card border-border">
-                      <DialogHeader>
-                        <DialogTitle>Invite Team Member</DialogTitle>
-                        <DialogDescription>Send an invitation to join your organization</DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="inviteEmail">Email Address</Label>
-                          <Input
-                            id="inviteEmail"
-                            type="email"
-                            placeholder="colleague@company.com"
-                            value={inviteEmail}
-                            onChange={e => setInviteEmail(e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="inviteRole">Role</Label>
-                          <Select
-                            value={inviteRole}
-                            onValueChange={v => setInviteRole(v as UserRole)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {inviteRoleOptions.map(opt => (
-                                <SelectItem
-                                  key={opt.value}
-                                  value={opt.value}
-                                >
-                                  {opt.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <div className="flex justify-end gap-3">
-                        <Button
-                          variant="outline"
-                          onClick={() => setIsInviteDialogOpen(false)}
-                          disabled={isInviting}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          variant="gradient"
-                          onClick={handleInviteUser}
-                          disabled={isInviting}
-                        >
-                          {isInviting ? "Sending..." : "Send Invitation"}
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                )
-              : (
-                  <span className="text-xs text-muted-foreground">
-                    Owner-operator accounts are single-user. Inviting additional team
-                    members isn't available on this plan.
-                  </span>
-                )}
+      {/* Users Tab */}
+      <TabsContent
+        value="users"
+        className="space-y-6"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">Team Members</h3>
+            <p className="text-sm text-muted-foreground">Manage who has access to your organization</p>
           </div>
+          {canInviteUsers
+            ? (
+                <Dialog
+                  open={isInviteDialogOpen}
+                  onOpenChange={setIsInviteDialogOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button variant="gradient">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Invite User
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-card border-border">
+                    <DialogHeader>
+                      <DialogTitle>Invite Team Member</DialogTitle>
+                      <DialogDescription>Send an invitation to join your organization</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="inviteEmail">Email Address</Label>
+                        <Input
+                          id="inviteEmail"
+                          type="email"
+                          placeholder="colleague@company.com"
+                          value={inviteEmail}
+                          onChange={e => setInviteEmail(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="inviteRole">Role</Label>
+                        <Select
+                          value={inviteRole}
+                          onValueChange={v => setInviteRole(v as UserRole)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {inviteRoleOptions.map(opt => (
+                              <SelectItem
+                                key={opt.value}
+                                value={opt.value}
+                              >
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsInviteDialogOpen(false)}
+                        disabled={isInviting}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="gradient"
+                        onClick={handleInviteUser}
+                        disabled={isInviting}
+                      >
+                        {isInviting ? "Sending..." : "Send Invitation"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )
+            : (
+                <span className="text-xs text-muted-foreground">
+                  Owner-operator accounts are single-user. Inviting additional team
+                  members isn't available on this plan.
+                </span>
+              )}
+        </div>
 
-          <Card className="bg-card/50 border-border/50">
-            <CardHeader>
-              <TableToolbar
-                search={teamSearch}
-                onSearchChange={setTeamSearch}
-                searchPlaceholder="Search by name or email..."
-                status={teamStatus}
-                onStatusChange={setTeamStatus}
-                statusOptions={[
-                  {
-                    value: "all", label: "All statuses",
-                  },
-                  {
-                    value: "active", label: "Active",
-                  },
-                  {
-                    value: "invited", label: "Invited",
-                  },
-                  {
-                    value: "disabled", label: "Disabled",
-                  },
-                ]}
-                filterEntity="team members"
-                filterFields={teamFilterFields}
-                filterValues={teamFilters}
-                onFiltersApply={setTeamFilters}
-              />
-            </CardHeader>
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border/50 hover:bg-transparent">
-                  <TableHead>User</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Last Active</TableHead>
-                  <TableHead className="w-[60px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoadingUsers
+        <Card className="bg-card/50 border-border/50">
+          <CardHeader>
+            <TableToolbar
+              search={teamSearch}
+              onSearchChange={setTeamSearch}
+              searchPlaceholder="Search by name or email..."
+              status={teamStatus}
+              onStatusChange={setTeamStatus}
+              statusOptions={[
+                {
+                  value: "all", label: "All statuses",
+                },
+                {
+                  value: "active", label: "Active",
+                },
+                {
+                  value: "invited", label: "Invited",
+                },
+                {
+                  value: "disabled", label: "Disabled",
+                },
+              ]}
+              filterEntity="team members"
+              filterFields={teamFilterFields}
+              filterValues={teamFilters}
+              onFiltersApply={setTeamFilters}
+            />
+          </CardHeader>
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border/50 hover:bg-transparent">
+                <TableHead>User</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Last Active</TableHead>
+                <TableHead className="w-[60px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoadingUsers
+                ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="text-center py-8 text-muted-foreground"
+                      >
+                        Loading users...
+                      </TableCell>
+                    </TableRow>
+                  )
+                : organizationUsersQuery.isError
                   ? (
                       <TableRow>
                         <TableCell
                           colSpan={5}
-                          className="text-center py-8 text-muted-foreground"
+                          className="text-center py-8"
                         >
-                          Loading users...
+                          <p className="text-destructive">Unable to load team members.</p>
+                          <Button
+                            variant="link"
+                            className="mt-1"
+                            onClick={() => organizationUsersQuery.refetch()}
+                          >
+                            Try again
+                          </Button>
                         </TableCell>
                       </TableRow>
                     )
-                  : organizationUsersQuery.isError
+                  : filteredTenantUsers.length === 0
                     ? (
                         <TableRow>
                           <TableCell
                             colSpan={5}
-                            className="text-center py-8"
+                            className="text-center py-8 text-muted-foreground"
                           >
-                            <p className="text-destructive">Unable to load team members.</p>
-                            <Button
-                              variant="link"
-                              className="mt-1"
-                              onClick={() => organizationUsersQuery.refetch()}
-                            >
-                              Try again
-                            </Button>
+                            {tenantUsers.length === 0 ? "No team members yet. Invite someone to get started." : "No team members match your filters."}
                           </TableCell>
                         </TableRow>
                       )
-                    : filteredTenantUsers.length === 0
-                      ? (
-                          <TableRow>
-                            <TableCell
-                              colSpan={5}
-                              className="text-center py-8 text-muted-foreground"
-                            >
-                              {tenantUsers.length === 0 ? "No team members yet. Invite someone to get started." : "No team members match your filters."}
-                            </TableCell>
-                          </TableRow>
-                        )
-                      : filteredTenantUsers.map(tenantUser => (
-                          <TableRow
-                            key={tenantUser.id}
-                            className="border-border/50"
-                          >
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-8 w-8">
-                                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-xs">
-                                    {tenantUser.name.split(" ").map(n => n[0]).join("")}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <p className="font-medium">{tenantUser.name}</p>
-                                  <p className="text-sm text-muted-foreground">{tenantUser.email}</p>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={roleColors[tenantUser.role]}>
-                                {ROLE_LABELS[tenantUser.role] ?? tenantUser.role}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={statusColors[tenantUser.status]}>{tenantUser.status}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <Clock className="h-3 w-3" />
-                                {tenantUser.lastActive}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleEditUser(tenantUser)}>
-                                    <Pencil className="h-4 w-4 mr-2" />
-                                    Edit User
-                                  </DropdownMenuItem>
-                                  {tenantUser.status === "invited" && (
-                                    <DropdownMenuItem
-                                      onClick={() => handleResendInvite(tenantUser)}
-                                      disabled={resendInviteMutation.isPending}
-                                    >
-                                      <Mail className="h-4 w-4 mr-2" />
-                                      Resend Invite
-                                    </DropdownMenuItem>
-                                  )}
-                                  <DropdownMenuItem
-                                    onClick={() => handleToggleUserStatus(tenantUser)}
-                                    disabled={updateStatusMutation.isPending}
-                                  >
-                                    {tenantUser.accountStatus === "disabled"
-                                      ? (
-                                          <UserCheck className="h-4 w-4 mr-2" />
-                                        )
-                                      : (
-                                          <UserX className="h-4 w-4 mr-2" />
-                                        )}
-                                    {tenantUser.accountStatus === "disabled" ? "Enable User" : "Disable User"}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onClick={() => handleOpenRemoveDialog(tenantUser)}
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Remove
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-              </TableBody>
-            </Table>
-          </Card>
-
-          {/* Edit User Dialog */}
-          <Dialog
-            open={isEditDialogOpen}
-            onOpenChange={setIsEditDialogOpen}
-          >
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Edit User</DialogTitle>
-                <DialogDescription>
-                  Update user details and permissions
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="editName">Full Name</Label>
-                  <Input
-                    id="editName"
-                    placeholder="Enter full name"
-                    value={editName}
-                    onChange={e => setEditName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editEmail">Email</Label>
-                  <Input
-                    id="editEmail"
-                    value={editingUser?.email || ""}
-                    disabled
-                    className="bg-muted"
-                  />
-                  <p className="text-xs text-muted-foreground">Email cannot be changed</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editRole">Role</Label>
-                  <Select
-                    value={editRole}
-                    onValueChange={v => setEditRole(v as UserRole)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {editRoleOptions.map(opt => (
-                        <SelectItem
-                          key={opt.value}
-                          value={opt.value}
+                    : filteredTenantUsers.map(tenantUser => (
+                        <TableRow
+                          key={tenantUser.id}
+                          className="border-border/50"
                         >
-                          {opt.label}
-                        </SelectItem>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-xs">
+                                  {tenantUser.name.split(" ").map(n => n[0]).join("")}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium">{tenantUser.name}</p>
+                                <p className="text-sm text-muted-foreground">{tenantUser.email}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={roleColors[tenantUser.role]}>
+                              {getRoleLabel(tenantUser.role)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={statusColors[tenantUser.status]}>{tenantUser.status}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              {tenantUser.lastActive}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEditUser(tenantUser)}>
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Edit User
+                                </DropdownMenuItem>
+                                {tenantUser.status === "invited" && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleResendInvite(tenantUser)}
+                                    disabled={resendInviteMutation.isPending}
+                                  >
+                                    <Mail className="h-4 w-4 mr-2" />
+                                    Resend Invite
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                  onClick={() => handleToggleUserStatus(tenantUser)}
+                                  disabled={updateStatusMutation.isPending}
+                                >
+                                  {tenantUser.accountStatus === "disabled"
+                                    ? (
+                                        <UserCheck className="h-4 w-4 mr-2" />
+                                      )
+                                    : (
+                                        <UserX className="h-4 w-4 mr-2" />
+                                      )}
+                                  {tenantUser.accountStatus === "disabled" ? "Enable User" : "Disable User"}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => handleOpenRemoveDialog(tenantUser)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Remove
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex justify-end gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsEditDialogOpen(false)}
-                  disabled={isUpdatingUser}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="gradient"
-                  onClick={handleSaveUser}
-                  disabled={isUpdatingUser}
-                >
-                  {isUpdatingUser ? "Saving..." : "Save Changes"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+            </TableBody>
+          </Table>
+        </Card>
 
-          {/* Remove User Confirmation Dialog */}
-          <Dialog
-            open={isRemoveDialogOpen}
-            onOpenChange={setIsRemoveDialogOpen}
-          >
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Remove User</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to remove
-                  {" "}
-                  {removingUser?.name}
-                  {" "}
-                  from your organization?
-                  They will lose access to all resources.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="flex justify-end gap-3 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsRemoveDialogOpen(false);
-                    setRemovingUser(null);
-                  }}
-                  disabled={isRemovingUser}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleRemoveUser}
-                  disabled={isRemovingUser}
-                >
-                  {isRemovingUser ? "Removing..." : "Remove User"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Role Permissions Summary — US-E02-002 */}
-          <RolePermissionsMatrix />
-        </TabsContent>
-
-        {/* Branding Tab */}
-        <TabsContent
-          value="branding"
-          className="space-y-6"
+        {/* Edit User Dialog */}
+        <Dialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
         >
-          <TenantBrandingPanel />
-        </TabsContent>
-
-        {/* Integrations Tab - External Services */}
-        <TabsContent
-          value="integrations"
-          className="space-y-6"
-        >
-          {/* Accounting Integration */}
-          <AccountingIntegrationPanel />
-
-          <Card className="bg-card/50 border-border/50">
-            <CardHeader>
-              <CardTitle>Connected Services</CardTitle>
-              <CardDescription>Manage third-party integrations and external services</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                {
-                  id: "whatsapp", name: "WhatsApp Business", icon: WhatsAppIcon, connected: true, description: "Send messages and notifications via WhatsApp",
-                },
-                {
-                  id: "sms", name: "SMS Gateway", icon: Phone, connected: true, description: "Send SMS notifications to drivers",
-                },
-                {
-                  id: "gmail", name: "Gmail", icon: Mail, connected: false, description: "Send emails using your Gmail account",
-                },
-                {
-                  id: "outlook", name: "Outlook", icon: Mail, connected: false, description: "Send emails using Microsoft Outlook",
-                },
-                {
-                  id: "maps", name: "Google Maps", icon: MapPin, connected: true, description: "Route optimization and live tracking",
-                },
-              ].map(integration => (
-                <div
-                  key={integration.id}
-                  className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:border-primary/30 transition-all"
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit User</DialogTitle>
+              <DialogDescription>
+                Update user details and permissions
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="editName">Full Name</Label>
+                <Input
+                  id="editName"
+                  placeholder="Enter full name"
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editEmail">Email</Label>
+                <Input
+                  id="editEmail"
+                  value={editingUser?.email || ""}
+                  disabled
+                  className="bg-muted"
+                />
+                <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editRole">Role</Label>
+                <Select
+                  value={editRole}
+                  onValueChange={v => setEditRole(v as UserRole)}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-lg ${integration.connected ? "bg-primary/20" : "bg-muted"}`}>
-                      <integration.icon className={`h-5 w-5 ${integration.connected ? "text-primary" : "text-muted-foreground"}`} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{integration.name}</p>
-                        {integration.connected
-                          ? (
-                              <CheckCircle className="h-4 w-4 text-success" />
-                            )
-                          : (
-                              <XCircle className="h-4 w-4 text-muted-foreground" />
-                            )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">{integration.description}</p>
-                    </div>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {editRoleOptions.map(opt => (
+                      <SelectItem
+                        key={opt.value}
+                        value={opt.value}
+                      >
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+                disabled={isUpdatingUser}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="gradient"
+                onClick={handleSaveUser}
+                disabled={isUpdatingUser}
+              >
+                {isUpdatingUser ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Remove User Confirmation Dialog */}
+        <Dialog
+          open={isRemoveDialogOpen}
+          onOpenChange={setIsRemoveDialogOpen}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Remove User</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to remove
+                {" "}
+                {removingUser?.name}
+                {" "}
+                from your organization?
+                They will lose access to all resources.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsRemoveDialogOpen(false);
+                  setRemovingUser(null);
+                }}
+                disabled={isRemovingUser}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRemoveUser}
+                disabled={isRemovingUser}
+              >
+                {isRemovingUser ? "Removing..." : "Remove User"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Role Permissions Summary — US-E02-002 */}
+        <RolePermissionsMatrix />
+      </TabsContent>
+
+      {/* Branding Tab */}
+      <TabsContent
+        value="branding"
+        className="space-y-6"
+      >
+        <TenantBrandingPanel />
+      </TabsContent>
+
+      {/* Integrations Tab - External Services */}
+      <TabsContent
+        value="integrations"
+        className="space-y-6"
+      >
+        {/* Accounting Integration */}
+        <AccountingIntegrationPanel />
+
+        <Card className="bg-card/50 border-border/50">
+          <CardHeader>
+            <CardTitle>Connected Services</CardTitle>
+            <CardDescription>Manage third-party integrations and external services</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {[
+              {
+                id: "whatsapp", name: "WhatsApp Business", icon: WhatsAppIcon, connected: true, description: "Send messages and notifications via WhatsApp",
+              },
+              {
+                id: "sms", name: "SMS Gateway", icon: Phone, connected: true, description: "Send SMS notifications to drivers",
+              },
+              {
+                id: "gmail", name: "Gmail", icon: Mail, connected: false, description: "Send emails using your Gmail account",
+              },
+              {
+                id: "outlook", name: "Outlook", icon: Mail, connected: false, description: "Send emails using Microsoft Outlook",
+              },
+              {
+                id: "maps", name: "Google Maps", icon: MapPin, connected: true, description: "Route optimization and live tracking",
+              },
+            ].map(integration => (
+              <div
+                key={integration.id}
+                className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:border-primary/30 transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`p-3 rounded-lg ${integration.connected ? "bg-primary/20" : "bg-muted"}`}>
+                    <integration.icon className={`h-5 w-5 ${integration.connected ? "text-primary" : "text-muted-foreground"}`} />
                   </div>
-                  <Button
-                    variant={integration.connected ? "outline" : "gradient"}
-                    size="sm"
-                    onClick={() => toast.success("Integration settings updated")}
-                  >
-                    {integration.connected ? "Configure" : "Connect"}
-                  </Button>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{integration.name}</p>
+                      {integration.connected
+                        ? (
+                            <CheckCircle className="h-4 w-4 text-success" />
+                          )
+                        : (
+                            <XCircle className="h-4 w-4 text-muted-foreground" />
+                          )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">{integration.description}</p>
+                  </div>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                <Button
+                  variant={integration.connected ? "outline" : "gradient"}
+                  size="sm"
+                  onClick={() => toast.success("Integration settings updated")}
+                >
+                  {integration.connected ? "Configure" : "Connect"}
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </TabsContent>
 
-        {/* Subscription Tab */}
-        <TabsContent
-          value="subscription"
-          className="space-y-6"
+      {/* Subscription Tab */}
+      <TabsContent
+        value="subscription"
+        className="space-y-6"
+      >
+        <Tabs
+          defaultValue="plan"
+          className="space-y-4"
         >
-          <Tabs
-            defaultValue="plan"
-            className="space-y-4"
+          <TabsList>
+            <TabsTrigger value="plan">Subscription</TabsTrigger>
+            <TabsTrigger value="invoices">Invoices</TabsTrigger>
+          </TabsList>
+          <TabsContent
+            value="plan"
+            className="space-y-6"
           >
-            <TabsList>
-              <TabsTrigger value="plan">Subscription</TabsTrigger>
-              <TabsTrigger value="invoices">Invoices</TabsTrigger>
-            </TabsList>
-            <TabsContent
-              value="plan"
-              className="space-y-6"
-            >
-              <TenantSubscriptionCard />
-            </TabsContent>
-            <TabsContent
-              value="invoices"
-              className="space-y-6"
-            >
-              <SubscriptionInvoicesPanel />
-            </TabsContent>
-          </Tabs>
-        </TabsContent>
+            <TenantSubscriptionCard />
+          </TabsContent>
+          <TabsContent
+            value="invoices"
+            className="space-y-6"
+          >
+            <SubscriptionInvoicesPanel />
+          </TabsContent>
+        </Tabs>
+      </TabsContent>
 
-        {/* Storage Tab */}
-        <TabsContent
-          value="storage"
-          className="space-y-6"
-        >
-          <StoragePanel />
-        </TabsContent>
+      {/* Storage Tab */}
+      <TabsContent
+        value="storage"
+        className="space-y-6"
+      >
+        <StoragePanel />
+      </TabsContent>
 
-      </Tabs>
-    </DashboardLayout>
+    </Tabs>
   );
 }

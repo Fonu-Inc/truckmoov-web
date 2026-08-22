@@ -44,7 +44,6 @@ import {
 import { CreateOwnerOperatorDialog } from "@/components/aggregator/CreateOwnerOperatorDialog";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -299,10 +298,7 @@ export default function AggregatorDashboard() {
     : realCompletedJobs;
 
   return (
-    <DashboardLayout
-      title="Aggregator Dashboard"
-      subtitle="Manage linked operators & coordinated execution"
-    >
+    <>
       <div className="space-y-6">
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -1987,6 +1983,6 @@ export default function AggregatorDashboard() {
         onOpenChange={setShowCreateOO}
         onCreated={refetchOrgs}
       />
-    </DashboardLayout>
+    </>
   );
 }

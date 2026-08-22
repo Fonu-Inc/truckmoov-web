@@ -54,7 +54,6 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PostpaidBillingTab } from "@/components/platform/PostpaidBillingTab";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -991,10 +990,7 @@ export default function PlatformBilling() {
   };
 
   return (
-    <DashboardLayout
-      title="Billing & Revenue"
-      subtitle="Manage invoices, subscriptions, and payments"
-    >
+    <>
       {/* Currency & timezone are now driven by global Settings → Billing / Preferences */}
 
       <Tabs
@@ -2789,6 +2785,6 @@ export default function PlatformBilling() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   );
 }

@@ -11,6 +11,12 @@ import InvitePage from "@/features/auth/components/pages/InvitePage";
 import ResetPasswordPage from "@/features/auth/components/pages/ResetPasswordPage";
 import SignUpPage from "@/features/auth/components/pages/SignUpPage";
 import { RoleHomeRedirect } from "@/features/auth/components/ui/RoleHomeRedirect";
+import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
+import AggregatorDashboard from "@/features/dashboard/components/pages/AggregatorDashboard";
+import DispatcherDashboard from "@/features/dashboard/components/pages/DispatcherDashboard";
+import EnterpriseLogisticsDashboard from "@/features/dashboard/components/pages/EnterpriseLogisticsDashboard";
+import OwnerOperatorDashboard from "@/features/dashboard/components/pages/OwnerOperatorDashboard";
+import TenantAdminDashboard from "@/features/dashboard/components/pages/TenantAdminDashboard";
 import DataBundles from "@/pages/admin/DataBundles";
 import DeviceInstallation from "@/pages/admin/DeviceInstallation";
 import DeviceManagement from "@/pages/admin/DeviceManagement";
@@ -29,15 +35,12 @@ import Settings from "@/pages/admin/Settings";
 import SIMManagement from "@/pages/admin/SIMManagement";
 import SubscriptionInvoices from "@/pages/admin/SubscriptionInvoices";
 import Sustainability from "@/pages/admin/Sustainability";
-import TenantAdminDashboard from "@/pages/admin/TenantAdminDashboard";
 import TenantWallet from "@/pages/admin/TenantWallet";
 import VehiclePLStatementPreview from "@/pages/admin/VehiclePLStatementPreview";
 import WaybillInvoices from "@/pages/admin/WaybillInvoices";
-import AggregatorDashboard from "@/pages/aggregator/AggregatorDashboard";
 import Architecture from "@/pages/Architecture";
 import DebugMap from "@/pages/debug/DebugMap";
 import DispatcherAlerts from "@/pages/dispatcher/DispatcherAlerts";
-import DispatcherDashboard from "@/pages/dispatcher/DispatcherDashboard";
 import DispatcherDevices from "@/pages/dispatcher/DispatcherDevices";
 import DispatcherDispatch from "@/pages/dispatcher/DispatcherDispatch";
 import DispatcherDrivers from "@/pages/dispatcher/DispatcherDrivers";
@@ -46,12 +49,10 @@ import DispatcherLiveMap from "@/pages/dispatcher/DispatcherLiveMap";
 import DispatcherMessages from "@/pages/dispatcher/DispatcherMessages";
 import DispatcherReports from "@/pages/dispatcher/DispatcherReports";
 import DispatcherSIMs from "@/pages/dispatcher/DispatcherSIMs";
-import EnterpriseLogisticsDashboard from "@/pages/enterprise/EnterpriseLogisticsDashboard";
 import ActivationOnboarding from "@/pages/onboarding/ActivationOnboarding";
 import KycOnboarding from "@/pages/onboarding/KycOnboarding";
 import SubscriptionOnboarding from "@/pages/onboarding/SubscriptionOnboarding";
 import WelcomeDashboard from "@/pages/onboarding/WelcomeDashboard";
-import OwnerOperatorDashboard from "@/pages/owner-operator/OwnerOperatorDashboard";
 import OwnerOperatorDocuments from "@/pages/owner-operator/OwnerOperatorDocuments";
 import OwnerOperatorJobs from "@/pages/owner-operator/OwnerOperatorJobs";
 import OwnerOperatorVehicleDetail from "@/pages/owner-operator/OwnerOperatorVehicleDetail";
@@ -72,6 +73,11 @@ import TechnicalArchitecture from "@/pages/TechnicalArchitecture";
  *
  * Which of these need a session is decided by AuthGuard from PUBLIC_ROUTES
  * (features/auth/utils/publicRoutes.ts), not by nesting here.
+ *
+ * DashboardLayout is a second pathless layout route holding everything that
+ * renders the dashboard shell, so the sidebar and top bar mount once instead
+ * of per page. Routes outside it — auth, the redirects, the print preview,
+ * 404/403 — own their own chrome.
  */
 export const router = createBrowserRouter([
   {
@@ -117,146 +123,19 @@ export const router = createBrowserRouter([
         Component: NotAuthorized,
       },
 
-      // Onboarding
-      {
-        path: "/onboarding",
-        Component: SubscriptionOnboarding,
-      },
-      {
-        path: "/onboarding/kyc",
-        Component: KycOnboarding,
-      },
-      {
-        path: "/onboarding/activate",
-        Component: ActivationOnboarding,
-      },
-      {
-        path: "/onboarding/quick-access",
-        Component: WelcomeDashboard,
-      },
-
-      // Enterprise
-      {
-        path: "/enterprise",
-        Component: EnterpriseLogisticsDashboard,
-      },
-
-      // Aggregator
-      {
-        path: "/aggregator",
-        Component: AggregatorDashboard,
-      },
-
-      // Owner-Operator
-      {
-        path: "/owner-operator",
-        Component: OwnerOperatorDashboard,
-      },
-      {
-        path: "/owner-operator/vehicle/:vehicleId",
-        Component: OwnerOperatorVehicleDetail,
-      },
-      {
-        path: "/owner-operator/vehicles",
-        Component: OwnerOperatorVehicles,
-      },
-      {
-        path: "/owner-operator/documents",
-        Component: OwnerOperatorDocuments,
-      },
-      {
-        path: "/owner-operator/jobs",
-        Component: OwnerOperatorJobs,
-      },
-
-      // Tenant Admin / Fleet Provider
-      {
-        path: "/overview",
-        Component: TenantAdminDashboard,
-      },
-      {
-        path: "/fleet",
-        Component: FleetManagement,
-      },
-      {
-        path: "/drivers",
-        Component: DriverManagement,
-      },
-      {
-        path: "/devices",
-        Component: DeviceManagement,
-      },
-      {
-        path: "/sims",
-        Component: SIMManagement,
-      },
-      {
-        path: "/data-bundles",
-        Component: DataBundles,
-      },
-      {
-        path: "/jobs",
-        Component: JobDispatch,
-      },
-      {
-        path: "/map",
-        Component: LiveMap,
-      },
-      {
-        path: "/behavior",
-        Component: DriverBehaviorDashboard,
-      },
-      {
-        path: "/fatigue",
-        Component: DriverFatigueDashboard,
-      },
-      {
-        path: "/messages",
-        Component: MessagingCenter,
-      },
-      {
-        path: "/inbox",
-        Component: OmnichannelInbox,
-      },
-      {
-        path: "/wallet",
-        Component: TenantWallet,
-      },
-      {
-        path: "/installation",
-        Component: DeviceInstallation,
-      },
-      {
-        path: "/integrations",
-        Component: Integrations,
-      },
-      {
-        path: "/job-offers",
-        Component: JobOffers,
-      },
-      {
-        path: "/reports",
-        Component: Reports,
-      },
-      {
-        path: "/waybill-invoices",
-        Component: WaybillInvoices,
-      },
+      // No dashboard shell of their own: a bare redirect, a print-only
+      // preview, and a scratch page.
       {
         path: "/subscription-invoices",
         Component: SubscriptionInvoices,
-      },
-      {
-        path: "/sustainability",
-        Component: Sustainability,
       },
       {
         path: "/fleet/pl-statement",
         Component: VehiclePLStatementPreview,
       },
       {
-        path: "/settings",
-        Component: Settings,
+        path: "/debug/map",
+        Component: DebugMap,
       },
 
       // Aliases for pages that are now a tab on another page. A loader
@@ -286,110 +165,245 @@ export const router = createBrowserRouter([
         loader: () => redirect("/settings?tab=subscription"),
       },
 
-      // Supervisor
+      // Everything inside the dashboard shell. Pages render their own content
+      // only; the sidebar, top bar and page title come from DashboardLayout.
       {
-        path: "/supervisor",
-        Component: SupervisorDashboard,
-      },
-      {
-        path: "/supervisor/map",
-        Component: SupervisorLiveMap,
-      },
-      {
-        path: "/supervisor/dispatch",
-        Component: SupervisorDispatch,
-      },
-      {
-        path: "/supervisor/drivers",
-        Component: SupervisorDrivers,
-      },
-      {
-        path: "/supervisor/alerts",
-        Component: SupervisorAlerts,
-      },
-      {
-        path: "/supervisor/messages",
-        Component: SupervisorMessages,
-      },
-      {
-        path: "/supervisor/inbox",
-        Component: OmnichannelInbox,
-      },
-      {
-        path: "/supervisor/reports",
-        Component: SupervisorReports,
-      },
-      {
-        path: "/supervisor/*",
-        Component: SupervisorDashboard,
-      },
+        Component: DashboardLayout,
+        children: [
+          // Onboarding
+          {
+            path: "/onboarding",
+            Component: SubscriptionOnboarding,
+          },
+          {
+            path: "/onboarding/kyc",
+            Component: KycOnboarding,
+          },
+          {
+            path: "/onboarding/activate",
+            Component: ActivationOnboarding,
+          },
+          {
+            path: "/onboarding/quick-access",
+            Component: WelcomeDashboard,
+          },
 
-      // Dispatcher Portal (independent — do not share with Supervisor/Admin)
-      {
-        path: "/dispatcher",
-        Component: DispatcherDashboard,
-      },
-      {
-        path: "/dispatcher/dispatch",
-        Component: DispatcherDispatch,
-      },
-      {
-        path: "/dispatcher/map",
-        Component: DispatcherLiveMap,
-      },
-      {
-        path: "/dispatcher/drivers",
-        Component: DispatcherDrivers,
-      },
-      {
-        path: "/dispatcher/devices",
-        Component: DispatcherDevices,
-      },
-      {
-        path: "/dispatcher/sims",
-        Component: DispatcherSIMs,
-      },
-      {
-        path: "/dispatcher/alerts",
-        Component: DispatcherAlerts,
-      },
-      {
-        path: "/dispatcher/messages",
-        Component: DispatcherMessages,
-      },
-      {
-        path: "/dispatcher/inbox",
-        Component: DispatcherInbox,
-      },
-      {
-        path: "/dispatcher/reports",
-        Component: DispatcherReports,
-      },
-      {
-        path: "/dispatcher/*",
-        Component: DispatcherDashboard,
-      },
+          // Enterprise
+          {
+            path: "/enterprise",
+            Component: EnterpriseLogisticsDashboard,
+          },
 
-      // Debug
-      {
-        path: "/debug/map",
-        Component: DebugMap,
-      },
+          // Aggregator
+          {
+            path: "/aggregator",
+            Component: AggregatorDashboard,
+          },
 
-      // Architecture documentation
-      {
-        path: "/architecture",
-        Component: Architecture,
-      },
-      {
-        path: "/technical-architecture",
-        Component: TechnicalArchitecture,
-      },
+          // Owner-Operator
+          {
+            path: "/owner-operator",
+            Component: OwnerOperatorDashboard,
+          },
+          {
+            path: "/owner-operator/vehicle/:vehicleId",
+            Component: OwnerOperatorVehicleDetail,
+          },
+          {
+            path: "/owner-operator/vehicles",
+            Component: OwnerOperatorVehicles,
+          },
+          {
+            path: "/owner-operator/documents",
+            Component: OwnerOperatorDocuments,
+          },
+          {
+            path: "/owner-operator/jobs",
+            Component: OwnerOperatorJobs,
+          },
 
-      // Help & Support
-      {
-        path: "/help",
-        Component: HelpSupport,
+          // Tenant Admin / Fleet Provider
+          {
+            path: "/overview",
+            Component: TenantAdminDashboard,
+          },
+          {
+            path: "/fleet",
+            Component: FleetManagement,
+          },
+          {
+            path: "/drivers",
+            Component: DriverManagement,
+          },
+          {
+            path: "/devices",
+            Component: DeviceManagement,
+          },
+          {
+            path: "/sims",
+            Component: SIMManagement,
+          },
+          {
+            path: "/data-bundles",
+            Component: DataBundles,
+          },
+          {
+            path: "/jobs",
+            Component: JobDispatch,
+          },
+          {
+            path: "/map",
+            Component: LiveMap,
+          },
+          {
+            path: "/behavior",
+            Component: DriverBehaviorDashboard,
+          },
+          {
+            path: "/fatigue",
+            Component: DriverFatigueDashboard,
+          },
+          {
+            path: "/messages",
+            Component: MessagingCenter,
+          },
+          {
+            path: "/inbox",
+            Component: OmnichannelInbox,
+          },
+          {
+            path: "/wallet",
+            Component: TenantWallet,
+          },
+          {
+            path: "/installation",
+            Component: DeviceInstallation,
+          },
+          {
+            path: "/integrations",
+            Component: Integrations,
+          },
+          {
+            path: "/job-offers",
+            Component: JobOffers,
+          },
+          {
+            path: "/reports",
+            Component: Reports,
+          },
+          {
+            path: "/waybill-invoices",
+            Component: WaybillInvoices,
+          },
+          {
+            path: "/sustainability",
+            Component: Sustainability,
+          },
+          {
+            path: "/settings",
+            Component: Settings,
+          },
+
+          // Supervisor
+          {
+            path: "/supervisor",
+            Component: SupervisorDashboard,
+          },
+          {
+            path: "/supervisor/map",
+            Component: SupervisorLiveMap,
+          },
+          {
+            path: "/supervisor/dispatch",
+            Component: SupervisorDispatch,
+          },
+          {
+            path: "/supervisor/drivers",
+            Component: SupervisorDrivers,
+          },
+          {
+            path: "/supervisor/alerts",
+            Component: SupervisorAlerts,
+          },
+          {
+            path: "/supervisor/messages",
+            Component: SupervisorMessages,
+          },
+          {
+            path: "/supervisor/inbox",
+            Component: OmnichannelInbox,
+          },
+          {
+            path: "/supervisor/reports",
+            Component: SupervisorReports,
+          },
+          {
+            path: "/supervisor/*",
+            Component: SupervisorDashboard,
+          },
+
+          // Dispatcher Portal (independent — do not share with Supervisor/Admin)
+          {
+            path: "/dispatcher",
+            Component: DispatcherDashboard,
+          },
+          {
+            path: "/dispatcher/dispatch",
+            Component: DispatcherDispatch,
+          },
+          {
+            path: "/dispatcher/map",
+            Component: DispatcherLiveMap,
+          },
+          {
+            path: "/dispatcher/drivers",
+            Component: DispatcherDrivers,
+          },
+          {
+            path: "/dispatcher/devices",
+            Component: DispatcherDevices,
+          },
+          {
+            path: "/dispatcher/sims",
+            Component: DispatcherSIMs,
+          },
+          {
+            path: "/dispatcher/alerts",
+            Component: DispatcherAlerts,
+          },
+          {
+            path: "/dispatcher/messages",
+            Component: DispatcherMessages,
+          },
+          {
+            path: "/dispatcher/inbox",
+            Component: DispatcherInbox,
+          },
+          {
+            path: "/dispatcher/reports",
+            Component: DispatcherReports,
+          },
+          {
+            path: "/dispatcher/*",
+            Component: DispatcherDashboard,
+          },
+
+          // Architecture documentation
+          {
+            path: "/architecture",
+            Component: Architecture,
+          },
+          {
+            path: "/technical-architecture",
+            Component: TechnicalArchitecture,
+          },
+
+          // Help & Support
+          {
+            path: "/help",
+            Component: HelpSupport,
+          },
+        ],
       },
 
       {

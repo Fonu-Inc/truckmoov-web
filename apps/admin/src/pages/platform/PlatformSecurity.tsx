@@ -61,7 +61,6 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { IsolationCheckPanel } from "@/components/platform/IsolationCheckPanel";
 import { GeographicHeatmap } from "@/components/security/GeographicHeatmap";
 import {
@@ -1641,10 +1640,7 @@ export default function PlatformSecurity() {
   };
 
   return (
-    <DashboardLayout
-      title="Security Audit"
-      subtitle="Monitor login activity, failed attempts, and security events"
-    >
+    <>
       {/* Timezone is configured globally in Settings → Display Preferences */}
 
       <Tabs
@@ -3775,6 +3771,6 @@ export default function PlatformSecurity() {
           )}
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   );
 }

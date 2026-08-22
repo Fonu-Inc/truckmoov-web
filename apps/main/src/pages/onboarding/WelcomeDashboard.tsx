@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/shadcn/button";
-import { getSidebarConfig } from "@/lib/sidebarConfig";
+import { ROLE_REDIRECT_MAP } from "@/features/auth/utils/authRedirect";
 import { useAuthStore } from "@/stores/authStore";
 import { OnboardingLayout } from "./OnboardingLayout";
 
@@ -222,8 +222,7 @@ export default function WelcomeDashboard() {
   const actions = getActionsFor(user?.role);
 
   const goToDashboard = () => {
-    const config = getSidebarConfig(user ?? null);
-    navigate(config?.homeRoute ?? "/overview");
+    navigate((user && ROLE_REDIRECT_MAP[user.role]) ?? "/overview");
   };
 
   return (

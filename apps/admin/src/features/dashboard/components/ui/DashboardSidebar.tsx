@@ -1,8 +1,8 @@
 import type {
-  SidebarConfig,
+  SidebarEntry,
   SidebarNavGroup,
   SidebarNavItem,
-} from "@/lib/sidebarConfig";
+} from "@/features/dashboard/utils/sidebarNav";
 import mtnLogoDark from "@truckmoov/reusables/assets/mtn-logo-dark.svg";
 import {
   ChevronDown,
@@ -26,17 +26,18 @@ import {
 } from "@/components/shadcn/collapsible";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
 import { useTenantBrandingContext } from "@/contexts/TenantBrandingContext";
-import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
 import {
-  getSidebarConfig,
   isNavGroup,
-
-} from "@/lib/sidebarConfig";
+  ORG_TYPE_LABEL,
+  SIDEBAR_ENTRIES,
+} from "@/features/dashboard/utils/sidebarNav";
+import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 import { useSidebarStore } from "@/stores/sidebarStore";
 
 export function DashboardSidebar() {
+  const user = useAuthStore(state => state.user);
   const logout = useAuthStore(state => state.logout);
   const location = useLocation();
   const { collapsed } = useSidebarStore();
@@ -51,17 +52,14 @@ export function DashboardSidebar() {
   const jobOfferCount = 0;
   const { logoUrl } = useTenantBrandingContext();
 
-  // ── Centralized sidebar resolution ──
-  const sidebarConfig: SidebarConfig = useMemo(
-    () => getSidebarConfig(),
-    [],
-  );
-
-  // Onboarding sidebar group fully removed — no gating computed here.
-
-  // Apply unread badge counts
+  // Entries this role may see, with unread badge counts applied. A group whose
+  // children are all filtered out drops away with them.
   const navItems = useMemo(
     () => {
+      const role = user?.role;
+      if (!role)
+        return [];
+
       const resolveBadge = (badgeKey?: string, existingBadge?: number) => {
         if (badgeKey === "messages")
           return unreadCount || undefined;
@@ -70,27 +68,32 @@ export function DashboardSidebar() {
         return existingBadge;
       };
 
-      const baseEntries = sidebarConfig.entries.map((entry) => {
+      const visible: (SidebarEntry & { badge?: number })[] = [];
+      for (const entry of SIDEBAR_ENTRIES) {
+        if (!entry.hasPermission.includes(role))
+          continue;
         if (isNavGroup(entry)) {
-          return {
-            ...entry,
-            badge: resolveBadge(entry.badgeKey),
-          };
+          // A group child omits `hasPermission` to inherit the group's.
+          const items = entry.items.filter(i => i.hasPermission?.includes(role) ?? true);
+          if (items.length) {
+            visible.push({
+              ...entry, items, badge: resolveBadge(entry.badgeKey),
+            });
+          }
+          continue;
         }
-        return {
+        visible.push({
           ...entry,
           badge: resolveBadge(
             entry.badgeKey,
             entry.badge,
           ),
-        };
-      });
-
-      // "Get Started" sidebar group intentionally removed.
-      return baseEntries;
+        });
+      }
+      return visible;
     },
     [
-      sidebarConfig,
+      user?.role,
       unreadCount,
       jobOfferCount,
     ],
@@ -261,9 +264,6 @@ export function DashboardSidebar() {
     );
   };
 
-  // ── Org type label for the badge ──
-  const orgLabel = sidebarConfig.orgTypeLabel;
-
   return (
     <aside
       className={cn(
@@ -309,7 +309,7 @@ export function DashboardSidebar() {
           />
           <div className="flex-1 min-w-0">
             <p className="truncate text-sm font-semibold text-sidebar-foreground">Platform</p>
-            <p className="truncate text-[10px] font-medium text-primary uppercase tracking-wide">{orgLabel}</p>
+            <p className="truncate text-[10px] font-medium text-primary uppercase tracking-wide">{ORG_TYPE_LABEL}</p>
           </div>
         </div>
       )}

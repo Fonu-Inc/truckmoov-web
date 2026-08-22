@@ -51,7 +51,6 @@ import { DeviceDetailsSheet } from "@/components/devices/DeviceDetailsSheet";
 import { DeviceFormDialog } from "@/components/devices/DeviceFormDialog";
 import { DeviceRequestsTracker } from "@/components/devices/DeviceRequestsTracker";
 import { DeviceSetupRequestDialog } from "@/components/devices/DeviceSetupRequestDialog";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -514,10 +513,7 @@ export default function DeviceManagement() {
   };
 
   return (
-    <DashboardLayout
-      title="IoT Device Management"
-      subtitle="Provision and manage GPS tracking devices"
-    >
+    <>
       <div className="space-y-6">
         {/* Top-right actions */}
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -1132,6 +1128,6 @@ export default function DeviceManagement() {
           />
         );
       })()}
-    </DashboardLayout>
+    </>
   );
 }

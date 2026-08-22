@@ -19,7 +19,6 @@ import { FleetMap } from "@/components/fleet/FleetMap";
 import { GeofenceManagementDialog } from "@/components/fleet/GeofenceManagementDialog";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { JobFormDialog } from "@/components/jobs/JobFormDialog";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -418,41 +417,28 @@ export default function SupervisorLiveMap() {
 
   if (vehiclesLoading) {
     return (
-      <DashboardLayout
-        title="Live Map"
-        subtitle="Real-time fleet tracking"
-      >
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   if (vehicles.length === 0) {
     return (
-      <DashboardLayout
-        title="Live Map"
-        subtitle="Real-time fleet tracking"
-      >
-        <EmptyState
-          icon={Truck}
-          title="No vehicles to track"
-          description="Add vehicles to your fleet to see them on the live map"
-          actionLabel="View Fleet"
-          actionHref="/fleet"
-        />
-      </DashboardLayout>
+      <EmptyState
+        icon={Truck}
+        title="No vehicles to track"
+        description="Add vehicles to your fleet to see them on the live map"
+        actionLabel="View Fleet"
+        actionHref="/fleet"
+      />
     );
   }
 
   const filterCount = statusFilters.length === 0 ? vehiclesWithDrivers.length : statusFiltered.length;
 
   return (
-    <DashboardLayout
-      title="Live Map"
-      subtitle="Real-time fleet tracking and monitoring"
-    >
+    <>
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-12rem)]">
         {/* Sidebar */}
         <div className="lg:col-span-1 space-y-4 flex flex-col">
@@ -990,6 +976,6 @@ export default function SupervisorLiveMap() {
         job={null}
         onSubmit={handleJobSubmit}
       />
-    </DashboardLayout>
+    </>
   );
 }

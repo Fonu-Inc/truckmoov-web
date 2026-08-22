@@ -1,6 +1,6 @@
 import type {
-  SidebarNavGroup, SidebarNavItem,
-} from "@/lib/sidebarConfig";
+  SidebarEntry, SidebarNavGroup, SidebarNavItem,
+} from "@/features/dashboard/utils/sidebarNav";
 import { useQuery } from "@tanstack/react-query";
 import { getOrganizationSettingsQueryOptions } from "@truckmoov/api/auth";
 import mtnLogoDark from "@truckmoov/reusables/assets/mtn-logo-dark.svg";
@@ -27,12 +27,12 @@ import {
   CollapsibleTrigger,
 } from "@/components/shadcn/collapsible";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
-import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
+import { getRoleShortLabel } from "@/features/auth/utils/role-label";
 import {
-  getSidebarConfig,
   isNavGroup,
-
-} from "@/lib/sidebarConfig";
+  SIDEBAR_ENTRIES,
+} from "@/features/dashboard/utils/sidebarNav";
+import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 import { useSidebarStore } from "@/stores/sidebarStore";
@@ -56,27 +56,14 @@ export function DashboardSidebar() {
   const orgName = branding?.organizationName;
   const orgAvatarUrl = branding?.logoUrl ?? "";
 
-  const ROLE_LABELS: Record<string, string> = {
-    ENTERPRISE_ADMIN: "ENTERPRISE",
-    FLEET_ADMIN: "FLEET",
-    AGGREGATOR_ADMIN: "AGGREGATOR",
-    OWNER_OPERATOR: "OPERATOR",
-    OPERATIONS_MANAGER: "OPERATIONS",
-    DISPATCHER: "DISPATCHER",
-    FINANCE_VIEWER: "FINANCE",
-  };
-  const roleLabel = user?.role ? (ROLE_LABELS[user.role] ?? user.role) : null;
+  const roleLabel = user?.role ? getRoleShortLabel(user.role) : null;
 
-  // ── Centralized sidebar resolution ──
-  const sidebarConfig = useMemo(
-    () => getSidebarConfig(user),
-    [user],
-  );
-
-  // Apply unread badge counts
+  // Entries this role may see, with unread badge counts applied. A group whose
+  // children are all filtered out drops away with them.
   const navItems = useMemo(
     () => {
-      if (!sidebarConfig)
+      const role = user?.role;
+      if (!role)
         return [];
 
       const resolveBadge = (badgeKey?: string, existingBadge?: number) => {
@@ -87,28 +74,32 @@ export function DashboardSidebar() {
         return existingBadge;
       };
 
-      const baseEntries = sidebarConfig.entries.map((entry) => {
+      const visible: (SidebarEntry & { badge?: number })[] = [];
+      for (const entry of SIDEBAR_ENTRIES) {
+        if (!entry.hasPermission.includes(role))
+          continue;
         if (isNavGroup(entry)) {
-          return {
-            ...entry,
-            badge: resolveBadge(entry.badgeKey),
-          };
+          // A group child omits `hasPermission` to inherit the group's.
+          const items = entry.items.filter(i => i.hasPermission?.includes(role) ?? true);
+          if (items.length) {
+            visible.push({
+              ...entry, items, badge: resolveBadge(entry.badgeKey),
+            });
+          }
+          continue;
         }
-        return {
+        visible.push({
           ...entry,
           badge: resolveBadge(
             entry.badgeKey,
             entry.badge,
           ),
-        };
-      });
-
-      // "Get Started" sidebar group intentionally removed — onboarding guidance
-      // is delivered via the persistent KycBanner and contextual redirects only.
-      return baseEntries;
+        });
+      }
+      return visible;
     },
     [
-      sidebarConfig,
+      user?.role,
       unreadCount,
       jobOfferCount,
     ],

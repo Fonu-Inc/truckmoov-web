@@ -10,12 +10,46 @@ Source of truth files:
 |---------|------|
 | Design tokens, typography, utilities | `packages/reusables/src/index.css` |
 | Tailwind token mapping | `apps/main/tailwind.config.ts` |
-| Page shell | `apps/main/src/components/layout/DashboardLayout.tsx` |
-| Sidebar | `apps/main/src/components/layout/DashboardSidebar.tsx` |
-| Top bar | `apps/main/src/components/layout/DashboardHeader.tsx` |
-| Navigation per role | `apps/main/src/lib/sidebarConfig.ts` |
+| Page shell | `apps/main/src/features/dashboard/components/layout/DashboardLayout.tsx` |
+| Sidebar | `apps/main/src/features/dashboard/components/ui/DashboardSidebar.tsx` |
+| Top bar | `apps/main/src/features/dashboard/components/ui/DashboardHeader.tsx` |
+| Navigation per role | `apps/main/src/features/dashboard/utils/sidebarNav.ts` |
 | UI primitives | `packages/reusables/src/components/shadcn/` |
 | Status screens (404 / 403 / crash) | `packages/reusables/src/components/pages/` |
+
+`apps/admin` mirrors all four of those paths under its own `features/dashboard/`.
+
+## The page shell
+
+`DashboardLayout` is a **pathless route**, not a component pages render. It sits in
+`shared/lib/route.ts` wrapping every route that gets the sidebar and top bar, so the
+shell mounts once and survives navigation:
+
+```ts
+{ Component: DashboardLayout, children: [ /* dashboard routes */ ] }
+```
+
+A page therefore returns only its own content — it takes no `title` prop and never
+imports the layout. Auth screens, the redirect aliases, the print-only P&L preview and
+the 404/403 screens sit outside that wrapper and own their own chrome.
+
+### One route, one name
+
+`sidebarNav.ts` is the whole navigation: the nav list *and* the page titles. An entry's
+`label` is both the sidebar link text and the top-bar heading, matched against
+`location.pathname` by `matchNavEntry` (exact match, else longest href prefix). So a
+page is called the same thing everywhere, and renaming it is a one-word edit.
+
+Two consequences worth knowing:
+
+- **A route with no entry has no top-bar title.** That is deliberate — the list is the
+  nav. Pages off the nav (`/help`, `/architecture`, the onboarding steps) name
+  themselves in their own body.
+- `fullWidth: true` on an entry drops the `p-6` on `<main>` for full-bleed pages like
+  `/map`. It replaced a per-page prop.
+
+Visibility is `hasPermission`: a role sees an entry iff its key is listed, and
+`getEntriesForRole` drops groups whose children are all filtered out.
 
 ## Identity
 

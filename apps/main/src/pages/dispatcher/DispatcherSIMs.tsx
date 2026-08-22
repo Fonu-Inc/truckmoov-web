@@ -3,7 +3,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 import { Button } from "@/components/shadcn/button";
 
@@ -128,10 +127,7 @@ export default function DispatcherSIMs() {
   };
 
   return (
-    <DashboardLayout
-      title="IoT SIM Management"
-      subtitle="Visibility over your SIMs connectivity"
-    >
+    <>
       <div className="space-y-6">
         {/* Top-right actions */}
         <div className="flex items-center justify-end gap-2">
@@ -262,6 +258,6 @@ export default function DispatcherSIMs() {
           setIsAssignDialogOpen(false);
         }}
       />
-    </DashboardLayout>
+    </>
   );
 }

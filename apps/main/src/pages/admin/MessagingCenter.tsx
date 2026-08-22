@@ -16,7 +16,6 @@ import { WhatsAppBusinessSetup } from "@/components/communications/WhatsAppBusin
 import { EmailInbox } from "@/components/email/EmailInbox";
 import { EmailProviderSettings } from "@/components/email/EmailProviderSettings";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { CallRecordingsManager } from "@/components/messaging/CallRecordingsManager";
 import { CampaignBuilderDialog } from "@/components/messaging/CampaignBuilderDialog";
 import { SMSTemplatesManager } from "@/components/messaging/SMSTemplatesManager";
@@ -216,7 +215,7 @@ export default function MessagingCenter() {
   });
 
   return (
-    <DashboardLayout title="Messaging Center">
+    <>
       <div className="space-y-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -774,6 +773,6 @@ export default function MessagingCenter() {
         onOpenChange={setIsCampaignBuilderOpen}
         onSubmit={handleCreateCampaign}
       />
-    </DashboardLayout>
+    </>
   );
 }

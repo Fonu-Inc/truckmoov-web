@@ -12,7 +12,6 @@ import { EmptyState } from "@/components/dashboard/EmptyState";
 import { FleetMap } from "@/components/fleet/FleetMap";
 import { GeofenceManagementDialog } from "@/components/fleet/GeofenceManagementDialog";
 import { JobFormDialog } from "@/components/jobs/JobFormDialog";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -434,31 +433,21 @@ export default function DispatcherLiveMap() {
 
   if (vehiclesLoading) {
     return (
-      <DashboardLayout
-        title="Dispatch Cockpit"
-        subtitle="Real-time waybill tracking"
-      >
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   if (vehicles.length === 0) {
     return (
-      <DashboardLayout
-        title="Dispatch Cockpit"
-        subtitle="Real-time waybill tracking"
-      >
-        <EmptyState
-          icon={Truck}
-          title="No vehicles to track"
-          description="Add vehicles to your fleet to start dispatching"
-          actionLabel="View Fleet"
-          actionHref="/fleet"
-        />
-      </DashboardLayout>
+      <EmptyState
+        icon={Truck}
+        title="No vehicles to track"
+        description="Add vehicles to your fleet to start dispatching"
+        actionLabel="View Fleet"
+        actionHref="/fleet"
+      />
     );
   }
 
@@ -467,10 +456,7 @@ export default function DispatcherLiveMap() {
   const availableVehicles = vehicles.filter(v => v.status === "active" || v.status === "inactive");
 
   return (
-    <DashboardLayout
-      title="Dispatch Cockpit"
-      subtitle="Real-time waybill control"
-    >
+    <>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-[calc(100vh-10rem)]">
         {/* ============= LEFT: CONTROL PANEL ============= */}
         <aside className="lg:col-span-3 flex flex-col gap-3 min-h-0">
@@ -1138,6 +1124,6 @@ export default function DispatcherLiveMap() {
         job={editingJob as any}
         onSubmit={handleJobSubmit}
       />
-    </DashboardLayout>
+    </>
   );
 }

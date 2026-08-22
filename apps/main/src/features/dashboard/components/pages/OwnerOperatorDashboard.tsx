@@ -30,7 +30,6 @@ import { EmptyState } from "@/components/dashboard/EmptyState";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { DeviceSetupRequestDialog } from "@/components/devices/DeviceSetupRequestDialog";
 import { DeviceSetupRequestTracker } from "@/components/devices/DeviceSetupRequestTracker";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ComplianceDocumentsPanel } from "@/components/owner-operator/ComplianceDocumentsPanel";
 import { UpgradeRequestDialog } from "@/components/owner-operator/UpgradeRequestDialog";
 import {
@@ -197,10 +196,7 @@ export default function OwnerOperatorDashboard() {
   };
 
   return (
-    <DashboardLayout
-      title="My Dashboard"
-      subtitle={ownerOrg?.orgName || "Owner-Operator"}
-    >
+    <>
       <div className="space-y-6">
         {/* Quick Stats */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -742,6 +738,6 @@ export default function OwnerOperatorDashboard() {
         onSubmit={createRequest}
         onUploadFile={uploadFile}
       />
-    </DashboardLayout>
+    </>
   );
 }

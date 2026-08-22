@@ -22,7 +22,6 @@ import {
   useEffect, useState,
 } from "react";
 import { toast } from "sonner";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -245,10 +244,7 @@ export default function SupervisorDrivers() {
   };
 
   return (
-    <DashboardLayout
-      title="Driver Management"
-      subtitle="Manage and communicate with your drivers"
-    >
+    <>
       <div className="space-y-6">
         {/* Main Content with Tabs */}
         <Card>
@@ -804,6 +800,6 @@ export default function SupervisorDrivers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   );
 }

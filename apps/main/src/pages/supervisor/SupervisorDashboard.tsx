@@ -14,7 +14,6 @@ import {
 } from "recharts";
 import { AlertList } from "@/components/alerts/AlertList";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -227,22 +226,14 @@ export default function SupervisorDashboard() {
 
   if (isLoading) {
     return (
-      <DashboardLayout
-        title="Operations Center"
-        subtitle="Dispatcher command view"
-      >
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     );
   }
 
   return (
-    <DashboardLayout
-      title="Operations Center"
-      subtitle="Dispatcher command view — queues, throughput & driver readiness"
-    >
+    <>
       <div className="space-y-6">
         {/* Quick Actions container with descriptive cards (horizontal scroll) */}
         <Card>
@@ -850,6 +841,6 @@ export default function SupervisorDashboard() {
         onOpenChange={setDispatchDialogOpen}
         selectedVehicleId={selectedVehicle}
       />
-    </DashboardLayout>
+    </>
   );
 }

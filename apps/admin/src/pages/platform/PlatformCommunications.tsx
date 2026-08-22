@@ -25,7 +25,6 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
   Alert,
   AlertDescription,
@@ -244,10 +243,7 @@ export default function PlatformCommunications() {
   };
 
   return (
-    <DashboardLayout
-      title="Channel Providers"
-      subtitle="Provision tenant communication assets"
-    >
+    <>
       <div className="space-y-6">
         {/* KPI strip */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -515,7 +511,7 @@ export default function PlatformCommunications() {
           onComplete={handleProvisioned}
         />
       )}
-    </DashboardLayout>
+    </>
   );
 }
 

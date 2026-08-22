@@ -9,7 +9,6 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { SubscriptionInvoicesCard } from "@/components/billing/SubscriptionInvoicesCard";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -658,10 +657,7 @@ export default function TenantWallet() {
   };
 
   return (
-    <DashboardLayout
-      title="Wallet & Billing"
-      subtitle="Manage your communication credits and view usage"
-    >
+    <>
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -1380,6 +1376,6 @@ export default function TenantWallet() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   );
 }

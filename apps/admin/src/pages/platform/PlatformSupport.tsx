@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { DeviceSetupRequestsQueue } from "@/components/devices/DeviceSetupRequestsQueue";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
   Tabs,
   TabsContent,
@@ -18,54 +17,49 @@ export default function PlatformSupport() {
   ] = useState("dashboard");
 
   return (
-    <DashboardLayout
-      title="Support & Incidents"
-      subtitle="Manage support tickets, escalations, and incident responses across all tenants"
-    >
-      <div className="space-y-6">
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
+    <div className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
+        <div className="flex justify-center">
+          <TabsList>
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="all-tickets">All Tickets</TabsTrigger>
+            <TabsTrigger value="escalated">Escalated</TabsTrigger>
+            <TabsTrigger value="device-setup">Device Setup</TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent
+          value="dashboard"
           className="space-y-6"
         >
-          <div className="flex justify-center">
-            <TabsList>
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="all-tickets">All Tickets</TabsTrigger>
-              <TabsTrigger value="escalated">Escalated</TabsTrigger>
-              <TabsTrigger value="device-setup">Device Setup</TabsTrigger>
-            </TabsList>
-          </div>
+          <SupportDashboard />
+        </TabsContent>
 
-          <TabsContent
-            value="dashboard"
-            className="space-y-6"
-          >
-            <SupportDashboard />
-          </TabsContent>
+        <TabsContent
+          value="all-tickets"
+          className="space-y-6"
+        >
+          <AllTickets />
+        </TabsContent>
 
-          <TabsContent
-            value="all-tickets"
-            className="space-y-6"
-          >
-            <AllTickets />
-          </TabsContent>
+        <TabsContent
+          value="escalated"
+          className="space-y-6"
+        >
+          <EscalatedTickets />
+        </TabsContent>
 
-          <TabsContent
-            value="escalated"
-            className="space-y-6"
-          >
-            <EscalatedTickets />
-          </TabsContent>
-
-          <TabsContent
-            value="device-setup"
-            className="space-y-6"
-          >
-            <DeviceSetupRequestsQueue />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </DashboardLayout>
+        <TabsContent
+          value="device-setup"
+          className="space-y-6"
+        >
+          <DeviceSetupRequestsQueue />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

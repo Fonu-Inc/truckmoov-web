@@ -20,7 +20,6 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -661,394 +660,392 @@ export default function PlatformDataBundles() {
   };
 
   return (
-    <DashboardLayout title="Data Bundles Catalog">
-      <div className="space-y-6 p-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Data Bundles Catalog</h1>
-          <p className="text-sm text-muted-foreground">
-            Platform-wide carrier plans available to every tenant. Manage pricing, validity and activation.
-          </p>
-        </div>
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Data Bundles Catalog</h1>
+        <p className="text-sm text-muted-foreground">
+          Platform-wide carrier plans available to every tenant. Manage pricing, validity and activation.
+        </p>
+      </div>
 
-        {/* Top-level: Data Bundles vs Tenant Adoption */}
-        <Tabs
-          defaultValue="catalog"
+      {/* Top-level: Data Bundles vs Tenant Adoption */}
+      <Tabs
+        defaultValue="catalog"
+        className="space-y-6"
+      >
+        <TabsList>
+          <TabsTrigger value="catalog">Data Bundles</TabsTrigger>
+          <TabsTrigger value="adoption">Tenant Adoption</TabsTrigger>
+        </TabsList>
+
+        {/* DATA BUNDLES */}
+        <TabsContent
+          value="catalog"
           className="space-y-6"
         >
-          <TabsList>
-            <TabsTrigger value="catalog">Data Bundles</TabsTrigger>
-            <TabsTrigger value="adoption">Tenant Adoption</TabsTrigger>
-          </TabsList>
+          {/* KPI strip */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              title="Active Bundles"
+              value={totalActive}
+              icon={Layers}
+            />
+            <StatCard
+              title="Carriers"
+              value={carrierCount}
+              icon={Tag}
+            />
+            <StatCard
+              title="SIMs Across Tenants"
+              value={totalSimsAcrossTenants}
+              icon={Building2}
+            />
+            <StatCard
+              title="Monthly Bundle Spend"
+              value={fmtCurrency(totalMonthlySpend)}
+              icon={TrendingUp}
+            />
+          </div>
 
-          {/* DATA BUNDLES */}
-          <TabsContent
-            value="catalog"
-            className="space-y-6"
+          {/* Carrier sub-tabs */}
+          <Tabs
+            defaultValue="MTN"
+            className="space-y-4"
           >
-            {/* KPI strip */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard
-                title="Active Bundles"
-                value={totalActive}
-                icon={Layers}
-              />
-              <StatCard
-                title="Carriers"
-                value={carrierCount}
-                icon={Tag}
-              />
-              <StatCard
-                title="SIMs Across Tenants"
-                value={totalSimsAcrossTenants}
-                icon={Building2}
-              />
-              <StatCard
-                title="Monthly Bundle Spend"
-                value={fmtCurrency(totalMonthlySpend)}
-                icon={TrendingUp}
-              />
-            </div>
+            <TabsList>
+              {CARRIER_TABS.map(c => (
+                <TabsTrigger
+                  key={c.value}
+                  value={c.value}
+                >
+                  {c.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-            {/* Carrier sub-tabs */}
-            <Tabs
-              defaultValue="MTN"
-              className="space-y-4"
-            >
-              <TabsList>
-                {CARRIER_TABS.map(c => (
-                  <TabsTrigger
-                    key={c.value}
-                    value={c.value}
-                  >
-                    {c.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+            {CARRIER_TABS.map((c) => {
+              const carrier = c.value;
+              const label = c.label;
+              const carrierBundles = filtered.filter(b => b.carrier === carrier);
+              const carrierTotal = catalog.filter(b => b.carrier === carrier).length;
+              return (
+                <TabsContent
+                  key={carrier}
+                  value={carrier}
+                  className="space-y-4"
+                >
+                  {/* Add bundle button outside the table */}
+                  <div className="flex justify-end">
+                    <Button
+                      variant="gradient"
+                      size="sm"
+                      onClick={() => {
+                        setForm({
+                          ...emptyForm,
+                          carrier,
+                        });
+                        setEditing(false);
+                        setFormOpen(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      {" "}
+                      Add
+                      {label}
+                      {" "}
+                      Bundle
+                    </Button>
+                  </div>
 
-              {CARRIER_TABS.map((c) => {
-                const carrier = c.value;
-                const label = c.label;
-                const carrierBundles = filtered.filter(b => b.carrier === carrier);
-                const carrierTotal = catalog.filter(b => b.carrier === carrier).length;
-                return (
-                  <TabsContent
-                    key={carrier}
-                    value={carrier}
-                    className="space-y-4"
-                  >
-                    {/* Add bundle button outside the table */}
-                    <div className="flex justify-end">
-                      <Button
-                        variant="gradient"
-                        size="sm"
-                        onClick={() => {
-                          setForm({
-                            ...emptyForm,
-                            carrier,
-                          });
-                          setEditing(false);
-                          setFormOpen(true);
-                        }}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        {" "}
-                        Add
-                        {label}
-                        {" "}
-                        Bundle
-                      </Button>
-                    </div>
-
-                    <Card className="bg-card/50 border-border/50">
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle>
-                              {label}
-                              {" "}
-                              Bundles
-                            </CardTitle>
-                            <CardDescription>
-                              {carrierBundles.length}
-                              {" "}
-                              of
-                              {carrierTotal}
-                              {" "}
-                              bundle(s)
-                            </CardDescription>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={exportCsv}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
+                  <Card className="bg-card/50 border-border/50">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle>
+                            {label}
                             {" "}
-                            Export Data
-                          </Button>
+                            Bundles
+                          </CardTitle>
+                          <CardDescription>
+                            {carrierBundles.length}
+                            {" "}
+                            of
+                            {carrierTotal}
+                            {" "}
+                            bundle(s)
+                          </CardDescription>
                         </div>
-                        <div className="flex flex-wrap gap-2 pt-3">
-                          <div className="relative flex-1 min-w-[220px]">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              className="pl-9"
-                              placeholder={`Search ${label} bundles...`}
-                              value={search}
-                              onChange={e => setSearch(e.target.value)}
-                            />
-                          </div>
-                          <Select
-                            value={statusFilter}
-                            onValueChange={v => setStatusFilter(v as typeof statusFilter)}
-                          >
-                            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All status</SelectItem>
-                              <SelectItem value="active">Active</SelectItem>
-                              <SelectItem value="inactive">Inactive</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Bundle</TableHead>
-                              <TableHead>Data</TableHead>
-                              <TableHead>Validity</TableHead>
-                              <TableHead>Cycle</TableHead>
-                              <TableHead>Price</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {carrierBundles.length === 0
-                              ? (
-                                  <TableRow>
-                                    <TableCell
-                                      colSpan={7}
-                                      className="text-center py-6 text-muted-foreground"
-                                    >
-                                      No
-                                      {label}
-                                      {" "}
-                                      bundles yet
-                                    </TableCell>
-                                  </TableRow>
-                                )
-                              : carrierBundles.map(b => (
-                                  <TableRow key={b.id}>
-                                    <TableCell className="font-medium">
-                                      <div>{b.name}</div>
-                                      <div className="text-xs text-muted-foreground font-mono">{b.code}</div>
-                                    </TableCell>
-                                    <TableCell>{formatBundleSize(b.data_mb)}</TableCell>
-                                    <TableCell>
-                                      {b.validity_days}
-                                      d
-                                    </TableCell>
-                                    <TableCell><Badge variant="secondary">{b.billing_cycle}</Badge></TableCell>
-                                    <TableCell className="font-semibold">{fmtCurrency(Number(b.price_ngn))}</TableCell>
-                                    <TableCell>
-                                      <Badge variant={b.is_active ? "default" : "outline"}>
-                                        {b.is_active ? "Active" : "Inactive"}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      <div className="flex items-center justify-end gap-1">
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={() => openEdit(b)}
-                                          title="Edit"
-                                        >
-                                          <Pencil className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={() => handleToggle(b)}
-                                          title={b.is_active ? "Deactivate" : "Activate"}
-                                        >
-                                          <Power className={`h-4 w-4 ${b.is_active ? "text-success" : "text-muted-foreground"}`} />
-                                        </Button>
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                          </TableBody>
-                        </Table>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                );
-              })}
-            </Tabs>
-          </TabsContent>
-
-          {/* TENANT ADOPTION */}
-          <TabsContent value="adoption">
-            <TenantAdoptionTable data={DUMMY_TENANT_USAGE} />
-          </TabsContent>
-        </Tabs>
-
-        {/* Create / Edit Bundle Dialog */}
-        <Dialog
-          open={formOpen}
-          onOpenChange={setFormOpen}
-        >
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Database className="h-5 w-5 text-primary" />
-                {editing ? "Edit Bundle" : "New Bundle"}
-              </DialogTitle>
-              <DialogDescription>
-                Bundles defined here become available to every tenant for SIM allocation.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>Carrier</Label>
-                  <Select
-                    value={form.carrier}
-                    onValueChange={v => setForm(f => ({
-                      ...f,
-                      carrier: v,
-                    }))}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {CARRIER_OPTIONS.map(c => (
-                        <SelectItem
-                          key={c}
-                          value={c}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={exportCsv}
                         >
-                          {c}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Billing Cycle</Label>
-                  <Select
-                    value={form.billing_cycle}
-                    onValueChange={v => setForm(f => ({
-                      ...f,
-                      billing_cycle: v as "monthly" | "yearly",
-                    }))}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                          <Download className="h-4 w-4 mr-2" />
+                          {" "}
+                          Export Data
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-3">
+                        <div className="relative flex-1 min-w-[220px]">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            className="pl-9"
+                            placeholder={`Search ${label} bundles...`}
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                          />
+                        </div>
+                        <Select
+                          value={statusFilter}
+                          onValueChange={v => setStatusFilter(v as typeof statusFilter)}
+                        >
+                          <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All status</SelectItem>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Bundle</TableHead>
+                            <TableHead>Data</TableHead>
+                            <TableHead>Validity</TableHead>
+                            <TableHead>Cycle</TableHead>
+                            <TableHead>Price</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {carrierBundles.length === 0
+                            ? (
+                                <TableRow>
+                                  <TableCell
+                                    colSpan={7}
+                                    className="text-center py-6 text-muted-foreground"
+                                  >
+                                    No
+                                    {label}
+                                    {" "}
+                                    bundles yet
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            : carrierBundles.map(b => (
+                                <TableRow key={b.id}>
+                                  <TableCell className="font-medium">
+                                    <div>{b.name}</div>
+                                    <div className="text-xs text-muted-foreground font-mono">{b.code}</div>
+                                  </TableCell>
+                                  <TableCell>{formatBundleSize(b.data_mb)}</TableCell>
+                                  <TableCell>
+                                    {b.validity_days}
+                                    d
+                                  </TableCell>
+                                  <TableCell><Badge variant="secondary">{b.billing_cycle}</Badge></TableCell>
+                                  <TableCell className="font-semibold">{fmtCurrency(Number(b.price_ngn))}</TableCell>
+                                  <TableCell>
+                                    <Badge variant={b.is_active ? "default" : "outline"}>
+                                      {b.is_active ? "Active" : "Inactive"}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => openEdit(b)}
+                                        title="Edit"
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleToggle(b)}
+                                        title={b.is_active ? "Deactivate" : "Activate"}
+                                      >
+                                        <Power className={`h-4 w-4 ${b.is_active ? "text-success" : "text-muted-foreground"}`} />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              );
+            })}
+          </Tabs>
+        </TabsContent>
 
+        {/* TENANT ADOPTION */}
+        <TabsContent value="adoption">
+          <TenantAdoptionTable data={DUMMY_TENANT_USAGE} />
+        </TabsContent>
+      </Tabs>
+
+      {/* Create / Edit Bundle Dialog */}
+      <Dialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5 text-primary" />
+              {editing ? "Edit Bundle" : "New Bundle"}
+            </DialogTitle>
+            <DialogDescription>
+              Bundles defined here become available to every tenant for SIM allocation.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Display Name</Label>
+                <Label>Carrier</Label>
+                <Select
+                  value={form.carrier}
+                  onValueChange={v => setForm(f => ({
+                    ...f,
+                    carrier: v,
+                  }))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CARRIER_OPTIONS.map(c => (
+                      <SelectItem
+                        key={c}
+                        value={c}
+                      >
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Billing Cycle</Label>
+                <Select
+                  value={form.billing_cycle}
+                  onValueChange={v => setForm(f => ({
+                    ...f,
+                    billing_cycle: v as "monthly" | "yearly",
+                  }))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="yearly">Yearly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Display Name</Label>
+              <Input
+                placeholder="e.g. MTN 10GB Monthly"
+                value={form.name}
+                onChange={e => setForm(f => ({
+                  ...f,
+                  name: e.target.value,
+                }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Bundle Code</Label>
+              <Input
+                placeholder="e.g. MTN_10GB_M"
+                value={form.code}
+                disabled={editing}
+                onChange={e => setForm(f => ({
+                  ...f,
+                  code: e.target.value.toUpperCase(),
+                }))}
+              />
+              <p className="text-xs text-muted-foreground">Unique identifier sent to the carrier PCRF. Cannot be changed after creation.</p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label>Data (MB)</Label>
                 <Input
-                  placeholder="e.g. MTN 10GB Monthly"
-                  value={form.name}
+                  type="number"
+                  value={form.data_mb}
                   onChange={e => setForm(f => ({
                     ...f,
-                    name: e.target.value,
+                    data_mb: Number(e.target.value),
                   }))}
                 />
               </div>
-
               <div className="space-y-2">
-                <Label>Bundle Code</Label>
+                <Label>Validity (days)</Label>
                 <Input
-                  placeholder="e.g. MTN_10GB_M"
-                  value={form.code}
-                  disabled={editing}
+                  type="number"
+                  value={form.validity_days}
                   onChange={e => setForm(f => ({
                     ...f,
-                    code: e.target.value.toUpperCase(),
+                    validity_days: Number(e.target.value),
                   }))}
                 />
-                <p className="text-xs text-muted-foreground">Unique identifier sent to the carrier PCRF. Cannot be changed after creation.</p>
               </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-2">
-                  <Label>Data (MB)</Label>
-                  <Input
-                    type="number"
-                    value={form.data_mb}
-                    onChange={e => setForm(f => ({
-                      ...f,
-                      data_mb: Number(e.target.value),
-                    }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Validity (days)</Label>
-                  <Input
-                    type="number"
-                    value={form.validity_days}
-                    onChange={e => setForm(f => ({
-                      ...f,
-                      validity_days: Number(e.target.value),
-                    }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Price (NGN)</Label>
-                  <Input
-                    type="number"
-                    value={form.price_ngn}
-                    onChange={e => setForm(f => ({
-                      ...f,
-                      price_ngn: Number(e.target.value),
-                    }))}
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between rounded-md border p-3">
-                <div>
-                  <p className="text-sm font-medium">Active</p>
-                  <p className="text-xs text-muted-foreground">Inactive bundles are hidden from tenants.</p>
-                </div>
-                <Switch
-                  checked={form.is_active}
-                  onCheckedChange={v => setForm(f => ({
+              <div className="space-y-2">
+                <Label>Price (NGN)</Label>
+                <Input
+                  type="number"
+                  value={form.price_ngn}
+                  onChange={e => setForm(f => ({
                     ...f,
-                    is_active: v,
+                    price_ngn: Number(e.target.value),
                   }))}
                 />
               </div>
             </div>
 
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setFormOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="gradient"
-                onClick={handleSave}
-                disabled={upsert.isPending}
-              >
-                {upsert.isPending ? "Saving..." : editing ? "Save Changes" : "Create Bundle"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </DashboardLayout>
+            <div className="flex items-center justify-between rounded-md border p-3">
+              <div>
+                <p className="text-sm font-medium">Active</p>
+                <p className="text-xs text-muted-foreground">Inactive bundles are hidden from tenants.</p>
+              </div>
+              <Switch
+                checked={form.is_active}
+                onCheckedChange={v => setForm(f => ({
+                  ...f,
+                  is_active: v,
+                }))}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setFormOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="gradient"
+              onClick={handleSave}
+              disabled={upsert.isPending}
+            >
+              {upsert.isPending ? "Saving..." : editing ? "Save Changes" : "Create Bundle"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
 

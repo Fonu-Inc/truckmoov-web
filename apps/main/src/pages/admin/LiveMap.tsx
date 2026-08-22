@@ -12,7 +12,6 @@ import { DriverCommunicationActions } from "@/components/communications/DriverCo
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { FleetMap } from "@/components/fleet/FleetMap";
 import { GeofenceManagementDialog } from "@/components/fleet/GeofenceManagementDialog";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -125,64 +124,45 @@ export default function LiveMap() {
 
   if (vehiclesLoading) {
     return (
-      <DashboardLayout
-        title="Live Fleet Map"
-        subtitle="Real-time vehicle tracking and monitoring"
-      >
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   if (vehiclesError) {
     return (
-      <DashboardLayout
-        title="Live Fleet Map"
-        subtitle="Real-time vehicle tracking and monitoring"
-      >
-        <div className="flex h-64 flex-col items-center justify-center gap-3 text-center">
-          <AlertTriangle className="h-8 w-8 text-destructive" />
-          <div>
-            <p className="font-semibold">Unable to load vehicles</p>
-            <p className="text-sm text-muted-foreground">The fleet service could not be reached.</p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => refetchVehicles()}
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Try again
-          </Button>
+      <div className="flex h-64 flex-col items-center justify-center gap-3 text-center">
+        <AlertTriangle className="h-8 w-8 text-destructive" />
+        <div>
+          <p className="font-semibold">Unable to load vehicles</p>
+          <p className="text-sm text-muted-foreground">The fleet service could not be reached.</p>
         </div>
-      </DashboardLayout>
+        <Button
+          variant="outline"
+          onClick={() => refetchVehicles()}
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Try again
+        </Button>
+      </div>
     );
   }
 
   if (vehicles.length === 0) {
     return (
-      <DashboardLayout
-        title="Live Fleet Map"
-        subtitle="Real-time vehicle tracking and monitoring"
-      >
-        <EmptyState
-          icon={Truck}
-          title="No vehicles to track"
-          description="Add vehicles to your fleet to see them on the live map"
-          actionLabel="Add Vehicle"
-          actionHref="/fleet"
-        />
-      </DashboardLayout>
+      <EmptyState
+        icon={Truck}
+        title="No vehicles to track"
+        description="Add vehicles to your fleet to see them on the live map"
+        actionLabel="Add Vehicle"
+        actionHref="/fleet"
+      />
     );
   }
 
   return (
-    <DashboardLayout
-      title="Live Fleet Map"
-      subtitle="Real-time vehicle tracking and monitoring"
-      fullWidth
-    >
+    <>
       <div className="grid min-w-0 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 h-[calc(100vh-4rem)] p-4 overflow-hidden">
         {/* Sidebar — only this scrolls */}
         <div className="min-w-0 lg:col-span-1 space-y-4 flex flex-col h-full overflow-x-hidden overflow-y-auto pr-1">
@@ -503,6 +483,6 @@ export default function LiveMap() {
         open={geofenceDialogOpen}
         onOpenChange={setGeofenceDialogOpen}
       />
-    </DashboardLayout>
+    </>
   );
 }

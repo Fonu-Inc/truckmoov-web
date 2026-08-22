@@ -20,7 +20,6 @@ import {
   countActiveFilters,
 } from "@/components/jobs/jobsFilter";
 import { JobsFilterDialog } from "@/components/jobs/JobsFilterDialog";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -318,16 +317,14 @@ export default function DispatcherDispatch() {
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Dispatch">
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   return (
-    <DashboardLayout title="Dispatch">
+    <>
       <div className="space-y-6">
         {/* Page header — Create Job CTA top-right */}
         <div className="flex justify-end">
@@ -526,6 +523,6 @@ export default function DispatcherDispatch() {
         onComplete={handleCompleteJob}
         isSubmitting={isCompleting}
       />
-    </DashboardLayout>
+    </>
   );
 }

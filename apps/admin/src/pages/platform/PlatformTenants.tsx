@@ -49,7 +49,6 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TenantDetailsSheet } from "@/components/platform/TenantDetailsSheet";
 import { TenantEditDialog } from "@/components/platform/TenantEditDialog";
 import { TenantOnboardingWizard } from "@/components/platform/TenantOnboardingWizard";
@@ -575,10 +574,7 @@ export default function PlatformTenants() {
   };
 
   return (
-    <DashboardLayout
-      title="Tenant Management"
-      subtitle="Create, edit, and manage tenant organizations"
-    >
+    <>
       <div className="space-y-6">
         {/* Top-right grouped controls (currency configured globally in Settings → Billing) */}
         <div className="flex items-center justify-end gap-2">
@@ -1063,6 +1059,6 @@ export default function PlatformTenants() {
           }}
         />
       )}
-    </DashboardLayout>
+    </>
   );
 }

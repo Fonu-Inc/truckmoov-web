@@ -2,7 +2,6 @@ import {
   Database, Lock, Shield, Users,
 } from "lucide-react";
 import { MermaidDiagram } from "@/components/diagrams/MermaidDiagram";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
@@ -105,89 +104,84 @@ const tenantIsolationDiagram = `graph TD
 
 export default function Architecture() {
   return (
-    <DashboardLayout
-      title="System Architecture"
-      subtitle="Technical diagrams and documentation for pitch decks"
+    <Tabs
+      defaultValue="security"
+      className="space-y-6"
     >
-      <Tabs
-        defaultValue="security"
-        className="space-y-6"
-      >
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
-          <TabsTrigger
-            value="security"
-            className="gap-2"
-          >
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">Security</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="rbac"
-            className="gap-2"
-          >
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">RBAC</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="data-flow"
-            className="gap-2"
-          >
-            <Database className="h-4 w-4" />
-            <span className="hidden sm:inline">Data Flow</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="multi-tenant"
-            className="gap-2"
-          >
-            <Lock className="h-4 w-4" />
-            <span className="hidden sm:inline">Multi-Tenant</span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent
+      <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+        <TabsTrigger
           value="security"
-          className="space-y-4"
+          className="gap-2"
         >
-          <MermaidDiagram
-            chart={securityArchitectureDiagram}
-            title="Security Architecture Overview"
-            description="End-to-end security flow from user authentication to data access with RLS policies"
-          />
-        </TabsContent>
-
-        <TabsContent
+          <Shield className="h-4 w-4" />
+          <span className="hidden sm:inline">Security</span>
+        </TabsTrigger>
+        <TabsTrigger
           value="rbac"
-          className="space-y-4"
+          className="gap-2"
         >
-          <MermaidDiagram
-            chart={rbacDiagram}
-            title="Role-Based Access Control (RBAC)"
-            description="User roles and their corresponding permission levels across the platform"
-          />
-        </TabsContent>
-
-        <TabsContent
+          <Users className="h-4 w-4" />
+          <span className="hidden sm:inline">RBAC</span>
+        </TabsTrigger>
+        <TabsTrigger
           value="data-flow"
-          className="space-y-4"
+          className="gap-2"
         >
-          <MermaidDiagram
-            chart={dataFlowDiagram}
-            title="Data Flow Architecture"
-            description="How data flows through the system from client applications to secure storage"
-          />
-        </TabsContent>
-
-        <TabsContent
+          <Database className="h-4 w-4" />
+          <span className="hidden sm:inline">Data Flow</span>
+        </TabsTrigger>
+        <TabsTrigger
           value="multi-tenant"
-          className="space-y-4"
+          className="gap-2"
         >
-          <MermaidDiagram
-            chart={tenantIsolationDiagram}
-            title="Multi-Tenant Isolation"
-            description="How tenant data is isolated using Row Level Security policies"
-          />
-        </TabsContent>
-      </Tabs>
-    </DashboardLayout>
+          <Lock className="h-4 w-4" />
+          <span className="hidden sm:inline">Multi-Tenant</span>
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent
+        value="security"
+        className="space-y-4"
+      >
+        <MermaidDiagram
+          chart={securityArchitectureDiagram}
+          title="Security Architecture Overview"
+          description="End-to-end security flow from user authentication to data access with RLS policies"
+        />
+      </TabsContent>
+
+      <TabsContent
+        value="rbac"
+        className="space-y-4"
+      >
+        <MermaidDiagram
+          chart={rbacDiagram}
+          title="Role-Based Access Control (RBAC)"
+          description="User roles and their corresponding permission levels across the platform"
+        />
+      </TabsContent>
+
+      <TabsContent
+        value="data-flow"
+        className="space-y-4"
+      >
+        <MermaidDiagram
+          chart={dataFlowDiagram}
+          title="Data Flow Architecture"
+          description="How data flows through the system from client applications to secure storage"
+        />
+      </TabsContent>
+
+      <TabsContent
+        value="multi-tenant"
+        className="space-y-4"
+      >
+        <MermaidDiagram
+          chart={tenantIsolationDiagram}
+          title="Multi-Tenant Isolation"
+          description="How tenant data is isolated using Row Level Security policies"
+        />
+      </TabsContent>
+    </Tabs>
   );
 }

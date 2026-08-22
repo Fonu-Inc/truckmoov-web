@@ -9,7 +9,6 @@ import {
   useMemo,
   useState,
 } from "react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -394,399 +393,397 @@ export default function PlatformComplianceAudit() {
   ];
 
   return (
-    <DashboardLayout title="Compliance & Audit">
-      <div className="space-y-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <ShieldCheck className="h-6 w-6 text-primary" />
-              Compliance & Audit
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Cross-tenant audit log for platform compliance, support, and security investigations.
-            </p>
-          </div>
+    <div className="space-y-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <ShieldCheck className="h-6 w-6 text-primary" />
+            Compliance & Audit
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Cross-tenant audit log for platform compliance, support, and security investigations.
+          </p>
         </div>
+      </div>
 
-        <div className="grid gap-3 md:grid-cols-3">
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center">
-                <ShieldCheck className="h-5 w-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs text-muted-foreground">Total Entries</div>
-                <div className="text-xl font-bold truncate">{entries.length.toLocaleString()}</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center">
-                <Lock className="h-5 w-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs text-muted-foreground">Immutability</div>
-                <div className="text-xl font-bold truncate">Enforced</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center">
-                <ShieldCheck className="h-5 w-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs text-muted-foreground">Retention (NCC)</div>
-                <div className="text-xl font-bold truncate">7 years</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
+      <div className="grid gap-3 md:grid-cols-3">
         <Card>
-          <CardHeader className="flex flex-row items-start justify-between space-y-0">
-            <div>
-              <CardTitle>Audit Log Entries</CardTitle>
-              <CardDescription>Immutable cross-tenant audit trail retained for 7 years per NCC requirements</CardDescription>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center">
+              <ShieldCheck className="h-5 w-5 text-primary" />
             </div>
-            <ExportButton
-              rows={entries}
-              columns={exportColumns as any}
-              filename="platform_audit_log"
-            />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search any field…"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                  >
-                    <SlidersHorizontal className="h-4 w-4 mr-2" />
-                    Filter
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-80 p-4 space-y-4"
-                  align="end"
+            <div className="min-w-0">
+              <div className="text-xs text-muted-foreground">Total Entries</div>
+              <div className="text-xl font-bold truncate">{entries.length.toLocaleString()}</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center">
+              <Lock className="h-5 w-5 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs text-muted-foreground">Immutability</div>
+              <div className="text-xl font-bold truncate">Enforced</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs text-muted-foreground">Retention (NCC)</div>
+              <div className="text-xl font-bold truncate">7 years</div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between space-y-0">
+          <div>
+            <CardTitle>Audit Log Entries</CardTitle>
+            <CardDescription>Immutable cross-tenant audit trail retained for 7 years per NCC requirements</CardDescription>
+          </div>
+          <ExportButton
+            rows={entries}
+            columns={exportColumns as any}
+            filename="platform_audit_log"
+          />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search any field…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
                 >
-                  <div className="font-medium text-sm">Show Audit Entries</div>
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                  Filter
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-80 p-4 space-y-4"
+                align="end"
+              >
+                <div className="font-medium text-sm">Show Audit Entries</div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="f-date"
-                        checked={draft.enableDate}
-                        onCheckedChange={v => setDraft({
-                          ...draft,
-                          enableDate: !!v,
-                        })}
-                      />
-                      <Label
-                        htmlFor="f-date"
-                        className="text-xs"
-                      >
-                        By date range
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="date"
-                        disabled={!draft.enableDate}
-                        value={draft.startDate}
-                        onChange={e => setDraft({
-                          ...draft,
-                          startDate: e.target.value,
-                        })}
-                        className="flex-1 min-w-0"
-                      />
-                      <Input
-                        type="date"
-                        disabled={!draft.enableDate}
-                        value={draft.endDate}
-                        onChange={e => setDraft({
-                          ...draft,
-                          endDate: e.target.value,
-                        })}
-                        className="flex-1 min-w-0"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="f-tenant"
-                        checked={draft.enableTenant}
-                        onCheckedChange={v => setDraft({
-                          ...draft,
-                          enableTenant: !!v,
-                        })}
-                      />
-                      <Label
-                        htmlFor="f-tenant"
-                        className="text-xs"
-                      >
-                        By tenant
-                      </Label>
-                    </div>
-                    <Select
-                      disabled={!draft.enableTenant}
-                      value={draft.tenantId}
-                      onValueChange={v => setDraft({
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="f-date"
+                      checked={draft.enableDate}
+                      onCheckedChange={v => setDraft({
                         ...draft,
-                        tenantId: v,
-                      })}
-                    >
-                      <SelectTrigger><SelectValue placeholder="Select tenant" /></SelectTrigger>
-                      <SelectContent>
-                        {tenants.map(t => (
-                          <SelectItem
-                            key={t.id}
-                            value={t.id}
-                          >
-                            {t.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="f-actor"
-                        checked={draft.enableActor}
-                        onCheckedChange={v => setDraft({
-                          ...draft,
-                          enableActor: !!v,
-                        })}
-                      />
-                      <Label
-                        htmlFor="f-actor"
-                        className="text-xs"
-                      >
-                        By actor (name / email / ID)
-                      </Label>
-                    </div>
-                    <Input
-                      disabled={!draft.enableActor}
-                      placeholder="e.g. jane@…"
-                      value={draft.actor}
-                      onChange={e => setDraft({
-                        ...draft,
-                        actor: e.target.value,
+                        enableDate: !!v,
                       })}
                     />
+                    <Label
+                      htmlFor="f-date"
+                      className="text-xs"
+                    >
+                      By date range
+                    </Label>
                   </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="f-action"
-                        checked={draft.enableAction}
-                        onCheckedChange={v => setDraft({
-                          ...draft,
-                          enableAction: !!v,
-                        })}
-                      />
-                      <Label
-                        htmlFor="f-action"
-                        className="text-xs"
-                      >
-                        By action type
-                      </Label>
-                    </div>
-                    <Select
-                      disabled={!draft.enableAction}
-                      value={draft.actionType}
-                      onValueChange={v => setDraft({
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="date"
+                      disabled={!draft.enableDate}
+                      value={draft.startDate}
+                      onChange={e => setDraft({
                         ...draft,
-                        actionType: v,
+                        startDate: e.target.value,
                       })}
-                    >
-                      <SelectTrigger><SelectValue placeholder="Select action" /></SelectTrigger>
-                      <SelectContent>
-                        {actionTypes.map(a => (
-                          <SelectItem
-                            key={a}
-                            value={a}
-                          >
-                            {a}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="f-resource"
-                        checked={draft.enableResource}
-                        onCheckedChange={v => setDraft({
-                          ...draft,
-                          enableResource: !!v,
-                        })}
-                      />
-                      <Label
-                        htmlFor="f-resource"
-                        className="text-xs"
-                      >
-                        By resource type
-                      </Label>
-                    </div>
-                    <Select
-                      disabled={!draft.enableResource}
-                      value={draft.resourceType}
-                      onValueChange={v => setDraft({
+                      className="flex-1 min-w-0"
+                    />
+                    <Input
+                      type="date"
+                      disabled={!draft.enableDate}
+                      value={draft.endDate}
+                      onChange={e => setDraft({
                         ...draft,
-                        resourceType: v,
+                        endDate: e.target.value,
                       })}
-                    >
-                      <SelectTrigger><SelectValue placeholder="Select resource" /></SelectTrigger>
-                      <SelectContent>
-                        {resourceTypes.map(r => (
-                          <SelectItem
-                            key={r}
-                            value={r}
-                          >
-                            {r}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      className="flex-1 min-w-0"
+                    />
                   </div>
+                </div>
 
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      size="sm"
-                      className="flex-1"
-                      onClick={applyFilters}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="f-tenant"
+                      checked={draft.enableTenant}
+                      onCheckedChange={v => setDraft({
+                        ...draft,
+                        enableTenant: !!v,
+                      })}
+                    />
+                    <Label
+                      htmlFor="f-tenant"
+                      className="text-xs"
                     >
-                      Apply
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={clearFilters}
-                    >
-                      Show All
-                    </Button>
+                      By tenant
+                    </Label>
                   </div>
-                </PopoverContent>
-              </Popover>
-            </div>
+                  <Select
+                    disabled={!draft.enableTenant}
+                    value={draft.tenantId}
+                    onValueChange={v => setDraft({
+                      ...draft,
+                      tenantId: v,
+                    })}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Select tenant" /></SelectTrigger>
+                    <SelectContent>
+                      {tenants.map(t => (
+                        <SelectItem
+                          key={t.id}
+                          value={t.id}
+                        >
+                          {t.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="border rounded-md overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Timestamp</TableHead>
-                    <TableHead>Actor</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Resource</TableHead>
-                    <TableHead>Tenant</TableHead>
-                    <TableHead>IP Address</TableHead>
-                    <TableHead>Source</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="f-actor"
+                      checked={draft.enableActor}
+                      onCheckedChange={v => setDraft({
+                        ...draft,
+                        enableActor: !!v,
+                      })}
+                    />
+                    <Label
+                      htmlFor="f-actor"
+                      className="text-xs"
+                    >
+                      By actor (name / email / ID)
+                    </Label>
+                  </div>
+                  <Input
+                    disabled={!draft.enableActor}
+                    placeholder="e.g. jane@…"
+                    value={draft.actor}
+                    onChange={e => setDraft({
+                      ...draft,
+                      actor: e.target.value,
+                    })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="f-action"
+                      checked={draft.enableAction}
+                      onCheckedChange={v => setDraft({
+                        ...draft,
+                        enableAction: !!v,
+                      })}
+                    />
+                    <Label
+                      htmlFor="f-action"
+                      className="text-xs"
+                    >
+                      By action type
+                    </Label>
+                  </div>
+                  <Select
+                    disabled={!draft.enableAction}
+                    value={draft.actionType}
+                    onValueChange={v => setDraft({
+                      ...draft,
+                      actionType: v,
+                    })}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Select action" /></SelectTrigger>
+                    <SelectContent>
+                      {actionTypes.map(a => (
+                        <SelectItem
+                          key={a}
+                          value={a}
+                        >
+                          {a}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="f-resource"
+                      checked={draft.enableResource}
+                      onCheckedChange={v => setDraft({
+                        ...draft,
+                        enableResource: !!v,
+                      })}
+                    />
+                    <Label
+                      htmlFor="f-resource"
+                      className="text-xs"
+                    >
+                      By resource type
+                    </Label>
+                  </div>
+                  <Select
+                    disabled={!draft.enableResource}
+                    value={draft.resourceType}
+                    onValueChange={v => setDraft({
+                      ...draft,
+                      resourceType: v,
+                    })}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Select resource" /></SelectTrigger>
+                    <SelectContent>
+                      {resourceTypes.map(r => (
+                        <SelectItem
+                          key={r}
+                          value={r}
+                        >
+                          {r}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    size="sm"
+                    className="flex-1"
+                    onClick={applyFilters}
+                  >
+                    Apply
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={clearFilters}
+                  >
+                    Show All
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="border rounded-md overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Timestamp</TableHead>
+                  <TableHead>Actor</TableHead>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Resource</TableHead>
+                  <TableHead>Tenant</TableHead>
+                  <TableHead>IP Address</TableHead>
+                  <TableHead>Source</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading
+                  ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={7}
+                          className="text-center text-muted-foreground py-8"
+                        >
+                          Loading…
+                        </TableCell>
+                      </TableRow>
+                    )
+                  : entries.length === 0
                     ? (
                         <TableRow>
                           <TableCell
                             colSpan={7}
                             className="text-center text-muted-foreground py-8"
                           >
-                            Loading…
+                            No audit entries found
                           </TableCell>
                         </TableRow>
                       )
-                    : entries.length === 0
-                      ? (
-                          <TableRow>
-                            <TableCell
-                              colSpan={7}
-                              className="text-center text-muted-foreground py-8"
-                            >
-                              No audit entries found
+                    : (
+                        entries.map(e => (
+                          <TableRow key={`${e.source}-${e.id}`}>
+                            <TableCell className="font-mono text-xs whitespace-nowrap">
+                              {formatWithPattern(
+                                e.timestamp,
+                                "yyyy-MM-dd HH:mm:ss",
+                              )}
                             </TableCell>
-                          </TableRow>
-                        )
-                      : (
-                          entries.map(e => (
-                            <TableRow key={`${e.source}-${e.id}`}>
-                              <TableCell className="font-mono text-xs whitespace-nowrap">
-                                {formatWithPattern(
-                                  e.timestamp,
-                                  "yyyy-MM-dd HH:mm:ss",
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm font-medium">{e.actor_name || "System"}</div>
+                            <TableCell>
+                              <div className="text-sm font-medium">{e.actor_name || "System"}</div>
+                              <div className="text-xs text-muted-foreground font-mono">
+                                {e.actor_email || e.actor_id?.slice(
+                                  0,
+                                  8,
+                                ) || "—"}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className="text-xs"
+                              >
+                                {e.action_type}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">{e.resource_type}</div>
+                              {e.resource_id && (
                                 <div className="text-xs text-muted-foreground font-mono">
-                                  {e.actor_email || e.actor_id?.slice(
+                                  {e.resource_id.slice(
                                     0,
                                     8,
-                                  ) || "—"}
+                                  )}
                                 </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs"
-                                >
-                                  {e.action_type}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm">{e.resource_type}</div>
-                                {e.resource_id && (
-                                  <div className="text-xs text-muted-foreground font-mono">
-                                    {e.resource_id.slice(
-                                      0,
-                                      8,
-                                    )}
-                                  </div>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-sm">{tenantNameOf(e.tenant_id)}</TableCell>
-                              <TableCell className="font-mono text-xs">{e.ip_address || "—"}</TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={e.source === "security" ? "destructive" : "secondary"}
-                                  className="text-xs"
-                                >
-                                  {e.source}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                </TableBody>
-              </Table>
-            </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm">{tenantNameOf(e.tenant_id)}</TableCell>
+                            <TableCell className="font-mono text-xs">{e.ip_address || "—"}</TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={e.source === "security" ? "destructive" : "secondary"}
+                                className="text-xs"
+                              >
+                                {e.source}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+              </TableBody>
+            </Table>
+          </div>
 
-            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <Lock className="h-3 w-3" />
-              Entries are immutable. Retained for 7 years per NCC regulatory requirement.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    </DashboardLayout>
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Lock className="h-3 w-3" />
+            Entries are immutable. Retained for 7 years per NCC regulatory requirement.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

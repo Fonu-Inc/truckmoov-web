@@ -10,7 +10,6 @@ import { CallInteractionModal } from "@/components/communications/CallInteractio
 import { DriverBehaviorTab } from "@/components/drivers/DriverBehaviorTab";
 import { DriverFatigueTab } from "@/components/drivers/DriverFatigueTab";
 import { DriverMessagesInbox } from "@/components/drivers/DriverMessagesInbox";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
@@ -115,176 +114,174 @@ export default function DispatcherDrivers() {
   };
 
   return (
-    <DashboardLayout title="Driver Management">
-      <div className="space-y-6">
-        {/* Main Tab Navigation */}
-        <Tabs
-          value={mainTab}
-          onValueChange={setMainTab}
-          className="w-full"
+    <div className="space-y-6">
+      {/* Main Tab Navigation */}
+      <Tabs
+        value={mainTab}
+        onValueChange={setMainTab}
+        className="w-full"
+      >
+        <div className="flex justify-center mb-6">
+          <TabsList className="bg-muted/50">
+            <TabsTrigger
+              value="drivers"
+              className="gap-2"
+            >
+              <Users className="h-4 w-4" />
+              Drivers
+            </TabsTrigger>
+            <TabsTrigger
+              value="behavior"
+              className="gap-2"
+            >
+              <Activity className="h-4 w-4" />
+              Behavior
+            </TabsTrigger>
+            <TabsTrigger
+              value="fatigue"
+              className="gap-2"
+            >
+              <Brain className="h-4 w-4" />
+              Fatigue AI
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent
+          value="drivers"
+          className="mt-0 space-y-6"
         >
-          <div className="flex justify-center mb-6">
-            <TabsList className="bg-muted/50">
-              <TabsTrigger
-                value="drivers"
-                className="gap-2"
-              >
-                <Users className="h-4 w-4" />
-                Drivers
-              </TabsTrigger>
-              <TabsTrigger
-                value="behavior"
-                className="gap-2"
-              >
-                <Activity className="h-4 w-4" />
-                Behavior
-              </TabsTrigger>
-              <TabsTrigger
-                value="fatigue"
-                className="gap-2"
-              >
-                <Brain className="h-4 w-4" />
-                Fatigue AI
-              </TabsTrigger>
-            </TabsList>
+          {/* Top-right page actions */}
+          <div className="flex justify-end gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              onClick={() => setShowInbox(!showInbox)}
+            >
+              <Inbox className="h-4 w-4 mr-2" />
+              {showInbox ? "Hide Inbox" : "Message Inbox"}
+            </Button>
           </div>
 
-          <TabsContent
-            value="drivers"
-            className="mt-0 space-y-6"
-          >
-            {/* Top-right page actions */}
-            <div className="flex justify-end gap-2 flex-wrap">
-              <Button
-                variant="outline"
-                onClick={() => setShowInbox(!showInbox)}
-              >
-                <Inbox className="h-4 w-4 mr-2" />
-                {showInbox ? "Hide Inbox" : "Message Inbox"}
-              </Button>
-            </div>
+          {/* Message Inbox */}
+          {showInbox && (
+            <DriverMessagesInbox />
+          )}
+        </TabsContent>
 
-            {/* Message Inbox */}
-            {showInbox && (
-              <DriverMessagesInbox />
-            )}
-          </TabsContent>
-
-          <TabsContent
-            value="behavior"
-            className="mt-0"
-          >
-            <DriverBehaviorTab />
-          </TabsContent>
-
-          <TabsContent
-            value="fatigue"
-            className="mt-0"
-          >
-            <DriverFatigueTab />
-          </TabsContent>
-        </Tabs>
-
-        {/* Call Interaction Modal */}
-        <CallInteractionModal
-          open={isCallDialogOpen}
-          onOpenChange={setIsCallDialogOpen}
-          contactName={selectedContactName}
-          contactPhone={selectedContactPhone}
-          status={sipStatus}
-          durationSeconds={durationSeconds}
-          onEndCall={handleEndCall}
-          recordingEnabled
-          onToggleRecord={(rec) => {
-            console.log(
-              "[Call] recording toggled",
-              rec,
-            );
-          }}
-          onSaveNote={(note) => {
-            console.log(
-              "[Call] note saved",
-              note,
-            );
-            return true;
-          }}
-        />
-
-        {/* Message Dialog */}
-        <Dialog
-          open={isMessageDialogOpen}
-          onOpenChange={setIsMessageDialogOpen}
+        <TabsContent
+          value="behavior"
+          className="mt-0"
         >
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                {messageType === "whatsapp"
-                  ? (
-                      <MessageSquare className="h-5 w-5 text-success" />
-                    )
-                  : (
-                      <Mail className="h-5 w-5 text-primary" />
-                    )}
-                Send
-                {" "}
-                {messageType === "whatsapp" ? "WhatsApp" : "SMS"}
-                {" "}
-                to
-                {" "}
-                {selectedContactName}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-white">
-                  {selectedContactName?.split(" ").map(n => n[0]).join("")}
-                </div>
-                <div>
-                  <p className="font-medium">{selectedContactName}</p>
-                  <p className="text-sm text-muted-foreground">{selectedContactPhone}</p>
-                </div>
+          <DriverBehaviorTab />
+        </TabsContent>
+
+        <TabsContent
+          value="fatigue"
+          className="mt-0"
+        >
+          <DriverFatigueTab />
+        </TabsContent>
+      </Tabs>
+
+      {/* Call Interaction Modal */}
+      <CallInteractionModal
+        open={isCallDialogOpen}
+        onOpenChange={setIsCallDialogOpen}
+        contactName={selectedContactName}
+        contactPhone={selectedContactPhone}
+        status={sipStatus}
+        durationSeconds={durationSeconds}
+        onEndCall={handleEndCall}
+        recordingEnabled
+        onToggleRecord={(rec) => {
+          console.log(
+            "[Call] recording toggled",
+            rec,
+          );
+        }}
+        onSaveNote={(note) => {
+          console.log(
+            "[Call] note saved",
+            note,
+          );
+          return true;
+        }}
+      />
+
+      {/* Message Dialog */}
+      <Dialog
+        open={isMessageDialogOpen}
+        onOpenChange={setIsMessageDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {messageType === "whatsapp"
+                ? (
+                    <MessageSquare className="h-5 w-5 text-success" />
+                  )
+                : (
+                    <Mail className="h-5 w-5 text-primary" />
+                  )}
+              Send
+              {" "}
+              {messageType === "whatsapp" ? "WhatsApp" : "SMS"}
+              {" "}
+              to
+              {" "}
+              {selectedContactName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-white">
+                {selectedContactName?.split(" ").map(n => n[0]).join("")}
               </div>
-              <div className="space-y-2">
-                <Label>Message</Label>
-                <Textarea
-                  placeholder="Type your message here..."
-                  value={messageContent}
-                  onChange={e => setMessageContent(e.target.value)}
-                  rows={4}
-                />
+              <div>
+                <p className="font-medium">{selectedContactName}</p>
+                <p className="text-sm text-muted-foreground">{selectedContactPhone}</p>
               </div>
             </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setIsMessageDialogOpen(false)}
-                disabled={isSending}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="gradient"
-                onClick={handleSendMessage}
-                disabled={!messageContent.trim() || isSending}
-              >
-                {isSending
-                  ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Sending...
-                      </>
-                    )
-                  : (
-                      <>
-                        <Send className="h-4 w-4 mr-2" />
-                        Send Message
-                      </>
-                    )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </DashboardLayout>
+            <div className="space-y-2">
+              <Label>Message</Label>
+              <Textarea
+                placeholder="Type your message here..."
+                value={messageContent}
+                onChange={e => setMessageContent(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsMessageDialogOpen(false)}
+              disabled={isSending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="gradient"
+              onClick={handleSendMessage}
+              disabled={!messageContent.trim() || isSending}
+            >
+              {isSending
+                ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  )
+                : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Send Message
+                    </>
+                  )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
