@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle, Archive, Database, HardDrive, TrendingUp,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {

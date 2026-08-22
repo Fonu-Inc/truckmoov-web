@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 import { DeveloperPortal } from "@/components/integrations/DeveloperPortal";
 import { ERPWMSIntegrationPanel } from "@/components/integrations/ERPWMSIntegrationPanel";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";

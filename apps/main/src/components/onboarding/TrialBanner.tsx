@@ -3,7 +3,7 @@ import { daysBetween } from "@truckmoov/app-core/utils/time-utils";
 import {
   ArrowRight, Clock, Sparkles,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { Button } from "@/components/shadcn/button";
 import { useAuthStore } from "@/stores/authStore";
 

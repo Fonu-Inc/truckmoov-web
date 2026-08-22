@@ -25,7 +25,7 @@ import {
   Wifi,
   Wrench,
 } from "lucide-react";
-import { ROLE_REDIRECT_MAP } from "./authRedirect";
+import { ROLE_REDIRECT_MAP } from "@/features/auth/utils/authRedirect";
 
 export type SidebarNavItem = {
   label: string;

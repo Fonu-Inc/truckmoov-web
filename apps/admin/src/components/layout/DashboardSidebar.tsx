@@ -17,7 +17,7 @@ import {
 import {
   NavLink,
   useLocation,
-} from "react-router-dom";
+} from "react-router";
 import mtnLogoDark from "@/assets/mtn-logo-dark.svg";
 import {
   Collapsible,

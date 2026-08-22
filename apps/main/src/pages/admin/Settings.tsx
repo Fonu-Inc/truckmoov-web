@@ -24,7 +24,7 @@ import {
 import {
   useEffect, useState,
 } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { SubscriptionInvoicesPanel } from "@/components/billing/SubscriptionInvoicesPanel";
 import { MaintenanceConfigPanel } from "@/components/fleet/MaintenanceConfigPanel";

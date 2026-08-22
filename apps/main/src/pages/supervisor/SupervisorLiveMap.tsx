@@ -11,7 +11,7 @@ import {
 import {
   useEffect, useMemo, useRef, useState,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { DriverCommunicationActions } from "@/components/communications/DriverCommunicationActions";
 import { EmptyState } from "@/components/dashboard/EmptyState";

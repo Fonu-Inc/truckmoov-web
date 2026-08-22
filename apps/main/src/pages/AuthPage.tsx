@@ -8,7 +8,7 @@ import {
 import { useForm } from "react-hook-form";
 import {
   Link, useNavigate,
-} from "react-router-dom";
+} from "react-router";
 
 import { toast } from "sonner";
 import * as z from "zod";
@@ -22,7 +22,7 @@ import {
   FormMessage,
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
-import { getPostLoginRedirectPath } from "@/lib/authRedirect";
+import { getPostLoginRedirectPath } from "@/features/auth/utils/authRedirect";
 import { useAuthStore } from "@/stores/authStore";
 
 const signInSchema = z.object({

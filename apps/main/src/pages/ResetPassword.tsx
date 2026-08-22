@@ -7,7 +7,7 @@ import {
 import { useForm } from "react-hook-form";
 import {
   Link, useNavigate, useSearchParams,
-} from "react-router-dom";
+} from "react-router";
 import { toast } from "sonner";
 
 import * as z from "zod";

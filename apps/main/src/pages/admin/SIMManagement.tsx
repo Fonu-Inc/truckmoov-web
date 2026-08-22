@@ -23,7 +23,7 @@ import {
 import {
   useEffect, useMemo, useState,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 

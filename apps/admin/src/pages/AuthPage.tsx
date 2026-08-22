@@ -9,7 +9,7 @@ import {
   Truck,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { toast } from "sonner";
 import * as z from "zod";

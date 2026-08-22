@@ -9,7 +9,7 @@ import {
 import {
   useCallback, useEffect, useState,
 } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { IVRDashboardTab } from "@/components/communications/IVRDashboardTab";
 import { WhatsAppBusinessSetup } from "@/components/communications/WhatsAppBusinessSetup";

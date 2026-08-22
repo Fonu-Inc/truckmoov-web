@@ -5,7 +5,7 @@ import {
   ArrowLeft, ArrowRight, Mail, Truck,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { toast } from "sonner";
 import * as z from "zod";

@@ -11,7 +11,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 import { KeyboardShortcutsDialog } from "@/components/KeyboardShortcutsDialog";
 import { NotificationCenter } from "@/components/platform/NotificationCenter";
 import { Button } from "@/components/shadcn/button";

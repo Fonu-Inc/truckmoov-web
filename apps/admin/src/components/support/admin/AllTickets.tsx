@@ -1,4 +1,6 @@
-import type { SystemSupportTicketCategory, SystemSupportTicketsQuery } from "@truckmoov/api/auth";
+import type {
+  SystemSupportTicketCategory, SystemSupportTicketsQuery,
+} from "@truckmoov/api/auth";
 import type { ReactNode } from "react";
 import type { SupportTicket } from "./AdminTicketSheet";
 import {

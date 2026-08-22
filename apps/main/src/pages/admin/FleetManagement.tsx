@@ -33,7 +33,7 @@ import {
 import {
   useEffect, useMemo, useState,
 } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { BulkUploadDialog } from "@/components/fleet/BulkUploadDialog";
 import { ComplianceTab } from "@/components/fleet/ComplianceTab";

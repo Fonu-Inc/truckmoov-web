@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate } from "react-router";
 
 // Subscription invoices have moved into Organization Settings → Subscription tab.
 export default function SubscriptionInvoices() {

@@ -7,7 +7,7 @@ import {
   LogOut, Moon, Settings, Sun,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { Button } from "@/components/shadcn/button";
 import {
   DropdownMenu,

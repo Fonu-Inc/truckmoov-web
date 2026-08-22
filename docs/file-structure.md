@@ -50,6 +50,7 @@ shared/
   services/
   utils/
   types/
+  lib/
 ```
 
 Same categories as a feature, minus `pages/` and `forms/` under `components/`. A page is a

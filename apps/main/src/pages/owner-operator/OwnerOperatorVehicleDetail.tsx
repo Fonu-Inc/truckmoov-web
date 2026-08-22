@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import {
   useNavigate, useParams,
-} from "react-router-dom";
+} from "react-router";
 import { DeviceHealthBadge } from "@/components/devices/DeviceHealthBadge";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { VehicleLiveMap } from "@/components/owner-operator/VehicleLiveMap";

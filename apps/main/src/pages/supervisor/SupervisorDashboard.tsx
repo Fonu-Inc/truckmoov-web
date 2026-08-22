@@ -7,7 +7,7 @@ import {
 import {
   useMemo, useState,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell,
   Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,

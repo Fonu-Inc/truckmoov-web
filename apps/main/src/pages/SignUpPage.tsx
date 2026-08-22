@@ -10,7 +10,7 @@ import { useForm } from "react-hook-form";
 
 import {
   Link, useNavigate,
-} from "react-router-dom";
+} from "react-router";
 import { toast } from "sonner";
 import * as z from "zod";
 import { Button } from "@/components/shadcn/button";
