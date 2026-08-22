@@ -27,7 +27,7 @@ features/[feature-name]/
     ui/         presentational pieces for this feature
     forms/      react-hook-form + zod forms (see docs/forms.md)
     layout/     shells, sidebars, headers scoped to the feature
-    provider/   React context providers
+    providers/  React context providers
   hooks/
   stores/
   services/
@@ -44,7 +44,7 @@ shared/
   components/
     ui/
     layout/
-    provider/
+    providers/
   hooks/
   stores/
   services/
@@ -106,4 +106,12 @@ Colocated next to their subject: `NotificationPreferencesPanel.tsx` sits beside
 | A hook used by two features | `shared/hooks/` |
 | A button/badge/table used everywhere | `shared/components/ui/` |
 | A shadcn primitive | `packages/reusables` (import via `@/components/shadcn/*`) |
+| A route screen shared by **two apps** | `packages/reusables/src/components/pages/` |
 | An API call | `packages/api`, wrapped by a feature `services/` or `hooks/` file |
+
+`components/pages/` in `reusables` is the one exception to "a page belongs to a
+feature": it holds route screens that are identical in every app and own no
+domain logic — the 404, 403 and crash screens (see
+[design.md](design.md#status-screens)). A page with any domain meaning still
+belongs to a feature in its own app. Helpers those screens need go in
+`packages/reusables/src/utils/`.

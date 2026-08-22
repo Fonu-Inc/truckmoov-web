@@ -1,8 +1,9 @@
+import NotAuthorized from "@truckmoov/reusables/components/pages/NotAuthorized";
+import NotFound from "@truckmoov/reusables/components/pages/NotFound";
 import { createBrowserRouter } from "react-router";
 import App from "@/App";
-import AuthPage from "@/pages/AuthPage";
-import NotAuthorized from "@/pages/NotAuthorized";
-import NotFound from "@/pages/NotFound";
+import { AuthLayout } from "@/features/auth/components/layout/AuthLayout";
+import AuthPage from "@/features/auth/components/pages/AuthPage";
 import DeviceSimulator from "@/pages/platform/DeviceSimulator";
 import PlatformBilling from "@/pages/platform/PlatformBilling";
 import PlatformCommunications from "@/pages/platform/PlatformCommunications";
@@ -28,9 +29,17 @@ export const router = createBrowserRouter([
   {
     Component: App,
     children: [
+      // AuthLayout supplies the branding panel and derives its help mode from
+      // the pathname, so it wraps the auth screen rather than the page
+      // rendering the panel itself.
       {
-        path: "/auth",
-        Component: AuthPage,
+        Component: AuthLayout,
+        children: [
+          {
+            path: "/auth",
+            Component: AuthPage,
+          },
+        ],
       },
       {
         path: "/not-authorized",

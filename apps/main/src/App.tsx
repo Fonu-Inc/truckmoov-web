@@ -1,5 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@truckmoov/api/lib/query-client";
+import { ErrorBoundary } from "@truckmoov/reusables/components/ErrorBoundary";
 import { useEffect } from "react";
 import { Outlet } from "react-router";
 import { Toaster as Sonner } from "@/components/shadcn/sonner";
@@ -38,7 +39,9 @@ function App() {
               <Sonner />
               <FonuCallProvider>
                 <AuthGuard>
-                  <Outlet />
+                  <ErrorBoundary variant="page">
+                    <Outlet />
+                  </ErrorBoundary>
                   <GlobalSupportChat />
                 </AuthGuard>
               </FonuCallProvider>

@@ -331,16 +331,3 @@ export function getSidebarConfig(user: AuthUser | null): SidebarConfig | null {
     homeRoute, entries: getEntriesForRole(user!.role),
   };
 }
-
-export function getAllowedRoutes(config: SidebarConfig): string[] {
-  const routes: string[] = [config.homeRoute];
-  for (const entry of config.entries) {
-    if (isNavGroup(entry)) {
-      routes.push(...entry.items.map(i => i.href));
-    }
-    else {
-      routes.push(entry.href);
-    }
-  }
-  return routes;
-}

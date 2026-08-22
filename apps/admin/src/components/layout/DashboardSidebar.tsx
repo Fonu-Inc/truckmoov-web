@@ -3,6 +3,7 @@ import type {
   SidebarNavGroup,
   SidebarNavItem,
 } from "@/lib/sidebarConfig";
+import mtnLogoDark from "@truckmoov/reusables/assets/mtn-logo-dark.svg";
 import {
   ChevronDown,
   Headphones,
@@ -18,7 +19,6 @@ import {
   NavLink,
   useLocation,
 } from "react-router";
-import mtnLogoDark from "@/assets/mtn-logo-dark.svg";
 import {
   Collapsible,
   CollapsibleContent,

@@ -3,6 +3,7 @@ import type {
 } from "@/lib/sidebarConfig";
 import { useQuery } from "@tanstack/react-query";
 import { getOrganizationSettingsQueryOptions } from "@truckmoov/api/auth";
+import mtnLogoDark from "@truckmoov/reusables/assets/mtn-logo-dark.svg";
 import {
   Avatar, AvatarFallback, AvatarImage,
 } from "@truckmoov/reusables/components/shadcn/avatar";
@@ -20,7 +21,6 @@ import {
 import {
   NavLink, useLocation,
 } from "react-router";
-import mtnLogoDark from "@/assets/mtn-logo-dark.svg";
 import {
   Collapsible,
   CollapsibleContent,

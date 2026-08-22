@@ -45,7 +45,7 @@ function App() {
               <Sonner />
               <FonuCallProvider>
                 <AuthGuard>
-                  <ErrorBoundary>
+                  <ErrorBoundary variant="page">
                     <Outlet />
                   </ErrorBoundary>
                   <AuthenticatedSupportChat />

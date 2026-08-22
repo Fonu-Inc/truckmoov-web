@@ -7,7 +7,6 @@ import {
   getDummyNotificationsForStakeholder,
   resolveStakeholderForNotifications,
 } from "@/lib/dummyNotifications";
-import { useActiveOrgStore } from "@/stores/activeOrgStore";
 import { useAuthStore } from "@/stores/authStore";
 
 export type PlatformNotification = {
@@ -23,18 +22,10 @@ export type PlatformNotification = {
 
 export function useRealtimeNotifications() {
   const userRole = useAuthStore(s => s.user?.role ?? null);
-  const resolveActiveOrg = useActiveOrgStore(s => s.resolveActiveOrg);
-  const activeOrg = resolveActiveOrg([]);
 
   const stakeholder = useMemo(
-    () => resolveStakeholderForNotifications({
-      userRole,
-      orgType: activeOrg?.orgType,
-    }),
-    [
-      userRole,
-      activeOrg?.orgType,
-    ],
+    () => resolveStakeholderForNotifications({ userRole }),
+    [userRole],
   );
 
   const dummySeed = useMemo(

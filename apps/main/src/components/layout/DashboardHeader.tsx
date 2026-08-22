@@ -19,7 +19,6 @@ import {
 } from "@/lib/sidebarConfig";
 import { useAuthStore } from "@/stores/authStore";
 import { useSidebarStore } from "@/stores/sidebarStore";
-import { OrgSwitcher } from "./OrgSwitcher";
 import { UserProfileDropdown } from "./UserProfileDropdown";
 
 type DashboardHeaderProps = {
@@ -147,8 +146,6 @@ export function DashboardHeader({
       </div>
 
       <div className="flex items-center gap-1.5">
-        <OrgSwitcher />
-
         {/* Dynamic Search */}
         <div className="hidden md:flex items-center">
           {searchOpen

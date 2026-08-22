@@ -3,7 +3,7 @@ import { Button } from "@/components/shadcn/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
 import { CircleHelp, Mail } from "lucide-react";
 
-export type AuthHelpMode = "sign-in" | "sign-up";
+export type AuthHelpMode = "sign-in" | "sign-up" | "admin";
 
 interface AuthHelpDialogProps {
   open: boolean;
@@ -11,7 +11,9 @@ interface AuthHelpDialogProps {
   mode: AuthHelpMode;
 }
 
-const SIGN_IN_FAQS = [
+type Faq = { q: string; a: string };
+
+const SIGN_IN_FAQS: Faq[] = [
   {
     q: "I forgot my password - how do I reset it?",
     a: "Click the \"Forgot password?\" link below the password field on the sign-in form. We'll email you a secure reset link. Open the link from the same device and choose a new password (at least 8 characters).",
@@ -25,16 +27,12 @@ const SIGN_IN_FAQS = [
     a: "Make sure Caps Lock is off and your email has no typos. If you were invited, use the exact email the invitation was sent to. Still stuck? Email support for help.",
   },
   {
-    q: "What's the difference between Quick Demo Access and Sign In?",
-    a: "Quick Demo Access lets you explore FleetPro with a pre-configured role (no account needed). Sign In is for real users with credentials. Demo data is reset periodically.",
-  },
-  {
     q: "How do I get an account?",
     a: "FleetPro accounts are created by invitation from your organization's admin, or by signing up your own organization via the \"Sign up\" link below the form.",
   },
 ];
 
-const SIGN_UP_FAQS = [
+const SIGN_UP_FAQS: Faq[] = [
   {
     q: "What information do I need to sign up?",
     a: "Your full name, work email, organization name, and a password (minimum 8 characters). You'll create the first admin account for your organization.",
@@ -53,13 +51,45 @@ const SIGN_UP_FAQS = [
   },
   {
     q: "Is there a free trial?",
-    a: "Yes - new organizations get access to a trial tier. You can also try Quick Demo Access on the sign-in screen to explore the platform without creating an account.",
+    a: "Yes - new organizations get access to a trial tier.",
   },
 ];
 
+const ADMIN_FAQS: Faq[] = [
+  {
+    q: "I forgot my password - how do I reset it?",
+    a: "Platform admin passwords are reset by the platform team; this screen has no self-service reset link. Email support from your registered address and we'll issue a reset.",
+  },
+  {
+    q: "My credentials aren't working",
+    a: "Make sure Caps Lock is off and your email has no typos. Platform admin accounts are separate from tenant FleetPro accounts - check you're on the admin app and not the tenant sign-in.",
+  },
+  {
+    q: "How do I get a platform admin account?",
+    a: "Platform admin access is provisioned by the platform team, not self-service. There is no sign-up on this screen.",
+  },
+  {
+    q: "What does platform admin access cover?",
+    a: "Tenants, devices, IoT SIMs and data bundles across the whole platform, plus billing, security, and compliance auditing.",
+  },
+];
+
+/** Keyed rather than a ternary chain so a new mode is a compile error, not a silent fallback. */
+const FAQS: Record<AuthHelpMode, Faq[]> = {
+  "sign-in": SIGN_IN_FAQS,
+  "sign-up": SIGN_UP_FAQS,
+  "admin": ADMIN_FAQS,
+};
+
+const TITLES: Record<AuthHelpMode, string> = {
+  "sign-in": "Sign In Help",
+  "sign-up": "Sign Up Help",
+  "admin": "Admin Sign In Help",
+};
+
 export function AuthHelpDialog({ open, onOpenChange, mode }: AuthHelpDialogProps) {
-  const faqs = mode === "sign-up" ? SIGN_UP_FAQS : SIGN_IN_FAQS;
-  const title = mode === "sign-up" ? "Sign Up Help" : "Sign In Help";
+  const faqs = FAQS[mode];
+  const title = TITLES[mode];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

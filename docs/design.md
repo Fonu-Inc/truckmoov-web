@@ -15,6 +15,7 @@ Source of truth files:
 | Top bar | `apps/main/src/components/layout/DashboardHeader.tsx` |
 | Navigation per role | `apps/main/src/lib/sidebarConfig.ts` |
 | UI primitives | `packages/reusables/src/components/shadcn/` |
+| Status screens (404 / 403 / crash) | `packages/reusables/src/components/pages/` |
 
 ## Identity
 
@@ -86,7 +87,7 @@ Scrollbars are restyled globally to a 6px muted thumb.
 ```
 ┌────────────┬──────────────────────────────────────────┐
 │  Sidebar   │  DashboardHeader (title, search, bell,   │
-│  w-64      │  org switcher, profile)                  │
+│  w-64      │  profile)                                │
 │  (w-20     ├──────────────────────────────────────────┤
 │ collapsed) │  TrialBanner (conditional)               │
 │            ├──────────────────────────────────────────┤
@@ -107,9 +108,10 @@ Scrollbars are restyled globally to a 6px muted thumb.
 - Content column is `bg-card`, one step lighter than the sidebar — that
   contrast *is* the layout separation. Don't add a border to fake it.
 - Sidebar, header, and page content each sit in their own `ErrorBoundary`; one
-  broken page never blanks the shell.
-- `OnboardingRouteGate` wraps children and can redirect users who haven't
-  finished KYC/onboarding.
+  broken page never blanks the shell. See [Status screens](#status-screens).
+- `OnboardingRouteGate` wraps children and is a pass-through in both apps today
+  ("soft gate: never blocks navigation"); write actions are gated at the
+  action/button level instead. It is the seam if route gating is ever added.
 - Header `title` is auto-overridden by the active sidebar entry's label, so the
   top bar and nav never disagree. The `title` prop is the fallback.
 - Global search (`⌘K`-style shortcuts in `hooks/useKeyboardShortcuts.ts`) and
@@ -157,9 +159,18 @@ Active item styling: `bg-primary/10 text-primary` with a 2px left primary
 border. Inactive: `text-sidebar-foreground/80` with `hover:bg-sidebar-accent`.
 
 **To add a page to the nav, add one entry to `SIDEBAR_ENTRIES` in
-`sidebarConfig.ts` with the roles that may see it** — `getAllowedRoutes()`
-derives route authorization from the same config, so a page added only to the
-router is unreachable/unauthorized by design.
+`sidebarConfig.ts` with the roles that may see it.**
+
+`hasPermission` controls **sidebar visibility only** — it is not route
+authorization. There is no route-level guard: `AuthGuard` checks for a session
+(and nothing else), so any authenticated user can reach any path in the route
+table by typing it, whatever their role. Treat the sidebar as navigation, and
+gate anything that actually matters at the action or query level.
+
+`/not-authorized` is therefore reached only via `getPostLoginRedirectPath`, when
+a role is missing from `ROLE_REDIRECT_MAP` (`features/auth/utils/authRedirect.ts`),
+or by typing the URL. If real route gating is ever added, `OnboardingRouteGate`
+is the seam for it.
 
 The sidebar shows org branding (`branding.logoUrl`, `organizationName` from
 `getOrganizationSettingsQueryOptions`), falling back to the MTN logo, plus a
@@ -202,6 +213,53 @@ Conventions that repeat across pages:
   map, never inline conditionals.
 - Search/status/filter state is plain `useState` in the page; filtering is done
   client-side over the query result.
+
+## Status screens
+
+404, 403 and crash all render the same full-bleed diagnostic panel, shared by
+both apps from `packages/reusables/src/components/pages/`:
+
+| Screen | File | Code | Accent |
+|---|---|---|---|
+| 404 catch-all | `NotFound.tsx` | 404 | `primary` — a wrong turn, not a fault |
+| No access | `NotAuthorized.tsx` | 403 | `destructive` |
+| Crash fallback | `AppError.tsx` | 500 | `destructive` |
+
+They compose `StatusScreen.tsx`, which is presentational — no router, no stores,
+the action is a `children` slot. That is what lets both apps import the pages
+directly in `shared/lib/route.ts` instead of keeping a copy each.
+
+The panel is a solid `bg-card` card with a **2px accent left rail** — the same
+device the sidebar uses for its active item — an eyebrow log line, the status
+code as a flat `font-mono` numeral beside the `h1`, and one detail chip when
+there is a fact worth showing (404 shows the requested path). No icon medallion,
+no gradient, no glow. Motion is one `animate-fade-in` with
+`motion-reduce:animate-none`.
+
+Every screen carries exactly **one** action: `GoBackButton`. It falls back to
+`/` when there is no in-app history, so the button never dead-ends — `/`
+resolves to the role home in main and the platform dashboard in admin. The
+depth check is `utils/goBack.ts`: `history.state.idx > 0`. Do **not** use
+`history.length` (it counts the whole tab session, so it is > 1 even in a fresh
+tab) or `location.key === "default"` (`createBrowserRouter` always generates a
+key, so it never equals `"default"`).
+
+### ErrorBoundary
+
+`ErrorBoundary` takes `variant`:
+
+- `inline` (default) — compact card in the slot that broke, with `Try again`.
+  Used for the sidebar / header / page-content boundaries in `DashboardLayout`.
+- `page` — `AppError` full screen. Used around `<Outlet/>` in both `App.tsx`.
+
+```tsx
+<ErrorBoundary variant="page"><Outlet /></ErrorBoundary>
+```
+
+Both variants render `ErrorDetails`, which shows the error name, message, stack
+frames and component stack plus a **Copy error details** button — and renders
+`null` unless `import.meta.env.DEV`. Production sees the message and the button,
+never a stack.
 
 ## Component rules
 

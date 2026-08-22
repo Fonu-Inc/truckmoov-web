@@ -1,8 +1,16 @@
+import NotAuthorized from "@truckmoov/reusables/components/pages/NotAuthorized";
+import NotFound from "@truckmoov/reusables/components/pages/NotFound";
 import {
   createBrowserRouter, redirect,
 } from "react-router";
 import App from "@/App";
-import { RoleHomeRedirect } from "@/features/auth/components/RoleHomeRedirect";
+import { AuthLayout } from "@/features/auth/components/layout/AuthLayout";
+import AuthPage from "@/features/auth/components/pages/AuthPage";
+import ForgotPasswordPage from "@/features/auth/components/pages/ForgotPasswordPage";
+import InvitePage from "@/features/auth/components/pages/InvitePage";
+import ResetPasswordPage from "@/features/auth/components/pages/ResetPasswordPage";
+import SignUpPage from "@/features/auth/components/pages/SignUpPage";
+import { RoleHomeRedirect } from "@/features/auth/components/ui/RoleHomeRedirect";
 import DataBundles from "@/pages/admin/DataBundles";
 import DeviceInstallation from "@/pages/admin/DeviceInstallation";
 import DeviceManagement from "@/pages/admin/DeviceManagement";
@@ -27,7 +35,6 @@ import VehiclePLStatementPreview from "@/pages/admin/VehiclePLStatementPreview";
 import WaybillInvoices from "@/pages/admin/WaybillInvoices";
 import AggregatorDashboard from "@/pages/aggregator/AggregatorDashboard";
 import Architecture from "@/pages/Architecture";
-import AuthPage from "@/pages/AuthPage";
 import DebugMap from "@/pages/debug/DebugMap";
 import DispatcherAlerts from "@/pages/dispatcher/DispatcherAlerts";
 import DispatcherDashboard from "@/pages/dispatcher/DispatcherDashboard";
@@ -40,10 +47,6 @@ import DispatcherMessages from "@/pages/dispatcher/DispatcherMessages";
 import DispatcherReports from "@/pages/dispatcher/DispatcherReports";
 import DispatcherSIMs from "@/pages/dispatcher/DispatcherSIMs";
 import EnterpriseLogisticsDashboard from "@/pages/enterprise/EnterpriseLogisticsDashboard";
-import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
-import InvitePage from "@/pages/InvitePage";
-import NotAuthorized from "@/pages/NotAuthorized";
-import NotFound from "@/pages/NotFound";
 import ActivationOnboarding from "@/pages/onboarding/ActivationOnboarding";
 import KycOnboarding from "@/pages/onboarding/KycOnboarding";
 import SubscriptionOnboarding from "@/pages/onboarding/SubscriptionOnboarding";
@@ -53,8 +56,6 @@ import OwnerOperatorDocuments from "@/pages/owner-operator/OwnerOperatorDocument
 import OwnerOperatorJobs from "@/pages/owner-operator/OwnerOperatorJobs";
 import OwnerOperatorVehicleDetail from "@/pages/owner-operator/OwnerOperatorVehicleDetail";
 import OwnerOperatorVehicles from "@/pages/owner-operator/OwnerOperatorVehicles";
-import ResetPassword from "@/pages/ResetPassword";
-import SignUpPage from "@/pages/SignUpPage";
 import SupervisorAlerts from "@/pages/supervisor/SupervisorAlerts";
 import SupervisorDashboard from "@/pages/supervisor/SupervisorDashboard";
 import SupervisorDispatch from "@/pages/supervisor/SupervisorDispatch";
@@ -76,22 +77,31 @@ export const router = createBrowserRouter([
   {
     Component: App,
     children: [
-      // Auth
+      // Auth screens that share the split branding panel. AuthLayout derives
+      // the help mode from the pathname, so it wraps them rather than each
+      // page rendering the panel itself.
       {
-        path: "/auth",
-        Component: AuthPage,
+        Component: AuthLayout,
+        children: [
+          {
+            path: "/auth",
+            Component: AuthPage,
+          },
+          {
+            path: "/auth/signup",
+            Component: SignUpPage,
+          },
+          {
+            path: "/auth/forgot-password",
+            Component: ForgotPasswordPage,
+          },
+        ],
       },
-      {
-        path: "/auth/signup",
-        Component: SignUpPage,
-      },
-      {
-        path: "/auth/forgot-password",
-        Component: ForgotPasswordPage,
-      },
+
+      // These two use their own centred card shell, not the panel.
       {
         path: "/auth/reset-password",
-        Component: ResetPassword,
+        Component: ResetPasswordPage,
       },
       {
         path: "/auth/invite",
