@@ -1,3 +1,4 @@
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
   Clock, Mail, Plus, Search, Shield, SlidersHorizontal, Trash2, Users, XCircle,
@@ -412,11 +413,7 @@ export function PlatformTeamManagement() {
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-primary-foreground">
-                                {platformUser.fullName
-                                  .split(" ")
-                                  .map(n => n[0])
-                                  .join("")
-                                  .toUpperCase()}
+                                {getInitials(platformUser.fullName)}
                               </div>
                               <div>
                                 <p className="font-medium">{platformUser.fullName}</p>

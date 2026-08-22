@@ -1,3 +1,4 @@
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   formatDayMonthTime, formatTime,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -35,8 +36,8 @@ import {
   DialogTitle,
 } from "@/components/shadcn/dialog";
 import { Label } from "@/components/shadcn/label";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
 
+import { ScrollArea } from "@/components/shadcn/scroll-area";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
@@ -413,7 +414,7 @@ export default function SupervisorDrivers() {
                                         "bg-gradient-to-br from-primary to-accent",
                                       )}
                                       >
-                                        {msg.driver_name?.split(" ").map((n: string) => n[0]).join("") || "?"}
+                                        {getInitials(msg.driver_name)}
                                       </div>
                                       <div>
                                         <p className="font-medium">{msg.driver_name || "Unknown"}</p>
@@ -620,7 +621,7 @@ export default function SupervisorDrivers() {
               callStatus === "ringing" && "animate-pulse",
             )}
             >
-              {selectedContactName?.split(" ").map(n => n[0]).join("")}
+              {getInitials(selectedContactName)}
             </div>
             <p className="text-xl font-semibold">{selectedContactName}</p>
             <p className="text-muted-foreground">{selectedContactPhone}</p>
@@ -690,7 +691,7 @@ export default function SupervisorDrivers() {
           <div className="space-y-4 py-4">
             <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
               <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-base font-bold text-white">
-                {selectedContactName?.split(" ").map(n => n[0]).join("")}
+                {getInitials(selectedContactName)}
               </div>
               <div>
                 <p className="font-semibold">{selectedContactName}</p>
@@ -772,7 +773,7 @@ export default function SupervisorDrivers() {
             </div>
             <div className="flex items-center gap-3 p-3 bg-[#25D366]/5 rounded-lg border border-[#25D366]/20">
               <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-bold text-white">
-                {selectedContactName?.split(" ").map(n => n[0]).join("")}
+                {getInitials(selectedContactName)}
               </div>
               <div>
                 <p className="font-medium">{selectedContactName}</p>

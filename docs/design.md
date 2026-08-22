@@ -136,9 +136,18 @@ Scrollbars are restyled globally to a 6px muted thumb.
 </DashboardLayout>
 ```
 
-- Fixed sidebar; content column offsets with `ml-64` / `ml-20`, animated
-  `transition-all duration-300`. Collapse state lives in
-  `stores/sidebarStore.ts` (Zustand), so it persists across routes.
+- Fixed sidebar; content column offsets with `ml-64` / `ml-20`. The collapse is
+  **not animated** — `transition-all duration-300` on a full-height fixed element
+  and its content column forced a layout pass on the whole page for 300ms per
+  toggle. Width snaps instead. Nothing in the sidebar transitions a layout
+  property; rows use `transition-colors` only.
+- Collapse state lives in `features/dashboard/stores/sidebarStore.ts` (Zustand
+  with `persist`), so it survives navigation *and* reload. The localStorage key
+  is per app (`main-sidebar` / `admin-sidebar`) because both dev servers share
+  `localhost`'s storage across ports.
+- A 2px primary bar at the very top of the shell shows `useNavigation().state`.
+  Page chunks load on demand (see below), so a click can block briefly; without
+  the bar that wait reads as the app freezing.
 - Content column is `bg-card`, one step lighter than the sidebar — that
   contrast *is* the layout separation. Don't add a border to fake it.
 - Sidebar, header, and page content each sit in their own `ErrorBoundary`; one
@@ -167,15 +176,25 @@ markup. Roles:
 | `DISPATCHER` | see config | Dispatch subset |
 | `FINANCE_VIEWER` | see config | Read-only financial subset |
 
-Entries are either a flat `SidebarNavItem` or a `SidebarNavGroup` (collapsible,
-e.g. "Communications" → Messaging Center / Omnichannel Inbox). Groups
-auto-expand when a child route is active. Badges come from `badgeKey`
-(`messages`, `jobOffers`) resolved against live realtime counts.
+In `apps/main`, entries are either a flat `SidebarNavItem` or a
+`SidebarNavGroup` (collapsible, e.g. "Communications" → Messaging Center /
+Omnichannel Inbox). A group auto-expands when a child route is active and closes
+again when you navigate away — unless you toggled it by hand, which takes over
+from then on. `apps/admin` has no groups, and its `sidebarNav.ts` deliberately
+does not define the type: a stray `items` array there fails to compile rather
+than rendering nothing. Adding a group to admin means copying the machinery
+across from main.
+
+There are **no nav badges**. `badgeKey` / `badge` and the `useRealtimeMessages`
+hook behind them are gone — the counts were a stubbed `useState(0)`, so every
+badge was decoration. They come back with a real feed.
 
 All entries for all roles live in **one** `SIDEBAR_ENTRIES` array. Visibility is
 a per-entry `hasPermission: UserRole[]` — a role sees an entry iff its key is
-listed — and `getEntriesForRole(role)` filters that array. There are no
-per-role entry arrays. Two consequences:
+listed — and `getEntriesForRole(role)` filters that array, caching the result per
+role. `SIDEBAR_ENTRIES` is a module constant, so a role's answer can never go
+stale, and the cache is what makes the sidebar's `memo`'d rows referentially
+stable. There are no per-role entry arrays. Two consequences:
 
 - One route means one entry with one label. A page is called the same thing for
   everybody who can reach it — `/fleet` is "Fleet" for the fleet provider,
@@ -193,7 +212,41 @@ Active item styling: `bg-primary/10 text-primary` with a 2px left primary
 border. Inactive: `text-sidebar-foreground/80` with `hover:bg-sidebar-accent`.
 
 **To add a page to the nav, add one entry to `SIDEBAR_ENTRIES` in
-`sidebarConfig.ts` with the roles that may see it.**
+`sidebarNav.ts` with the roles that may see it.**
+
+### Sidebar rendering rules
+
+The sidebar re-renders once per session, not once per navigation. Three rules
+keep it that way — break any of them and every click pays for the whole tree:
+
+- `DashboardSidebar` is `memo`'d and takes **no props**, so `DashboardLayout`
+  re-rendering for the page title stops at the sidebar boundary.
+- **Nothing at the top of the sidebar reads the location.** Active styling comes
+  from `NavLink`'s own `className={({ isActive }) => …}` render prop, so a click
+  updates the two anchors whose state changed. `useLocation()` appears only
+  inside `NavGroup` (main only, one or two instances), which needs the pathname
+  to auto-expand.
+- The active left rail is always rendered as `border-l-2 border-transparent` and
+  only changes colour. Toggling the border on and off changed the row's box
+  metrics, making every navigation a layout pass instead of a repaint.
+
+An href carrying a query (`/fleet?tab=maintenance`) never highlights: `NavLink`
+matches on pathname only, so it would light up on plain `/fleet` next to the real
+Fleet row.
+
+### Route code splitting
+
+`shared/lib/route.ts` loads pages through react-router's `lazy`, one chunk per
+page, in both apps:
+
+```ts
+{ path: "/fleet", lazy: async () => ({ Component: (await import("@/pages/admin/FleetManagement")).default }) }
+```
+
+`App`, both layouts, the auth pages, `RoleHomeRedirect` and the 404/403 screens
+stay eagerly imported — small, critical path, and a spinner in place of the login
+form is worse than the bytes. There is no `Suspense` boundary; the router owns
+the pending state and `DashboardLayout` renders it as the top progress bar.
 
 `hasPermission` controls **sidebar visibility only** — it is not route
 authorization. There is no route-level guard: `AuthGuard` checks for a session
@@ -317,10 +370,17 @@ never a stack.
 
 - Server data: React Query via `@truckmoov/api` (`packages/api`). Apps never
   call endpoints directly — see [api.md](api.md).
-- Client state: Zustand stores in `apps/main/src/stores/` (`authStore`,
-  `sidebarStore`, …).
-- Realtime: `useRealtimeNotifications`, `useRealtimeMessages` feed the header
-  bell and sidebar badges.
+- Client state: Zustand. A store belongs to the feature that owns it —
+  `features/dashboard/stores/sidebarStore.ts`. `authStore` is still in the loose
+  `src/stores/`, which [file-structure.md](file-structure.md) says means "not
+  placed yet"; move it when something else touches it.
+- **Subscribe with a selector**, always: `useSidebarStore(s => s.collapsed)`, not
+  `const { collapsed } = useSidebarStore()`. The destructuring form subscribes to
+  the whole store, so any write anywhere re-renders the component.
+- Realtime: nothing is wired. `useRealtimeNotifications`, `useRealtimeMessages`
+  and `lib/dummyNotifications.ts` are deleted — they served invented alerts and
+  hardcoded zero counts. The header bell (`features/dashboard/components/ui/
+  NotificationCenter.tsx`) is a stateless empty state until a real feed exists.
 
 ## Notes
 

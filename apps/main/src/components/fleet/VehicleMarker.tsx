@@ -1,4 +1,5 @@
 import type { Vehicle } from "@/types";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   Clock, Fuel, Gauge, Navigation, Truck,
@@ -110,7 +111,7 @@ export function VehicleInfoCard({
         {driverName && (
           <div className="flex items-center gap-2 text-muted-foreground">
             <span className="h-4 w-4 rounded-full bg-primary/20 text-primary text-xs flex items-center justify-center font-bold">
-              {driverName.charAt(0)}
+              {getInitials(driverName)}
             </span>
             <span>{driverName}</span>
           </div>

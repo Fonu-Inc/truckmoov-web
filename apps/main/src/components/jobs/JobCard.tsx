@@ -1,4 +1,5 @@
 import type { Job } from "@/types";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import {
   Activity, Banknote, Calendar, Eye, Hash,
@@ -250,7 +251,7 @@ export function JobCard({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-[10px] font-medium text-primary-foreground shrink-0">
-                    {driver.name.split(" ").map(n => n[0]).join("")}
+                    {getInitials(driver.name)}
                   </div>
                   <TooltipProvider delayDuration={200}>
                     <Tooltip>

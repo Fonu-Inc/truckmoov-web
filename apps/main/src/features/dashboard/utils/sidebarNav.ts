@@ -29,8 +29,6 @@ export type SidebarNavItem = {
   label: string;
   href: string;
   icon: LucideIcon;
-  badge?: number;
-  badgeKey?: string;
   /** Page owns its own padding — DashboardLayout drops the `p-6` on `<main>`. */
   fullWidth?: boolean;
   /** Roles allowed to see this entry. On a group child, omit to inherit the group's roles. */
@@ -40,7 +38,6 @@ export type SidebarNavItem = {
 export type SidebarNavGroup = {
   label: string;
   icon: LucideIcon;
-  badgeKey?: string;
   items: SidebarNavItem[];
   hasPermission?: UserRole[];
 };
@@ -103,7 +100,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     label: "My Jobs", href: "/owner-operator/jobs", icon: Package, hasPermission: ["OWNER_OPERATOR"],
   },
   {
-    label: "Job Offers", href: "/job-offers", icon: Inbox, badgeKey: "jobOffers", hasPermission: ["OWNER_OPERATOR"],
+    label: "Job Offers", href: "/job-offers", icon: Inbox, hasPermission: ["OWNER_OPERATOR"],
   },
   {
     label: "Dispatch", href: "/dispatcher/dispatch", icon: Telescope, hasPermission: ["DISPATCHER"],
@@ -219,7 +216,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     label: "Documents", href: "/owner-operator/documents", icon: FileText, hasPermission: ["OWNER_OPERATOR"],
   },
   {
-    label: "Alerts", href: "/dispatcher/alerts", icon: Bell, badge: 3, hasPermission: ["DISPATCHER"],
+    label: "Alerts", href: "/dispatcher/alerts", icon: Bell, hasPermission: ["DISPATCHER"],
   },
 
   // ─── Analytics ─────────────────────────────────────────────────
@@ -234,7 +231,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   {
     label: "Communications",
     icon: Bell,
-    badgeKey: "messages",
     items: [
       {
         label: "Messaging Center", href: "/messages", icon: Send,
@@ -254,7 +250,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   {
     label: "Communications",
     icon: Bell,
-    badgeKey: "messages",
     items: [
       {
         label: "Messaging Center", href: "/dispatcher/messages", icon: Send,
@@ -302,6 +297,49 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     ],
   },
 ];
+
+const entriesByRole = new Map<UserRole, SidebarEntry[]>();
+
+/**
+ * The entries this role may see, in `SIDEBAR_ENTRIES` order. A group whose
+ * children are all filtered out drops away with them.
+ *
+ * ponytail: cached per role and never invalidated — `SIDEBAR_ENTRIES` is a
+ * module constant, so the answer for a role cannot change while the tab is
+ * open. Seven roles, so the map holds seven arrays at most. The payoff is
+ * referential stability: the sidebar's `memo`'d rows never see a new prop
+ * object, so navigating re-renders no part of the nav tree.
+ */
+export function getEntriesForRole(role: UserRole): SidebarEntry[] {
+  const cached = entriesByRole.get(role);
+  if (cached)
+    return cached;
+
+  const visible: SidebarEntry[] = [];
+  for (const entry of SIDEBAR_ENTRIES) {
+    if (!entry.hasPermission.includes(role))
+      continue;
+    if (isNavGroup(entry)) {
+      // A group child omits `hasPermission` to inherit the group's.
+      const items = entry.items.filter(i => i.hasPermission?.includes(role) ?? true);
+      if (items.length) {
+        visible.push(items.length === entry.items.length
+          ? entry
+          : {
+              ...entry, items,
+            });
+      }
+      continue;
+    }
+    visible.push(entry);
+  }
+
+  entriesByRole.set(
+    role,
+    visible,
+  );
+  return visible;
+}
 
 /**
  * Deepest entry whose href matches this pathname — exact match wins, else the

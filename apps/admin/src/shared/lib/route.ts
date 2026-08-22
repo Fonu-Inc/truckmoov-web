@@ -5,19 +5,6 @@ import App from "@/App";
 import { AuthLayout } from "@/features/auth/components/layout/AuthLayout";
 import AuthPage from "@/features/auth/components/pages/AuthPage";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
-import PlatformDashboard from "@/features/dashboard/components/pages/PlatformDashboard";
-import DeviceSimulator from "@/pages/platform/DeviceSimulator";
-import PlatformBilling from "@/pages/platform/PlatformBilling";
-import PlatformCommunications from "@/pages/platform/PlatformCommunications";
-import PlatformComplianceAudit from "@/pages/platform/PlatformComplianceAudit";
-import PlatformDataBundles from "@/pages/platform/PlatformDataBundles";
-import PlatformDevices from "@/pages/platform/PlatformDevices";
-import PlatformMessagingCenter from "@/pages/platform/PlatformMessagingCenter";
-import PlatformSecurity from "@/pages/platform/PlatformSecurity";
-import PlatformSettings from "@/pages/platform/PlatformSettings";
-import PlatformSIMs from "@/pages/platform/PlatformSIMs";
-import PlatformSupport from "@/pages/platform/PlatformSupport";
-import PlatformTenants from "@/pages/platform/PlatformTenants";
 
 /**
  * App is a pathless layout route: it owns the provider tower, the AuthGuard
@@ -30,6 +17,16 @@ import PlatformTenants from "@/pages/platform/PlatformTenants";
  * renders the dashboard shell, so the sidebar and top bar mount once instead
  * of per page. Auth and the 404/403 screens sit outside it — they own their
  * own chrome.
+ *
+ * Pages are loaded through react-router's `lazy`, not imported at the top: each
+ * becomes its own chunk that arrives when the route is first visited. Eagerly
+ * importing all of them put every platform table, chart and simulator into the
+ * initial bundle, so the first paint waited on code for pages nobody had opened.
+ * `DashboardLayout` renders the router's pending state while a chunk loads.
+ *
+ * `App`, the two layouts, the auth page and the status screens stay eager —
+ * they are small and on the critical path, and a spinner in place of the login
+ * form would be worse than the bytes.
  */
 export const router = createBrowserRouter([
   {
@@ -56,55 +53,55 @@ export const router = createBrowserRouter([
         children: [
           {
             path: "/",
-            Component: PlatformDashboard,
+            lazy: async () => ({ Component: (await import("@/features/dashboard/components/pages/PlatformDashboard")).default }),
           },
           {
             path: "/tenants",
-            Component: PlatformTenants,
+            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformTenants")).default }),
           },
           {
             path: "/devices",
-            Component: PlatformDevices,
+            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformDevices")).default }),
           },
           {
             path: "/sims",
-            Component: PlatformSIMs,
+            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformSIMs")).default }),
           },
           {
             path: "/data-bundles",
-            Component: PlatformDataBundles,
+            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformDataBundles")).default }),
           },
           {
             path: "/simulator",
-            Component: DeviceSimulator,
+            lazy: async () => ({ Component: (await import("@/pages/platform/DeviceSimulator")).default }),
           },
           {
             path: "/communications",
-            Component: PlatformCommunications,
+            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformCommunications")).default }),
           },
           {
             path: "/messaging",
-            Component: PlatformMessagingCenter,
+            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformMessagingCenter")).default }),
           },
           {
             path: "/billing",
-            Component: PlatformBilling,
+            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformBilling")).default }),
           },
           {
             path: "/security",
-            Component: PlatformSecurity,
+            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformSecurity")).default }),
           },
           {
             path: "/compliance-audit",
-            Component: PlatformComplianceAudit,
+            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformComplianceAudit")).default }),
           },
           {
             path: "/settings",
-            Component: PlatformSettings,
+            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformSettings")).default }),
           },
           {
             path: "/support",
-            Component: PlatformSupport,
+            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformSupport")).default }),
           },
         ],
       },

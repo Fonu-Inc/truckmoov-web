@@ -1,3 +1,4 @@
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   Activity, Brain, Inbox, Loader2,
   Mail, MessageSquare, Send, Users,
@@ -19,10 +20,10 @@ import {
   DialogTitle,
 } from "@/components/shadcn/dialog";
 import { Label } from "@/components/shadcn/label";
+
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
-
 import { Textarea } from "@/components/shadcn/textarea";
 import { useFonuCall } from "@/contexts/FonuCallContext";
 
@@ -235,7 +236,7 @@ export default function DriverManagement() {
           <div className="space-y-4 py-4">
             <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
               <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-medium text-white">
-                {selectedContactName?.split(" ").map(n => n[0]).join("")}
+                {getInitials(selectedContactName)}
               </div>
               <div>
                 <p className="font-medium">{selectedContactName}</p>

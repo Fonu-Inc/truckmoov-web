@@ -1,4 +1,5 @@
 import type { ExportColumn } from "@/lib/exportTable";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   ArrowUpRight,
   CheckCircle2,
@@ -13,10 +14,10 @@ import {
 import { useState } from "react";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
+
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import {
@@ -382,16 +383,7 @@ export function MyTickets() {
                           const status = statusConfig[ticket.status];
                           const priority = priorityConfig[ticket.priority];
                           const reporter = reporterName(ticket as DemoTicket);
-                          const initials = reporter
-                            .split(" ")
-                            .map(p => p[0])
-                            .filter(Boolean)
-                            .slice(
-                              0,
-                              2,
-                            )
-                            .join("")
-                            .toUpperCase();
+                          const initials = getInitials(reporter);
                           return (
                             <TableRow
                               key={ticket.id}
@@ -409,7 +401,7 @@ export function MyTickets() {
                               <TableCell>
                                 <div className="flex items-center gap-2 min-w-0">
                                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
-                                    {initials || "?"}
+                                    {initials}
                                   </div>
                                   <span className="text-sm truncate">{reporter}</span>
                                 </div>

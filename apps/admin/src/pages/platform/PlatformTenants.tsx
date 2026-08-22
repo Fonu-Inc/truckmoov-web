@@ -19,6 +19,7 @@ import {
   useResendTenantInvite,
   useUpdateTenantStatus,
 } from "@truckmoov/api/auth";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle,
@@ -85,7 +86,6 @@ import {
   TableRow,
 } from "@/components/shadcn/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 
 const ORG_TYPE_LABELS: Record<string, string> = {
   enterprise: "Enterprise",
@@ -223,8 +223,6 @@ function SortIcon({
 
 export default function PlatformTenants() {
   const { currency } = useCurrency();
-  const { addNotification } = useRealtimeNotifications();
-
   const queryClient = useQueryClient();
   const updateTenantStatusMutation = useUpdateTenantStatus();
   const resendTenantInviteMutation = useResendTenantInvite();
@@ -498,12 +496,7 @@ export default function PlatformTenants() {
   };
 
   const handleWizardComplete = (wizardData: { companyName?: string }) => {
-    addNotification({
-      type: "tenant_created",
-      title: "Tenant Onboarded",
-      message: `${wizardData.companyName || "New tenant"} has been onboarded successfully`,
-      severity: "success",
-    });
+    toast.success(`${wizardData.companyName || "New tenant"} onboarded`);
   };
 
   // DB Tenant handlers
@@ -513,12 +506,7 @@ export default function PlatformTenants() {
         id: tenant.id,
         data: { status: newStatus },
       });
-      addNotification({
-        type: "system",
-        title: "Tenant Status Changed",
-        message: `${tenant.name} status changed to ${newStatus}`,
-        severity: newStatus === "suspended" ? "warning" : "info",
-      });
+      toast.success(`${tenant.name} is now ${newStatus}`);
     }
     catch {
       // Error handled by react-query
@@ -806,7 +794,7 @@ export default function PlatformTenants() {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
-                              {tenant.name.charAt(0)}
+                              {getInitials(tenant.name)}
                             </div>
                             <div>
                               <p className="font-medium">{tenant.name}</p>

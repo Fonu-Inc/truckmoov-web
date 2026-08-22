@@ -7,6 +7,7 @@ import {
   getSystemTenantQueryOptions,
   useUpdateTenantStatus,
 } from "@truckmoov/api/auth";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   formatDayMonthTime,
   formatWithPattern,
@@ -50,8 +51,8 @@ import {
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Progress } from "@/components/shadcn/progress";
-import { ScrollArea } from "@/components/shadcn/scroll-area";
 
+import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Separator } from "@/components/shadcn/separator";
 import {
   Tabs,
@@ -383,7 +384,7 @@ export function TenantDetailsSheet({
         <SheetHeader>
           <SheetTitle className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-lg">
-              {tenant.name.charAt(0)}
+              {getInitials(tenant.name)}
             </div>
             <div className="flex-1">
               <span>{tenant.name}</span>

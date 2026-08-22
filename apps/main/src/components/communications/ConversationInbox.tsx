@@ -1,3 +1,4 @@
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   formatDistance, formatTime,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -307,7 +308,7 @@ export function ConversationInbox() {
                         <div className="relative">
                           <Avatar className="h-10 w-10">
                             <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-sm">
-                              {conv.driverName.split(" ").map(n => n[0]).join("")}
+                              {getInitials(conv.driverName)}
                             </AvatarFallback>
                           </Avatar>
                           <div className={cn(
@@ -370,7 +371,7 @@ export function ConversationInbox() {
                 </TooltipWrapper>
                 <Avatar className="h-10 w-10">
                   <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white">
-                    {selectedConversation.driverName.split(" ").map(n => n[0]).join("")}
+                    {getInitials(selectedConversation.driverName)}
                   </AvatarFallback>
                 </Avatar>
                 <div>

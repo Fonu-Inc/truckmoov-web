@@ -11,16 +11,15 @@ import {
   useState,
 } from "react";
 import { KeyboardShortcutsDialog } from "@/components/KeyboardShortcutsDialog";
-import { NotificationCenter } from "@/components/platform/NotificationCenter";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { ShortcutTooltip } from "@/components/shadcn/shortcut-tooltip";
+import { useSidebarStore } from "@/features/dashboard/stores/sidebarStore";
 import {
   SHORTCUTS,
   useGlobalShortcuts,
 } from "@/hooks/useKeyboardShortcuts";
-import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
-import { useSidebarStore } from "@/stores/sidebarStore";
+import { NotificationCenter } from "./NotificationCenter";
 import { UserProfileDropdown } from "./UserProfileDropdown";
 
 type DashboardHeaderProps = {
@@ -33,14 +32,6 @@ export function DashboardHeader({
   title,
   onRefresh,
 }: DashboardHeaderProps) {
-  const {
-    notifications,
-    unreadCount,
-    markAsRead,
-    markAllAsRead,
-    clearNotifications,
-  } = useRealtimeNotifications();
-
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [
     searchValue,
@@ -54,10 +45,8 @@ export function DashboardHeader({
     shortcutsOpen,
     setShortcutsOpen,
   ] = useState(false);
-  const {
-    collapsed,
-    toggle,
-  } = useSidebarStore();
+  const collapsed = useSidebarStore(s => s.collapsed);
+  const toggle = useSidebarStore(s => s.toggle);
 
   useGlobalShortcuts({
     onSearch: () => {
@@ -158,13 +147,7 @@ export function DashboardHeader({
           </Button>
         </ShortcutTooltip>
 
-        <NotificationCenter
-          notifications={notifications}
-          unreadCount={unreadCount}
-          onMarkAsRead={markAsRead}
-          onMarkAllAsRead={markAllAsRead}
-          onClear={clearNotifications}
-        />
+        <NotificationCenter />
 
         <UserProfileDropdown />
       </div>

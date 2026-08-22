@@ -3,6 +3,7 @@ import type {
   FilterDraft,
   FilterField,
 } from "@/components/shadcn/platform-filter-popover";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   formatDateInTimezone,
 
@@ -84,6 +85,7 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
+
 import {
   Dialog,
   DialogContent,
@@ -97,7 +99,6 @@ import {
   DialogHeader as SheetHeader,
   DialogTitle as SheetTitle,
 } from "@/components/shadcn/dialog";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -2102,7 +2103,7 @@ export default function PlatformSecurity() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                              {event.userName.charAt(0)}
+                              {getInitials(event.userName)}
                             </div>
                             <div>
                               <p className="font-medium text-sm">{event.userName}</p>
@@ -3329,7 +3330,7 @@ export default function PlatformSecurity() {
                     ? (
                         <div className="flex items-center gap-3">
                           <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
-                            {selectedEvent.userName?.charAt(0)}
+                            {getInitials(selectedEvent.userName)}
                           </div>
                           <div>
                             <p className="font-medium">{selectedEvent.userName}</p>
@@ -3348,7 +3349,7 @@ export default function PlatformSecurity() {
                   <h4 className="font-medium text-sm text-muted-foreground">Tenant</h4>
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">
-                      {selectedEvent.tenant.charAt(0)}
+                      {getInitials(selectedEvent.tenant)}
                     </div>
                     <p className="font-medium">{selectedEvent.tenant}</p>
                   </div>
@@ -3642,7 +3643,7 @@ export default function PlatformSecurity() {
             <div className="space-y-4 text-sm">
               <div className="flex items-center gap-3 pb-3 border-b">
                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                  {selectedLoginEvent.userName.charAt(0)}
+                  {getInitials(selectedLoginEvent.userName)}
                 </div>
                 <div>
                   <p className="font-medium">{selectedLoginEvent.userName}</p>

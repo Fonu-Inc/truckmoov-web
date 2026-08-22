@@ -6,6 +6,7 @@ import {
   useEscalateSupportTicket,
   useUpdateSupportTicketStatus,
 } from "@truckmoov/api/auth";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   ArrowUpRight,
@@ -21,8 +22,8 @@ import {
   useMemo,
   useState,
 } from "react";
-import { toast } from "sonner";
 
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import { Checkbox } from "@/components/shadcn/checkbox";
@@ -197,18 +198,6 @@ function channelFromContext(value: string) {
     default:
       return "Web";
   }
-}
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(
-      0,
-      2,
-    )
-    .map(part => part[0]?.toUpperCase() ?? "")
-    .join("") || "?";
 }
 
 function formatCreatedAt(date: string) {
@@ -498,7 +487,7 @@ export function AdminTicketSheet({
                   <FieldLabel>Reporter</FieldLabel>
                   <div className="flex items-center gap-3">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                      {initials(reporterName)}
+                      {getInitials(reporterName)}
                     </div>
                     <p className="font-semibold">{reporterName}</p>
                   </div>

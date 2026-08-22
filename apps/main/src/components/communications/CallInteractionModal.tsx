@@ -1,3 +1,4 @@
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import { formatClockDuration } from "@truckmoov/app-core/utils/time-utils";
 import {
   Circle, Mic, Phone, PhoneCall, PhoneOff, Square, StickyNote,
@@ -71,16 +72,7 @@ export function CallInteractionModal({
     [open],
   );
 
-  const initials = (contactName || "?")
-    .split(" ")
-    .map(n => n[0])
-    .filter(Boolean)
-    .slice(
-      0,
-      2,
-    )
-    .join("")
-    .toUpperCase();
+  const initials = getInitials(contactName);
 
   const statusLabel
     = status === "connecting"

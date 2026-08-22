@@ -6,13 +6,14 @@ import {
   useUpdateOrganizationSettings,
   useUploadMedia,
 } from "@truckmoov/api/auth";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   Save, Upload,
 } from "lucide-react";
+
 import {
   useEffect, useRef,
 } from "react";
-
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import {
@@ -52,14 +53,6 @@ import {
   organizationSettingsToFormValues,
   organizationSettingsToPayload,
 } from "./organizationSettingsFormConfig";
-
-function getOrganizationInitials(name: string) {
-  const initials = name.trim().split(/\s+/).filter(Boolean).slice(
-    0,
-    2,
-  ).map(part => part[0]?.toUpperCase()).join("");
-  return initials || "TM";
-}
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
@@ -208,7 +201,7 @@ export function OrganizationSettingsForm() {
                   alt={organizationName || "Organization"}
                 />
                 <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-2xl">
-                  {getOrganizationInitials(organizationName)}
+                  {getInitials(organizationName)}
                 </AvatarFallback>
               </Avatar>
               <div>

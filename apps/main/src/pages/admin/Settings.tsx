@@ -14,6 +14,7 @@ import {
   useUpdateOrganizationUser,
   useUpdateOrganizationUserStatus,
 } from "@truckmoov/api/auth";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   BarChart3, Bell, Bot, Building2, CheckCircle,
@@ -815,7 +816,7 @@ export default function Settings() {
                             <div className="flex items-center gap-3">
                               <Avatar className="h-8 w-8">
                                 <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-xs">
-                                  {tenantUser.name.split(" ").map(n => n[0]).join("")}
+                                  {getInitials(tenantUser.name)}
                                 </AvatarFallback>
                               </Avatar>
                               <div>

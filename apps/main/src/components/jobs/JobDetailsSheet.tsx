@@ -3,8 +3,9 @@ import {
   useJob, useJobTimeline,
 } from "@truckmoov/api/dispatch";
 import { useVehicle } from "@truckmoov/api/fleet";
-import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 
+import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
 import {
   Activity, Banknote, Calendar, CheckCircle, Clock,
   FileText, Hash, MapPin, MessageSquare, Package, Phone,
@@ -139,16 +140,7 @@ export function JobDetailsSheet({
   const driverName = apiJob?.assigned_driver_name || job.driverName;
   const driverPhone = apiJob?.assigned_driver_phone || job.driverPhone;
   const driverDisplayName = driverName || driverId || "Assigned driver";
-  const driverInitials = driverDisplayName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(
-      0,
-      2,
-    )
-    .map(part => part[0])
-    .join("")
-    .toUpperCase();
+  const driverInitials = getInitials(driverDisplayName);
   const uiStage = toUiStage(
     status,
     apiJob?.acknowledged_at,
@@ -292,7 +284,7 @@ export function JobDetailsSheet({
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xs font-medium text-primary-foreground shrink-0">
-                          {driverInitials || "DR"}
+                          {driverInitials}
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate">{driverDisplayName}</p>

@@ -12,60 +12,6 @@ import ResetPasswordPage from "@/features/auth/components/pages/ResetPasswordPag
 import SignUpPage from "@/features/auth/components/pages/SignUpPage";
 import { RoleHomeRedirect } from "@/features/auth/components/ui/RoleHomeRedirect";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
-import AggregatorDashboard from "@/features/dashboard/components/pages/AggregatorDashboard";
-import DispatcherDashboard from "@/features/dashboard/components/pages/DispatcherDashboard";
-import EnterpriseLogisticsDashboard from "@/features/dashboard/components/pages/EnterpriseLogisticsDashboard";
-import OwnerOperatorDashboard from "@/features/dashboard/components/pages/OwnerOperatorDashboard";
-import TenantAdminDashboard from "@/features/dashboard/components/pages/TenantAdminDashboard";
-import DataBundles from "@/pages/admin/DataBundles";
-import DeviceInstallation from "@/pages/admin/DeviceInstallation";
-import DeviceManagement from "@/pages/admin/DeviceManagement";
-import DriverBehaviorDashboard from "@/pages/admin/DriverBehaviorDashboard";
-import DriverFatigueDashboard from "@/pages/admin/DriverFatigueDashboard";
-import DriverManagement from "@/pages/admin/DriverManagement";
-import FleetManagement from "@/pages/admin/FleetManagement";
-import Integrations from "@/pages/admin/Integrations";
-import JobDispatch from "@/pages/admin/JobDispatch";
-import JobOffers from "@/pages/admin/JobOffers";
-import LiveMap from "@/pages/admin/LiveMap";
-import MessagingCenter from "@/pages/admin/MessagingCenter";
-import OmnichannelInbox from "@/pages/admin/OmnichannelInbox";
-import Reports from "@/pages/admin/Reports";
-import Settings from "@/pages/admin/Settings";
-import SIMManagement from "@/pages/admin/SIMManagement";
-import SubscriptionInvoices from "@/pages/admin/SubscriptionInvoices";
-import Sustainability from "@/pages/admin/Sustainability";
-import TenantWallet from "@/pages/admin/TenantWallet";
-import VehiclePLStatementPreview from "@/pages/admin/VehiclePLStatementPreview";
-import WaybillInvoices from "@/pages/admin/WaybillInvoices";
-import Architecture from "@/pages/Architecture";
-import DebugMap from "@/pages/debug/DebugMap";
-import DispatcherAlerts from "@/pages/dispatcher/DispatcherAlerts";
-import DispatcherDevices from "@/pages/dispatcher/DispatcherDevices";
-import DispatcherDispatch from "@/pages/dispatcher/DispatcherDispatch";
-import DispatcherDrivers from "@/pages/dispatcher/DispatcherDrivers";
-import DispatcherInbox from "@/pages/dispatcher/DispatcherInbox";
-import DispatcherLiveMap from "@/pages/dispatcher/DispatcherLiveMap";
-import DispatcherMessages from "@/pages/dispatcher/DispatcherMessages";
-import DispatcherReports from "@/pages/dispatcher/DispatcherReports";
-import DispatcherSIMs from "@/pages/dispatcher/DispatcherSIMs";
-import ActivationOnboarding from "@/pages/onboarding/ActivationOnboarding";
-import KycOnboarding from "@/pages/onboarding/KycOnboarding";
-import SubscriptionOnboarding from "@/pages/onboarding/SubscriptionOnboarding";
-import WelcomeDashboard from "@/pages/onboarding/WelcomeDashboard";
-import OwnerOperatorDocuments from "@/pages/owner-operator/OwnerOperatorDocuments";
-import OwnerOperatorJobs from "@/pages/owner-operator/OwnerOperatorJobs";
-import OwnerOperatorVehicleDetail from "@/pages/owner-operator/OwnerOperatorVehicleDetail";
-import OwnerOperatorVehicles from "@/pages/owner-operator/OwnerOperatorVehicles";
-import SupervisorAlerts from "@/pages/supervisor/SupervisorAlerts";
-import SupervisorDashboard from "@/pages/supervisor/SupervisorDashboard";
-import SupervisorDispatch from "@/pages/supervisor/SupervisorDispatch";
-import SupervisorDrivers from "@/pages/supervisor/SupervisorDrivers";
-import SupervisorLiveMap from "@/pages/supervisor/SupervisorLiveMap";
-import SupervisorMessages from "@/pages/supervisor/SupervisorMessages";
-import SupervisorReports from "@/pages/supervisor/SupervisorReports";
-import HelpSupport from "@/pages/support/HelpSupport";
-import TechnicalArchitecture from "@/pages/TechnicalArchitecture";
 
 /**
  * App is a pathless layout route: it owns the provider tower, the AuthGuard
@@ -78,6 +24,17 @@ import TechnicalArchitecture from "@/pages/TechnicalArchitecture";
  * renders the dashboard shell, so the sidebar and top bar mount once instead
  * of per page. Routes outside it — auth, the redirects, the print preview,
  * 404/403 — own their own chrome.
+ *
+ * Pages are loaded through react-router's `lazy`, not imported at the top: each
+ * becomes its own chunk that arrives when the route is first visited. Eagerly
+ * importing all fifty-odd of them put every dashboard, table, chart and map into
+ * the initial bundle, so the first paint waited on code for pages nobody had
+ * opened. `DashboardLayout` renders the router's pending state while a chunk
+ * loads. No `Suspense` boundary is involved — the router owns the wait.
+ *
+ * `App`, the two layouts, the auth pages, `RoleHomeRedirect` and the status
+ * screens stay eager: they are small and on the critical path, and a spinner in
+ * place of the login form would be worse than the bytes.
  */
 export const router = createBrowserRouter([
   {
@@ -127,15 +84,15 @@ export const router = createBrowserRouter([
       // preview, and a scratch page.
       {
         path: "/subscription-invoices",
-        Component: SubscriptionInvoices,
+        lazy: async () => ({ Component: (await import("@/pages/admin/SubscriptionInvoices")).default }),
       },
       {
         path: "/fleet/pl-statement",
-        Component: VehiclePLStatementPreview,
+        lazy: async () => ({ Component: (await import("@/pages/admin/VehiclePLStatementPreview")).default }),
       },
       {
         path: "/debug/map",
-        Component: DebugMap,
+        lazy: async () => ({ Component: (await import("@/pages/debug/DebugMap")).default }),
       },
 
       // Aliases for pages that are now a tab on another page. A loader
@@ -173,235 +130,235 @@ export const router = createBrowserRouter([
           // Onboarding
           {
             path: "/onboarding",
-            Component: SubscriptionOnboarding,
+            lazy: async () => ({ Component: (await import("@/pages/onboarding/SubscriptionOnboarding")).default }),
           },
           {
             path: "/onboarding/kyc",
-            Component: KycOnboarding,
+            lazy: async () => ({ Component: (await import("@/pages/onboarding/KycOnboarding")).default }),
           },
           {
             path: "/onboarding/activate",
-            Component: ActivationOnboarding,
+            lazy: async () => ({ Component: (await import("@/pages/onboarding/ActivationOnboarding")).default }),
           },
           {
             path: "/onboarding/quick-access",
-            Component: WelcomeDashboard,
+            lazy: async () => ({ Component: (await import("@/pages/onboarding/WelcomeDashboard")).default }),
           },
 
           // Enterprise
           {
             path: "/enterprise",
-            Component: EnterpriseLogisticsDashboard,
+            lazy: async () => ({ Component: (await import("@/features/dashboard/components/pages/EnterpriseLogisticsDashboard")).default }),
           },
 
           // Aggregator
           {
             path: "/aggregator",
-            Component: AggregatorDashboard,
+            lazy: async () => ({ Component: (await import("@/features/dashboard/components/pages/AggregatorDashboard")).default }),
           },
 
           // Owner-Operator
           {
             path: "/owner-operator",
-            Component: OwnerOperatorDashboard,
+            lazy: async () => ({ Component: (await import("@/features/dashboard/components/pages/OwnerOperatorDashboard")).default }),
           },
           {
             path: "/owner-operator/vehicle/:vehicleId",
-            Component: OwnerOperatorVehicleDetail,
+            lazy: async () => ({ Component: (await import("@/pages/owner-operator/OwnerOperatorVehicleDetail")).default }),
           },
           {
             path: "/owner-operator/vehicles",
-            Component: OwnerOperatorVehicles,
+            lazy: async () => ({ Component: (await import("@/pages/owner-operator/OwnerOperatorVehicles")).default }),
           },
           {
             path: "/owner-operator/documents",
-            Component: OwnerOperatorDocuments,
+            lazy: async () => ({ Component: (await import("@/pages/owner-operator/OwnerOperatorDocuments")).default }),
           },
           {
             path: "/owner-operator/jobs",
-            Component: OwnerOperatorJobs,
+            lazy: async () => ({ Component: (await import("@/pages/owner-operator/OwnerOperatorJobs")).default }),
           },
 
           // Tenant Admin / Fleet Provider
           {
             path: "/overview",
-            Component: TenantAdminDashboard,
+            lazy: async () => ({ Component: (await import("@/features/dashboard/components/pages/TenantAdminDashboard")).default }),
           },
           {
             path: "/fleet",
-            Component: FleetManagement,
+            lazy: async () => ({ Component: (await import("@/pages/admin/FleetManagement")).default }),
           },
           {
             path: "/drivers",
-            Component: DriverManagement,
+            lazy: async () => ({ Component: (await import("@/pages/admin/DriverManagement")).default }),
           },
           {
             path: "/devices",
-            Component: DeviceManagement,
+            lazy: async () => ({ Component: (await import("@/pages/admin/DeviceManagement")).default }),
           },
           {
             path: "/sims",
-            Component: SIMManagement,
+            lazy: async () => ({ Component: (await import("@/pages/admin/SIMManagement")).default }),
           },
           {
             path: "/data-bundles",
-            Component: DataBundles,
+            lazy: async () => ({ Component: (await import("@/pages/admin/DataBundles")).default }),
           },
           {
             path: "/jobs",
-            Component: JobDispatch,
+            lazy: async () => ({ Component: (await import("@/pages/admin/JobDispatch")).default }),
           },
           {
             path: "/map",
-            Component: LiveMap,
+            lazy: async () => ({ Component: (await import("@/pages/admin/LiveMap")).default }),
           },
           {
             path: "/behavior",
-            Component: DriverBehaviorDashboard,
+            lazy: async () => ({ Component: (await import("@/pages/admin/DriverBehaviorDashboard")).default }),
           },
           {
             path: "/fatigue",
-            Component: DriverFatigueDashboard,
+            lazy: async () => ({ Component: (await import("@/pages/admin/DriverFatigueDashboard")).default }),
           },
           {
             path: "/messages",
-            Component: MessagingCenter,
+            lazy: async () => ({ Component: (await import("@/pages/admin/MessagingCenter")).default }),
           },
           {
             path: "/inbox",
-            Component: OmnichannelInbox,
+            lazy: async () => ({ Component: (await import("@/pages/admin/OmnichannelInbox")).default }),
           },
           {
             path: "/wallet",
-            Component: TenantWallet,
+            lazy: async () => ({ Component: (await import("@/pages/admin/TenantWallet")).default }),
           },
           {
             path: "/installation",
-            Component: DeviceInstallation,
+            lazy: async () => ({ Component: (await import("@/pages/admin/DeviceInstallation")).default }),
           },
           {
             path: "/integrations",
-            Component: Integrations,
+            lazy: async () => ({ Component: (await import("@/pages/admin/Integrations")).default }),
           },
           {
             path: "/job-offers",
-            Component: JobOffers,
+            lazy: async () => ({ Component: (await import("@/pages/admin/JobOffers")).default }),
           },
           {
             path: "/reports",
-            Component: Reports,
+            lazy: async () => ({ Component: (await import("@/pages/admin/Reports")).default }),
           },
           {
             path: "/waybill-invoices",
-            Component: WaybillInvoices,
+            lazy: async () => ({ Component: (await import("@/pages/admin/WaybillInvoices")).default }),
           },
           {
             path: "/sustainability",
-            Component: Sustainability,
+            lazy: async () => ({ Component: (await import("@/pages/admin/Sustainability")).default }),
           },
           {
             path: "/settings",
-            Component: Settings,
+            lazy: async () => ({ Component: (await import("@/pages/admin/Settings")).default }),
           },
 
           // Supervisor
           {
             path: "/supervisor",
-            Component: SupervisorDashboard,
+            lazy: async () => ({ Component: (await import("@/pages/supervisor/SupervisorDashboard")).default }),
           },
           {
             path: "/supervisor/map",
-            Component: SupervisorLiveMap,
+            lazy: async () => ({ Component: (await import("@/pages/supervisor/SupervisorLiveMap")).default }),
           },
           {
             path: "/supervisor/dispatch",
-            Component: SupervisorDispatch,
+            lazy: async () => ({ Component: (await import("@/pages/supervisor/SupervisorDispatch")).default }),
           },
           {
             path: "/supervisor/drivers",
-            Component: SupervisorDrivers,
+            lazy: async () => ({ Component: (await import("@/pages/supervisor/SupervisorDrivers")).default }),
           },
           {
             path: "/supervisor/alerts",
-            Component: SupervisorAlerts,
+            lazy: async () => ({ Component: (await import("@/pages/supervisor/SupervisorAlerts")).default }),
           },
           {
             path: "/supervisor/messages",
-            Component: SupervisorMessages,
+            lazy: async () => ({ Component: (await import("@/pages/supervisor/SupervisorMessages")).default }),
           },
           {
             path: "/supervisor/inbox",
-            Component: OmnichannelInbox,
+            lazy: async () => ({ Component: (await import("@/pages/admin/OmnichannelInbox")).default }),
           },
           {
             path: "/supervisor/reports",
-            Component: SupervisorReports,
+            lazy: async () => ({ Component: (await import("@/pages/supervisor/SupervisorReports")).default }),
           },
           {
             path: "/supervisor/*",
-            Component: SupervisorDashboard,
+            lazy: async () => ({ Component: (await import("@/pages/supervisor/SupervisorDashboard")).default }),
           },
 
           // Dispatcher Portal (independent — do not share with Supervisor/Admin)
           {
             path: "/dispatcher",
-            Component: DispatcherDashboard,
+            lazy: async () => ({ Component: (await import("@/features/dashboard/components/pages/DispatcherDashboard")).default }),
           },
           {
             path: "/dispatcher/dispatch",
-            Component: DispatcherDispatch,
+            lazy: async () => ({ Component: (await import("@/pages/dispatcher/DispatcherDispatch")).default }),
           },
           {
             path: "/dispatcher/map",
-            Component: DispatcherLiveMap,
+            lazy: async () => ({ Component: (await import("@/pages/dispatcher/DispatcherLiveMap")).default }),
           },
           {
             path: "/dispatcher/drivers",
-            Component: DispatcherDrivers,
+            lazy: async () => ({ Component: (await import("@/pages/dispatcher/DispatcherDrivers")).default }),
           },
           {
             path: "/dispatcher/devices",
-            Component: DispatcherDevices,
+            lazy: async () => ({ Component: (await import("@/pages/dispatcher/DispatcherDevices")).default }),
           },
           {
             path: "/dispatcher/sims",
-            Component: DispatcherSIMs,
+            lazy: async () => ({ Component: (await import("@/pages/dispatcher/DispatcherSIMs")).default }),
           },
           {
             path: "/dispatcher/alerts",
-            Component: DispatcherAlerts,
+            lazy: async () => ({ Component: (await import("@/pages/dispatcher/DispatcherAlerts")).default }),
           },
           {
             path: "/dispatcher/messages",
-            Component: DispatcherMessages,
+            lazy: async () => ({ Component: (await import("@/pages/dispatcher/DispatcherMessages")).default }),
           },
           {
             path: "/dispatcher/inbox",
-            Component: DispatcherInbox,
+            lazy: async () => ({ Component: (await import("@/pages/dispatcher/DispatcherInbox")).default }),
           },
           {
             path: "/dispatcher/reports",
-            Component: DispatcherReports,
+            lazy: async () => ({ Component: (await import("@/pages/dispatcher/DispatcherReports")).default }),
           },
           {
             path: "/dispatcher/*",
-            Component: DispatcherDashboard,
+            lazy: async () => ({ Component: (await import("@/features/dashboard/components/pages/DispatcherDashboard")).default }),
           },
 
           // Architecture documentation
           {
             path: "/architecture",
-            Component: Architecture,
+            lazy: async () => ({ Component: (await import("@/pages/Architecture")).default }),
           },
           {
             path: "/technical-architecture",
-            Component: TechnicalArchitecture,
+            lazy: async () => ({ Component: (await import("@/pages/TechnicalArchitecture")).default }),
           },
 
           // Help & Support
           {
             path: "/help",
-            Component: HelpSupport,
+            lazy: async () => ({ Component: (await import("@/pages/support/HelpSupport")).default }),
           },
         ],
       },

@@ -1,3 +1,4 @@
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   ArrowDownLeft,
@@ -297,7 +298,7 @@ function MessageItem({ message }: { message: DriverMessage }) {
         "bg-gradient-to-br from-primary to-accent",
       )}
       >
-        {message.driver_name?.split(" ").map(n => n[0]).join("") || "?"}
+        {getInitials(message.driver_name)}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">

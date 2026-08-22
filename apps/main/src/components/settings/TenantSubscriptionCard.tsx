@@ -12,6 +12,7 @@ import {
 import {
   getDevicesQueryOptions, getVehiclesSummaryQueryOptions,
 } from "@truckmoov/api/fleet";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle,
@@ -313,7 +314,7 @@ export function TenantSubscriptionCard() {
                 color: "white",
               }}
             >
-              {currentPlan.name.charAt(0)}
+              {getInitials(currentPlan.name)}
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">

@@ -9,6 +9,7 @@
     "./package.json": "./package.json",
     "./tsconfig.base.json": "./tsconfig.base.json",
     "./eslint-config": "./src/lib/eslint-config.mjs",
+    "./utils/general-utils": "./src/utils/general-utils.ts",
     "./utils/time-utils": "./src/utils/time-utils.ts"
   },
   "dependencies": {

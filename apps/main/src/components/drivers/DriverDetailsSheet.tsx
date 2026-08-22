@@ -1,4 +1,5 @@
 import type { Driver } from "@/types";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   daysUntil, formatDate, formatDayMonthTime, formatRelative,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -338,7 +339,7 @@ export function DriverDetailsSheet({
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-2xl font-bold text-primary-foreground">
-                {driver.name.split(" ").map(n => n[0]).join("")}
+                {getInitials(driver.name)}
               </div>
               <div>
                 <DialogTitle className="text-xl">{driver.name}</DialogTitle>

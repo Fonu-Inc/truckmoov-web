@@ -1,3 +1,4 @@
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   CheckCheck, MessageSquare, Phone, PhoneCall, PhoneOff, Send,
 } from "lucide-react";
@@ -212,7 +213,7 @@ export function CommunicationsPanel({
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">
-                              {driver.name.charAt(0)}
+                              {getInitials(driver.name)}
                             </div>
                             <div>
                               <p className="text-sm font-medium truncate max-w-[100px]">
@@ -245,7 +246,7 @@ export function CommunicationsPanel({
                       <div className="flex items-center justify-between p-3 border-b border-border">
                         <div className="flex items-center gap-2">
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">
-                            {selectedDriver.name.charAt(0)}
+                            {getInitials(selectedDriver.name)}
                           </div>
                           <div>
                             <p className="text-sm font-medium">{selectedDriver.name}</p>
@@ -343,7 +344,7 @@ export function CommunicationsPanel({
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">
-                          {driver.name.charAt(0)}
+                          {getInitials(driver.name)}
                         </div>
                         <div>
                           <p className="font-medium">{driver.name}</p>
@@ -402,7 +403,7 @@ export function CommunicationsPanel({
           </DialogHeader>
           <div className="flex flex-col items-center py-8">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary text-2xl font-bold mb-4">
-              {callingDriver?.name.charAt(0)}
+              {getInitials(callingDriver?.name)}
             </div>
             <p className="text-lg font-medium">{callingDriver?.name}</p>
             <p className="text-sm text-muted-foreground">{callingDriver?.phone}</p>

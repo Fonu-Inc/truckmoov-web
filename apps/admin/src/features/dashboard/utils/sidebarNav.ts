@@ -15,35 +15,23 @@ import {
   Wifi,
 } from "lucide-react";
 
+/**
+ * ponytail: the admin nav is flat. `apps/main` has collapsible groups and the
+ * `SidebarNavGroup` / `isNavGroup` machinery to render them; this app has never
+ * used one, so the type does not permit one. Adding a group here means copying
+ * that machinery back from main — and until then, a stray `items` array fails to
+ * compile instead of silently rendering nothing.
+ */
 export type SidebarNavItem = {
   /** Nav link text. Doubles as the top-bar title — a route is called one thing. */
   label: string;
   href: string;
   icon: ElementType;
-  badge?: number;
-  badgeKey?: string;
   /** Page owns its own padding — DashboardLayout drops the `p-6` on `<main>`. */
   fullWidth?: boolean;
-  /** Roles allowed to see this entry. On a group child, omit to inherit the group's roles. */
+  /** Roles allowed to see this entry. */
   hasPermission?: UserRole[];
 };
-
-export type SidebarNavGroup = {
-  label: string;
-  icon: ElementType;
-  badgeKey?: string;
-  items: SidebarNavItem[];
-  hasPermission?: UserRole[];
-};
-
-export type SidebarEntry = SidebarNavItem | SidebarNavGroup;
-
-export function isNavGroup(entry: SidebarEntry): entry is SidebarNavGroup {
-  return "items" in entry;
-}
-
-/** Badge text under the org name in the sidebar. */
-export const ORG_TYPE_LABEL = "Platform Admin";
 
 /** The three roles that can sign in to the admin app. */
 const ADMIN_ROLES: UserRole[] = [
@@ -68,7 +56,7 @@ const ADMIN_ROLES: UserRole[] = [
  * children can inherit) — a new entry that forgets it fails to compile instead
  * of silently showing up for every role.
  */
-export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] = [
+export const SIDEBAR_ENTRIES: (SidebarNavItem & { hasPermission: UserRole[] })[] = [
   {
     label: "Overview", href: "/", icon: LayoutDashboard, hasPermission: ADMIN_ROLES,
   },
@@ -107,27 +95,43 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   },
 ];
 
+const entriesByRole = new Map<UserRole, SidebarNavItem[]>();
+
+/**
+ * The entries this role may see, in `SIDEBAR_ENTRIES` order.
+ *
+ * ponytail: cached per role and never invalidated — `SIDEBAR_ENTRIES` is a
+ * module constant, so the answer for a role cannot change while the tab is
+ * open. The payoff is referential stability: the sidebar's `memo`'d rows never
+ * see a new prop object, so navigating re-renders no part of the nav tree.
+ */
+export function getEntriesForRole(role: UserRole): SidebarNavItem[] {
+  const cached = entriesByRole.get(role);
+  if (cached)
+    return cached;
+
+  const visible = SIDEBAR_ENTRIES.filter(entry => entry.hasPermission.includes(role));
+  entriesByRole.set(
+    role,
+    visible,
+  );
+  return visible;
+}
+
 /**
  * Deepest entry whose href matches this pathname — exact match wins, else the
- * longest href prefix. Group children are matched, groups themselves are not
- * (a group has no route of its own).
+ * longest href prefix.
  *
  * Permissions are deliberately ignored: this names the page you are on, and
  * whether you may be there is AuthGuard's call, not the top bar's.
  */
 export function matchNavEntry(pathname: string): SidebarNavItem | undefined {
   let best: SidebarNavItem | undefined;
-  const consider = (item: SidebarNavItem) => {
+  for (const item of SIDEBAR_ENTRIES) {
     if (pathname === item.href || pathname.startsWith(`${item.href}/`)) {
       if (!best || item.href.length > best.href.length)
         best = item;
     }
-  };
-  for (const entry of SIDEBAR_ENTRIES) {
-    if (isNavGroup(entry))
-      entry.items.forEach(consider);
-    else
-      consider(entry);
   }
   return best;
 }

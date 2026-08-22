@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getOrganizationSettingsQueryOptions } from "@truckmoov/api/auth";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   Avatar, AvatarFallback, AvatarImage,
 } from "@truckmoov/reusables/components/shadcn/avatar";
@@ -19,11 +20,6 @@ import {
 } from "@/components/shadcn/dropdown-menu";
 import { getRoleLabel } from "@/features/auth/utils/role-label";
 import { useAuthStore } from "@/stores/authStore";
-
-const PLATFORM_ADMIN_URL = (import.meta.env.VITE_PLATFORM_ADMIN_URL || "http://localhost:3002").replace(
-  /\/$/,
-  "",
-);
 
 export function UserProfileDropdown() {
   const {
@@ -47,21 +43,7 @@ export function UserProfileDropdown() {
   };
 
   const handleSettingsClick = () => {
-    if (user?.role === "PLATFORM_ADMIN") {
-      window.location.assign(`${PLATFORM_ADMIN_URL}/settings`);
-    }
-    else {
-      navigate("/settings");
-    }
-  };
-
-  const getInitials = (name?: string) => {
-    if (!name)
-      return "U";
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1)
-      return parts[0].charAt(0).toUpperCase();
-    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    navigate("/settings");
   };
 
   return (

@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   CheckCircle, Clock, Mail, MessageSquare, Send,
   Sparkles, Users,
@@ -404,7 +405,7 @@ export function CampaignBuilderDialog({
                             onCheckedChange={() => toggleDriver(driver.id)}
                           />
                           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xs font-medium text-primary-foreground">
-                            {driver.name.split(" ").map(n => n[0]).join("")}
+                            {getInitials(driver.name)}
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium">{driver.name}</p>

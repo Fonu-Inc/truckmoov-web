@@ -3,6 +3,7 @@ import type {
   FilterDraft,
   FilterField,
 } from "@/components/shadcn/platform-filter-popover";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   formatDateOnlyInTimezone,
   getTimezoneLabel,
@@ -65,6 +66,7 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
+
 import {
   Dialog,
   DialogContent,
@@ -78,7 +80,6 @@ import {
   DialogHeader as SheetHeader,
   DialogTitle as SheetTitle,
 } from "@/components/shadcn/dialog";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1301,7 +1302,7 @@ export default function PlatformBilling() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">
-                          {invoice.tenant.charAt(0)}
+                          {getInitials(invoice.tenant)}
                         </div>
                         <div>
                           <p className="font-medium text-sm">{invoice.tenant}</p>
@@ -1663,7 +1664,7 @@ export default function PlatformBilling() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                              {sub.tenant.charAt(0)}
+                              {getInitials(sub.tenant)}
                             </div>
                             {sub.tenant}
                           </div>
@@ -2308,7 +2309,7 @@ export default function PlatformBilling() {
                   <h4 className="font-medium text-sm text-muted-foreground">Bill To</h4>
                   <div className="flex items-center gap-3">
                     <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
-                      {selectedInvoice.tenant.charAt(0)}
+                      {getInitials(selectedInvoice.tenant)}
                     </div>
                     <div>
                       <p className="font-medium">{selectedInvoice.tenant}</p>

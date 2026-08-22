@@ -1,4 +1,5 @@
 import type { Job } from "@/types";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   AlertCircle, Brain, CheckCircle, Clock, ListChecks,
   MapPin, MessageSquare, Phone, PhoneCall, Route, ShieldCheck,
@@ -610,7 +611,7 @@ export function TruckMatchingDialog({
                     <div className="flex items-center gap-4 mb-3">
                       <div className="flex items-center gap-2">
                         <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xs font-medium text-primary-foreground">
-                          {match.driver.name.split(" ").map(n => n[0]).join("")}
+                          {getInitials(match.driver.name)}
                         </div>
                         <div>
                           <p className="text-sm font-medium">{match.driver.name}</p>

@@ -11,7 +11,9 @@ import {
   useResendSystemAdminInvite,
   useUpdateSystemAdminStatus,
 } from "@truckmoov/api/auth";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
+
 import {
   Clock,
   Mail,
@@ -22,7 +24,6 @@ import {
   SlidersHorizontal,
   Users,
 } from "lucide-react";
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -452,15 +453,7 @@ export function PlatformTeamManagement() {
                       <TableBody>
                         {filteredAdmins.map((admin) => {
                           const displayName = getAdminDisplayName(admin);
-                          const initials = displayName
-                            .split(" ")
-                            .map(n => n[0])
-                            .join("")
-                            .toUpperCase()
-                            .slice(
-                              0,
-                              2,
-                            );
+                          const initials = getInitials(displayName);
                           const isSelf = admin.userId === user?.id;
 
                           return (

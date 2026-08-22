@@ -8,8 +8,9 @@ import {
   useUpdateProfile,
   useUpdateSystemSettings,
 } from "@truckmoov/api/auth";
-import { TIMEZONES } from "@truckmoov/app-core/utils/time-utils";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 
+import { TIMEZONES } from "@truckmoov/app-core/utils/time-utils";
 import {
   Bell,
   Camera,
@@ -573,7 +574,7 @@ export default function PlatformSettings() {
                         alt={profileForm.watch("fullName")}
                       />
                       <AvatarFallback className="text-lg">
-                        {(profileForm.watch("fullName") || user?.email || "U").charAt(0).toUpperCase()}
+                        {getInitials(profileForm.watch("fullName") || user?.email)}
                       </AvatarFallback>
                     </Avatar>
                     <button

@@ -1,3 +1,4 @@
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   formatRelative, formatWithPattern,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -196,15 +197,7 @@ export function AdminTicketSheet({
       8,
     )}`
     : "—";
-  const reporterInitials = reporterDisplay
-    .split(" ")
-    .filter(Boolean)
-    .slice(
-      0,
-      2,
-    )
-    .map(p => p[0]?.toUpperCase() || "")
-    .join("") || "?";
+  const reporterInitials = getInitials(reporterDisplay);
 
   const priorityStyles: Record<string, {
     label: string; className: string;

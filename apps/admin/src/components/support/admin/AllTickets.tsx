@@ -12,6 +12,8 @@ import {
   getSystemSupportTicketsQueryOptions,
   getSystemSupportTicketSummaryQueryOptions,
 } from "@truckmoov/api/auth";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
+
 import {
   ArrowUpRight,
   CheckCircle2,
@@ -24,7 +26,6 @@ import {
   SlidersHorizontal,
   Ticket as TicketIcon,
 } from "lucide-react";
-
 import {
   useEffect,
   useMemo,
@@ -238,18 +239,6 @@ function channelFromContext(value?: string) {
     default:
       return "Web";
   }
-}
-
-function reporterInitials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(
-      0,
-      2,
-    )
-    .map(part => part[0]?.toUpperCase() ?? "")
-    .join("") || "?";
 }
 
 function normalizeTicket(raw: Record<string, unknown>): TicketRow {
@@ -774,7 +763,7 @@ export function AllTickets() {
                             <TableCell>
                               <div className="flex min-w-0 items-center gap-2">
                                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
-                                  {reporterInitials(reporter)}
+                                  {getInitials(reporter)}
                                 </div>
                                 <span className="truncate font-semibold">{reporter}</span>
                               </div>

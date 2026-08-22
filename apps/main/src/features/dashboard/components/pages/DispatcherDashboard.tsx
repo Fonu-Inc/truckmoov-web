@@ -1,4 +1,5 @@
 import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   Activity, AlertTriangle, ArrowUpRight, CheckCircle2, ChevronRight, Clock,
   Loader2, MapPin, MessageSquare, Package, Phone,
@@ -804,7 +805,7 @@ export default function DispatcherDashboard() {
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold flex-shrink-0">
-                            {driver.name.charAt(0)}
+                            {getInitials(driver.name)}
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-medium truncate">{driver.name}</p>

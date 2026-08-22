@@ -1,3 +1,4 @@
+import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   formatRelative, formatWithPattern,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -425,7 +426,7 @@ export default function DispatcherInbox() {
                       >
                         <Avatar className="h-10 w-10">
                           <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-sm">
-                            {conv.driverName?.split(" ").map(n => n[0]).join("") || "?"}
+                            {getInitials(conv.driverName)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
@@ -516,7 +517,7 @@ export default function DispatcherInbox() {
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
                     <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground">
-                      {selectedConversation.driverName?.split(" ").map(n => n[0]).join("") || "?"}
+                      {getInitials(selectedConversation.driverName)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
