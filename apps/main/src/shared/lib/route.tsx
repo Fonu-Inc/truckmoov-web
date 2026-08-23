@@ -503,6 +503,14 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: "dispatch",
+                lazy: guardedByNamed(
+                  settingsTabRoles("/settings/dispatch") ?? [],
+                  () => import("@/features/settings/components/ui/DispatchPreferencesPanel"),
+                  "DispatchPreferencesPanel",
+                ),
+              },
+              {
                 path: "communication",
                 lazy: guardedByNamed(
                   settingsTabRoles("/settings/communication") ?? [],

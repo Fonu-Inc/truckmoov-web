@@ -10,6 +10,7 @@ import {
   HardDrive,
   Palette,
   Plug,
+  Radio,
   Receipt,
   Users,
   Wrench,
@@ -68,6 +69,9 @@ export const SETTINGS_TABS: SettingsTab[] = [
   },
   {
     to: "/settings/notifications", label: "Notifications", icon: Bell, hasPermissions: ENTERPRISE_ADMIN_ONLY,
+  },
+  {
+    to: "/settings/dispatch", label: "Dispatch", icon: Radio, hasPermissions: ["DISPATCHER"],
   },
   {
     to: "/settings/communication", label: "Communication", icon: Bell, hasPermissions: ENTERPRISE_ADMIN_ONLY,

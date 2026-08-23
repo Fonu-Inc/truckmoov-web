@@ -294,6 +294,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "OWNER_OPERATOR",
+      "DISPATCHER",
     ],
   },
 ];
