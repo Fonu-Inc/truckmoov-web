@@ -1,3 +1,6 @@
+import type { UserRole } from "@truckmoov/api/auth";
+import type React from "react";
+import { RequireRole } from "@truckmoov/reusables/components/auth/RequireRole";
 import NotAuthorized from "@truckmoov/reusables/components/pages/NotAuthorized";
 import NotFound from "@truckmoov/reusables/components/pages/NotFound";
 import { createBrowserRouter } from "react-router";
@@ -5,7 +8,42 @@ import App from "@/App";
 import { AuthLayout } from "@/features/auth/components/layout/AuthLayout";
 import AuthPage from "@/features/auth/components/pages/AuthPage";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
+import { ADMIN_ROLES } from "@/features/dashboard/utils/sidebarNav";
 import { SettingsLayout } from "@/features/settings/components/layout/SettingsLayout";
+import { useAuthStore } from "@/stores/authStore";
+
+const useRole = () => useAuthStore(s => s.user?.role);
+
+/**
+ * Wrap a Component with a role check. URL-typing a page from a role that
+ * isn't in `allow` lands on /not-authorized instead of rendering. Every
+ * route in the admin app shares the same three ADMIN_ROLES, so guarding
+ * `DashboardLayout` covers the whole shell in one line — child routes
+ * inherit through the outlet. Same for the `/settings` layout.
+ */
+function withGuard(allow: UserRole[], Loaded: React.ComponentType<unknown>) {
+  return function Guarded(props: Record<string, unknown>) {
+    const role = useRole();
+    if (!role || !allow.includes(role)) {
+      return (
+        <RequireRole
+          allow={allow}
+          useRole={useRole}
+        />
+      );
+    }
+    return <Loaded {...props} />;
+  };
+}
+
+const GuardedDashboardLayout = withGuard(
+  ADMIN_ROLES,
+  DashboardLayout,
+);
+const GuardedSettingsLayout = withGuard(
+  ADMIN_ROLES,
+  SettingsLayout,
+);
 
 /**
  * App is a pathless layout route: it owns the provider tower, the AuthGuard
@@ -54,7 +92,7 @@ export const router = createBrowserRouter([
       // Everything inside the dashboard shell. Pages render their own content
       // only; the sidebar, top bar and page title come from DashboardLayout.
       {
-        Component: DashboardLayout,
+        Component: GuardedDashboardLayout,
         children: [
           {
             path: "/",
@@ -108,7 +146,7 @@ export const router = createBrowserRouter([
           // named export; only tabs needing props or extra markup have a page.
           {
             path: "/settings",
-            Component: SettingsLayout,
+            Component: GuardedSettingsLayout,
             children: [
               {
                 index: true,

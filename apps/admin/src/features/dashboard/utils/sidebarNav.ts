@@ -33,8 +33,10 @@ export type SidebarNavItem = {
   hasPermission?: UserRole[];
 };
 
-/** The three roles that can sign in to the admin app. */
-const ADMIN_ROLES: UserRole[] = [
+/** The three roles that can sign in to the admin app. Exported so route.tsx
+ * can gate the whole dashboard shell (and the settings tabs) with the same
+ * list the sidebar uses. */
+export const ADMIN_ROLES: UserRole[] = [
   "SUPER_ADMIN",
   "SYSTEM_ADMIN",
   "PLATFORM_ADMIN",

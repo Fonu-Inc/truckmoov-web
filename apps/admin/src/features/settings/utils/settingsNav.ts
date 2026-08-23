@@ -1,7 +1,7 @@
 import type { UserRole } from "@truckmoov/api/auth";
 
 export type SettingsTab = {
-  /** Absolute path, matching the child route in `shared/lib/route.ts`. */
+  /** Absolute path, matching the child route in `shared/lib/route.tsx`. */
   to: string;
   label: string;
   /** Roles that may see this tab. Empty means every role. */
@@ -10,7 +10,7 @@ export type SettingsTab = {
 
 /**
  * The platform settings tab bar, in order. One entry per child route of
- * `/settings` — add a route here and in `shared/lib/route.ts`, same as the
+ * `/settings` — add a route here and in `shared/lib/route.tsx`, same as the
  * sidebar. Text only: this bar has never had icons.
  *
  * ponytail: `hasPermissions` is empty on every tab today. The list is the seam;

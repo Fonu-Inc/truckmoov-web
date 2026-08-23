@@ -1,3 +1,6 @@
+import type { UserRole } from "@truckmoov/api/auth";
+import type React from "react";
+import { RequireRole } from "@truckmoov/reusables/components/auth/RequireRole";
 import NotAuthorized from "@truckmoov/reusables/components/pages/NotAuthorized";
 import NotFound from "@truckmoov/reusables/components/pages/NotFound";
 import {
@@ -12,7 +15,96 @@ import ResetPasswordPage from "@/features/auth/components/pages/ResetPasswordPag
 import SignUpPage from "@/features/auth/components/pages/SignUpPage";
 import { RoleHomeRedirect } from "@/features/auth/components/ui/RoleHomeRedirect";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
+import { getRolesForHref } from "@/features/dashboard/utils/sidebarNav";
 import { SettingsLayout } from "@/features/settings/components/layout/SettingsLayout";
+import { SETTINGS_TABS } from "@/features/settings/utils/settingsNav";
+import { useAuthStore } from "@/stores/authStore";
+
+const useRole = () => useAuthStore(s => s.user?.role);
+
+/**
+ * Wrap a lazy Component with a role check. URL-typing a page the current role
+ * can't see lands on /not-authorized before the chunk mounts. Two variants:
+ *
+ *  - `guarded(href, importer)` — role list comes from the sidebar entry; a
+ *    typo means the boot-time throw fires instead of the guard leaking.
+ *  - `guardedBy(allow, importer)` — for routes that aren't in the sidebar
+ *    (details, aliases already redirect elsewhere) or where a settings tab
+ *    supplies the list.
+ *
+ * These return the object react-router's `lazy` expects, so the route table
+ * still reads leaf-per-line: `{ path, lazy: guarded("/fleet", () => import(…)) }`.
+ */
+type LazyImporter = () => Promise<{ default: React.ComponentType<unknown> }>;
+type NamedLazyImporter<K extends string> = () => Promise<Record<K, React.ComponentType<unknown>>>;
+
+function withGuard(allow: UserRole[], Loaded: React.ComponentType<unknown>) {
+  return function Guarded(props: Record<string, unknown>) {
+    const role = useRole();
+    if (!role || !allow.includes(role)) {
+      return (
+        <RequireRole
+          allow={allow}
+          useRole={useRole}
+        />
+      );
+    }
+    return <Loaded {...props} />;
+  };
+}
+
+function guarded(href: string, importer: LazyImporter) {
+  const allow = getRolesForHref(href);
+  if (!allow)
+    throw new Error(`route.tsx: no sidebar entry for ${href}`);
+  return async () => ({
+    Component: withGuard(
+      allow,
+      (await importer()).default,
+    ),
+  });
+}
+
+function guardedBy(allow: UserRole[], importer: LazyImporter) {
+  return async () => ({
+    Component: withGuard(
+      allow,
+      (await importer()).default,
+    ),
+  });
+}
+
+function guardedByNamed<K extends string>(allow: UserRole[], importer: NamedLazyImporter<K>, key: K) {
+  return async () => ({
+    Component: withGuard(
+      allow,
+      (await importer())[key],
+    ),
+  });
+}
+
+/**
+ * Role list for a `/settings/*` child — reads straight from SETTINGS_TABS
+ * so the tab bar and the URL guard cannot disagree. Returns `undefined` when
+ * the tab is visible to every role, so the caller skips the wrapper.
+ */
+function settingsTabRoles(to: string): UserRole[] | undefined {
+  const tab = SETTINGS_TABS.find(t => t.to === to);
+  if (!tab)
+    throw new Error(`route.tsx: no SETTINGS_TABS entry for ${to}`);
+  return tab.hasPermissions.length === 0 ? undefined : tab.hasPermissions;
+}
+
+/**
+ * SettingsLayout, wrapped in the sidebar's /settings role list so URL-typing
+ * `/settings/*` from a role that isn't in that list (DISPATCHER, FINANCE_VIEWER)
+ * lands on /not-authorized before any child tab loads. Built once at import so
+ * the wrapper identity is stable across renders.
+ */
+const GuardedSettingsLayout = withGuard(
+  getRolesForHref("/settings") ?? [],
+  SettingsLayout,
+);
 
 /**
  * App is a pathless layout route: it owns the provider tower, the AuthGuard
@@ -125,10 +217,16 @@ export const router = createBrowserRouter([
 
       // Everything inside the dashboard shell. Pages render their own content
       // only; the sidebar, top bar and page title come from DashboardLayout.
+      //
+      // Routes whose href appears in the sidebar are guarded via `guarded()` —
+      // the role list is read from `getRolesForHref`, so typing a hidden URL
+      // returns /not-authorized instead of rendering. Routes that aren't in
+      // the sidebar (onboarding, detail pages, the supervisor tree, help and
+      // architecture docs) stay open to any logged-in role, matching today.
       {
         Component: DashboardLayout,
         children: [
-          // Onboarding
+          // Onboarding — no sidebar entry, no guard.
           {
             path: "/onboarding",
             lazy: async () => ({ Component: (await import("@/pages/onboarding/SubscriptionOnboarding")).default }),
@@ -146,74 +244,117 @@ export const router = createBrowserRouter([
             lazy: async () => ({ Component: (await import("@/pages/onboarding/WelcomeDashboard")).default }),
           },
 
-          // Enterprise
+          // Role dashboards (each home has a single-role sidebar entry).
           {
             path: "/enterprise",
-            lazy: async () => ({ Component: (await import("@/features/dashboard/components/pages/EnterpriseLogisticsDashboard")).default }),
+            lazy: guarded(
+              "/enterprise",
+              () => import("@/features/dashboard/components/pages/EnterpriseLogisticsDashboard"),
+            ),
           },
-
-          // Aggregator
           {
             path: "/aggregator",
-            lazy: async () => ({ Component: (await import("@/features/dashboard/components/pages/AggregatorDashboard")).default }),
+            lazy: guarded(
+              "/aggregator",
+              () => import("@/features/dashboard/components/pages/AggregatorDashboard"),
+            ),
           },
-
-          // Owner-Operator
           {
             path: "/owner-operator",
-            lazy: async () => ({ Component: (await import("@/features/dashboard/components/pages/OwnerOperatorDashboard")).default }),
+            lazy: guarded(
+              "/owner-operator",
+              () => import("@/features/dashboard/components/pages/OwnerOperatorDashboard"),
+            ),
           },
           {
+            // Detail page for the same feature as /owner-operator/vehicles.
             path: "/owner-operator/vehicle/:vehicleId",
-            lazy: async () => ({ Component: (await import("@/pages/owner-operator/OwnerOperatorVehicleDetail")).default }),
+            lazy: guardedBy(
+              ["OWNER_OPERATOR"],
+              () => import("@/pages/owner-operator/OwnerOperatorVehicleDetail"),
+            ),
           },
           {
             path: "/owner-operator/vehicles",
-            lazy: async () => ({ Component: (await import("@/pages/owner-operator/OwnerOperatorVehicles")).default }),
+            lazy: guarded(
+              "/owner-operator/vehicles",
+              () => import("@/pages/owner-operator/OwnerOperatorVehicles"),
+            ),
           },
           {
             path: "/owner-operator/documents",
-            lazy: async () => ({ Component: (await import("@/pages/owner-operator/OwnerOperatorDocuments")).default }),
+            lazy: guarded(
+              "/owner-operator/documents",
+              () => import("@/pages/owner-operator/OwnerOperatorDocuments"),
+            ),
           },
           {
             path: "/owner-operator/jobs",
-            lazy: async () => ({ Component: (await import("@/pages/owner-operator/OwnerOperatorJobs")).default }),
+            lazy: guarded(
+              "/owner-operator/jobs",
+              () => import("@/pages/owner-operator/OwnerOperatorJobs"),
+            ),
           },
 
           // Tenant Admin / Fleet Provider
           {
             path: "/overview",
-            lazy: async () => ({ Component: (await import("@/features/dashboard/components/pages/TenantAdminDashboard")).default }),
+            lazy: guarded(
+              "/overview",
+              () => import("@/features/dashboard/components/pages/TenantAdminDashboard"),
+            ),
           },
           {
             path: "/fleet",
-            lazy: async () => ({ Component: (await import("@/pages/admin/FleetManagement")).default }),
+            lazy: guarded(
+              "/fleet",
+              () => import("@/pages/admin/FleetManagement"),
+            ),
           },
           {
             path: "/drivers",
-            lazy: async () => ({ Component: (await import("@/pages/admin/DriverManagement")).default }),
+            lazy: guarded(
+              "/drivers",
+              () => import("@/pages/admin/DriverManagement"),
+            ),
           },
           {
             path: "/devices",
-            lazy: async () => ({ Component: (await import("@/pages/admin/DeviceManagement")).default }),
+            lazy: guarded(
+              "/devices",
+              () => import("@/pages/admin/DeviceManagement"),
+            ),
           },
           {
             path: "/sims",
-            lazy: async () => ({ Component: (await import("@/pages/admin/SIMManagement")).default }),
+            lazy: guarded(
+              "/sims",
+              () => import("@/pages/admin/SIMManagement"),
+            ),
           },
           {
             path: "/data-bundles",
-            lazy: async () => ({ Component: (await import("@/pages/admin/DataBundles")).default }),
+            lazy: guarded(
+              "/data-bundles",
+              () => import("@/pages/admin/DataBundles"),
+            ),
           },
           {
             path: "/jobs",
-            lazy: async () => ({ Component: (await import("@/pages/admin/JobDispatch")).default }),
+            lazy: guarded(
+              "/jobs",
+              () => import("@/pages/admin/JobDispatch"),
+            ),
           },
           {
             path: "/map",
-            lazy: async () => ({ Component: (await import("@/pages/admin/LiveMap")).default }),
+            lazy: guarded(
+              "/map",
+              () => import("@/pages/admin/LiveMap"),
+            ),
           },
           {
+            // Not in the sidebar — no guard, same as today.
             path: "/behavior",
             lazy: async () => ({ Component: (await import("@/pages/admin/DriverBehaviorDashboard")).default }),
           },
@@ -223,65 +364,108 @@ export const router = createBrowserRouter([
           },
           {
             path: "/messages",
-            lazy: async () => ({ Component: (await import("@/pages/admin/MessagingCenter")).default }),
+            lazy: guarded(
+              "/messages",
+              () => import("@/pages/admin/MessagingCenter"),
+            ),
           },
           {
             path: "/inbox",
-            lazy: async () => ({ Component: (await import("@/pages/admin/OmnichannelInbox")).default }),
+            lazy: guarded(
+              "/inbox",
+              () => import("@/pages/admin/OmnichannelInbox"),
+            ),
           },
           {
             path: "/wallet",
-            lazy: async () => ({ Component: (await import("@/pages/admin/TenantWallet")).default }),
+            lazy: guarded(
+              "/wallet",
+              () => import("@/pages/admin/TenantWallet"),
+            ),
           },
           {
             path: "/installation",
-            lazy: async () => ({ Component: (await import("@/pages/admin/DeviceInstallation")).default }),
+            lazy: guarded(
+              "/installation",
+              () => import("@/pages/admin/DeviceInstallation"),
+            ),
           },
           {
             path: "/integrations",
-            lazy: async () => ({ Component: (await import("@/pages/admin/Integrations")).default }),
+            lazy: guarded(
+              "/integrations",
+              () => import("@/pages/admin/Integrations"),
+            ),
           },
           {
             path: "/job-offers",
-            lazy: async () => ({ Component: (await import("@/pages/admin/JobOffers")).default }),
+            lazy: guarded(
+              "/job-offers",
+              () => import("@/pages/admin/JobOffers"),
+            ),
           },
           {
             path: "/reports",
-            lazy: async () => ({ Component: (await import("@/pages/admin/Reports")).default }),
+            lazy: guarded(
+              "/reports",
+              () => import("@/pages/admin/Reports"),
+            ),
           },
           {
             path: "/waybill-invoices",
-            lazy: async () => ({ Component: (await import("@/pages/admin/WaybillInvoices")).default }),
+            lazy: guarded(
+              "/waybill-invoices",
+              () => import("@/pages/admin/WaybillInvoices"),
+            ),
           },
           {
             path: "/sustainability",
-            lazy: async () => ({ Component: (await import("@/pages/admin/Sustainability")).default }),
+            lazy: guarded(
+              "/sustainability",
+              () => import("@/pages/admin/Sustainability"),
+            ),
           },
           // Settings is a pathful layout route: SettingsLayout owns the tab bar
           // and the Outlet, one child route per tab. The tab list it renders is
           // features/settings/utils/settingsNav.ts — keep the two in step.
           //
-          // A tab that is exactly one panel is routed straight off that panel's
-          // named export; only tabs needing props or extra markup have a page.
+          // Two levels of guarding: the whole subtree is behind the sidebar
+          // guard (four tenant admin roles), and each restricted tab wraps its
+          // lazy Component with `settingsTabRoles(to)`. A tab with an empty
+          // `hasPermissions` skips the wrapper. Subscription nests one more
+          // layout — Plan (index) and Invoices — under a sub-tab bar.
           {
             path: "/settings",
-            Component: SettingsLayout,
+            Component: GuardedSettingsLayout,
             children: [
               {
                 index: true,
-                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/OrganizationSettingsPage")).default }),
+                lazy: guardedBy(
+                  settingsTabRoles("/settings") ?? [],
+                  () => import("@/features/settings/components/pages/OrganizationSettingsPage"),
+                ),
               },
               {
                 path: "subscription",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/TenantSubscriptionCard")).TenantSubscriptionCard }),
-              },
-              {
-                path: "subscription/invoices",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/SubscriptionInvoicesPanel")).SubscriptionInvoicesPanel }),
+                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/SubscriptionSettingsPage")).default }),
+                children: [
+                  {
+                    index: true,
+                    lazy: async () => ({ Component: (await import("@/features/settings/components/ui/TenantSubscriptionCard")).TenantSubscriptionCard }),
+                  },
+                  {
+                    path: "invoices",
+                    lazy: async () => ({ Component: (await import("@/features/settings/components/ui/SubscriptionInvoicesPanel")).SubscriptionInvoicesPanel }),
+                  },
+                ],
               },
               {
                 path: "storage",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/StoragePanel")).StoragePanel }),
+                lazy: guardedByNamed(
+                  settingsTabRoles("/settings/storage") ?? [],
+                  () => import("@/features/settings/components/ui/StoragePanel"),
+                  "StoragePanel",
+                ),
               },
               {
                 path: "invoicing",
@@ -297,19 +481,34 @@ export const router = createBrowserRouter([
               },
               {
                 path: "ai",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/AiSettingsPage")).default }),
+                lazy: guardedBy(
+                  settingsTabRoles("/settings/ai") ?? [],
+                  () => import("@/features/settings/components/pages/AiSettingsPage"),
+                ),
               },
               {
                 path: "ai-usage",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/AIUsageAnalyticsPanel")).AIUsageAnalyticsPanel }),
+                lazy: guardedByNamed(
+                  settingsTabRoles("/settings/ai-usage") ?? [],
+                  () => import("@/features/settings/components/ui/AIUsageAnalyticsPanel"),
+                  "AIUsageAnalyticsPanel",
+                ),
               },
               {
                 path: "notifications",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/NotificationPreferencesPanel")).NotificationPreferencesPanel }),
+                lazy: guardedByNamed(
+                  settingsTabRoles("/settings/notifications") ?? [],
+                  () => import("@/features/settings/components/ui/NotificationPreferencesPanel"),
+                  "NotificationPreferencesPanel",
+                ),
               },
               {
                 path: "communication",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/TenantCommunicationSettings")).TenantCommunicationSettings }),
+                lazy: guardedByNamed(
+                  settingsTabRoles("/settings/communication") ?? [],
+                  () => import("@/features/settings/components/ui/TenantCommunicationSettings"),
+                  "TenantCommunicationSettings",
+                ),
               },
               {
                 path: "users",
@@ -317,11 +516,18 @@ export const router = createBrowserRouter([
               },
               {
                 path: "branding",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/TenantBrandingPanel")).TenantBrandingPanel }),
+                lazy: guardedByNamed(
+                  settingsTabRoles("/settings/branding") ?? [],
+                  () => import("@/features/settings/components/ui/TenantBrandingPanel"),
+                  "TenantBrandingPanel",
+                ),
               },
               {
                 path: "integrations",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/IntegrationsSettingsPage")).default }),
+                lazy: guardedBy(
+                  settingsTabRoles("/settings/integrations") ?? [],
+                  () => import("@/features/settings/components/pages/IntegrationsSettingsPage"),
+                ),
               },
             ],
           },

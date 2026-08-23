@@ -1,5 +1,5 @@
 import {
-  NavLink, Outlet,
+  Navigate, NavLink, Outlet, useLocation,
 } from "react-router";
 import {
   canSeeTab, SETTINGS_TABS,
@@ -9,7 +9,7 @@ import { useAuthStore } from "@/stores/authStore";
 
 /**
  * The settings shell, mounted as a pathful layout route at `/settings` (see
- * `shared/lib/route.ts`), so the tab bar stays put while each tab's chunk
+ * `shared/lib/route.tsx`), so the tab bar stays put while each tab's chunk
  * loads into the `Outlet`. Tab pages render only their own content.
  *
  * Links, not Radix `Tabs`: every tab is its own route, so the bar is navigation
@@ -20,6 +20,28 @@ import { useAuthStore } from "@/stores/authStore";
  */
 export function SettingsLayout() {
   const role = useAuthStore(s => s.user?.role);
+  const { pathname } = useLocation();
+  const visibleTabs = SETTINGS_TABS.filter(tab => canSeeTab(
+    tab,
+    role,
+  ));
+
+  // Organization is enterprise-admin-only, but the sidebar routes several
+  // other roles to /settings. Send them to their first visible tab instead
+  // of the empty Outlet the index route would render. `visibleTabs` is
+  // non-empty in practice — sidebar gating keeps roles with no settings at
+  // all off /settings — but if it ever is, RequireRole above catches it.
+  if (pathname === "/settings" && !canSeeTab(
+    SETTINGS_TABS[0],
+    role,
+  ) && visibleTabs.length > 0) {
+    return (
+      <Navigate
+        to={visibleTabs[0].to}
+        replace
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -27,10 +49,7 @@ export function SettingsLayout() {
         aria-label="Settings sections"
         className="bg-muted/50 text-muted-foreground flex flex-wrap gap-1 h-auto rounded-md p-1"
       >
-        {SETTINGS_TABS.filter(tab => canSeeTab(
-          tab,
-          role,
-        )).map(tab => (
+        {visibleTabs.map(tab => (
           <NavLink
             key={tab.to}
             to={tab.to}

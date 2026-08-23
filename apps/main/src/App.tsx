@@ -15,7 +15,7 @@ import { useAuthStore } from "./stores/authStore";
 
 /**
  * Root layout route (pathless). Owns the provider tower and the auth gate;
- * the route table lives in shared/lib/route.ts.
+ * the route table lives in shared/lib/route.tsx.
  */
 function App() {
   useEffect(

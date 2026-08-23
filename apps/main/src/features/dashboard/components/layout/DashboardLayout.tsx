@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * The dashboard shell, mounted as a pathless layout route (see
- * `shared/lib/route.ts`) so the sidebar and top bar survive navigation instead
+ * `shared/lib/route.tsx`) so the sidebar and top bar survive navigation instead
  * of remounting per page.
  *
  * Pages render only their own content. The page's title and whether it is

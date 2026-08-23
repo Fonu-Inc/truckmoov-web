@@ -352,6 +352,41 @@ export function getEntriesForRole(role: UserRole): SidebarEntry[] {
  * ponytail: raw href comparison, so the two `?tab=` entries never win and
  * `/fleet` names those pages. Same as before this list owned the title.
  */
+/**
+ * Every role listed under `href` across the sidebar — union across the
+ * top-level entries and any group children that carry their own `hasPermission`
+ * override, else the parent group's list. Returned as a deduped array in
+ * declaration order.
+ *
+ * Feeds the URL guard in `shared/lib/route.tsx`: a route whose href is in the
+ * sidebar shares the sidebar's role list. Returns `undefined` for hrefs the
+ * sidebar doesn't own (aliases, `/`, sub-routes like `/settings/branding`),
+ * so callers can decide their own policy — usually "no wrapper needed" or an
+ * explicit list.
+ */
+export function getRolesForHref(href: string): UserRole[] | undefined {
+  const roles = new Set<UserRole>();
+  let matched = false;
+  for (const entry of SIDEBAR_ENTRIES) {
+    if (isNavGroup(entry)) {
+      for (const item of entry.items) {
+        if (item.href !== href)
+          continue;
+        matched = true;
+        for (const r of item.hasPermission ?? entry.hasPermission)
+          roles.add(r);
+      }
+      continue;
+    }
+    if (entry.href !== href)
+      continue;
+    matched = true;
+    for (const r of entry.hasPermission)
+      roles.add(r);
+  }
+  return matched ? [...roles] : undefined;
+}
+
 export function matchNavEntry(pathname: string): SidebarNavItem | undefined {
   let best: SidebarNavItem | undefined;
   const consider = (item: SidebarNavItem) => {

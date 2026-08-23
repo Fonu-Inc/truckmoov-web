@@ -9,7 +9,7 @@ import { useAuthStore } from "@/stores/authStore";
 
 /**
  * The platform settings shell, mounted as a pathful layout route at `/settings`
- * (see `shared/lib/route.ts`), so the tab bar stays put while each tab's chunk
+ * (see `shared/lib/route.tsx`), so the tab bar stays put while each tab's chunk
  * loads into the `Outlet`. Tab pages render only their own content.
  *
  * Links, not Radix `Tabs`: every tab is its own route, so the bar is navigation

@@ -23,7 +23,7 @@ Source of truth files:
 ## The page shell
 
 `DashboardLayout` is a **pathless route**, not a component pages render. It sits in
-`shared/lib/route.ts` wrapping every route that gets the sidebar and top bar, so the
+`shared/lib/route.tsx` wrapping every route that gets the sidebar and top bar, so the
 shell mounts once and survives navigation:
 
 ```ts
@@ -221,9 +221,12 @@ border. Inactive: `text-sidebar-foreground/80` with `hover:bg-sidebar-accent`.
 
 The settings tab bar has its own list with its own field: `SETTINGS_TABS` in
 `features/settings/utils/settingsNav.ts` carries `hasPermissions: UserRole[]`,
-where **empty means every role** — the opposite default from the sidebar's
-`hasPermission`, which is required precisely so a new nav entry can't slip in
-visible-to-all. Both are visibility only; neither authorizes anything.
+where **empty means every role reaching this app** — the opposite default from
+the sidebar's `hasPermission`, which is required precisely so a new nav entry
+can't slip in visible-to-all. A non-empty array both hides the tab *and*
+gates its URL: `shared/lib/route.tsxx` reads the same list to wrap each tab's
+lazy Component in `RequireRole`, so a hidden tab is unreachable by typing —
+see [Route-level authorization](#route-level-authorization).
 
 ### Sidebar rendering rules
 
@@ -247,8 +250,8 @@ Fleet row.
 
 ### Route code splitting
 
-`shared/lib/route.ts` loads pages through react-router's `lazy`, one chunk per
-page, in both apps:
+`shared/lib/route.tsxx` loads pages through react-router's `lazy`, one chunk
+per page, in both apps:
 
 ```ts
 { path: "/fleet", lazy: async () => ({ Component: (await import("@/pages/admin/FleetManagement")).default }) }
@@ -259,16 +262,34 @@ stay eagerly imported — small, critical path, and a spinner in place of the lo
 form is worse than the bytes. There is no `Suspense` boundary; the router owns
 the pending state and `DashboardLayout` renders it as the top progress bar.
 
-`hasPermission` controls **sidebar visibility only** — it is not route
-authorization. There is no route-level guard: `AuthGuard` checks for a session
-(and nothing else), so any authenticated user can reach any path in the route
-table by typing it, whatever their role. Treat the sidebar as navigation, and
-gate anything that actually matters at the action or query level.
+### Route-level authorization
 
-`/not-authorized` is therefore reached only via `getPostLoginRedirectPath`, when
-a role is missing from `ROLE_REDIRECT_MAP` (`features/auth/utils/authRedirect.ts`),
-or by typing the URL. If real route gating is ever added, `OnboardingRouteGate`
-is the seam for it.
+Two lists — `SIDEBAR_ENTRIES` and `SETTINGS_TABS` — feed the same
+`RequireRole` wrapper in `shared/lib/route.tsxx`, so a URL a role can't see
+in the nav can't be reached by typing it either. Roles are read once via
+each app's `useAuthStore`; the check happens client-side before the route's
+chunk loads.
+
+- **Main app.** `getRolesForHref(href)` in `sidebarNav.ts` returns the union
+  of `hasPermission` for every entry (including group children) pointing at
+  that href. `guarded(href, importer)` in `route.tsx` looks it up and wraps
+  the lazy Component in a `RequireRole` that redirects to `/not-authorized`
+  when the role doesn't match. Routes not in the sidebar — onboarding, the
+  supervisor tree, `/help`, the architecture docs, detail pages — stay
+  open, same as before. Settings tabs are guarded a second time by their
+  own `hasPermissions` list.
+- **Admin app.** Every route shares the three `ADMIN_ROLES`, so a single
+  `withGuard(ADMIN_ROLES, DashboardLayout)` at the shell covers the whole
+  tree; the settings layout gets the same wrapper.
+
+`AuthGuard` still only checks for a session — role gating is the wrapper's
+job. `/not-authorized` is reached three ways now: `getPostLoginRedirectPath`
+sending a role missing from `ROLE_REDIRECT_MAP`
+(`features/auth/utils/authRedirect.ts`), the `RequireRole` wrapper firing on
+a URL-typed hidden route, or typing the URL directly.
+
+This is client-side gating and treated as a nav convenience — the browser
+still owns the guard. Real authorization stays at the API layer.
 
 The sidebar shows org branding (`branding.logoUrl`, `organizationName` from
 `getOrganizationSettingsQueryOptions`), falling back to the MTN logo, plus a
@@ -292,7 +313,7 @@ is a page, so it gets a real anchor, back/forward, middle-click and a URL you
 can send someone — and no `aria-controls` pointing at a panel that isn't there.
 Every link takes `end`; settings routes are all leaves.
 
-Two consequences worth copying:
+Three consequences worth copying:
 
 - The tab list lives in `features/settings/utils/settingsNav.ts`
   (`SETTINGS_TABS`), the way the nav lives in `sidebarNav.ts`. Adding a tab is
@@ -302,6 +323,10 @@ Two consequences worth copying:
   so there is no wrapper page. Only tabs needing props, or holding more than one
   panel, have a file in `components/pages/`. See
   [file-structure.md](file-structure.md#a-panel-that-is-exactly-one-route).
+- A tab that itself holds several routes nests one more layout the same way.
+  `/settings/subscription` in `apps/main` is `SubscriptionSettingsPage`, a
+  mini layout with Plan (`index`) and Invoices (`/settings/subscription/invoices`)
+  sub-tabs. Copy the pattern when the parent tab needs its own bar.
 
 `?tab=` survives on `/fleet`, `/messages` and `/integrations`. Those are the
 next ones to convert; nothing new should use a query param for a tab.
@@ -351,7 +376,7 @@ both apps from `packages/reusables/src/components/pages/`:
 
 They compose `StatusScreen.tsx`, which is presentational — no router, no stores,
 the action is a `children` slot. That is what lets both apps import the pages
-directly in `shared/lib/route.ts` instead of keeping a copy each.
+directly in `shared/lib/route.tsx` instead of keeping a copy each.
 
 The panel is a solid `bg-card` card with a **2px accent left rail** — the same
 device the sidebar uses for its active item — an eyebrow log line, the status

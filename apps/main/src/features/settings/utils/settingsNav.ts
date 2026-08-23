@@ -7,7 +7,6 @@ import {
   Building2,
   CreditCard,
   FileCheck,
-  FileText,
   HardDrive,
   Palette,
   Plug,
@@ -17,7 +16,7 @@ import {
 } from "lucide-react";
 
 export type SettingsTab = {
-  /** Absolute path, matching the child route in `shared/lib/route.ts`. */
+  /** Absolute path, matching the child route in `shared/lib/route.tsx`. */
   to: string;
   /** Tab text. Hidden below `sm`, where only the icon shows. */
   label: string;
@@ -27,26 +26,30 @@ export type SettingsTab = {
 };
 
 /**
+ * Tabs limited to the enterprise admin — the only tenant role that owns
+ * org-wide configuration. Kept as a constant so route.ts can reuse the same
+ * list when guarding the URL.
+ */
+const ENTERPRISE_ADMIN_ONLY: UserRole[] = ["ENTERPRISE_ADMIN"];
+
+/**
  * The settings tab bar, in order. One entry per child route of `/settings` —
- * add a route here and in `shared/lib/route.ts`, same as the sidebar.
+ * add a route here and in `shared/lib/route.tsx`, same as the sidebar.
  *
- * ponytail: `hasPermissions` is empty on every tab today. The list is the seam;
- * fill a row in the day a tab needs locking down, and nothing else changes.
- * Empty means "everyone" — deliberately unlike `sidebarNav.ts`, where a missing
- * role list is a type error so a new nav entry can't default to visible-to-all.
+ * `hasPermissions` is now both the tab-bar filter and the input to the route
+ * guard in `shared/lib/route.tsx`: an empty array still means "every role that
+ * reaches this app", but a filled one locks the URL too. Invoices is no
+ * longer a top-level tab — it lives inside Subscription as a sub-tab.
  */
 export const SETTINGS_TABS: SettingsTab[] = [
   {
-    to: "/settings", label: "Organization", icon: Building2, hasPermissions: [],
+    to: "/settings", label: "Organization", icon: Building2, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
     to: "/settings/subscription", label: "Subscription", icon: CreditCard, hasPermissions: [],
   },
   {
-    to: "/settings/subscription/invoices", label: "Invoices", icon: FileText, hasPermissions: [],
-  },
-  {
-    to: "/settings/storage", label: "Storage", icon: HardDrive, hasPermissions: [],
+    to: "/settings/storage", label: "Storage", icon: HardDrive, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
     to: "/settings/invoicing", label: "Invoicing", icon: Receipt, hasPermissions: [],
@@ -58,32 +61,32 @@ export const SETTINGS_TABS: SettingsTab[] = [
     to: "/settings/fleet", label: "Fleet", icon: Wrench, hasPermissions: [],
   },
   {
-    to: "/settings/ai", label: "AI Matching", icon: Bot, hasPermissions: [],
+    to: "/settings/ai", label: "AI Matching", icon: Bot, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
-    to: "/settings/ai-usage", label: "AI Usage", icon: BarChart3, hasPermissions: [],
+    to: "/settings/ai-usage", label: "AI Usage", icon: BarChart3, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
-    to: "/settings/notifications", label: "Notifications", icon: Bell, hasPermissions: [],
+    to: "/settings/notifications", label: "Notifications", icon: Bell, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
-    to: "/settings/communication", label: "Communication", icon: Bell, hasPermissions: [],
+    to: "/settings/communication", label: "Communication", icon: Bell, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
     to: "/settings/users", label: "Users", icon: Users, hasPermissions: [],
   },
   {
-    to: "/settings/branding", label: "Branding", icon: Palette, hasPermissions: [],
+    to: "/settings/branding", label: "Branding", icon: Palette, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
-    to: "/settings/integrations", label: "Connections", icon: Plug, hasPermissions: [],
+    to: "/settings/integrations", label: "Connections", icon: Plug, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
 ];
 
 /**
- * Tab-bar visibility only — not authorization. Typing a hidden tab's URL still
- * renders it, exactly like the sidebar's `hasPermission` (see docs/design.md).
- * Gate anything that matters at the action or query level.
+ * Tab-bar visibility. The same predicate feeds the URL guard in
+ * `shared/lib/route.tsx`, so a tab hidden here can't be reached by typing its
+ * URL — both are UI/URL gating; backend actions still enforce authorization.
  */
 export function canSeeTab(tab: SettingsTab, role?: UserRole): boolean {
   return tab.hasPermissions.length === 0 || (!!role && tab.hasPermissions.includes(role));
