@@ -59,7 +59,7 @@ export function TrialBanner() {
         variant="outline"
         className="h-8 gap-1.5"
       >
-        <Link to="/settings?tab=subscription">
+        <Link to="/settings/billing">
           Upgrade now
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>

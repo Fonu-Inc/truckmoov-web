@@ -215,7 +215,7 @@ export function StoragePanel() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => navigate("/settings?tab=subscription")}
+                        onClick={() => navigate("/settings/subscription")}
                       >
                         Upgrade plan
                       </Button>

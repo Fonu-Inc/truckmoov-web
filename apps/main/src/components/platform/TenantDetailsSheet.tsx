@@ -52,8 +52,8 @@ import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { TenantKYCVerification } from "@/features/settings/components/ui/TenantKYCVerification";
 import { DataExportPanel } from "./DataExportPanel";
-import { TenantKYCVerification } from "./TenantKYCVerification";
 import { TerminateTenantDialog } from "./TerminateTenantDialog";
 
 export type TenantData = {

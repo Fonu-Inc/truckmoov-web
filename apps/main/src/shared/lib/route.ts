@@ -12,6 +12,7 @@ import ResetPasswordPage from "@/features/auth/components/pages/ResetPasswordPag
 import SignUpPage from "@/features/auth/components/pages/SignUpPage";
 import { RoleHomeRedirect } from "@/features/auth/components/ui/RoleHomeRedirect";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
+import { SettingsLayout } from "@/features/settings/components/layout/SettingsLayout";
 
 /**
  * App is a pathless layout route: it owns the provider tower, the AuthGuard
@@ -24,6 +25,10 @@ import { DashboardLayout } from "@/features/dashboard/components/layout/Dashboar
  * renders the dashboard shell, so the sidebar and top bar mount once instead
  * of per page. Routes outside it — auth, the redirects, the print preview,
  * 404/403 — own their own chrome.
+ *
+ * `/settings` is the one pathful layout route: SettingsLayout owns the tab bar,
+ * each tab is a child route. Tabs are routes, not query params — see the block
+ * further down and features/settings/utils/settingsNav.ts.
  *
  * Pages are loaded through react-router's `lazy`, not imported at the top: each
  * becomes its own chunk that arrives when the route is first visited. Eagerly
@@ -116,10 +121,6 @@ export const router = createBrowserRouter([
       {
         path: "/compliance",
         loader: () => redirect("/fleet?tab=compliance"),
-      },
-      {
-        path: "/subscription",
-        loader: () => redirect("/settings?tab=subscription"),
       },
 
       // Everything inside the dashboard shell. Pages render their own content
@@ -256,9 +257,73 @@ export const router = createBrowserRouter([
             path: "/sustainability",
             lazy: async () => ({ Component: (await import("@/pages/admin/Sustainability")).default }),
           },
+          // Settings is a pathful layout route: SettingsLayout owns the tab bar
+          // and the Outlet, one child route per tab. The tab list it renders is
+          // features/settings/utils/settingsNav.ts — keep the two in step.
+          //
+          // A tab that is exactly one panel is routed straight off that panel's
+          // named export; only tabs needing props or extra markup have a page.
           {
             path: "/settings",
-            lazy: async () => ({ Component: (await import("@/pages/admin/Settings")).default }),
+            Component: SettingsLayout,
+            children: [
+              {
+                index: true,
+                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/OrganizationSettingsPage")).default }),
+              },
+              {
+                path: "subscription",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/TenantSubscriptionCard")).TenantSubscriptionCard }),
+              },
+              {
+                path: "subscription/invoices",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/SubscriptionInvoicesPanel")).SubscriptionInvoicesPanel }),
+              },
+              {
+                path: "storage",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/StoragePanel")).StoragePanel }),
+              },
+              {
+                path: "invoicing",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/TenantInvoiceConfigPanel")).TenantInvoiceConfigPanel }),
+              },
+              {
+                path: "kyc",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/KycSettingsPage")).default }),
+              },
+              {
+                path: "fleet",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/MaintenanceConfigPanel")).MaintenanceConfigPanel }),
+              },
+              {
+                path: "ai",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/AiSettingsPage")).default }),
+              },
+              {
+                path: "ai-usage",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/AIUsageAnalyticsPanel")).AIUsageAnalyticsPanel }),
+              },
+              {
+                path: "notifications",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/NotificationPreferencesPanel")).NotificationPreferencesPanel }),
+              },
+              {
+                path: "communication",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/TenantCommunicationSettings")).TenantCommunicationSettings }),
+              },
+              {
+                path: "users",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/UsersSettingsPage")).default }),
+              },
+              {
+                path: "branding",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/TenantBrandingPanel")).TenantBrandingPanel }),
+              },
+              {
+                path: "integrations",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/IntegrationsSettingsPage")).default }),
+              },
+            ],
           },
 
           // Supervisor

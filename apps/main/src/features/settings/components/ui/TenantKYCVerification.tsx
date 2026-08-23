@@ -116,6 +116,12 @@ const INDUSTRIES = [
   "Other",
 ];
 
+/**
+ * ponytail: also rendered by `components/platform/TenantDetailsSheet`, which is
+ * still in the unmigrated `components/` bucket — so the cross-folder import is
+ * legal today. The day `platform` becomes a feature, move this to
+ * `shared/components/ui/`: a feature may not reach into another feature.
+ */
 export function TenantKYCVerification({
   tenantId, readOnly = false,
 }: {

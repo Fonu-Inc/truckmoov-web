@@ -14,6 +14,7 @@ Source of truth files:
 | Sidebar | `apps/main/src/features/dashboard/components/ui/DashboardSidebar.tsx` |
 | Top bar | `apps/main/src/features/dashboard/components/ui/DashboardHeader.tsx` |
 | Navigation per role | `apps/main/src/features/dashboard/utils/sidebarNav.ts` |
+| Settings tab bar | `apps/main/src/features/settings/utils/settingsNav.ts` |
 | UI primitives | `packages/reusables/src/components/shadcn/` |
 | Status screens (404 / 403 / crash) | `packages/reusables/src/components/pages/` |
 
@@ -32,6 +33,10 @@ shell mounts once and survives navigation:
 A page therefore returns only its own content — it takes no `title` prop and never
 imports the layout. Auth screens, the redirect aliases, the print-only P&L preview and
 the 404/403 screens sit outside that wrapper and own their own chrome.
+
+`/settings` nests a second layout route inside it — `SettingsLayout`, the only
+**pathful** one — which owns the settings tab bar the same way: its tab pages
+render content only. See [Tabs are routes](#tabs-are-routes-not-query-params).
 
 ### One route, one name
 
@@ -214,6 +219,12 @@ border. Inactive: `text-sidebar-foreground/80` with `hover:bg-sidebar-accent`.
 **To add a page to the nav, add one entry to `SIDEBAR_ENTRIES` in
 `sidebarNav.ts` with the roles that may see it.**
 
+The settings tab bar has its own list with its own field: `SETTINGS_TABS` in
+`features/settings/utils/settingsNav.ts` carries `hasPermissions: UserRole[]`,
+where **empty means every role** — the opposite default from the sidebar's
+`hasPermission`, which is required precisely so a new nav entry can't slip in
+visible-to-all. Both are visibility only; neither authorizes anything.
+
 ### Sidebar rendering rules
 
 The sidebar re-renders once per session, not once per navigation. Three rules
@@ -266,8 +277,34 @@ short role badge (`ENTERPRISE`, `FLEET`, `OPERATOR`, …).
 ## Standard page composition
 
 Most pages are: layout → optional `Tabs` → `Card` per section → `TableToolbar`
-in `CardHeader` → `Table`. See `apps/main/src/pages/admin/Settings.tsx` for the
-canonical example (tabbed settings with a filtered members table).
+in `CardHeader` → `Table`. See
+`apps/main/src/features/settings/components/pages/UsersSettingsPage.tsx` for the
+canonical example (a filtered members table with row actions and dialogs).
+
+### Tabs are routes, not query params
+
+`/settings` in both apps is the pattern to copy for a tabbed screen:
+`SettingsLayout` is a **pathful layout route** owning the tab bar and the
+`Outlet`, and every tab is a child route — `/settings`, `/settings/subscription`,
+`/settings/users`. The bar is a `<nav>` of `NavLink`s wearing `TabsTrigger`'s
+classes (`isActive` in place of `data-[state=active]`), not Radix `Tabs`: a tab
+is a page, so it gets a real anchor, back/forward, middle-click and a URL you
+can send someone — and no `aria-controls` pointing at a panel that isn't there.
+Every link takes `end`; settings routes are all leaves.
+
+Two consequences worth copying:
+
+- The tab list lives in `features/settings/utils/settingsNav.ts`
+  (`SETTINGS_TABS`), the way the nav lives in `sidebarNav.ts`. Adding a tab is
+  one row there plus one child route.
+- A tab that is exactly one panel is routed straight off that panel's named
+  export (`lazy: async () => ({ Component: (await import(…)).StoragePanel })`),
+  so there is no wrapper page. Only tabs needing props, or holding more than one
+  panel, have a file in `components/pages/`. See
+  [file-structure.md](file-structure.md#a-panel-that-is-exactly-one-route).
+
+`?tab=` survives on `/fleet`, `/messages` and `/integrations`. Those are the
+next ones to convert; nothing new should use a query param for a tab.
 
 ```tsx
 <Card className="bg-card/50 border-border/50">

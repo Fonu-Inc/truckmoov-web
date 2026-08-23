@@ -86,6 +86,22 @@ import { useOrgDataScope } from "@/shared/hooks/useOrgDataScope"
 import { Button } from "@/components/shadcn/button"
 ```
 
+## A panel that is exactly one route
+
+A route screen normally lives in `components/pages/`. The exception: when a tab
+or page is exactly one panel with no props, route that panel's named export
+directly instead of writing a three-line wrapper page.
+
+```ts
+// shared/lib/route.ts
+{ path: "storage", lazy: async () => ({ Component: (await import("@/features/settings/components/ui/StoragePanel")).StoragePanel }) }
+```
+
+`features/settings` is the worked example: 14 tabs in `apps/main`, 16 in
+`apps/admin`, and only the ones needing props or holding more than one panel have
+a file in `components/pages/`. The route table plus that feature's
+`utils/settingsNav.ts` are the index of which `ui/` components are routes.
+
 ## Create only what you need
 
 Do not scaffold empty category folders. A feature that is one component is just
@@ -100,7 +116,7 @@ Colocated next to their subject: `NotificationPreferencesPanel.tsx` sits beside
 
 | File | Location |
 | --- | --- |
-| A route screen | `features/[feature]/components/pages/` |
+| A route screen | `features/[feature]/components/pages/` (unless it is [exactly one panel](#a-panel-that-is-exactly-one-route)) |
 | A form for one feature | `features/[feature]/components/forms/` |
 | A hook used by one feature | `features/[feature]/hooks/` |
 | A hook used by two features | `shared/hooks/` |

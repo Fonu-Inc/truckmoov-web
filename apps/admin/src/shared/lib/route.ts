@@ -5,6 +5,7 @@ import App from "@/App";
 import { AuthLayout } from "@/features/auth/components/layout/AuthLayout";
 import AuthPage from "@/features/auth/components/pages/AuthPage";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
+import { SettingsLayout } from "@/features/settings/components/layout/SettingsLayout";
 
 /**
  * App is a pathless layout route: it owns the provider tower, the AuthGuard
@@ -17,6 +18,10 @@ import { DashboardLayout } from "@/features/dashboard/components/layout/Dashboar
  * renders the dashboard shell, so the sidebar and top bar mount once instead
  * of per page. Auth and the 404/403 screens sit outside it — they own their
  * own chrome.
+ *
+ * `/settings` is the one pathful layout route: SettingsLayout owns the tab bar,
+ * each tab is a child route. Tabs are routes, not local state — see the block
+ * further down and features/settings/utils/settingsNav.ts.
  *
  * Pages are loaded through react-router's `lazy`, not imported at the top: each
  * becomes its own chunk that arrives when the route is first visited. Eagerly
@@ -95,9 +100,81 @@ export const router = createBrowserRouter([
             path: "/compliance-audit",
             lazy: async () => ({ Component: (await import("@/pages/platform/PlatformComplianceAudit")).default }),
           },
+          // Settings is a pathful layout route: SettingsLayout owns the tab bar
+          // and the Outlet, one child route per tab. The tab list it renders is
+          // features/settings/utils/settingsNav.ts — keep the two in step.
+          //
+          // A tab that is exactly one panel is routed straight off that panel's
+          // named export; only tabs needing props or extra markup have a page.
           {
             path: "/settings",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformSettings")).default }),
+            Component: SettingsLayout,
+            children: [
+              {
+                index: true,
+                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/GeneralSettingsPage")).default }),
+              },
+              {
+                path: "team",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PlatformTeamManagement")).PlatformTeamManagement }),
+              },
+              {
+                path: "ai-providers",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PlatformAISettings")).PlatformAISettings }),
+              },
+              {
+                path: "integrations",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/IntegrationSettings")).IntegrationSettings }),
+              },
+              {
+                path: "api-governance",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/IntegrationsGovernance")).IntegrationsGovernance }),
+              },
+              {
+                path: "whatsapp",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/WhatsAppSettingsPage")).default }),
+              },
+              {
+                path: "webhooks",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/WebhookManagement")).WebhookManagement }),
+              },
+              {
+                path: "kyc-review",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/KYCReviewWorkflow")).KYCReviewWorkflow }),
+              },
+              {
+                path: "telephony",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/TelephonySettingsPage")).default }),
+              },
+              {
+                path: "notifications",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/NotificationsSettingsPage")).default }),
+              },
+              {
+                path: "security",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/SecuritySettingsPage")).default }),
+              },
+              {
+                path: "service-tiers",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/TieredServicesManager")).TieredServicesManager }),
+              },
+              {
+                path: "billing",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/BillingSettingsPage")).default }),
+              },
+              {
+                path: "api",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/ApiSettingsPage")).default }),
+              },
+              {
+                path: "feature-flags",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/FeatureFlagsPanel")).FeatureFlagsPanel }),
+              },
+              {
+                path: "upgrades",
+                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/OrgUpgradeQueue")).OrgUpgradeQueue }),
+              },
+            ],
           },
           {
             path: "/support",
