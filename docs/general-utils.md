@@ -44,6 +44,18 @@ Every avatar in both apps reads the same, so there is no per-site fallback —
 no `"U"`, `"?"`, `"TM"` or `"DR"`. Outside this file there should be no
 `name.charAt(0)` or `name.split(" ").map(n => n[0])`.
 
+**`debounce(fn, wait)`** — wrap a function so it only fires after `wait` ms of
+quiet. The returned function has `.cancel()`; call it from `useEffect`
+cleanup so a pending trailing call doesn't run after the component unmounts.
+Reach for it whenever a keystroke/resize/filter change should not fan out to
+a request or heavy work on every tick.
+
+```tsx
+const debounced = useMemo(() => debounce(setDebounced, 300), [])
+useEffect(() => () => debounced.cancel(), [debounced])
+onChange={e => debounced(e.target.value)}
+```
+
 ## Adding a function
 
 1. Write it in `general-utils.ts`, with a comment saying **when to reach for it**.

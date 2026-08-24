@@ -83,6 +83,7 @@ import type {
   OnboardingSubscriptionCapsResponse,
   OrganizationSettingsResponse,
   OrganizationUserResponse,
+  OrganizationUsersQuery,
   OrganizationUsersResponse,
   ProfileResponse,
   RefreshPayload,
@@ -325,8 +326,10 @@ export async function logout({ data }: LogoutPayload) {
   return res
 }
 
-export async function getOrganizationUsers() {
-  const { data } = await axiosInstance.get<OrganizationUsersResponse>('/auth/organization/users')
+export async function getOrganizationUsers(payload?: OrganizationUsersQuery) {
+  const { data } = await axiosInstance.get<OrganizationUsersResponse>('/auth/organization/users', {
+    params: payload?.params,
+  })
   return data
 }
 

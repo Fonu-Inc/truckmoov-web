@@ -22,3 +22,38 @@ export function getInitials(name?: string | null): string {
       .join('') || '-'
   )
 }
+
+/**
+ * Debounce: return a wrapped version of `fn` that only fires after `wait` ms
+ * of quiet. Reach for it whenever a change event (keystroke, resize, filter)
+ * should not fan out to work like a request or a heavy re-render on every tick.
+ *
+ * The returned function has a `.cancel()` method — call it from `useEffect`
+ * cleanup so a pending trailing call doesn't run after the component unmounts
+ * or the value is superseded.
+ *
+ *   const debounced = debounce((v: string) => search(v), 300)
+ *   input.oninput = e => debounced(e.target.value)
+ *   // later: debounced.cancel()
+ */
+export function debounce<Args extends unknown[]>(
+  fn: (...args: Args) => void,
+  wait: number,
+): ((...args: Args) => void) & { cancel: () => void } {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  const debounced = (...args: Args) => {
+    if (timer)
+      clearTimeout(timer)
+    timer = setTimeout(() => {
+      timer = null
+      fn(...args)
+    }, wait)
+  }
+  debounced.cancel = () => {
+    if (timer) {
+      clearTimeout(timer)
+      timer = null
+    }
+  }
+  return debounced
+}

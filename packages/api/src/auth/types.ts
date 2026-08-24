@@ -732,6 +732,14 @@ export type OrganizationUsersData = {
   users: OrganizationUser[]
 }
 
+export type OrganizationUsersQuery = {
+  params?: {
+    search?: string
+    status?: 'active' | 'inactive' | 'invited'
+    role?: UserRole
+  }
+}
+
 export type OrganizationUserMutationData = {
   message: string
   user: OrganizationUser

@@ -13,13 +13,15 @@ import {
   useUpdateOrganizationUser,
   useUpdateOrganizationUserStatus,
 } from "@truckmoov/api/auth";
-import { getInitials } from "@truckmoov/app-core/utils/general-utils";
+import {
+  debounce, getInitials,
+} from "@truckmoov/app-core/utils/general-utils";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   Clock, Mail, MoreHorizontal, Pencil, Plus, Trash2, UserCheck, UserX,
 } from "lucide-react";
 import {
-  useEffect, useState,
+  useEffect, useMemo, useState,
 } from "react";
 import { toast } from "sonner";
 import {
@@ -64,6 +66,7 @@ import {
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import { getRoleLabel } from "@/features/auth/utils/role-label";
 import { RolePermissionsMatrix } from "@/features/settings/components/ui/RolePermissionsMatrix";
+import { canManageOrganizationUsers } from "@/features/settings/utils/userManagementPermissions";
 import { useAuthStore } from "@/stores/authStore";
 
 type RoleOption = {
@@ -132,7 +135,7 @@ const statusColors: Record<string, string> = {
   active: "bg-success/20 text-success border-success/30",
   invited: "bg-warning/20 text-warning border-warning/30",
   suspended: "bg-destructive/20 text-destructive border-destructive/30",
-  disabled: "bg-destructive/20 text-destructive border-destructive/30",
+  inactive: "bg-destructive/20 text-destructive border-destructive/30",
 };
 
 /**
@@ -144,8 +147,9 @@ export default function UsersSettingsPage() {
   // ponytail: the signed-in role IS the org context here — /settings is admin-only
   // and each admin role maps 1:1 to an org type, so there is nothing to look up.
   const currentRole = user?.role;
+  const canManage = canManageOrganizationUsers(currentRole);
   const inviteRoleOptions = (currentRole && INVITE_ROLES_BY_ADMIN_ROLE[currentRole]) || [];
-  const canInviteUsers = inviteRoleOptions.length > 0;
+  const canInviteUsers = canManage && inviteRoleOptions.length > 0;
   const defaultInviteRole: UserRole = inviteRoleOptions[0]?.value ?? UserRole.FINANCE_VIEWER;
 
   const [
@@ -221,7 +225,62 @@ export default function UsersSettingsPage() {
     setRemovingUser,
   ] = useState<TenantUser | null>(null);
 
-  const organizationUsersQuery = useQuery(getOrganizationUsersQueryOptions());
+  // Team members table toolbar state. Declared here so the query below can key
+  // off it — server-side search / status / role filter.
+  const [
+    teamSearch,
+    setTeamSearch,
+  ] = useState("");
+  const [
+    debouncedSearch,
+    setDebouncedSearch,
+  ] = useState("");
+  const [
+    teamStatus,
+    setTeamStatus,
+  ] = useState<string>("all");
+  const [
+    teamFilters,
+    setTeamFilters,
+  ] = useState<FilterValues>({});
+
+  // Debounce the search input so keystrokes don't fan out to a request each.
+  // Cancel a pending trailing call on unmount / re-run.
+  const debouncedSetSearch = useMemo(
+    () => debounce(
+      (v: string) => setDebouncedSearch(v.trim()),
+      300,
+    ),
+    [],
+  );
+  useEffect(
+    () => () => debouncedSetSearch.cancel(),
+    [debouncedSetSearch],
+  );
+  useEffect(
+    () => {
+      debouncedSetSearch(teamSearch);
+    },
+    [
+      teamSearch,
+      debouncedSetSearch,
+    ],
+  );
+
+  const roleFilter = teamFilters.role;
+  const activeRoleFilter
+    = roleFilter?.enabled && roleFilter.value ? (roleFilter.value as UserRole) : undefined;
+  const organizationUsersQuery = useQuery(
+    getOrganizationUsersQueryOptions({
+      params: {
+        ...(debouncedSearch ? { search: debouncedSearch } : {}),
+        ...(teamStatus === "active" || teamStatus === "inactive" || teamStatus === "invited"
+          ? { status: teamStatus }
+          : {}),
+        ...(activeRoleFilter ? { role: activeRoleFilter } : {}),
+      },
+    }),
+  );
   const inviteUserMutation = useInviteUser();
   const updateUserMutation = useUpdateOrganizationUser();
   const changeRoleMutation = useChangeRole();
@@ -237,7 +296,7 @@ export default function UsersSettingsPage() {
       role: organizationUser.role,
       status:
         organizationUser.accountStatus === "disabled"
-          ? "disabled"
+          ? "inactive"
           : organizationUser.status,
       lastActive: formatRelative(
         organizationUser.lastActiveAt,
@@ -363,72 +422,23 @@ export default function UsersSettingsPage() {
     );
   };
 
-  // Team members table toolbar state
-  const [
-    teamSearch,
-    setTeamSearch,
-  ] = useState("");
-  const [
-    teamStatus,
-    setTeamStatus,
-  ] = useState("all");
-  const [
-    teamFilters,
-    setTeamFilters,
-  ] = useState<FilterValues>({});
-
+  // Role filter offers every tenant-facing role — a stable option list, so the
+  // dropdown doesn't reshape as the current page's results narrow. Admin roles
+  // (SUPER/SYSTEM/PLATFORM) are backend-only and never appear as tenant users.
   const teamFilterFields: FilterField[] = [
     {
       type: "select",
       key: "role",
       label: "Role",
-      // ponytail: offer only the roles actually present in this org
-      options: [...new Set(tenantUsers.map(u => u.role))].map(role => ({
-        value: role,
-        label: getRoleLabel(role),
-      })),
-    },
-    {
-      type: "select",
-      key: "lastActive",
-      label: "Last Active",
-      options: [
-        {
-          value: "today", label: "Today",
-        },
-        {
-          value: "week", label: "This week",
-        },
-        {
-          value: "older", label: "Older",
-        },
-      ],
+      options: (Object.values(UserRole) as UserRole[])
+        .filter(
+          r => r !== UserRole.SUPER_ADMIN && r !== UserRole.SYSTEM_ADMIN && r !== UserRole.PLATFORM_ADMIN,
+        )
+        .map(role => ({
+          value: role, label: getRoleLabel(role),
+        })),
     },
   ];
-
-  const filteredTenantUsers = tenantUsers.filter((u) => {
-    const q = teamSearch.trim().toLowerCase();
-    if (q && !`${u.name} ${u.email}`.toLowerCase().includes(q))
-      return false;
-    if (teamStatus !== "all" && u.status !== teamStatus)
-      return false;
-    const roleF = teamFilters.role;
-    if (roleF?.enabled && roleF.value && u.role !== roleF.value)
-      return false;
-    const laF = teamFilters.lastActive;
-    if (laF?.enabled && laF.value) {
-      const la = (u.lastActive || "").toLowerCase();
-      const isToday = /min|hour|today/.test(la);
-      const isWeek = isToday || /day|yesterday/.test(la);
-      if (laF.value === "today" && !isToday)
-        return false;
-      if (laF.value === "week" && !isWeek)
-        return false;
-      if (laF.value === "older" && isWeek)
-        return false;
-    }
-    return true;
-  });
 
   return (
     <div className="space-y-6">
@@ -507,9 +517,9 @@ export default function UsersSettingsPage() {
               </Dialog>
             )
           : (
-              <span className="text-xs text-muted-foreground">
-                Owner-operator accounts are single-user. Inviting additional team
-                members isn't available on this plan.
+              <span className="text-xs text-muted-foreground max-w-xs text-right">
+                You have view-only access to team members. Ask an Enterprise
+                Admin to make changes.
               </span>
             )}
       </div>
@@ -530,10 +540,10 @@ export default function UsersSettingsPage() {
                 value: "active", label: "Active",
               },
               {
-                value: "invited", label: "Invited",
+                value: "inactive", label: "Inactive",
               },
               {
-                value: "disabled", label: "Disabled",
+                value: "invited", label: "Invited",
               },
             ]}
             filterEntity="team members"
@@ -582,18 +592,20 @@ export default function UsersSettingsPage() {
                       </TableCell>
                     </TableRow>
                   )
-                : filteredTenantUsers.length === 0
+                : tenantUsers.length === 0
                   ? (
                       <TableRow>
                         <TableCell
                           colSpan={5}
                           className="text-center py-8 text-muted-foreground"
                         >
-                          {tenantUsers.length === 0 ? "No team members yet. Invite someone to get started." : "No team members match your filters."}
+                          {debouncedSearch || teamStatus !== "all" || activeRoleFilter
+                            ? "No team members match your filters."
+                            : "No team members yet. Invite someone to get started."}
                         </TableCell>
                       </TableRow>
                     )
-                  : filteredTenantUsers.map(tenantUser => (
+                  : tenantUsers.map(tenantUser => (
                       <TableRow
                         key={tenantUser.id}
                         className="border-border/50"
@@ -626,51 +638,53 @@ export default function UsersSettingsPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEditUser(tenantUser)}>
-                                <Pencil className="h-4 w-4 mr-2" />
-                                Edit User
-                              </DropdownMenuItem>
-                              {tenantUser.status === "invited" && (
-                                <DropdownMenuItem
-                                  onClick={() => handleResendInvite(tenantUser)}
-                                  disabled={resendInviteMutation.isPending}
+                          {canManage && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
                                 >
-                                  <Mail className="h-4 w-4 mr-2" />
-                                  Resend Invite
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEditUser(tenantUser)}>
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Edit User
                                 </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem
-                                onClick={() => handleToggleUserStatus(tenantUser)}
-                                disabled={updateStatusMutation.isPending}
-                              >
-                                {tenantUser.accountStatus === "disabled"
-                                  ? (
-                                      <UserCheck className="h-4 w-4 mr-2" />
-                                    )
-                                  : (
-                                      <UserX className="h-4 w-4 mr-2" />
-                                    )}
-                                {tenantUser.accountStatus === "disabled" ? "Enable User" : "Disable User"}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => handleOpenRemoveDialog(tenantUser)}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Remove
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                                {tenantUser.status === "invited" && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleResendInvite(tenantUser)}
+                                    disabled={resendInviteMutation.isPending}
+                                  >
+                                    <Mail className="h-4 w-4 mr-2" />
+                                    Resend Invite
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                  onClick={() => handleToggleUserStatus(tenantUser)}
+                                  disabled={updateStatusMutation.isPending}
+                                >
+                                  {tenantUser.accountStatus === "disabled"
+                                    ? (
+                                        <UserCheck className="h-4 w-4 mr-2" />
+                                      )
+                                    : (
+                                        <UserX className="h-4 w-4 mr-2" />
+                                      )}
+                                  {tenantUser.accountStatus === "disabled" ? "Enable User" : "Disable User"}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => handleOpenRemoveDialog(tenantUser)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Remove
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

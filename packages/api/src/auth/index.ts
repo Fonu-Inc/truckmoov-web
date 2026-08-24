@@ -169,6 +169,7 @@ import {
 } from './requests'
 import type {
   ActivityLogQuery,
+  OrganizationUsersQuery,
   GetSimBatchPayload,
   SystemSimBatchesSummary,
   SystemDeviceCatalogQuery,
@@ -208,7 +209,8 @@ export const AUTH_QUERY_KEY = {
   notificationPreferences: ['notificationPreferences'],
   dispatchPreferences: ['dispatchPreferences'],
 
-  organizationUsers: ['organizationUsers'],
+  organizationUsers: (payload?: OrganizationUsersQuery) =>
+    payload ? ['organizationUsers', payload] : ['organizationUsers'],
   organizationSettings: ['organizationSettings'],
 
   activityLog: (payload?: ActivityLogQuery) => ['activityLog', payload],
@@ -412,10 +414,10 @@ export function useUpdateDispatchPreferences() {
 
 // Organization users/settings
 
-export function getOrganizationUsersQueryOptions() {
+export function getOrganizationUsersQueryOptions(payload?: OrganizationUsersQuery) {
   return queryOptions({
-    queryKey: AUTH_QUERY_KEY.organizationUsers,
-    queryFn: getOrganizationUsers,
+    queryKey: AUTH_QUERY_KEY.organizationUsers(payload),
+    queryFn: () => getOrganizationUsers(payload),
   })
 }
 
@@ -430,7 +432,7 @@ export function useInviteUser() {
   return useMutation({
     mutationFn: inviteUser,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.organizationUsers })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.organizationUsers() })
     },
   })
 }
@@ -443,7 +445,7 @@ export function useChangeRole() {
   return useMutation({
     mutationFn: changeRole,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.organizationUsers })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.organizationUsers() })
     },
   })
 }
@@ -452,7 +454,7 @@ export function useUpdateOrganizationUser() {
   return useMutation({
     mutationFn: updateOrganizationUser,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.organizationUsers })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.organizationUsers() })
     },
   })
 }
@@ -461,7 +463,7 @@ export function useDeleteOrganizationUser() {
   return useMutation({
     mutationFn: deleteOrganizationUser,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.organizationUsers })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.organizationUsers() })
     },
   })
 }
@@ -470,7 +472,7 @@ export function useUpdateOrganizationUserStatus() {
   return useMutation({
     mutationFn: updateOrganizationUserStatus,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.organizationUsers })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.organizationUsers() })
     },
   })
 }
