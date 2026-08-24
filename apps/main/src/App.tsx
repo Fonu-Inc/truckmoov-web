@@ -10,7 +10,7 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { FonuCallProvider } from "./contexts/FonuCallContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
-import { TenantBrandingProvider } from "./contexts/TenantBrandingContext";
+import { BrandingProvider } from "./features/settings/branding/BrandingProvider";
 import { useAuthStore } from "./stores/authStore";
 
 /**
@@ -35,7 +35,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <CurrencyProvider>
           <PreferencesProvider>
-            <TenantBrandingProvider>
+            <BrandingProvider>
               <Sonner />
               <FonuCallProvider>
                 <AuthGuard>
@@ -45,7 +45,7 @@ function App() {
                   <GlobalSupportChat />
                 </AuthGuard>
               </FonuCallProvider>
-            </TenantBrandingProvider>
+            </BrandingProvider>
           </PreferencesProvider>
         </CurrencyProvider>
       </QueryClientProvider>

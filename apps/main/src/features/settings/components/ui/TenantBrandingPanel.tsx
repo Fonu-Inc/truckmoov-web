@@ -2,21 +2,20 @@ import type { OrganizationBrandingSettings } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
   getOrganizationSettingsQueryOptions,
-
   useUpdateOrganizationSettings,
   useUploadMedia,
 } from "@truckmoov/api/auth";
 import {
-  Image as ImageIcon, Palette, RotateCcw, Save, Upload,
+  Bell, Home, Image as ImageIcon, Palette, RotateCcw, Save, Search, Settings2, Upload,
 } from "lucide-react";
 import {
-  useRef, useState,
+  useEffect, useMemo, useRef, useState,
 } from "react";
-
 import { toast } from "sonner";
 import {
   Avatar, AvatarFallback, AvatarImage,
 } from "@/components/shadcn/avatar";
+import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
@@ -25,51 +24,28 @@ import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Separator } from "@/components/shadcn/separator";
 import { Skeleton } from "@/components/shadcn/skeleton";
-
-type BrandingColorKey
-  = | "primaryColor"
-    | "secondaryColor"
-    | "accentColor"
-    | "successColor"
-    | "warningColor"
-    | "destructiveColor"
-    | "sidebarBackground"
-    | "sidebarText"
-    | "sidebarAccent";
-
-const DEFAULT_BRANDING: Record<BrandingColorKey, string> = {
-  primaryColor: "#E6B800",
-  secondaryColor: "#1F2937",
-  accentColor: "#FFCC00",
-  successColor: "#22C55E",
-  warningColor: "#F59E0B",
-  destructiveColor: "#EF4444",
-  sidebarBackground: "#111827",
-  sidebarText: "#F9FAFB",
-  sidebarAccent: "#1F2937",
-};
+import {
+  applyBrandingToDocument,
+  BRANDING_TOKENS,
+  type BrandingColorKey,
+  clearBrandingFromDocument,
+  HEX_COLOR_PATTERN,
+  hexToHslTriplet,
+  readTokenAsHex,
+} from "../../branding/tokens";
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
-const IMAGE_TYPES = [
-  "image/png",
-  "image/jpeg",
-  "image/svg+xml",
-  "image/webp",
-];
-const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
+const IMAGE_TYPES = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
 
-type ColorFieldProps = {
+function ColorField({
+  label, value, onChange, description,
+}: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   description: string;
-};
-
-function ColorField({
-  label, value, onChange, description,
-}: ColorFieldProps) {
+}) {
   const validColor = HEX_COLOR_PATTERN.test(value);
-
   return (
     <div className="space-y-1.5">
       <Label className="text-sm">{label}</Label>
@@ -96,6 +72,85 @@ function ColorField({
   );
 }
 
+function LivePreview({ colors }: { colors: Record<BrandingColorKey, string> }) {
+  const swatch = (key: BrandingColorKey) => ({ backgroundColor: colors[key] });
+  const text = (key: BrandingColorKey) => ({ color: colors[key] });
+  return (
+    <div className="overflow-hidden rounded-lg border border-border">
+      <div className="grid grid-cols-[9rem_1fr]">
+        <aside
+          className="flex flex-col gap-1 p-3 text-xs"
+          style={{ backgroundColor: colors.sidebarBackground, color: colors.sidebarText }}
+        >
+          <div className="mb-2 flex items-center gap-2">
+            <div
+              className="flex h-7 w-7 items-center justify-center rounded-md text-[10px] font-bold"
+              style={{ backgroundColor: colors.primaryColor, color: colors.sidebarBackground }}
+            >
+              T
+            </div>
+            <span className="font-semibold tracking-tight">TruckMoov</span>
+          </div>
+          <div className="flex items-center gap-2 rounded-md px-2 py-1.5" style={{ backgroundColor: colors.sidebarAccent }}>
+            <Home className="h-3.5 w-3.5" />
+            <span>Dashboard</span>
+          </div>
+          <div className="flex items-center gap-2 rounded-md px-2 py-1.5 opacity-80">
+            <Bell className="h-3.5 w-3.5" />
+            <span>Alerts</span>
+          </div>
+          <div className="flex items-center gap-2 rounded-md px-2 py-1.5 opacity-80">
+            <Settings2 className="h-3.5 w-3.5" />
+            <span>Settings</span>
+          </div>
+        </aside>
+        <div className="space-y-3 bg-background p-4">
+          <div className="flex items-center gap-2">
+            <div className="flex flex-1 items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-xs text-muted-foreground">
+              <Search className="h-3.5 w-3.5" />
+              <span>Search fleet…</span>
+            </div>
+            <button
+              type="button"
+              className="rounded-md px-3 py-1.5 text-xs font-medium"
+              style={{ backgroundColor: colors.primaryColor, color: colors.sidebarBackground }}
+            >
+              New trip
+            </button>
+            <button
+              type="button"
+              className="rounded-md px-3 py-1.5 text-xs font-medium"
+              style={{ backgroundColor: colors.accentColor, color: colors.sidebarBackground }}
+            >
+              Assign
+            </button>
+          </div>
+          <div className="rounded-md border border-border bg-card p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-semibold">Active trip #4821</span>
+              <span
+                className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                style={{ backgroundColor: colors.successColor, color: "#fff" }}
+              >
+                On time
+              </span>
+            </div>
+            <div className="flex gap-3 text-[10px]">
+              <span className="rounded-full px-2 py-0.5" style={{ backgroundColor: colors.warningColor, color: "#111" }}>
+                Idle 3
+              </span>
+              <span className="rounded-full px-2 py-0.5" style={{ backgroundColor: colors.destructiveColor, color: "#fff" }}>
+                Alert 1
+              </span>
+              <span className="ml-auto font-medium" style={text("primaryColor")}>View</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function getErrorMessage(error: unknown, fallback: string) {
   if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
     return error.message;
@@ -108,10 +163,12 @@ export function TenantBrandingPanel() {
   const settingsQuery = useQuery(getOrganizationSettingsQueryOptions());
   const uploadMutation = useUploadMedia();
   const updateMutation = useUpdateOrganizationSettings();
-  const [
-    localColors,
-    setLocalColors,
-  ] = useState<Partial<Record<BrandingColorKey, string>>>({});
+  const [localColors, setLocalColors] = useState<Partial<Record<BrandingColorKey, string>>>({});
+
+  const savedBranding = settingsQuery.data?.data?.branding;
+  useEffect(() => () => {
+    applyBrandingToDocument(savedBranding);
+  }, [savedBranding]);
 
   if (settingsQuery.isPending) {
     return (
@@ -131,26 +188,32 @@ export function TenantBrandingPanel() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-destructive">{settingsQuery.error.message}</p>
-          <Button
-            variant="outline"
-            onClick={() => settingsQuery.refetch()}
-          >
-            Try again
-          </Button>
+          <Button variant="outline" onClick={() => settingsQuery.refetch()}>Try again</Button>
         </CardContent>
       </Card>
     );
   }
 
   const branding = settingsQuery.data.data.branding ?? {};
-  const getColor = (key: BrandingColorKey) => localColors[key] ?? branding[key] ?? DEFAULT_BRANDING[key];
+  const getColor = (key: BrandingColorKey) => {
+    const cssVar = BRANDING_TOKENS.find(t => t.key === key)!.cssVar;
+    return (localColors[key] ?? branding[key] ?? readTokenAsHex(cssVar)).toUpperCase();
+  };
+
+  const previewColors = useMemo(
+    () => Object.fromEntries(BRANDING_TOKENS.map(t => [t.key, getColor(t.key)])) as Record<BrandingColorKey, string>,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [localColors, branding],
+  );
+
   const hasChanges = Object.keys(localColors).length > 0;
-  const hasInvalidColor = Object.values(localColors).some(color => !color || !HEX_COLOR_PATTERN.test(color));
+  const hasInvalidColor = Object.values(localColors).some(c => !c || !HEX_COLOR_PATTERN.test(c));
 
   function updateColor(key: BrandingColorKey, value: string) {
-    setLocalColors(current => ({
-      ...current, [key]: value,
-    }));
+    setLocalColors(current => ({ ...current, [key]: value }));
+    const cssVar = BRANDING_TOKENS.find(t => t.key === key)!.cssVar;
+    const hsl = hexToHslTriplet(value);
+    if (hsl) document.documentElement.style.setProperty(cssVar, hsl);
   }
 
   function saveBranding(
@@ -162,8 +225,7 @@ export function TenantBrandingPanel() {
       { data: { branding: changes } },
       {
         onSuccess: () => {
-          if (clearColorChanges)
-            setLocalColors({});
+          if (clearColorChanges) setLocalColors({});
           toast.success(successMessage);
         },
         onError: error => toast.error(error.message),
@@ -176,19 +238,25 @@ export function TenantBrandingPanel() {
       toast.error("Correct invalid color values before saving.");
       return;
     }
-    saveBranding(
-      localColors,
-      "Brand colors saved successfully.",
-      true,
-    );
+    saveBranding(localColors, "Brand colors saved successfully.", true);
+  }
+
+  function handleReset() {
+    clearBrandingFromDocument();
+    const defaults = Object.fromEntries(
+      BRANDING_TOKENS.map(t => [t.key, readTokenAsHex(t.cssVar)]),
+    ) as Record<BrandingColorKey, string>;
+    setLocalColors(defaults);
+    for (const { key, cssVar } of BRANDING_TOKENS) {
+      const hsl = hexToHslTriplet(defaults[key]);
+      if (hsl) document.documentElement.style.setProperty(cssVar, hsl);
+    }
   }
 
   function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
-    if (!file)
-      return;
-
+    if (!file) return;
     if (!IMAGE_TYPES.includes(file.type)) {
       toast.error("Upload a PNG, JPG, SVG, or WebP image.");
       return;
@@ -197,21 +265,17 @@ export function TenantBrandingPanel() {
       toast.error("Image size must not exceed 2 MB.");
       return;
     }
-
-    uploadMutation.mutate(
-      file,
-      {
-        onSuccess: response => saveBranding(
-          { logoUrl: response.data.url },
-          "Organization logo updated successfully.",
-        ),
-        onError: error => toast.error(getErrorMessage(
-          error,
-          "Unable to upload image.",
-        )),
-      },
-    );
+    uploadMutation.mutate(file, {
+      onSuccess: response => saveBranding({ logoUrl: response.data.url }, "Organization logo updated successfully."),
+      onError: error => toast.error(getErrorMessage(error, "Unable to upload image.")),
+    });
   }
+
+  const groups: Array<{ id: "primary" | "status" | "sidebar"; title: string }> = [
+    { id: "primary", title: "Primary Colors" },
+    { id: "status", title: "Status Colors" },
+    { id: "sidebar", title: "Sidebar Colors" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -226,10 +290,7 @@ export function TenantBrandingPanel() {
         <CardContent>
           <div className="flex items-center gap-6">
             <Avatar className="h-20 w-20 rounded-lg">
-              <AvatarImage
-                src={branding.logoUrl || undefined}
-                className="object-contain"
-              />
+              <AvatarImage src={branding.logoUrl || undefined} className="object-contain" />
               <AvatarFallback className="rounded-lg bg-primary/20 text-xl text-primary">Logo</AvatarFallback>
             </Avatar>
             <div className="space-y-2">
@@ -270,7 +331,7 @@ export function TenantBrandingPanel() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setLocalColors(DEFAULT_BRANDING)}
+                onClick={handleReset}
                 disabled={updateMutation.isPending}
               >
                 <RotateCcw className="h-4 w-4" />
@@ -289,149 +350,36 @@ export function TenantBrandingPanel() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <section>
-            <h4 className="mb-3 text-sm font-medium">Primary Colors</h4>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-              <ColorField
-                label="Primary"
-                value={getColor("primaryColor")}
-                onChange={v => updateColor(
-                  "primaryColor",
-                  v,
+          {groups.map((group, i) => (
+            <section key={group.id}>
+              {i > 0 && <Separator className="mb-6" />}
+              <div className="mb-3 flex items-center gap-2">
+                <h4 className="text-sm font-medium">{group.title}</h4>
+                {group.id === "sidebar" && (
+                  <Badge variant="outline" className="text-[10px]">applied in both themes</Badge>
                 )}
-                description="Buttons and links"
-              />
-              <ColorField
-                label="Secondary"
-                value={getColor("secondaryColor")}
-                onChange={v => updateColor(
-                  "secondaryColor",
-                  v,
-                )}
-                description="Secondary elements"
-              />
-              <ColorField
-                label="Accent"
-                value={getColor("accentColor")}
-                onChange={v => updateColor(
-                  "accentColor",
-                  v,
-                )}
-                description="Highlights and accents"
-              />
-            </div>
-          </section>
-          <Separator />
-          <section>
-            <h4 className="mb-3 text-sm font-medium">Status Colors</h4>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-              <ColorField
-                label="Success"
-                value={getColor("successColor")}
-                onChange={v => updateColor(
-                  "successColor",
-                  v,
-                )}
-                description="Completed states"
-              />
-              <ColorField
-                label="Warning"
-                value={getColor("warningColor")}
-                onChange={v => updateColor(
-                  "warningColor",
-                  v,
-                )}
-                description="Caution states"
-              />
-              <ColorField
-                label="Destructive"
-                value={getColor("destructiveColor")}
-                onChange={v => updateColor(
-                  "destructiveColor",
-                  v,
-                )}
-                description="Errors and danger actions"
-              />
-            </div>
-          </section>
-          <Separator />
-          <section>
-            <h4 className="mb-3 text-sm font-medium">Sidebar Colors</h4>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-              <ColorField
-                label="Background"
-                value={getColor("sidebarBackground")}
-                onChange={v => updateColor(
-                  "sidebarBackground",
-                  v,
-                )}
-                description="Sidebar background"
-              />
-              <ColorField
-                label="Text"
-                value={getColor("sidebarText")}
-                onChange={v => updateColor(
-                  "sidebarText",
-                  v,
-                )}
-                description="Sidebar text and icons"
-              />
-              <ColorField
-                label="Accent"
-                value={getColor("sidebarAccent")}
-                onChange={v => updateColor(
-                  "sidebarAccent",
-                  v,
-                )}
-                description="Active item highlight"
-              />
-            </div>
-          </section>
-          <Separator />
-          <section>
-            <h4 className="mb-3 text-sm font-medium">Live Preview</h4>
-            <div className="flex h-32 overflow-hidden rounded-lg border border-border">
-              <div
-                className="flex w-16 flex-col items-center gap-2 p-2"
-                style={{ backgroundColor: getColor("sidebarBackground") }}
-              >
-                <div
-                  className="flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold text-white"
-                  style={{ backgroundColor: getColor("primaryColor") }}
-                >
-                  T
-                </div>
-                <div
-                  className="h-1 w-8 rounded opacity-50"
-                  style={{ backgroundColor: getColor("sidebarText") }}
-                />
-                <div
-                  className="h-6 w-10 rounded"
-                  style={{ backgroundColor: getColor("sidebarAccent") }}
-                />
               </div>
-              <div className="flex-1 bg-background p-3">
-                <div className="mb-3 flex gap-2">
-                  <div
-                    className="rounded px-3 py-1 text-xs font-medium text-white"
-                    style={{ backgroundColor: getColor("primaryColor") }}
-                  >
-                    Primary
-                  </div>
-                  <div
-                    className="rounded px-3 py-1 text-xs font-medium text-white"
-                    style={{ backgroundColor: getColor("accentColor") }}
-                  >
-                    Accent
-                  </div>
-                </div>
-                <div className="flex gap-3 text-[10px] text-muted-foreground">
-                  <span style={{ color: getColor("successColor") }}>Success</span>
-                  <span style={{ color: getColor("warningColor") }}>Warning</span>
-                  <span style={{ color: getColor("destructiveColor") }}>Error</span>
-                </div>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+                {BRANDING_TOKENS.filter(t => t.group === group.id).map(t => (
+                  <ColorField
+                    key={t.key}
+                    label={t.label}
+                    value={getColor(t.key)}
+                    onChange={v => updateColor(t.key, v)}
+                    description={t.description}
+                  />
+                ))}
               </div>
+            </section>
+          ))}
+
+          <Separator />
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <h4 className="text-sm font-medium">Live Preview</h4>
+              <p className="text-xs text-muted-foreground">The rest of the app also updates live.</p>
             </div>
+            <LivePreview colors={previewColors} />
           </section>
         </CardContent>
       </Card>
