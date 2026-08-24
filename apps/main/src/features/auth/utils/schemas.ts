@@ -23,3 +23,8 @@ export const passwordMismatch = {
   message: "Passwords do not match.",
   path: ["confirmPassword"],
 };
+
+export const fullNameSchema = z.string().trim().min(
+  2,
+  "Enter your full name.",
+);

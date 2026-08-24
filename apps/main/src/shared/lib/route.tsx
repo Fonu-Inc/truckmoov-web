@@ -9,10 +9,12 @@ import {
 import App from "@/App";
 import { AuthLayout } from "@/features/auth/components/layout/AuthLayout";
 import AuthPage from "@/features/auth/components/pages/AuthPage";
+import CompleteProfilePage from "@/features/auth/components/pages/CompleteProfilePage";
 import ForgotPasswordPage from "@/features/auth/components/pages/ForgotPasswordPage";
 import InvitePage from "@/features/auth/components/pages/InvitePage";
 import ResetPasswordPage from "@/features/auth/components/pages/ResetPasswordPage";
 import SignUpPage from "@/features/auth/components/pages/SignUpPage";
+import VerifyEmailPage from "@/features/auth/components/pages/VerifyEmailPage";
 import { RoleHomeRedirect } from "@/features/auth/components/ui/RoleHomeRedirect";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
 import { getRolesForHref } from "@/features/dashboard/utils/sidebarNav";
@@ -166,6 +168,14 @@ export const router = createBrowserRouter([
       {
         path: "/auth/invite",
         Component: InvitePage,
+      },
+      {
+        path: "/auth/verify-email",
+        Component: VerifyEmailPage,
+      },
+      {
+        path: "/auth/complete-profile",
+        Component: CompleteProfilePage,
       },
 
       {

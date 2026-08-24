@@ -11,4 +11,6 @@ export const PUBLIC_ROUTES: readonly string[] = [
   "/auth/forgot-password",
   "/auth/reset-password",
   "/auth/invite",
+  "/auth/verify-email",
+  "/auth/complete-profile",
 ];
