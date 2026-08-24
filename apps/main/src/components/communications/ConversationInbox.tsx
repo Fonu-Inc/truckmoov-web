@@ -420,7 +420,7 @@ export function ConversationInbox() {
                   key: "whatsapp", label: "WhatsApp", icon: (
                     <WhatsAppIcon
                       size={12}
-                      className="text-emerald-500"
+                      className="text-success"
                     />
                   ),
                 },
@@ -428,7 +428,7 @@ export function ConversationInbox() {
                   key: "sms", label: "SMS", icon: (
                     <SMSIcon
                       size={12}
-                      className="text-blue-500"
+                      className="text-info"
                     />
                   ),
                 },
@@ -436,7 +436,7 @@ export function ConversationInbox() {
                   key: "voice", label: "Voice", icon: (
                     <VoiceCallIcon
                       size={12}
-                      className="text-orange-500"
+                      className="text-warning"
                     />
                   ),
                 },
@@ -468,10 +468,10 @@ export function ConversationInbox() {
                   // Channel-specific colors for outbound bubbles
                   const bubbleClass = isOutbound
                     ? isCall
-                      ? "bg-orange-600 text-white rounded-br-md"
+                      ? "bg-warning text-white rounded-br-md"
                       : isWhatsApp
-                        ? "bg-emerald-600 text-white rounded-br-md"
-                        : "bg-blue-600 text-white rounded-br-md"
+                        ? "bg-success text-white rounded-br-md"
+                        : "bg-info text-white rounded-br-md"
                     : "bg-muted rounded-bl-md";
 
                   const metaClass = isOutbound ? "text-white/70" : "text-muted-foreground";
@@ -485,16 +485,16 @@ export function ConversationInbox() {
                   const channelLabel = isCall ? "Voice" : isWhatsApp ? "WhatsApp" : "SMS";
 
                   const channelBadgeClass = isCall
-                    ? "bg-orange-500/20 text-orange-200 border-orange-400/30"
+                    ? "bg-warning/20 text-warning border-warning/30"
                     : isWhatsApp
-                      ? "bg-emerald-500/20 text-emerald-200 border-emerald-400/30"
-                      : "bg-blue-500/20 text-blue-200 border-blue-400/30";
+                      ? "bg-success/20 text-success border-success/30"
+                      : "bg-info/20 text-info border-info/30";
 
                   const inboundBadgeClass = isCall
-                    ? "bg-orange-500/10 text-orange-600 border-orange-500/30"
+                    ? "bg-warning/10 text-warning border-warning/30"
                     : isWhatsApp
-                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
-                      : "bg-blue-500/10 text-blue-600 border-blue-500/30";
+                      ? "bg-success/10 text-success border-success/30"
+                      : "bg-info/10 text-info border-info/30";
 
                   return (
                     <div

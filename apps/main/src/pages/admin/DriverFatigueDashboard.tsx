@@ -25,29 +25,29 @@ import { Separator } from "@/components/shadcn/separator";
 type FatigueAlert = any;
 
 const riskLevelColors = {
-  low: "bg-green-500/20 text-green-400 border-green-500/30",
-  medium: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  high: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-  critical: "bg-red-500/20 text-red-400 border-red-500/30",
+  low: "bg-success/20 text-success border-success/30",
+  medium: "bg-warning/20 text-warning border-warning/30",
+  high: "bg-warning/20 text-warning border-warning/30",
+  critical: "bg-destructive/20 text-destructive border-destructive/30",
 };
 
 const riskLevelBg = {
-  low: "from-green-500/10 to-transparent",
-  medium: "from-yellow-500/10 to-transparent",
-  high: "from-orange-500/10 to-transparent",
-  critical: "from-red-500/10 to-transparent",
+  low: "from-success/10 to-transparent",
+  medium: "from-warning/10 to-transparent",
+  high: "from-warning/10 to-transparent",
+  critical: "from-destructive/10 to-transparent",
 };
 
 function FatigueScoreGauge({ score }: { score: number }) {
   const percentage = (score / 10) * 100;
   const getColor = () => {
     if (score <= 3)
-      return "text-green-400";
+      return "text-success";
     if (score <= 5)
-      return "text-yellow-400";
+      return "text-warning";
     if (score <= 7)
-      return "text-orange-400";
-    return "text-red-400";
+      return "text-warning";
+    return "text-destructive";
   };
 
   return (
@@ -148,7 +148,7 @@ function AlertCard({
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <h4 className="text-sm font-medium flex items-center gap-2 mb-2">
-                <AlertTriangle className="h-4 w-4 text-yellow-400" />
+                <AlertTriangle className="h-4 w-4 text-warning" />
                 Fatigue Indicators
               </h4>
               <ul className="space-y-1">
@@ -157,7 +157,7 @@ function AlertCard({
                     key={idx}
                     className="text-sm text-muted-foreground flex items-start gap-2"
                   >
-                    <span className="text-yellow-400 mt-1">•</span>
+                    <span className="text-warning mt-1">•</span>
                     {indicator}
                   </li>
                 ))}
@@ -166,7 +166,7 @@ function AlertCard({
 
             <div>
               <h4 className="text-sm font-medium flex items-center gap-2 mb-2">
-                <Shield className="h-4 w-4 text-green-400" />
+                <Shield className="h-4 w-4 text-success" />
                 Recommendations
               </h4>
               <ul className="space-y-1">
@@ -175,7 +175,7 @@ function AlertCard({
                     key={idx}
                     className="text-sm text-muted-foreground flex items-start gap-2"
                   >
-                    <span className="text-green-400 mt-1">✓</span>
+                    <span className="text-success mt-1">✓</span>
                     {rec}
                   </li>
                 ))}
@@ -248,7 +248,7 @@ export default function DriverFatigueDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-500/10 to-transparent border-green-500/20">
+        <Card className="bg-gradient-to-br from-success/10 to-transparent border-success/20">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-2">
               <Coffee className="h-4 w-4" />
@@ -262,12 +262,12 @@ export default function DriverFatigueDashboard() {
             </div>
             <Progress
               value={stats.avgRestCompliance * 10}
-              className="mt-2 h-2 [&>div]:bg-green-500"
+              className="mt-2 h-2 [&>div]:bg-success"
             />
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-red-500/10 to-transparent border-red-500/20">
+        <Card className="bg-gradient-to-br from-destructive/10 to-transparent border-destructive/20">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
@@ -275,7 +275,7 @@ export default function DriverFatigueDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-400">{stats.critical}</div>
+            <div className="text-3xl font-bold text-destructive">{stats.critical}</div>
             <p className="text-xs text-muted-foreground mt-1">
               +
               {" "}
@@ -286,7 +286,7 @@ export default function DriverFatigueDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/20">
+        <Card className="bg-gradient-to-br from-info/10 to-transparent border-info/20">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-2">
               <Eye className="h-4 w-4" />
@@ -298,7 +298,7 @@ export default function DriverFatigueDashboard() {
             <div className="flex gap-2 mt-2">
               <Badge
                 variant="outline"
-                className="text-xs bg-green-500/10 text-green-400"
+                className="text-xs bg-success/10 text-success"
               >
                 {stats.low}
                 {" "}
@@ -306,7 +306,7 @@ export default function DriverFatigueDashboard() {
               </Badge>
               <Badge
                 variant="outline"
-                className="text-xs bg-yellow-500/10 text-yellow-400"
+                className="text-xs bg-warning/10 text-warning"
               >
                 {stats.medium}
                 {" "}
@@ -329,42 +329,42 @@ export default function DriverFatigueDashboard() {
           <div className="flex gap-4">
             <div className="flex-1">
               <div className="flex justify-between mb-1">
-                <span className="text-sm text-green-400">Low Risk</span>
+                <span className="text-sm text-success">Low Risk</span>
                 <span className="text-sm text-muted-foreground">{stats.low}</span>
               </div>
               <Progress
                 value={stats.total > 0 ? (stats.low / stats.total) * 100 : 0}
-                className="h-2 [&>div]:bg-green-500"
+                className="h-2 [&>div]:bg-success"
               />
             </div>
             <div className="flex-1">
               <div className="flex justify-between mb-1">
-                <span className="text-sm text-yellow-400">Medium Risk</span>
+                <span className="text-sm text-warning">Medium Risk</span>
                 <span className="text-sm text-muted-foreground">{stats.medium}</span>
               </div>
               <Progress
                 value={stats.total > 0 ? (stats.medium / stats.total) * 100 : 0}
-                className="h-2 [&>div]:bg-yellow-500"
+                className="h-2 [&>div]:bg-warning"
               />
             </div>
             <div className="flex-1">
               <div className="flex justify-between mb-1">
-                <span className="text-sm text-orange-400">High Risk</span>
+                <span className="text-sm text-warning">High Risk</span>
                 <span className="text-sm text-muted-foreground">{stats.high}</span>
               </div>
               <Progress
                 value={stats.total > 0 ? (stats.high / stats.total) * 100 : 0}
-                className="h-2 [&>div]:bg-orange-500"
+                className="h-2 [&>div]:bg-warning"
               />
             </div>
             <div className="flex-1">
               <div className="flex justify-between mb-1">
-                <span className="text-sm text-red-400">Critical</span>
+                <span className="text-sm text-destructive">Critical</span>
                 <span className="text-sm text-muted-foreground">{stats.critical}</span>
               </div>
               <Progress
                 value={stats.total > 0 ? (stats.critical / stats.total) * 100 : 0}
-                className="h-2 [&>div]:bg-red-500"
+                className="h-2 [&>div]:bg-destructive"
               />
             </div>
           </div>

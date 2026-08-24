@@ -26,22 +26,22 @@ const healthConfig: Record<DeviceHealthStatus, {
 }> = {
   online: {
     label: "Online",
-    color: "text-green-500",
-    bgColor: "bg-green-500/10 border-green-500/20",
+    color: "text-success",
+    bgColor: "bg-success/10 border-success/20",
     icon: Circle,
     description: "Device is actively sending telemetry",
   },
   degraded: {
     label: "Degraded",
-    color: "text-amber-500",
-    bgColor: "bg-amber-500/10 border-amber-500/20",
+    color: "text-warning",
+    bgColor: "bg-warning/10 border-warning/20",
     icon: AlertCircle,
     description: "Device heartbeat delayed (3-10 min)",
   },
   offline: {
     label: "Offline",
-    color: "text-red-500",
-    bgColor: "bg-red-500/10 border-red-500/20",
+    color: "text-destructive",
+    bgColor: "bg-destructive/10 border-destructive/20",
     icon: WifiOff,
     description: "No telemetry received for 10+ minutes",
   },

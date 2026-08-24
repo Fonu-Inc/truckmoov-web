@@ -110,7 +110,11 @@ function NavRowBase({
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>{row}</TooltipTrigger>
+      {/* ponytail: `asChild` composes className via string concat, so passing a
+          render-prop function to NavLink through it stringifies the function
+          into the DOM (breaks styling + hitboxes). Wrap the NavLink in a span
+          so the Slot clones the span, and the function stays inside. */}
+      <TooltipTrigger asChild><span className="block">{row}</span></TooltipTrigger>
       <TooltipContent side="right">{item.label}</TooltipContent>
     </Tooltip>
   );

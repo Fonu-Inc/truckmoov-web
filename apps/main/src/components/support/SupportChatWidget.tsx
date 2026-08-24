@@ -487,7 +487,7 @@ export function SupportChatWidget({
             className="fill-primary-foreground text-primary w-[35px] h-[35px]"
             strokeWidth={2}
           />
-          <span className="absolute top-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-background shadow-sm" />
+          <span className="absolute top-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background shadow-sm" />
         </button>
       )}
 
@@ -525,17 +525,17 @@ export function SupportChatWidget({
               )}
               <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground shrink-0 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.1)]">
                 <MessageCircleQuestion
-                  className="fill-primary-foreground bg-zinc-50/0 text-primary w-[25px] h-[30px] border-0"
+                  className="fill-primary-foreground bg-transparent text-primary w-[25px] h-[30px] border-0"
                   strokeWidth={2}
                 />
-                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-foreground animate-pulse" />
+                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-foreground animate-pulse" />
               </div>
               <div className="min-w-0">
                 <p className="font-semibold text-sm leading-tight tracking-tight truncate">
                   {view === "topic" && activeTopic ? activeTopic.label : "FleetPro Support"}
                 </p>
                 <p className="text-[11px] text-background/70 flex items-center gap-1.5 mt-0.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-success" />
                   AI assistant · always online
                 </p>
               </div>

@@ -48,10 +48,10 @@ const statusConfig: Record<string, {
     icon: Clock, color: "text-muted-foreground", label: "Pending",
   },
   sent: {
-    icon: Check, color: "text-blue-500", label: "Sent",
+    icon: Check, color: "text-info", label: "Sent",
   },
   delivered: {
-    icon: CheckCheck, color: "text-green-500", label: "Delivered",
+    icon: CheckCheck, color: "text-success", label: "Delivered",
   },
   read: {
     icon: Eye, color: "text-primary", label: "Read",
@@ -175,7 +175,7 @@ export function BroadcastTracker() {
               <p className="text-xs text-muted-foreground">Total</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-blue-500">{selectedBroadcast.delivered_count}</p>
+              <p className="text-2xl font-bold text-info">{selectedBroadcast.delivered_count}</p>
               <p className="text-xs text-muted-foreground">Sent</p>
             </div>
             <div className="text-center">
@@ -401,7 +401,7 @@ export function BroadcastTracker() {
                               </span>
                             </div>
                             <div className="flex items-center gap-2 text-xs">
-                              <span className="text-blue-500">
+                              <span className="text-info">
                                 {broadcast.delivered_count}
                                 {" "}
                                 sent

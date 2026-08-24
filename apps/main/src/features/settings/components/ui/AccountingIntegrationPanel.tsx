@@ -50,7 +50,7 @@ export function AccountingIntegrationPanel() {
         return (
           <Badge
             variant="default"
-            className="bg-emerald-600"
+            className="bg-success"
           >
             <CheckCircle2 className="h-3 w-3 mr-1" />
             Connected
@@ -86,7 +86,7 @@ export function AccountingIntegrationPanel() {
         return (
           <Badge
             variant="default"
-            className="bg-emerald-600"
+            className="bg-success"
           >
             Synced
           </Badge>

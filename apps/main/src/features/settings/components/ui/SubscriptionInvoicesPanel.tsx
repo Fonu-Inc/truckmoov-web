@@ -226,7 +226,7 @@ function statusBadge(s: SubInvoiceStatus) {
   switch (s) {
     case "paid":
       return (
-        <Badge className="bg-green-500/10 text-green-600 border-green-500/20 hover:bg-green-500/10">
+        <Badge className="bg-success/10 text-success border-success/20 hover:bg-success/10">
           <CheckCircle className="h-3 w-3 mr-1" />
           {" "}
           Paid
@@ -236,7 +236,7 @@ function statusBadge(s: SubInvoiceStatus) {
       return (
         <Badge
           variant="secondary"
-          className="bg-amber-500/10 text-amber-600 border-amber-500/20"
+          className="bg-warning/10 text-warning border-warning/20"
         >
           <Clock className="h-3 w-3 mr-1" />
           {" "}
@@ -267,8 +267,8 @@ function statusBadge(s: SubInvoiceStatus) {
 
 function modelBadge(m: BillingModel) {
   const variants: Record<BillingModel, string> = {
-    Prepaid: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-    Postpaid: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+    Prepaid: "bg-info/10 text-info border-info/20",
+    Postpaid: "bg-primary/10 text-primary border-primary/20",
     Trial: "bg-muted text-muted-foreground border-muted",
   };
   return (
@@ -527,13 +527,13 @@ export function SubscriptionInvoicesPanel() {
       label: "Total paid (12mo)", value: formatCurrency(
         totalPaid,
         "NGN",
-      ), icon: TrendingUp, tone: "text-green-600 bg-green-500/10",
+      ), icon: TrendingUp, tone: "text-success bg-success/10",
     },
     {
       label: "Outstanding", value: formatCurrency(
         outstanding,
         "NGN",
-      ), icon: Wallet, tone: "text-amber-600 bg-amber-500/10",
+      ), icon: Wallet, tone: "text-warning bg-warning/10",
     },
     {
       label: "Overdue invoices", value: String(overdueCount), icon: AlertCircle, tone: "text-destructive bg-destructive/10",
@@ -1076,7 +1076,7 @@ export function SubscriptionInvoicesPanel() {
                 {selected.paidDate && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Paid on</span>
-                    <span className="text-green-600">{selected.paidDate}</span>
+                    <span className="text-success">{selected.paidDate}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -1106,8 +1106,8 @@ export function SubscriptionInvoicesPanel() {
                     </Button>
                   )
                 : (
-                    <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-3 text-sm">
-                      <p className="font-medium text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                    <div className="rounded-md bg-warning/10 border border-warning/20 p-3 text-sm">
+                      <p className="font-medium text-warning flex items-center gap-2">
                         <Clock className="h-4 w-4" />
                         {" "}
                         Awaiting payment confirmation

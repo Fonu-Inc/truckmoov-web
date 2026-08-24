@@ -121,7 +121,7 @@ export default function OwnerOperatorVehicleDetail() {
       )
     : null;
   const batteryColor = batteryPercent !== null
-    ? batteryPercent >= 60 ? "text-green-500" : batteryPercent >= 30 ? "text-amber-500" : "text-red-500"
+    ? batteryPercent >= 60 ? "text-success" : batteryPercent >= 30 ? "text-warning" : "text-destructive"
     : "text-muted-foreground";
 
   if (vehicleLoading) {
@@ -399,7 +399,7 @@ export default function OwnerOperatorVehicleDetail() {
             {expiringDocs.length > 0 && expiredDocs.length === 0 && (
               <Badge
                 variant="outline"
-                className="border-amber-500 text-amber-500"
+                className="border-warning text-warning"
               >
                 {expiringDocs.length}
                 {" "}
@@ -433,7 +433,7 @@ export default function OwnerOperatorVehicleDetail() {
                         className={`flex items-center justify-between rounded-lg border p-3 ${
                           isExpired
                             ? "border-destructive/20 bg-destructive/5"
-                            : isExpiringSoon ? "border-amber-500/20 bg-amber-50/5" : ""
+                            : isExpiringSoon ? "border-warning/20 bg-warning/5" : ""
                         }`}
                       >
                         <div className="space-y-0.5">

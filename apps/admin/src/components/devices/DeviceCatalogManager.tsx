@@ -114,14 +114,14 @@ const DEVICE_FEATURE_OPTIONS: Array<{
   },
 ];
 const protocolBadgeClass: Record<string, string> = {
-  TCP: "border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-50",
-  HTTP: "border-emerald-100 bg-emerald-50 text-emerald-700 hover:bg-emerald-50",
-  MQTT: "border-purple-100 bg-purple-50 text-purple-700 hover:bg-purple-50",
-  UDP: "border-amber-100 bg-amber-50 text-amber-700 hover:bg-amber-50",
+  TCP: "border-info/30 bg-info/10 text-info hover:bg-info/10",
+  HTTP: "border-success/30 bg-success/10 text-success hover:bg-success/10",
+  MQTT: "border-primary/30 bg-primary/10 text-primary hover:bg-primary/10",
+  UDP: "border-warning/30 bg-warning/10 text-warning hover:bg-warning/10",
 };
 const statusBadgeClass: Record<string, string> = {
-  supported: "border-emerald-500/40 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/15",
-  deprecated: "border-amber-500/40 bg-amber-500/15 text-amber-400 hover:bg-amber-500/15",
+  supported: "border-success/40 bg-success/15 text-success hover:bg-success/15",
+  deprecated: "border-warning/40 bg-warning/15 text-warning hover:bg-warning/15",
   blocked: "border-destructive/40 bg-destructive/15 text-destructive hover:bg-destructive/15",
 };
 const statusLabel: Record<string, string> = {
@@ -130,9 +130,9 @@ const statusLabel: Record<string, string> = {
   blocked: "Blocked",
 };
 const featureIconClass: Record<string, string> = {
-  obd2: "text-blue-500",
-  fuel: "text-amber-500",
-  sos: "text-red-500",
+  obd2: "text-info",
+  fuel: "text-warning",
+  sos: "text-destructive",
 };
 
 const deviceCatalogFormSchema = z.object({

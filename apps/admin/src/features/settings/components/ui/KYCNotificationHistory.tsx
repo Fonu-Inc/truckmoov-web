@@ -271,7 +271,7 @@ export function KYCNotificationHistory() {
       case "sent":
       case "delivered":
         return (
-          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+          <Badge className="bg-success/20 text-success border-success/30">
             <MailCheck className="w-3 h-3 mr-1" />
             {" "}
             Sent
@@ -279,7 +279,7 @@ export function KYCNotificationHistory() {
         );
       case "pending":
         return (
-          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+          <Badge className="bg-warning/20 text-warning border-warning/30">
             <Clock className="w-3 h-3 mr-1" />
             {" "}
             Pending
@@ -287,7 +287,7 @@ export function KYCNotificationHistory() {
         );
       case "failed":
         return (
-          <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+          <Badge className="bg-destructive/20 text-destructive border-destructive/30">
             <MailX className="w-3 h-3 mr-1" />
             {" "}
             Failed
@@ -295,7 +295,7 @@ export function KYCNotificationHistory() {
         );
       case "bounced":
         return (
-          <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
+          <Badge className="bg-warning/20 text-warning border-warning/30">
             <AlertTriangle className="w-3 h-3 mr-1" />
             {" "}
             Bounced
@@ -313,14 +313,14 @@ export function KYCNotificationHistory() {
   const getNotificationTypeBadge = (type: string) => {
     return type === "approved"
       ? (
-          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+          <Badge className="bg-success/20 text-success border-success/30">
             <CheckCircle2 className="w-3 h-3 mr-1" />
             {" "}
             Approved
           </Badge>
         )
       : (
-          <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+          <Badge className="bg-destructive/20 text-destructive border-destructive/30">
             <XCircle className="w-3 h-3 mr-1" />
             {" "}
             Rejected
@@ -379,8 +379,8 @@ export function KYCNotificationHistory() {
                 <p className="text-sm text-muted-foreground">Delivered</p>
                 <p className="text-2xl font-bold">{stats.sent}</p>
               </div>
-              <div className="p-3 rounded-full bg-green-500/10">
-                <MailCheck className="w-5 h-5 text-green-500" />
+              <div className="p-3 rounded-full bg-success/10">
+                <MailCheck className="w-5 h-5 text-success" />
               </div>
             </div>
           </CardContent>
@@ -392,8 +392,8 @@ export function KYCNotificationHistory() {
                 <p className="text-sm text-muted-foreground">Failed</p>
                 <p className="text-2xl font-bold">{stats.failed}</p>
               </div>
-              <div className="p-3 rounded-full bg-red-500/10">
-                <MailX className="w-5 h-5 text-red-500" />
+              <div className="p-3 rounded-full bg-destructive/10">
+                <MailX className="w-5 h-5 text-destructive" />
               </div>
             </div>
           </CardContent>
@@ -405,8 +405,8 @@ export function KYCNotificationHistory() {
                 <p className="text-sm text-muted-foreground">Pending</p>
                 <p className="text-2xl font-bold">{stats.pending}</p>
               </div>
-              <div className="p-3 rounded-full bg-yellow-500/10">
-                <Clock className="w-5 h-5 text-yellow-500" />
+              <div className="p-3 rounded-full bg-warning/10">
+                <Clock className="w-5 h-5 text-warning" />
               </div>
             </div>
           </CardContent>
@@ -512,7 +512,7 @@ export function KYCNotificationHistory() {
                               {getDeliveryStatusBadge(log.delivery_status)}
                               {log.error_message && (
                                 <p
-                                  className="text-xs text-red-400 max-w-[200px] truncate"
+                                  className="text-xs text-destructive max-w-[200px] truncate"
                                   title={log.error_message}
                                 >
                                   {log.error_message}

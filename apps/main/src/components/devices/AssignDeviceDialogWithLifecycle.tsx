@@ -286,7 +286,7 @@ export function AssignDeviceDialogWithLifecycle({
                           </div>
                           <span className={cn(
                             "rounded-full px-2 py-0.5 text-xs font-medium",
-                            vehicle.status === "active" ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground",
+                            vehicle.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground",
                           )}
                           >
                             {vehicle.status}

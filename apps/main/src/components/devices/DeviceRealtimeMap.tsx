@@ -481,7 +481,7 @@ export function DeviceRealtimeMap({
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm">
               <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
+                <div className="w-2 h-2 rounded-full bg-success" />
                 <span>
                   {activeCount}
                   {" "}
@@ -489,7 +489,7 @@ export function DeviceRealtimeMap({
                 </span>
               </div>
               {faultyCount > 0 && (
-                <div className="flex items-center gap-1 text-red-500">
+                <div className="flex items-center gap-1 text-destructive">
                   <AlertTriangle className="h-4 w-4" />
                   <span>
                     {faultyCount}

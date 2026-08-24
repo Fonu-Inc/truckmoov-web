@@ -89,8 +89,10 @@ Never hardcode a color. Use the semantic Tailwind token (`bg-card`,
 | `ring` | primary | primary | Focus rings are always yellow |
 
 `--radius: 0.5rem`. The sidebar keeps its own token set
-(`sidebar-background`, `sidebar-accent`, …) and stays dark in **both** themes
-for contrast.
+(`sidebar-background`, `sidebar-accent`, …) and flips with the theme — light
+surface in light mode, dark charcoal in dark mode. The auth branding panel
+(`AuthBrandingPanel`) is the one exception: it scopes `.dark` on itself so
+`bg-sidebar` resolves to the dark values regardless of the app-level theme.
 
 Charts use `--chart-1..5` (yellow, green, blue, purple, red) — MTN-aligned,
 not the shadcn defaults.
@@ -130,8 +132,8 @@ Scrollbars are restyled globally to a 6px muted thumb.
 │  (w-20     ├──────────────────────────────────────────┤
 │ collapsed) │  TrialBanner (conditional)               │
 │            ├──────────────────────────────────────────┤
-│  dark      │  <main class="p-6">  page content        │
-│  always    │  (p-0 when fullWidth — maps, split views)│
+│  themed    │  <main class="p-6">  page content        │
+│            │  (p-0 when fullWidth — maps, split views)│
 └────────────┴──────────────────────────────────────────┘
 ```
 
@@ -153,8 +155,11 @@ Scrollbars are restyled globally to a 6px muted thumb.
 - A 2px primary bar at the very top of the shell shows `useNavigation().state`.
   Page chunks load on demand (see below), so a click can block briefly; without
   the bar that wait reads as the app freezing.
-- Content column is `bg-card`, one step lighter than the sidebar — that
-  contrast *is* the layout separation. Don't add a border to fake it.
+- Content column is `bg-card` and the sidebar is `bg-sidebar` — both flip
+  with the theme, so the layout separation comes from a `border-r
+  border-sidebar-border` on the sidebar. In dark mode the sidebar is
+  darker than the card; in light mode it's a near-white surface next to a
+  white content column with a hairline between them.
 - Sidebar, header, and page content each sit in their own `ErrorBoundary`; one
   broken page never blanks the shell. See [Status screens](#status-screens).
 - `OnboardingRouteGate` wraps children and is a pass-through in both apps today

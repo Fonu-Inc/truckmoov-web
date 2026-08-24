@@ -277,7 +277,7 @@ export function TenantAIConfigPanel({ tenantId: _tenantId }: TenantAIConfigPanel
                   )}
                   {config.last_connection_test_success
                     ? (
-                        <Check className="inline ml-1 h-3 w-3 text-green-500" />
+                        <Check className="inline ml-1 h-3 w-3 text-success" />
                       )
                     : (
                         <X className="inline ml-1 h-3 w-3 text-destructive" />

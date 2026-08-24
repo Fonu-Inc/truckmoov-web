@@ -142,10 +142,10 @@ export function DeviceCatalogManager() {
 
   const getProtocolBadge = (protocol: ProtocolType) => {
     const colors: Record<ProtocolType, string> = {
-      tcp: "bg-blue-100 text-blue-700",
-      http: "bg-green-100 text-green-700",
-      mqtt: "bg-purple-100 text-purple-700",
-      udp: "bg-amber-100 text-amber-700",
+      tcp: "bg-info/10 text-info",
+      http: "bg-success/10 text-success",
+      mqtt: "bg-primary/10 text-primary",
+      udp: "bg-warning/10 text-warning",
     };
     return (
       <Badge
@@ -360,17 +360,17 @@ export function DeviceCatalogManager() {
                             <div className="flex gap-1">
                               {entry.supports_obd && (
                                 <span title="OBD Support">
-                                  <Gauge className="h-4 w-4 text-blue-500" />
+                                  <Gauge className="h-4 w-4 text-info" />
                                 </span>
                               )}
                               {entry.supports_fuel && (
                                 <span title="Fuel Monitoring">
-                                  <Fuel className="h-4 w-4 text-amber-500" />
+                                  <Fuel className="h-4 w-4 text-warning" />
                                 </span>
                               )}
                               {entry.supports_sos && (
                                 <span title="SOS Button">
-                                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                                  <AlertTriangle className="h-4 w-4 text-destructive" />
                                 </span>
                               )}
                               {!entry.supports_obd && !entry.supports_fuel && !entry.supports_sos && (

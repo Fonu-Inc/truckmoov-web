@@ -590,14 +590,14 @@ export default function OmnichannelInbox() {
                         value="sms"
                         className="text-xs px-3"
                       >
-                        <SMSLogo className="h-3 w-3 mr-1 text-blue-500" />
+                        <SMSLogo className="h-3 w-3 mr-1 text-info" />
                         SMS
                       </TabsTrigger>
                       <TabsTrigger
                         value="voice"
                         className="text-xs px-3"
                       >
-                        <PhoneLogo className="h-3 w-3 mr-1 text-orange-500" />
+                        <PhoneLogo className="h-3 w-3 mr-1 text-warning" />
                         Voice
                       </TabsTrigger>
                     </TabsList>

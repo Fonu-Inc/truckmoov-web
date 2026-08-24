@@ -493,7 +493,7 @@ export function KYCReviewWorkflow() {
       case "verified":
       case "approved":
         return (
-          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+          <Badge className="bg-success/20 text-success border-success/30">
             <CheckCircle2 className="w-3 h-3 mr-1" />
             {" "}
             Approved
@@ -501,7 +501,7 @@ export function KYCReviewWorkflow() {
         );
       case "under_review":
         return (
-          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+          <Badge className="bg-warning/20 text-warning border-warning/30">
             <Clock className="w-3 h-3 mr-1" />
             {" "}
             Under Review
@@ -509,7 +509,7 @@ export function KYCReviewWorkflow() {
         );
       case "rejected":
         return (
-          <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+          <Badge className="bg-destructive/20 text-destructive border-destructive/30">
             <XCircle className="w-3 h-3 mr-1" />
             {" "}
             Rejected
@@ -610,8 +610,8 @@ export function KYCReviewWorkflow() {
                 <p className="text-sm text-muted-foreground">Pending Review</p>
                 <p className="text-2xl font-bold">{pendingDocuments.length}</p>
               </div>
-              <div className="p-3 rounded-full bg-yellow-500/10">
-                <Clock className="w-5 h-5 text-yellow-500" />
+              <div className="p-3 rounded-full bg-warning/10">
+                <Clock className="w-5 h-5 text-warning" />
               </div>
             </div>
           </CardContent>
@@ -623,8 +623,8 @@ export function KYCReviewWorkflow() {
                 <p className="text-sm text-muted-foreground">Approved</p>
                 <p className="text-2xl font-bold">{approvedDocuments.length}</p>
               </div>
-              <div className="p-3 rounded-full bg-green-500/10">
-                <CheckCircle2 className="w-5 h-5 text-green-500" />
+              <div className="p-3 rounded-full bg-success/10">
+                <CheckCircle2 className="w-5 h-5 text-success" />
               </div>
             </div>
           </CardContent>
@@ -636,8 +636,8 @@ export function KYCReviewWorkflow() {
                 <p className="text-sm text-muted-foreground">Rejected</p>
                 <p className="text-2xl font-bold">{rejectedDocuments.length}</p>
               </div>
-              <div className="p-3 rounded-full bg-red-500/10">
-                <XCircle className="w-5 h-5 text-red-500" />
+              <div className="p-3 rounded-full bg-destructive/10">
+                <XCircle className="w-5 h-5 text-destructive" />
               </div>
             </div>
           </CardContent>
@@ -755,7 +755,7 @@ export function KYCReviewWorkflow() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="text-green-500 border-green-500/30 hover:bg-green-500/10"
+                                className="text-success border-success/30 hover:bg-success/10"
                                 onClick={() => handleOpenReview(
                                   doc,
                                   "approve",
@@ -767,7 +767,7 @@ export function KYCReviewWorkflow() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="text-red-500 border-red-500/30 hover:bg-red-500/10"
+                                className="text-destructive border-destructive/30 hover:bg-destructive/10"
                                 onClick={() => handleOpenReview(
                                   doc,
                                   "reject",
@@ -940,7 +940,7 @@ export function KYCReviewWorkflow() {
                                   {pendingCount > 0 && (
                                     <Badge
                                       variant="outline"
-                                      className="text-yellow-500 border-yellow-500/30"
+                                      className="text-warning border-warning/30"
                                     >
                                       {pendingCount}
                                       {" "}
@@ -970,7 +970,7 @@ export function KYCReviewWorkflow() {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      className="text-green-500"
+                                      className="text-success"
                                       onClick={() => handleUpdateTenantStatus(
                                         tenant.tenant_id,
                                         "verified",
@@ -1198,7 +1198,7 @@ export function KYCReviewWorkflow() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="text-green-500"
+                                    className="text-success"
                                     onClick={() => handleOpenReview(
                                       doc,
                                       "approve",
@@ -1209,7 +1209,7 @@ export function KYCReviewWorkflow() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="text-red-500"
+                                    className="text-destructive"
                                     onClick={() => handleOpenReview(
                                       doc,
                                       "reject",
@@ -1246,10 +1246,10 @@ export function KYCReviewWorkflow() {
             <DialogTitle className="flex items-center gap-2">
               {reviewAction === "approve"
                 ? (
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                    <CheckCircle2 className="w-5 h-5 text-success" />
                   )
                 : (
-                    <XCircle className="w-5 h-5 text-red-500" />
+                    <XCircle className="w-5 h-5 text-destructive" />
                   )}
               {reviewAction === "approve" ? "Approve Document" : "Reject Document"}
             </DialogTitle>
@@ -1304,7 +1304,7 @@ export function KYCReviewWorkflow() {
             <Button
               onClick={handleSubmitReview}
               disabled={submitting || (reviewAction === "reject" && !reviewComment.trim())}
-              className={reviewAction === "approve" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}
+              className={reviewAction === "approve" ? "bg-success hover:bg-success/90" : "bg-destructive hover:bg-destructive/90"}
             >
               {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               {reviewAction === "approve" ? "Approve" : "Reject"}
@@ -1390,7 +1390,7 @@ export function KYCReviewWorkflow() {
                             {DOCUMENT_TYPE_LABELS[doc.document_type] || doc.document_type}
                           </p>
                           {doc.rejection_reason && (
-                            <p className="text-sm text-red-400 mt-1">
+                            <p className="text-sm text-destructive mt-1">
                               Reason:
                               {" "}
                               {doc.rejection_reason}
@@ -1412,7 +1412,7 @@ export function KYCReviewWorkflow() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-green-500"
+                              className="text-success"
                               onClick={() => {
                                 setTenantDetailOpen(false);
                                 handleOpenReview(
@@ -1426,7 +1426,7 @@ export function KYCReviewWorkflow() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-red-500"
+                              className="text-destructive"
                               onClick={() => {
                                 setTenantDetailOpen(false);
                                 handleOpenReview(
@@ -1452,7 +1452,7 @@ export function KYCReviewWorkflow() {
                 <div className="flex gap-2">
                   {selectedTenant.verification_status !== "verified" && (
                     <Button
-                      className="bg-green-600 hover:bg-green-700"
+                      className="bg-success hover:bg-success/90"
                       onClick={() => {
                         handleUpdateTenantStatus(
                           selectedTenant.tenant_id,
@@ -1468,7 +1468,7 @@ export function KYCReviewWorkflow() {
                   {selectedTenant.verification_status !== "rejected" && (
                     <Button
                       variant="outline"
-                      className="text-red-500 border-red-500/30"
+                      className="text-destructive border-destructive/30"
                       onClick={() => {
                         handleUpdateTenantStatus(
                           selectedTenant.tenant_id,

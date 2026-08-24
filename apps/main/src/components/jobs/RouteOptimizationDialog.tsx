@@ -540,9 +540,9 @@ export function RouteOptimizationDialog({
         {aiAnalysis && (
           <div className="space-y-2">
             {aiAnalysis.savings_percentage && Number.parseFloat(aiAnalysis.savings_percentage) > 0 && (
-              <Alert className="border-green-500/30 bg-green-500/10">
-                <TrendingDown className="h-4 w-4 text-green-500" />
-                <AlertDescription className="text-green-400">
+              <Alert className="border-success/30 bg-success/10">
+                <TrendingDown className="h-4 w-4 text-success" />
+                <AlertDescription className="text-success">
                   Route optimized! Saved
                   {" "}
                   {aiAnalysis.savings_percentage}
@@ -575,10 +575,10 @@ export function RouteOptimizationDialog({
             {aiAnalysis.warnings && aiAnalysis.warnings.length > 0 && (
               <Alert
                 variant="destructive"
-                className="border-yellow-500/30 bg-yellow-500/10"
+                className="border-warning/30 bg-warning/10"
               >
-                <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                <AlertDescription className="text-yellow-400">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <AlertDescription className="text-warning">
                   {aiAnalysis.warnings.join(". ")}
                 </AlertDescription>
               </Alert>

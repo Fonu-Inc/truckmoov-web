@@ -46,19 +46,19 @@ const ERP_PROVIDERS: {
   id: ERPProvider; name: string; icon: string; color: string;
 }[] = [
   {
-    id: "sap", name: "SAP S/4HANA & Business One", icon: "🏢", color: "bg-blue-600",
+    id: "sap", name: "SAP S/4HANA & Business One", icon: "🏢", color: "bg-info",
   },
   {
-    id: "oracle", name: "Oracle NetSuite / Fusion", icon: "🔴", color: "bg-red-600",
+    id: "oracle", name: "Oracle NetSuite / Fusion", icon: "🔴", color: "bg-destructive",
   },
   {
-    id: "dynamics", name: "Microsoft Dynamics 365", icon: "🟦", color: "bg-indigo-600",
+    id: "dynamics", name: "Microsoft Dynamics 365", icon: "🟦", color: "bg-primary",
   },
   {
-    id: "odoo", name: "Odoo ERP", icon: "🟣", color: "bg-purple-600",
+    id: "odoo", name: "Odoo ERP", icon: "🟣", color: "bg-primary",
   },
   {
-    id: "zoho", name: "Zoho", icon: "🟡", color: "bg-yellow-600",
+    id: "zoho", name: "Zoho", icon: "🟡", color: "bg-warning",
   },
   {
     id: "custom", name: "Custom ERP / WMS", icon: "⚙️", color: "bg-muted",
@@ -166,7 +166,7 @@ export function ERPWMSIntegrationPanel({ tenantId: _tenantId }: Props) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "connected": return (
-        <Badge className="bg-emerald-600">
+        <Badge className="bg-success">
           <CheckCircle2 className="h-3 w-3 mr-1" />
           Connected
         </Badge>
@@ -188,11 +188,11 @@ export function ERPWMSIntegrationPanel({ tenantId: _tenantId }: Props) {
 
   const getSyncStatusBadge = (status: string) => {
     switch (status) {
-      case "success": return <Badge className="bg-emerald-600">Success</Badge>;
+      case "success": return <Badge className="bg-success">Success</Badge>;
       case "partial": return (
         <Badge
           variant="outline"
-          className="text-yellow-600 border-yellow-600"
+          className="text-warning border-warning"
         >
           Partial
         </Badge>

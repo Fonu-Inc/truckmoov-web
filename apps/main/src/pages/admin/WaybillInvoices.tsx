@@ -87,28 +87,28 @@ const statusConfig: Record<string, {
   label: string; color: string; icon: React.ElementType;
 }> = {
   received: {
-    label: "Received", color: "bg-blue-500/10 text-blue-500 border-blue-500/20", icon: Clock,
+    label: "Received", color: "bg-info/10 text-info border-info/20", icon: Clock,
   },
   processing: {
-    label: "Processing", color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20", icon: Loader2,
+    label: "Processing", color: "bg-warning/10 text-warning border-warning/20", icon: Loader2,
   },
   extracted: {
-    label: "Extracted", color: "bg-green-500/10 text-green-500 border-green-500/20", icon: CheckCircle2,
+    label: "Extracted", color: "bg-success/10 text-success border-success/20", icon: CheckCircle2,
   },
   extraction_failed: {
     label: "Failed", color: "bg-destructive/10 text-destructive border-destructive/20", icon: XCircle,
   },
   needs_review: {
-    label: "Needs Review", color: "bg-orange-500/10 text-orange-500 border-orange-500/20", icon: AlertTriangle,
+    label: "Needs Review", color: "bg-warning/10 text-warning border-warning/20", icon: AlertTriangle,
   },
   approved: {
-    label: "Approved", color: "bg-blue-500/10 text-blue-500 border-blue-500/20", icon: CheckCircle2,
+    label: "Approved", color: "bg-info/10 text-info border-info/20", icon: CheckCircle2,
   },
   invoice_generated: {
-    label: "Invoiced", color: "bg-purple-500/10 text-purple-500 border-purple-500/20", icon: Receipt,
+    label: "Invoiced", color: "bg-primary/10 text-primary border-primary/20", icon: Receipt,
   },
   invoiced: {
-    label: "Invoiced", color: "bg-purple-500/10 text-purple-500 border-purple-500/20", icon: Receipt,
+    label: "Invoiced", color: "bg-primary/10 text-primary border-primary/20", icon: Receipt,
   },
   rejected: {
     label: "Rejected", color: "bg-destructive/10 text-destructive border-destructive/20", icon: XCircle,
@@ -125,19 +125,19 @@ const invoiceStatusConfig: Record<string, {
     label: "Draft", color: "bg-muted text-muted-foreground border-muted",
   },
   pending_review: {
-    label: "Pending Review", color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+    label: "Pending Review", color: "bg-warning/10 text-warning border-warning/20",
   },
   approved: {
-    label: "Approved", color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+    label: "Approved", color: "bg-info/10 text-info border-info/20",
   },
   sent: {
-    label: "Sent", color: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+    label: "Sent", color: "bg-primary/10 text-primary border-primary/20",
   },
   paid: {
-    label: "Paid", color: "bg-green-500/10 text-green-500 border-green-500/20",
+    label: "Paid", color: "bg-success/10 text-success border-success/20",
   },
   partially_paid: {
-    label: "Partially Paid", color: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+    label: "Partially Paid", color: "bg-warning/10 text-warning border-warning/20",
   },
   overdue: {
     label: "Overdue", color: "bg-destructive/10 text-destructive border-destructive/20",
@@ -1676,7 +1676,7 @@ function WaybillDetailView({
           {waybill.source_type === "whatsapp" && (
             <Badge
               variant="outline"
-              className="ml-2 bg-green-500/10 text-green-600 border-green-500/20"
+              className="ml-2 bg-success/10 text-success border-success/20"
             >
               <MessageSquare className="h-3 w-3 mr-1" />
               WhatsApp
@@ -1854,9 +1854,9 @@ function WaybillDetailView({
                           {fieldConf != null && (
                             <span className={`ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
                               fieldConf >= 0.8
-                                ? "bg-green-500/10 text-green-600"
+                                ? "bg-success/10 text-success"
                                 : fieldConf >= 0.5
-                                  ? "bg-yellow-500/10 text-yellow-600"
+                                  ? "bg-warning/10 text-warning"
                                   : "bg-destructive/10 text-destructive"
                             }`}
                             >

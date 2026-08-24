@@ -26,9 +26,11 @@ export function AuthBrandingPanel({ children, subtitle, helpMode }: AuthBranding
 
   return (
     <div className="min-h-screen flex">
-      {/* `sidebar` is the repo's always-dark token family — it stays dark in
-          light mode too, which is what this column needs. */}
-      <div className="relative hidden overflow-hidden bg-sidebar p-12 lg:flex lg:w-1/2 flex-col justify-between">
+      {/* ponytail: the `dark` class scopes the `.dark` CSS vars to this
+          subtree, so `bg-sidebar` and `text-sidebar-foreground` resolve to
+          their dark values regardless of the app's theme toggle. This panel
+          is always dark by design. */}
+      <div className="dark relative hidden overflow-hidden bg-sidebar p-12 lg:flex lg:w-1/2 flex-col justify-between">
         <div className="absolute inset-0 opacity-[0.03]">
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
             <defs>

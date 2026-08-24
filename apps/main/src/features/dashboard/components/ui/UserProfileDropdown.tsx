@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
 import { getRoleLabel } from "@/features/auth/utils/role-label";
+import { getRolesForHref } from "@/features/dashboard/utils/sidebarNav";
 import { useAuthStore } from "@/stores/authStore";
 
 export function UserProfileDropdown() {
@@ -35,6 +36,9 @@ export function UserProfileDropdown() {
   const logoUrl = branding?.profilePictureUrl;
   const isDark = theme === "dark";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
+  const canSeeSettings = user?.role
+    ? (getRolesForHref("/settings") ?? []).includes(user.role)
+    : false;
 
   const handleLogout = () => {
     logout();
@@ -84,13 +88,15 @@ export function UserProfileDropdown() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={handleSettingsClick}
-          className="cursor-pointer"
-        >
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
-        </DropdownMenuItem>
+        {canSeeSettings && (
+          <DropdownMenuItem
+            onClick={handleSettingsClick}
+            className="cursor-pointer"
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem
           onSelect={(e) => {
             e.preventDefault();

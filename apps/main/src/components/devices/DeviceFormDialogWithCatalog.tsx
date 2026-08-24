@@ -285,15 +285,15 @@ export function DeviceFormDialogWithCatalog({
 
                 <div className="flex gap-3 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
-                    <Gauge className={`h-3.5 w-3.5 ${selectedCatalogEntry.supports_obd ? "text-blue-500" : "text-muted-foreground/30"}`} />
+                    <Gauge className={`h-3.5 w-3.5 ${selectedCatalogEntry.supports_obd ? "text-info" : "text-muted-foreground/30"}`} />
                     <span className={selectedCatalogEntry.supports_obd ? "" : "line-through"}>OBD-II</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Fuel className={`h-3.5 w-3.5 ${selectedCatalogEntry.supports_fuel ? "text-amber-500" : "text-muted-foreground/30"}`} />
+                    <Fuel className={`h-3.5 w-3.5 ${selectedCatalogEntry.supports_fuel ? "text-warning" : "text-muted-foreground/30"}`} />
                     <span className={selectedCatalogEntry.supports_fuel ? "" : "line-through"}>Fuel</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <AlertTriangle className={`h-3.5 w-3.5 ${selectedCatalogEntry.supports_sos ? "text-red-500" : "text-muted-foreground/30"}`} />
+                    <AlertTriangle className={`h-3.5 w-3.5 ${selectedCatalogEntry.supports_sos ? "text-destructive" : "text-muted-foreground/30"}`} />
                     <span className={selectedCatalogEntry.supports_sos ? "" : "line-through"}>SOS</span>
                   </div>
                 </div>

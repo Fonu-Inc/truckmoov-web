@@ -182,9 +182,9 @@ export function ApiKeyManagement() {
     <div className="space-y-6">
       {/* New Key Alert */}
       {newlyCreatedKey && (
-        <Card className="border-green-500 bg-green-500/10">
+        <Card className="border-success bg-success/10">
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-green-600">
+            <CardTitle className="flex items-center gap-2 text-success">
               <Check className="h-5 w-5" />
               API Key Created
             </CardTitle>
@@ -378,7 +378,7 @@ export function ApiKeyManagement() {
                               <span className="font-medium">{key.name}</span>
                               <Badge
                                 variant="outline"
-                                className="text-green-600"
+                                className="text-success"
                               >
                                 Active
                               </Badge>

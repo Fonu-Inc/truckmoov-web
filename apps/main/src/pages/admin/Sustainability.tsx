@@ -207,12 +207,12 @@ export default function Sustainability() {
 
   const getScoreBadge = (score: number) => {
     if (score >= 80)
-      return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Excellent</Badge>;
+      return <Badge className="bg-success/20 text-success border-success/30">Excellent</Badge>;
     if (score >= 60)
-      return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Good</Badge>;
+      return <Badge className="bg-warning/20 text-warning border-warning/30">Good</Badge>;
     if (score >= 40)
-      return <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">Fair</Badge>;
-    return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Poor</Badge>;
+      return <Badge className="bg-warning/20 text-warning border-warning/30">Fair</Badge>;
+    return <Badge className="bg-destructive/20 text-destructive border-destructive/30">Poor</Badge>;
   };
 
   // Trees equivalent (1 tree absorbs ~22kg CO2/year)
@@ -223,7 +223,7 @@ export default function Sustainability() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Leaf className="h-6 w-6 text-green-500" />
+            <Leaf className="h-6 w-6 text-success" />
             Sustainability Dashboard
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -234,11 +234,11 @@ export default function Sustainability() {
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-green-500/20">
+        <Card className="border-success/20">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
-                <TrendingDown className="h-6 w-6 text-red-400" />
+              <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
+                <TrendingDown className="h-6 w-6 text-destructive" />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-muted-foreground">CO₂ Emitted (30d)</p>
@@ -257,11 +257,11 @@ export default function Sustainability() {
           </CardContent>
         </Card>
 
-        <Card className="border-green-500/20">
+        <Card className="border-success/20">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-yellow-500/10 flex items-center justify-center shrink-0">
-                <Fuel className="h-6 w-6 text-yellow-400" />
+              <div className="h-12 w-12 rounded-full bg-warning/10 flex items-center justify-center shrink-0">
+                <Fuel className="h-6 w-6 text-warning" />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-muted-foreground">Avg CO₂/km</p>
@@ -280,11 +280,11 @@ export default function Sustainability() {
           </CardContent>
         </Card>
 
-        <Card className="border-green-500/20">
+        <Card className="border-success/20">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
-                <Zap className="h-6 w-6 text-green-400" />
+              <div className="h-12 w-12 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                <Zap className="h-6 w-6 text-success" />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-muted-foreground">EV/Zero Emission</p>
@@ -304,11 +304,11 @@ export default function Sustainability() {
           </CardContent>
         </Card>
 
-        <Card className="border-green-500/20">
+        <Card className="border-success/20">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-                <TreePine className="h-6 w-6 text-emerald-400" />
+              <div className="h-12 w-12 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                <TreePine className="h-6 w-6 text-success" />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-muted-foreground">Trees to Offset</p>
@@ -486,7 +486,7 @@ export default function Sustainability() {
                           i === 0
                             ? "bg-destructive/20 text-destructive"
                             : i < 3
-                              ? "bg-orange-500/20 text-orange-400"
+                              ? "bg-warning/20 text-warning"
                               : "bg-muted text-muted-foreground",
                         )}
                         >
@@ -563,11 +563,11 @@ export default function Sustainability() {
                           <span className={cn(
                             "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
                             i === 0
-                              ? "bg-yellow-500/20 text-yellow-400"
+                              ? "bg-warning/20 text-warning"
                               : i === 1
-                                ? "bg-gray-400/20 text-gray-300"
+                                ? "bg-muted-foreground/20 text-muted-foreground"
                                 : i === 2
-                                  ? "bg-amber-700/20 text-amber-500"
+                                  ? "bg-warning/20 text-warning"
                                   : "bg-muted text-muted-foreground",
                           )}
                           >
@@ -625,11 +625,11 @@ export default function Sustainability() {
                                 <span className={cn(
                                   "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
                                   i === 0
-                                    ? "bg-yellow-500/20 text-yellow-400"
+                                    ? "bg-warning/20 text-warning"
                                     : i === 1
-                                      ? "bg-gray-400/20 text-gray-300"
+                                      ? "bg-muted-foreground/20 text-muted-foreground"
                                       : i === 2
-                                        ? "bg-amber-700/20 text-amber-500"
+                                        ? "bg-warning/20 text-warning"
                                         : "bg-muted text-muted-foreground",
                                 )}
                                 >
@@ -747,7 +747,7 @@ export default function Sustainability() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <Battery className="h-8 w-8 text-green-500" />
+                  <Battery className="h-8 w-8 text-success" />
                   <div>
                     <p className="text-sm text-muted-foreground">EV Vehicles</p>
                     <p className="text-xl font-bold">{evCount}</p>
@@ -758,7 +758,7 @@ export default function Sustainability() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <Zap className="h-8 w-8 text-yellow-500" />
+                  <Zap className="h-8 w-8 text-warning" />
                   <div>
                     <p className="text-sm text-muted-foreground">Charging Sessions</p>
                     <p className="text-xl font-bold">{evSessions.data?.length || 0}</p>
@@ -769,7 +769,7 @@ export default function Sustainability() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <Fuel className="h-8 w-8 text-blue-500" />
+                  <Fuel className="h-8 w-8 text-info" />
                   <div>
                     <p className="text-sm text-muted-foreground">Total Energy</p>
                     <p className="text-xl font-bold">
@@ -1007,7 +1007,7 @@ export default function Sustainability() {
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Target</span>
-                        <span className="text-green-400">
+                        <span className="text-success">
                           {display.target_co2_kg_per_month?.toFixed(0) || "—"}
                           {" "}
                           kg/month
@@ -1072,7 +1072,7 @@ export default function Sustainability() {
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Target</span>
-                        <span className="text-green-400">
+                        <span className="text-success">
                           {evTarget}
                           %
                         </span>
@@ -1196,7 +1196,7 @@ function TargetsForm({
             ev_adoption_target_percent: Number(evTarget),
           })}
           disabled={isSaving}
-          className="bg-green-600 hover:bg-green-700"
+          className="bg-success hover:bg-success/90"
         >
           {isSaving ? "Saving..." : "Save Targets"}
         </Button>

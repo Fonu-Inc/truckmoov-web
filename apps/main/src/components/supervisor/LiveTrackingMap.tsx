@@ -212,7 +212,7 @@ export function LiveTrackingMap({
                   <div
                     className={cn(
                       "relative flex h-11 w-11 items-center justify-center rounded-full border-3 border-white shadow-xl transition-transform group-hover:scale-110",
-                      isMoving ? "bg-emerald-500" : "bg-amber-500",
+                      isMoving ? "bg-success" : "bg-warning",
                     )}
                     style={{ boxShadow: "0 4px 14px rgba(0,0,0,0.3)" }}
                   >
@@ -229,7 +229,7 @@ export function LiveTrackingMap({
                   </div>
                   {/* Pulse */}
                   {isMoving && (
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 h-11 w-11 rounded-full bg-emerald-500 animate-ping opacity-30" />
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 h-11 w-11 rounded-full bg-success animate-ping opacity-30" />
                   )}
                 </button>
               );
@@ -255,7 +255,7 @@ export function LiveTrackingMap({
                     <div className="flex items-center gap-3">
                       <div className={cn(
                         "flex h-10 w-10 items-center justify-center rounded-full shadow-md",
-                        selectedVehicle.location?.speed ? "bg-emerald-500" : "bg-amber-500",
+                        selectedVehicle.location?.speed ? "bg-success" : "bg-warning",
                       )}
                       >
                         <Truck className="h-5 w-5 text-white" />
@@ -342,11 +342,11 @@ export function LiveTrackingMap({
             <p className="text-xs font-semibold mb-2">Vehicle Status</p>
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-emerald-500 shadow-sm" />
+                <div className="h-3 w-3 rounded-full bg-success shadow-sm" />
                 <span className="text-xs">Moving</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-amber-500 shadow-sm" />
+                <div className="h-3 w-3 rounded-full bg-warning shadow-sm" />
                 <span className="text-xs">Idle</span>
               </div>
             </div>

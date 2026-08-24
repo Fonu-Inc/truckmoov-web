@@ -45,24 +45,24 @@ export function DeviceTelemetryPanel({
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      active: "bg-green-500",
-      configured: "bg-blue-500",
-      assigned: "bg-purple-500",
-      registered: "bg-amber-500",
-      faulty: "bg-red-500",
-      decommissioned: "bg-gray-500",
+      active: "bg-success",
+      configured: "bg-info",
+      assigned: "bg-primary",
+      registered: "bg-warning",
+      faulty: "bg-destructive",
+      decommissioned: "bg-muted-foreground",
     };
-    return colors[status] || "bg-gray-500";
+    return colors[status] || "bg-muted-foreground";
   };
 
   const getSeverityColor = (severity: string) => {
     const colors: Record<string, string> = {
-      low: "bg-blue-500",
-      medium: "bg-amber-500",
-      high: "bg-orange-500",
-      critical: "bg-red-500",
+      low: "bg-info",
+      medium: "bg-warning",
+      high: "bg-warning",
+      critical: "bg-destructive",
     };
-    return colors[severity] || "bg-gray-500";
+    return colors[severity] || "bg-muted-foreground";
   };
 
   const formatEventType = (type: string) => {
@@ -83,7 +83,7 @@ export function DeviceTelemetryPanel({
                 lastSeen={device.last_seen}
                 size="md"
               />
-              <Badge className={`${getStatusColor(device.lifecycle_status || device.status)} text-white`}>
+              <Badge className={`${getStatusColor(device.lifecycle_status || device.status)} text-primary-foreground`}>
                 {device.lifecycle_status || device.status}
               </Badge>
             </div>
@@ -122,7 +122,7 @@ export function DeviceTelemetryPanel({
           {/* Speed */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Gauge className="h-4 w-4 text-blue-500" />
+              <Gauge className="h-4 w-4 text-info" />
               <span className="text-sm">Speed</span>
             </div>
             <span className="font-mono text-lg">
@@ -135,7 +135,7 @@ export function DeviceTelemetryPanel({
           {/* Heading */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Navigation className="h-4 w-4 text-green-500" />
+              <Navigation className="h-4 w-4 text-success" />
               <span className="text-sm">Heading</span>
             </div>
             <span className="font-mono text-lg">
@@ -150,7 +150,7 @@ export function DeviceTelemetryPanel({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Fuel className="h-4 w-4 text-amber-500" />
+                <Fuel className="h-4 w-4 text-warning" />
                 <span className="text-sm">Fuel Level</span>
               </div>
               <span className="font-mono">
@@ -168,7 +168,7 @@ export function DeviceTelemetryPanel({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Battery className="h-4 w-4 text-green-500" />
+                <Battery className="h-4 w-4 text-success" />
                 <span className="text-sm">Device Battery</span>
               </div>
               <span className="font-mono">
@@ -178,7 +178,7 @@ export function DeviceTelemetryPanel({
             </div>
             <Progress
               value={device.battery_level || 0}
-              className={`h-2 ${(device.battery_level || 0) < 20 ? "bg-red-200" : ""}`}
+              className={`h-2 ${(device.battery_level || 0) < 20 ? "bg-destructive/30" : ""}`}
             />
           </div>
 
@@ -186,7 +186,7 @@ export function DeviceTelemetryPanel({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Signal className="h-4 w-4 text-blue-500" />
+                <Signal className="h-4 w-4 text-info" />
                 <span className="text-sm">Signal Strength</span>
               </div>
               <span className="font-mono">
@@ -204,7 +204,7 @@ export function DeviceTelemetryPanel({
           {device.engine_status && (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-purple-500" />
+                <Zap className="h-4 w-4 text-primary" />
                 <span className="text-sm">Engine</span>
               </div>
               <Badge variant={device.engine_status === "on" ? "default" : "secondary"}>
@@ -231,7 +231,7 @@ export function DeviceTelemetryPanel({
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            <AlertTriangle className="h-5 w-5 text-warning" />
             Driver Behavior Events
           </CardTitle>
         </CardHeader>
@@ -252,7 +252,7 @@ export function DeviceTelemetryPanel({
                       >
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <Badge className={`${getSeverityColor(event.severity)} text-white text-xs`}>
+                            <Badge className={`${getSeverityColor(event.severity)} text-primary-foreground text-xs`}>
                               {event.severity}
                             </Badge>
                             <span className="text-sm font-medium">

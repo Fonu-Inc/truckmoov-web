@@ -895,24 +895,15 @@ export function FleetMap({
             <>
               <div className="h-px bg-border my-1.5" />
               <div className="flex items-center gap-2">
-                <div
-                  className="h-3 w-3 rounded-full"
-                  style={{ background: "#eab308" }}
-                />
+                <div className="h-3 w-3 rounded-full bg-warning/70" />
                 <span className="text-xs text-muted-foreground">Harsh — minor</span>
               </div>
               <div className="flex items-center gap-2">
-                <div
-                  className="h-3 w-3 rounded-full"
-                  style={{ background: "#f97316" }}
-                />
+                <div className="h-3 w-3 rounded-full bg-warning" />
                 <span className="text-xs text-muted-foreground">Harsh — moderate</span>
               </div>
               <div className="flex items-center gap-2">
-                <div
-                  className="h-3 w-3 rounded-full"
-                  style={{ background: "#ef4444" }}
-                />
+                <div className="h-3 w-3 rounded-full bg-destructive" />
                 <span className="text-xs text-muted-foreground">Harsh — severe</span>
               </div>
             </>

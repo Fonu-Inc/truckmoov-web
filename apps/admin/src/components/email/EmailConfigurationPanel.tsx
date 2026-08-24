@@ -161,8 +161,8 @@ export function EmailConfigurationPanel() {
 
   const getProviderIcon = (provider: "gmail" | "outlook") => {
     const colors = {
-      gmail: "bg-red-500/10 text-red-500",
-      outlook: "bg-blue-500/10 text-blue-500",
+      gmail: "bg-destructive/10 text-destructive",
+      outlook: "bg-info/10 text-info",
     };
     return (
       <div className={`p-2 rounded-lg ${colors[provider]}`}>
@@ -227,8 +227,8 @@ export function EmailConfigurationPanel() {
                       disabled={isConnecting}
                       className="flex items-center gap-4 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors text-left"
                     >
-                      <div className="p-3 rounded-lg bg-red-500/10">
-                        <Mail className="h-6 w-6 text-red-500" />
+                      <div className="p-3 rounded-lg bg-destructive/10">
+                        <Mail className="h-6 w-6 text-destructive" />
                       </div>
                       <div className="flex-1">
                         <p className="font-medium">Gmail</p>
@@ -246,8 +246,8 @@ export function EmailConfigurationPanel() {
                       disabled={isConnecting}
                       className="flex items-center gap-4 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors text-left"
                     >
-                      <div className="p-3 rounded-lg bg-blue-500/10">
-                        <Mail className="h-6 w-6 text-blue-500" />
+                      <div className="p-3 rounded-lg bg-info/10">
+                        <Mail className="h-6 w-6 text-info" />
                       </div>
                       <div className="flex-1">
                         <p className="font-medium">Outlook / Microsoft 365</p>

@@ -21,32 +21,32 @@ type LifecycleConfig = {
 const lifecycleStatusConfig: Record<DeviceLifecycleStatus, LifecycleConfig> = {
   registered: {
     label: "Registered",
-    color: "text-gray-600",
-    bgColor: "bg-gray-100",
+    color: "text-muted-foreground",
+    bgColor: "bg-muted",
     description: "Device has been registered",
   },
   config_pending: {
     label: "Config Pending",
-    color: "text-yellow-600",
-    bgColor: "bg-yellow-100",
+    color: "text-warning",
+    bgColor: "bg-warning/10",
     description: "Awaiting configuration",
   },
   configured: {
     label: "Configured",
-    color: "text-blue-600",
-    bgColor: "bg-blue-100",
+    color: "text-info",
+    bgColor: "bg-info/10",
     description: "Device is configured",
   },
   verified_online: {
     label: "Verified Online",
-    color: "text-teal-600",
-    bgColor: "bg-teal-100",
+    color: "text-info",
+    bgColor: "bg-info/15",
     description: "Device verified and online",
   },
   assignable: {
     label: "Assignable",
-    color: "text-green-600",
-    bgColor: "bg-green-100",
+    color: "text-success",
+    bgColor: "bg-success/10",
     description: "Ready to be assigned",
   },
   assigned: {
@@ -57,14 +57,14 @@ const lifecycleStatusConfig: Record<DeviceLifecycleStatus, LifecycleConfig> = {
   },
   faulty: {
     label: "Faulty",
-    color: "text-red-600",
-    bgColor: "bg-red-100",
+    color: "text-destructive",
+    bgColor: "bg-destructive/10",
     description: "Device has a fault",
   },
   decommissioned: {
     label: "Decommissioned",
-    color: "text-gray-400",
-    bgColor: "bg-gray-50",
+    color: "text-muted-foreground",
+    bgColor: "bg-muted/60",
     description: "Device is decommissioned",
   },
 };
@@ -92,20 +92,20 @@ export function DeviceLifecycleBadge({
     }> = {
       active: {
         label: "Active",
-        color: "text-green-600",
-        bgColor: "bg-green-100",
+        color: "text-success",
+        bgColor: "bg-success/10",
       },
       inactive: {
         label: "Inactive",
-        color: "text-gray-600",
-        bgColor: "bg-gray-100",
+        color: "text-muted-foreground",
+        bgColor: "bg-muted",
       },
     };
 
     const fallback = legacyConfig[status] || {
       label: status,
-      color: "text-gray-600",
-      bgColor: "bg-gray-100",
+      color: "text-muted-foreground",
+      bgColor: "bg-muted",
     };
 
     return (

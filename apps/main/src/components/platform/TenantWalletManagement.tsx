@@ -194,10 +194,10 @@ export function TenantWalletManagement() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Low Balance</CardTitle>
-            <TrendingDown className="h-4 w-4 text-yellow-500" />
+            <TrendingDown className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-500">{lowBalanceCount}</div>
+            <div className="text-2xl font-bold text-warning">{lowBalanceCount}</div>
             <p className="text-xs text-muted-foreground">Below threshold</p>
           </CardContent>
         </Card>

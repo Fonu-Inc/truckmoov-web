@@ -693,7 +693,7 @@ export default function TenantWallet() {
                   </Button>
                 </div>
                 {(walletInfo?.balance || 0) < (walletInfo?.low_balance_threshold || 1000) && (
-                  <div className="mt-4 flex items-center gap-2 text-yellow-600 bg-yellow-500/10 rounded-lg px-3 py-2">
+                  <div className="mt-4 flex items-center gap-2 text-warning bg-warning/10 rounded-lg px-3 py-2">
                     <AlertTriangle className="h-4 w-4" />
                     <span className="text-sm">Low balance - top up to continue sending messages</span>
                   </div>
@@ -723,7 +723,7 @@ export default function TenantWallet() {
                 <CardTitle className="text-sm font-medium">Top Ups This Month</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-2xl font-bold text-success">
                   ₦
                   {thisMonthTransactions
                     .filter(tx => tx.transaction_type === "topup")
@@ -799,10 +799,10 @@ export default function TenantWallet() {
                             <div className="flex items-center gap-3">
                               <div className={`p-2 rounded-lg ${
                                 type === "call"
-                                  ? "bg-blue-500/10 text-blue-500"
+                                  ? "bg-info/10 text-info"
                                   : type === "sms"
-                                    ? "bg-green-500/10 text-green-500"
-                                    : "bg-emerald-500/10 text-emerald-500"
+                                    ? "bg-success/10 text-success"
+                                    : "bg-success/10 text-success"
                               }`}
                               >
                                 {getTypeIcon(type)}
@@ -874,10 +874,10 @@ export default function TenantWallet() {
                         <div className="flex items-center gap-3">
                           <div className={`p-2 rounded-lg ${
                             rate.communication_type === "call"
-                              ? "bg-blue-500/10 text-blue-500"
+                              ? "bg-info/10 text-info"
                               : rate.communication_type === "sms"
-                                ? "bg-green-500/10 text-green-500"
-                                : "bg-emerald-500/10 text-emerald-500"
+                                ? "bg-success/10 text-success"
+                                : "bg-success/10 text-success"
                           }`}
                           >
                             {getTypeIcon(rate.communication_type)}
@@ -1220,7 +1220,7 @@ export default function TenantWallet() {
                           <Badge
                             variant={tx.transaction_type === "debit" ? "destructive" : "default"}
                             className={
-                              tx.transaction_type === "topup" ? "bg-green-500/10 text-green-500 border-green-500/20" : ""
+                              tx.transaction_type === "topup" ? "bg-success/10 text-success border-success/20" : ""
                             }
                           >
                             {tx.transaction_type === "debit"
@@ -1253,7 +1253,7 @@ export default function TenantWallet() {
                           {tx.description}
                         </TableCell>
                         <TableCell className={`text-right font-medium ${
-                          tx.transaction_type === "debit" ? "text-red-500" : "text-green-500"
+                          tx.transaction_type === "debit" ? "text-destructive" : "text-success"
                         }`}
                         >
                           {tx.transaction_type === "debit" ? "-" : "+"}
@@ -1344,7 +1344,7 @@ export default function TenantWallet() {
                 </div>
                 <div className="flex justify-between items-center mt-2 text-sm">
                   <span className="text-muted-foreground">New balance:</span>
-                  <span className="font-medium text-green-600">
+                  <span className="font-medium text-success">
                     ₦
                     {((walletInfo?.balance || 0) + Number.parseFloat(topupAmount || "0")).toLocaleString()}
                   </span>

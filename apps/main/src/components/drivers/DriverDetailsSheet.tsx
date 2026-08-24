@@ -50,10 +50,10 @@ const commIcons: Record<string, React.ReactNode> = {
 };
 
 const riskLevelColors: Record<string, string> = {
-  low: "bg-green-500/20 text-green-400 border-green-500/30",
-  medium: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  high: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-  critical: "bg-red-500/20 text-red-400 border-red-500/30",
+  low: "bg-success/20 text-success border-success/30",
+  medium: "bg-warning/20 text-warning border-warning/30",
+  high: "bg-warning/20 text-warning border-warning/30",
+  critical: "bg-destructive/20 text-destructive border-destructive/30",
 };
 
 // Score gauge component
@@ -114,7 +114,7 @@ function FatigueGauge({ score }: { score: number }) {
     if (score <= 5)
       return "text-warning";
     if (score <= 7)
-      return "text-orange-400";
+      return "text-warning";
     return "text-destructive";
   };
 

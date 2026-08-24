@@ -52,7 +52,7 @@ export function TicketCsatPanel({
 
   if (csat) {
     return (
-      <div className="rounded-lg border bg-emerald-500/5 border-emerald-500/30 p-4 space-y-3">
+      <div className="rounded-lg border bg-success/5 border-success/30 p-4 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
             Your feedback
@@ -76,7 +76,7 @@ export function TicketCsatPanel({
               key={n}
               className={cn(
                 "h-5 w-5",
-                n <= csat.rating ? "fill-amber-500 text-amber-500" : "text-muted-foreground/30",
+                n <= csat.rating ? "fill-primary text-primary" : "text-muted-foreground/30",
               )}
             />
           ))}
@@ -131,7 +131,7 @@ export function TicketCsatPanel({
             <Star
               className={cn(
                 "h-7 w-7",
-                n <= active ? "fill-amber-500 text-amber-500" : "text-muted-foreground/40",
+                n <= active ? "fill-primary text-primary" : "text-muted-foreground/40",
               )}
             />
           </button>

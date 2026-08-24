@@ -50,9 +50,9 @@ function getManeuverIcon(type: string, modifier?: string) {
     case "roundabout":
       return <RotateCcw className="h-4 w-4" />;
     case "arrive":
-      return <MapPin className="h-4 w-4 text-green-500" />;
+      return <MapPin className="h-4 w-4 text-success" />;
     case "depart":
-      return <Navigation className="h-4 w-4 text-blue-500" />;
+      return <Navigation className="h-4 w-4 text-info" />;
     default:
       return <ArrowUp className="h-4 w-4" />;
   }

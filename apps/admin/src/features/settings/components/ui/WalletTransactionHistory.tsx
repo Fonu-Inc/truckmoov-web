@@ -94,7 +94,7 @@ export function WalletTransactionHistory() {
         return (
           <Badge
             variant="outline"
-            className="bg-red-500/10 text-red-500 border-red-500/20"
+            className="bg-destructive/10 text-destructive border-destructive/20"
           >
             <ArrowDownRight className="h-3 w-3 mr-1" />
             Debit
@@ -105,7 +105,7 @@ export function WalletTransactionHistory() {
         return (
           <Badge
             variant="outline"
-            className="bg-green-500/10 text-green-500 border-green-500/20"
+            className="bg-success/10 text-success border-success/20"
           >
             <ArrowUpRight className="h-3 w-3 mr-1" />
             {type === "topup" ? "Top Up" : "Credit"}
@@ -115,7 +115,7 @@ export function WalletTransactionHistory() {
         return (
           <Badge
             variant="outline"
-            className="bg-blue-500/10 text-blue-500 border-blue-500/20"
+            className="bg-info/10 text-info border-info/20"
           >
             <ArrowUpRight className="h-3 w-3 mr-1" />
             Refund
@@ -317,7 +317,7 @@ export function WalletTransactionHistory() {
                         <TableCell>
                           {tx.unit_rate_ngn && `₦${tx.unit_rate_ngn}`}
                         </TableCell>
-                        <TableCell className={`text-right font-medium ${tx.transaction_type === "debit" ? "text-red-500" : "text-green-500"}`}>
+                        <TableCell className={`text-right font-medium ${tx.transaction_type === "debit" ? "text-destructive" : "text-success"}`}>
                           {tx.transaction_type === "debit" ? "-" : "+"}
                           ₦
                           {tx.amount_ngn.toLocaleString()}

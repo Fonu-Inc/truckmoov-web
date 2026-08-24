@@ -60,13 +60,13 @@ function payoutStatusBadge(s: PayoutStatus) {
     label: string; cls: string; Icon: any;
   }> = {
     paid: {
-      label: "Paid", cls: "bg-green-500/10 text-green-600 border-green-500/20", Icon: CheckCircle,
+      label: "Paid", cls: "bg-success/10 text-success border-success/20", Icon: CheckCircle,
     },
     scheduled: {
-      label: "Scheduled", cls: "bg-blue-500/10 text-blue-600 border-blue-500/20", Icon: Clock,
+      label: "Scheduled", cls: "bg-info/10 text-info border-info/20", Icon: Clock,
     },
     processing: {
-      label: "Processing", cls: "bg-amber-500/10 text-amber-600 border-amber-500/20", Icon: Clock,
+      label: "Processing", cls: "bg-warning/10 text-warning border-warning/20", Icon: Clock,
     },
     failed: {
       label: "Failed", cls: "bg-destructive/10 text-destructive border-destructive/20", Icon: XCircle,
@@ -131,7 +131,7 @@ export function PayoutsTab() {
             "NGN",
           )}
           Icon={Banknote}
-          tone="text-green-600 bg-green-500/10"
+          tone="text-success bg-success/10"
         />
         <StatTile
           label="Pending payouts"
@@ -140,13 +140,13 @@ export function PayoutsTab() {
             "NGN",
           )}
           Icon={Clock}
-          tone="text-amber-600 bg-amber-500/10"
+          tone="text-warning bg-warning/10"
         />
         <StatTile
           label="Recipients"
           value={String(new Set(DEMO_PAYOUTS.map(p => p.recipient)).size)}
           Icon={UsersIcon}
-          tone="text-blue-600 bg-blue-500/10"
+          tone="text-info bg-info/10"
         />
         <StatTile
           label="Failed"
@@ -333,7 +333,7 @@ export function SettlementsTab() {
             "NGN",
           )}
           Icon={TrendingUp}
-          tone="text-green-600 bg-green-500/10"
+          tone="text-success bg-success/10"
         />
         <StatTile
           label="Gross revenue (4w)"
@@ -351,13 +351,13 @@ export function SettlementsTab() {
             "NGN",
           )}
           Icon={Clock}
-          tone="text-amber-600 bg-amber-500/10"
+          tone="text-warning bg-warning/10"
         />
         <StatTile
           label="Jobs completed"
           value={String(totalJobs)}
           Icon={Truck}
-          tone="text-blue-600 bg-blue-500/10"
+          tone="text-info bg-info/10"
         />
       </div>
 
@@ -436,7 +436,7 @@ export function SettlementsTab() {
                       "NGN",
                     )}
                   </TableCell>
-                  <TableCell className="text-right font-bold text-green-600">
+                  <TableCell className="text-right font-bold text-success">
                     {formatCurrency(
                       s.netEarnings,
                       "NGN",
@@ -445,7 +445,7 @@ export function SettlementsTab() {
                   <TableCell>
                     {s.status === "settled"
                       ? (
-                          <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                          <Badge className="bg-success/10 text-success border-success/20">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Settled
                           </Badge>
@@ -453,7 +453,7 @@ export function SettlementsTab() {
                       : (
                           <Badge
                             variant="secondary"
-                            className="bg-amber-500/10 text-amber-600 border-amber-500/20"
+                            className="bg-warning/10 text-warning border-warning/20"
                           >
                             <Clock className="h-3 w-3 mr-1" />
                             Pending
@@ -534,7 +534,7 @@ export function CustomerBillingTab() {
             "NGN",
           )}
           Icon={Clock}
-          tone="text-amber-600 bg-amber-500/10"
+          tone="text-warning bg-warning/10"
         />
         <StatTile
           label="YTD revenue"
@@ -543,7 +543,7 @@ export function CustomerBillingTab() {
             "NGN",
           )}
           Icon={TrendingUp}
-          tone="text-green-600 bg-green-500/10"
+          tone="text-success bg-success/10"
         />
         <StatTile
           label="Overdue accounts"
@@ -636,7 +636,7 @@ export function CustomerBillingTab() {
                   <TableCell className="text-right">
                     {c.outstanding > 0
                       ? (
-                          <span className="font-semibold text-amber-600">
+                          <span className="font-semibold text-warning">
                             {formatCurrency(
                               c.outstanding,
                               "NGN",
@@ -651,7 +651,7 @@ export function CustomerBillingTab() {
                   <TableCell>
                     {c.status === "current"
                       ? (
-                          <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Current</Badge>
+                          <Badge className="bg-success/10 text-success border-success/20">Current</Badge>
                         )
                       : (
                           <Badge variant="destructive">Overdue</Badge>

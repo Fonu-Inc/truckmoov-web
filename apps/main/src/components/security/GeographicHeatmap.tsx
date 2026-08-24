@@ -43,19 +43,19 @@ function getFlagEmoji(countryCode: string): string {
 function getHeatColor(intensity: number, max: number): string {
   const ratio = max > 0 ? intensity / max : 0;
   if (ratio > 0.7)
-    return "bg-red-500/20 border-red-500/50";
+    return "bg-destructive/20 border-destructive/50";
   if (ratio > 0.4)
-    return "bg-orange-500/20 border-orange-500/50";
+    return "bg-warning/20 border-warning/50";
   if (ratio > 0.2)
-    return "bg-yellow-500/20 border-yellow-500/50";
-  return "bg-green-500/20 border-green-500/50";
+    return "bg-warning/20 border-warning/50";
+  return "bg-success/20 border-success/50";
 }
 
 function getThreatColor(level: string): string {
   switch (level) {
     case "high": return "bg-destructive text-destructive-foreground";
-    case "medium": return "bg-orange-500 text-white";
-    default: return "bg-green-500 text-white";
+    case "medium": return "bg-warning text-warning-foreground";
+    default: return "bg-success text-success-foreground";
   }
 }
 
@@ -305,19 +305,19 @@ export function GeographicHeatmap({ attempts }: GeographicHeatmapProps) {
         <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
           <span className="font-medium">Intensity:</span>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 rounded bg-green-500/20 border border-green-500/50" />
+            <div className="w-4 h-4 rounded bg-success/20 border border-success/50" />
             <span>Low</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 rounded bg-yellow-500/20 border border-yellow-500/50" />
+            <div className="w-4 h-4 rounded bg-warning/20 border border-warning/50" />
             <span>Moderate</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 rounded bg-orange-500/20 border border-orange-500/50" />
+            <div className="w-4 h-4 rounded bg-warning/20 border border-warning/50" />
             <span>High</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 rounded bg-red-500/20 border border-red-500/50" />
+            <div className="w-4 h-4 rounded bg-destructive/20 border border-destructive/50" />
             <span>Critical</span>
           </div>
         </div>

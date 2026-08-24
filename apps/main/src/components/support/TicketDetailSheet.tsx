@@ -45,7 +45,7 @@ const statusConfig: Record<TicketStatus, {
     label: "Escalated", className: "bg-destructive/10 text-destructive",
   },
   resolved: {
-    label: "Resolved", className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    label: "Resolved", className: "bg-success/10 text-success",
   },
   closed: {
     label: "Closed", className: "bg-muted text-muted-foreground",

@@ -22,9 +22,9 @@ export function DriverFuelAnalysisPanel() {
 
   const getTrendIcon = (vsFleet: number) => {
     if (vsFleet > 5)
-      return <TrendingUp className="h-4 w-4 text-green-600" />;
+      return <TrendingUp className="h-4 w-4 text-success" />;
     if (vsFleet < -5)
-      return <TrendingDown className="h-4 w-4 text-red-600" />;
+      return <TrendingDown className="h-4 w-4 text-destructive" />;
     return <Minus className="h-4 w-4 text-muted-foreground" />;
   };
 
@@ -120,7 +120,7 @@ export function DriverFuelAnalysisPanel() {
           </div>
           <div className="p-3 rounded-lg bg-muted/50">
             <div className="text-sm text-muted-foreground">Total Potential Savings</div>
-            <div className="text-xl font-bold text-green-600">
+            <div className="text-xl font-bold text-success">
               {formatCurrency(getTotalPotentialSavings())}
             </div>
           </div>
@@ -185,7 +185,7 @@ export function DriverFuelAnalysisPanel() {
                           <TableCell className="text-right">
                             {efficiency.potential_savings_ngn > 0
                               ? (
-                                  <span className="text-green-600">
+                                  <span className="text-success">
                                     {formatCurrency(efficiency.potential_savings_ngn)}
                                   </span>
                                 )

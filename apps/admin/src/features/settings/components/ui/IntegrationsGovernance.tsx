@@ -370,7 +370,7 @@ export function IntegrationsGovernance() {
                                   <TableCell className="font-medium">{tenant.tenant_name}</TableCell>
                                   <TableCell className="text-right">{tenant.total_requests.toLocaleString()}</TableCell>
                                   <TableCell className="text-right">
-                                    <span className="text-emerald-600 dark:text-emerald-400">{tenant.successful_requests.toLocaleString()}</span>
+                                    <span className="text-success">{tenant.successful_requests.toLocaleString()}</span>
                                   </TableCell>
                                   <TableCell className="text-right">
                                     <span className={tenant.failed_requests > 0 ? "text-destructive" : ""}>
@@ -514,7 +514,7 @@ export function IntegrationsGovernance() {
                                     <div className="flex items-center justify-end gap-1">
                                       {tenant.success_rate >= 95
                                         ? (
-                                            <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                            <TrendingUp className="h-4 w-4 text-success" />
                                           )
                                         : tenant.success_rate < 80
                                           ? (
@@ -523,7 +523,7 @@ export function IntegrationsGovernance() {
                                           : null}
                                       <span className={
                                         tenant.success_rate >= 95
-                                          ? "text-emerald-600 dark:text-emerald-400"
+                                          ? "text-success"
                                           : tenant.success_rate < 80
                                             ? "text-destructive"
                                             : ""
@@ -548,7 +548,7 @@ export function IntegrationsGovernance() {
                                       ? (
                                           <Badge
                                             variant="outline"
-                                            className="text-emerald-600 border-emerald-600 dark:text-emerald-400 dark:border-emerald-400"
+                                            className="text-success border-success"
                                           >
                                             <CheckCircle2 className="h-3 w-3 mr-1" />
                                             Healthy
@@ -558,7 +558,7 @@ export function IntegrationsGovernance() {
                                         ? (
                                             <Badge
                                               variant="outline"
-                                              className="text-amber-600 border-amber-600 dark:text-amber-400 dark:border-amber-400"
+                                              className="text-warning border-warning"
                                             >
                                               <AlertTriangle className="h-3 w-3 mr-1" />
                                               Degraded
@@ -714,7 +714,7 @@ export function IntegrationsGovernance() {
                                         ? (
                                             <Badge
                                               variant="outline"
-                                              className="text-emerald-600 border-emerald-600 dark:text-emerald-400 dark:border-emerald-400"
+                                              className="text-success border-success"
                                             >
                                               <CheckCircle2 className="h-3 w-3 mr-1" />
                                               Enabled

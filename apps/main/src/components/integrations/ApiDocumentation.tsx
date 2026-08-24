@@ -1170,11 +1170,11 @@ export function ApiDocumentation() {
   };
 
   const methodColors: Record<string, string> = {
-    GET: "bg-blue-500/20 text-blue-500 border-blue-500/30",
-    POST: "bg-green-500/20 text-green-500 border-green-500/30",
-    PUT: "bg-yellow-500/20 text-yellow-500 border-yellow-500/30",
-    PATCH: "bg-orange-500/20 text-orange-500 border-orange-500/30",
-    DELETE: "bg-red-500/20 text-red-500 border-red-500/30",
+    GET: "bg-info/20 text-info border-info/30",
+    POST: "bg-success/20 text-success border-success/30",
+    PUT: "bg-warning/20 text-warning border-warning/30",
+    PATCH: "bg-warning/20 text-warning border-warning/30",
+    DELETE: "bg-destructive/20 text-destructive border-destructive/30",
   };
 
   return (

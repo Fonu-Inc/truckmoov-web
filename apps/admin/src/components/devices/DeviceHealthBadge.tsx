@@ -16,19 +16,19 @@ const STATUS_CONFIG: Record<string, {
 }> = {
   healthy: {
     label: "Healthy",
-    dot: "bg-green-500",
+    dot: "bg-success",
   },
   warning: {
     label: "Warning",
-    dot: "bg-amber-500",
+    dot: "bg-warning",
   },
   critical: {
     label: "Critical",
-    dot: "bg-red-500",
+    dot: "bg-destructive",
   },
   offline: {
     label: "Offline",
-    dot: "bg-gray-400",
+    dot: "bg-muted-foreground",
   },
 };
 

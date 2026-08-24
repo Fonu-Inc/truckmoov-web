@@ -59,10 +59,10 @@ function fmt(n: number) {
 }
 
 const TIER_COLOR: Record<string, string> = {
-  "excellent": "bg-green-100 text-green-800",
-  "good": "bg-blue-100 text-blue-800",
-  "marginal": "bg-yellow-100 text-yellow-800",
-  "loss-making": "bg-red-100 text-red-800",
+  "excellent": "bg-success/10 text-success",
+  "good": "bg-info/10 text-info",
+  "marginal": "bg-warning/10 text-warning",
+  "loss-making": "bg-destructive/10 text-destructive",
 };
 
 const TIER_LABEL: Record<string, string> = {
@@ -220,9 +220,9 @@ export default function VehiclePLStatementPreview() {
                       className={i % 2 === 0 ? "bg-muted/30" : ""}
                     >
                       <td className="p-2 font-medium">{r.vehicle_name}</td>
-                      <td className="text-right p-2 text-green-700">{fmt(r.revenue)}</td>
-                      <td className="text-right p-2 text-red-700">{fmt(r.costs)}</td>
-                      <td className={`text-right p-2 font-semibold ${r.net_profit >= 0 ? "text-green-700" : "text-red-700"}`}>
+                      <td className="text-right p-2 text-success">{fmt(r.revenue)}</td>
+                      <td className="text-right p-2 text-destructive">{fmt(r.costs)}</td>
+                      <td className={`text-right p-2 font-semibold ${r.net_profit >= 0 ? "text-success" : "text-destructive"}`}>
                         {fmt(r.net_profit)}
                       </td>
                       <td className="text-right p-2">
@@ -243,7 +243,7 @@ export default function VehiclePLStatementPreview() {
                     <td className="p-2">Total</td>
                     <td className="text-right p-2">{fmt(totals.revenue)}</td>
                     <td className="text-right p-2">{fmt(totals.costs)}</td>
-                    <td className={`text-right p-2 ${totals.profit >= 0 ? "text-green-700" : "text-red-700"}`}>
+                    <td className={`text-right p-2 ${totals.profit >= 0 ? "text-success" : "text-destructive"}`}>
                       {fmt(totals.profit)}
                     </td>
                     <td className="text-right p-2">

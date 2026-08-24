@@ -124,7 +124,7 @@ function statusBadge(status: string) {
     case "verified":
     case "approved":
       return (
-        <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+        <Badge className="bg-success/20 text-success border-success/30">
           <CheckCircle2 className="w-3 h-3 mr-1" />
           {" "}
           {status === "completed" ? "Completed" : "Verified"}
@@ -133,7 +133,7 @@ function statusBadge(status: string) {
     case "in_progress":
     case "under_review":
       return (
-        <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+        <Badge className="bg-warning/20 text-warning border-warning/30">
           <Clock className="w-3 h-3 mr-1" />
           {" "}
           {status === "in_progress" ? "In Progress" : "Under Review"}
@@ -141,7 +141,7 @@ function statusBadge(status: string) {
       );
     case "rejected":
       return (
-        <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+        <Badge className="bg-destructive/20 text-destructive border-destructive/30">
           <XCircle className="w-3 h-3 mr-1" />
           {" "}
           Rejected
@@ -953,14 +953,14 @@ export function OnboardingKYCStep({
                     key={docType.value}
                     className={`flex items-center justify-between gap-3 p-3 rounded-lg border ${
                       uploaded
-                        ? "bg-green-500/10 border-green-500/30"
+                        ? "bg-success/10 border-success/30"
                         : "bg-muted/30 border-border"
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       {uploaded
                         ? (
-                            <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+                            <CheckCircle2 className="w-5 h-5 text-success shrink-0" />
                           )
                         : (
                             <AlertCircle className="w-5 h-5 text-muted-foreground shrink-0" />

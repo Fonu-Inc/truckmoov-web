@@ -72,19 +72,19 @@ function DeviceStatusBadge({ status }: { status: SimulatedDevice["status"] }) {
     icon: React.ReactNode;
   }> = {
     disconnected: {
-      color: "bg-gray-500",
+      color: "bg-muted-foreground",
       icon: <WifiOff className="h-3 w-3" />,
     },
     connecting: {
-      color: "bg-amber-500 animate-pulse",
+      color: "bg-warning animate-pulse",
       icon: <Radio className="h-3 w-3" />,
     },
     connected: {
-      color: "bg-green-500",
+      color: "bg-success",
       icon: <Wifi className="h-3 w-3" />,
     },
     error: {
-      color: "bg-red-500",
+      color: "bg-destructive",
       icon: <AlertTriangle className="h-3 w-3" />,
     },
   };
@@ -141,22 +141,22 @@ function GeofenceAlertItem({ alert }: { alert: GeofenceAlert }) {
       isRestricted && isEntry
         ? "bg-destructive/10 border-destructive/30"
         : isEntry
-          ? "bg-amber-500/10 border-amber-500/30"
-          : "bg-blue-500/10 border-blue-500/30"
+          ? "bg-warning/10 border-warning/30"
+          : "bg-info/10 border-info/30"
     }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className={`p-1.5 rounded-full ${
-            isRestricted && isEntry ? "bg-destructive/20" : isEntry ? "bg-amber-500/20" : "bg-blue-500/20"
+            isRestricted && isEntry ? "bg-destructive/20" : isEntry ? "bg-warning/20" : "bg-info/20"
           }`}
           >
             {isEntry
               ? (
-                  <LogIn className={`h-3 w-3 ${isRestricted ? "text-destructive" : "text-amber-500"}`} />
+                  <LogIn className={`h-3 w-3 ${isRestricted ? "text-destructive" : "text-warning"}`} />
                 )
               : (
-                  <LogOut className="h-3 w-3 text-blue-500" />
+                  <LogOut className="h-3 w-3 text-info" />
                 )}
           </div>
           <div>
@@ -599,9 +599,9 @@ export default function DeviceSimulator() {
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-2">
-                                    <span className="text-green-600">{device.messageCount}</span>
+                                    <span className="text-success">{device.messageCount}</span>
                                     {device.errorCount > 0 && (
-                                      <span className="text-red-500">
+                                      <span className="text-destructive">
                                         (
                                         {device.errorCount}
                                         {" "}
@@ -806,8 +806,8 @@ export default function DeviceSimulator() {
                       key={log.id}
                       className={`p-3 rounded-lg border text-sm font-mono ${
                         log.direction === "sent"
-                          ? "bg-blue-500/10 border-blue-500/20"
-                          : "bg-green-500/10 border-green-500/20"
+                          ? "bg-info/10 border-info/20"
+                          : "bg-success/10 border-success/20"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-2">
@@ -867,11 +867,11 @@ export default function DeviceSimulator() {
 
                 <div className="grid grid-cols-2 gap-4 text-center">
                   <div className="p-4 rounded-lg bg-muted">
-                    <p className="text-3xl font-bold text-green-500">{connectedCount}</p>
+                    <p className="text-3xl font-bold text-success">{connectedCount}</p>
                     <p className="text-sm text-muted-foreground">Connected</p>
                   </div>
                   <div className="p-4 rounded-lg bg-muted">
-                    <p className="text-3xl font-bold text-red-500">{errorCount}</p>
+                    <p className="text-3xl font-bold text-destructive">{errorCount}</p>
                     <p className="text-sm text-muted-foreground">Errors</p>
                   </div>
                 </div>

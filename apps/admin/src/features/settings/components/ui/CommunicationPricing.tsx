@@ -91,11 +91,11 @@ export function CommunicationPricing() {
   const getTypeBadgeColor = (type: string) => {
     switch (type) {
       case "call":
-        return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+        return "bg-info/10 text-info border-info/20";
       case "sms":
-        return "bg-green-500/10 text-green-500 border-green-500/20";
+        return "bg-success/10 text-success border-success/20";
       case "whatsapp":
-        return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+        return "bg-success/10 text-success border-success/20";
       default:
         return "";
     }
@@ -203,7 +203,7 @@ export function CommunicationPricing() {
                 {editedRates[rate.id] !== rate.rate_ngn && (
                   <Badge
                     variant="outline"
-                    className="w-full justify-center bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
+                    className="w-full justify-center bg-warning/10 text-warning border-warning/20"
                   >
                     Unsaved changes
                   </Badge>

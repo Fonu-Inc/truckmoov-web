@@ -160,8 +160,8 @@ export function DeviceList({
                             key={bar}
                             className={`w-1 rounded-sm ${
                               bar <= getSignalBars(device.signal_strength)
-                                ? "bg-green-500"
-                                : "bg-gray-300"
+                                ? "bg-success"
+                                : "bg-muted"
                             }`}
                             style={{ height: `${bar * 3 + 4}px` }}
                           />
@@ -172,7 +172,7 @@ export function DeviceList({
                     {/* Battery */}
                     <div className="flex items-center gap-1">
                       <Battery className="h-3 w-3 text-muted-foreground" />
-                      <span className={device.battery_level && device.battery_level < 20 ? "text-red-500" : ""}>
+                      <span className={device.battery_level && device.battery_level < 20 ? "text-destructive" : ""}>
                         {device.battery_level ?? "-"}
                         %
                       </span>
@@ -187,7 +187,7 @@ export function DeviceList({
                     {/* Location indicator */}
                     <div className="flex items-center gap-1">
                       <MapPin className="h-3 w-3 text-muted-foreground" />
-                      <span className={device.latitude && device.longitude ? "text-green-500" : "text-gray-400"}>
+                      <span className={device.latitude && device.longitude ? "text-success" : "text-muted-foreground"}>
                         {device.latitude && device.longitude ? "GPS" : "N/A"}
                       </span>
                     </div>

@@ -64,22 +64,22 @@ export function getDummyFuelComposition(range: DummyRange) {
     {
       name: "Petrol",
       value: adj(12),
-      color: "hsl(25 95% 53%)",
+      color: "hsl(var(--chart-5))",
     },
     {
       name: "CNG",
       value: adj(6),
-      color: "hsl(48 96% 53%)",
+      color: "hsl(var(--chart-1))",
     },
     {
       name: "Hybrid",
       value: adj(5),
-      color: "hsl(190 90% 50%)",
+      color: "hsl(var(--chart-3))",
     },
     {
       name: "Electric",
       value: adj(4),
-      color: "hsl(142 71% 45%)",
+      color: "hsl(var(--chart-2))",
     },
   ];
 }

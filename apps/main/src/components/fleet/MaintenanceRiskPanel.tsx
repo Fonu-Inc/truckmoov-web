@@ -31,10 +31,10 @@ export function MaintenanceRiskPanel() {
 
   const getRiskIcon = (level: string) => {
     switch (level) {
-      case "critical": return <AlertTriangle className="h-4 w-4 text-red-600" />;
-      case "high": return <AlertTriangle className="h-4 w-4 text-orange-600" />;
-      case "moderate": return <Activity className="h-4 w-4 text-yellow-600" />;
-      default: return <Shield className="h-4 w-4 text-green-600" />;
+      case "critical": return <AlertTriangle className="h-4 w-4 text-destructive" />;
+      case "high": return <AlertTriangle className="h-4 w-4 text-warning" />;
+      case "moderate": return <Activity className="h-4 w-4 text-warning" />;
+      default: return <Shield className="h-4 w-4 text-success" />;
     }
   };
 
@@ -98,7 +98,7 @@ export function MaintenanceRiskPanel() {
             </Badge>
           )}
           {highCount > 0 && (
-            <Badge className="bg-orange-100 text-orange-700">
+            <Badge className="bg-warning/10 text-warning">
               {highCount}
               {" "}
               High Risk

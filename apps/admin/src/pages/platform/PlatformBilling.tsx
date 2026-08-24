@@ -242,17 +242,17 @@ const planDistribution = [
   {
     name: "Starter",
     value: 45,
-    color: "#94a3b8",
+    color: "hsl(var(--muted-foreground))",
   },
   {
     name: "Professional",
     value: 62,
-    color: "#3b82f6",
+    color: "hsl(var(--chart-3))",
   },
   {
     name: "Enterprise",
     value: 18,
-    color: "#22c55e",
+    color: "hsl(var(--chart-2))",
   },
 ];
 

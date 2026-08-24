@@ -82,7 +82,7 @@ export function OrgUpgradeQueue() {
         return (
           <Badge
             variant="outline"
-            className="text-amber-600 border-amber-300 bg-amber-50"
+            className="text-warning border-warning/20 bg-warning/10"
           >
             Pending
           </Badge>
@@ -91,7 +91,7 @@ export function OrgUpgradeQueue() {
         return (
           <Badge
             variant="default"
-            className="bg-emerald-600"
+            className="bg-success"
           >
             Approved
           </Badge>

@@ -69,9 +69,9 @@ export function DeviceConnectivityPanel({
   const getStatusIcon = () => {
     switch (status) {
       case "online":
-        return <Wifi className="h-5 w-5 text-emerald-500" />;
+        return <Wifi className="h-5 w-5 text-success" />;
       case "degraded":
-        return <TrendingDown className="h-5 w-5 text-amber-500" />;
+        return <TrendingDown className="h-5 w-5 text-warning" />;
       case "offline":
         return <WifiOff className="h-5 w-5 text-destructive" />;
       default:
@@ -222,9 +222,9 @@ export function DeviceConnectivityPanel({
           <>
             <Separator />
             <div className="flex items-start gap-2 p-3 bg-secondary rounded-lg border">
-              <Timer className="h-4 w-4 text-amber-600 mt-0.5" />
+              <Timer className="h-4 w-4 text-warning mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-amber-600">Degraded Connectivity</p>
+                <p className="text-sm font-medium text-warning">Degraded Connectivity</p>
                 <p className="text-xs text-muted-foreground">
                   No heartbeat for
                   {" "}

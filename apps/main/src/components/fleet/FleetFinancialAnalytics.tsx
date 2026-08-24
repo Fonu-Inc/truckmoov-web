@@ -831,10 +831,10 @@ export function FleetFinancialAnalytics() {
 
   const getTierBadge = (tier: string) => {
     const colors: Record<string, string> = {
-      "excellent": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      "good": "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-      "marginal": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-      "loss-making": "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+      "excellent": "bg-success/20 text-success",
+      "good": "bg-info/20 text-info",
+      "marginal": "bg-warning/20 text-warning",
+      "loss-making": "bg-destructive/20 text-destructive",
     };
     return (
       <Badge className={colors[tier] || colors.marginal}>
@@ -876,7 +876,7 @@ export function FleetFinancialAnalytics() {
                 <TrendingUp className="h-5 w-5 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-green-600">{format(summaryStats.totalRevenue)}</p>
+                <p className="text-2xl font-bold text-success">{format(summaryStats.totalRevenue)}</p>
                 <p className="text-xs text-muted-foreground">
                   Total Revenue ·
                   {summaryStats.vehicleCount}
@@ -895,7 +895,7 @@ export function FleetFinancialAnalytics() {
                 <TrendingDown className="h-5 w-5 text-destructive" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-red-600">{format(summaryStats.totalCost)}</p>
+                <p className="text-2xl font-bold text-destructive">{format(summaryStats.totalCost)}</p>
                 <p className="text-xs text-muted-foreground">Total Costs · Fleet total</p>
               </div>
             </div>
@@ -909,7 +909,7 @@ export function FleetFinancialAnalytics() {
                 <DollarSign className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className={`text-2xl font-bold ${summaryStats.totalProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                <p className={`text-2xl font-bold ${summaryStats.totalProfit >= 0 ? "text-success" : "text-destructive"}`}>
                   {format(summaryStats.totalProfit)}
                 </p>
                 <p className="text-xs text-muted-foreground">
@@ -1445,13 +1445,13 @@ export function FleetFinancialAnalytics() {
                       <TableCell className="font-medium">
                         {getVehicleName(item.vehicle_id)}
                       </TableCell>
-                      <TableCell className="text-right text-green-600">
+                      <TableCell className="text-right text-success">
                         {format(item.revenue?.total || 0)}
                       </TableCell>
-                      <TableCell className="text-right text-red-600">
+                      <TableCell className="text-right text-destructive">
                         {format(item.costs?.total || 0)}
                       </TableCell>
-                      <TableCell className={`text-right font-semibold ${(item.profitability?.net_profit || 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
+                      <TableCell className={`text-right font-semibold ${(item.profitability?.net_profit || 0) >= 0 ? "text-success" : "text-destructive"}`}>
                         {format(item.profitability?.net_profit || 0)}
                       </TableCell>
                       <TableCell className="text-right">
@@ -1747,7 +1747,7 @@ export function FleetFinancialAnalytics() {
             <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-amber-500" />
+                  <AlertTriangle className="h-5 w-5 text-warning" />
                   Underperforming Assets
                 </CardTitle>
                 <CardDescription>
@@ -1765,7 +1765,7 @@ export function FleetFinancialAnalytics() {
               {underperformingVehicles.length === 0
                 ? (
                     <div className="text-center py-8">
-                      <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
+                      <CheckCircle className="h-12 w-12 text-success mx-auto mb-3" />
                       <p className="text-muted-foreground">All vehicles are performing well!</p>
                     </div>
                   )
@@ -1784,7 +1784,7 @@ export function FleetFinancialAnalytics() {
                         return (
                           <Card
                             key={item.vehicle_id}
-                            className="border-amber-200 dark:border-amber-800"
+                            className="border-warning/30"
                           >
                             <CardContent className="pt-4">
                               <div className="flex items-start justify-between">
@@ -1806,7 +1806,7 @@ export function FleetFinancialAnalytics() {
                                   </p>
                                 </div>
                                 <div className="text-right">
-                                  <p className={`text-lg font-bold ${(item.profitability?.net_profit || 0) >= 0 ? "text-amber-600" : "text-red-600"}`}>
+                                  <p className={`text-lg font-bold ${(item.profitability?.net_profit || 0) >= 0 ? "text-warning" : "text-destructive"}`}>
                                     {format(item.profitability?.net_profit || 0)}
                                   </p>
                                   <p className="text-xs text-muted-foreground">
