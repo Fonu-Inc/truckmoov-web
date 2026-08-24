@@ -17,7 +17,6 @@ import {
   Receipt,
   Send,
   Settings,
-  Telescope,
   Truck,
   Users,
   Wifi,
@@ -82,10 +81,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   {
     label: "Overview", href: "/owner-operator", icon: LayoutDashboard, hasPermission: ["OWNER_OPERATOR"],
   },
-  {
-    label: "Overview", href: "/dispatcher", icon: LayoutDashboard, hasPermission: ["DISPATCHER"],
-  },
-
   // ─── Jobs & dispatch ───────────────────────────────────────────
   {
     label: "Jobs", href: "/jobs", icon: Package,
@@ -94,6 +89,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "OPERATIONS_MANAGER",
+      "DISPATCHER",
     ],
   },
   {
@@ -101,9 +97,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   },
   {
     label: "Job Offers", href: "/job-offers", icon: Inbox, hasPermission: ["OWNER_OPERATOR"],
-  },
-  {
-    label: "Dispatch", href: "/dispatcher/dispatch", icon: Telescope, hasPermission: ["DISPATCHER"],
   },
 
   // ─── Fleet ─────────────────────────────────────────────────────
@@ -128,10 +121,8 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "OPERATIONS_MANAGER",
+      "DISPATCHER",
     ],
-  },
-  {
-    label: "Drivers", href: "/dispatcher/drivers", icon: Users, hasPermission: ["DISPATCHER"],
   },
 
   // ─── Devices & connectivity ────────────────────────────────────
@@ -145,9 +136,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "OPERATIONS_MANAGER",
       "FINANCE_VIEWER",
     ],
-  },
-  {
-    label: "Devices", href: "/dispatcher/devices", icon: Cpu, hasPermission: ["DISPATCHER"],
   },
   {
     label: "Installation", href: "/installation", icon: Wrench, hasPermission: [
@@ -164,9 +152,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "OPERATIONS_MANAGER",
       "FINANCE_VIEWER",
     ],
-  },
-  {
-    label: "SIM Cards", href: "/dispatcher/sims", icon: Wifi, hasPermission: ["DISPATCHER"],
   },
   {
     label: "Data Bundles", href: "/data-bundles", icon: Database,
@@ -186,10 +171,8 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "OPERATIONS_MANAGER",
+      "DISPATCHER",
     ],
-  },
-  {
-    label: "Live Map", href: "/dispatcher/map", icon: MapPin, hasPermission: ["DISPATCHER"],
   },
 
   // ─── Money ─────────────────────────────────────────────────────
@@ -215,10 +198,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   {
     label: "Documents", href: "/owner-operator/documents", icon: FileText, hasPermission: ["OWNER_OPERATOR"],
   },
-  {
-    label: "Alerts", href: "/dispatcher/alerts", icon: Bell, hasPermission: ["DISPATCHER"],
-  },
-
   // ─── Analytics ─────────────────────────────────────────────────
   {
     label: "Analytics", href: "/analytics", icon: BarChart3, hasPermission: [
@@ -271,9 +250,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     ],
   },
   {
-    label: "Reports", href: "/dispatcher/reports", icon: BarChart3, hasPermission: ["DISPATCHER"],
-  },
-  {
     label: "Sustainability", href: "/sustainability", icon: Leaf, hasPermission: [
       "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
@@ -291,9 +267,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     label: "Settings", href: "/settings", icon: Settings,
     hasPermission: [
       "ENTERPRISE_ADMIN",
-      "FLEET_ADMIN",
-      "AGGREGATOR_ADMIN",
-      "OWNER_OPERATOR",
       "DISPATCHER",
     ],
   },

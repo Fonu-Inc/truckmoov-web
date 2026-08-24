@@ -447,7 +447,10 @@ export const router = createBrowserRouter([
               },
               {
                 path: "subscription",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/SubscriptionSettingsPage")).default }),
+                lazy: guardedBy(
+                  settingsTabRoles("/settings/subscription") ?? [],
+                  () => import("@/features/settings/components/pages/SubscriptionSettingsPage"),
+                ),
                 children: [
                   {
                     index: true,
@@ -469,15 +472,26 @@ export const router = createBrowserRouter([
               },
               {
                 path: "invoicing",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/TenantInvoiceConfigPanel")).TenantInvoiceConfigPanel }),
+                lazy: guardedByNamed(
+                  settingsTabRoles("/settings/invoicing") ?? [],
+                  () => import("@/features/settings/components/ui/TenantInvoiceConfigPanel"),
+                  "TenantInvoiceConfigPanel",
+                ),
               },
               {
                 path: "kyc",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/KycSettingsPage")).default }),
+                lazy: guardedBy(
+                  settingsTabRoles("/settings/kyc") ?? [],
+                  () => import("@/features/settings/components/pages/KycSettingsPage"),
+                ),
               },
               {
                 path: "fleet",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/MaintenanceConfigPanel")).MaintenanceConfigPanel }),
+                lazy: guardedByNamed(
+                  settingsTabRoles("/settings/fleet") ?? [],
+                  () => import("@/features/settings/components/ui/MaintenanceConfigPanel"),
+                  "MaintenanceConfigPanel",
+                ),
               },
               {
                 path: "ai",
@@ -520,7 +534,10 @@ export const router = createBrowserRouter([
               },
               {
                 path: "users",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/UsersSettingsPage")).default }),
+                lazy: guardedBy(
+                  settingsTabRoles("/settings/users") ?? [],
+                  () => import("@/features/settings/components/pages/UsersSettingsPage"),
+                ),
               },
               {
                 path: "branding",

@@ -47,19 +47,19 @@ export const SETTINGS_TABS: SettingsTab[] = [
     to: "/settings", label: "Organization", icon: Building2, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
-    to: "/settings/subscription", label: "Subscription", icon: CreditCard, hasPermissions: [],
+    to: "/settings/subscription", label: "Subscription", icon: CreditCard, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
     to: "/settings/storage", label: "Storage", icon: HardDrive, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
-    to: "/settings/invoicing", label: "Invoicing", icon: Receipt, hasPermissions: [],
+    to: "/settings/invoicing", label: "Invoicing", icon: Receipt, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
-    to: "/settings/kyc", label: "KYC", icon: FileCheck, hasPermissions: [],
+    to: "/settings/kyc", label: "KYC", icon: FileCheck, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
-    to: "/settings/fleet", label: "Fleet", icon: Wrench, hasPermissions: [],
+    to: "/settings/fleet", label: "Fleet", icon: Wrench, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
     to: "/settings/ai", label: "AI Matching", icon: Bot, hasPermissions: ENTERPRISE_ADMIN_ONLY,
@@ -77,7 +77,7 @@ export const SETTINGS_TABS: SettingsTab[] = [
     to: "/settings/communication", label: "Communication", icon: Bell, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
-    to: "/settings/users", label: "Users", icon: Users, hasPermissions: [],
+    to: "/settings/users", label: "Users", icon: Users, hasPermissions: ENTERPRISE_ADMIN_ONLY,
   },
   {
     to: "/settings/branding", label: "Branding", icon: Palette, hasPermissions: ENTERPRISE_ADMIN_ONLY,

@@ -6,7 +6,7 @@ export const ROLE_REDIRECT_MAP: Partial<Record<UserRole, string>> = {
   OWNER_OPERATOR: "/owner-operator",
   FLEET_ADMIN: "/overview",
   OPERATIONS_MANAGER: "/overview",
-  DISPATCHER: "/dispatcher",
+  DISPATCHER: "/jobs",
   FINANCE_VIEWER: "/fleet?tab=analytics",
 };
 

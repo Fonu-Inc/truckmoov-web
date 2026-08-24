@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCompleteProfile } from "@truckmoov/api/auth";
+import { useRegisterInvited } from "@truckmoov/api/auth";
 import { PasswordFieldControl } from "@truckmoov/reusables/components/app/PasswordFieldControl";
 import {
   Mail, User,
@@ -50,7 +50,7 @@ export function InviteProfileForm({
   inviteToken, email,
 }: InviteProfileFormProps) {
   const navigate = useNavigate();
-  const completeProfile = useCompleteProfile();
+  const registerInvited = useRegisterInvited();
 
   const form = useForm<InvitePasswordFormValues>({
     resolver: zodResolver(invitePasswordSchema),
@@ -62,10 +62,10 @@ export function InviteProfileForm({
   });
 
   function onSubmit(values: InvitePasswordFormValues) {
-    completeProfile.mutate(
+    registerInvited.mutate(
       {
         data: {
-          token: inviteToken,
+          inviteToken,
           fullName: values.fullName.trim(),
           password: values.newPassword,
         },
@@ -163,7 +163,7 @@ export function InviteProfileForm({
           type="submit"
           form={INVITE_PASSWORD_FORM_ID}
           className="w-full"
-          loading={completeProfile.isPending}
+          loading={registerInvited.isPending}
         >
           Activate account
         </Button>

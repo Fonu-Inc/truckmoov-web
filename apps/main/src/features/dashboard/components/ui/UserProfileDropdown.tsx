@@ -32,7 +32,6 @@ export function UserProfileDropdown() {
   const { data: orgSettings } = useQuery(getOrganizationSettingsQueryOptions());
   const branding = orgSettings?.data?.branding;
   const orgName = branding?.organizationName;
-  const orgEmail = branding?.contactEmail ?? user?.email;
   const logoUrl = branding?.profilePictureUrl;
   const isDark = theme === "dark";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
@@ -64,7 +63,7 @@ export function UserProfileDropdown() {
           </Avatar>
           <span className="hidden sm:flex flex-col items-start leading-tight">
             <span className="text-xs font-semibold text-foreground truncate max-w-[140px]">
-              {orgName || "Organization"}
+              {user?.email || "Signed in"}
             </span>
           </span>
         </Button>
@@ -76,11 +75,10 @@ export function UserProfileDropdown() {
       >
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{orgName || "Organization"}</p>
-            <p className="text-xs leading-none text-muted-foreground">
-              {orgEmail || "user@example.com"}
+            <p className="text-sm font-medium leading-none truncate">
+              {user?.email || "Signed in"}
             </p>
-            <p className="text-xs leading-none text-muted-foreground mt-1">
+            <p className="text-xs leading-none text-muted-foreground">
               {getRoleLabel(user?.role)}
             </p>
           </div>
