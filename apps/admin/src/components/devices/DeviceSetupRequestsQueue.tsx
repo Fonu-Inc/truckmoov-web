@@ -84,6 +84,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
   TableBody,
@@ -800,148 +801,170 @@ export function DeviceSetupRequestsQueue() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {requestsQuery.isLoading || requestsQuery.isFetching || requestsQuery.isError || requests.length === 0
+                {requestsQuery.isLoading
                   ? (
-                      <TableRow>
-                        <TableCell colSpan={7}>
-                          <div className="py-12 text-center">
-                            {requestsQuery.isLoading || requestsQuery.isFetching
-                              ? (
-                                  <Loader2 className="mx-auto mb-3 h-10 w-10 animate-spin text-muted-foreground" />
-                                )
-                              : (
-                                  <Cpu className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-                                )}
-                            <p className="font-medium">
-                              {requestsQuery.isLoading || requestsQuery.isFetching
-                                ? "Loading device setup requests"
-                                : "No device setup requests found"}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {requestsQuery.isError ? "Unable to load requests right now" : "Try adjusting your search or filters"}
-                            </p>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <TableRow
+                          key={i}
+                          className="h-[86px]"
+                        >
+                          <TableCell colSpan={7}>
+                            <Skeleton className="h-4 w-full" />
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )
-                  : (
-                      requests.map((request) => {
-                        const statusConfig
-                          = STATUS_CONFIG[request.status as SystemDeviceSetupStatus] ?? {
-                            label: formatStatusLabel(request.status),
-                            className: "border-transparent bg-secondary text-secondary-foreground",
-                          };
-                        return (
-                          <TableRow
-                            key={request.id}
-                            className="h-[86px]"
-                          >
-                            <TableCell>
-                              <div className="space-y-1">
-                                <p className="font-semibold">
-                                  {[
-                                    request.manufacturer,
-                                    request.model,
-                                  ].filter(Boolean).join(" ")}
-                                </p>
-                                <p className="font-mono text-xs text-muted-foreground">{request.imei}</p>
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs"
-                                >
-                                  {CONNECTION_LABELS[request.connectionType] ?? request.connectionType}
-                                </Badge>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="space-y-1">
-                                <p className="font-semibold">{request.requesterName || "-"}</p>
-                                {request.needsSim && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-xs"
-                                  >
-                                    Needs SIM
-                                  </Badge>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-semibold">{request.vehiclePlate || "-"}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <MapPin className="h-3.5 w-3.5" />
-                                {request.location || "-"}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={statusConfig.className}
+                  : requestsQuery.isError
+                    ? (
+                        <TableRow>
+                          <TableCell colSpan={7}>
+                            <div className="py-12 text-center">
+                              <p className="text-destructive">Unable to load setup requests.</p>
+                              <Button
+                                variant="link"
+                                className="mt-1"
+                                onClick={() => requestsQuery.refetch()}
                               >
-                                {statusConfig.label}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm text-muted-foreground">
-                                <p>
-                                  {formatWithPattern(
-                                    request.createdAt,
-                                    "dd MMM yyyy",
-                                  )}
+                                Try again
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    : requests.length === 0
+                      ? (
+                          <TableRow>
+                            <TableCell colSpan={7}>
+                              <div className="py-12 text-center">
+                                <Cpu className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+                                <p className="font-medium">No device setup requests found</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {debouncedSearch || activeFilterCount > 0
+                                    ? "Try adjusting your search or filters."
+                                    : "New requests will appear here."}
                                 </p>
-                                <div className="mt-1 flex items-center gap-1 text-xs">
-                                  <Calendar className="h-3.5 w-3.5" />
-                                  {formatWithPattern(
-                                    request.updatedAt,
-                                    "dd MMM",
-                                  )}
-                                </div>
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => setSelectedRequest(request)}>
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    View Details
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    disabled={assignRequest.isPending || rejectRequest.isPending}
-                                    onClick={() => handleAssign(request)}
-                                  >
-                                    {assigningRequestId === request.id
-                                      ? (
-                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        )
-                                      : (
-                                          <UserPlus className="mr-2 h-4 w-4" />
-                                        )}
-                                    Assign to Me
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    disabled={rejectRequest.isPending || assignRequest.isPending}
-                                    className="text-destructive"
-                                    onClick={() => setSelectedRejectRequest(request)}
-                                  >
-                                    <XCircle className="mr-2 h-4 w-4" />
-                                    Reject
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
-                        );
-                      })
-                    )}
+                        )
+                      : (
+                          requests.map((request) => {
+                            const statusConfig
+                              = STATUS_CONFIG[request.status as SystemDeviceSetupStatus] ?? {
+                                label: formatStatusLabel(request.status),
+                                className: "border-transparent bg-secondary text-secondary-foreground",
+                              };
+                            return (
+                              <TableRow
+                                key={request.id}
+                                className="h-[86px]"
+                              >
+                                <TableCell>
+                                  <div className="space-y-1">
+                                    <p className="font-semibold">
+                                      {[
+                                        request.manufacturer,
+                                        request.model,
+                                      ].filter(Boolean).join(" ")}
+                                    </p>
+                                    <p className="font-mono text-xs text-muted-foreground">{request.imei}</p>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      {CONNECTION_LABELS[request.connectionType] ?? request.connectionType}
+                                    </Badge>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="space-y-1">
+                                    <p className="font-semibold">{request.requesterName || "-"}</p>
+                                    {request.needsSim && (
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-xs"
+                                      >
+                                        Needs SIM
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="font-semibold">{request.vehiclePlate || "-"}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                    <MapPin className="h-3.5 w-3.5" />
+                                    {request.location || "-"}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant="outline"
+                                    className={statusConfig.className}
+                                  >
+                                    {statusConfig.label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="text-sm text-muted-foreground">
+                                    <p>
+                                      {formatWithPattern(
+                                        request.createdAt,
+                                        "dd MMM yyyy",
+                                      )}
+                                    </p>
+                                    <div className="mt-1 flex items-center gap-1 text-xs">
+                                      <Calendar className="h-3.5 w-3.5" />
+                                      {formatWithPattern(
+                                        request.updatedAt,
+                                        "dd MMM",
+                                      )}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                      >
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => setSelectedRequest(request)}>
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        View Details
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        disabled={assignRequest.isPending || rejectRequest.isPending}
+                                        onClick={() => handleAssign(request)}
+                                      >
+                                        {assigningRequestId === request.id
+                                          ? (
+                                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            )
+                                          : (
+                                              <UserPlus className="mr-2 h-4 w-4" />
+                                            )}
+                                        Assign to Me
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        disabled={rejectRequest.isPending || assignRequest.isPending}
+                                        className="text-destructive"
+                                        onClick={() => setSelectedRejectRequest(request)}
+                                      >
+                                        <XCircle className="mr-2 h-4 w-4" />
+                                        Reject
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )}
               </TableBody>
             </Table>
           </div>
@@ -960,7 +983,19 @@ export function DeviceSetupRequestsQueue() {
           {detailRequest && (
             <div className="space-y-5">
               {selectedRequestDetailQuery.isLoading && (
-                <p className="text-sm text-muted-foreground">Loading latest request details...</p>
+                <Skeleton className="h-4 w-56" />
+              )}
+              {selectedRequestDetailQuery.isError && (
+                <div className="rounded-lg border border-border/50 bg-card/50 py-4 text-center">
+                  <p className="text-destructive">Unable to load latest request details.</p>
+                  <Button
+                    variant="link"
+                    className="mt-1"
+                    onClick={() => selectedRequestDetailQuery.refetch()}
+                  >
+                    Try again
+                  </Button>
+                </div>
               )}
               <div className="grid grid-cols-2 gap-x-10 gap-y-4 text-sm">
                 <DetailItem

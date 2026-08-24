@@ -5,4 +5,8 @@
  * accepts an arbitrary string. Kept in its own module so both AuthGuard and
  * the router can read it without an import cycle.
  */
-export const PUBLIC_ROUTES: readonly string[] = ["/auth"];
+export const PUBLIC_ROUTES: readonly string[] = [
+  "/auth",
+  "/auth/verify-email",
+  "/auth/complete-profile",
+];

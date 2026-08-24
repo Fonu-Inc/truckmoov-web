@@ -77,6 +77,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
   TableBody,
@@ -316,6 +317,7 @@ export function DeviceCatalogManager() {
           form.reset(defaultCatalogFormValues);
           setCreateDialogOpen(false);
         },
+        onError: error => toast.error(error.message),
       },
     );
   }
@@ -354,26 +356,36 @@ export function DeviceCatalogManager() {
           setEditingModel(null);
           editForm.reset(defaultEditCatalogFormValues);
         },
+        onError: error => toast.error(error.message),
       },
     );
   }
 
   function handleMarkDeprecated(model: SystemDeviceCatalogModel) {
-    updateCatalogEntry.mutate({
-      id: model.id,
-      data: { status: "deprecated" },
-    });
+    updateCatalogEntry.mutate(
+      {
+        id: model.id,
+        data: { status: "deprecated" },
+      },
+      { onError: error => toast.error(error.message) },
+    );
   }
 
   function handleBlockModel(model: SystemDeviceCatalogModel) {
-    updateCatalogEntry.mutate({
-      id: model.id,
-      data: { status: "blocked" },
-    });
+    updateCatalogEntry.mutate(
+      {
+        id: model.id,
+        data: { status: "blocked" },
+      },
+      { onError: error => toast.error(error.message) },
+    );
   }
 
   function handleDeleteModel(model: SystemDeviceCatalogModel) {
-    deleteCatalogEntry.mutate({ id: model.id });
+    deleteCatalogEntry.mutate(
+      { id: model.id },
+      { onError: error => toast.error(error.message) },
+    );
   }
 
   return (
@@ -450,135 +462,160 @@ export function DeviceCatalogManager() {
               <TableBody>
                 {catalogQuery.isLoading
                   ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={7}
-                          className="px-5 py-8 text-center text-muted-foreground"
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <TableRow
+                          key={i}
+                          className="h-[72px]"
                         >
-                          Loading device catalog...
-                        </TableCell>
-                      </TableRow>
+                          <TableCell
+                            colSpan={7}
+                            className="px-5"
+                          >
+                            <Skeleton className="h-4 w-full" />
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )
-                  : models.length === 0
+                  : catalogQuery.isError
                     ? (
                         <TableRow>
                           <TableCell
                             colSpan={7}
-                            className="px-5 py-8 text-center text-muted-foreground"
+                            className="px-5 py-8 text-center"
                           >
-                            No device models in catalog.
+                            <p className="text-destructive">Unable to load the device catalog.</p>
+                            <Button
+                              variant="link"
+                              className="mt-1"
+                              onClick={() => catalogQuery.refetch()}
+                            >
+                              Try again
+                            </Button>
                           </TableCell>
                         </TableRow>
                       )
-                    : (
-                        models.map(model => (
-                          <TableRow
-                            key={model.id}
-                            className="h-[72px]"
-                          >
-                            <TableCell className="px-5 font-semibold text-foreground">{model.manufacturer}</TableCell>
-                            <TableCell className="px-5 font-semibold text-foreground">{model.model}</TableCell>
-                            <TableCell className="px-5">
-                              <Badge
-                                variant="outline"
-                                className={`h-6 rounded-md px-2 text-xs font-bold ${
-                                  protocolBadgeClass[model.protocolType] ?? "border-muted bg-muted text-muted-foreground"
-                                }`}
-                              >
-                                {model.protocolType}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="px-5 text-muted-foreground">
-                              {model.defaultPort}
-                            </TableCell>
-                            <TableCell className="px-5">
-                              <div className="flex items-center gap-1.5">
-                                {model.supportedFeatures.length > 0
-                                  ? (
-                                      model.supportedFeatures.map(feature => (
-                                        <span
-                                          key={feature}
-                                          title={feature}
-                                        >
-                                          {feature === "obd2"
-                                            ? (
-                                                <Gauge className={`h-4 w-4 ${featureIconClass[feature]}`} />
-                                              )
-                                            : feature === "fuel"
-                                              ? (
-                                                  <Fuel className={`h-4 w-4 ${featureIconClass[feature]}`} />
-                                                )
-                                              : feature === "sos"
-                                                ? (
-                                                    <AlertTriangle className={`h-4 w-4 ${featureIconClass[feature]}`} />
-                                                  )
-                                                : null}
-                                        </span>
-                                      ))
-                                    )
-                                  : (
-                                      <span className="text-muted-foreground text-sm">Basic</span>
-                                    )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="px-5">
-                              <Badge
-                                variant="outline"
-                                className={`h-6 rounded-md px-2 text-xs font-bold ${
-                                  statusBadgeClass[model.status] ?? "border-muted bg-muted text-muted-foreground"
-                                }`}
-                              >
-                                {statusLabel[model.status] ?? model.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="px-5 text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                  align="end"
-                                  className="w-44"
-                                >
-                                  <DropdownMenuItem onClick={() => handleOpenEdit(model)}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    disabled={updateCatalogEntry.isPending}
-                                    onClick={() => handleMarkDeprecated(model)}
-                                  >
-                                    <Archive className="mr-2 h-4 w-4" />
-                                    Mark Deprecated
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    disabled={updateCatalogEntry.isPending}
-                                    onClick={() => handleBlockModel(model)}
-                                  >
-                                    <X className="mr-2 h-4 w-4" />
-                                    Block Model
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    className="text-destructive focus:text-destructive"
-                                    disabled={deleteCatalogEntry.isPending}
-                                    onClick={() => handleDeleteModel(model)}
-                                  >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                    : models.length === 0
+                      ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={7}
+                              className="px-5 py-8 text-center text-muted-foreground"
+                            >
+                              {searchParam || statusFilter !== "all"
+                                ? "No device models match your filters."
+                                : "No device models in the catalog yet."}
                             </TableCell>
                           </TableRow>
-                        ))
-                      )}
+                        )
+                      : (
+                          models.map(model => (
+                            <TableRow
+                              key={model.id}
+                              className="h-[72px]"
+                            >
+                              <TableCell className="px-5 font-semibold text-foreground">{model.manufacturer}</TableCell>
+                              <TableCell className="px-5 font-semibold text-foreground">{model.model}</TableCell>
+                              <TableCell className="px-5">
+                                <Badge
+                                  variant="outline"
+                                  className={`h-6 rounded-md px-2 text-xs font-bold ${
+                                    protocolBadgeClass[model.protocolType] ?? "border-muted bg-muted text-muted-foreground"
+                                  }`}
+                                >
+                                  {model.protocolType}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="px-5 text-muted-foreground">
+                                {model.defaultPort}
+                              </TableCell>
+                              <TableCell className="px-5">
+                                <div className="flex items-center gap-1.5">
+                                  {model.supportedFeatures.length > 0
+                                    ? (
+                                        model.supportedFeatures.map(feature => (
+                                          <span
+                                            key={feature}
+                                            title={feature}
+                                          >
+                                            {feature === "obd2"
+                                              ? (
+                                                  <Gauge className={`h-4 w-4 ${featureIconClass[feature]}`} />
+                                                )
+                                              : feature === "fuel"
+                                                ? (
+                                                    <Fuel className={`h-4 w-4 ${featureIconClass[feature]}`} />
+                                                  )
+                                                : feature === "sos"
+                                                  ? (
+                                                      <AlertTriangle className={`h-4 w-4 ${featureIconClass[feature]}`} />
+                                                    )
+                                                  : null}
+                                          </span>
+                                        ))
+                                      )
+                                    : (
+                                        <span className="text-muted-foreground text-sm">Basic</span>
+                                      )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="px-5">
+                                <Badge
+                                  variant="outline"
+                                  className={`h-6 rounded-md px-2 text-xs font-bold ${
+                                    statusBadgeClass[model.status] ?? "border-muted bg-muted text-muted-foreground"
+                                  }`}
+                                >
+                                  {statusLabel[model.status] ?? model.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="px-5 text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent
+                                    align="end"
+                                    className="w-44"
+                                  >
+                                    <DropdownMenuItem onClick={() => handleOpenEdit(model)}>
+                                      <Edit className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      disabled={updateCatalogEntry.isPending}
+                                      onClick={() => handleMarkDeprecated(model)}
+                                    >
+                                      <Archive className="mr-2 h-4 w-4" />
+                                      Mark Deprecated
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      disabled={updateCatalogEntry.isPending}
+                                      onClick={() => handleBlockModel(model)}
+                                    >
+                                      <X className="mr-2 h-4 w-4" />
+                                      Block Model
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      disabled={deleteCatalogEntry.isPending}
+                                      onClick={() => handleDeleteModel(model)}
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
               </TableBody>
             </Table>
           </div>

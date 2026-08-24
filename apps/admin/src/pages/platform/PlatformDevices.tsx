@@ -18,6 +18,7 @@ import { DeviceCatalogManager } from "@/components/devices/DeviceCatalogManager"
 import { DeviceProvisioningQueue } from "@/components/devices/DeviceProvisioningQueue";
 import { PlatformDeviceManagement } from "@/components/devices/PlatformDeviceManagement";
 import { PlatformDeviceTrackingContent } from "@/components/devices/PlatformDeviceTracking";
+import { Button } from "@/components/shadcn/button";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Tabs,
@@ -70,51 +71,66 @@ export default function PlatformDevices() {
   return (
     <div className="space-y-6">
       {/* Stats - Same data for both tabs */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        {loading
-          ? (
-              Array.from({ length: 5 }).fill(0).map((_, i) => (
-                <Skeleton
-                  key={i}
-                  className="h-24"
-                />
-              ))
-            )
-          : (
-              <>
-                <StatCard
-                  title="Total Devices"
-                  value={stats.total}
-                  icon={Satellite}
-                  changeLabel="Registered devices"
-                />
-                <StatCard
-                  title="Verified / Active"
-                  value={stats.verified}
-                  icon={Activity}
-                  changeLabel="Ready for assignment"
-                />
-                <StatCard
-                  title="Pending Config"
-                  value={stats.pending}
-                  icon={WifiOff}
-                  changeLabel="Awaiting verification"
-                />
-                <StatCard
-                  title="Online Now"
-                  value={stats.online}
-                  icon={Signal}
-                  changeLabel="Last 5 minutes"
-                />
-                <StatCard
-                  title="Faulty"
-                  value={stats.faulty}
-                  icon={AlertTriangle}
-                  changeLabel="Needs attention"
-                />
-              </>
-            )}
-      </div>
+      {summaryQuery.isError
+        ? (
+            <div className="rounded-lg border border-border/50 bg-card/50 py-6 text-center">
+              <p className="text-destructive">Unable to load device summary.</p>
+              <Button
+                variant="link"
+                className="mt-1"
+                onClick={() => summaryQuery.refetch()}
+              >
+                Try again
+              </Button>
+            </div>
+          )
+        : (
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              {summaryQuery.isLoading
+                ? (
+                    Array.from({ length: 5 }).fill(0).map((_, i) => (
+                      <Skeleton
+                        key={i}
+                        className="h-24"
+                      />
+                    ))
+                  )
+                : (
+                    <>
+                      <StatCard
+                        title="Total Devices"
+                        value={stats.total}
+                        icon={Satellite}
+                        changeLabel="Registered devices"
+                      />
+                      <StatCard
+                        title="Verified / Active"
+                        value={stats.verified}
+                        icon={Activity}
+                        changeLabel="Ready for assignment"
+                      />
+                      <StatCard
+                        title="Pending Config"
+                        value={stats.pending}
+                        icon={WifiOff}
+                        changeLabel="Awaiting verification"
+                      />
+                      <StatCard
+                        title="Online Now"
+                        value={stats.online}
+                        icon={Signal}
+                        changeLabel="Last 5 minutes"
+                      />
+                      <StatCard
+                        title="Faulty"
+                        value={stats.faulty}
+                        icon={AlertTriangle}
+                        changeLabel="Needs attention"
+                      />
+                    </>
+                  )}
+            </div>
+          )}
 
       {/* Tabs for Management, Tracking, and Catalog */}
       <Tabs
