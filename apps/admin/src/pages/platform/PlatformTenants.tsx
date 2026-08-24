@@ -583,34 +583,40 @@ export default function PlatformTenants() {
             icon={Building2}
             change={12}
             changeLabel="this month"
+            loading={summaryQuery.isPending}
           />
           <StatCard
             title="Active Tenants"
             value={activeTenants}
             icon={CheckCircle}
             variant="success"
+            loading={summaryQuery.isPending}
           />
           <StatCard
             title="Suspended"
             value={suspendedTenants}
             icon={Ban}
             variant="danger"
+            loading={summaryQuery.isPending}
           />
           <StatCard
             title="Total Vehicles"
-            value={totalVehicles.toLocaleString()}
+            value={typeof totalVehicles === "number" ? totalVehicles.toLocaleString() : totalVehicles}
             icon={Truck}
+            loading={summaryQuery.isPending}
           />
           <StatCard
             title="Total SIMs"
-            value={totalSims.toLocaleString()}
+            value={typeof totalSims === "number" ? totalSims.toLocaleString() : totalSims}
             icon={Smartphone}
+            loading={summaryQuery.isPending}
           />
           <StatCard
             title="Overdue Invoices"
             value={overdueInvoices}
             icon={AlertTriangle}
             variant="default"
+            loading={summaryQuery.isPending}
           />
         </div>
 
