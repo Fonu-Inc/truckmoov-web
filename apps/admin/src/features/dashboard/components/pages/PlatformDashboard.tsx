@@ -52,6 +52,7 @@ import {
 } from "@/components/shadcn/card";
 import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
 import { Progress } from "@/components/shadcn/progress";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Tabs,
   TabsContent,
@@ -376,7 +377,10 @@ function getHealthBadgeClass(status?: string) {
 }
 
 export default function PlatformDashboard() {
-  const { data: systemDashboardResponse } = useQuery(getSystemDashboardQueryOptions());
+  const {
+    data: systemDashboardResponse,
+    isLoading: systemDashboardLoading,
+  } = useQuery(getSystemDashboardQueryOptions());
   const {
     data: systemHealthResponse,
     isError: systemHealthError,
@@ -440,44 +444,52 @@ export default function PlatformDashboard() {
           value={formatMetric(systemDashboard?.totalTenants)}
           icon={Building2}
           variant="success"
+          loading={systemDashboardLoading}
         />
         <StatCard
           title="Total Vehicles"
           value={formatMetric(systemDashboard?.totalVehicles)}
           icon={Truck}
+          loading={systemDashboardLoading}
         />
         <StatCard
           title="Total Drivers"
           value={formatMetric(systemDashboard?.totalDrivers)}
           icon={Users}
+          loading={systemDashboardLoading}
         />
         <StatCard
           title="Total SIM Cards"
           value={formatMetric(systemDashboard?.totalSimCards)}
           icon={CreditCard}
           variant="success"
+          loading={systemDashboardLoading}
         />
         <StatCard
           title="IoT Devices"
           value={formatMetric(systemDashboard?.totalSensors)}
           icon={Cpu}
+          loading={systemDashboardLoading}
         />
         <StatCard
           title="Total Drivers"
           value={formatMetric(systemDashboard?.totalDrivers)}
           icon={Users}
           variant="success"
+          loading={systemDashboardLoading}
         />
         <StatCard
           title="Data Usage Today"
           value={formatDataUsage(systemDashboard?.dataUsageTodayMb)}
           icon={Radio}
           variant="warning"
+          loading={systemDashboardLoading}
         />
         <StatCard
           title="GPS Messages/hr"
           value={formatMetric(systemDashboard?.sensorGpsMessagesPerHour)}
           icon={MapPin}
+          loading={systemDashboardLoading}
         />
       </div>
 
@@ -600,9 +612,23 @@ export default function PlatformDashboard() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {systemHealthLoading && (
-                  <div className="p-3 rounded-lg border text-sm text-muted-foreground">
-                    Loading system health...
-                  </div>
+                  <>
+                    {[0, 1, 2].map(i => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between rounded-lg border border-border p-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="h-2.5 w-2.5 rounded-full" />
+                          <Skeleton className="h-4 w-32" />
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <Skeleton className="h-4 w-12" />
+                          <Skeleton className="h-5 w-16 rounded-full" />
+                        </div>
+                      </div>
+                    ))}
+                  </>
                 )}
 
                 {systemHealthError && (
@@ -653,9 +679,20 @@ export default function PlatformDashboard() {
             <CardContent>
               <div className="space-y-3">
                 {activityLogLoading && (
-                  <div className="p-3 rounded-lg border text-sm text-muted-foreground">
-                    Loading recent activity...
-                  </div>
+                  <>
+                    {Array.from({ length: ACTIVITY_LOG_LIMIT }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between gap-4 p-3 rounded-lg border"
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <Skeleton className="h-8 w-8 rounded-lg" />
+                          <Skeleton className="h-4 w-2/3" />
+                        </div>
+                        <Skeleton className="h-3 w-12" />
+                      </div>
+                    ))}
+                  </>
                 )}
 
                 {!activityLogLoading && recentActivities.length === 0 && (

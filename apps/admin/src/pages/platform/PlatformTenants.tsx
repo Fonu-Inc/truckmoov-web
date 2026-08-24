@@ -576,7 +576,7 @@ export default function PlatformTenants() {
         </div>
 
         {/* Stats */}
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 2xl:grid-cols-6">
           <StatCard
             title="Total Tenants"
             value={totalTenants}
@@ -649,6 +649,9 @@ export default function PlatformTenants() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
+                  type="search"
+                  name="tenants-search"
+                  autoComplete="off"
                   placeholder="Search by name or email..."
                   className="pl-10"
                   value={searchQuery}

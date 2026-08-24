@@ -154,7 +154,17 @@ export const router = createBrowserRouter([
               },
               {
                 path: "team",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PlatformTeamManagement")).PlatformTeamManagement }),
+                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/TeamSettingsPage")).default }),
+                children: [
+                  {
+                    index: true,
+                    lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PlatformAdminsPanel")).PlatformAdminsPanel }),
+                  },
+                  {
+                    path: "invitations",
+                    lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PlatformAdminInvitesPanel")).PlatformAdminInvitesPanel }),
+                  },
+                ],
               },
               {
                 path: "ai-providers",
