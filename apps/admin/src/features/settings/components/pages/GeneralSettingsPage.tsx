@@ -1,36 +1,19 @@
-import type { Timezone } from "@truckmoov/app-core/utils/time-utils";
-import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import {
   getSystemSettingsQueryOptions,
-  useUpdateProfile,
   useUpdateSystemSettings,
 } from "@truckmoov/api/auth";
-import { getInitials } from "@truckmoov/app-core/utils/general-utils";
-import { TIMEZONES } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Camera,
   Database,
   Globe,
   RefreshCw,
   Save,
-  User as UserIcon,
 } from "lucide-react";
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/shadcn/avatar";
-import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card,
@@ -57,17 +40,7 @@ import {
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
 import { Switch } from "@/components/shadcn/switch";
-import { usePreferences } from "@/contexts/PreferencesContext";
-import { getRoleLabel } from "@/features/auth/utils/role-label";
-import { useAuthStore } from "@/stores/authStore";
-
-const DATE_RANGE_OPTIONS: Record<ChartDateRange, string> = {
-  "today": "Today",
-  "yesterday": "Yesterday",
-  "7d": "Last 7 Days",
-  "30d": "Last 30 Days",
-  "90d": "Last 90 Days",
-};
+import { ChangePasswordCard } from "@/features/settings/components/ui/ChangePasswordCard";
 
 const platformConfigurationSchema = z.object({
   platformName: z.string().trim().min(
@@ -110,38 +83,9 @@ const dataRetentionSchema = z.object({
   ]),
 });
 
-const profileSchema = z.object({
-  fullName: z.string().trim().min(
-    1,
-    "Full name is required.",
-  ),
-  phoneNumber: z.string().trim().max(
-    30,
-    "Phone number is too long.",
-  ).optional(),
-});
-
-const displayPreferencesSchema = z.object({
-  timezone: z.enum([
-    "WAT",
-    "UTC",
-  ]),
-  defaultDateRange: z.enum([
-    "today",
-    "yesterday",
-    "7d",
-    "30d",
-    "90d",
-  ]),
-});
-
 type PlatformConfigurationFormValues = z.infer<typeof platformConfigurationSchema>;
 type DataRetentionFormValues = z.infer<typeof dataRetentionSchema>;
-type ProfileFormValues = z.infer<typeof profileSchema>;
-type DisplayPreferencesFormValues = z.infer<typeof displayPreferencesSchema>;
 
-export const PROFILE_FORM_ID = "platform-profile-form";
-export const DISPLAY_PREFERENCES_FORM_ID = "display-preferences-form";
 export const PLATFORM_CONFIGURATION_FORM_ID = "platform-configuration-form";
 export const DATA_RETENTION_FORM_ID = "data-retention-form";
 
@@ -161,44 +105,18 @@ const DEFAULT_DATA_RETENTION_VALUES: DataRetentionFormValues = {
   backupFrequency: "daily",
 };
 
-const DEFAULT_PROFILE_VALUES: ProfileFormValues = {
-  fullName: "",
-  phoneNumber: "",
-};
-
 /**
  * `/settings` — the tab bar's first entry, so it is the index route.
  *
- * ponytail: four cards in one page (profile, display preferences, platform
- * configuration, data retention) because they were one tab. Each could become
- * its own route the day General grows a sub-nav; until then splitting it would
- * only add files.
+ * ponytail: three cards in one page (change password, platform configuration,
+ * data retention) because they were one tab. Each could become its own route
+ * the day General grows a sub-nav; until then splitting it would only add files.
  */
 export default function GeneralSettingsPage() {
   const systemSettingsQuery = useQuery(getSystemSettingsQueryOptions());
   const systemSettings = systemSettingsQuery.data?.data;
-  const updateProfile = useUpdateProfile();
   const updatePlatformConfiguration = useUpdateSystemSettings();
   const updateDataRetention = useUpdateSystemSettings();
-  const {
-    timezone,
-    setTimezone,
-    defaultDateRange,
-    setDefaultDateRange,
-  } = usePreferences();
-
-  const profileForm = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: DEFAULT_PROFILE_VALUES,
-  });
-
-  const displayPreferencesForm = useForm<DisplayPreferencesFormValues>({
-    resolver: zodResolver(displayPreferencesSchema),
-    defaultValues: {
-      timezone,
-      defaultDateRange,
-    },
-  });
 
   const platformConfigurationForm = useForm<PlatformConfigurationFormValues>({
     resolver: zodResolver(platformConfigurationSchema),
@@ -209,43 +127,6 @@ export default function GeneralSettingsPage() {
     resolver: zodResolver(dataRetentionSchema),
     defaultValues: DEFAULT_DATA_RETENTION_VALUES,
   });
-
-  const user = useAuthStore(s => s.user);
-  const [
-    profileAvatar,
-    setProfileAvatar,
-  ] = useState<string | undefined>(user?.avatar);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(
-    () => {
-      if (user) {
-        profileForm.reset({
-          fullName: user.name ?? "",
-          phoneNumber: user.phone ?? "",
-        });
-        setProfileAvatar(user.avatar);
-      }
-    },
-    [
-      user?.id,
-      profileForm,
-    ],
-  );
-
-  useEffect(
-    () => {
-      displayPreferencesForm.reset({
-        timezone,
-        defaultDateRange,
-      });
-    },
-    [
-      timezone,
-      defaultDateRange,
-      displayPreferencesForm,
-    ],
-  );
 
   useEffect(
     () => {
@@ -296,47 +177,6 @@ export default function GeneralSettingsPage() {
       dataRetentionForm,
     ],
   );
-
-  const handleAvatarPick = () => fileInputRef.current?.click();
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file)
-      return;
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Image must be smaller than 2MB");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = ev => setProfileAvatar(ev.target?.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const handleSaveProfile = (values: ProfileFormValues) => {
-    updateProfile.mutate(
-      {
-        data: {
-          fullName: values.fullName,
-          phoneNumber: values.phoneNumber || undefined,
-          profilePictureUrl: profileAvatar,
-        },
-      },
-      {
-        onSuccess: async () => {
-          await useAuthStore.getState().bootstrapFromSession();
-          toast.success("Profile saved");
-        },
-        onError: (error) => {
-          toast.error(error.message);
-        },
-      },
-    );
-  };
-
-  const handleSaveDisplayPreferences = (values: DisplayPreferencesFormValues) => {
-    setTimezone(values.timezone as Timezone);
-    setDefaultDateRange(values.defaultDateRange as ChartDateRange);
-    toast.success("Display preferences saved");
-  };
 
   const handleSavePlatformConfiguration = (values: PlatformConfigurationFormValues) => {
     updatePlatformConfiguration.mutate(
@@ -409,240 +249,7 @@ export default function GeneralSettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Admin Profile */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserIcon className="h-5 w-5 text-primary" />
-            My Profile
-          </CardTitle>
-          <CardDescription>
-            Update your name, contact details, and profile photo.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <Form {...profileForm}>
-            <form
-              id={PROFILE_FORM_ID}
-              onSubmit={profileForm.handleSubmit(handleSaveProfile)}
-              className="space-y-6"
-            >
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage
-                      src={profileAvatar}
-                      alt={profileForm.watch("fullName")}
-                    />
-                    <AvatarFallback className="text-lg">
-                      {getInitials(profileForm.watch("fullName") || user?.email)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <button
-                    type="button"
-                    onClick={handleAvatarPick}
-                    className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow hover:opacity-90"
-                    aria-label="Change avatar"
-                  >
-                    <Camera className="h-3.5 w-3.5" />
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleAvatarChange}
-                  />
-                </div>
-                <div>
-                  <p className="font-medium">{profileForm.watch("fullName") || "Platform Admin"}</p>
-                  <p className="text-xs text-muted-foreground">{user?.email}</p>
-                  {user?.role && (
-                    <Badge
-                      variant="outline"
-                      className="mt-1"
-                    >
-                      {getRoleLabel(user.role)}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={profileForm.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Your name"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      value={user?.email ?? ""}
-                      disabled
-                    />
-                  </FormControl>
-                </FormItem>
-                <FormField
-                  control={profileForm.control}
-                  name="phoneNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="+234..."
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="flex justify-end">
-                <Button
-                  type="submit"
-                  form={PROFILE_FORM_ID}
-                  disabled={updateProfile.isPending}
-                >
-                  {updateProfile.isPending
-                    ? (
-                        <>
-                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                          Saving...
-                        </>
-                      )
-                    : (
-                        <>
-                          <Save className="h-4 w-4 mr-2" />
-                          Save Profile
-                        </>
-                      )}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-primary" />
-            Display Preferences
-          </CardTitle>
-          <CardDescription>
-            Centralized time and date defaults. These become the default filters for charts,
-            tables, and reports across the platform. Users can still override locally on a
-            per-view basis.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Form {...displayPreferencesForm}>
-            <form
-              id={DISPLAY_PREFERENCES_FORM_ID}
-              onSubmit={displayPreferencesForm.handleSubmit(handleSaveDisplayPreferences)}
-              className="space-y-4"
-            >
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={displayPreferencesForm.control}
-                  name="timezone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Default Timezone</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Object.entries(TIMEZONES).map(([
-                            code,
-                            tz,
-                          ]) => (
-                            <SelectItem
-                              key={code}
-                              value={code}
-                            >
-                              {tz.name}
-                              {" "}
-                              (
-                              {tz.offset}
-                              )
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={displayPreferencesForm.control}
-                  name="defaultDateRange"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Default Time Range</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Object.entries(DATE_RANGE_OPTIONS).map(([
-                            k,
-                            label,
-                          ]) => (
-                            <SelectItem
-                              key={k}
-                              value={k}
-                            >
-                              {label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="flex justify-end">
-                <Button
-                  type="submit"
-                  form={DISPLAY_PREFERENCES_FORM_ID}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Preferences
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+      <ChangePasswordCard />
 
       <Card>
         <CardHeader>
