@@ -33,14 +33,8 @@ import {
 import { ExportButton } from "@/components/shadcn/export-button";
 
 import { Separator } from "@/components/shadcn/separator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+import { DataTable } from "@/components/shadcn/data-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
@@ -121,7 +115,7 @@ export function KYCReviewWorkflow() {
   const [
     tenantFilters,
     setTenantFilters,
-  ] = useState<import("@/components/ui/table-toolbar").FilterValues>({});
+  ] = useState<import("@/components/shadcn/table-toolbar").FilterValues>({});
   const [
     docSearch,
     setDocSearch,
@@ -133,7 +127,7 @@ export function KYCReviewWorkflow() {
   const [
     docFilters,
     setDocFilters,
-  ] = useState<import("@/components/ui/table-toolbar").FilterValues>({});
+  ] = useState<import("@/components/shadcn/table-toolbar").FilterValues>({});
   const [
     selectedTenant,
     setSelectedTenant,
@@ -349,6 +343,204 @@ export function KYCReviewWorkflow() {
   });
 
   const getTenantDocuments = (tenantId: string) => documents.filter(d => d.tenant_id === tenantId);
+
+  const filteredDocs = documents.filter((doc) => {
+    const tenant = businessInfoList.find(b => b.tenant_id === doc.tenant_id);
+    const q = docSearch.trim().toLowerCase();
+    if (q && !(
+      doc.document_name.toLowerCase().includes(q)
+      || (DOCUMENT_TYPE_LABELS[doc.document_type] || doc.document_type).toLowerCase().includes(q)
+      || (tenant?.company_name || "").toLowerCase().includes(q)
+    )) {
+      return false;
+    }
+    if (docStatusFilter !== "all" && doc.status !== docStatusFilter)
+      return false;
+    const typeF = docFilters.document_type;
+    if (typeF?.enabled && typeF.value && doc.document_type !== typeF.value)
+      return false;
+    const subF = docFilters.submitted;
+    if (subF?.enabled && subF.date && new Date(doc.created_at) < new Date(subF.date))
+      return false;
+    const revF = docFilters.reviewed;
+    if (revF?.enabled) {
+      if (revF.value === "yes" && !doc.reviewed_at)
+        return false;
+      if (revF.value === "no" && doc.reviewed_at)
+        return false;
+    }
+    return true;
+  });
+
+  const tenantColumns: ColumnDef<BusinessInfo>[] = [
+    {
+      accessorKey: "company_name",
+      header: "Company",
+      cell: ({ row }) => (
+        <div>
+          <p className="font-medium">{row.original.company_name}</p>
+          <p className="text-xs text-muted-foreground">{row.original.email}</p>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "registration_number",
+      header: "Registration",
+      cell: ({ row }) => (
+        <div className="text-sm">
+          <p>{row.original.registration_number || "-"}</p>
+          <p className="text-xs text-muted-foreground">{row.original.tax_id || "-"}</p>
+        </div>
+      ),
+    },
+    {
+      id: "documents",
+      header: "Documents",
+      cell: ({ row }) => {
+        const tenantDocs = getTenantDocuments(row.original.tenant_id);
+        const pendingCount = tenantDocs.filter(d => d.status === "pending").length;
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-sm">
+              {tenantDocs.length}
+              {" docs"}
+            </span>
+            {pendingCount > 0 && (
+              <Badge variant="outline" className="text-warning border-warning/30">
+                {pendingCount}
+                {" pending"}
+              </Badge>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "verification_status",
+      header: "Status",
+      cell: ({ row }) => getStatusBadge(row.original.verification_status),
+    },
+    {
+      accessorKey: "created_at",
+      header: "Submitted",
+      meta: { className: "text-sm text-muted-foreground" },
+      cell: ({ row }) => formatDate(row.original.created_at),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      meta: { className: "text-right" },
+      cell: ({ row }) => {
+        const tenant = row.original;
+        return (
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSelectedTenant(tenant);
+                setTenantDetailOpen(true);
+              }}
+            >
+              <Eye className="w-4 h-4 mr-1" />
+              Review
+            </Button>
+            {tenant.verification_status !== "verified" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-success"
+                onClick={() => handleUpdateTenantStatus(tenant.tenant_id, "verified")}
+              >
+                <CheckCircle2 className="w-4 h-4 mr-1" />
+                Verify
+              </Button>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+
+  const docColumns: ColumnDef<KYCDocument>[] = [
+    {
+      accessorKey: "document_name",
+      header: "Document",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <FileText className="w-4 h-4 text-muted-foreground" />
+          <span className="font-medium">{row.original.document_name}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "document_type",
+      header: "Type",
+      meta: { className: "text-sm" },
+      cell: ({ row }) => DOCUMENT_TYPE_LABELS[row.original.document_type] || row.original.document_type,
+    },
+    {
+      id: "tenant",
+      header: "Tenant",
+      meta: { className: "text-sm" },
+      cell: ({ row }) => {
+        const tenant = businessInfoList.find(b => b.tenant_id === row.original.tenant_id);
+        return tenant?.company_name || row.original.tenant_id;
+      },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => getStatusBadge(row.original.status),
+    },
+    {
+      accessorKey: "created_at",
+      header: "Submitted",
+      meta: { className: "text-sm text-muted-foreground" },
+      cell: ({ row }) => formatDate(row.original.created_at),
+    },
+    {
+      accessorKey: "reviewed_at",
+      header: "Reviewed",
+      meta: { className: "text-sm text-muted-foreground" },
+      cell: ({ row }) => (row.original.reviewed_at ? formatDate(row.original.reviewed_at) : "-"),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      meta: { className: "text-right" },
+      cell: ({ row }) => {
+        const doc = row.original;
+        return (
+          <div className="flex items-center justify-end gap-1">
+            <Button variant="ghost" size="icon" onClick={() => handleViewDocument(doc)}>
+              <Eye className="w-4 h-4" />
+            </Button>
+            {doc.status === "pending" && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-success"
+                  onClick={() => handleOpenReview(doc, "approve")}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive"
+                  onClick={() => handleOpenReview(doc, "reject")}
+                >
+                  <XCircle className="w-4 h-4" />
+                </Button>
+              </>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
 
   if (loading) {
     return (
@@ -631,102 +823,19 @@ export function KYCReviewWorkflow() {
                 filterValues={tenantFilters}
                 onFiltersApply={setTenantFilters}
               />
-              {filteredBusinessInfo.length === 0
-                ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Building2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p>No tenant registrations found</p>
-                    </div>
-                  )
-                : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Company</TableHead>
-                          <TableHead>Registration</TableHead>
-                          <TableHead>Documents</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Submitted</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredBusinessInfo.map((tenant) => {
-                          const tenantDocs = getTenantDocuments(tenant.tenant_id);
-                          const pendingCount = tenantDocs.filter(d => d.status === "pending").length;
-
-                          return (
-                            <TableRow key={tenant.id}>
-                              <TableCell>
-                                <div>
-                                  <p className="font-medium">{tenant.company_name}</p>
-                                  <p className="text-xs text-muted-foreground">{tenant.email}</p>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm">
-                                  <p>{tenant.registration_number || "-"}</p>
-                                  <p className="text-xs text-muted-foreground">{tenant.tax_id || "-"}</p>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm">
-                                    {tenantDocs.length}
-                                    {" "}
-                                    docs
-                                  </span>
-                                  {pendingCount > 0 && (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-warning border-warning/30"
-                                    >
-                                      {pendingCount}
-                                      {" "}
-                                      pending
-                                    </Badge>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>{getStatusBadge(tenant.verification_status)}</TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {formatDate(tenant.created_at)}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      setSelectedTenant(tenant);
-                                      setTenantDetailOpen(true);
-                                    }}
-                                  >
-                                    <Eye className="w-4 h-4 mr-1" />
-                                    Review
-                                  </Button>
-                                  {tenant.verification_status !== "verified" && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="text-success"
-                                      onClick={() => handleUpdateTenantStatus(
-                                        tenant.tenant_id,
-                                        "verified",
-                                      )}
-                                    >
-                                      <CheckCircle2 className="w-4 h-4 mr-1" />
-                                      Verify
-                                    </Button>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  )}
+              <DataTable
+                columns={tenantColumns}
+                data={filteredBusinessInfo}
+                isLoading={loading}
+                hasActiveFilters={!!searchQuery || tenantStatusFilter !== "all" || Object.values(tenantFilters).some(f => f?.enabled)}
+                emptyState={(
+                  <div className="text-muted-foreground">
+                    <Building2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>No tenant registrations found</p>
+                  </div>
+                )}
+                filteredEmptyState="No tenants match your filters."
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -843,112 +952,14 @@ export function KYCReviewWorkflow() {
                 filterValues={docFilters}
                 onFiltersApply={setDocFilters}
               />
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Document</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Tenant</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Submitted</TableHead>
-                    <TableHead>Reviewed</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {documents
-                    .filter((doc) => {
-                      const tenant = businessInfoList.find(b => b.tenant_id === doc.tenant_id);
-                      const q = docSearch.trim().toLowerCase();
-                      if (q && !(
-                        doc.document_name.toLowerCase().includes(q)
-                        || (DOCUMENT_TYPE_LABELS[doc.document_type] || doc.document_type).toLowerCase().includes(q)
-                        || (tenant?.company_name || "").toLowerCase().includes(q)
-                      )) {
-                        return false;
-                      }
-                      if (docStatusFilter !== "all" && doc.status !== docStatusFilter)
-                        return false;
-                      const typeF = docFilters.document_type;
-                      if (typeF?.enabled && typeF.value && doc.document_type !== typeF.value)
-                        return false;
-                      const subF = docFilters.submitted;
-                      if (subF?.enabled && subF.date && new Date(doc.created_at) < new Date(subF.date))
-                        return false;
-                      const revF = docFilters.reviewed;
-                      if (revF?.enabled) {
-                        if (revF.value === "yes" && !doc.reviewed_at)
-                          return false;
-                        if (revF.value === "no" && doc.reviewed_at)
-                          return false;
-                      }
-                      return true;
-                    })
-                    .map((doc) => {
-                      const tenant = businessInfoList.find(b => b.tenant_id === doc.tenant_id);
-                      return (
-                        <TableRow key={doc.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <FileText className="w-4 h-4 text-muted-foreground" />
-                              <span className="font-medium">{doc.document_name}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {DOCUMENT_TYPE_LABELS[doc.document_type] || doc.document_type}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {tenant?.company_name || doc.tenant_id}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(doc.status)}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {formatDate(doc.created_at)}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {doc.reviewed_at ? formatDate(doc.reviewed_at) : "-"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleViewDocument(doc)}
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              {doc.status === "pending" && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-success"
-                                    onClick={() => handleOpenReview(
-                                      doc,
-                                      "approve",
-                                    )}
-                                  >
-                                    <CheckCircle2 className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-destructive"
-                                    onClick={() => handleOpenReview(
-                                      doc,
-                                      "reject",
-                                    )}
-                                  >
-                                    <XCircle className="w-4 h-4" />
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                </TableBody>
-              </Table>
+              <DataTable
+                columns={docColumns}
+                data={filteredDocs}
+                isLoading={loading}
+                hasActiveFilters={!!docSearch.trim() || docStatusFilter !== "all" || Object.values(docFilters).some(f => f?.enabled)}
+                emptyState="No documents found."
+                filteredEmptyState="No documents match your filters."
+              />
             </CardContent>
           </Card>
         </TabsContent>

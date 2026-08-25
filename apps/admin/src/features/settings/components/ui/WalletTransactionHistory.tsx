@@ -22,14 +22,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+import type { ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "@/components/shadcn/data-table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 
 type WalletTransaction = {
@@ -166,6 +160,96 @@ export function WalletTransactionHistory() {
     URL.revokeObjectURL(url);
   };
 
+  const txColumns: ColumnDef<WalletTransaction>[] = [
+    {
+      accessorKey: "created_at",
+      header: "Date/Time",
+      cell: ({ row }) => (
+        <div className="text-sm">
+          <div>{formatDate(row.original.created_at)}</div>
+          <div className="text-xs text-muted-foreground">
+            {formatTime(row.original.created_at)}
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "tenant_id",
+      header: "Tenant",
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.tenant_id}</span>
+      ),
+    },
+    {
+      accessorKey: "transaction_type",
+      header: "Type",
+      cell: ({ row }) => getTransactionBadge(row.original.transaction_type),
+    },
+    {
+      accessorKey: "communication_type",
+      header: "Channel",
+      cell: ({ row }) => (
+        row.original.communication_type
+          ? (
+              <div className="flex items-center gap-1 capitalize">
+                {getTypeIcon(row.original.communication_type)}
+                {row.original.communication_type}
+              </div>
+            )
+          : null
+      ),
+    },
+    {
+      accessorKey: "quantity",
+      header: "Qty",
+      cell: ({ row }) => (
+        row.original.quantity
+          ? (
+              <span>
+                {row.original.quantity}
+                {" "}
+                {row.original.communication_type === "call" ? "min" : "msg"}
+              </span>
+            )
+          : null
+      ),
+    },
+    {
+      accessorKey: "unit_rate_ngn",
+      header: "Rate",
+      cell: ({ row }) => (row.original.unit_rate_ngn ? `₦${row.original.unit_rate_ngn}` : null),
+    },
+    {
+      accessorKey: "amount_ngn",
+      header: () => <div className="text-right">Amount</div>,
+      meta: { className: "text-right" },
+      cell: ({ row }) => (
+        <span className={`font-medium ${row.original.transaction_type === "debit" ? "text-destructive" : "text-success"}`}>
+          {row.original.transaction_type === "debit" ? "-" : "+"}
+          ₦
+          {row.original.amount_ngn.toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "balance_after_ngn",
+      header: () => <div className="text-right">Balance After</div>,
+      meta: { className: "text-right" },
+      cell: ({ row }) => (
+        <>
+          ₦
+          {row.original.balance_after_ngn.toLocaleString()}
+        </>
+      ),
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+      meta: { className: "max-w-[200px] truncate text-muted-foreground text-sm" },
+      cell: ({ row }) => row.original.description,
+    },
+  ];
+
   if (loading) {
     return (
       <Card>
@@ -260,80 +344,13 @@ export function WalletTransactionHistory() {
         />
 
         <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date/Time</TableHead>
-                <TableHead>Tenant</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Channel</TableHead>
-                <TableHead>Qty</TableHead>
-                <TableHead>Rate</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-right">Balance After</TableHead>
-                <TableHead>Description</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTransactions.length === 0
-                ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={9}
-                        className="text-center py-8 text-muted-foreground"
-                      >
-                        No transactions found
-                      </TableCell>
-                    </TableRow>
-                  )
-                : (
-                    filteredTransactions.map(tx => (
-                      <TableRow key={tx.id}>
-                        <TableCell className="text-sm">
-                          <div>{formatDate(tx.created_at)}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatTime(tx.created_at)}
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-medium">{tx.tenant_id}</TableCell>
-                        <TableCell>{getTransactionBadge(tx.transaction_type)}</TableCell>
-                        <TableCell>
-                          {tx.communication_type && (
-                            <div className="flex items-center gap-1 capitalize">
-                              {getTypeIcon(tx.communication_type)}
-                              {tx.communication_type}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {tx.quantity && (
-                            <span>
-                              {tx.quantity}
-                              {" "}
-                              {tx.communication_type === "call" ? "min" : "msg"}
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {tx.unit_rate_ngn && `₦${tx.unit_rate_ngn}`}
-                        </TableCell>
-                        <TableCell className={`text-right font-medium ${tx.transaction_type === "debit" ? "text-destructive" : "text-success"}`}>
-                          {tx.transaction_type === "debit" ? "-" : "+"}
-                          ₦
-                          {tx.amount_ngn.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          ₦
-                          {tx.balance_after_ngn.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate text-muted-foreground text-sm">
-                          {tx.description}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={txColumns}
+            data={filteredTransactions}
+            hasActiveFilters={!!searchTerm || typeFilter !== "all" || commTypeFilter !== "all"}
+            emptyState="No transactions found"
+            filteredEmptyState="No transactions match your filters."
+          />
         </div>
 
         <div className="text-sm text-muted-foreground">

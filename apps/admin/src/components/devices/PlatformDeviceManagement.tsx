@@ -69,14 +69,8 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+import type { ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "@/components/shadcn/data-table";
 
 const lifecycleStatuses = [
   {
@@ -317,6 +311,106 @@ export function PlatformDeviceManagement() {
   const detailDevice = selectedDeviceDetailQuery.data?.data ?? selectedDevice;
   const selectedSignal = detailDevice?.signalStrength ?? 0;
   const selectedBattery = detailDevice?.batteryLevel ?? 0;
+
+  const deviceColumns: ColumnDef<SystemDeviceInventoryItem>[] = [
+    {
+      accessorKey: "imei",
+      header: "IMEI",
+      cell: ({ row }) => (
+        <span className="font-mono text-sm font-medium text-foreground">{row.original.imei}</span>
+      ),
+    },
+    {
+      id: "manufacturer",
+      header: "Manufacturer / Model",
+      cell: ({ row }) => (
+        <div>
+          <p className="font-semibold text-foreground">{row.original.manufacturer}</p>
+          <p className="text-xs text-muted-foreground">{row.original.model}</p>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "tenantName",
+      header: "Tenant",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-semibold text-foreground">
+            {row.original.tenantName ?? "Unknown tenant"}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: "lifecycle",
+      header: "Lifecycle / Operational",
+      cell: ({ row }) => {
+        const device = row.original;
+        return (
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge className={getStatusBadgeClass(device.lifecycleStatus)}>
+              {formatStatusLabel(device.lifecycleStatus)}
+            </Badge>
+            {device.operationalStatus && device.operationalStatus !== device.lifecycleStatus && (
+              <Badge className={getStatusBadgeClass(device.operationalStatus)}>
+                {formatStatusLabel(device.operationalStatus)}
+              </Badge>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "signalStrength",
+      header: "Signal",
+      cell: ({ row }) => (
+        formatSignal(row.original.signalStrength)
+          ? (
+              <div className="flex items-center gap-2 font-semibold text-foreground">
+                <Signal className="h-4 w-4 text-success" />
+                {formatSignal(row.original.signalStrength)}
+              </div>
+            )
+          : (
+              <span className="text-muted-foreground">.</span>
+            )
+      ),
+    },
+    {
+      accessorKey: "lastSeen",
+      header: "Last Seen",
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground">
+          {formatCompactRelative(row.original.lastSeen, "Never")}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      meta: { className: "w-[50px]" },
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setSelectedDevice(row.original)}>
+              <Eye className="h-4 w-4 mr-2" />
+              View Details
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ];
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -596,132 +690,17 @@ export function PlatformDeviceManagement() {
         </div>
 
         <div className="overflow-hidden rounded-lg border">
-          <Table className="[&_td]:h-[78px] [&_td]:px-4 [&_th]:px-4">
-            <TableHeader>
-              <TableRow>
-                <TableHead>IMEI</TableHead>
-                <TableHead>Manufacturer / Model</TableHead>
-                <TableHead>Tenant</TableHead>
-                <TableHead>Lifecycle / Operational</TableHead>
-                <TableHead>Signal</TableHead>
-                <TableHead>Last Seen</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {devicesQuery.isLoading
-                ? (
-                    Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell colSpan={7}>
-                          <Skeleton className="h-4 w-full" />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )
-                : devicesQuery.isError
-                  ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={7}
-                          className="text-center py-8"
-                        >
-                          <p className="text-destructive">Unable to load devices.</p>
-                          <Button
-                            variant="link"
-                            className="mt-1"
-                            onClick={() => devicesQuery.refetch()}
-                          >
-                            Try again
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : devices.length === 0
-                    ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={7}
-                            className="text-center py-8 text-muted-foreground"
-                          >
-                            {debouncedSearchQuery.trim() || activeFilterCount > 0
-                              ? "No devices match your filters."
-                              : "No devices yet."}
-                          </TableCell>
-                        </TableRow>
-                      )
-                    : (
-                        devices.map(device => (
-                          <TableRow key={device.id}>
-                            <TableCell className="font-mono text-sm font-medium text-foreground">{device.imei}</TableCell>
-                            <TableCell>
-                              <div>
-                                <p className="font-semibold text-foreground">{device.manufacturer}</p>
-                                <p className="text-xs text-muted-foreground">{device.model}</p>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Building2 className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm font-semibold text-foreground">
-                                  {device.tenantName ?? "Unknown tenant"}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap items-center gap-2">
-                                <Badge className={getStatusBadgeClass(device.lifecycleStatus)}>
-                                  {formatStatusLabel(device.lifecycleStatus)}
-                                </Badge>
-                                {device.operationalStatus && device.operationalStatus !== device.lifecycleStatus && (
-                                  <Badge className={getStatusBadgeClass(device.operationalStatus)}>
-                                    {formatStatusLabel(device.operationalStatus)}
-                                  </Badge>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {formatSignal(device.signalStrength)
-                                ? (
-                                    <div className="flex items-center gap-2 font-semibold text-foreground">
-                                      <Signal className="h-4 w-4 text-success" />
-                                      {formatSignal(device.signalStrength)}
-                                    </div>
-                                  )
-                                : (
-                                    <span className="text-muted-foreground">.</span>
-                                  )}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {formatCompactRelative(
-                                device.lastSeen,
-                                "Never",
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => setSelectedDevice(device)}>
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View Details
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={deviceColumns}
+            data={devices}
+            isLoading={devicesQuery.isLoading}
+            isError={devicesQuery.isError}
+            errorMessage="Unable to load devices."
+            onRetry={() => devicesQuery.refetch()}
+            hasActiveFilters={!!debouncedSearchQuery.trim() || activeFilterCount > 0}
+            emptyState="No devices yet."
+            filteredEmptyState="No devices match your filters."
+          />
         </div>
 
         <div className="mt-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-3">

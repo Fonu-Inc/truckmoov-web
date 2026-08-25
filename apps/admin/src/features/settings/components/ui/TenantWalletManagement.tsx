@@ -36,14 +36,8 @@ import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 
 import { Switch } from "@/components/shadcn/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+import type { ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "@/components/shadcn/data-table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 
 type TenantWallet = {
@@ -208,6 +202,90 @@ export function TenantWalletManagement() {
   const lowBalanceCount = wallets.filter(w => w.balance_ngn < w.low_balance_threshold_ngn).length;
   const negativeBalanceCount = wallets.filter(w => w.balance_ngn < 0).length;
 
+  const filteredWallets = wallets.filter((w) => {
+    const matchesSearch = !searchQuery || w.tenant_id.toLowerCase().includes(searchQuery.toLowerCase());
+    const status = getBalanceStatus(w).text.toLowerCase();
+    const matchesStatus = statusFilter === "all" || status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const walletColumns: ColumnDef<TenantWallet>[] = [
+    {
+      accessorKey: "tenant_id",
+      header: "Tenant ID",
+      cell: ({ row }) => <span className="font-medium">{row.original.tenant_id}</span>,
+    },
+    {
+      accessorKey: "balance_ngn",
+      header: "Balance",
+      cell: ({ row }) => (
+        <span className={row.original.balance_ngn < 0 ? "text-destructive" : ""}>
+          ₦
+          {row.original.balance_ngn.toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = getBalanceStatus(row.original);
+        return (
+          <Badge variant={status.color as "default" | "destructive" | "outline" | "secondary"}>
+            {status.text}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "credit_enabled",
+      header: "Credit Enabled",
+      cell: ({ row }) => (
+        <Switch
+          checked={row.original.credit_enabled}
+          onCheckedChange={() => handleToggleCredit(row.original)}
+        />
+      ),
+    },
+    {
+      accessorKey: "credit_limit_ngn",
+      header: "Credit Limit",
+      cell: ({ row }) => (
+        <>
+          ₦
+          {row.original.credit_limit_ngn.toLocaleString()}
+        </>
+      ),
+    },
+    {
+      accessorKey: "low_balance_threshold_ngn",
+      header: "Low Balance Threshold",
+      cell: ({ row }) => (
+        <>
+          ₦
+          {row.original.low_balance_threshold_ngn.toLocaleString()}
+        </>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setSelectedWallet(row.original);
+            setTopupDialogOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          Top Up
+        </Button>
+      ),
+    },
+  ];
+
   if (loading) {
     return (
       <Card>
@@ -367,86 +445,13 @@ export function TenantWalletManagement() {
           />
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tenant ID</TableHead>
-                <TableHead>Balance</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Credit Enabled</TableHead>
-                <TableHead>Credit Limit</TableHead>
-                <TableHead>Low Balance Threshold</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(() => {
-                const filtered = wallets.filter((w) => {
-                  const matchesSearch = !searchQuery || w.tenant_id.toLowerCase().includes(searchQuery.toLowerCase());
-                  const status = getBalanceStatus(w).text.toLowerCase();
-                  const matchesStatus = statusFilter === "all" || status === statusFilter;
-                  return matchesSearch && matchesStatus;
-                });
-                return filtered.length === 0
-                  ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={7}
-                          className="text-center py-8 text-muted-foreground"
-                        >
-                          No tenant wallets found
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : (
-                      filtered.map((wallet) => {
-                        const status = getBalanceStatus(wallet);
-                        return (
-                          <TableRow key={wallet.id}>
-                            <TableCell className="font-medium">{wallet.tenant_id}</TableCell>
-                            <TableCell className={wallet.balance_ngn < 0 ? "text-destructive" : ""}>
-                              ₦
-                              {wallet.balance_ngn.toLocaleString()}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={status.color as "default" | "destructive" | "outline" | "secondary"}>
-                                {status.text}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Switch
-                                checked={wallet.credit_enabled}
-                                onCheckedChange={() => handleToggleCredit(wallet)}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              ₦
-                              {wallet.credit_limit_ngn.toLocaleString()}
-                            </TableCell>
-                            <TableCell>
-                              ₦
-                              {wallet.low_balance_threshold_ngn.toLocaleString()}
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedWallet(wallet);
-                                  setTopupDialogOpen(true);
-                                }}
-                              >
-                                <Plus className="h-4 w-4 mr-1" />
-                                Top Up
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    );
-              })()}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={walletColumns}
+            data={filteredWallets}
+            hasActiveFilters={!!searchQuery || statusFilter !== "all"}
+            emptyState="No tenant wallets found"
+            filteredEmptyState="No tenant wallets match your filters."
+          />
         </CardContent>
       </Card>
 

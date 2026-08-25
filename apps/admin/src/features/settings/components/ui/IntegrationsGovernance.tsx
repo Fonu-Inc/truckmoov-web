@@ -33,15 +33,8 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 import { ExportButton } from "@/components/shadcn/export-button";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+import type { ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "@/components/shadcn/data-table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import {
   Tabs,
@@ -181,6 +174,278 @@ export function IntegrationsGovernance() {
     enableTenantIntegrations.mutate(tenantId);
     setConfirmEnable(null);
   };
+
+  const apiUsageColumns: ColumnDef<any>[] = [
+    {
+      accessorKey: "tenant_name",
+      header: "Tenant",
+      cell: ({ row }) => <span className="font-medium">{row.original.tenant_name}</span>,
+    },
+    {
+      accessorKey: "total_requests",
+      header: () => <div className="text-right">Total Requests</div>,
+      meta: { className: "text-right" },
+      cell: ({ row }) => row.original.total_requests.toLocaleString(),
+    },
+    {
+      accessorKey: "successful_requests",
+      header: () => <div className="text-right">Successful</div>,
+      meta: { className: "text-right" },
+      cell: ({ row }) => <span className="text-success">{row.original.successful_requests.toLocaleString()}</span>,
+    },
+    {
+      accessorKey: "failed_requests",
+      header: () => <div className="text-right">Failed</div>,
+      meta: { className: "text-right" },
+      cell: ({ row }) => (
+        <span className={row.original.failed_requests > 0 ? "text-destructive" : ""}>
+          {row.original.failed_requests.toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "avg_response_time_ms",
+      header: () => <div className="text-right">Avg Response</div>,
+      meta: { className: "text-right" },
+      cell: ({ row }) => (
+        <>
+          {row.original.avg_response_time_ms.toFixed(0)}
+          ms
+        </>
+      ),
+    },
+    {
+      accessorKey: "last_request_at",
+      header: "Last Request",
+      cell: ({ row }) => (
+        row.original.last_request_at
+          ? <span className="text-muted-foreground text-sm">{formatRelative(row.original.last_request_at)}</span>
+          : "-"
+      ),
+    },
+  ];
+
+  const webhookHealthColumns: ColumnDef<any>[] = [
+    {
+      accessorKey: "tenant_name",
+      header: "Tenant",
+      cell: ({ row }) => <span className="font-medium">{row.original.tenant_name}</span>,
+    },
+    {
+      accessorKey: "active_subscriptions",
+      header: () => <div className="text-right">Active Webhooks</div>,
+      meta: { className: "text-right" },
+      cell: ({ row }) => row.original.active_subscriptions,
+    },
+    {
+      accessorKey: "total_deliveries",
+      header: () => <div className="text-right">Total Deliveries</div>,
+      meta: { className: "text-right" },
+      cell: ({ row }) => row.original.total_deliveries.toLocaleString(),
+    },
+    {
+      accessorKey: "success_rate",
+      header: () => <div className="text-right">Success Rate</div>,
+      meta: { className: "text-right" },
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-1">
+          {row.original.success_rate >= 95
+            ? <TrendingUp className="h-4 w-4 text-success" />
+            : row.original.success_rate < 80
+              ? <TrendingDown className="h-4 w-4 text-destructive" />
+              : null}
+          <span className={
+            row.original.success_rate >= 95
+              ? "text-success"
+              : row.original.success_rate < 80
+                ? "text-destructive"
+                : ""
+          }
+          >
+            {row.original.success_rate.toFixed(1)}
+            %
+          </span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "dead_letter_count",
+      header: () => <div className="text-right">Dead Letters</div>,
+      meta: { className: "text-right" },
+      cell: ({ row }) => (
+        row.original.dead_letter_count > 0
+          ? <Badge variant="destructive">{row.original.dead_letter_count}</Badge>
+          : <span className="text-muted-foreground">0</span>
+      ),
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        row.original.success_rate >= 95
+          ? (
+              <Badge variant="outline" className="text-success border-success">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Healthy
+              </Badge>
+            )
+          : row.original.success_rate >= 80
+            ? (
+                <Badge variant="outline" className="text-warning border-warning">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  Degraded
+                </Badge>
+              )
+            : (
+                <Badge variant="destructive">
+                  <XCircle className="h-3 w-3 mr-1" />
+                  Critical
+                </Badge>
+              )
+      ),
+    },
+  ];
+
+  const tenantControlColumns: ColumnDef<any>[] = [
+    {
+      accessorKey: "tenant_name",
+      header: "Tenant",
+      cell: ({ row }) => <span className="font-medium">{row.original.tenant_name}</span>,
+    },
+    {
+      accessorKey: "active_api_keys",
+      header: () => <div className="text-center">API Keys</div>,
+      meta: { className: "text-center" },
+      cell: ({ row }) => (
+        <Badge variant={row.original.active_api_keys > 0 ? "default" : "secondary"}>
+          {row.original.active_api_keys}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "active_webhooks",
+      header: () => <div className="text-center">Webhooks</div>,
+      meta: { className: "text-center" },
+      cell: ({ row }) => (
+        <Badge variant={row.original.active_webhooks > 0 ? "default" : "secondary"}>
+          {row.original.active_webhooks}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "last_activity",
+      header: "Last Activity",
+      cell: ({ row }) => (
+        row.original.last_activity
+          ? <span className="text-muted-foreground text-sm">{formatRelative(row.original.last_activity)}</span>
+          : <span className="text-muted-foreground text-sm">Never</span>
+      ),
+    },
+    {
+      accessorKey: "api_enabled",
+      header: "Status",
+      cell: ({ row }) => (
+        row.original.api_enabled
+          ? (
+              <Badge variant="outline" className="text-success border-success">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Enabled
+              </Badge>
+            )
+          : (
+              <Badge variant="destructive">
+                <Ban className="h-3 w-3 mr-1" />
+                Disabled
+              </Badge>
+            )
+      ),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      meta: { className: "text-right" },
+      cell: ({ row }) => {
+        const tenant = row.original;
+        const hasActiveIntegrations = tenant.active_api_keys > 0 || tenant.active_webhooks > 0;
+        return hasActiveIntegrations
+          ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setConfirmDisable(tenant.tenant_id)}
+                disabled={disableTenantIntegrations.isPending}
+              >
+                <Ban className="h-4 w-4 mr-1" />
+                Disable
+              </Button>
+            )
+          : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConfirmEnable(tenant.tenant_id)}
+                disabled={enableTenantIntegrations.isPending}
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Enable
+              </Button>
+            );
+      },
+    },
+  ];
+
+  const auditColumns: ColumnDef<any>[] = [
+    {
+      accessorKey: "created_at",
+      header: "Timestamp",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground text-sm">{formatRelative(row.original.created_at)}</span>
+      ),
+    },
+    {
+      accessorKey: "tenant_name",
+      header: "Tenant",
+      cell: ({ row }) => <span className="font-medium">{row.original.tenant_name}</span>,
+    },
+    {
+      accessorKey: "action",
+      header: "Action",
+      cell: ({ row }) => (
+        <Badge variant={
+          row.original.action.includes("CREATED")
+            ? "default"
+            : row.original.action.includes("REVOKED") || row.original.action.includes("DISABLED")
+              ? "destructive"
+              : "secondary"
+        }
+        >
+          {row.original.action.replace(/_/g, " ")}
+        </Badge>
+      ),
+    },
+    {
+      id: "entity",
+      header: "Entity",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">
+          {row.original.resource_type}
+          :
+          {row.original.resource_id?.slice(0, 8)}
+          ...
+        </span>
+      ),
+    },
+    {
+      id: "actor",
+      header: "Actor",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground text-sm">
+          {row.original.actor_id?.slice(0, 8) || "System"}
+          ...
+        </span>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -329,75 +594,14 @@ export function IntegrationsGovernance() {
                   </div>
                 )}
               />
-              {loadingApiUsage
-                ? (
-                    <div className="space-y-2">
-                      {[...Array.from({ length: 5 })].map((_, i) => (
-                        <Skeleton
-                          key={i}
-                          className="h-12 w-full"
-                        />
-                      ))}
-                    </div>
-                  )
-                : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Tenant</TableHead>
-                          <TableHead className="text-right">Total Requests</TableHead>
-                          <TableHead className="text-right">Successful</TableHead>
-                          <TableHead className="text-right">Failed</TableHead>
-                          <TableHead className="text-right">Avg Response</TableHead>
-                          <TableHead>Last Request</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredApiUsage.length === 0
-                          ? (
-                              <TableRow>
-                                <TableCell
-                                  colSpan={6}
-                                  className="text-center text-muted-foreground"
-                                >
-                                  No API usage data available
-                                </TableCell>
-                              </TableRow>
-                            )
-                          : (
-                              filteredApiUsage.map((tenant: any) => (
-                                <TableRow key={tenant.tenant_id}>
-                                  <TableCell className="font-medium">{tenant.tenant_name}</TableCell>
-                                  <TableCell className="text-right">{tenant.total_requests.toLocaleString()}</TableCell>
-                                  <TableCell className="text-right">
-                                    <span className="text-success">{tenant.successful_requests.toLocaleString()}</span>
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    <span className={tenant.failed_requests > 0 ? "text-destructive" : ""}>
-                                      {tenant.failed_requests.toLocaleString()}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    {tenant.avg_response_time_ms.toFixed(0)}
-                                    ms
-                                  </TableCell>
-                                  <TableCell>
-                                    {tenant.last_request_at
-                                      ? (
-                                          <span className="text-muted-foreground text-sm">
-                                            {formatRelative(tenant.last_request_at)}
-                                          </span>
-                                        )
-                                      : (
-                                          "-"
-                                        )}
-                                  </TableCell>
-                                </TableRow>
-                              ))
-                            )}
-                      </TableBody>
-                    </Table>
-                  )}
+              <DataTable
+                columns={apiUsageColumns}
+                data={filteredApiUsage}
+                isLoading={loadingApiUsage}
+                hasActiveFilters={!!apiSearch || apiStatusFilter !== "all"}
+                emptyState="No API usage data available"
+                filteredEmptyState="No API usage data matches your filters."
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -469,114 +673,14 @@ export function IntegrationsGovernance() {
                   </div>
                 )}
               />
-              {loadingWebhookHealth
-                ? (
-                    <div className="space-y-2">
-                      {[...Array.from({ length: 5 })].map((_, i) => (
-                        <Skeleton
-                          key={i}
-                          className="h-12 w-full"
-                        />
-                      ))}
-                    </div>
-                  )
-                : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Tenant</TableHead>
-                          <TableHead className="text-right">Active Webhooks</TableHead>
-                          <TableHead className="text-right">Total Deliveries</TableHead>
-                          <TableHead className="text-right">Success Rate</TableHead>
-                          <TableHead className="text-right">Dead Letters</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredWebhookHealth.length === 0
-                          ? (
-                              <TableRow>
-                                <TableCell
-                                  colSpan={6}
-                                  className="text-center text-muted-foreground"
-                                >
-                                  No webhook data available
-                                </TableCell>
-                              </TableRow>
-                            )
-                          : (
-                              filteredWebhookHealth.map((tenant: any) => (
-                                <TableRow key={tenant.tenant_id}>
-                                  <TableCell className="font-medium">{tenant.tenant_name}</TableCell>
-                                  <TableCell className="text-right">{tenant.active_subscriptions}</TableCell>
-                                  <TableCell className="text-right">{tenant.total_deliveries.toLocaleString()}</TableCell>
-                                  <TableCell className="text-right">
-                                    <div className="flex items-center justify-end gap-1">
-                                      {tenant.success_rate >= 95
-                                        ? (
-                                            <TrendingUp className="h-4 w-4 text-success" />
-                                          )
-                                        : tenant.success_rate < 80
-                                          ? (
-                                              <TrendingDown className="h-4 w-4 text-destructive" />
-                                            )
-                                          : null}
-                                      <span className={
-                                        tenant.success_rate >= 95
-                                          ? "text-success"
-                                          : tenant.success_rate < 80
-                                            ? "text-destructive"
-                                            : ""
-                                      }
-                                      >
-                                        {tenant.success_rate.toFixed(1)}
-                                        %
-                                      </span>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    {tenant.dead_letter_count > 0
-                                      ? (
-                                          <Badge variant="destructive">{tenant.dead_letter_count}</Badge>
-                                        )
-                                      : (
-                                          <span className="text-muted-foreground">0</span>
-                                        )}
-                                  </TableCell>
-                                  <TableCell>
-                                    {tenant.success_rate >= 95
-                                      ? (
-                                          <Badge
-                                            variant="outline"
-                                            className="text-success border-success"
-                                          >
-                                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                                            Healthy
-                                          </Badge>
-                                        )
-                                      : tenant.success_rate >= 80
-                                        ? (
-                                            <Badge
-                                              variant="outline"
-                                              className="text-warning border-warning"
-                                            >
-                                              <AlertTriangle className="h-3 w-3 mr-1" />
-                                              Degraded
-                                            </Badge>
-                                          )
-                                        : (
-                                            <Badge variant="destructive">
-                                              <XCircle className="h-3 w-3 mr-1" />
-                                              Critical
-                                            </Badge>
-                                          )}
-                                  </TableCell>
-                                </TableRow>
-                              ))
-                            )}
-                      </TableBody>
-                    </Table>
-                  )}
+              <DataTable
+                columns={webhookHealthColumns}
+                data={filteredWebhookHealth}
+                isLoading={loadingWebhookHealth}
+                hasActiveFilters={!!webhookSearch || webhookStatusFilter !== "all"}
+                emptyState="No webhook data available"
+                filteredEmptyState="No webhook data matches your filters."
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -647,118 +751,14 @@ export function IntegrationsGovernance() {
                   </div>
                 )}
               />
-              {loadingTenantStatuses
-                ? (
-                    <div className="space-y-2">
-                      {[...Array.from({ length: 5 })].map((_, i) => (
-                        <Skeleton
-                          key={i}
-                          className="h-12 w-full"
-                        />
-                      ))}
-                    </div>
-                  )
-                : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Tenant</TableHead>
-                          <TableHead className="text-center">API Keys</TableHead>
-                          <TableHead className="text-center">Webhooks</TableHead>
-                          <TableHead>Last Activity</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredTenantStatuses.length === 0
-                          ? (
-                              <TableRow>
-                                <TableCell
-                                  colSpan={6}
-                                  className="text-center text-muted-foreground"
-                                >
-                                  No tenants found
-                                </TableCell>
-                              </TableRow>
-                            )
-                          : (
-                              filteredTenantStatuses.map((tenant: any) => {
-                                const hasActiveIntegrations = tenant.active_api_keys > 0 || tenant.active_webhooks > 0;
-                                return (
-                                  <TableRow key={tenant.tenant_id}>
-                                    <TableCell className="font-medium">{tenant.tenant_name}</TableCell>
-                                    <TableCell className="text-center">
-                                      <Badge variant={tenant.active_api_keys > 0 ? "default" : "secondary"}>
-                                        {tenant.active_api_keys}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                      <Badge variant={tenant.active_webhooks > 0 ? "default" : "secondary"}>
-                                        {tenant.active_webhooks}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                      {tenant.last_activity
-                                        ? (
-                                            <span className="text-muted-foreground text-sm">
-                                              {formatRelative(tenant.last_activity)}
-                                            </span>
-                                          )
-                                        : (
-                                            <span className="text-muted-foreground text-sm">Never</span>
-                                          )}
-                                    </TableCell>
-                                    <TableCell>
-                                      {tenant.api_enabled
-                                        ? (
-                                            <Badge
-                                              variant="outline"
-                                              className="text-success border-success"
-                                            >
-                                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                                              Enabled
-                                            </Badge>
-                                          )
-                                        : (
-                                            <Badge variant="destructive">
-                                              <Ban className="h-3 w-3 mr-1" />
-                                              Disabled
-                                            </Badge>
-                                          )}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      {hasActiveIntegrations
-                                        ? (
-                                            <Button
-                                              variant="destructive"
-                                              size="sm"
-                                              onClick={() => setConfirmDisable(tenant.tenant_id)}
-                                              disabled={disableTenantIntegrations.isPending}
-                                            >
-                                              <Ban className="h-4 w-4 mr-1" />
-                                              Disable
-                                            </Button>
-                                          )
-                                        : (
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              onClick={() => setConfirmEnable(tenant.tenant_id)}
-                                              disabled={enableTenantIntegrations.isPending}
-                                            >
-                                              <RefreshCw className="h-4 w-4 mr-1" />
-                                              Enable
-                                            </Button>
-                                          )}
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })
-                            )}
-                      </TableBody>
-                    </Table>
-                  )}
+              <DataTable
+                columns={tenantControlColumns}
+                data={filteredTenantStatuses}
+                isLoading={loadingTenantStatuses}
+                hasActiveFilters={!!tenantSearch || tenantStatusFilter !== "all"}
+                emptyState="No tenants found"
+                filteredEmptyState="No tenants match your filters."
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -814,88 +814,14 @@ export function IntegrationsGovernance() {
                   </div>
                 )}
               />
-              {loadingAuditLogs
-                ? (
-                    <div className="space-y-2">
-                      {[...Array.from({ length: 5 })].map((_, i) => (
-                        <Skeleton
-                          key={i}
-                          className="h-12 w-full"
-                        />
-                      ))}
-                    </div>
-                  )
-                : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Timestamp</TableHead>
-                          <TableHead>Tenant</TableHead>
-                          <TableHead>Action</TableHead>
-                          <TableHead>Entity</TableHead>
-                          <TableHead>Actor</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredAuditLogs.length === 0
-                          ? (
-                              <TableRow>
-                                <TableCell
-                                  colSpan={5}
-                                  className="text-center text-muted-foreground"
-                                >
-                                  No audit logs available
-                                </TableCell>
-                              </TableRow>
-                            )
-                          : (
-                              filteredAuditLogs.map((log: any) => (
-                                <TableRow key={log.id}>
-                                  <TableCell className="text-muted-foreground text-sm">
-                                    {formatRelative(log.created_at)}
-                                  </TableCell>
-                                  <TableCell className="font-medium">{log.tenant_name}</TableCell>
-                                  <TableCell>
-                                    <Badge variant={
-                                      log.action.includes("CREATED")
-                                        ? "default"
-                                        : log.action.includes("REVOKED") || log.action.includes("DISABLED")
-                                          ? "destructive"
-                                          : "secondary"
-                                    }
-                                    >
-                                      {log.action.replace(
-                                        /_/g,
-                                        " ",
-                                      )}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    <span className="text-muted-foreground">
-                                      {log.resource_type}
-                                      :
-                                      {log.resource_id?.slice(
-                                        0,
-                                        8,
-                                      )}
-                                      ...
-                                    </span>
-                                  </TableCell>
-                                  <TableCell>
-                                    <span className="text-muted-foreground text-sm">
-                                      {log.actor_id?.slice(
-                                        0,
-                                        8,
-                                      ) || "System"}
-                                      ...
-                                    </span>
-                                  </TableCell>
-                                </TableRow>
-                              ))
-                            )}
-                      </TableBody>
-                    </Table>
-                  )}
+              <DataTable
+                columns={auditColumns}
+                data={filteredAuditLogs}
+                isLoading={loadingAuditLogs}
+                hasActiveFilters={!!auditSearch}
+                emptyState="No audit logs available"
+                filteredEmptyState="No audit logs match your search."
+              />
             </CardContent>
           </Card>
         </TabsContent>

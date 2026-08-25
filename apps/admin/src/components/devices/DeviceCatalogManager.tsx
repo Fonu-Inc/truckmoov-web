@@ -77,15 +77,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+import type { ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Textarea } from "@/components/shadcn/textarea";
 
 type CatalogStatusFilter = "all" | "supported" | "deprecated" | "blocked";
@@ -388,6 +381,149 @@ export function DeviceCatalogManager() {
     );
   }
 
+  const catalogColumns: ColumnDef<SystemDeviceCatalogModel>[] = [
+    {
+      accessorKey: "manufacturer",
+      header: "Manufacturer",
+      meta: { className: "px-5" },
+      cell: ({ row }) => (
+        <span className="font-semibold text-foreground">{row.original.manufacturer}</span>
+      ),
+    },
+    {
+      accessorKey: "model",
+      header: "Model",
+      meta: { className: "px-5" },
+      cell: ({ row }) => (
+        <span className="font-semibold text-foreground">{row.original.model}</span>
+      ),
+    },
+    {
+      accessorKey: "protocolType",
+      header: "Protocol",
+      meta: { className: "px-5" },
+      cell: ({ row }) => (
+        <Badge
+          variant="outline"
+          className={`h-6 rounded-md px-2 text-xs font-bold ${
+            protocolBadgeClass[row.original.protocolType] ?? "border-muted bg-muted text-muted-foreground"
+          }`}
+        >
+          {row.original.protocolType}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "defaultPort",
+      header: "Port",
+      meta: { className: "px-5 text-muted-foreground" },
+      cell: ({ row }) => row.original.defaultPort,
+    },
+    {
+      accessorKey: "supportedFeatures",
+      header: "Features",
+      meta: { className: "px-5" },
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5">
+          {row.original.supportedFeatures.length > 0
+            ? (
+                row.original.supportedFeatures.map(feature => (
+                  <span
+                    key={feature}
+                    title={feature}
+                  >
+                    {feature === "obd2"
+                      ? (
+                          <Gauge className={`h-4 w-4 ${featureIconClass[feature]}`} />
+                        )
+                      : feature === "fuel"
+                        ? (
+                            <Fuel className={`h-4 w-4 ${featureIconClass[feature]}`} />
+                          )
+                        : feature === "sos"
+                          ? (
+                              <AlertTriangle className={`h-4 w-4 ${featureIconClass[feature]}`} />
+                            )
+                          : null}
+                  </span>
+                ))
+              )
+            : (
+                <span className="text-muted-foreground text-sm">Basic</span>
+              )}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      meta: { className: "px-5" },
+      cell: ({ row }) => (
+        <Badge
+          variant="outline"
+          className={`h-6 rounded-md px-2 text-xs font-bold ${
+            statusBadgeClass[row.original.status] ?? "border-muted bg-muted text-muted-foreground"
+          }`}
+        >
+          {statusLabel[row.original.status] ?? row.original.status}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      meta: { className: "w-[56px] px-5 text-right" },
+      cell: ({ row }) => {
+        const model = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="w-44"
+            >
+              <DropdownMenuItem onClick={() => handleOpenEdit(model)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={updateCatalogEntry.isPending}
+                onClick={() => handleMarkDeprecated(model)}
+              >
+                <Archive className="mr-2 h-4 w-4" />
+                Mark Deprecated
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={updateCatalogEntry.isPending}
+                onClick={() => handleBlockModel(model)}
+              >
+                <X className="mr-2 h-4 w-4" />
+                Block Model
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                disabled={deleteCatalogEntry.isPending}
+                onClick={() => handleDeleteModel(model)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
   return (
     <>
       <div className="flex items-center justify-end mb-4">
@@ -447,177 +583,17 @@ export function DeviceCatalogManager() {
           </div>
 
           <div className="overflow-hidden rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-14 px-5 text-muted-foreground">Manufacturer</TableHead>
-                  <TableHead className="h-14 px-5 text-muted-foreground">Model</TableHead>
-                  <TableHead className="h-14 px-5 text-muted-foreground">Protocol</TableHead>
-                  <TableHead className="h-14 px-5 text-muted-foreground">Port</TableHead>
-                  <TableHead className="h-14 px-5 text-muted-foreground">Features</TableHead>
-                  <TableHead className="h-14 px-5 text-muted-foreground">Status</TableHead>
-                  <TableHead className="h-14 w-[56px] px-5"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {catalogQuery.isLoading
-                  ? (
-                      Array.from({ length: 5 }).map((_, i) => (
-                        <TableRow
-                          key={i}
-                          className="h-[72px]"
-                        >
-                          <TableCell
-                            colSpan={7}
-                            className="px-5"
-                          >
-                            <Skeleton className="h-4 w-full" />
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )
-                  : catalogQuery.isError
-                    ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={7}
-                            className="px-5 py-8 text-center"
-                          >
-                            <p className="text-destructive">Unable to load the device catalog.</p>
-                            <Button
-                              variant="link"
-                              className="mt-1"
-                              onClick={() => catalogQuery.refetch()}
-                            >
-                              Try again
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    : models.length === 0
-                      ? (
-                          <TableRow>
-                            <TableCell
-                              colSpan={7}
-                              className="px-5 py-8 text-center text-muted-foreground"
-                            >
-                              {searchParam || statusFilter !== "all"
-                                ? "No device models match your filters."
-                                : "No device models in the catalog yet."}
-                            </TableCell>
-                          </TableRow>
-                        )
-                      : (
-                          models.map(model => (
-                            <TableRow
-                              key={model.id}
-                              className="h-[72px]"
-                            >
-                              <TableCell className="px-5 font-semibold text-foreground">{model.manufacturer}</TableCell>
-                              <TableCell className="px-5 font-semibold text-foreground">{model.model}</TableCell>
-                              <TableCell className="px-5">
-                                <Badge
-                                  variant="outline"
-                                  className={`h-6 rounded-md px-2 text-xs font-bold ${
-                                    protocolBadgeClass[model.protocolType] ?? "border-muted bg-muted text-muted-foreground"
-                                  }`}
-                                >
-                                  {model.protocolType}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="px-5 text-muted-foreground">
-                                {model.defaultPort}
-                              </TableCell>
-                              <TableCell className="px-5">
-                                <div className="flex items-center gap-1.5">
-                                  {model.supportedFeatures.length > 0
-                                    ? (
-                                        model.supportedFeatures.map(feature => (
-                                          <span
-                                            key={feature}
-                                            title={feature}
-                                          >
-                                            {feature === "obd2"
-                                              ? (
-                                                  <Gauge className={`h-4 w-4 ${featureIconClass[feature]}`} />
-                                                )
-                                              : feature === "fuel"
-                                                ? (
-                                                    <Fuel className={`h-4 w-4 ${featureIconClass[feature]}`} />
-                                                  )
-                                                : feature === "sos"
-                                                  ? (
-                                                      <AlertTriangle className={`h-4 w-4 ${featureIconClass[feature]}`} />
-                                                    )
-                                                  : null}
-                                          </span>
-                                        ))
-                                      )
-                                    : (
-                                        <span className="text-muted-foreground text-sm">Basic</span>
-                                      )}
-                                </div>
-                              </TableCell>
-                              <TableCell className="px-5">
-                                <Badge
-                                  variant="outline"
-                                  className={`h-6 rounded-md px-2 text-xs font-bold ${
-                                    statusBadgeClass[model.status] ?? "border-muted bg-muted text-muted-foreground"
-                                  }`}
-                                >
-                                  {statusLabel[model.status] ?? model.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="px-5 text-right">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                    >
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent
-                                    align="end"
-                                    className="w-44"
-                                  >
-                                    <DropdownMenuItem onClick={() => handleOpenEdit(model)}>
-                                      <Edit className="mr-2 h-4 w-4" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      disabled={updateCatalogEntry.isPending}
-                                      onClick={() => handleMarkDeprecated(model)}
-                                    >
-                                      <Archive className="mr-2 h-4 w-4" />
-                                      Mark Deprecated
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      disabled={updateCatalogEntry.isPending}
-                                      onClick={() => handleBlockModel(model)}
-                                    >
-                                      <X className="mr-2 h-4 w-4" />
-                                      Block Model
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      className="text-destructive focus:text-destructive"
-                                      disabled={deleteCatalogEntry.isPending}
-                                      onClick={() => handleDeleteModel(model)}
-                                    >
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-              </TableBody>
-            </Table>
+            <DataTable
+              columns={catalogColumns}
+              data={models}
+              isLoading={catalogQuery.isLoading}
+              isError={catalogQuery.isError}
+              errorMessage="Unable to load the device catalog."
+              onRetry={() => catalogQuery.refetch()}
+              hasActiveFilters={!!searchParam || statusFilter !== "all"}
+              emptyState="No device models in the catalog yet."
+              filteredEmptyState="No device models match your filters."
+            />
           </div>
         </CardContent>
       </Card>

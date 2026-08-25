@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   Check, Eye, ShieldCheck, X,
 } from "lucide-react";
@@ -5,9 +6,7 @@ import { Badge } from "@/components/shadcn/badge";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
+import { DataTable } from "@/components/shadcn/data-table";
 
 /**
  * US-E02-002 — Role Permissions Summary.
@@ -133,7 +132,34 @@ function AccessCell({ value }: { value: Access }) {
   );
 }
 
+type CapabilityRow = (typeof CAPABILITIES)[number];
+
 export function RolePermissionsMatrix() {
+  const columns: ColumnDef<CapabilityRow>[] = [
+    {
+      accessorKey: "capability",
+      header: "Capability",
+      meta: { className: "min-w-[180px] font-medium text-sm" },
+      cell: ({ row }) => row.original.capability,
+    },
+    ...ROLES.map<ColumnDef<CapabilityRow>>(r => ({
+      id: r.key,
+      header: () => (
+        <div className="flex flex-col items-center gap-1">
+          <span className="font-medium">{r.label}</span>
+          <Badge
+            variant="outline"
+            className="text-[10px] font-normal"
+          >
+            {r.desc}
+          </Badge>
+        </div>
+      ),
+      meta: { className: "text-center min-w-[120px]" },
+      cell: ({ row }) => <AccessCell value={row.original.access[r.key]} />,
+    })),
+  ];
+
   return (
     <Card className="bg-card/50 border-border/50">
       <CardHeader>
@@ -165,44 +191,10 @@ export function RolePermissionsMatrix() {
         </div>
 
         <div className="overflow-x-auto rounded-md border border-border/50">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border/50 hover:bg-transparent">
-                <TableHead className="min-w-[180px]">Capability</TableHead>
-                {ROLES.map(r => (
-                  <TableHead
-                    key={r.key}
-                    className="text-center min-w-[120px]"
-                  >
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="font-medium">{r.label}</span>
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] font-normal"
-                      >
-                        {r.desc}
-                      </Badge>
-                    </div>
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {CAPABILITIES.map(row => (
-                <TableRow
-                  key={row.capability}
-                  className="border-border/50"
-                >
-                  <TableCell className="font-medium text-sm">{row.capability}</TableCell>
-                  {ROLES.map(r => (
-                    <TableCell key={r.key}>
-                      <AccessCell value={row.access[r.key]} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={columns}
+            data={CAPABILITIES}
+          />
         </div>
       </CardContent>
     </Card>

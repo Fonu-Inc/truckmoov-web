@@ -35,14 +35,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+import type { ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "@/components/shadcn/data-table";
 
 type NotificationLog = {
   id: string;
@@ -347,6 +341,65 @@ export function KYCNotificationHistory() {
     pending: logs.filter(l => l.delivery_status === "pending").length,
   };
 
+  const logColumns: ColumnDef<NotificationLog>[] = [
+    {
+      id: "recipient",
+      header: "Recipient",
+      cell: ({ row }) => (
+        <div>
+          <p className="font-medium">{row.original.tenant_name || "Unknown"}</p>
+          <p className="text-sm text-muted-foreground">{row.original.tenant_email}</p>
+        </div>
+      ),
+    },
+    {
+      id: "document",
+      header: "Document",
+      cell: ({ row }) => (
+        <div>
+          <p className="font-medium text-sm">{row.original.document_name}</p>
+          <p className="text-xs text-muted-foreground">
+            {DOCUMENT_TYPE_LABELS[row.original.document_type] || row.original.document_type}
+          </p>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "notification_type",
+      header: "Type",
+      cell: ({ row }) => getNotificationTypeBadge(row.original.notification_type),
+    },
+    {
+      accessorKey: "delivery_status",
+      header: "Delivery Status",
+      cell: ({ row }) => (
+        <div className="space-y-1">
+          {getDeliveryStatusBadge(row.original.delivery_status)}
+          {row.original.error_message && (
+            <p
+              className="text-xs text-destructive max-w-[200px] truncate"
+              title={row.original.error_message}
+            >
+              {row.original.error_message}
+            </p>
+          )}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "sent_at",
+      header: "Sent At",
+      cell: ({ row }) => (
+        <div className="text-sm">
+          <p>{formatDate(row.original.sent_at)}</p>
+          <p className="text-muted-foreground text-xs">
+            {formatWithPattern(row.original.sent_at, "h:mm a")}
+          </p>
+        </div>
+      ),
+    },
+  ];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -465,78 +518,20 @@ export function KYCNotificationHistory() {
             </Select>
           </div>
 
-          {filteredLogs.length === 0
-            ? (
-                <div className="text-center py-12 text-muted-foreground">
+          <ScrollArea className="h-[500px]">
+            <DataTable
+              columns={logColumns}
+              data={filteredLogs}
+              hasActiveFilters={!!searchQuery || statusFilter !== "all" || typeFilter !== "all"}
+              emptyState={
+                <div className="text-muted-foreground">
                   <Mail className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>No notification logs found</p>
                 </div>
-              )
-            : (
-                <ScrollArea className="h-[500px]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-border/50 hover:bg-transparent">
-                        <TableHead>Recipient</TableHead>
-                        <TableHead>Document</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Delivery Status</TableHead>
-                        <TableHead>Sent At</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredLogs.map(log => (
-                        <TableRow
-                          key={log.id}
-                          className="border-border/50"
-                        >
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{log.tenant_name || "Unknown"}</p>
-                              <p className="text-sm text-muted-foreground">{log.tenant_email}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium text-sm">{log.document_name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {DOCUMENT_TYPE_LABELS[log.document_type] || log.document_type}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {getNotificationTypeBadge(log.notification_type)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              {getDeliveryStatusBadge(log.delivery_status)}
-                              {log.error_message && (
-                                <p
-                                  className="text-xs text-destructive max-w-[200px] truncate"
-                                  title={log.error_message}
-                                >
-                                  {log.error_message}
-                                </p>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              <p>{formatDate(log.sent_at)}</p>
-                              <p className="text-muted-foreground text-xs">
-                                {formatWithPattern(
-                                  log.sent_at,
-                                  "h:mm a",
-                                )}
-                              </p>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              )}
+              }
+              filteredEmptyState="No notification logs match your filters."
+            />
+          </ScrollArea>
         </CardContent>
       </Card>
     </div>

@@ -55,14 +55,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+import { DataTable } from "@/components/shadcn/data-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import { getRoleLabel } from "@/features/auth/utils/role-label";
 import { RolePermissionsMatrix } from "@/features/settings/components/ui/RolePermissionsMatrix";
@@ -422,6 +416,102 @@ export default function UsersSettingsPage() {
     );
   };
 
+  const columns: ColumnDef<TenantUser>[] = [
+    {
+      accessorKey: "name",
+      header: "User",
+      cell: ({ row }) => {
+        const tenantUser = row.original;
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-xs">
+                {getInitials(tenantUser.name)}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-medium">{tenantUser.name}</p>
+              <p className="text-sm text-muted-foreground">{tenantUser.email}</p>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "role",
+      header: "Role",
+      cell: ({ row }) => (
+        <Badge className={roleColors[row.original.role]}>{getRoleLabel(row.original.role)}</Badge>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge className={statusColors[row.original.status]}>{row.original.status}</Badge>
+      ),
+    },
+    {
+      accessorKey: "lastActive",
+      header: "Last Active",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          {row.original.lastActive}
+        </div>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      meta: { className: "w-[60px]" },
+      cell: ({ row }) => {
+        const tenantUser = row.original;
+        if (!canManage) return null;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleEditUser(tenantUser)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit User
+              </DropdownMenuItem>
+              {tenantUser.status === "invited" && (
+                <DropdownMenuItem
+                  onClick={() => handleResendInvite(tenantUser)}
+                  disabled={resendInviteMutation.isPending}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Resend Invite
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                onClick={() => handleToggleUserStatus(tenantUser)}
+                disabled={updateStatusMutation.isPending}
+              >
+                {tenantUser.accountStatus === "disabled"
+                  ? <UserCheck className="h-4 w-4 mr-2" />
+                  : <UserX className="h-4 w-4 mr-2" />}
+                {tenantUser.accountStatus === "disabled" ? "Enable User" : "Disable User"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => handleOpenRemoveDialog(tenantUser)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Remove
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
   // Role filter offers every tenant-facing role — a stable option list, so the
   // dropdown doesn't reshape as the current page's results narrow. Admin roles
   // (SUPER/SYSTEM/PLATFORM) are backend-only and never appear as tenant users.
@@ -552,144 +642,17 @@ export default function UsersSettingsPage() {
             onFiltersApply={setTeamFilters}
           />
         </CardHeader>
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border/50 hover:bg-transparent">
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Last Active</TableHead>
-              <TableHead className="w-[60px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoadingUsers
-              ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="text-center py-8 text-muted-foreground"
-                    >
-                      Loading users...
-                    </TableCell>
-                  </TableRow>
-                )
-              : organizationUsersQuery.isError
-                ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="text-center py-8"
-                      >
-                        <p className="text-destructive">Unable to load team members.</p>
-                        <Button
-                          variant="link"
-                          className="mt-1"
-                          onClick={() => organizationUsersQuery.refetch()}
-                        >
-                          Try again
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  )
-                : tenantUsers.length === 0
-                  ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={5}
-                          className="text-center py-8 text-muted-foreground"
-                        >
-                          {debouncedSearch || teamStatus !== "all" || activeRoleFilter
-                            ? "No team members match your filters."
-                            : "No team members yet. Invite someone to get started."}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : tenantUsers.map(tenantUser => (
-                      <TableRow
-                        key={tenantUser.id}
-                        className="border-border/50"
-                      >
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-xs">
-                                {getInitials(tenantUser.name)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-medium">{tenantUser.name}</p>
-                              <p className="text-sm text-muted-foreground">{tenantUser.email}</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={roleColors[tenantUser.role]}>
-                            {getRoleLabel(tenantUser.role)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[tenantUser.status]}>{tenantUser.status}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            {tenantUser.lastActive}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {canManage && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEditUser(tenantUser)}>
-                                  <Pencil className="h-4 w-4 mr-2" />
-                                  Edit User
-                                </DropdownMenuItem>
-                                {tenantUser.status === "invited" && (
-                                  <DropdownMenuItem
-                                    onClick={() => handleResendInvite(tenantUser)}
-                                    disabled={resendInviteMutation.isPending}
-                                  >
-                                    <Mail className="h-4 w-4 mr-2" />
-                                    Resend Invite
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem
-                                  onClick={() => handleToggleUserStatus(tenantUser)}
-                                  disabled={updateStatusMutation.isPending}
-                                >
-                                  {tenantUser.accountStatus === "disabled"
-                                    ? (
-                                        <UserCheck className="h-4 w-4 mr-2" />
-                                      )
-                                    : (
-                                        <UserX className="h-4 w-4 mr-2" />
-                                      )}
-                                  {tenantUser.accountStatus === "disabled" ? "Enable User" : "Disable User"}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-destructive"
-                                  onClick={() => handleOpenRemoveDialog(tenantUser)}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Remove
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-          </TableBody>
-        </Table>
+        <DataTable
+          columns={columns}
+          data={tenantUsers}
+          isLoading={isLoadingUsers}
+          isError={organizationUsersQuery.isError}
+          errorMessage="Unable to load team members."
+          onRetry={() => organizationUsersQuery.refetch()}
+          hasActiveFilters={!!debouncedSearch || teamStatus !== "all" || !!activeRoleFilter}
+          emptyState="No team members yet. Invite someone to get started."
+          filteredEmptyState="No team members match your filters."
+        />
       </Card>
 
       {/* Edit User Dialog */}

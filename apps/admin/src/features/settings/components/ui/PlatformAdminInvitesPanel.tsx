@@ -32,15 +32,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+import type { ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "@/components/shadcn/data-table";
 
 export function PlatformAdminInvitesPanel() {
   const invitesQuery = useQuery(getSystemAdminInvitesQueryOptions());
@@ -77,6 +70,60 @@ export function PlatformAdminInvitesPanel() {
     );
   };
 
+  const inviteColumns: ColumnDef<AdminInvite>[] = [
+    {
+      accessorKey: "email",
+      header: "Email",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Mail className="h-4 w-4 text-muted-foreground" />
+          <span>{row.original.email}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "expiresAt",
+      header: "Expires",
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground">
+          {row.original.expiresAt ? formatDate(row.original.expiresAt) : "—"}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      meta: { className: "text-right" },
+      cell: ({ row }) => {
+        const invite = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleResendInvite(invite)}>
+                Resend Invite
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => setInvitationToCancel(invite)}
+              >
+                Cancel Invite
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
   return (
     <>
       <Card>
@@ -87,88 +134,21 @@ export function PlatformAdminInvitesPanel() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {invitesQuery.isLoading
-            ? (
-                <div className="space-y-3">
-                  {[
-                    1,
-                    2,
-                  ].map(i => (
-                    <Skeleton
-                      key={i}
-                      className="h-10 w-full"
-                    />
-                  ))}
-                </div>
-              )
-            : invitesQuery.isError
-              ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p className="text-sm text-destructive">Failed to load invitations.</p>
-                  </div>
-                )
-              : invites.length === 0
-                ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Mail className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p>No pending invitations</p>
-                      <p className="text-sm">Invites you send from the Admins tab will appear here.</p>
-                    </div>
-                  )
-                : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Expires</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {invites.map(invite => (
-                          <TableRow key={invite.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Mail className="h-4 w-4 text-muted-foreground" />
-                                <span>{invite.email}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm text-muted-foreground">
-                                {invite.expiresAt
-                                  ? formatDate(invite.expiresAt)
-                                  : "—"}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleResendInvite(invite)}>
-                                    Resend Invite
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onClick={() => setInvitationToCancel(invite)}
-                                  >
-                                    Cancel Invite
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
+          <DataTable
+            columns={inviteColumns}
+            data={invites}
+            isLoading={invitesQuery.isLoading}
+            isError={invitesQuery.isError}
+            errorMessage="Failed to load invitations."
+            onRetry={() => invitesQuery.refetch()}
+            emptyState={
+              <div className="text-muted-foreground">
+                <Mail className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No pending invitations</p>
+                <p className="text-sm">Invites you send from the Admins tab will appear here.</p>
+              </div>
+            }
+          />
         </CardContent>
       </Card>
 

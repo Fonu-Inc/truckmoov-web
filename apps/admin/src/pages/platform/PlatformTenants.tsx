@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   SubscriptionPlan,
   SystemTenant,
@@ -36,7 +37,6 @@ import {
   MoreHorizontal,
   Pencil,
   Search,
-  Send,
   Smartphone,
   Sparkles,
   Truck,
@@ -63,6 +63,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,15 +77,6 @@ import {
 
   PlatformFilterPopover,
 } from "@/components/shadcn/platform-filter-popover";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 const ORG_TYPE_LABELS: Record<string, string> = {
@@ -528,6 +520,396 @@ export default function PlatformTenants() {
     }
   };
 
+  const tenantColumns: ColumnDef<SystemTenant>[] = [
+    {
+      id: "tenantId",
+      header: "Tenant ID",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs px-2 py-1 rounded bg-muted text-foreground">
+          TENANT-
+          {String(row.original.id).replace(
+            /-/g,
+            "",
+          ).slice(
+            0,
+            8,
+          ).toUpperCase()}
+        </span>
+      ),
+    },
+    {
+      id: "name",
+      header: () => (
+        <span
+          className="cursor-pointer select-none"
+          onClick={() => toggleSort("name")}
+        >
+          Tenant
+          <SortIcon
+            active={sortKey === "name"}
+            dir={sortDir}
+          />
+        </span>
+      ),
+      cell: ({ row }) => {
+        const tenant = row.original;
+        return (
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
+              {getInitials(tenant.name)}
+            </div>
+            <div>
+              <p className="font-medium">{tenant.name}</p>
+              <p className="text-xs text-muted-foreground">{tenant.email}</p>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      id: "primaryContact",
+      header: "Primary Contact",
+      cell: ({ row }) => (
+        <div className="text-sm">
+          {row.original.primaryContactName
+            ? <span className="font-medium">{row.original.primaryContactName}</span>
+            : <span className="text-muted-foreground">—</span>}
+        </div>
+      ),
+    },
+    {
+      id: "orgType",
+      header: () => (
+        <span
+          className="cursor-pointer select-none"
+          onClick={() => toggleSort("orgType")}
+        >
+          Org Type
+          <SortIcon
+            active={sortKey === "orgType"}
+            dir={sortDir}
+          />
+        </span>
+      ),
+      cell: ({ row }) => (
+        <div className="flex flex-wrap gap-1">
+          {(tenantOrgTypesState[row.original.id] || []).length > 0
+            ? (
+                tenantOrgTypesState[row.original.id].map(ot => (
+                  <Badge
+                    key={ot}
+                    variant="outline"
+                    className="text-xs whitespace-nowrap"
+                  >
+                    {ORG_TYPE_LABELS[ot] ?? ot}
+                  </Badge>
+                ))
+              )
+            : (
+                <span className="text-xs text-muted-foreground">—</span>
+              )}
+        </div>
+      ),
+    },
+    {
+      id: "plan",
+      header: () => (
+        <span
+          className="cursor-pointer select-none"
+          onClick={() => toggleSort("plan")}
+        >
+          Plan
+          <SortIcon
+            active={sortKey === "plan"}
+            dir={sortDir}
+          />
+        </span>
+      ),
+      cell: ({ row }) => (
+        <Badge className={`${TIER_COLORS[row.original.plan]} capitalize`}>
+          {row.original.plan}
+        </Badge>
+      ),
+    },
+    {
+      id: "status",
+      header: () => (
+        <span
+          className="cursor-pointer select-none"
+          onClick={() => toggleSort("status")}
+        >
+          Status
+          <SortIcon
+            active={sortKey === "status"}
+            dir={sortDir}
+          />
+        </span>
+      ),
+      cell: ({ row }) => {
+        const tenant = row.original;
+        return (
+          <div className="flex items-center gap-1.5">
+            {getStatusBadge(tenant.status)}
+            {tenant.status === "pending" && (
+              <span className="text-xs text-muted-foreground">
+                {!tenant.invitationStatus?.invitationAccepted && tenant.invitationStatus?.hasPendingInvitation
+                  ? "(Awaiting Invite Acceptance)"
+                  : (!tenant.businessInfo?.verificationStatus || tenant.businessInfo?.verificationStatus === "pending")
+                      ? "(Awaiting KYC)"
+                      : null}
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: "kycStatus",
+      header: "KYC Status",
+      cell: ({ row }) => {
+        const status = row.original.businessInfo?.verificationStatus;
+        if (status === "verified") {
+          return (
+            <Badge className="bg-success/10 text-success border-success/30">
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Verified
+            </Badge>
+          );
+        }
+        if (status === "under_review") {
+          return (
+            <Badge className="bg-warning/10 text-warning border-warning/30">
+              <Clock className="h-3 w-3 mr-1" />
+              Under Review
+            </Badge>
+          );
+        }
+        if (status === "rejected") {
+          return (
+            <Badge variant="destructive">
+              <XCircle className="h-3 w-3 mr-1" />
+              Rejected
+            </Badge>
+          );
+        }
+        return (
+          <Badge variant="secondary">
+            <Clock className="h-3 w-3 mr-1" />
+            Not Submitted
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "vehicleCount",
+      header: () => (
+        <span
+          className="cursor-pointer select-none"
+          onClick={() => toggleSort("vehicleCount")}
+        >
+          Vehicles
+          <SortIcon
+            active={sortKey === "vehicleCount"}
+            dir={sortDir}
+          />
+        </span>
+      ),
+      cell: ({ row }) => {
+        const tenant = row.original;
+        return (
+          <div className="flex items-center gap-1">
+            <Truck className="h-4 w-4 text-muted-foreground" />
+            <span className={tenant.vehicleCount >= getPlanLimits(tenant.plan).maxVehicles ? "text-destructive font-medium" : ""}>
+              {tenant.vehicleCount}
+              /
+              {getPlanLimits(tenant.plan).maxVehicles}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "drivers",
+      header: "Drivers",
+      cell: ({ row }) => {
+        const tenant = row.original;
+        return (
+          <div className="flex items-center gap-1">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <span className={tenant.driverCount >= getPlanLimits(tenant.plan).maxDrivers ? "text-destructive font-medium" : ""}>
+              {tenant.driverCount}
+              /
+              {getPlanLimits(tenant.plan).maxDrivers}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "devices",
+      header: "Devices",
+      cell: ({ row }) => {
+        const tenant = row.original;
+        return (
+          <div className="flex items-center gap-1">
+            <Cpu className="h-4 w-4 text-muted-foreground" />
+            <span className={tenant.deviceCount >= getPlanLimits(tenant.plan).maxDevices ? "text-destructive font-medium" : ""}>
+              {tenant.deviceCount}
+              /
+              {getPlanLimits(tenant.plan).maxDevices}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "simCount",
+      header: () => (
+        <span
+          className="cursor-pointer select-none"
+          onClick={() => toggleSort("simCount")}
+        >
+          SIMs
+          <SortIcon
+            active={sortKey === "simCount"}
+            dir={sortDir}
+          />
+        </span>
+      ),
+      cell: ({ row }) => {
+        const tenant = row.original;
+        return (
+          <div className="flex items-center gap-1">
+            <Smartphone className="h-4 w-4 text-muted-foreground" />
+            <span className={tenant.simCount >= getPlanLimits(tenant.plan).maxSims ? "text-destructive font-medium" : ""}>
+              {tenant.simCount}
+              /
+              {getPlanLimits(tenant.plan).maxSims}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "monthlyRevenueNgn",
+      header: () => (
+        <span
+          className="cursor-pointer select-none"
+          onClick={() => toggleSort("monthlyRevenueNgn")}
+        >
+          Revenue
+          <SortIcon
+            active={sortKey === "monthlyRevenueNgn"}
+            dir={sortDir}
+          />
+        </span>
+      ),
+      cell: ({ row }) => (
+        <span className="font-medium">
+          {currency === "NGN"
+            ? `₦${(row.original.monthlyRevenueNgn || 0).toLocaleString()}`
+            : `$${Math.round((row.original.monthlyRevenueNgn || 0) / 1550).toLocaleString()}`}
+        </span>
+      ),
+    },
+    {
+      id: "lastActiveAt",
+      header: () => (
+        <span
+          className="cursor-pointer select-none"
+          onClick={() => toggleSort("lastActiveAt")}
+        >
+          Last Active
+          <SortIcon
+            active={sortKey === "lastActiveAt"}
+            dir={sortDir}
+          />
+        </span>
+      ),
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground">
+          {row.original.lastActiveAt ? formatDate(row.original.lastActiveAt) : "Never"}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      meta: { className: "w-[50px]" },
+      cell: ({ row }) => {
+        const tenant = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => {
+                setSelectedDbTenant(tenant);
+                setIsDbDetailsSheetOpen(true);
+              }}
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleOpenDbEdit(tenant)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+              {(tenant.status === "pending" || tenant.status === "inactive") && (
+                <DropdownMenuItem onClick={() => handleResendInvitation(tenant)}>
+                  Resend Invitation
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              {tenant.status === "active"
+                ? (
+                    <DropdownMenuItem
+                      onClick={() => handleDbTenantStatusChange(
+                        tenant,
+                        "suspended",
+                      )}
+                      className="text-warning"
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Suspend
+                    </DropdownMenuItem>
+                  )
+                : tenant.status === "suspended"
+                  ? (
+                      <DropdownMenuItem
+                        onClick={() => handleDbTenantStatusChange(
+                          tenant,
+                          "active",
+                        )}
+                        className="text-success"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Activate
+                      </DropdownMenuItem>
+                    )
+                  : null}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setDeleteConfirmDbTenant(tenant)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Ban className="h-4 w-4 mr-2" />
+                Terminate
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
   const handleExport = async () => {
     setIsExporting(true);
     try {
@@ -667,352 +1049,20 @@ export default function PlatformTenants() {
               />
             </div>
 
-            {isLoadingDbTenants ? (
-              <div className="space-y-4">
-                {[
-                  1,
-                  2,
-                  3,
-                ].map(i => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-4"
-                  >
-                    <Skeleton className="h-10 w-10 rounded-lg" />
-                    <div className="space-y-2 flex-1">
-                      <Skeleton className="h-4 w-[200px]" />
-                      <Skeleton className="h-3 w-[150px]" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : sortedDbTenants.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No tenants found
-              </div>
-            ) : (
-              <div className="rounded-lg border overflow-x-auto">
-                <Table className="[&_th]:px-6 [&_td]:px-6 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tenant ID</TableHead>
-                      <TableHead
-                        className="cursor-pointer select-none"
-                        onClick={() => toggleSort("name")}
-                      >
-                        Tenant
-                        <SortIcon
-                          active={sortKey === "name"}
-                          dir={sortDir}
-                        />
-                      </TableHead>
-                      <TableHead>Primary Contact</TableHead>
-                      <TableHead
-                        className="cursor-pointer select-none"
-                        onClick={() => toggleSort("orgType")}
-                      >
-                        Org Type
-                        <SortIcon
-                          active={sortKey === "orgType"}
-                          dir={sortDir}
-                        />
-                      </TableHead>
-                      <TableHead
-                        className="cursor-pointer select-none"
-                        onClick={() => toggleSort("plan")}
-                      >
-                        Plan
-                        <SortIcon
-                          active={sortKey === "plan"}
-                          dir={sortDir}
-                        />
-                      </TableHead>
-                      <TableHead
-                        className="cursor-pointer select-none"
-                        onClick={() => toggleSort("status")}
-                      >
-                        Status
-                        <SortIcon
-                          active={sortKey === "status"}
-                          dir={sortDir}
-                        />
-                      </TableHead>
-                      <TableHead>KYC Status</TableHead>
-                      <TableHead
-                        className="cursor-pointer select-none"
-                        onClick={() => toggleSort("vehicleCount")}
-                      >
-                        Vehicles
-                        <SortIcon
-                          active={sortKey === "vehicleCount"}
-                          dir={sortDir}
-                        />
-                      </TableHead>
-                      <TableHead>Drivers</TableHead>
-                      <TableHead>Devices</TableHead>
-                      <TableHead
-                        className="cursor-pointer select-none"
-                        onClick={() => toggleSort("simCount")}
-                      >
-                        SIMs
-                        <SortIcon
-                          active={sortKey === "simCount"}
-                          dir={sortDir}
-                        />
-                      </TableHead>
-                      <TableHead
-                        className="cursor-pointer select-none"
-                        onClick={() => toggleSort("monthlyRevenueNgn")}
-                      >
-                        Revenue
-                        <SortIcon
-                          active={sortKey === "monthlyRevenueNgn"}
-                          dir={sortDir}
-                        />
-                      </TableHead>
-                      <TableHead
-                        className="cursor-pointer select-none"
-                        onClick={() => toggleSort("lastActiveAt")}
-                      >
-                        Last Active
-                        <SortIcon
-                          active={sortKey === "lastActiveAt"}
-                          dir={sortDir}
-                        />
-                      </TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sortedDbTenants.map(tenant => (
-                      <TableRow
-                        key={tenant.id}
-                      >
-                        <TableCell>
-                          <span className="font-mono text-xs px-2 py-1 rounded bg-muted text-foreground">
-                            TENANT-
-                            {String(tenant.id).replace(
-                              /-/g,
-                              "",
-                            ).slice(
-                              0,
-                              8,
-                            ).toUpperCase()}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
-                              {getInitials(tenant.name)}
-                            </div>
-                            <div>
-                              <p className="font-medium">{tenant.name}</p>
-                              <p className="text-xs text-muted-foreground">{tenant.email}</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {tenant.primaryContactName
-                            ? (
-                                <span className="font-medium">{tenant.primaryContactName}</span>
-                              )
-                            : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {(tenantOrgTypesState[tenant.id] || []).length > 0
-                              ? (
-                                  tenantOrgTypesState[tenant.id].map(ot => (
-                                    <Badge
-                                      key={ot}
-                                      variant="outline"
-                                      className="text-xs whitespace-nowrap"
-                                    >
-                                      {ORG_TYPE_LABELS[ot] ?? ot}
-                                    </Badge>
-                                  ))
-                                )
-                              : (
-                                  <span className="text-xs text-muted-foreground">—</span>
-                                )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`${TIER_COLORS[tenant.plan]} capitalize`}>
-                            {tenant.plan}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5">
-                            {getStatusBadge(tenant.status)}
-                            {tenant.status === "pending" && (
-                              <span className="text-xs text-muted-foreground">
-                                {/* Check invitation status first, then KYC status */}
-                                {!tenant.invitationStatus?.invitationAccepted && tenant.invitationStatus?.hasPendingInvitation
-                                  ? "(Awaiting Invite Acceptance)"
-                                  : (!tenant.businessInfo?.verificationStatus || tenant.businessInfo?.verificationStatus === "pending")
-                                      ? "(Awaiting KYC)"
-                                      : null}
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {tenant.businessInfo?.verificationStatus === "verified"
-                            ? (
-                                <Badge className="bg-success/10 text-success border-success/30">
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Verified
-                                </Badge>
-                              )
-                            : tenant.businessInfo?.verificationStatus === "under_review"
-                              ? (
-                                  <Badge className="bg-warning/10 text-warning border-warning/30">
-                                    <Clock className="h-3 w-3 mr-1" />
-                                    Under Review
-                                  </Badge>
-                                )
-                              : tenant.businessInfo?.verificationStatus === "rejected"
-                                ? (
-                                    <Badge variant="destructive">
-                                      <XCircle className="h-3 w-3 mr-1" />
-                                      Rejected
-                                    </Badge>
-                                  )
-                                : (
-                                    <Badge variant="secondary">
-                                      <Clock className="h-3 w-3 mr-1" />
-                                      Not Submitted
-                                    </Badge>
-                                  )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Truck className="h-4 w-4 text-muted-foreground" />
-                            <span className={tenant.vehicleCount >= getPlanLimits(tenant.plan).maxVehicles ? "text-destructive font-medium" : ""}>
-                              {tenant.vehicleCount}
-                              /
-                              {getPlanLimits(tenant.plan).maxVehicles}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <span className={tenant.driverCount >= getPlanLimits(tenant.plan).maxDrivers ? "text-destructive font-medium" : ""}>
-                              {tenant.driverCount}
-                              /
-                              {getPlanLimits(tenant.plan).maxDrivers}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Cpu className="h-4 w-4 text-muted-foreground" />
-                            <span className={tenant.deviceCount >= getPlanLimits(tenant.plan).maxDevices ? "text-destructive font-medium" : ""}>
-                              {tenant.deviceCount}
-                              /
-                              {getPlanLimits(tenant.plan).maxDevices}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Smartphone className="h-4 w-4 text-muted-foreground" />
-                            <span className={tenant.simCount >= getPlanLimits(tenant.plan).maxSims ? "text-destructive font-medium" : ""}>
-                              {tenant.simCount}
-                              /
-                              {getPlanLimits(tenant.plan).maxSims}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {currency === "NGN"
-                            ? `₦${(tenant.monthlyRevenueNgn || 0).toLocaleString()}`
-                            : `$${Math.round((tenant.monthlyRevenueNgn || 0) / 1550).toLocaleString()}`}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {tenant.lastActiveAt
-                            ? formatDate(tenant.lastActiveAt)
-                            : "Never"}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => {
-                                setSelectedDbTenant(tenant);
-                                setIsDbDetailsSheetOpen(true);
-                              }}
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleOpenDbEdit(tenant)}>
-                                <Pencil className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              {(tenant.status === "pending" || tenant.status === "inactive") && (
-                                <DropdownMenuItem onClick={() => handleResendInvitation(tenant)}>
-                                  <Send className="h-4 w-4 mr-2" />
-                                  Resend Invitation
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuSeparator />
-                              {tenant.status === "active"
-                                ? (
-                                    <DropdownMenuItem
-                                      onClick={() => handleDbTenantStatusChange(
-                                        tenant,
-                                        "suspended",
-                                      )}
-                                      className="text-warning"
-                                    >
-                                      <XCircle className="h-4 w-4 mr-2" />
-                                      Suspend
-                                    </DropdownMenuItem>
-                                  )
-                                : tenant.status === "suspended"
-                                  ? (
-                                      <DropdownMenuItem
-                                        onClick={() => handleDbTenantStatusChange(
-                                          tenant,
-                                          "active",
-                                        )}
-                                        className="text-success"
-                                      >
-                                        <CheckCircle className="h-4 w-4 mr-2" />
-                                        Activate
-                                      </DropdownMenuItem>
-                                    )
-                                  : null}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => setDeleteConfirmDbTenant(tenant)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Ban className="h-4 w-4 mr-2" />
-                                Terminate
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+            <div className="rounded-lg border overflow-x-auto">
+              <DataTable
+                columns={tenantColumns}
+                data={sortedDbTenants}
+                isLoading={isLoadingDbTenants}
+                isError={tenantsQuery.isError}
+                errorMessage="Unable to load tenants."
+                onRetry={() => tenantsQuery.refetch()}
+                hasActiveFilters={!!debouncedSearch || !!apiStatus || !!apiPlan || !!apiOrganizationType || !!apiKycStatus || apiRevenueFrom !== undefined || apiRevenueTo !== undefined || !!apiLastActiveFrom || !!apiLastActiveTo}
+                emptyState="No tenants found"
+                filteredEmptyState="No tenants match your filters."
+                className="[&_th]:px-6 [&_td]:px-6 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap"
+              />
+            </div>
           </CardContent>
         </Card>
       </div>
