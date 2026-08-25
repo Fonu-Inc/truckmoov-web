@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   SystemSimItem,
   SystemSimsQuery,
@@ -70,6 +71,7 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -111,14 +113,6 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import {
   Tabs,
   TabsContent,
@@ -575,8 +569,6 @@ export default function PlatformSIMs() {
     ],
   );
 
-  const statPlaceholder = systemSimsSummaryQuery.isLoading ? "..." : "N/A";
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
@@ -748,6 +740,213 @@ export default function PlatformSIMs() {
     }));
   };
 
+  const simColumns = useMemo<ColumnDef<SIMCard>[]>(
+    () => [
+      {
+        id: "select",
+        meta: { className: "w-12" },
+        header: () => (
+          <Checkbox
+            checked={selectedSIMIds.size === filteredSIMs.length && filteredSIMs.length > 0}
+            onCheckedChange={toggleAllSIMs}
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={selectedSIMIds.has(row.original.id)}
+            onCheckedChange={() => toggleSIMSelection(row.original.id)}
+          />
+        ),
+      },
+      {
+        id: "iccid",
+        meta: { className: "min-w-[220px]" },
+        header: "ICCID / Phone",
+        cell: ({ row }) => (
+          <div>
+            <p className="font-mono text-sm font-semibold leading-5">{row.original.iccid}</p>
+            <p className="text-xs text-muted-foreground">{row.original.msisdn ?? emptyValue}</p>
+          </div>
+        ),
+      },
+      {
+        id: "carrier",
+        meta: { className: "min-w-[140px]" },
+        header: "Carrier",
+        cell: ({ row }) => (
+          <Badge
+            variant="outline"
+            className="font-medium"
+          >
+            {row.original.carrier}
+          </Badge>
+        ),
+      },
+      {
+        id: "plan",
+        meta: { className: "min-w-[170px]" },
+        header: "Plan",
+        cell: ({ row }) => (
+          <span className="text-sm font-medium">{planLabels[row.original.plan]}</span>
+        ),
+      },
+      {
+        id: "tenant",
+        meta: { className: "min-w-[190px]" },
+        header: "Tenant",
+        cell: ({ row }) =>
+          row.original.tenant
+            ? (
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">{row.original.tenant}</span>
+                </div>
+              )
+            : (
+                <span className="text-muted-foreground">{emptyValue}</span>
+              ),
+      },
+      {
+        id: "device",
+        meta: { className: "min-w-[150px]" },
+        header: "Device",
+        cell: ({ row }) =>
+          row.original.deviceId
+            ? (
+                <div className="flex items-center gap-2">
+                  <Cpu className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">{row.original.deviceId}</span>
+                </div>
+              )
+            : (
+                <span className="text-muted-foreground">{emptyValue}</span>
+              ),
+      },
+      {
+        id: "status",
+        meta: { className: "min-w-[140px]" },
+        header: "Status",
+        cell: ({ row }) => getStatusBadge(row.original.status),
+      },
+      {
+        id: "dataUsage",
+        meta: { className: "min-w-[170px]" },
+        header: "Data Usage",
+        cell: ({ row }) => (
+          <div className="w-28">
+            <div className="flex justify-between text-xs mb-1">
+              <span className="font-semibold">
+                {row.original.dataUsage}
+                {" "}
+                MB
+              </span>
+              <span className="text-muted-foreground">
+                /
+                {row.original.dataLimit}
+              </span>
+            </div>
+            <Progress
+              value={getUsagePercentage(
+                row.original.dataUsage,
+                row.original.dataLimit,
+              )}
+              className="h-1.5"
+            />
+          </div>
+        ),
+      },
+      {
+        id: "signal",
+        meta: { className: "min-w-[120px]" },
+        header: "Signal",
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2">
+            {getSignalIcon(
+              row.original.signalStrength,
+              row.original.status,
+            )}
+            {row.original.status === "active" && row.original.networkType
+              ? (
+                  <span className="text-xs font-semibold">{row.original.networkType}</span>
+                )
+              : (
+                  <span className="text-xs text-muted-foreground">{emptyValue}</span>
+                )}
+            {row.original.roaming && (
+              <span title="Roaming">
+                <Globe className="h-3 w-3 text-warning" />
+              </span>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: "actions",
+        meta: { className: "w-12" },
+        header: "",
+        cell: ({ row }) => {
+          const sim = row.original;
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleOpenDetails(sim)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Details
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleOpenEdit(sim)}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleOpenAssign(sim)}>
+                  <ArrowUpDown className="h-4 w-4 mr-2" />
+                  Reassign
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  disabled={suspendSystemSimMutation.isPending}
+                  onClick={() => handleToggleSuspend(sim)}
+                  className={sim.status === "suspended" ? "text-success" : "text-warning"}
+                >
+                  {sim.status === "suspended"
+                    ? (
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                      )
+                    : (
+                        <XCircle className="h-4 w-4 mr-2" />
+                      )}
+                  {sim.status === "suspended" ? "Reactivate" : "Suspend"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
+    ],
+    [
+      filteredSIMs.length,
+      handleOpenAssign,
+      handleOpenEdit,
+      handleToggleSuspend,
+      selectedSIMIds,
+      suspendSystemSimMutation.isPending,
+      toggleAllSIMs,
+    ],
+  );
+
+  const hasActiveFilters
+    = Boolean(debouncedSearchQuery)
+      || Boolean(simFilterDraft.status?.enabled)
+      || Boolean(simFilterDraft.carrier?.enabled);
+
   return (
     <>
       <Tabs
@@ -772,30 +971,35 @@ export default function PlatformSIMs() {
           <div className="grid gap-4 md:grid-cols-5">
             <StatCard
               title="Total SIMs"
-              value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.total}
+              value={summaryStats.total}
               icon={Wifi}
+              loading={systemSimsSummaryQuery.isLoading}
             />
             <StatCard
               title="Active"
-              value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.active}
+              value={summaryStats.active}
               icon={CheckCircle}
               variant="success"
+              loading={systemSimsSummaryQuery.isLoading}
             />
             <StatCard
               title="Unassigned"
-              value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.unassigned}
+              value={summaryStats.unassigned}
               icon={AlertTriangle}
               variant="warning"
+              loading={systemSimsSummaryQuery.isLoading}
             />
             <StatCard
               title="Pending Requests"
-              value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.pendingRequests}
+              value={summaryStats.pendingRequests}
               icon={TrendingUp}
+              loading={systemSimsSummaryQuery.isLoading}
             />
             <StatCard
               title="Carriers"
-              value={systemSimsSummaryQuery.isLoading ? statPlaceholder : summaryStats.carriers}
+              value={summaryStats.carriers}
               icon={CreditCard}
+              loading={systemSimsSummaryQuery.isLoading}
             />
           </div>
 
@@ -922,168 +1126,17 @@ export default function PlatformSIMs() {
               )}
 
               <div className="overflow-x-auto rounded-lg border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">
-                        <Checkbox
-                          checked={selectedSIMIds.size === filteredSIMs.length && filteredSIMs.length > 0}
-                          onCheckedChange={toggleAllSIMs}
-                        />
-                      </TableHead>
-                      <TableHead className="min-w-[220px]">ICCID / Phone</TableHead>
-                      <TableHead className="min-w-[140px]">Carrier</TableHead>
-                      <TableHead className="min-w-[170px]">Plan</TableHead>
-                      <TableHead className="min-w-[190px]">Tenant</TableHead>
-                      <TableHead className="min-w-[150px]">Device</TableHead>
-                      <TableHead className="min-w-[140px]">Status</TableHead>
-                      <TableHead className="min-w-[170px]">Data Usage</TableHead>
-                      <TableHead className="min-w-[120px]">Signal</TableHead>
-                      <TableHead className="w-12"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredSIMs.map(sim => (
-                      <TableRow
-                        key={sim.id}
-                        className={selectedSIMIds.has(sim.id) ? "bg-primary/5" : ""}
-                      >
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedSIMIds.has(sim.id)}
-                            onCheckedChange={() => toggleSIMSelection(sim.id)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-mono text-sm font-semibold leading-5">{sim.iccid}</p>
-                            <p className="text-xs text-muted-foreground">{sim.msisdn ?? emptyValue}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className="font-medium"
-                          >
-                            {sim.carrier}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm font-medium">{planLabels[sim.plan]}</span>
-                        </TableCell>
-                        <TableCell>
-                          {sim.tenant
-                            ? (
-                                <div className="flex items-center gap-2">
-                                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                                  <span className="text-sm font-medium">{sim.tenant}</span>
-                                </div>
-                              )
-                            : (
-                                <span className="text-muted-foreground">{emptyValue}</span>
-                              )}
-                        </TableCell>
-                        <TableCell>
-                          {sim.deviceId
-                            ? (
-                                <div className="flex items-center gap-2">
-                                  <Cpu className="h-4 w-4 text-muted-foreground" />
-                                  <span className="text-sm font-medium">{sim.deviceId}</span>
-                                </div>
-                              )
-                            : (
-                                <span className="text-muted-foreground">{emptyValue}</span>
-                              )}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(sim.status)}</TableCell>
-                        <TableCell>
-                          <div className="w-28">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span className="font-semibold">
-                                {sim.dataUsage}
-                                {" "}
-                                MB
-                              </span>
-                              <span className="text-muted-foreground">
-                                /
-                                {sim.dataLimit}
-                              </span>
-                            </div>
-                            <Progress
-                              value={getUsagePercentage(
-                                sim.dataUsage,
-                                sim.dataLimit,
-                              )}
-                              className="h-1.5"
-                            />
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getSignalIcon(
-                              sim.signalStrength,
-                              sim.status,
-                            )}
-                            {sim.status === "active" && sim.networkType
-                              ? (
-                                  <span className="text-xs font-semibold">{sim.networkType}</span>
-                                )
-                              : (
-                                  <span className="text-xs text-muted-foreground">{emptyValue}</span>
-                                )}
-                            {sim.roaming && (
-                              <span title="Roaming">
-                                <Globe className="h-3 w-3 text-warning" />
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleOpenDetails(sim)}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleOpenEdit(sim)}>
-                                <Pencil className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleOpenAssign(sim)}>
-                                <ArrowUpDown className="h-4 w-4 mr-2" />
-                                Reassign
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                disabled={suspendSystemSimMutation.isPending}
-                                onClick={() => handleToggleSuspend(sim)}
-                                className={sim.status === "suspended" ? "text-success" : "text-warning"}
-                              >
-                                {sim.status === "suspended"
-                                  ? (
-                                      <CheckCircle className="h-4 w-4 mr-2" />
-                                    )
-                                  : (
-                                      <XCircle className="h-4 w-4 mr-2" />
-                                    )}
-                                {sim.status === "suspended" ? "Reactivate" : "Suspend"}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <DataTable<SIMCard>
+                  columns={simColumns}
+                  data={filteredSIMs}
+                  isLoading={systemSimsQuery.isLoading}
+                  isError={systemSimsQuery.isError}
+                  onRetry={() => systemSimsQuery.refetch()}
+                  hasActiveFilters={hasActiveFilters}
+                  emptyState="No SIMs yet."
+                  filteredEmptyState="No SIMs match your filters."
+                  rowClassName={sim => selectedSIMIds.has(sim.id) ? "bg-primary/5" : ""}
+                />
               </div>
             </CardContent>
           </Card>
