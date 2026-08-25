@@ -12,8 +12,7 @@ type AuthCardShellProps = {
 
 /**
  * Centred card shell for the auth screens that don't use the branding panel —
- * verify-email and complete-profile. Wraps both their form and their "link is
- * broken" empty state.
+ * the invite flow. Wraps both its form and the "link is broken" empty state.
  */
 export function AuthCardShell({
   title, description, children,

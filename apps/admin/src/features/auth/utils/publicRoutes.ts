@@ -7,6 +7,5 @@
  */
 export const PUBLIC_ROUTES: readonly string[] = [
   "/auth",
-  "/auth/verify-email",
-  "/auth/complete-profile",
+  "/auth/invite",
 ];

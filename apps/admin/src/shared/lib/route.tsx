@@ -7,8 +7,7 @@ import { createBrowserRouter } from "react-router";
 import App from "@/App";
 import { AuthLayout } from "@/features/auth/components/layout/AuthLayout";
 import AuthPage from "@/features/auth/components/pages/AuthPage";
-import CompleteProfilePage from "@/features/auth/components/pages/CompleteProfilePage";
-import VerifyEmailPage from "@/features/auth/components/pages/VerifyEmailPage";
+import InvitePage from "@/features/auth/components/pages/InvitePage";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
 import { ADMIN_ROLES } from "@/features/dashboard/utils/sidebarNav";
 import { SettingsLayout } from "@/features/settings/components/layout/SettingsLayout";
@@ -87,12 +86,8 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: "/auth/verify-email",
-        Component: VerifyEmailPage,
-      },
-      {
-        path: "/auth/complete-profile",
-        Component: CompleteProfilePage,
+        path: "/auth/invite",
+        Component: InvitePage,
       },
       {
         path: "/not-authorized",

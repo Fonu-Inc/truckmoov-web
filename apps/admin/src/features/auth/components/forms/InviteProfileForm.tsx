@@ -1,6 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCompleteProfile } from "@truckmoov/api/auth";
+import { useRegisterInvited } from "@truckmoov/api/auth";
 import { PasswordFieldControl } from "@truckmoov/reusables/components/app/PasswordFieldControl";
+import {
+  Mail, User,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -19,52 +22,54 @@ import {
   confirmPasswordSchema, fullNameSchema, newPasswordSchema, passwordMismatch,
 } from "@/features/auth/utils/schemas";
 
-const completeProfileSchema = z
+const invitePasswordSchema = z
   .object({
     fullName: fullNameSchema,
-    password: newPasswordSchema,
+    newPassword: newPasswordSchema,
     confirmPassword: confirmPasswordSchema,
   })
   .refine(
-    values => values.password === values.confirmPassword,
+    values => values.newPassword === values.confirmPassword,
     passwordMismatch,
   );
 
-type CompleteProfileFormValues = z.infer<typeof completeProfileSchema>;
+type InvitePasswordFormValues = z.infer<typeof invitePasswordSchema>;
 
-export const COMPLETE_PROFILE_FORM_ID = "admin-complete-profile-form";
+export const INVITE_PASSWORD_FORM_ID = "admin-invite-password-form";
 
-/** `token` comes from the verify-email hop; the page renders its empty state when absent. */
-export function CompleteProfileForm({ token }: { token: string }) {
+type InviteProfileFormProps = {
+  /** Both come from the invite link's query string; the page gates on them being present. */
+  inviteToken: string;
+  email: string;
+};
+
+export function InviteProfileForm({
+  inviteToken, email,
+}: InviteProfileFormProps) {
   const navigate = useNavigate();
-  const completeProfile = useCompleteProfile();
+  const registerInvited = useRegisterInvited();
 
-  const form = useForm<CompleteProfileFormValues>({
-    resolver: zodResolver(completeProfileSchema),
+  const form = useForm<InvitePasswordFormValues>({
+    resolver: zodResolver(invitePasswordSchema),
     defaultValues: {
       fullName: "",
-      password: "",
+      newPassword: "",
       confirmPassword: "",
     },
   });
 
-  function onSubmit(values: CompleteProfileFormValues) {
-    if (!token) {
-      toast.error("Profile link is missing a token.");
-      return;
-    }
-
-    completeProfile.mutate(
+  function onSubmit(values: InvitePasswordFormValues) {
+    registerInvited.mutate(
       {
         data: {
-          token,
-          fullName: values.fullName,
-          password: values.password,
+          inviteToken,
+          fullName: values.fullName.trim(),
+          password: values.newPassword,
         },
       },
       {
         onSuccess: () => {
-          toast.success("Profile completed. Sign in to continue.");
+          toast.success("Account activated. Sign in to continue.");
           navigate(
             "/auth",
             { replace: true },
@@ -80,23 +85,32 @@ export function CompleteProfileForm({ token }: { token: string }) {
   return (
     <Form {...form}>
       <form
-        id={COMPLETE_PROFILE_FORM_ID}
+        id={INVITE_PASSWORD_FORM_ID}
         onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-4"
       >
+        <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/40 px-3 py-2 text-sm">
+          <Mail className="h-4 w-4 shrink-0 text-primary" />
+          <span className="truncate">{email}</span>
+        </div>
+
         <FormField
           control={form.control}
           name="fullName"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Full name</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Ada Lovelace"
-                  autoComplete="name"
-                  {...field}
-                />
-              </FormControl>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <FormControl>
+                  <Input
+                    placeholder="Jane Doe"
+                    autoComplete="name"
+                    className="pl-10"
+                    {...field}
+                  />
+                </FormControl>
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -104,7 +118,7 @@ export function CompleteProfileForm({ token }: { token: string }) {
 
         <FormField
           control={form.control}
-          name="password"
+          name="newPassword"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Password</FormLabel>
@@ -144,11 +158,11 @@ export function CompleteProfileForm({ token }: { token: string }) {
 
         <Button
           type="submit"
-          form={COMPLETE_PROFILE_FORM_ID}
+          form={INVITE_PASSWORD_FORM_ID}
           className="w-full"
-          loading={completeProfile.isPending}
+          loading={registerInvited.isPending}
         >
-          Complete profile
+          Activate account
         </Button>
       </form>
     </Form>
