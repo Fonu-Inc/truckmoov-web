@@ -16,7 +16,6 @@ import {
 } from "@truckmoov/api/auth";
 import {
   AlertTriangle,
-  Archive,
   BookOpen,
   Download,
   Edit,
@@ -24,9 +23,9 @@ import {
   Gauge,
   MoreHorizontal,
   Plus,
+  RefreshCw,
   Search,
   Trash2,
-  X,
 } from "lucide-react";
 import {
   useEffect,
@@ -234,6 +233,14 @@ export function DeviceCatalogManager() {
     isExporting,
     setIsExporting,
   ] = useState(false);
+  const [
+    statusDialogModel,
+    setStatusDialogModel,
+  ] = useState<SystemDeviceCatalogModel | null>(null);
+  const [
+    pendingStatus,
+    setPendingStatus,
+  ] = useState<"supported" | "deprecated" | "blocked">("supported");
   const createCatalogEntry = useCreateDeviceCatalogEntry();
   const updateCatalogEntry = useUpdateDeviceCatalogEntry();
   const deleteCatalogEntry = useDeleteDeviceCatalogEntry();
@@ -354,23 +361,24 @@ export function DeviceCatalogManager() {
     );
   }
 
-  function handleMarkDeprecated(model: SystemDeviceCatalogModel) {
-    updateCatalogEntry.mutate(
-      {
-        id: model.id,
-        data: { status: "deprecated" },
-      },
-      { onError: error => toast.error(error.message) },
-    );
+  function handleOpenStatusDialog(model: SystemDeviceCatalogModel) {
+    setStatusDialogModel(model);
+    setPendingStatus(model.status as "supported" | "deprecated" | "blocked");
   }
 
-  function handleBlockModel(model: SystemDeviceCatalogModel) {
+  function handleStatusSubmit() {
+    if (!statusDialogModel) {
+      return;
+    }
     updateCatalogEntry.mutate(
       {
-        id: model.id,
-        data: { status: "blocked" },
+        id: statusDialogModel.id,
+        data: { status: pendingStatus },
       },
-      { onError: error => toast.error(error.message) },
+      {
+        onSuccess: () => setStatusDialogModel(null),
+        onError: error => toast.error(error.message),
+      },
     );
   }
 
@@ -496,17 +504,10 @@ export function DeviceCatalogManager() {
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={updateCatalogEntry.isPending}
-                onClick={() => handleMarkDeprecated(model)}
+                onClick={() => handleOpenStatusDialog(model)}
               >
-                <Archive className="mr-2 h-4 w-4" />
-                Mark Deprecated
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={updateCatalogEntry.isPending}
-                onClick={() => handleBlockModel(model)}
-              >
-                <X className="mr-2 h-4 w-4" />
-                Block Model
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Change Status…
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -992,6 +993,60 @@ export function DeviceCatalogManager() {
               loading={updateCatalogEntry.isPending}
             >
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={statusDialogModel !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setStatusDialogModel(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Change Status</DialogTitle>
+            <DialogDescription>
+              Update the catalog status for
+              {" "}
+              {statusDialogModel?.manufacturer}
+              {" "}
+              {statusDialogModel?.model}
+              .
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Select
+              value={pendingStatus}
+              onValueChange={value => setPendingStatus(value as typeof pendingStatus)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="supported">Supported</SelectItem>
+                <SelectItem value="deprecated">Deprecated</SelectItem>
+                <SelectItem value="blocked">Blocked</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStatusDialogModel(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleStatusSubmit}
+              loading={updateCatalogEntry.isPending}
+              disabled={pendingStatus === statusDialogModel?.status}
+            >
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>
