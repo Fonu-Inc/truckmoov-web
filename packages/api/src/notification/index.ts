@@ -5,6 +5,8 @@ import {
   connectWhatsAppAccount,
   createWhatsAppTemplate,
   disconnectWhatsAppAccount,
+  getDeliveryLog,
+  getNotifyHealth,
   getWhatsAppAccount,
   getWhatsAppConversation,
   getWhatsAppConversationMessages,
@@ -20,7 +22,7 @@ import {
 
 export type * from './types'
 
-import type { WhatsAppConversationsQuery } from './types'
+import type { DeliveryLogQuery, WhatsAppConversationsQuery } from './types'
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
 
@@ -42,6 +44,9 @@ export const NOTIFICATION_QUERY_KEY = {
   ],
   whatsappTemplates: ['notification', 'whatsapp', 'templates'],
   whatsappAccount: ['notification', 'whatsapp', 'account'],
+  deliveryLog: (payload?: DeliveryLogQuery) =>
+    payload ? ['notification', 'deliveryLog', payload] : ['notification', 'deliveryLog'],
+  notifyHealth: ['notification', 'health'],
 } as const
 
 // ─── queryOptions factories ───────────────────────────────────────────────────
@@ -188,5 +193,23 @@ export function useDisconnectWhatsAppAccount() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEY.whatsappAccount })
     },
+  })
+}
+
+// ─── Delivery log ─────────────────────────────────────────────────────────────
+
+export function getDeliveryLogQueryOptions(payload?: DeliveryLogQuery) {
+  return queryOptions({
+    queryKey: NOTIFICATION_QUERY_KEY.deliveryLog(payload),
+    queryFn: () => getDeliveryLog(payload),
+  })
+}
+
+// ─── Health ───────────────────────────────────────────────────────────────────
+
+export function getNotifyHealthQueryOptions() {
+  return queryOptions({
+    queryKey: NOTIFICATION_QUERY_KEY.notifyHealth,
+    queryFn: getNotifyHealth,
   })
 }

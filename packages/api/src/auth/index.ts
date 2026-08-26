@@ -166,9 +166,40 @@ import {
   updateOnboardingFeatures,
   uploadOnboardingKycDocument,
   completeOnboarding,
+  getTenantStatus,
+  resendVerification,
+  verifyActivityLog,
+  getMailboxCredentials,
+  saveMailboxCredentials,
+  deleteMailboxCredentials,
+  getMailboxThreads,
+  getMailboxThreadsSince,
+  getMailboxThread,
+  getMailboxAttachmentLink,
+  sendMailboxMessage,
+  getPlatformAlertSettings,
+  updatePlatformAlertSetting,
+  getCommunicationRates,
+  updateCommunicationRates,
+  getCommunicationRateHistory,
+  requestOrganisationUpgrade,
+  getOrganisationUpgradeQueue,
+  approveOrganisationUpgrade,
+  rejectOrganisationUpgrade,
+  assignSystemSupportTicket,
+  getSystemKycReviewQueue,
+  approveSystemKycDocument,
+  rejectSystemKycDocument,
+  getDataBundleWalletLedger,
 } from './requests'
 import type {
   ActivityLogQuery,
+  CommunicationChannel,
+  DataBundleLedgerQuery,
+  MailboxAttachmentPayload,
+  MailboxThreadsQuery,
+  MailboxThreadsSinceQuery,
+  SystemKycReviewQueueQuery,
   OrganizationUsersQuery,
   GetSimBatchPayload,
   SystemSimBatchesSummary,
@@ -291,6 +322,29 @@ export const AUTH_QUERY_KEY = {
   systemSupportTicketMessages: (id: string) => ['systemSupportTicketMessages', id],
 
   authHealth: ['authHealth'],
+
+  tenantStatus: ['tenantStatus'],
+  activityLogVerify: ['activityLogVerify'],
+
+  mailboxCredentials: ['mailboxCredentials'],
+  mailboxThreads: (payload?: MailboxThreadsQuery) =>
+    payload ? ['mailboxThreads', payload] : ['mailboxThreads'],
+  mailboxThreadsSince: (payload: MailboxThreadsSinceQuery) => ['mailboxThreadsSince', payload],
+  mailboxThread: (id: string) => ['mailboxThread', id],
+  mailboxAttachment: ({ messageId, index }: MailboxAttachmentPayload) =>
+    ['mailboxAttachment', messageId, index],
+
+  platformAlertSettings: ['platformAlertSettings'],
+
+  communicationRates: ['communicationRates'],
+  communicationRateHistory: (channel: CommunicationChannel) => ['communicationRateHistory', channel],
+
+  organisationUpgradeQueue: ['organisationUpgradeQueue'],
+
+  systemKycReviewQueue: (payload?: SystemKycReviewQueueQuery) =>
+    payload ? ['systemKycReviewQueue', payload] : ['systemKycReviewQueue'],
+
+  dataBundleLedger: (payload?: DataBundleLedgerQuery) => ['dataBundleLedger', payload],
 } as const
 
 // Public auth/session
@@ -1496,5 +1550,213 @@ export function useCreateSupportTicketMessage() {
 
 export function getAuthHealthQueryOptions() {
   return queryOptions({ queryKey: AUTH_QUERY_KEY.authHealth, queryFn: getAuthHealth })
+}
+
+// ─── Auth (additions) ─────────────────────────────────────────────────────────
+
+export function getTenantStatusQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.tenantStatus, queryFn: getTenantStatus })
+}
+
+export function getActivityLogVerifyQueryOptions() {
+  return queryOptions({ queryKey: AUTH_QUERY_KEY.activityLogVerify, queryFn: verifyActivityLog })
+}
+
+export function useResendVerification() {
+  return useMutation({ mutationFn: resendVerification })
+}
+
+// ─── Mailbox ──────────────────────────────────────────────────────────────────
+
+export function getMailboxCredentialsQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.mailboxCredentials,
+    queryFn: getMailboxCredentials,
+  })
+}
+
+export function useSaveMailboxCredentials() {
+  return useMutation({
+    mutationFn: saveMailboxCredentials,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.mailboxCredentials })
+    },
+  })
+}
+
+export function useDeleteMailboxCredentials() {
+  return useMutation({
+    mutationFn: deleteMailboxCredentials,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.mailboxCredentials })
+    },
+  })
+}
+
+export function getMailboxThreadsQueryOptions(payload?: MailboxThreadsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.mailboxThreads(payload),
+    queryFn: () => getMailboxThreads(payload),
+  })
+}
+
+export function getMailboxThreadsSinceQueryOptions(payload: MailboxThreadsSinceQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.mailboxThreadsSince(payload),
+    queryFn: () => getMailboxThreadsSince(payload),
+  })
+}
+
+export function getMailboxThreadQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.mailboxThread(id),
+    queryFn: () => getMailboxThread({ id }),
+    enabled: Boolean(id),
+  })
+}
+
+export function getMailboxAttachmentLinkQueryOptions(payload: MailboxAttachmentPayload) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.mailboxAttachment(payload),
+    queryFn: () => getMailboxAttachmentLink(payload),
+  })
+}
+
+export function useSendMailboxMessage() {
+  return useMutation({
+    mutationFn: sendMailboxMessage,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mailboxThreads'] })
+    },
+  })
+}
+
+// ─── Platform Alerts ──────────────────────────────────────────────────────────
+
+export function getPlatformAlertSettingsQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.platformAlertSettings,
+    queryFn: getPlatformAlertSettings,
+  })
+}
+
+export function useUpdatePlatformAlertSetting() {
+  return useMutation({
+    mutationFn: updatePlatformAlertSetting,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.platformAlertSettings })
+    },
+  })
+}
+
+// ─── Communication Pricing ────────────────────────────────────────────────────
+
+export function getCommunicationRatesQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.communicationRates,
+    queryFn: getCommunicationRates,
+  })
+}
+
+export function getCommunicationRateHistoryQueryOptions(channel: CommunicationChannel) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.communicationRateHistory(channel),
+    queryFn: () => getCommunicationRateHistory({ channel }),
+    enabled: Boolean(channel),
+  })
+}
+
+export function useUpdateCommunicationRates() {
+  return useMutation({
+    mutationFn: updateCommunicationRates,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.communicationRates })
+      queryClient.invalidateQueries({ queryKey: ['communicationRateHistory'] })
+    },
+  })
+}
+
+// ─── Organisation Upgrades ────────────────────────────────────────────────────
+
+export function getOrganisationUpgradeQueueQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.organisationUpgradeQueue,
+    queryFn: getOrganisationUpgradeQueue,
+  })
+}
+
+export function useRequestOrganisationUpgrade() {
+  return useMutation({
+    mutationFn: requestOrganisationUpgrade,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.organisationUpgradeQueue })
+    },
+  })
+}
+
+export function useApproveOrganisationUpgrade() {
+  return useMutation({
+    mutationFn: approveOrganisationUpgrade,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.organisationUpgradeQueue })
+    },
+  })
+}
+
+export function useRejectOrganisationUpgrade() {
+  return useMutation({
+    mutationFn: rejectOrganisationUpgrade,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.organisationUpgradeQueue })
+    },
+  })
+}
+
+// ─── System Support (assign) ──────────────────────────────────────────────────
+
+export function useAssignSystemSupportTicket() {
+  return useMutation({
+    mutationFn: assignSystemSupportTicket,
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTickets() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSupportTicket(id) })
+    },
+  })
+}
+
+// ─── System KYC ───────────────────────────────────────────────────────────────
+
+export function getSystemKycReviewQueueQueryOptions(payload?: SystemKycReviewQueueQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemKycReviewQueue(payload),
+    queryFn: () => getSystemKycReviewQueue(payload),
+  })
+}
+
+export function useApproveSystemKycDocument() {
+  return useMutation({
+    mutationFn: approveSystemKycDocument,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['systemKycReviewQueue'] })
+    },
+  })
+}
+
+export function useRejectSystemKycDocument() {
+  return useMutation({
+    mutationFn: rejectSystemKycDocument,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['systemKycReviewQueue'] })
+    },
+  })
+}
+
+// ─── Data Bundles (ledger) ────────────────────────────────────────────────────
+
+export function getDataBundleWalletLedgerQueryOptions(payload?: DataBundleLedgerQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.dataBundleLedger(payload),
+    queryFn: () => getDataBundleWalletLedger(payload),
+  })
 }
 

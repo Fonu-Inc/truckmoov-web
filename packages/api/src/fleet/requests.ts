@@ -7,6 +7,7 @@ import type {
   AlertsQuery,
   AssignDevicePayload,
   AssignDriverPayload,
+  AuditChainVerificationResponse,
   AuditLogQuery,
   BulkDeviceImportResponse,
   BulkDriverImportResponse,
@@ -135,6 +136,7 @@ import type {
   VehicleSummaryResponse,
   VehiclesQuery,
   ComplianceDocumentsQuery,
+  ComplianceDocumentHistoryQuery,
   ComplianceDocumentListResponse,
   ComplianceDocumentSummaryResponse,
   ComplianceDocumentResponse,
@@ -806,6 +808,14 @@ export async function getComplianceDocs({ params }: ComplianceDocumentsQuery = {
   return data
 }
 
+export async function getComplianceDocumentHistory({ params }: ComplianceDocumentHistoryQuery = {}) {
+  const { data } = await axiosInstance.get<ComplianceDocumentListResponse>(
+    '/fleet/compliance/documents/history',
+    { params },
+  )
+  return data
+}
+
 export async function getComplianceSummary() {
   const { data } = await axiosInstance.get<ComplianceDocumentSummaryResponse>('/fleet/compliance/documents/summary')
   return data
@@ -862,9 +872,8 @@ export async function exportComplianceDocs() {
 
 // ─── Integrations ─────────────────────────────────────────────────────────────
 
-// Not under the /fleet prefix — the webhook receiver is mounted at the root.
 export async function getIntegrationHealth() {
-  const { data } = await axiosInstance.get<IntegrationHealthResponse>('/webhooks/health')
+  const { data } = await axiosInstance.get<IntegrationHealthResponse>('/fleet/webhooks/health')
   return data
 }
 
@@ -872,5 +881,10 @@ export async function getIntegrationHealth() {
 
 export async function getAuditLog(payload?: AuditLogQuery) {
   const { data } = await axiosInstance.get<FleetAuditLogResponse>('/fleet/audit', { params: payload?.params })
+  return data
+}
+
+export async function verifyAuditChain() {
+  const { data } = await axiosInstance.get<AuditChainVerificationResponse>('/fleet/audit/verify')
   return data
 }

@@ -35,6 +35,7 @@ import {
   getAlerts,
   getAllVehicleHealth,
   getAuditLog,
+  getComplianceDocumentHistory,
   getDeliveryMetrics,
   getDevice,
   getDeviceSetupRequest,
@@ -124,6 +125,7 @@ import {
   setComplianceDocReminder,
   sendComplianceReminders,
   exportComplianceDocs,
+  verifyAuditChain,
 } from './requests'
 
 export type * from './types'
@@ -133,6 +135,7 @@ export type * from './types'
 import type {
   AlertsQuery,
   AuditLogQuery,
+  ComplianceDocumentHistoryQuery,
   DeviceSetupRequestsQuery,
   DevicesQuery,
   DispatchSearchQuery,
@@ -225,7 +228,13 @@ export const FLEET_QUERY_KEY = {
     payload,
   ],
   auditLog: (payload?: AuditLogQuery) => ['fleet', 'auditLog', payload],
+  auditChainVerification: ['fleet', 'auditChainVerification'],
   complianceDocs: (params?: ComplianceDocumentsQuery['params']) => ['fleet', 'complianceDocs', params],
+  complianceDocumentHistory: (params?: ComplianceDocumentHistoryQuery['params']) => [
+    'fleet',
+    'complianceDocumentHistory',
+    params,
+  ],
   complianceSummary: ['fleet', 'complianceSummary'],
 } as const
 
@@ -633,6 +642,13 @@ export function getAuditLogQueryOptions(payload?: AuditLogQuery) {
   })
 }
 
+export function getAuditChainVerificationQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.auditChainVerification,
+    queryFn: verifyAuditChain,
+  })
+}
+
 // ─── useQuery hooks ────────────────────────────────────────────────────────────
 
 export function useVehicles(payload?: VehiclesQuery) {
@@ -858,6 +874,10 @@ export function useDocumentAccessLog(id: string) {
 
 export function useAuditLog(payload?: AuditLogQuery) {
   return useQuery(getAuditLogQueryOptions(payload))
+}
+
+export function useAuditChainVerification() {
+  return useQuery(getAuditChainVerificationQueryOptions())
 }
 
 // ─── Mutation hooks ───────────────────────────────────────────────────────────
@@ -1308,6 +1328,19 @@ export function useUploadDocument() {
 }
 
 // ─── Compliance hooks ─────────────────────────────────────────────────────────
+
+export function getComplianceDocumentHistoryQueryOptions(
+  params?: ComplianceDocumentHistoryQuery['params'],
+) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.complianceDocumentHistory(params),
+    queryFn: () => getComplianceDocumentHistory({ params }),
+  })
+}
+
+export function useComplianceDocumentHistory(params?: ComplianceDocumentHistoryQuery['params']) {
+  return useQuery(getComplianceDocumentHistoryQueryOptions(params))
+}
 
 export function useComplianceDocs(params?: ComplianceDocumentsQuery['params']) {
   return useQuery({

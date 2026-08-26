@@ -661,6 +661,9 @@ export type AuditLogQuery = {
   }
 }
 
+// ponytail: the OpenAPI response has no schema; tighten this when the server publishes one.
+export type AuditChainVerificationResponse = ServerResponse<unknown>
+
 // ─── Analytics ────────────────────────────────────────────────────────────────
 
 export type FleetAnalyticsPeriodDays = 7 | 30 | 60 | 90
@@ -1459,6 +1462,13 @@ export type ComplianceDocumentsQuery = {
     documentType?: string
     status?: ComplianceDocumentStatus
     search?: string
+  }
+}
+
+export type ComplianceDocumentHistoryQuery = {
+  params?: {
+    vehicleId?: string
+    documentType?: string
   }
 }
 

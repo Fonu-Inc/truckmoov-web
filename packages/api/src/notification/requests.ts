@@ -4,8 +4,11 @@ import type {
   ConnectWhatsAppAccountPayload,
   CreateWhatsAppTemplatePayload,
   CreateWhatsAppTemplateResponse,
+  DeliveryLogQuery,
+  DeliveryLogResponse,
   DisconnectWhatsAppAccountPayload,
   DisconnectWhatsAppAccountResponse,
+  NotifyHealthResponse,
   NotifyOutboxMessageResponse,
   RetryNotifyMessagePayload,
   SendJobInstructionPayload,
@@ -128,5 +131,21 @@ export async function disconnectWhatsAppAccount({ phoneNumberId }: DisconnectWha
   const { data } = await axiosInstance.delete<DisconnectWhatsAppAccountResponse>(
     `/notify/whatsapp/settings/${phoneNumberId}`,
   )
+  return data
+}
+
+// ─── Delivery log ─────────────────────────────────────────────────────────────
+
+export async function getDeliveryLog(payload?: DeliveryLogQuery) {
+  const { data } = await axiosInstance.get<DeliveryLogResponse>('/notify/delivery-log', {
+    params: payload?.params,
+  })
+  return data
+}
+
+// ─── Health ───────────────────────────────────────────────────────────────────
+
+export async function getNotifyHealth() {
+  const { data } = await axiosInstance.get<NotifyHealthResponse>('/notify/health')
   return data
 }

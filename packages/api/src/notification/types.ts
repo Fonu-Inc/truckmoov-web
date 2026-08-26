@@ -254,3 +254,56 @@ export type DisconnectWhatsAppAccountPayload = {
 export type DisconnectWhatsAppAccountResponse = ServerResponse<{
   phone_number_id?: string
 }>
+
+// ─── Delivery log ─────────────────────────────────────────────────────────────
+
+export type DeliveryLogNotificationType =
+  | 'generic'
+  | 'kyc_decision'
+  | 'compliance_reminder'
+  | 'job_assignment'
+  | 'campaign'
+  | 'spending_limit'
+
+export type DeliveryLogEntry = {
+  id?: string
+  tenant_id?: string
+  notification_type?: string
+  channel?: string
+  recipient?: string
+  subject?: string
+  content?: string
+  status?: string
+  provider_message_id?: string
+  failure_reason?: string
+  delivered_at?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export type DeliveryLogPage = {
+  entries?: DeliveryLogEntry[]
+  total?: number
+  limit?: number
+  offset?: number
+}
+
+export type DeliveryLogResponse = ServerResponse<DeliveryLogPage>
+
+export type DeliveryLogQuery = {
+  params?: {
+    notification_type?: DeliveryLogNotificationType
+    channel?: string
+    status?: string
+    limit?: number
+    offset?: number
+  }
+}
+
+// ─── Health ───────────────────────────────────────────────────────────────────
+
+// ponytail: /notify/health is a probe route kept for parity with getAuthHealth
+export type NotifyHealthResponse = {
+  service?: string
+  status?: string
+}

@@ -4,7 +4,39 @@ import type { ServerResponse } from '../lib/types'
 import type {
   ActivityLogQuery,
   ActivityLogResponse,
+  ActivityLogVerifyResponse,
   ApproveSIMRequestPayload,
+  AssignSystemSupportTicketPayload,
+  CommunicationRateHistoryPayload,
+  CommunicationRateHistoryResponse,
+  CommunicationRatesResponse,
+  DataBundleLedgerQuery,
+  DataBundleLedgerResponse,
+  MailboxAttachmentLinkResponse,
+  MailboxAttachmentPayload,
+  MailboxCredentialsResponse,
+  MailboxThreadDetailResponse,
+  MailboxThreadPayload,
+  MailboxThreadsQuery,
+  MailboxThreadsResponse,
+  MailboxThreadsSinceQuery,
+  OrganisationUpgradeQueueResponse,
+  OrganisationUpgradeResponse,
+  PlatformAlertSettingResponse,
+  PlatformAlertSettingsResponse,
+  RejectKycDocumentPayload,
+  RequestUpgradePayload,
+  ResendVerificationPayload,
+  ReviewUpgradePayload,
+  SaveMailCredentialsPayload,
+  SendMailPayload,
+  SendMailResponse,
+  SystemKycReviewDocumentResponse,
+  SystemKycReviewQueueQuery,
+  SystemKycReviewQueueResponse,
+  TenantStatusResponse,
+  UpdateAlertSettingPayload,
+  UpdateCommunicationRatesPayload,
   EnterpriseEnquiryPayload,
   PaymentIntentPayload,
   ProvisionDevicesPayload,
@@ -1161,4 +1193,174 @@ export async function createSupportTicketMessage({ id, data }: CreateTicketMessa
     data,
   )
   return res
+}
+
+// ─── Auth (additions) ─────────────────────────────────────────────────────────
+
+export async function getTenantStatus() {
+  const { data } = await axiosInstance.get<TenantStatusResponse>('/auth/tenant-status')
+  return data
+}
+
+export async function resendVerification({ data }: ResendVerificationPayload) {
+  const { data: res } = await axiosInstance.post<MessageResponse>('/auth/resend-verification', data)
+  return res
+}
+
+export async function verifyActivityLog() {
+  const { data } = await axiosInstance.get<ActivityLogVerifyResponse>('/auth/activity-log/verify')
+  return data
+}
+
+// ─── Mailbox ──────────────────────────────────────────────────────────────────
+
+export async function getMailboxCredentials() {
+  const { data } = await axiosInstance.get<MailboxCredentialsResponse>('/auth/mailbox/credentials')
+  return data
+}
+
+export async function saveMailboxCredentials({ data: body }: SaveMailCredentialsPayload) {
+  const { data } = await axiosInstance.put<MailboxCredentialsResponse>('/auth/mailbox/credentials', body)
+  return data
+}
+
+export async function deleteMailboxCredentials() {
+  const { data } = await axiosInstance.delete<MessageResponse>('/auth/mailbox/credentials')
+  return data
+}
+
+export async function getMailboxThreads(payload?: MailboxThreadsQuery) {
+  const { data } = await axiosInstance.get<MailboxThreadsResponse>('/auth/mailbox/threads', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getMailboxThreadsSince(payload: MailboxThreadsSinceQuery) {
+  const { data } = await axiosInstance.get<MailboxThreadsResponse>('/auth/mailbox/threads/since', {
+    params: payload.params,
+  })
+  return data
+}
+
+export async function getMailboxThread({ id }: MailboxThreadPayload) {
+  const { data } = await axiosInstance.get<MailboxThreadDetailResponse>(`/auth/mailbox/threads/${id}`)
+  return data
+}
+
+export async function getMailboxAttachmentLink({ messageId, index }: MailboxAttachmentPayload) {
+  const { data } = await axiosInstance.get<MailboxAttachmentLinkResponse>(
+    `/auth/mailbox/messages/${messageId}/attachments/${index}`,
+  )
+  return data
+}
+
+export async function sendMailboxMessage({ data: body }: SendMailPayload) {
+  const { data } = await axiosInstance.post<SendMailResponse>('/auth/mailbox/send', body)
+  return data
+}
+
+// ─── Platform Alerts ──────────────────────────────────────────────────────────
+
+export async function getPlatformAlertSettings() {
+  const { data } = await axiosInstance.get<PlatformAlertSettingsResponse>('/auth/system/alert-settings')
+  return data
+}
+
+export async function updatePlatformAlertSetting({ alertType, data: body }: UpdateAlertSettingPayload) {
+  const { data } = await axiosInstance.patch<PlatformAlertSettingResponse>(
+    `/auth/system/alert-settings/${alertType}`,
+    body,
+  )
+  return data
+}
+
+// ─── Communication Pricing ────────────────────────────────────────────────────
+
+export async function getCommunicationRates() {
+  const { data } = await axiosInstance.get<CommunicationRatesResponse>('/auth/system/communication-rates')
+  return data
+}
+
+export async function updateCommunicationRates({ data: body }: UpdateCommunicationRatesPayload) {
+  const { data } = await axiosInstance.put<CommunicationRatesResponse>('/auth/system/communication-rates', body)
+  return data
+}
+
+export async function getCommunicationRateHistory({ channel }: CommunicationRateHistoryPayload) {
+  const { data } = await axiosInstance.get<CommunicationRateHistoryResponse>(
+    `/auth/system/communication-rates/${channel}/history`,
+  )
+  return data
+}
+
+// ─── Organisation Upgrades ────────────────────────────────────────────────────
+
+export async function requestOrganisationUpgrade({ data: body }: RequestUpgradePayload) {
+  const { data } = await axiosInstance.post<OrganisationUpgradeResponse>('/auth/organisation-upgrades', body)
+  return data
+}
+
+export async function getOrganisationUpgradeQueue() {
+  const { data } = await axiosInstance.get<OrganisationUpgradeQueueResponse>('/auth/organisation-upgrades')
+  return data
+}
+
+export async function approveOrganisationUpgrade({ id, data: body }: ReviewUpgradePayload) {
+  const { data } = await axiosInstance.post<OrganisationUpgradeResponse>(
+    `/auth/organisation-upgrades/${id}/approve`,
+    body,
+  )
+  return data
+}
+
+export async function rejectOrganisationUpgrade({ id, data: body }: ReviewUpgradePayload) {
+  const { data } = await axiosInstance.post<OrganisationUpgradeResponse>(
+    `/auth/organisation-upgrades/${id}/reject`,
+    body,
+  )
+  return data
+}
+
+// ─── System Support (assign ticket) ───────────────────────────────────────────
+
+export async function assignSystemSupportTicket({ id, data: body }: AssignSystemSupportTicketPayload) {
+  const { data } = await axiosInstance.patch<SystemSupportTicketDetailResponse>(
+    `/auth/system/support/tickets/${id}/assign`,
+    body,
+  )
+  return data
+}
+
+// ─── System KYC ───────────────────────────────────────────────────────────────
+
+export async function getSystemKycReviewQueue(payload?: SystemKycReviewQueueQuery) {
+  const { data } = await axiosInstance.get<SystemKycReviewQueueResponse>('/auth/system/kyc/documents', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function approveSystemKycDocument({ id }: { id: string }) {
+  const { data } = await axiosInstance.patch<SystemKycReviewDocumentResponse>(
+    `/auth/system/kyc/documents/${id}/approve`,
+  )
+  return data
+}
+
+export async function rejectSystemKycDocument({ id, data: body }: RejectKycDocumentPayload) {
+  const { data } = await axiosInstance.patch<SystemKycReviewDocumentResponse>(
+    `/auth/system/kyc/documents/${id}/reject`,
+    body,
+  )
+  return data
+}
+
+// ─── Data Bundles (ledger) ────────────────────────────────────────────────────
+
+export async function getDataBundleWalletLedger(payload?: DataBundleLedgerQuery) {
+  const { data } = await axiosInstance.get<DataBundleLedgerResponse>('/auth/data-bundles/ledger', {
+    params: payload?.params,
+  })
+  return data
 }

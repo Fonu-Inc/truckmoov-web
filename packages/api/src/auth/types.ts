@@ -1941,3 +1941,149 @@ export type SystemAdminInvitesResponse = ServerResponse<{
 }>
 export type SystemAdminInviteResponse = ServerResponse<Record<string, unknown>>
 export type SystemAdminInviteCancelResponse = ServerResponse<Record<string, unknown>>
+
+// ─── Auth (additions) ─────────────────────────────────────────────────────────
+
+export type ResendVerificationPayload = { data: { email: string } }
+// ponytail: spec ships no response schema, tighten when @ApiResponse lands
+export type TenantStatusResponse = ServerResponse<unknown>
+// ponytail: spec ships no response schema
+export type ActivityLogVerifyResponse = ServerResponse<unknown>
+
+// ─── Mailbox ──────────────────────────────────────────────────────────────────
+
+export type MailServer = {
+  host: string
+  port: number
+  username: string
+  password: string
+  secure?: boolean
+}
+
+export type SaveMailCredentialsPayload = {
+  data: {
+    emailAddress: string
+    displayName?: string
+    imap: MailServer
+    smtp: MailServer
+  }
+}
+
+// ponytail: spec ships no mailbox response schemas; typed loose until it does
+export type MailboxCredentialsResponse = ServerResponse<unknown>
+export type MailboxThreadsQuery = { params?: { limit?: number; offset?: number } }
+export type MailboxThreadsSinceQuery = { params: { cursor: string; limit?: number } }
+export type MailboxThreadPayload = { id: string }
+export type MailboxAttachmentPayload = { messageId: string; index: number }
+export type MailboxThreadsResponse = ServerResponse<unknown[]>
+export type MailboxThreadDetailResponse = ServerResponse<unknown>
+export type MailboxAttachmentLinkResponse = ServerResponse<{ url: string; expiresAt?: string }>
+
+export type MailAddress = { address: string; name?: string | null }
+export type OutgoingAttachment = { filename: string; contentType: string; content: string }
+export type SendMailPayload = {
+  data: {
+    to: MailAddress[]
+    cc?: MailAddress[]
+    bcc?: MailAddress[]
+    subject: string
+    bodyText?: string
+    bodyHtml?: string
+    replyToThreadId?: string
+    attachments?: OutgoingAttachment[]
+  }
+}
+export type SendMailResponse = ServerResponse<unknown>
+
+// ─── Platform Alerts ──────────────────────────────────────────────────────────
+
+export type PlatformAlertChannel = 'email' | 'sms' | 'slack' | 'webhook'
+export type PlatformAlertSeverity = 'low' | 'medium' | 'high' | 'critical'
+
+export type UpdateAlertSettingPayload = {
+  alertType: string
+  data: {
+    enabled?: boolean
+    channels?: PlatformAlertChannel
+    recipients?: string[]
+    minSeverity?: PlatformAlertSeverity
+  }
+}
+
+// ponytail: spec ships no response schemas
+export type PlatformAlertSettingsResponse = ServerResponse<unknown[]>
+export type PlatformAlertSettingResponse = ServerResponse<unknown>
+
+// ─── Communication Pricing ────────────────────────────────────────────────────
+
+export type CommunicationChannel = 'sms' | 'whatsapp' | 'voice' | 'ai' | 'iot_sim'
+
+export type ChannelRate = {
+  channel: CommunicationChannel
+  rateKobo: number
+  enabled?: boolean
+  description?: string
+}
+
+export type UpdateCommunicationRatesPayload = { data: { rates: ChannelRate[] } }
+export type CommunicationRateHistoryPayload = { channel: CommunicationChannel }
+
+// ponytail: spec ships no response schemas
+export type CommunicationRatesResponse = ServerResponse<unknown>
+export type CommunicationRateHistoryResponse = ServerResponse<unknown[]>
+
+// ─── Organisation Upgrades ────────────────────────────────────────────────────
+
+export type RequestUpgradePayload = { data: { reason: string } }
+export type ReviewUpgradePayload = { id: string; data: { notes?: string } }
+
+// ponytail: spec ships no response schemas
+export type OrganisationUpgradeQueueResponse = ServerResponse<unknown[]>
+export type OrganisationUpgradeResponse = ServerResponse<unknown>
+
+// ─── System Support (assign) ──────────────────────────────────────────────────
+
+export type AssignSystemSupportTicketPayload = {
+  id: string
+  data: { assigneeId?: string | null }
+}
+
+// ─── System KYC ───────────────────────────────────────────────────────────────
+
+export type KycReviewDocumentStatus = 'pending' | 'under_review' | 'verified' | 'rejected'
+
+export type KycReviewDocument = {
+  id: string
+  tenantId: string
+  documentType: string
+  documentName: string
+  fileSize: number
+  status: KycReviewDocumentStatus
+  reviewedBy: string | null
+  reviewedAt: string | null
+  rejectionReason: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type SystemKycReviewQueueQuery = {
+  params?: {
+    status?: KycReviewDocumentStatus
+    tenantId?: string
+    page?: number
+    limit?: number
+  }
+}
+
+export type SystemKycReviewQueueResponse = ServerResponse<{
+  items: KycReviewDocument[]
+  total: number
+}>
+export type SystemKycReviewDocumentResponse = ServerResponse<KycReviewDocument>
+export type RejectKycDocumentPayload = { id: string; data: { reason: string } }
+
+// ─── Data Bundles (ledger) ────────────────────────────────────────────────────
+
+export type DataBundleLedgerQuery = { params?: { page?: number; limit?: number } }
+// ponytail: spec ships no ledger row schema
+export type DataBundleLedgerResponse = ServerResponse<unknown[]>

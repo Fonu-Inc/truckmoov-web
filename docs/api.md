@@ -82,16 +82,13 @@ Three conventions fall out of those documents:
   snake_case and a camelCase spelling of the same field. Only the canonical
   (documented-required) form is typed — adding both doubles every payload type
   for no gain.
-- **Route groups without the service prefix.** `auth` and `fleet` are split
-  into groups that are *not* all mounted under the service name. In `auth`
+- **Route groups and service prefixes.** `auth` is split into groups that are
+  *not* all mounted under the service name. In `auth`
   only the `Auth` group keeps it (`/auth/login`, `/auth/me`, `/auth/invite`,
   …) — the rest sit at the root: `/profile`, `/organization`, `/system`,
-  `/onboarding`, `/sims`, `/data-bundles`. In `fleet` only the probes keep
-  it, so every real route is at the root: `/vehicles`, `/devices`,
-  `/drivers`, `/geofences`, `/alerts`, `/analytics`, `/reports`,
-  `/maintenance`, `/compliance`, `/financials`, `/fuel`, `/documents`,
-  `/routes`, `/carriers`, `/data-bundles`, `/gps-devices`, `/audit`,
-  `/device-setup-requests`, and `/dispatch/{search,recommend-drivers}`.
+  `/onboarding`, `/sims`, `/data-bundles`. Every fleet route remains under
+  `/fleet`, including `/fleet/vehicles`, `/fleet/devices`, `/fleet/drivers`,
+  and `/fleet/webhooks/health`.
   `dispatch`, `notification` and `tracking` still prefix everything. Keep
   each service's routes in its own `src/[service]/` folder regardless, and do
   not re-add a prefix the document does not show.
