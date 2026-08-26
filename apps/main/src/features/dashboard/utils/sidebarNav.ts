@@ -120,7 +120,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     hasPermission: [
       "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
-      "OPERATIONS_MANAGER",
       "DISPATCHER",
     ],
   },
@@ -133,15 +132,11 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "OWNER_OPERATOR",
-      "OPERATIONS_MANAGER",
       "FINANCE_VIEWER",
     ],
   },
   {
-    label: "Installation", href: "/installation", icon: Wrench, hasPermission: [
-      "FLEET_ADMIN",
-      "OPERATIONS_MANAGER",
-    ],
+    label: "Installation", href: "/installation", icon: Wrench, hasPermission: ["FLEET_ADMIN"],
   },
   {
     label: "SIM Cards", href: "/sims", icon: Wifi,
@@ -149,7 +144,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "ENTERPRISE_ADMIN",
       "FLEET_ADMIN",
       "OWNER_OPERATOR",
-      "OPERATIONS_MANAGER",
       "FINANCE_VIEWER",
     ],
   },
@@ -182,6 +176,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "OWNER_OPERATOR",
+      "FINANCE_VIEWER",
     ],
   },
   {

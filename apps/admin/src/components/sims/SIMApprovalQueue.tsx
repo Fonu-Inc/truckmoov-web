@@ -1,7 +1,12 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   SystemSimRequest,
   SystemSimRequestsQuery,
 } from "@truckmoov/api/auth";
+import type {
+  FilterDraft,
+  FilterField,
+} from "@/components/shadcn/platform-filter-popover";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useQuery,
@@ -11,6 +16,7 @@ import {
   getSystemSimsRequestsExportQueryOptions,
   getSystemSimsRequestsQueryOptions,
   getSystemSimsRequestsSummaryQueryOptions,
+  getSystemTenantsQueryOptions,
 
   useApproveSIMRequest,
   useRejectSIMRequest,
@@ -23,7 +29,6 @@ import {
   Download,
   Loader2,
   Search,
-  Wifi,
   XCircle,
 } from "lucide-react";
 import {
@@ -44,6 +49,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -62,20 +68,16 @@ import {
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
 import {
+  buildEmptyDraft,
+  PlatformFilterPopover,
+} from "@/components/shadcn/platform-filter-popover";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { Textarea } from "@/components/shadcn/textarea";
 
 import { SIMApprovalSummaryCards } from "./SIMApprovalSummaryCards";
@@ -184,18 +186,6 @@ export function SIMApprovalQueue() {
     setSearchQuery,
   ] = useState("");
   const [
-    organisationFilter,
-    setOrganisationFilter,
-  ] = useState("");
-  const [
-    carrierFilter,
-    setCarrierFilter,
-  ] = useState("");
-  const [
-    useCaseFilter,
-    setUseCaseFilter,
-  ] = useState("");
-  const [
     statusFilter,
     setStatusFilter,
   ] = useState("all");
@@ -212,22 +202,42 @@ export function SIMApprovalQueue() {
     setSelectedRejectRequest,
   ] = useState<SystemSimRequest | null>(null);
 
-  const debouncedSearchQuery = useDebouncedValue(
+  const tenantsQuery = useQuery(getSystemTenantsQueryOptions());
+  const tenantOptions = useMemo(
+    () => (tenantsQuery.data?.data.tenants ?? [])
+      .map(t => ({
+        value: t.name,
+        label: t.name,
+      })),
+    [tenantsQuery.data],
+  );
+
+  const filterFields: FilterField[] = useMemo(
+    () => [
+      {
+        key: "organisation",
+        label: "Organisation",
+        type: "select",
+        options: tenantOptions,
+      },
+    ],
+    [tenantOptions],
+  );
+
+  const [
+    advancedFilters,
+    setAdvancedFilters,
+  ] = useState<FilterDraft>(() => buildEmptyDraft(filterFields));
+
+  const debouncedSearch = useDebouncedValue(
     searchQuery.trim(),
     350,
   );
-  const debouncedOrganisationFilter = useDebouncedValue(
-    organisationFilter.trim(),
-    350,
-  );
-  const debouncedCarrierFilter = useDebouncedValue(
-    carrierFilter.trim(),
-    350,
-  );
-  const debouncedUseCaseFilter = useDebouncedValue(
-    useCaseFilter.trim(),
-    350,
-  );
+
+  const apiOrganisation
+    = advancedFilters.organisation?.enabled && advancedFilters.organisation?.value
+      ? advancedFilters.organisation.value
+      : undefined;
 
   const approveRequest = useApproveSIMRequest();
   const rejectRequest = useRejectSIMRequest();
@@ -243,22 +253,16 @@ export function SIMApprovalQueue() {
       if (statusFilter !== "all") {
         params.status = statusFilter as "pending" | "approved" | "rejected";
       }
-      if (debouncedSearchQuery)
-        params.search = debouncedSearchQuery;
-      if (debouncedOrganisationFilter)
-        params.organisation = debouncedOrganisationFilter;
-      if (debouncedCarrierFilter)
-        params.carrier = debouncedCarrierFilter;
-      if (debouncedUseCaseFilter)
-        params.useCase = debouncedUseCaseFilter;
+      if (debouncedSearch)
+        params.search = debouncedSearch;
+      if (apiOrganisation)
+        params.organisation = apiOrganisation;
 
       return Object.keys(params).length > 0 ? { params } : undefined;
     },
     [
-      debouncedCarrierFilter,
-      debouncedOrganisationFilter,
-      debouncedSearchQuery,
-      debouncedUseCaseFilter,
+      apiOrganisation,
+      debouncedSearch,
       statusFilter,
     ],
   );
@@ -267,14 +271,8 @@ export function SIMApprovalQueue() {
   const summaryQuery = useQuery(getSystemSimsRequestsSummaryQueryOptions());
   const requests = requestsQuery.data?.data.requests ?? [];
   const summary = summaryQuery.data?.data;
-  const summaryLoadingValue = summaryQuery.isLoading ? "..." : 0;
 
-  const summaryStats = {
-    totalRequested: summary?.totalRequested ?? summaryLoadingValue,
-    pendingCount: summary?.pendingApproval ?? summaryLoadingValue,
-    approvedCount: summary?.approvedThisMonth ?? summaryLoadingValue,
-    rejectedCount: summary?.rejectedThisMonth ?? summaryLoadingValue,
-  };
+  const hasActiveFilters = statusFilter !== "all" || !!debouncedSearch || !!apiOrganisation;
 
   const closeRejectDialog = () => {
     setSelectedRejectRequest(null);
@@ -330,13 +328,123 @@ export function SIMApprovalQueue() {
     }
   };
 
+  const columns: ColumnDef<SystemSimRequest>[] = useMemo(
+    () => [
+      {
+        id: "organisation",
+        header: "Organisation",
+        cell: ({ row }) => (
+          <span className="font-semibold">{row.original.tenantName || emptyValue}</span>
+        ),
+      },
+      {
+        id: "carrier",
+        header: "Carrier",
+        cell: ({ row }) => (
+          <span className="font-medium">{row.original.preferredOperator || emptyValue}</span>
+        ),
+      },
+      {
+        id: "plan",
+        header: "Plan / Use Case",
+        cell: ({ row }) => (
+          <div className="space-y-1">
+            <p className="font-semibold">{row.original.requestedPlan || emptyValue}</p>
+            <p className="text-sm text-muted-foreground">{titleCase(row.original.useCase)}</p>
+          </div>
+        ),
+      },
+      {
+        id: "dataLimit",
+        header: "Data Limit / SIM",
+        cell: ({ row }) => (
+          <span className="font-semibold">{formatDataLimit(row.original.requestedDataLimitMb)}</span>
+        ),
+      },
+      {
+        id: "quantity",
+        header: "Quantity",
+        cell: ({ row }) => (
+          <span className="inline-flex items-center gap-1 font-semibold">
+            <CheckCircle className="h-3 w-3 text-muted-foreground" />
+            {row.original.numberOfSims}
+          </span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => getStatusBadge(row.original.status),
+      },
+      {
+        id: "createdAt",
+        header: "Date Requested",
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">
+            {formatDate(
+              row.original.createdAt,
+              emptyValue,
+            )}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        header: () => <span className="block text-right">Actions</span>,
+        cell: ({ row }) => {
+          const request = row.original;
+          return (
+            <div className="flex items-center justify-end gap-2">
+              {isPendingRequest(request)
+                ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedRejectRequest(request)}
+                        disabled={approveRequest.isPending || rejectRequest.isPending}
+                      >
+                        Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleApprove(request)}
+                        loading={approvingRequestId === request.id}
+                        disabled={rejectRequest.isPending}
+                      >
+                        Approve
+                      </Button>
+                    </>
+                  )
+                : (
+                    <span className="text-sm text-muted-foreground">Processed</span>
+                  )}
+            </div>
+          );
+        },
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      approveRequest.isPending,
+      rejectRequest.isPending,
+      approvingRequestId,
+    ],
+  );
+
   return (
     <div className="space-y-6">
-      <SIMApprovalSummaryCards {...summaryStats} />
+      <SIMApprovalSummaryCards
+        totalRequested={summary?.totalRequested ?? 0}
+        pendingCount={summary?.pendingApproval ?? 0}
+        approvedCount={summary?.approvedThisMonth ?? 0}
+        rejectedCount={summary?.rejectedThisMonth ?? 0}
+        loading={summaryQuery.isPending}
+      />
 
       <Card>
-        <CardHeader className="space-y-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2">
                 <ClipboardCheck className="h-5 w-5" />
@@ -362,9 +470,11 @@ export function SIMApprovalQueue() {
               Export Data
             </Button>
           </div>
+        </CardHeader>
 
-          <div className="grid gap-3 lg:grid-cols-[minmax(220px,1.3fr)_repeat(4,minmax(160px,1fr))]">
-            <div className="relative">
+        <CardContent>
+          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search requests..."
@@ -373,26 +483,11 @@ export function SIMApprovalQueue() {
                 onChange={event => setSearchQuery(event.target.value)}
               />
             </div>
-            <Input
-              placeholder="Organisation"
-              value={organisationFilter}
-              onChange={event => setOrganisationFilter(event.target.value)}
-            />
-            <Input
-              placeholder="Carrier"
-              value={carrierFilter}
-              onChange={event => setCarrierFilter(event.target.value)}
-            />
-            <Input
-              placeholder="Use case"
-              value={useCaseFilter}
-              onChange={event => setUseCaseFilter(event.target.value)}
-            />
             <Select
               value={statusFilter}
               onValueChange={setStatusFilter}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full md:w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -402,108 +497,28 @@ export function SIMApprovalQueue() {
                 <SelectItem value="rejected">Rejected</SelectItem>
               </SelectContent>
             </Select>
+            <PlatformFilterPopover
+              entity="requests"
+              fields={filterFields}
+              value={advancedFilters}
+              onApply={setAdvancedFilters}
+              onReset={() => setAdvancedFilters(buildEmptyDraft(filterFields))}
+            />
           </div>
-        </CardHeader>
 
-        <CardContent>
-          <div className="overflow-x-auto rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[220px] px-6 whitespace-nowrap">Organisation</TableHead>
-                  <TableHead className="min-w-[150px] px-6 whitespace-nowrap">Carrier</TableHead>
-                  <TableHead className="min-w-[210px] px-6 whitespace-nowrap">Plan / Use Case</TableHead>
-                  <TableHead className="min-w-[160px] px-6 whitespace-nowrap">Data Limit / SIM</TableHead>
-                  <TableHead className="min-w-[120px] px-6 whitespace-nowrap">Quantity</TableHead>
-                  <TableHead className="min-w-[150px] px-6 whitespace-nowrap">Status</TableHead>
-                  <TableHead className="min-w-[170px] px-6 whitespace-nowrap">Date Requested</TableHead>
-                  <TableHead className="min-w-[190px] px-6 text-right whitespace-nowrap">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {requestsQuery.isLoading || requestsQuery.isFetching
-                  ? (
-                      <TableRow>
-                        <TableCell colSpan={8}>
-                          <div className="py-12 text-center text-muted-foreground">
-                            <Loader2 className="mx-auto mb-3 h-10 w-10 animate-spin" />
-                            Loading SIM requests...
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : requests.length === 0
-                    ? (
-                        <TableRow>
-                          <TableCell colSpan={8}>
-                            <div className="py-12 text-center text-muted-foreground">
-                              <Wifi className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                              <p>No provisioning requests found</p>
-                              <p className="text-sm">Adjust filters or wait for tenants to request SIM activations</p>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    : (
-                        requests.map(request => (
-                          <TableRow key={request.id}>
-                            <TableCell className="px-6 font-semibold">{request.tenantName || emptyValue}</TableCell>
-                            <TableCell className="px-6 font-medium">{request.preferredOperator || emptyValue}</TableCell>
-                            <TableCell className="px-6">
-                              <div className="space-y-1">
-                                <p className="font-semibold">{request.requestedPlan || emptyValue}</p>
-                                <p className="text-sm text-muted-foreground">{titleCase(request.useCase)}</p>
-                              </div>
-                            </TableCell>
-                            <TableCell className="px-6 font-semibold">
-                              {formatDataLimit(request.requestedDataLimitMb)}
-                            </TableCell>
-                            <TableCell className="px-6 font-semibold">
-                              <span className="inline-flex items-center gap-1">
-                                <CheckCircle className="h-3 w-3 text-muted-foreground" />
-                                {request.numberOfSims}
-                              </span>
-                            </TableCell>
-                            <TableCell className="px-6">{getStatusBadge(request.status)}</TableCell>
-                            <TableCell className="px-6 text-muted-foreground">
-                              {formatDate(
-                                request.createdAt,
-                                emptyValue,
-                              )}
-                            </TableCell>
-                            <TableCell className="px-6">
-                              <div className="flex items-center justify-end gap-2">
-                                {isPendingRequest(request)
-                                  ? (
-                                      <>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={() => setSelectedRejectRequest(request)}
-                                          disabled={approveRequest.isPending || rejectRequest.isPending}
-                                        >
-                                          Reject
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          onClick={() => handleApprove(request)}
-                                          loading={approvingRequestId === request.id}
-                                          disabled={rejectRequest.isPending}
-                                        >
-                                          Approve
-                                        </Button>
-                                      </>
-                                    )
-                                  : (
-                                      <span className="text-sm text-muted-foreground">Processed</span>
-                                    )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-              </TableBody>
-            </Table>
+          <div className="rounded-lg border overflow-x-auto">
+            <DataTable
+              columns={columns}
+              data={requests}
+              isLoading={requestsQuery.isLoading}
+              isError={requestsQuery.isError}
+              errorMessage="Unable to load SIM requests."
+              onRetry={() => requestsQuery.refetch()}
+              hasActiveFilters={hasActiveFilters}
+              emptyState="No provisioning requests found"
+              filteredEmptyState="No requests match your filters."
+              className="[&_th]:px-6 [&_td]:px-6 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap"
+            />
           </div>
         </CardContent>
       </Card>
