@@ -372,12 +372,56 @@ export const router = createBrowserRouter([
             path: "/fatigue",
             lazy: async () => ({ Component: (await import("@/pages/admin/DriverFatigueDashboard")).default }),
           },
+          // Messages is a pathful layout route: CommunicationsLayout owns the
+          // outer tab bar, each tab is a child route (see design.md "Tabs are
+          // routes, not query params"). Email nests one more layout for its
+          // Inbox / Provider Settings sub-tabs. Outer guard covers the subtree.
           {
             path: "/messages",
             lazy: guarded(
               "/messages",
-              () => import("@/pages/admin/MessagingCenter"),
+              () => import("@/features/communications/components/layout/CommunicationsLayout"),
             ),
+            children: [
+              {
+                index: true,
+                lazy: async () => ({ Component: (await import("@/features/communications/components/pages/CampaignsPage")).CampaignsPage }),
+              },
+              {
+                path: "whatsapp",
+                lazy: async () => ({ Component: (await import("@/features/communications/components/ui/WhatsAppBusinessSetup")).WhatsAppBusinessSetup }),
+              },
+              {
+                path: "email",
+                lazy: async () => ({ Component: (await import("@/features/communications/components/layout/EmailLayout")).EmailLayout }),
+                children: [
+                  {
+                    index: true,
+                    lazy: async () => ({ Component: (await import("@/features/communications/components/ui/EmailInbox")).EmailInbox }),
+                  },
+                  {
+                    path: "settings",
+                    lazy: async () => ({ Component: (await import("@/features/communications/components/ui/EmailProviderSettings")).EmailProviderSettings }),
+                  },
+                ],
+              },
+              {
+                path: "templates",
+                lazy: async () => ({ Component: (await import("@/features/communications/components/ui/SMSTemplatesManager")).SMSTemplatesManager }),
+              },
+              {
+                path: "voice",
+                lazy: async () => ({ Component: (await import("@/features/communications/components/ui/VoiceIVRManager")).VoiceIVRManager }),
+              },
+              {
+                path: "recordings",
+                lazy: async () => ({ Component: (await import("@/features/communications/components/ui/CallRecordingsManager")).CallRecordingsManager }),
+              },
+              {
+                path: "ivr-dashboard",
+                lazy: async () => ({ Component: (await import("@/features/communications/components/ui/IVRDashboardTab")).IVRDashboardTab }),
+              },
+            ],
           },
           {
             path: "/inbox",

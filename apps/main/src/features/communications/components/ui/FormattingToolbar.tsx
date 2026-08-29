@@ -2,6 +2,7 @@ import {
   Bold, Code, Image, Italic, Link2, Strikethrough,
 } from "lucide-react";
 import { useState } from "react";
+import { EmojiPicker } from "@/components/messaging/EmojiPicker";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import {
@@ -10,7 +11,6 @@ import {
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/shadcn/tooltip";
-import { EmojiPicker } from "./EmojiPicker";
 
 type FormattingToolbarProps = {
   onFormat: (type: string, value?: string) => void;

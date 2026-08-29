@@ -43,13 +43,13 @@ import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
+import { useAuthStore } from "@/stores/authStore";
 import { WhatsAppTemplatesManager } from "./WhatsAppTemplatesManager";
 
 type WhatsAppAccount = any;
 
-type WhatsAppBusinessSetupProps = { tenantId: string };
-
-export function WhatsAppBusinessSetup({ tenantId }: WhatsAppBusinessSetupProps) {
+export function WhatsAppBusinessSetup() {
+  const tenantId = useAuthStore(s => s.user?.tenantId) || "";
   const accounts: any[] = [];
   const isLoading = false;
   const canSend = false;
@@ -578,5 +578,3 @@ function UsageStatsCard({ tenantId: _tenantId }: { tenantId: string }) {
     </Card>
   );
 }
-
-export default WhatsAppBusinessSetup;
