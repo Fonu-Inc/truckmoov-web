@@ -608,6 +608,14 @@ export const router = createBrowserRouter([
                   () => import("@/features/settings/components/pages/IntegrationsSettingsPage"),
                 ),
               },
+              {
+                path: "upgrade",
+                lazy: guardedByNamed(
+                  settingsTabRoles("/settings/upgrade") ?? [],
+                  () => import("@/features/settings/components/ui/UpgradeSettingsPanel"),
+                  "UpgradeSettingsPanel",
+                ),
+              },
             ],
           },
 

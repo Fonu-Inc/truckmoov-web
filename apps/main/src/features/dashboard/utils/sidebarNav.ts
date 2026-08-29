@@ -263,6 +263,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     hasPermission: [
       "ENTERPRISE_ADMIN",
       "DISPATCHER",
+      "OWNER_OPERATOR",
     ],
   },
 ];

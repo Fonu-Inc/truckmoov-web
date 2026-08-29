@@ -1,6 +1,7 @@
 import type { UserRole } from "@truckmoov/api/auth";
 import type { ElementType } from "react";
 import {
+  ArrowUpCircle,
   BarChart3,
   Bell,
   Bot,
@@ -84,6 +85,9 @@ export const SETTINGS_TABS: SettingsTab[] = [
   },
   {
     to: "/settings/integrations", label: "Connections", icon: Plug, hasPermissions: ENTERPRISE_ADMIN_ONLY,
+  },
+  {
+    to: "/settings/upgrade", label: "Upgrade", icon: ArrowUpCircle, hasPermissions: ["OWNER_OPERATOR"],
   },
 ];
 

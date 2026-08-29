@@ -2055,8 +2055,29 @@ export type CommunicationRateHistoryResponse = ServerResponse<unknown[]>
 export type RequestUpgradePayload = { data: { reason: string } }
 export type ReviewUpgradePayload = { id: string; data: { notes?: string } }
 
-// ponytail: spec ships no response schemas
-export type OrganisationUpgradeQueueResponse = ServerResponse<unknown[]>
+// ponytail: row shape observed from the server, not the spec — narrow further when auth.json publishes it
+export type OrganisationUpgradeRequest = {
+  id: string
+  tenantId: string
+  fromOrganisationType: string
+  toOrganisationType: string
+  reason: string | null
+  statedVehicleCount: number | null
+  status: 'pending' | 'approved' | 'rejected'
+  requestedBy: string
+  requestedAt: string
+  reviewedBy: string | null
+  reviewedAt: string | null
+  reviewerNotes: string | null
+  vehicleCountAtReview: number | null
+  currentVehicleCount: number | null
+}
+
+export type OrganisationUpgradeQueueResponse = ServerResponse<{
+  pending: OrganisationUpgradeRequest[]
+  history: OrganisationUpgradeRequest[]
+  pendingCount: number
+}>
 export type OrganisationUpgradeResponse = ServerResponse<unknown>
 
 // ─── System Support (assign) ──────────────────────────────────────────────────

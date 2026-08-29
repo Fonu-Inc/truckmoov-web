@@ -32,18 +32,22 @@ type DraftRow = {
   yearly_price_ngn: number;
 };
 
-export function PlanPricingManager() {
-  const plans: any[] = [];
-  const isLoading = false;
-  const updatePlan = { mutateAsync: async (..._args: any[]) => {} };
-  const rate = 0;
-  const updatedAt: string | null = null;
-  const fxLoading = false;
-  const updateFx = {
-    mutateAsync: async (..._args: any[]) => {},
-    isPending: false,
-  };
+// ponytail: stubbed data with stable identity, wire to real hooks when backend is ready
+const plans: any[] = [];
+const isLoading = false;
+const updatePlan = {
+  mutateAsync: async (..._args: any[]) => {},
+  isPending: false,
+};
+const rate = 0;
+const updatedAt: string | null = null;
+const fxLoading = false;
+const updateFx = {
+  mutateAsync: async (..._args: any[]) => {},
+  isPending: false,
+};
 
+export function PlanPricingManager() {
   const [
     fxDraft,
     setFxDraft,

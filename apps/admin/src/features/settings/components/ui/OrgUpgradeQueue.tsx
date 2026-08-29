@@ -1,8 +1,15 @@
 import {
+  getOrganisationUpgradeQueueQueryOptions,
+  useApproveOrganisationUpgrade,
+  useRejectOrganisationUpgrade,
+} from "@truckmoov/api/auth";
+import {
   formatDate,
   formatDayMonth,
 } from "@truckmoov/app-core/utils/time-utils";
+import { useQuery } from "@tanstack/react-query";
 import {
+  AlertCircle,
   ArrowUpCircle,
   Check,
   Clock,
@@ -32,6 +39,14 @@ import {
 } from "@/components/shadcn/dialog";
 import { Textarea } from "@/components/shadcn/textarea";
 
+function humaniseOrgType(t: string) {
+  return t.split("_").map(w => w[0]?.toUpperCase() + w.slice(1)).join("-");
+}
+
+function formatOrgTypeChange(from: string, to: string) {
+  return `${humaniseOrgType(from)} → ${humaniseOrgType(to)}`;
+}
+
 export function OrgUpgradeQueue() {
   const [
     reviewingId,
@@ -41,101 +56,42 @@ export function OrgUpgradeQueue() {
     reviewNotes,
     setReviewNotes,
   ] = useState("");
-  const [isProcessing] = useState(false);
 
-  const DEMO_REQUESTS = [
-    {
-      id: "dur-1",
-      org_id: "demo-oo-1",
-      orgName: "Tunde Adebayo Logistics",
-      orgType: "OWNER_OPERATOR",
-      status: "pending",
-      reason: "Fleet has grown to 9 vehicles — exceeded Owner-Operator cap.",
-      current_vehicle_count: 9,
-      current_driver_count: 11,
-      target_org_type: "FLEET_PROVIDER",
-      requested_by_name: "Tunde Adebayo",
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
-      reviewed_at: null,
-      review_notes: null,
-    },
-    {
-      id: "dur-2",
-      org_id: "demo-oo-2",
-      orgName: "Cisse Brothers Haulage",
-      orgType: "OWNER_OPERATOR",
-      status: "pending",
-      reason: "Adding a fleet manager and 4 new trucks for Kano corridor.",
-      current_vehicle_count: 8,
-      current_driver_count: 8,
-      target_org_type: "FLEET_PROVIDER",
-      requested_by_name: "Aminata Cissé",
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 22).toISOString(),
-      reviewed_at: null,
-      review_notes: null,
-    },
-    {
-      id: "dur-3",
-      org_id: "demo-oo-3",
-      orgName: "Mensah Cargo Express",
-      orgType: "OWNER_OPERATOR",
-      status: "pending",
-      reason: "Won enterprise contract — needs dispatcher seat and multi-driver.",
-      current_vehicle_count: 7,
-      current_driver_count: 9,
-      target_org_type: "FLEET_PROVIDER",
-      requested_by_name: "Kwame Mensah",
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
-      reviewed_at: null,
-      review_notes: null,
-    },
-    {
-      id: "dur-4",
-      org_id: "demo-oo-4",
-      orgName: "Dlamini Transport",
-      orgType: "OWNER_OPERATOR",
-      status: "approved",
-      reason: "Acquired competitor — now operating 14 trucks.",
-      current_vehicle_count: 14,
-      current_driver_count: 16,
-      target_org_type: "FLEET_PROVIDER",
-      requested_by_name: "Zanele Dlamini",
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
-      reviewed_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(),
-      review_notes: "Approved — KYC docs and bank statements verified.",
-    },
-    {
-      id: "dur-5",
-      org_id: "demo-oo-5",
-      orgName: "Bello & Sons Logistics",
-      orgType: "OWNER_OPERATOR",
-      status: "rejected",
-      reason: "Want to add manager seat.",
-      current_vehicle_count: 3,
-      current_driver_count: 3,
-      target_org_type: "FLEET_PROVIDER",
-      requested_by_name: "Ibrahim Bello",
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(),
-      reviewed_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString(),
-      review_notes: "Below threshold — Owner-Operator plan still appropriate. Consider Standard tier add-on.",
-    },
-  ];
-  const requests = DEMO_REQUESTS;
-  const isLoading = false;
+  const queueQuery = useQuery(getOrganisationUpgradeQueueQueryOptions());
+  const pendingRequests = queueQuery.data?.data.pending ?? [];
+  const processedRequests = queueQuery.data?.data.history ?? [];
+  const isLoading = queueQuery.isLoading;
 
-  const pendingRequests = requests.filter((r: any) => r.status === "pending");
-  const processedRequests = requests.filter((r: any) => r.status !== "pending");
+  const approveMut = useApproveOrganisationUpgrade();
+  const rejectMut = useRejectOrganisationUpgrade();
+  const isProcessing = approveMut.isPending || rejectMut.isPending;
 
-  const handleApprove = async (_requestId: string) => {
-    toast.info("Coming soon");
-    setReviewingId(null);
-    setReviewNotes("");
+  const handleApprove = (id: string) => {
+    approveMut.mutate(
+      { id, data: reviewNotes ? { notes: reviewNotes } : {} },
+      {
+        onSuccess: () => {
+          toast.success("Upgrade approved");
+          setReviewingId(null);
+          setReviewNotes("");
+        },
+        onError: error => toast.error(error.message),
+      },
+    );
   };
 
-  const handleReject = async (_requestId: string) => {
-    toast.info("Coming soon");
-    setReviewingId(null);
-    setReviewNotes("");
+  const handleReject = (id: string) => {
+    rejectMut.mutate(
+      { id, data: reviewNotes ? { notes: reviewNotes } : {} },
+      {
+        onSuccess: () => {
+          toast.info("Upgrade rejected");
+          setReviewingId(null);
+          setReviewNotes("");
+        },
+        onError: error => toast.error(error.message),
+      },
+    );
   };
 
   const getStatusBadge = (status: string) => {
@@ -186,6 +142,14 @@ export function OrgUpgradeQueue() {
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               )
+            : queueQuery.isError
+              ? (
+                  <EmptyState
+                    icon={AlertCircle}
+                    title="Couldn't load upgrade requests"
+                    description={queueQuery.error?.message ?? "Please try again."}
+                  />
+                )
             : pendingRequests.length === 0
               ? (
                   <EmptyState
@@ -196,7 +160,7 @@ export function OrgUpgradeQueue() {
                 )
               : (
                   <div className="space-y-3">
-                    {pendingRequests.map((req: any) => (
+                    {pendingRequests.map(req => (
                       <div
                         key={req.id}
                         className="flex items-center justify-between rounded-lg border border-border p-4"
@@ -206,21 +170,21 @@ export function OrgUpgradeQueue() {
                             <Truck className="h-5 w-5 text-primary" />
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-sm truncate">{req.orgName}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {req.current_vehicle_count}
-                              {" "}
-                              vehicles • Requested
-                              {" "}
-                              {formatDate(req.created_at)}
+                            <p className="font-medium text-sm truncate">
+                              {req.reason || "No reason given"}
                             </p>
-                            {req.reason && (
-                              <p className="text-xs text-muted-foreground mt-1 italic truncate">
-                                "
-                                {req.reason}
-                                "
-                              </p>
-                            )}
+                            <p className="text-xs text-muted-foreground">
+                              {formatOrgTypeChange(req.fromOrganisationType, req.toOrganisationType)}
+                              {" • "}
+                              {(req.currentVehicleCount ?? req.statedVehicleCount) ?? 0}
+                              {" vehicles • Requested "}
+                              {formatDate(req.requestedAt)}
+                            </p>
+                            <p className="text-xs text-muted-foreground/70 mt-0.5 font-mono">
+                              tenant
+                              {" "}
+                              {req.tenantId.slice(0, 8)}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0 ml-4">
@@ -254,19 +218,19 @@ export function OrgUpgradeQueue() {
               {processedRequests.slice(
                 0,
                 10,
-              ).map((req: any) => (
+              ).map(req => (
                 <div
                   key={req.id}
                   className="flex items-center justify-between rounded-lg border border-border/50 p-3 text-sm"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span className="truncate">{req.orgName}</span>
+                    <span className="truncate">{req.reason || "No reason given"}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {getStatusBadge(req.status)}
                     <span className="text-xs text-muted-foreground">
-                      {formatDayMonth(req.reviewed_at || req.created_at)}
+                      {formatDayMonth(req.reviewedAt || req.requestedAt)}
                     </span>
                   </div>
                 </div>
