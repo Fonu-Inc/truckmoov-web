@@ -63,12 +63,12 @@ The service types are hand-written against the published OpenAPI documents:
 
 | Service | Swagger UI | OpenAPI JSON |
 |---|---|---|
-| auth | `/docs/auth` | `/openapi/auth.json` |
-| fleet | `/docs/fleet` | `/openapi/fleet.json` |
-| dispatch | — | `/openapi/dispatch.json` |
-| tracking | — | `/openapi/tracking.json` |
-| notification | — | `/openapi/notification.json` |
-| console | `/docs/console` | `/openapi/console.json` |
+| auth | [/docs/auth](https://dev-api.truckmoov.com/docs/auth) | `/openapi/auth.json` |
+| fleet | [/docs/fleet](https://dev-api.truckmoov.com/docs/fleet) | `/openapi/fleet.json` |
+| dispatch | [/docs/dispatch](https://dev-api.truckmoov.com/docs/dispatch) | `/openapi/dispatch.json` |
+| tracking | [/docs/tracking](https://dev-api.truckmoov.com/docs/tracking) | `/openapi/tracking.json` |
+| notification | [/docs/notification](https://dev-api.truckmoov.com/docs/notification) | `/openapi/notification.json` |
+| console | [/docs/console](https://dev-api.truckmoov.com/docs/console) | `/openapi/console.json` |
 
 All served from `https://dev-api.truckmoov.com`.
 

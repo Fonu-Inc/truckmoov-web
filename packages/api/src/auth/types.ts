@@ -2000,19 +2000,37 @@ export type SendMailResponse = ServerResponse<unknown>
 export type PlatformAlertChannel = 'email' | 'sms' | 'slack' | 'webhook'
 export type PlatformAlertSeverity = 'low' | 'medium' | 'high' | 'critical'
 
+export type PlatformAlertType =
+  | 'new_tenant_signup'
+  | 'system_errors'
+  | 'billing_alerts'
+  | 'security_alerts'
+
+// Row shape confirmed against a live GET response; the OpenAPI omits it.
+// Spec types `channels` as a single string, but the server returns an array
+// (e.g. ["email"]) — trust the wire over the spec.
+export type PlatformAlertSetting = {
+  alertType: PlatformAlertType
+  enabled: boolean
+  channels: PlatformAlertChannel[]
+  recipients: string[]
+  minSeverity: PlatformAlertSeverity
+  updatedAt: string
+  updatedBy: string | null
+}
+
 export type UpdateAlertSettingPayload = {
-  alertType: string
+  alertType: PlatformAlertType
   data: {
     enabled?: boolean
-    channels?: PlatformAlertChannel
+    channels?: PlatformAlertChannel[]
     recipients?: string[]
     minSeverity?: PlatformAlertSeverity
   }
 }
 
-// ponytail: spec ships no response schemas
-export type PlatformAlertSettingsResponse = ServerResponse<unknown[]>
-export type PlatformAlertSettingResponse = ServerResponse<unknown>
+export type PlatformAlertSettingsResponse = ServerResponse<PlatformAlertSetting[]>
+export type PlatformAlertSettingResponse = ServerResponse<PlatformAlertSetting>
 
 // ─── Communication Pricing ────────────────────────────────────────────────────
 
