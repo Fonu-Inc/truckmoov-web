@@ -10,6 +10,7 @@ import AuthPage from "@/features/auth/components/pages/AuthPage";
 import InvitePage from "@/features/auth/components/pages/InvitePage";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
 import { ADMIN_ROLES } from "@/features/dashboard/utils/sidebarNav";
+import { SecurityLayout } from "@/features/security/components/layout/SecurityLayout";
 import { SettingsLayout } from "@/features/settings/components/layout/SettingsLayout";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -44,6 +45,10 @@ const GuardedDashboardLayout = withGuard(
 const GuardedSettingsLayout = withGuard(
   ADMIN_ROLES,
   SettingsLayout,
+);
+const GuardedSecurityLayout = withGuard(
+  ADMIN_ROLES,
+  SecurityLayout,
 );
 
 /**
@@ -137,7 +142,19 @@ export const router = createBrowserRouter([
           },
           {
             path: "/security",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformSecurity")).default }),
+            Component: GuardedSecurityLayout,
+            children: [
+              { index: true, lazy: async () => ({ Component: (await import("@/features/security/components/pages/SecurityOverviewPage")).default }) },
+              { path: "login-history", lazy: async () => ({ Component: (await import("@/features/security/components/pages/LoginHistoryPage")).default }) },
+              { path: "failed-attempts", lazy: async () => ({ Component: (await import("@/features/security/components/pages/FailedAttemptsPage")).default }) },
+              { path: "geographic-map", lazy: async () => ({ Component: (await import("@/features/security/components/pages/GeographicMapPage")).default }) },
+              { path: "blocked-ips", lazy: async () => ({ Component: (await import("@/features/security/components/pages/BlockedIpsPage")).default }) },
+              { path: "auto-block-rules", lazy: async () => ({ Component: (await import("@/features/security/components/pages/AutoBlockRulesPage")).default }) },
+              { path: "notifications", lazy: async () => ({ Component: (await import("@/features/security/components/pages/NotificationsPage")).default }) },
+              { path: "events", lazy: async () => ({ Component: (await import("@/features/security/components/pages/SecurityEventsPage")).default }) },
+              { path: "sim-audit", lazy: async () => ({ Component: (await import("@/features/security/components/pages/SimAuditPage")).default }) },
+              { path: "isolation-check", lazy: async () => ({ Component: (await import("@/features/security/components/pages/IsolationCheckPage")).default }) },
+            ],
           },
           {
             path: "/compliance-audit",
