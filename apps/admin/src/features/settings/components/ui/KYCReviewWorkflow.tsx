@@ -57,6 +57,12 @@ import {
   TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { Textarea } from "@/components/shadcn/textarea";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getSystemKycReviewQueueQueryOptions,
+  useApproveSystemKycDocument,
+  useRejectSystemKycDocument,
+} from "@truckmoov/api/auth";
 import { KYCNotificationHistory } from "./KYCNotificationHistory";
 
 type BusinessInfo = {
@@ -165,11 +171,32 @@ export function KYCReviewWorkflow() {
     reviewAction,
     setReviewAction,
   ] = useState<"approve" | "reject">("approve");
-  const [submitting] = useState(false);
   const [
     tenantDetailOpen,
     setTenantDetailOpen,
   ] = useState(false);
+
+  const pendingQuery = useQuery(
+    getSystemKycReviewQueueQueryOptions({ params: { status: "pending" } }),
+  );
+  const approve = useApproveSystemKycDocument();
+  const reject = useRejectSystemKycDocument();
+  const submitting = approve.isPending || reject.isPending;
+
+  const pendingDocuments: KYCDocument[] = (pendingQuery.data?.data.items ?? []).map(d => ({
+    id: d.id,
+    tenant_id: d.tenantId,
+    document_type: d.documentType,
+    document_name: d.documentName,
+    file_path: "",
+    file_size: d.fileSize,
+    mime_type: null,
+    status: d.status,
+    rejection_reason: d.rejectionReason,
+    reviewed_at: d.reviewedAt,
+    expires_at: null,
+    created_at: d.createdAt,
+  }));
 
   const fetchData = async () => {
     setLoading(true);
@@ -538,16 +565,46 @@ export function KYCReviewWorkflow() {
     setReviewDialogOpen(true);
   };
 
-  const handleSubmitReview = async () => {
-    toast.info("Coming soon");
-    setReviewDialogOpen(false);
+  const handleSubmitReview = () => {
+    if (!selectedDocument)
+      return;
+
+    const closeDialog = () => {
+      setReviewDialogOpen(false);
+      setSelectedDocument(null);
+      setReviewComment("");
+    };
+
+    if (reviewAction === "approve") {
+      approve.mutate(
+        { id: selectedDocument.id },
+        {
+          onSuccess: () => {
+            toast.success("Document approved");
+            closeDialog();
+          },
+          onError: error => toast.error(error.message),
+        },
+      );
+    }
+    else {
+      reject.mutate(
+        { id: selectedDocument.id, data: { reason: reviewComment.trim() } },
+        {
+          onSuccess: () => {
+            toast.success("Document rejected");
+            closeDialog();
+          },
+          onError: error => toast.error(error.message),
+        },
+      );
+    }
   };
 
   const handleUpdateTenantStatus = async (_tenantId: string, _status: string) => {
     toast.info("Coming soon");
   };
 
-  const pendingDocuments = documents.filter(d => d.status === "pending");
   const approvedDocuments = documents.filter(d => d.status === "approved");
   const rejectedDocuments = documents.filter(d => d.status === "rejected");
 
@@ -707,14 +764,33 @@ export function KYCReviewWorkflow() {
               <CardDescription>Review and approve or reject submitted KYC documents</CardDescription>
             </CardHeader>
             <CardContent>
-              {pendingDocuments.length === 0
+              {pendingQuery.isPending
                 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <CheckCircle2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p>No documents pending review</p>
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     </div>
                   )
-                : (
+                : pendingQuery.isError
+                  ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p>Failed to load pending documents</p>
+                        <Button
+                          variant="link"
+                          onClick={() => pendingQuery.refetch()}
+                        >
+                          Try again
+                        </Button>
+                      </div>
+                    )
+                  : pendingDocuments.length === 0
+                    ? (
+                        <div className="text-center py-12 text-muted-foreground">
+                          <CheckCircle2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                          <p>No documents pending review</p>
+                        </div>
+                      )
+                    : (
                     <div className="space-y-4">
                       {pendingDocuments.map((doc) => {
                         const tenant = businessInfoList.find(b => b.tenant_id === doc.tenant_id);
@@ -745,14 +821,6 @@ export function KYCReviewWorkflow() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleViewDocument(doc)}
-                              >
-                                <Eye className="w-4 h-4 mr-1" />
-                                View
-                              </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -1284,16 +1352,6 @@ export function KYCReviewWorkflow() {
                 />
               </div>
             )}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => selectedDocument && handleViewDocument(selectedDocument)}
-              >
-                <Eye className="w-4 h-4 mr-1" />
-                View Document
-              </Button>
-            </div>
           </div>
           <DialogFooter>
             <Button
