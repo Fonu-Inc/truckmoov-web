@@ -131,6 +131,22 @@ import type {
   RejectSystemDeviceSetupRequestPayload,
   RejectSIMRequestPayload,
   RemoveOrganizationUserResponse,
+  BlockSystemIpPayload,
+  BlockSystemIpResponse,
+  SystemFailedLoginsQuery,
+  SystemFailedLoginsResponse,
+  SystemAuthEventsQuery,
+  SystemAuthEventsResponse,
+  SystemBlockedIpsQuery,
+  SystemBlockedIpsResponse,
+  UnblockSystemIpPayload,
+  UnblockSystemIpResponse,
+  SystemAutoBlockRulesResponse,
+  UpdateSystemAutoBlockRulePayload,
+  UpdateSystemAutoBlockRuleResponse,
+  SystemSecurityEventsQuery,
+  SystemSecurityEventsResponse,
+  SystemSecurityOverviewResponse,
   ResetPasswordPayload,
   RetrySimBatchPayload,
   AllocatableSimsQuery,
@@ -1404,6 +1420,67 @@ export async function updatePlatformWalletCreditSettings({
   const { data } = await axiosInstance.put<PlatformWalletCreditSettingsResponse>(
     `/auth/system/wallets/${tenantId}/credit-settings`,
     body,
+  )
+  return data
+}
+
+export async function getSystemSecurityOverview() {
+  const { data } = await axiosInstance.get<SystemSecurityOverviewResponse>('/auth/system/security/overview')
+  return data
+}
+
+export async function getSystemFailedLogins(payload?: SystemFailedLoginsQuery) {
+  const { data } = await axiosInstance.get<SystemFailedLoginsResponse>('/auth/system/security/failed-logins', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function blockSystemIp({ data: body }: BlockSystemIpPayload) {
+  const { data } = await axiosInstance.post<BlockSystemIpResponse>('/auth/system/security/blocked-ips', body)
+  return data
+}
+
+export async function getSystemAuthEvents(payload?: SystemAuthEventsQuery) {
+  const { data } = await axiosInstance.get<SystemAuthEventsResponse>('/auth/system/security/auth-events', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getSystemBlockedIps(payload?: SystemBlockedIpsQuery) {
+  const { data } = await axiosInstance.get<SystemBlockedIpsResponse>('/auth/system/security/blocked-ips', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function unblockSystemIp({ id }: UnblockSystemIpPayload) {
+  const { data } = await axiosInstance.patch<UnblockSystemIpResponse>(
+    `/auth/system/security/blocked-ips/${id}/unblock`,
+  )
+  return data
+}
+
+export async function getSystemAutoBlockRules() {
+  const { data } = await axiosInstance.get<SystemAutoBlockRulesResponse>(
+    '/auth/system/security/auto-block-rules',
+  )
+  return data
+}
+
+export async function updateSystemAutoBlockRule({ id, data: body }: UpdateSystemAutoBlockRulePayload) {
+  const { data } = await axiosInstance.patch<UpdateSystemAutoBlockRuleResponse>(
+    `/auth/system/security/auto-block-rules/${id}`,
+    body,
+  )
+  return data
+}
+
+export async function getSystemSecurityEvents(payload?: SystemSecurityEventsQuery) {
+  const { data } = await axiosInstance.get<SystemSecurityEventsResponse>(
+    '/auth/system/security/events',
+    { params: payload?.params },
   )
   return data
 }

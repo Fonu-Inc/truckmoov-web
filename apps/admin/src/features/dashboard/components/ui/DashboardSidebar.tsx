@@ -54,10 +54,12 @@ function NavRowBase({
 }) {
   const Icon = item.icon;
 
+  // ponytail: only "/" needs `end`; every other entry should light up on its
+  // sub-routes too (`/security/login-history` → highlights "Security").
   const row = (
     <NavLink
       to={item.href}
-      end
+      end={item.href === "/"}
       className={({ isActive }) => cn(
         ROW,
         isActive ? ROW_ACTIVE : ROW_IDLE,

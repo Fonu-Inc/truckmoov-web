@@ -4,20 +4,41 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/shadcn/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
 
 const SKELETON_ROWS = 5;
+const DEFAULT_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
+export type DataTablePagination = {
+  /** 1-based current page. */
+  page: number;
+  pageSize: number;
+  total: number;
+  onPageChange: (page: number) => void;
+  /** Omit to hide the rows-per-page selector. */
+  onPageSizeChange?: (pageSize: number) => void;
+  pageSizeOptions?: number[];
+};
 
 export interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
@@ -32,6 +53,8 @@ export interface DataTableProps<TData> {
   onRowClick?: (row: TData) => void;
   rowClassName?: (row: TData) => string;
   className?: string;
+  /** Server-driven pagination. Omit to render without a footer (unchanged behaviour). */
+  pagination?: DataTablePagination;
 }
 
 export function DataTable<TData>({
@@ -47,6 +70,7 @@ export function DataTable<TData>({
   onRowClick,
   rowClassName,
   className,
+  pagination,
 }: DataTableProps<TData>) {
   const table = useReactTable({
     data,
@@ -124,6 +148,92 @@ export function DataTable<TData>({
           ))
         )}
       </TableBody>
+      {pagination && pagination.total > 0 && (
+        <TableFooter className="bg-transparent">
+          <TableRow className="border-t border-border/50 hover:bg-transparent">
+            <TableCell colSpan={colCount} className="p-0">
+              <PaginationBar pagination={pagination} />
+            </TableCell>
+          </TableRow>
+        </TableFooter>
+      )}
     </Table>
+  );
+}
+
+function PaginationBar({ pagination }: { pagination: DataTablePagination }) {
+  const {
+    page,
+    pageSize,
+    total,
+    onPageChange,
+    onPageSizeChange,
+    pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
+  } = pagination;
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const from = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const to = Math.min(safePage * pageSize, total);
+  const isFirst = safePage <= 1;
+  const isLast = safePage >= totalPages;
+
+  return (
+    <div className="flex items-center justify-between gap-4 px-4 py-3 font-normal">
+      <p className="hidden text-sm text-muted-foreground md:block">
+        {total === 0
+          ? "No results"
+          : `Showing ${from}–${to} of ${total}`}
+      </p>
+
+      <div className="flex flex-1 items-center justify-end gap-4">
+        {onPageSizeChange && (
+          <div className="hidden items-center gap-2 md:flex">
+            <span className="text-sm text-muted-foreground">Rows</span>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => onPageSizeChange(Number(v))}
+            >
+              <SelectTrigger className="h-8 w-[72px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {pageSizeOptions.map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            aria-label="Previous page"
+            disabled={isFirst}
+            onClick={() => onPageChange(safePage - 1)}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm text-muted-foreground tabular-nums">
+            Page {safePage} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            aria-label="Next page"
+            disabled={isLast}
+            onClick={() => onPageChange(safePage + 1)}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,6 +1,8 @@
 import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import { formatDateInTimezone } from "@truckmoov/app-core/utils/time-utils";
+import { getSystemSecurityOverviewQueryOptions } from "@truckmoov/api/auth";
+import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   Ban,
@@ -53,8 +55,6 @@ import { Separator } from "@/components/shadcn/separator";
 import { usePreferences } from "@/contexts/PreferencesContext";
 import type { LoginEvent, SecurityEvent } from "@/features/security/types";
 import {
-  DEMO_BLOCKED_IPS,
-  mockFailedAttempts,
   mockLoginEvents,
   mockSecurityEvents,
 } from "@/features/security/utils/mocks";
@@ -161,8 +161,10 @@ const eventsByTenant = [
 
 export default function SecurityOverviewPage() {
   const [loginEvents] = useState<LoginEvent[]>(mockLoginEvents);
-  const [failedAttempts] = useState(mockFailedAttempts);
   const [securityEvents] = useState<SecurityEvent[]>(mockSecurityEvents);
+  const overviewQuery = useQuery(getSystemSecurityOverviewQueryOptions());
+  const overview = overviewQuery.data?.data;
+  const overviewLoading = overviewQuery.isLoading;
   const [
     selectedEvent,
     setSelectedEvent,
@@ -190,15 +192,10 @@ export default function SecurityOverviewPage() {
     setTenantActivityRange,
   ] = useState<ChartDateRange>("7d");
 
-  const dbBlockedIPs = DEMO_BLOCKED_IPS;
-
-  const totalLogins = loginEvents.filter(e => e.eventType === "login" && e.status === "success").length;
-  const totalFailedAttempts = failedAttempts.reduce(
-    (sum, fa) => sum + fa.attempts,
-    0,
-  );
-  const blockedIPsCount = dbBlockedIPs.length;
-  const criticalEvents = securityEvents.filter(e => e.severity === "critical" || e.severity === "high").length;
+  const totalLogins = overview?.successfulLoginsToday ?? 0;
+  const totalFailedAttempts = overview?.failedLoginsToday ?? 0;
+  const blockedIPsCount = overview?.activeBlocks ?? 0;
+  const criticalEvents = (overview?.criticalEventsToday ?? 0) + (overview?.highEventsToday ?? 0);
 
   const handleViewEvent = (event: SecurityEvent) => {
     setSelectedEvent(event);
@@ -213,29 +210,29 @@ export default function SecurityOverviewPage() {
           title="Successful Logins (24h)"
           value={totalLogins}
           icon={LogIn}
-          change={12}
-          changeLabel="vs yesterday"
           variant="success"
+          loading={overviewLoading}
         />
         <StatCard
           title="Failed Attempts (24h)"
           value={totalFailedAttempts}
           icon={UserX}
-          change={-8}
-          changeLabel="vs yesterday"
           variant="warning"
+          loading={overviewLoading}
         />
         <StatCard
           title="Blocked IPs"
           value={blockedIPsCount}
           icon={Ban}
           variant="default"
+          loading={overviewLoading}
         />
         <StatCard
           title="Critical Events"
           value={criticalEvents}
           icon={ShieldAlert}
           variant="danger"
+          loading={overviewLoading}
         />
       </div>
 

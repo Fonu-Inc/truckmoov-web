@@ -84,10 +84,12 @@ function NavRowBase({
   // real Fleet row. Those rows just never highlight — same as before.
   const idleOnly = item.href.includes("?");
 
+  // ponytail: only "/" needs `end`; every other entry should light up on its
+  // sub-routes too (`/security/login-history` → highlights "Security").
   const row = (
     <NavLink
       to={item.href}
-      end
+      end={item.href === "/"}
       className={idleOnly
         ? cn(
             ROW,

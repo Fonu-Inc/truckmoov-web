@@ -62,6 +62,15 @@ import {
   getSystemHealth,
   getSystemRefDataDeviceCatalog,
   getSystemRefDataTenantOnboarding,
+  getSystemFailedLogins,
+  getSystemAuthEvents,
+  getSystemBlockedIps,
+  unblockSystemIp,
+  getSystemAutoBlockRules,
+  updateSystemAutoBlockRule,
+  getSystemSecurityEvents,
+  getSystemSecurityOverview,
+  blockSystemIp,
   getSystemSettings,
   getSystemSim,
   getSystemSims,
@@ -232,6 +241,10 @@ import type {
   ReactivateSimPayload,
   UnassignSimDevicePayload,
   GetSimRequestPayload,
+  SystemFailedLoginsQuery,
+  SystemAuthEventsQuery,
+  SystemBlockedIpsQuery,
+  SystemSecurityEventsQuery,
 } from './types'
 
 // Every type in ./types is public — no hand-maintained list to fall out of date.
@@ -254,6 +267,17 @@ export const AUTH_QUERY_KEY = {
 
   systemAdmins: ['systemAdmins'],
   systemAdminInvites: ['systemAdminInvites'],
+
+  systemSecurityOverview: ['systemSecurityOverview'],
+  systemFailedLogins: (payload?: SystemFailedLoginsQuery) =>
+    payload ? ['systemFailedLogins', payload] : ['systemFailedLogins'],
+  systemAuthEvents: (payload?: SystemAuthEventsQuery) =>
+    payload ? ['systemAuthEvents', payload] : ['systemAuthEvents'],
+  systemBlockedIps: (payload?: SystemBlockedIpsQuery) =>
+    payload ? ['systemBlockedIps', payload] : ['systemBlockedIps'],
+  systemAutoBlockRules: ['systemAutoBlockRules'] as const,
+  systemSecurityEvents: (payload?: SystemSecurityEventsQuery) =>
+    payload ? ['systemSecurityEvents', payload] : ['systemSecurityEvents'],
 
   systemTenants: (payload?: SystemTenantsQuery) =>
     payload ? ['systemTenants', payload] : ['systemTenants'],
@@ -569,6 +593,80 @@ export function getSystemActivityLogQueryOptions(payload?: ActivityLogQuery) {
 
 export function getSystemAdminsQueryOptions() {
   return queryOptions({ queryKey: AUTH_QUERY_KEY.systemAdmins, queryFn: getSystemAdmins })
+}
+
+export function getSystemSecurityOverviewQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSecurityOverview,
+    queryFn: getSystemSecurityOverview,
+  })
+}
+
+export function getSystemFailedLoginsQueryOptions(payload?: SystemFailedLoginsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemFailedLogins(payload),
+    queryFn: () => getSystemFailedLogins(payload),
+  })
+}
+
+export function getSystemAuthEventsQueryOptions(payload?: SystemAuthEventsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemAuthEvents(payload),
+    queryFn: () => getSystemAuthEvents(payload),
+  })
+}
+
+export function getSystemBlockedIpsQueryOptions(payload?: SystemBlockedIpsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemBlockedIps(payload),
+    queryFn: () => getSystemBlockedIps(payload),
+  })
+}
+
+export function useBlockSystemIp() {
+  return useMutation({
+    mutationFn: blockSystemIp,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['systemFailedLogins'] })
+      queryClient.invalidateQueries({ queryKey: ['systemAuthEvents'] })
+      queryClient.invalidateQueries({ queryKey: ['systemBlockedIps'] })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSecurityOverview })
+    },
+  })
+}
+
+export function useUnblockSystemIp() {
+  return useMutation({
+    mutationFn: unblockSystemIp,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['systemBlockedIps'] })
+      queryClient.invalidateQueries({ queryKey: ['systemFailedLogins'] })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSecurityOverview })
+    },
+  })
+}
+
+export function getSystemAutoBlockRulesQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemAutoBlockRules,
+    queryFn: getSystemAutoBlockRules,
+  })
+}
+
+export function useUpdateSystemAutoBlockRule() {
+  return useMutation({
+    mutationFn: updateSystemAutoBlockRule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemAutoBlockRules })
+    },
+  })
+}
+
+export function getSystemSecurityEventsQueryOptions(payload?: SystemSecurityEventsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemSecurityEvents(payload),
+    queryFn: () => getSystemSecurityEvents(payload),
+  })
 }
 
 export function getSystemAdminInvitesQueryOptions() {

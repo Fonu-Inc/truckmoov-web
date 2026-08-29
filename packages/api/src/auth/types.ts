@@ -2180,3 +2180,178 @@ export type PlatformWalletsResponse = ServerResponse<unknown>
 export type PlatformWalletLedgerResponse = ServerResponse<unknown>
 export type PlatformTopUpResponse = ServerResponse<unknown>
 export type PlatformWalletCreditSettingsResponse = ServerResponse<unknown>
+
+export type SystemSecurityOverview = {
+  failedLoginsToday: number
+  successfulLoginsToday: number
+  activeBlocks: number
+  criticalEventsToday: number
+  highEventsToday: number
+}
+
+export type SystemSecurityOverviewResponse = ServerResponse<SystemSecurityOverview>
+
+// ponytail: item shape not in swagger and dev returns []; fields kept optional to match whatever the API ships
+export type SystemFailedLogin = {
+  id: string
+  email?: string | null
+  ipAddress?: string | null
+  location?: string | null
+  reason?: string | null
+  attempts?: number | null
+  blocked?: boolean | null
+  userAgent?: string | null
+  createdAt?: string | null
+  timestamp?: string | null
+}
+
+export type SystemFailedLoginsQuery = {
+  params?: {
+    offset?: number
+    limit?: number
+    from?: string
+    to?: string
+    search?: string
+    ipAddress?: string
+  }
+}
+
+export type SystemFailedLoginsResponse = ServerResponse<{
+  items: SystemFailedLogin[]
+  total: number
+}>
+
+export type BlockSystemIpPayload = {
+  data: {
+    ipAddress: string
+    reason: string
+    expiresAt?: string
+  }
+}
+
+// ponytail: response record shape not published — treat as opaque, tighten when spec lands
+export type BlockSystemIpResponse = ServerResponse<unknown>
+
+export type SystemAuthEvent = {
+  id: string
+  tenantId?: string | null
+  userId?: string | null
+  email?: string | null
+  eventType?: 'login' | 'logout' | 'refresh' | string | null
+  status?: 'success' | 'failed' | string | null
+  failureReason?: string | null
+  ipAddress?: string | null
+  userAgent?: string | null
+  occurredAt?: string | null
+}
+
+// ponytail: extra filter params (tenant/event/location/device) not documented; add when swagger publishes
+export type SystemAuthEventsQuery = {
+  params?: {
+    offset?: number
+    limit?: number
+    search?: string
+    status?: 'success' | 'failed'
+    eventType?: string
+    from?: string
+    to?: string
+  }
+}
+
+export type SystemAuthEventsResponse = ServerResponse<{
+  items: SystemAuthEvent[]
+  total: number
+}>
+
+// ponytail: LIST endpoint currently returns only { id, reason } per item.
+// The extra fields are on the create/unblock response — kept optional so
+// we can render them the moment the server includes them.
+export type SystemBlockedIp = {
+  id: string
+  reason?: string | null
+  ipAddress?: string | null
+  blockType?: 'permanent' | 'temporary' | string | null
+  blockedAt?: string | null
+  expiresAt?: string | null
+  blockedBy?: string | null
+  unblockedAt?: string | null
+  unblockedBy?: string | null
+}
+
+export type SystemBlockedIpsQuery = {
+  params?: {
+    offset?: number
+    limit?: number
+    // ponytail: server currently ignores these — kept for when it doesn't
+    search?: string
+    active?: boolean
+  }
+}
+
+export type SystemBlockedIpsResponse = ServerResponse<{
+  items: SystemBlockedIp[]
+  total: number
+}>
+
+export type UnblockSystemIpPayload = { id: string }
+export type UnblockSystemIpResponse = ServerResponse<SystemBlockedIp>
+
+export type SystemAutoBlockRule = {
+  id: string
+  name: string
+  enabled: boolean
+  maxAttempts: number
+  windowMinutes: number
+  /** null = permanent block */
+  blockDurationHours: number | null
+  precedence: number
+  updatedAt?: string | null
+  updatedBy?: string | null
+}
+
+export type SystemAutoBlockRulesResponse = ServerResponse<SystemAutoBlockRule[]>
+
+export type UpdateSystemAutoBlockRulePayload = {
+  id: string
+  data: {
+    enabled?: boolean
+    maxAttempts?: number
+    windowMinutes?: number
+    blockDurationHours?: number | null
+    precedence?: number
+  }
+}
+
+export type UpdateSystemAutoBlockRuleResponse = ServerResponse<SystemAutoBlockRule>
+
+export type SystemSecurityEventSeverity = 'low' | 'medium' | 'high' | 'critical'
+
+export type SystemSecurityEvent = {
+  id: string
+  eventType: string
+  severity?: SystemSecurityEventSeverity | string | null
+  tenantId?: string | null
+  summary?: string | null
+  relatedEntityType?: string | null
+  relatedEntityId?: string | null
+  metadata?: Record<string, unknown> | null
+  occurredAt?: string | null
+}
+
+export type SystemSecurityEventsQuery = {
+  params?: {
+    offset?: number
+    limit?: number
+    search?: string
+    severity?: SystemSecurityEventSeverity
+    eventType?: string
+    tenantId?: string
+    from?: string
+    to?: string
+  }
+}
+
+export type SystemSecurityEventsResponse = ServerResponse<{
+  items: SystemSecurityEvent[]
+  total: number
+}>
