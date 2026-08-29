@@ -1,4 +1,6 @@
+import { getSystemSubscriptionPlansQueryOptions } from "@truckmoov/api/auth";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
+import { useQuery } from "@tanstack/react-query";
 import {
   DollarSign,
   RefreshCw,
@@ -7,7 +9,6 @@ import {
 } from "lucide-react";
 import {
   useEffect,
-  useMemo,
   useState,
 } from "react";
 import { Badge } from "@/components/shadcn/badge";
@@ -23,22 +24,7 @@ import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Separator } from "@/components/shadcn/separator";
 
-type DraftRow = {
-  id: string;
-  name: string;
-  tier: string | null;
-  billing_cycle: string;
-  price_ngn: number;
-  yearly_price_ngn: number;
-};
-
-// ponytail: stubbed data with stable identity, wire to real hooks when backend is ready
-const plans: any[] = [];
-const isLoading = false;
-const updatePlan = {
-  mutateAsync: async (..._args: any[]) => {},
-  isPending: false,
-};
+// ponytail: FX card still stubbed — separate endpoint, out of scope for this change.
 const rate = 0;
 const updatedAt: string | null = null;
 const fxLoading = false;
@@ -47,74 +33,15 @@ const updateFx = {
   isPending: false,
 };
 
+const ngnFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+const usdFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
+
 export function PlanPricingManager() {
-  const [
-    fxDraft,
-    setFxDraft,
-  ] = useState<string>(String(rate));
-  const [
-    drafts,
-    setDrafts,
-  ] = useState<Record<string, DraftRow>>({});
+  const { data, isLoading } = useQuery(getSystemSubscriptionPlansQueryOptions());
+  const plans = data?.data.plans ?? [];
 
-  useEffect(
-    () => setFxDraft(String(rate)),
-    [rate],
-  );
-
-  useEffect(
-    () => {
-      if (!plans)
-        return;
-      const map: Record<string, DraftRow> = {};
-      for (const p of plans) {
-        map[p.id] = {
-          id: p.id,
-          name: p.name,
-          tier: p.tier,
-          billing_cycle: p.billing_cycle,
-          price_ngn: Number(p.price_ngn ?? 0),
-          yearly_price_ngn: Number(p.yearly_price_ngn ?? 0),
-        };
-      }
-      setDrafts(map);
-    },
-    [plans],
-  );
-
-  const dirtyIds = useMemo(
-    () => {
-      if (!plans)
-        return new Set<string>();
-      const s = new Set<string>();
-      for (const p of plans) {
-        const d = drafts[p.id];
-        if (!d)
-          continue;
-        if (Number(d.price_ngn) !== Number(p.price_ngn ?? 0) || Number(d.yearly_price_ngn) !== Number(p.yearly_price_ngn ?? 0)) {
-          s.add(p.id);
-        }
-      }
-      return s;
-    },
-    [
-      drafts,
-      plans,
-    ],
-  );
-
-  const handleSaveRow = async (id: string) => {
-    const d = drafts[id];
-    if (!d)
-      return;
-    await updatePlan.mutateAsync({
-      id,
-      updates: {
-        price_ngn: Number(d.price_ngn),
-        yearly_price_ngn: Number(d.yearly_price_ngn),
-      },
-    });
-  };
+  const [fxDraft, setFxDraft] = useState<string>(String(rate));
+  useEffect(() => setFxDraft(String(rate)), []);
 
   const handleSaveFx = async () => {
     const n = Number(fxDraft);
@@ -178,112 +105,83 @@ export function PlanPricingManager() {
             Subscription Plan Pricing
           </CardTitle>
           <CardDescription>
-            Edit the monthly and yearly NGN price for each plan. USD equivalents are previewed using the rate above.
+            Monthly and yearly NGN pricing for each plan, sourced from
+            {" "}
+            <code>/auth/system/subscription-plans</code>
+            . USD equivalents use the rate above.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoading && <p className="text-sm text-muted-foreground">Loading plans…</p>}
-          {!isLoading && plans && plans.length === 0 && (
+          {!isLoading && plans.length === 0 && (
             <p className="text-sm text-muted-foreground">No subscription plans configured.</p>
           )}
-          {plans?.map((p) => {
-            const d = drafts[p.id];
-            if (!d)
-              return null;
-            const isDirty = dirtyIds.has(p.id);
-            const usdMonthly = rate > 0 ? d.price_ngn / rate : 0;
-            const usdYearly = rate > 0 ? d.yearly_price_ngn / rate : 0;
+          {plans.map((p) => {
+            const yearlyNgn = p.yearlyMonthlyEquivalentNgn !== null
+              ? p.yearlyMonthlyEquivalentNgn * 12
+              : null;
+            const usdMonthly = rate > 0 && p.monthlyPriceNgn !== null ? p.monthlyPriceNgn / rate : null;
+            const usdYearly = rate > 0 && yearlyNgn !== null ? yearlyNgn / rate : null;
             return (
               <div
-                key={p.id}
+                key={p.code}
                 className="rounded-lg border p-4 space-y-3"
               >
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{p.name}</span>
-                    {p.tier && (
-                      <Badge
-                        variant="outline"
-                        className="capitalize"
-                      >
-                        {p.tier}
-                      </Badge>
-                    )}
-                    <Badge
-                      variant="secondary"
-                      className="capitalize"
-                    >
-                      {p.billing_cycle}
-                    </Badge>
-                    {!p.is_active && <Badge variant="destructive">Inactive</Badge>}
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleSaveRow(p.id)}
-                    disabled={!isDirty || updatePlan.isPending}
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Save
-                  </Button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium">{p.name}</span>
+                  <Badge variant="outline" className="capitalize">{p.tier}</Badge>
+                  {p.badge && <Badge variant="secondary">{p.badge}</Badge>}
+                  {p.customPricing && <Badge variant="secondary">Custom pricing</Badge>}
                 </div>
                 <Separator />
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Monthly Price (NGN)</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={d.price_ngn}
-                      onChange={e =>
-                        setDrafts(prev => ({
-                          ...prev,
-                          [p.id]: {
-                            ...prev[p.id],
-                            price_ngn: Number(e.target.value),
-                          },
-                        }))}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      ≈ $
-                      {usdMonthly.toLocaleString(
-                        undefined,
-                        { maximumFractionDigits: 2 },
-                      )}
-                      {" "}
-                      USD
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Yearly Price (NGN)</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={d.yearly_price_ngn}
-                      onChange={e =>
-                        setDrafts(prev => ({
-                          ...prev,
-                          [p.id]: {
-                            ...prev[p.id],
-                            yearly_price_ngn: Number(e.target.value),
-                          },
-                        }))}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      ≈ $
-                      {usdYearly.toLocaleString(
-                        undefined,
-                        { maximumFractionDigits: 2 },
-                      )}
-                      {" "}
-                      USD
-                    </p>
-                  </div>
+                  <PriceCell
+                    label="Monthly Price (NGN)"
+                    ngn={p.monthlyPriceNgn}
+                    usd={usdMonthly}
+                    customPricing={p.customPricing}
+                  />
+                  <PriceCell
+                    label="Yearly Price (NGN)"
+                    ngn={yearlyNgn}
+                    usd={usdYearly}
+                    customPricing={p.customPricing}
+                  />
                 </div>
               </div>
             );
           })}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function PriceCell({
+  label,
+  ngn,
+  usd,
+  customPricing,
+}: {
+  label: string;
+  ngn: number | null;
+  usd: number | null;
+  customPricing: boolean;
+}) {
+  return (
+    <div className="space-y-1">
+      <Label>{label}</Label>
+      <p className="text-lg font-semibold">
+        {customPricing || ngn === null ? "Contact sales" : `₦${ngnFormatter.format(ngn)}`}
+      </p>
+      {usd !== null && (
+        <p className="text-xs text-muted-foreground">
+          ≈ $
+          {usdFormatter.format(usd)}
+          {" "}
+          USD
+        </p>
+      )}
     </div>
   );
 }
