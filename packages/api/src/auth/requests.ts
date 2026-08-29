@@ -24,6 +24,14 @@ import type {
   OrganisationUpgradeResponse,
   PlatformAlertSettingResponse,
   PlatformAlertSettingsResponse,
+  PlatformTopUpPayload,
+  PlatformTopUpResponse,
+  PlatformWalletCreditSettingsPayload,
+  PlatformWalletCreditSettingsResponse,
+  PlatformWalletLedgerQuery,
+  PlatformWalletLedgerResponse,
+  PlatformWalletsQuery,
+  PlatformWalletsResponse,
   RejectKycDocumentPayload,
   RequestUpgradePayload,
   ResendVerificationPayload,
@@ -1362,5 +1370,40 @@ export async function getDataBundleWalletLedger(payload?: DataBundleLedgerQuery)
   const { data } = await axiosInstance.get<DataBundleLedgerResponse>('/auth/data-bundles/ledger', {
     params: payload?.params,
   })
+  return data
+}
+
+// ─── Platform Wallets ─────────────────────────────────────────────────────────
+
+export async function getPlatformWallets(payload?: PlatformWalletsQuery) {
+  const { data } = await axiosInstance.get<PlatformWalletsResponse>('/auth/system/wallets', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function getPlatformWalletLedger(payload?: PlatformWalletLedgerQuery) {
+  const { data } = await axiosInstance.get<PlatformWalletLedgerResponse>('/auth/system/wallets/ledger', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function platformTopUpWallet({ tenantId, data: body }: PlatformTopUpPayload) {
+  const { data } = await axiosInstance.post<PlatformTopUpResponse>(
+    `/auth/system/wallets/${tenantId}/top-up`,
+    body,
+  )
+  return data
+}
+
+export async function updatePlatformWalletCreditSettings({
+  tenantId,
+  data: body,
+}: PlatformWalletCreditSettingsPayload) {
+  const { data } = await axiosInstance.put<PlatformWalletCreditSettingsResponse>(
+    `/auth/system/wallets/${tenantId}/credit-settings`,
+    body,
+  )
   return data
 }

@@ -2087,3 +2087,40 @@ export type RejectKycDocumentPayload = { id: string; data: { reason: string } }
 export type DataBundleLedgerQuery = { params?: { page?: number; limit?: number } }
 // ponytail: spec ships no ledger row schema
 export type DataBundleLedgerResponse = ServerResponse<unknown[]>
+
+// ─── Platform Wallets ─────────────────────────────────────────────────────────
+
+export type PlatformWalletsQuery = {
+  params?: { query?: string; status?: string }
+}
+
+export type PlatformWalletLedgerQuery = {
+  params?: {
+    query?: string
+    tenantId?: string
+    category?: string
+    direction?: string
+    page?: number
+    limit?: number
+  }
+}
+
+export type PlatformTopUpPayload = {
+  tenantId: string
+  data: { amount: number; reason: string }
+}
+
+export type PlatformWalletCreditSettingsPayload = {
+  tenantId: string
+  data: {
+    creditEnabled: boolean
+    creditLimit?: number | null
+    lowBalanceThreshold: number
+  }
+}
+
+// ponytail: spec ships no response schema — tighten when @ApiResponse lands
+export type PlatformWalletsResponse = ServerResponse<unknown>
+export type PlatformWalletLedgerResponse = ServerResponse<unknown>
+export type PlatformTopUpResponse = ServerResponse<unknown>
+export type PlatformWalletCreditSettingsResponse = ServerResponse<unknown>

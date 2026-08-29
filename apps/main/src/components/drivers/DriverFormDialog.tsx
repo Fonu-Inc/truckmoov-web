@@ -1,4 +1,6 @@
-import type { Driver } from "@/types";
+import type {
+  DriverCommunicationPreference, DriverStatus,
+} from "@truckmoov/api/fleet";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toDateParam } from "@truckmoov/app-core/utils/time-utils";
 import { useEffect } from "react";
@@ -43,6 +45,7 @@ const driverSchema = z.object({
     "available",
     "offline",
     "suspended",
+    "inactive",
   ]),
   communicationPreference: z.enum([
     "whatsapp",
@@ -52,17 +55,28 @@ const driverSchema = z.object({
   ]),
 });
 
-type DriverFormData = z.infer<typeof driverSchema>;
+export type DriverFormData = z.infer<typeof driverSchema>;
+
+type DriverFormDriver = {
+  name: string;
+  phone: string;
+  email?: string | null;
+  licenseNumber: string;
+  licenseExpiry?: string | Date | null;
+  status?: DriverStatus;
+  communicationPreference?: DriverCommunicationPreference;
+};
 
 type DriverFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  driver?: Driver | null;
-  onSubmit: (data: DriverFormData) => void;
+  driver?: DriverFormDriver | null;
+  onSubmit: (data: DriverFormData) => boolean | Promise<boolean>;
+  isSubmitting?: boolean;
 };
 
 export function DriverFormDialog({
-  open, onOpenChange, driver, onSubmit,
+  open, onOpenChange, driver, onSubmit, isSubmitting,
 }: DriverFormDialogProps) {
   const isEditing = !!driver;
 
@@ -94,8 +108,8 @@ export function DriverFormDialog({
           email: driver.email || "",
           licenseNumber: driver.licenseNumber,
           licenseExpiry: toDateParam(driver.licenseExpiry),
-          status: driver.status,
-          communicationPreference: driver.communicationPreference,
+          status: driver.status ?? "available",
+          communicationPreference: driver.communicationPreference ?? "whatsapp",
         });
       }
       else {
@@ -117,10 +131,11 @@ export function DriverFormDialog({
     ],
   );
 
-  const handleSubmit = (data: DriverFormData) => {
-    onSubmit(data);
-    onOpenChange(false);
-    form.reset();
+  const handleSubmit = async (data: DriverFormData) => {
+    if (await onSubmit(data)) {
+      onOpenChange(false);
+      form.reset();
+    }
   };
 
   return (
@@ -263,6 +278,7 @@ export function DriverFormDialog({
                         <SelectItem value="available">Available</SelectItem>
                         <SelectItem value="offline">Offline</SelectItem>
                         <SelectItem value="suspended">Suspended</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -302,12 +318,15 @@ export function DriverFormDialog({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 variant="gradient"
+                loading={isSubmitting}
+                disabled={isSubmitting}
               >
                 {isEditing ? "Update Driver" : "Add Driver"}
               </Button>

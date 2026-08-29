@@ -191,11 +191,17 @@ import {
   approveSystemKycDocument,
   rejectSystemKycDocument,
   getDataBundleWalletLedger,
+  getPlatformWallets,
+  getPlatformWalletLedger,
+  platformTopUpWallet,
+  updatePlatformWalletCreditSettings,
 } from './requests'
 import type {
   ActivityLogQuery,
   CommunicationChannel,
   DataBundleLedgerQuery,
+  PlatformWalletLedgerQuery,
+  PlatformWalletsQuery,
   MailboxAttachmentPayload,
   MailboxThreadsQuery,
   MailboxThreadsSinceQuery,
@@ -345,6 +351,9 @@ export const AUTH_QUERY_KEY = {
     payload ? ['systemKycReviewQueue', payload] : ['systemKycReviewQueue'],
 
   dataBundleLedger: (payload?: DataBundleLedgerQuery) => ['dataBundleLedger', payload],
+
+  platformWallets: (payload?: PlatformWalletsQuery) => ['platformWallets', payload],
+  platformWalletLedger: (payload?: PlatformWalletLedgerQuery) => ['platformWalletLedger', payload],
 } as const
 
 // Public auth/session
@@ -1757,6 +1766,41 @@ export function getDataBundleWalletLedgerQueryOptions(payload?: DataBundleLedger
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.dataBundleLedger(payload),
     queryFn: () => getDataBundleWalletLedger(payload),
+  })
+}
+
+// ─── Platform Wallets ─────────────────────────────────────────────────────────
+
+export function getPlatformWalletsQueryOptions(payload?: PlatformWalletsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.platformWallets(payload),
+    queryFn: () => getPlatformWallets(payload),
+  })
+}
+
+export function getPlatformWalletLedgerQueryOptions(payload?: PlatformWalletLedgerQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.platformWalletLedger(payload),
+    queryFn: () => getPlatformWalletLedger(payload),
+  })
+}
+
+export function usePlatformTopUpWallet() {
+  return useMutation({
+    mutationFn: platformTopUpWallet,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['platformWallets'] })
+      queryClient.invalidateQueries({ queryKey: ['platformWalletLedger'] })
+    },
+  })
+}
+
+export function useUpdatePlatformWalletCreditSettings() {
+  return useMutation({
+    mutationFn: updatePlatformWalletCreditSettings,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['platformWallets'] })
+    },
   })
 }
 

@@ -15,7 +15,17 @@ import { Progress } from "@/components/shadcn/progress";
 type DriverBulkUploadDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpload: (drivers: any[]) => void;
+  onUpload: (drivers: DriverBulkUploadItem[]) => void | Promise<void>;
+};
+
+export type DriverBulkUploadItem = {
+  name: string;
+  phone: string;
+  email?: string;
+  licenseNumber: string;
+  licenseExpiry: string;
+  status: string;
+  communicationPreference: string;
 };
 
 type ParsedDriver = {
@@ -206,17 +216,25 @@ export function DriverBulkUploadDialog({
     setUploadProgress(0);
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     const validDrivers = parsedDrivers.filter(d => d.valid);
     if (validDrivers.length === 0) {
       toast.error("No valid drivers to upload");
       return;
     }
 
-    onUpload(validDrivers);
-    toast.success(`Successfully uploaded ${validDrivers.length} drivers`);
-    onOpenChange(false);
-    resetState();
+    setIsProcessing(true);
+    try {
+      await onUpload(validDrivers);
+      onOpenChange(false);
+      resetState();
+    }
+    catch {
+      // The API error is shown by the parent.
+    }
+    finally {
+      setIsProcessing(false);
+    }
   };
 
   const downloadTemplate = () => {
@@ -412,7 +430,7 @@ export function DriverBulkUploadDialog({
             </Button>
             <Button
               variant="gradient"
-              onClick={handleUpload}
+              onClick={() => void handleUpload()}
               disabled={!file || isProcessing || validCount === 0}
             >
               Upload
