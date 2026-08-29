@@ -55,6 +55,20 @@ import {
 import { Input } from "@/components/shadcn/input";
 import { Separator } from "@/components/shadcn/separator";
 import { Switch } from "@/components/shadcn/switch";
+import { Textarea } from "@/components/shadcn/textarea";
+
+const nairaFormatter = new Intl.NumberFormat("en-NG", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function formatKobo(kobo: number): string {
+  return nairaFormatter.format(kobo / 100);
+}
+
+function nairaToKobo(naira: number): number {
+  return Math.round(naira * 100);
+}
 
 const CHANNELS = ["sms", "whatsapp", "voice", "ai", "iot_sim"] as const;
 
@@ -165,10 +179,13 @@ export function CommunicationPricing() {
   }, [ratesQuery.data, form]);
 
   const onSubmit = (values: FormValues) => {
+    const dirty = form.formState.dirtyFields.rates ?? [];
+    const changed = values.rates.filter((_, i) => Boolean(dirty[i]));
+    if (changed.length === 0) return;
     updateRates.mutate(
       {
         data: {
-          rates: values.rates.map(r => ({
+          rates: changed.map(r => ({
             channel: r.channel,
             rateKobo: Math.round(r.rateNaira * 100),
             enabled: r.enabled,
@@ -230,6 +247,27 @@ export function CommunicationPricing() {
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-6"
           >
+            <div className="bg-muted/50 rounded-lg p-4">
+              <h4 className="font-medium mb-2">Billing Summary</h4>
+              <div className="grid gap-4 md:grid-cols-3 text-sm">
+                {watched
+                  .filter(r => r.enabled)
+                  .map(r => (
+                    <div key={r.channel} className="flex items-center justify-between">
+                      <span className="text-muted-foreground">
+                        {CHANNEL_LABELS[r.channel]}:
+                      </span>
+                      <span className="font-medium">
+                        ₦{Number(r.rateNaira || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        <span className="text-muted-foreground ml-1">/ {UNIT_LABELS[r.unit]}</span>
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            <Separator />
+
             <div className="grid gap-6 md:grid-cols-3">
               {fields.map((field, index) => {
                 const channel = field.channel;
@@ -268,27 +306,37 @@ export function CommunicationPricing() {
                       <FormField
                         control={form.control}
                         name={`rates.${index}.rateNaira`}
-                        render={({ field: rateField }) => (
-                          <FormItem>
-                            <FormLabel>Rate (₦)</FormLabel>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                                ₦
-                              </span>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  min="0.01"
-                                  step="0.01"
-                                  {...rateField}
-                                  className="pl-8"
-                                  disabled={!row?.enabled}
-                                />
-                              </FormControl>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                        render={({ field: rateField }) => {
+                          const kobo = nairaToKobo(Number(rateField.value) || 0);
+                          return (
+                            <FormItem>
+                              <FormLabel>Rate (₦)</FormLabel>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                  ₦
+                                </span>
+                                <FormControl>
+                                  <Input
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={formatKobo(kobo)}
+                                    onChange={(e) => {
+                                      const digits = e.target.value.replace(/\D/g, "").slice(0, 12);
+                                      const nextKobo = digits === "" ? 0 : parseInt(digits, 10);
+                                      rateField.onChange(nextKobo / 100);
+                                    }}
+                                    onBlur={rateField.onBlur}
+                                    name={rateField.name}
+                                    ref={rateField.ref}
+                                    className="pl-8"
+                                    disabled={!row?.enabled}
+                                  />
+                                </FormControl>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }}
                       />
 
                       <FormField
@@ -300,8 +348,10 @@ export function CommunicationPricing() {
                               Description
                             </FormLabel>
                             <FormControl>
-                              <Input
+                              <Textarea
                                 {...descField}
+                                rows={2}
+                                className="resize-none"
                                 placeholder="Optional label"
                                 disabled={!row?.enabled}
                               />
@@ -334,27 +384,6 @@ export function CommunicationPricing() {
                   </Card>
                 );
               })}
-            </div>
-
-            <Separator />
-
-            <div className="bg-muted/50 rounded-lg p-4">
-              <h4 className="font-medium mb-2">Billing Summary</h4>
-              <div className="grid gap-4 md:grid-cols-3 text-sm">
-                {watched
-                  .filter(r => r.enabled)
-                  .map(r => (
-                    <div key={r.channel} className="flex items-center justify-between">
-                      <span className="text-muted-foreground">
-                        {CHANNEL_LABELS[r.channel]}:
-                      </span>
-                      <span className="font-medium">
-                        ₦{Number(r.rateNaira || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                        <span className="text-muted-foreground ml-1">/ {UNIT_LABELS[r.unit]}</span>
-                      </span>
-                    </div>
-                  ))}
-              </div>
             </div>
           </form>
         </Form>
