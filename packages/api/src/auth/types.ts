@@ -2036,6 +2036,12 @@ export type PlatformAlertSettingResponse = ServerResponse<PlatformAlertSetting>
 
 export type CommunicationChannel = 'sms' | 'whatsapp' | 'voice' | 'ai' | 'iot_sim'
 
+export type CommunicationRateUnit =
+  | 'per_message'
+  | 'per_minute'
+  | 'per_request'
+  | 'recurring_monthly'
+
 export type ChannelRate = {
   channel: CommunicationChannel
   rateKobo: number
@@ -2046,9 +2052,20 @@ export type ChannelRate = {
 export type UpdateCommunicationRatesPayload = { data: { rates: ChannelRate[] } }
 export type CommunicationRateHistoryPayload = { channel: CommunicationChannel }
 
-// ponytail: spec ships no response schemas
-export type CommunicationRatesResponse = ServerResponse<unknown>
-export type CommunicationRateHistoryResponse = ServerResponse<unknown[]>
+// Server row (spec ships descriptions only — shape observed from live response).
+export type CommunicationRate = {
+  id: string
+  channel: CommunicationChannel
+  unit: CommunicationRateUnit
+  rateKobo: number
+  enabled: boolean
+  description: string | null
+  effectiveFrom: string
+  createdBy: string | null
+}
+
+export type CommunicationRatesResponse = ServerResponse<CommunicationRate[]>
+export type CommunicationRateHistoryResponse = ServerResponse<CommunicationRate[]>
 
 // ─── Organisation Upgrades ────────────────────────────────────────────────────
 

@@ -1,17 +1,32 @@
-import { formatDate } from "@truckmoov/app-core/utils/time-utils";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { ColumnDef } from "@tanstack/react-table";
+import { useQuery } from "@tanstack/react-query";
 import {
+  getCommunicationRateHistoryQueryOptions,
+  getCommunicationRatesQueryOptions,
+  useUpdateCommunicationRates,
+} from "@truckmoov/api/auth";
+import type {
+  CommunicationChannel,
+  CommunicationRate,
+  CommunicationRateUnit,
+} from "@truckmoov/api/auth";
+import { formatDate, formatTime } from "@truckmoov/app-core/utils/time-utils";
+import {
+  Bot,
   DollarSign,
+  History,
   MessageCircle,
   MessageSquare,
   Phone,
   RefreshCw,
+  Router,
   Save,
 } from "lucide-react";
-import {
-  useEffect,
-  useState,
-} from "react";
+import { useEffect, useState } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -21,89 +36,158 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
 import { Separator } from "@/components/shadcn/separator";
 import { Switch } from "@/components/shadcn/switch";
 
-type CommunicationRate = {
-  id: string;
-  communication_type: string;
-  rate_ngn: number;
-  rate_unit: string;
-  description: string | null;
-  is_active: boolean;
-  updated_at: string;
+const CHANNELS = ["sms", "whatsapp", "voice", "ai", "iot_sim"] as const;
+
+const rateRowSchema = z.object({
+  channel: z.enum(CHANNELS),
+  unit: z.enum(["per_message", "per_minute", "per_request", "recurring_monthly"]),
+  rateNaira: z.coerce
+    .number({ invalid_type_error: "Enter a valid rate" })
+    .min(0.01, "Rate must be at least ₦0.01"),
+  enabled: z.boolean(),
+  description: z.string().max(255).optional(),
+});
+
+const formSchema = z.object({ rates: z.array(rateRowSchema) });
+
+type FormValues = z.infer<typeof formSchema>;
+
+export const COMMUNICATION_PRICING_FORM_ID = "communication-pricing-form";
+
+const CHANNEL_LABELS: Record<CommunicationChannel, string> = {
+  sms: "SMS",
+  whatsapp: "WhatsApp",
+  voice: "Voice",
+  ai: "AI",
+  iot_sim: "IoT SIM",
 };
 
+const UNIT_LABELS: Record<CommunicationRateUnit, string> = {
+  per_message: "per message",
+  per_minute: "per minute",
+  per_request: "per request",
+  recurring_monthly: "per month",
+};
+
+const DEFAULT_UNIT: Record<CommunicationChannel, CommunicationRateUnit> = {
+  sms: "per_message",
+  whatsapp: "per_message",
+  voice: "per_minute",
+  ai: "per_request",
+  iot_sim: "recurring_monthly",
+};
+
+function getIcon(channel: CommunicationChannel) {
+  switch (channel) {
+    case "voice":
+      return <Phone className="h-5 w-5" />;
+    case "sms":
+      return <MessageSquare className="h-5 w-5" />;
+    case "whatsapp":
+      return <MessageCircle className="h-5 w-5" />;
+    case "ai":
+      return <Bot className="h-5 w-5" />;
+    case "iot_sim":
+      return <Router className="h-5 w-5" />;
+    default:
+      return <DollarSign className="h-5 w-5" />;
+  }
+}
+
+function getBadgeClass(channel: CommunicationChannel) {
+  switch (channel) {
+    case "voice":
+      return "bg-info/10 text-info border-info/20";
+    case "sms":
+    case "whatsapp":
+      return "bg-success/10 text-success border-success/20";
+    case "ai":
+      return "bg-primary/10 text-primary border-primary/20";
+    case "iot_sim":
+      return "bg-warning/10 text-warning border-warning/20";
+    default:
+      return "";
+  }
+}
+
+function serverRatesToForm(rates: CommunicationRate[] | undefined): FormValues {
+  const byChannel = new Map(rates?.map(r => [r.channel, r]));
+  return {
+    rates: CHANNELS.map((channel) => {
+      const row = byChannel.get(channel);
+      return {
+        channel,
+        unit: row?.unit ?? DEFAULT_UNIT[channel],
+        rateNaira: row ? row.rateKobo / 100 : 0.01,
+        enabled: row?.enabled ?? true,
+        description: row?.description ?? "",
+      };
+    }),
+  };
+}
+
 export function CommunicationPricing() {
-  const [rates] = useState<CommunicationRate[]>([]);
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
-  const [saving] = useState(false);
-  const [
-    editedRates,
-    setEditedRates,
-  ] = useState<Record<string, number>>({});
+  const ratesQuery = useQuery(getCommunicationRatesQueryOptions());
+  const updateRates = useUpdateCommunicationRates();
+  const [historyChannel, setHistoryChannel] = useState<CommunicationChannel | null>(null);
 
-  const fetchRates = async () => {
-    setLoading(false);
-  };
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: serverRatesToForm(undefined),
+  });
+  const { fields } = useFieldArray({ control: form.control, name: "rates" });
+  const watched = form.watch("rates");
 
-  useEffect(
-    () => {
-      fetchRates();
-    },
-    [],
-  );
-
-  const handleRateChange = (id: string, value: string) => {
-    const numValue = Number.parseFloat(value) || 0;
-    setEditedRates(prev => ({
-      ...prev,
-      [id]: numValue,
-    }));
-  };
-
-  const handleToggleActive = async (_id: string, _isActive: boolean) => {
-    toast.info("Coming soon");
-  };
-
-  const handleSaveRates = async () => {
-    toast.info("Coming soon");
-  };
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "call":
-        return <Phone className="h-5 w-5" />;
-      case "sms":
-        return <MessageSquare className="h-5 w-5" />;
-      case "whatsapp":
-        return <MessageCircle className="h-5 w-5" />;
-      default:
-        return <DollarSign className="h-5 w-5" />;
+  useEffect(() => {
+    if (ratesQuery.data?.data) {
+      form.reset(serverRatesToForm(ratesQuery.data.data));
     }
+  }, [ratesQuery.data, form]);
+
+  const onSubmit = (values: FormValues) => {
+    updateRates.mutate(
+      {
+        data: {
+          rates: values.rates.map(r => ({
+            channel: r.channel,
+            rateKobo: Math.round(r.rateNaira * 100),
+            enabled: r.enabled,
+            description: r.description || undefined,
+          })),
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Rates updated");
+        },
+        onError: (error) => {
+          toast.error(error.message);
+        },
+      },
+    );
   };
 
-  const getTypeBadgeColor = (type: string) => {
-    switch (type) {
-      case "call":
-        return "bg-info/10 text-info border-info/20";
-      case "sms":
-        return "bg-success/10 text-success border-success/20";
-      case "whatsapp":
-        return "bg-success/10 text-success border-success/20";
-      default:
-        return "";
-    }
-  };
-
-  const hasChanges = rates.some(rate => editedRates[rate.id] !== rate.rate_ngn);
-
-  if (loading) {
+  if (ratesQuery.isLoading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">
@@ -112,6 +196,8 @@ export function CommunicationPricing() {
       </Card>
     );
   }
+
+  const hasChanges = form.formState.isDirty;
 
   return (
     <Card>
@@ -127,119 +213,241 @@ export function CommunicationPricing() {
             </CardDescription>
           </div>
           <Button
-            onClick={handleSaveRates}
-            disabled={saving || !hasChanges}
+            type="submit"
+            form={COMMUNICATION_PRICING_FORM_ID}
+            loading={updateRates.isPending}
+            disabled={!hasChanges}
           >
-            {saving
-              ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                )
-              : (
-                  <Save className="h-4 w-4 mr-2" />
-                )}
+            <Save className="h-4 w-4 mr-2" />
             Save Changes
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid gap-6 md:grid-cols-3">
-          {rates.map(rate => (
-            <Card
-              key={rate.id}
-              className={`border-2 ${rate.is_active ? "border-primary/20" : "border-muted opacity-60"}`}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`p-2 rounded-lg ${getTypeBadgeColor(rate.communication_type)}`}>
-                      {getIcon(rate.communication_type)}
-                    </div>
-                    <div>
-                      <h4 className="font-semibold capitalize">{rate.communication_type}</h4>
-                      <p className="text-xs text-muted-foreground">
-                        {rate.rate_unit === "per_minute" ? "Per Minute" : "Per Message"}
-                      </p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={rate.is_active}
-                    onCheckedChange={checked => handleToggleActive(
-                      rate.id,
-                      checked,
-                    )}
-                  />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor={`rate-${rate.id}`}>Rate (₦)</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₦</span>
-                    <Input
-                      id={`rate-${rate.id}`}
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={editedRates[rate.id] || 0}
-                      onChange={e => handleRateChange(
-                        rate.id,
-                        e.target.value,
-                      )}
-                      className="pl-8"
-                      disabled={!rate.is_active}
-                    />
-                  </div>
-                </div>
-
-                {rate.description && (
-                  <p className="text-sm text-muted-foreground">{rate.description}</p>
-                )}
-
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Last updated</span>
-                  <span>{formatDate(rate.updated_at)}</span>
-                </div>
-
-                {editedRates[rate.id] !== rate.rate_ngn && (
-                  <Badge
-                    variant="outline"
-                    className="w-full justify-center bg-warning/10 text-warning border-warning/20"
+        <Form {...form}>
+          <form
+            id={COMMUNICATION_PRICING_FORM_ID}
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-6"
+          >
+            <div className="grid gap-6 md:grid-cols-3">
+              {fields.map((field, index) => {
+                const channel = field.channel;
+                const row = watched[index];
+                return (
+                  <Card
+                    key={field.id}
+                    className={`border-2 ${row?.enabled ? "border-primary/20" : "border-muted opacity-60"}`}
                   >
-                    Unsaved changes
-                  </Badge>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={`p-2 rounded-lg ${getBadgeClass(channel)}`}>
+                            {getIcon(channel)}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold">{CHANNEL_LABELS[channel]}</h4>
+                            <p className="text-xs text-muted-foreground">
+                              {UNIT_LABELS[row?.unit ?? DEFAULT_UNIT[channel]]}
+                            </p>
+                          </div>
+                        </div>
+                        <FormField
+                          control={form.control}
+                          name={`rates.${index}.enabled`}
+                          render={({ field: switchField }) => (
+                            <Switch
+                              checked={switchField.value}
+                              onCheckedChange={switchField.onChange}
+                            />
+                          )}
+                        />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name={`rates.${index}.rateNaira`}
+                        render={({ field: rateField }) => (
+                          <FormItem>
+                            <FormLabel>Rate (₦)</FormLabel>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                ₦
+                              </span>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min="0.01"
+                                  step="0.01"
+                                  {...rateField}
+                                  className="pl-8"
+                                  disabled={!row?.enabled}
+                                />
+                              </FormControl>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-        <Separator />
+                      <FormField
+                        control={form.control}
+                        name={`rates.${index}.description`}
+                        render={({ field: descField }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-muted-foreground">
+                              Description
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...descField}
+                                placeholder="Optional label"
+                                disabled={!row?.enabled}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-        <div className="bg-muted/50 rounded-lg p-4">
-          <h4 className="font-medium mb-2">Billing Summary</h4>
-          <div className="grid gap-4 md:grid-cols-3 text-sm">
-            {rates.filter(r => r.is_active).map(rate => (
-              <div
-                key={rate.id}
-                className="flex items-center justify-between"
-              >
-                <span className="capitalize text-muted-foreground">
-                  {rate.communication_type}
-                  :
-                </span>
-                <span className="font-medium">
-                  ₦
-                  {editedRates[rate.id]?.toLocaleString() || rate.rate_ngn.toLocaleString()}
-                  <span className="text-muted-foreground ml-1">
-                    /
-                    {rate.rate_unit === "per_minute" ? "min" : "msg"}
-                  </span>
-                </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setHistoryChannel(channel)}
+                      >
+                        <History className="h-4 w-4 mr-2" />
+                        View history
+                      </Button>
+
+                      {form.formState.dirtyFields.rates?.[index] && (
+                        <Badge
+                          variant="outline"
+                          className="w-full justify-center bg-warning/10 text-warning border-warning/20"
+                        >
+                          Unsaved changes
+                        </Badge>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            <Separator />
+
+            <div className="bg-muted/50 rounded-lg p-4">
+              <h4 className="font-medium mb-2">Billing Summary</h4>
+              <div className="grid gap-4 md:grid-cols-3 text-sm">
+                {watched
+                  .filter(r => r.enabled)
+                  .map(r => (
+                    <div key={r.channel} className="flex items-center justify-between">
+                      <span className="text-muted-foreground">
+                        {CHANNEL_LABELS[r.channel]}:
+                      </span>
+                      <span className="font-medium">
+                        ₦{Number(r.rateNaira || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        <span className="text-muted-foreground ml-1">/ {UNIT_LABELS[r.unit]}</span>
+                      </span>
+                    </div>
+                  ))}
               </div>
-            ))}
+            </div>
+          </form>
+        </Form>
+      </CardContent>
+
+      <RateHistoryDialog
+        channel={historyChannel}
+        onClose={() => setHistoryChannel(null)}
+      />
+    </Card>
+  );
+}
+
+type RateHistoryDialogProps = {
+  channel: CommunicationChannel | null;
+  onClose: () => void;
+};
+
+function RateHistoryDialog({ channel, onClose }: RateHistoryDialogProps) {
+  const historyQuery = useQuery({
+    ...getCommunicationRateHistoryQueryOptions(channel ?? ("sms" as CommunicationChannel)),
+    enabled: Boolean(channel),
+  });
+
+  const columns: ColumnDef<CommunicationRate>[] = [
+    {
+      accessorKey: "effectiveFrom",
+      header: "Effective from",
+      cell: ({ row }) => (
+        <div className="text-sm">
+          <div>{formatDate(row.original.effectiveFrom)}</div>
+          <div className="text-xs text-muted-foreground">
+            {formatTime(row.original.effectiveFrom)}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      ),
+    },
+    {
+      accessorKey: "rateKobo",
+      header: "Rate",
+      cell: ({ row }) => (
+        <span className="font-medium">
+          ₦{(row.original.rateKobo / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "enabled",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge
+          variant="outline"
+          className={
+            row.original.enabled
+              ? "bg-success/10 text-success border-success/20"
+              : "bg-muted text-muted-foreground"
+          }
+        >
+          {row.original.enabled ? "Enabled" : "Disabled"}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground">
+          {row.original.description ?? "—"}
+        </span>
+      ),
+    },
+  ];
+
+  return (
+    <Dialog open={channel !== null} onOpenChange={open => !open && onClose()}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <History className="h-5 w-5 text-primary" />
+            {channel ? CHANNEL_LABELS[channel] : ""} rate history
+          </DialogTitle>
+          <DialogDescription>Every rate this channel has had, newest first.</DialogDescription>
+        </DialogHeader>
+        <DataTable
+          columns={columns}
+          data={historyQuery.data?.data ?? []}
+          isLoading={historyQuery.isLoading}
+          isError={historyQuery.isError}
+          errorMessage={historyQuery.error?.message}
+          onRetry={() => historyQuery.refetch()}
+          emptyState="No rate history yet"
+        />
+      </DialogContent>
+    </Dialog>
   );
 }
