@@ -1,3 +1,6 @@
+import type { ColumnDef } from "@tanstack/react-table";
+import { useQuery } from "@tanstack/react-query";
+import { getPlatformWalletLedgerQueryOptions } from "@truckmoov/api/auth";
 import {
   formatDate,
   formatTime,
@@ -10,9 +13,9 @@ import {
   MessageCircle,
   MessageSquare,
   Phone,
-  RefreshCw,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -22,10 +25,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
-import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shadcn/data-table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 
+// ponytail: response schema not shipped by spec — assumed shape mirrors legacy mock; tighten when @ApiResponse lands
 type WalletTransaction = {
   id: string;
   tenant_id: string;
@@ -41,33 +44,47 @@ type WalletTransaction = {
   created_at: string;
 };
 
+function useDebouncedValue<T>(value: T, delayMs: number) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timeout = window.setTimeout(setDebounced, delayMs, value);
+    return () => window.clearTimeout(timeout);
+  }, [delayMs, value]);
+  return debounced;
+}
+
 export function WalletTransactionHistory() {
-  const [transactions] = useState<WalletTransaction[]>([]);
-  const [loading] = useState(false);
-  const [
-    searchTerm,
-    setSearchTerm,
-  ] = useState("");
-  const [
-    typeFilter,
-    setTypeFilter,
-  ] = useState<string>("all");
-  const [
-    commTypeFilter,
-    setCommTypeFilter,
-  ] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [commTypeFilter, setCommTypeFilter] = useState<string>("all");
 
-  const filteredTransactions = transactions.filter((tx) => {
-    const matchesSearch
-      = tx.tenant_id.toLowerCase().includes(searchTerm.toLowerCase())
-        || tx.description?.toLowerCase().includes(searchTerm.toLowerCase())
-        || tx.reference_id?.toLowerCase().includes(searchTerm.toLowerCase());
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
 
-    const matchesType = typeFilter === "all" || tx.transaction_type === typeFilter;
-    const matchesCommType = commTypeFilter === "all" || tx.communication_type === commTypeFilter;
+  const ledgerQuery = useQuery(
+    getPlatformWalletLedgerQueryOptions({
+      params: {
+        query: debouncedSearch || undefined,
+        category: typeFilter !== "all" ? typeFilter : undefined,
+      },
+    }),
+  );
 
-    return matchesSearch && matchesType && matchesCommType;
-  });
+  const responseData = ledgerQuery.data?.data as { items?: WalletTransaction[]; total?: number } | undefined;
+  const transactions = useMemo<WalletTransaction[]>(
+    () => responseData?.items ?? [],
+    [responseData],
+  );
+  const total = responseData?.total ?? transactions.length;
+
+  // ponytail: channel filter applied client-side — ledger endpoint's `direction` param
+  // doesn't map cleanly to voice/sms/whatsapp; move server-side once spec clarifies
+  const filteredTransactions = useMemo(
+    () =>
+      transactions.filter(tx =>
+        commTypeFilter === "all" || tx.communication_type === commTypeFilter,
+      ),
+    [transactions, commTypeFilter],
+  );
 
   const getTypeIcon = (commType: string | null) => {
     switch (commType) {
@@ -118,46 +135,6 @@ export function WalletTransactionHistory() {
       default:
         return <Badge variant="outline">{type}</Badge>;
     }
-  };
-
-  const exportTransactions = () => {
-    const csv = [
-      [
-        "Date",
-        "Tenant",
-        "Type",
-        "Channel",
-        "Quantity",
-        "Rate",
-        "Amount",
-        "Balance Before",
-        "Balance After",
-        "Description",
-      ].join(","),
-      ...filteredTransactions.map(tx => [
-        new Date(tx.created_at).toISOString(),
-        tx.tenant_id,
-        tx.transaction_type,
-        tx.communication_type || "",
-        tx.quantity || "",
-        tx.unit_rate_ngn || "",
-        tx.amount_ngn,
-        tx.balance_before_ngn,
-        tx.balance_after_ngn,
-        `"${tx.description || ""}"`,
-      ].join(",")),
-    ].join("\n");
-
-    const blob = new Blob(
-      [csv],
-      { type: "text/csv" },
-    );
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `wallet-transactions-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const txColumns: ColumnDef<WalletTransaction>[] = [
@@ -250,15 +227,8 @@ export function WalletTransactionHistory() {
     },
   ];
 
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
-    );
-  }
+  const hasActiveFilters
+    = !!searchTerm || typeFilter !== "all" || commTypeFilter !== "all";
 
   return (
     <Card>
@@ -276,7 +246,7 @@ export function WalletTransactionHistory() {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={exportTransactions}
+              onClick={() => toast.info("Endpoint coming soon")}
             >
               <Download className="h-4 w-4 mr-2" />
               Export Data
@@ -292,22 +262,10 @@ export function WalletTransactionHistory() {
           status={typeFilter}
           onStatusChange={setTypeFilter}
           statusOptions={[
-            {
-              value: "debit",
-              label: "Debit",
-            },
-            {
-              value: "credit",
-              label: "Credit",
-            },
-            {
-              value: "topup",
-              label: "Top Up",
-            },
-            {
-              value: "refund",
-              label: "Refund",
-            },
+            { value: "debit", label: "Debit" },
+            { value: "credit", label: "Credit" },
+            { value: "topup", label: "Top Up" },
+            { value: "refund", label: "Refund" },
           ]}
           filterEntity="transactions"
           filterFields={[
@@ -316,20 +274,10 @@ export function WalletTransactionHistory() {
               key: "channel",
               label: "Channel",
               options: [
-                {
-                  value: "call",
-                  label: "Voice Call",
-                },
-                {
-                  value: "sms",
-                  label: "SMS",
-                },
-                {
-                  value: "whatsapp",
-                  label: "WhatsApp",
-                },
+                { value: "call", label: "Voice Call" },
+                { value: "sms", label: "SMS" },
+                { value: "whatsapp", label: "WhatsApp" },
               ],
-
             },
           ]}
           filterValues={{
@@ -337,7 +285,6 @@ export function WalletTransactionHistory() {
               enabled: commTypeFilter !== "all",
               value: commTypeFilter,
             },
-
           }}
           onFiltersApply={values =>
             setCommTypeFilter(values.channel?.enabled ? values.channel.value ?? "all" : "all")}
@@ -347,7 +294,11 @@ export function WalletTransactionHistory() {
           <DataTable
             columns={txColumns}
             data={filteredTransactions}
-            hasActiveFilters={!!searchTerm || typeFilter !== "all" || commTypeFilter !== "all"}
+            isLoading={ledgerQuery.isLoading}
+            isError={ledgerQuery.isError}
+            errorMessage="Failed to load transaction history."
+            onRetry={() => ledgerQuery.refetch()}
+            hasActiveFilters={hasActiveFilters}
             emptyState="No transactions found"
             filteredEmptyState="No transactions match your filters."
           />
@@ -360,9 +311,10 @@ export function WalletTransactionHistory() {
           {" "}
           of
           {" "}
-          {transactions.length}
+          {total}
           {" "}
           transactions
+          {/* ponytail: no pagination — add pager when result set grows */}
         </div>
       </CardContent>
     </Card>

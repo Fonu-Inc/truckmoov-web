@@ -1,18 +1,22 @@
 import type { FilterValues } from "@/components/shadcn/table-toolbar";
+import type { ColumnDef } from "@tanstack/react-table";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getPlatformWalletsQueryOptions,
+  usePlatformTopUpWallet,
+  useUpdatePlatformWalletCreditSettings,
+} from "@truckmoov/api/auth";
 import {
   AlertTriangle,
   Building2,
   CreditCard,
+  Download,
   Plus,
-  RefreshCw,
+  Settings,
   TrendingDown,
   Wallet,
-
 } from "lucide-react";
-import {
-  useEffect,
-  useState,
-} from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -23,6 +27,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -31,15 +36,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/dialog";
-import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-
 import { Switch } from "@/components/shadcn/switch";
-import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/shadcn/data-table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 
+// ponytail: response schema not shipped by spec — assumed shape mirrors legacy mock; tighten when @ApiResponse lands
 type TenantWallet = {
   id: string;
   tenant_id: string;
@@ -50,164 +52,156 @@ type TenantWallet = {
   updated_at: string;
 };
 
+type WalletsResponseData = {
+  summary?: {
+    totalWallets?: number;
+    totalBalanceKobo?: number;
+    lowBalance?: number;
+    negativeBalance?: number;
+  };
+  wallets?: TenantWallet[];
+};
+
+function useDebouncedValue<T>(value: T, delayMs: number) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timeout = window.setTimeout(setDebounced, delayMs, value);
+    return () => window.clearTimeout(timeout);
+  }, [delayMs, value]);
+  return debounced;
+}
+
+function getBalanceStatus(wallet: TenantWallet) {
+  if (wallet.balance_ngn < 0) {
+    return { color: "destructive", text: "Negative" } as const;
+  }
+  if (wallet.balance_ngn < wallet.low_balance_threshold_ngn) {
+    return { color: "warning", text: "Low" } as const;
+  }
+  return { color: "default", text: "Healthy" } as const;
+}
+
 export function TenantWalletManagement() {
-  const [
-    wallets,
-    setWallets,
-  ] = useState<TenantWallet[]>([]);
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
-  const [
-    topupDialogOpen,
-    setTopupDialogOpen,
-  ] = useState(false);
-  const [
-    selectedWallet,
-    setSelectedWallet,
-  ] = useState<TenantWallet | null>(null);
-  const [
-    topupAmount,
-    setTopupAmount,
-  ] = useState("");
-  const [topupLoading] = useState(false);
-  const [
-    searchQuery,
-    setSearchQuery,
-  ] = useState("");
-  const [
-    statusFilter,
-    setStatusFilter,
-  ] = useState<string>("all");
-  const [
-    walletFilters,
-    setWalletFilters,
-  ] = useState<FilterValues>({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [walletFilters, setWalletFilters] = useState<FilterValues>({});
 
-  const DEMO_WALLETS: TenantWallet[] = [
-    {
-      id: "dw-1",
-      tenant_id: "Lagos Express Logistics",
-      balance_ngn: 4_287_500,
-      credit_enabled: true,
-      credit_limit_ngn: 5_000_000,
-      low_balance_threshold_ngn: 500_000,
-      updated_at: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-    },
-    {
-      id: "dw-2",
-      tenant_id: "Nairobi Fleet Group",
-      balance_ngn: 2_148_900,
-      credit_enabled: true,
-      credit_limit_ngn: 3_000_000,
-      low_balance_threshold_ngn: 400_000,
-      updated_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    },
-    {
-      id: "dw-3",
-      tenant_id: "Accra Swift Cargo",
-      balance_ngn: 1_842_300,
-      credit_enabled: true,
-      credit_limit_ngn: 2_500_000,
-      low_balance_threshold_ngn: 300_000,
-      updated_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-    },
-    {
-      id: "dw-4",
-      tenant_id: "Johannesburg Freight",
-      balance_ngn: 612_000,
-      credit_enabled: true,
-      credit_limit_ngn: 2_000_000,
-      low_balance_threshold_ngn: 500_000,
-      updated_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    },
-    {
-      id: "dw-5",
-      tenant_id: "Abuja Haulage Co.",
-      balance_ngn: 384_200,
-      credit_enabled: false,
-      credit_limit_ngn: 0,
-      low_balance_threshold_ngn: 400_000,
-      updated_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-    },
-    {
-      id: "dw-6",
-      tenant_id: "Cape Town Trucking",
-      balance_ngn: -128_400,
-      credit_enabled: true,
-      credit_limit_ngn: 1_500_000,
-      low_balance_threshold_ngn: 250_000,
-      updated_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-    },
-    {
-      id: "dw-7",
-      tenant_id: "Kano Northern Logistics",
-      balance_ngn: 1_204_700,
-      credit_enabled: false,
-      credit_limit_ngn: 0,
-      low_balance_threshold_ngn: 200_000,
-      updated_at: new Date(Date.now() - 1000 * 60 * 60 * 9).toISOString(),
-    },
-    {
-      id: "dw-8",
-      tenant_id: "Dar es Salaam Movers",
-      balance_ngn: 798_400,
-      credit_enabled: true,
-      credit_limit_ngn: 1_000_000,
-      low_balance_threshold_ngn: 200_000,
-      updated_at: new Date(Date.now() - 1000 * 60 * 60 * 14).toISOString(),
-    },
-  ];
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
 
-  useEffect(
-    () => {
-      setWallets(DEMO_WALLETS);
-      setLoading(false);
-    },
-    [],
+  const walletsQuery = useQuery(
+    getPlatformWalletsQueryOptions({
+      params: {
+        query: debouncedSearch || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+      },
+    }),
   );
 
-  const handleTopup = async () => {
-    toast.info("Coming soon");
-  };
-
-  const handleToggleCredit = async (_wallet) => {
-    toast.info("Coming soon");
-  };
-
-  const getBalanceStatus = (wallet: TenantWallet) => {
-    if (wallet.balance_ngn < 0) {
-      return {
-        color: "destructive",
-        text: "Negative",
-      };
-    }
-    if (wallet.balance_ngn < wallet.low_balance_threshold_ngn) {
-      return {
-        color: "warning",
-        text: "Low",
-      };
-    }
-    return {
-      color: "default",
-      text: "Healthy",
-    };
-  };
-
-  const totalBalance = wallets.reduce(
-    (sum, w) => sum + (w.balance_ngn || 0),
-    0,
+  const responseData = walletsQuery.data?.data as WalletsResponseData | undefined;
+  const wallets = useMemo<TenantWallet[]>(
+    () => responseData?.wallets ?? [],
+    [responseData],
   );
-  const lowBalanceCount = wallets.filter(w => w.balance_ngn < w.low_balance_threshold_ngn).length;
-  const negativeBalanceCount = wallets.filter(w => w.balance_ngn < 0).length;
+  const summary = responseData?.summary;
 
-  const filteredWallets = wallets.filter((w) => {
-    const matchesSearch = !searchQuery || w.tenant_id.toLowerCase().includes(searchQuery.toLowerCase());
-    const status = getBalanceStatus(w).text.toLowerCase();
-    const matchesStatus = statusFilter === "all" || status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // ponytail: structured filters (credit yes/no, balance range) applied client-side —
+  // endpoint doesn't expose these params yet; move server-side once it does
+  const filteredWallets = useMemo(() => {
+    const creditFilter = walletFilters.credit;
+    const balanceFilter = walletFilters.balance;
+    return wallets.filter((w) => {
+      if (creditFilter?.enabled) {
+        const want = creditFilter.value === "yes";
+        if (w.credit_enabled !== want) return false;
+      }
+      if (balanceFilter?.enabled) {
+        const min = balanceFilter.from ? Number(balanceFilter.from) : Number.NEGATIVE_INFINITY;
+        const max = balanceFilter.to ? Number(balanceFilter.to) : Number.POSITIVE_INFINITY;
+        if (w.balance_ngn < min || w.balance_ngn > max) return false;
+      }
+      return true;
+    });
+  }, [wallets, walletFilters]);
+
+  const [topupDialogOpen, setTopupDialogOpen] = useState(false);
+  const [creditDialogOpen, setCreditDialogOpen] = useState(false);
+  const [selectedWallet, setSelectedWallet] = useState<TenantWallet | null>(null);
+  const [topupAmount, setTopupAmount] = useState("");
+  const [topupReason, setTopupReason] = useState("");
+  const [creditEnabled, setCreditEnabled] = useState(false);
+  const [creditLimit, setCreditLimit] = useState("");
+  const [lowBalanceThreshold, setLowBalanceThreshold] = useState("");
+
+  const topupMutation = usePlatformTopUpWallet();
+  const creditMutation = useUpdatePlatformWalletCreditSettings();
+
+  const openTopup = (wallet: TenantWallet) => {
+    setSelectedWallet(wallet);
+    setTopupAmount("");
+    setTopupReason("");
+    setTopupDialogOpen(true);
+  };
+
+  const openCreditSettings = (wallet: TenantWallet) => {
+    setSelectedWallet(wallet);
+    setCreditEnabled(wallet.credit_enabled);
+    setCreditLimit(String(wallet.credit_limit_ngn ?? 0));
+    setLowBalanceThreshold(String(wallet.low_balance_threshold_ngn ?? 0));
+    setCreditDialogOpen(true);
+  };
+
+  const handleTopup = () => {
+    if (!selectedWallet) return;
+    const amount = Number(topupAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error("Enter a valid amount.");
+      return;
+    }
+    topupMutation.mutate(
+      {
+        tenantId: selectedWallet.tenant_id,
+        data: { amount, reason: topupReason.trim() },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Wallet topped up");
+          setTopupDialogOpen(false);
+        },
+        onError: (error) => toast.error(error.message),
+      },
+    );
+  };
+
+  const handleCreditSubmit = () => {
+    if (!selectedWallet) return;
+    const limit = creditLimit === "" ? null : Number(creditLimit);
+    const threshold = Number(lowBalanceThreshold);
+    if (limit !== null && !Number.isFinite(limit)) {
+      toast.error("Enter a valid credit limit.");
+      return;
+    }
+    if (!Number.isFinite(threshold) || threshold < 0) {
+      toast.error("Enter a valid low balance threshold.");
+      return;
+    }
+    creditMutation.mutate(
+      {
+        tenantId: selectedWallet.tenant_id,
+        data: {
+          creditEnabled,
+          creditLimit: limit,
+          lowBalanceThreshold: threshold,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Credit settings updated");
+          setCreditDialogOpen(false);
+        },
+        onError: (error) => toast.error(error.message),
+      },
+    );
+  };
 
   const walletColumns: ColumnDef<TenantWallet>[] = [
     {
@@ -243,7 +237,7 @@ export function TenantWalletManagement() {
       cell: ({ row }) => (
         <Switch
           checked={row.original.credit_enabled}
-          onCheckedChange={() => handleToggleCredit(row.original)}
+          onCheckedChange={() => openCreditSettings(row.original)}
         />
       ),
     },
@@ -271,30 +265,30 @@ export function TenantWalletManagement() {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            setSelectedWallet(row.original);
-            setTopupDialogOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Top Up
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => openTopup(row.original)}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Top Up
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => openCreditSettings(row.original)}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+        </div>
       ),
     },
   ];
 
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
-    );
-  }
+  const hasActiveFilters
+    = !!searchQuery || statusFilter !== "all"
+      || !!walletFilters.credit?.enabled || !!walletFilters.balance?.enabled;
 
   return (
     <>
@@ -305,7 +299,9 @@ export function TenantWalletManagement() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{wallets.length}</div>
+            <div className="text-2xl font-bold">
+              {summary?.totalWallets?.toLocaleString() ?? "—"}
+            </div>
             <p className="text-xs text-muted-foreground">Active tenant wallets</p>
           </CardContent>
         </Card>
@@ -317,8 +313,9 @@ export function TenantWalletManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ₦
-              {totalBalance.toLocaleString()}
+              {summary
+                ? `₦${Math.round((summary.totalBalanceKobo ?? 0) / 100).toLocaleString()}`
+                : "—"}
             </div>
             <p className="text-xs text-muted-foreground">Across all tenants</p>
           </CardContent>
@@ -330,7 +327,9 @@ export function TenantWalletManagement() {
             <TrendingDown className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning">{lowBalanceCount}</div>
+            <div className="text-2xl font-bold text-warning">
+              {summary?.lowBalance?.toLocaleString() ?? "—"}
+            </div>
             <p className="text-xs text-muted-foreground">Below threshold</p>
           </CardContent>
         </Card>
@@ -341,7 +340,9 @@ export function TenantWalletManagement() {
             <AlertTriangle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">{negativeBalanceCount}</div>
+            <div className="text-2xl font-bold text-destructive">
+              {summary?.negativeBalance?.toLocaleString() ?? "—"}
+            </div>
             <p className="text-xs text-muted-foreground">Using credit</p>
           </CardContent>
         </Card>
@@ -360,41 +361,13 @@ export function TenantWalletManagement() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <ExportButton
-                filename="tenant-wallets"
-                rows={wallets.filter((w) => {
-                  const matchesSearch = !searchQuery || w.tenant_id.toLowerCase().includes(searchQuery.toLowerCase());
-                  const status = getBalanceStatus(w).text.toLowerCase();
-                  const matchesStatus = statusFilter === "all" || status === statusFilter;
-                  return matchesSearch && matchesStatus;
-                })}
-                columns={[
-                  {
-                    header: "Tenant",
-                    accessor: w => w.tenant_id,
-                  },
-                  {
-                    header: "Balance (NGN)",
-                    accessor: w => w.balance_ngn,
-                  },
-                  {
-                    header: "Status",
-                    accessor: w => getBalanceStatus(w).text,
-                  },
-                  {
-                    header: "Credit Enabled",
-                    accessor: w => (w.credit_enabled ? "Yes" : "No"),
-                  },
-                  {
-                    header: "Credit Limit (NGN)",
-                    accessor: w => w.credit_limit_ngn,
-                  },
-                  {
-                    header: "Low Balance Threshold (NGN)",
-                    accessor: w => w.low_balance_threshold_ngn,
-                  },
-                ]}
-              />
+              <Button
+                variant="outline"
+                onClick={() => toast.info("Endpoint coming soon")}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export Data
+              </Button>
             </div>
           </div>
           <TableToolbar
@@ -404,18 +377,9 @@ export function TenantWalletManagement() {
             status={statusFilter}
             onStatusChange={setStatusFilter}
             statusOptions={[
-              {
-                value: "healthy",
-                label: "Healthy",
-              },
-              {
-                value: "low",
-                label: "Low",
-              },
-              {
-                value: "negative",
-                label: "Negative",
-              },
+              { value: "healthy", label: "Healthy" },
+              { value: "low", label: "Low" },
+              { value: "negative", label: "Negative" },
             ]}
             filterEntity="wallets"
             filterFields={[
@@ -424,21 +388,11 @@ export function TenantWalletManagement() {
                 key: "credit",
                 label: "Credit enabled",
                 options: [
-                  {
-                    value: "yes",
-                    label: "Credit enabled",
-                  },
-                  {
-                    value: "no",
-                    label: "Credit disabled",
-                  },
+                  { value: "yes", label: "Credit enabled" },
+                  { value: "no", label: "Credit disabled" },
                 ],
               },
-              {
-                type: "range",
-                key: "balance",
-                label: "Balance (₦)",
-              },
+              { type: "range", key: "balance", label: "Balance (₦)" },
             ]}
             filterValues={walletFilters}
             onFiltersApply={setWalletFilters}
@@ -448,17 +402,18 @@ export function TenantWalletManagement() {
           <DataTable
             columns={walletColumns}
             data={filteredWallets}
-            hasActiveFilters={!!searchQuery || statusFilter !== "all"}
+            isLoading={walletsQuery.isLoading}
+            isError={walletsQuery.isError}
+            errorMessage="Failed to load tenant wallets."
+            onRetry={() => walletsQuery.refetch()}
+            hasActiveFilters={hasActiveFilters}
             emptyState="No tenant wallets found"
             filteredEmptyState="No tenant wallets match your filters."
           />
         </CardContent>
       </Card>
 
-      <Dialog
-        open={topupDialogOpen}
-        onOpenChange={setTopupDialogOpen}
-      >
+      <Dialog open={topupDialogOpen} onOpenChange={setTopupDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Top Up Wallet</DialogTitle>
@@ -475,7 +430,7 @@ export function TenantWalletManagement() {
               <Label>Current Balance</Label>
               <p className="text-2xl font-bold">
                 ₦
-                {selectedWallet?.balance_ngn.toLocaleString() || 0}
+                {selectedWallet?.balance_ngn.toLocaleString() ?? 0}
               </p>
             </div>
 
@@ -491,36 +446,97 @@ export function TenantWalletManagement() {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="topup-reason">Reason</Label>
+              <Input
+                id="topup-reason"
+                placeholder="e.g. Manual adjustment"
+                value={topupReason}
+                onChange={e => setTopupReason(e.target.value)}
+              />
+            </div>
+
             {topupAmount && (
               <div className="bg-muted rounded-lg p-3">
                 <p className="text-sm text-muted-foreground">New Balance</p>
                 <p className="text-lg font-semibold">
                   ₦
-                  {((selectedWallet?.balance_ngn || 0) + Number.parseFloat(topupAmount || "0")).toLocaleString()}
+                  {((selectedWallet?.balance_ngn ?? 0) + Number.parseFloat(topupAmount || "0")).toLocaleString()}
                 </p>
               </div>
             )}
           </div>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setTopupDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setTopupDialogOpen(false)}>
               Cancel
             </Button>
             <Button
               onClick={handleTopup}
-              disabled={topupLoading || !topupAmount}
+              disabled={topupMutation.isPending || !topupAmount}
             >
-              {topupLoading
-                ? (
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  )
-                : (
-                    <CreditCard className="h-4 w-4 mr-2" />
-                  )}
-              Confirm Top Up
+              <CreditCard className="h-4 w-4 mr-2" />
+              {topupMutation.isPending ? "Processing…" : "Confirm Top Up"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={creditDialogOpen} onOpenChange={setCreditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Credit Settings</DialogTitle>
+            <DialogDescription>
+              Update credit configuration for
+              {" "}
+              {selectedWallet?.tenant_id}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="credit-enabled">Credit Enabled</Label>
+              <Switch
+                id="credit-enabled"
+                checked={creditEnabled}
+                onCheckedChange={setCreditEnabled}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="credit-limit">Credit Limit (₦)</Label>
+              <Input
+                id="credit-limit"
+                type="number"
+                min="0"
+                placeholder="Enter credit limit"
+                value={creditLimit}
+                onChange={e => setCreditLimit(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="low-balance-threshold">Low Balance Threshold (₦)</Label>
+              <Input
+                id="low-balance-threshold"
+                type="number"
+                min="0"
+                placeholder="Enter threshold"
+                value={lowBalanceThreshold}
+                onChange={e => setLowBalanceThreshold(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreditSubmit}
+              disabled={creditMutation.isPending}
+            >
+              {creditMutation.isPending ? "Saving…" : "Save Settings"}
             </Button>
           </DialogFooter>
         </DialogContent>
