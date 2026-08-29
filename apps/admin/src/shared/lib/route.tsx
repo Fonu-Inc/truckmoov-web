@@ -214,6 +214,24 @@ export const router = createBrowserRouter([
               {
                 path: "billing",
                 lazy: async () => ({ Component: (await import("@/features/settings/components/pages/BillingSettingsPage")).default }),
+                children: [
+                  {
+                    index: true,
+                    lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PlanPricingManager")).PlanPricingManager }),
+                  },
+                  {
+                    path: "communication",
+                    lazy: async () => ({ Component: (await import("@/features/settings/components/ui/CommunicationPricing")).CommunicationPricing }),
+                  },
+                  {
+                    path: "wallet",
+                    lazy: async () => ({ Component: (await import("@/features/settings/components/pages/BillingWalletPage")).default }),
+                  },
+                  {
+                    path: "configurations",
+                    lazy: async () => ({ Component: (await import("@/features/settings/components/pages/BillingConfigurationsPage")).default }),
+                  },
+                ],
               },
               {
                 path: "api",

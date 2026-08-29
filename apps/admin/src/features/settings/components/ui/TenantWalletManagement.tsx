@@ -38,6 +38,7 @@ import {
 } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { Switch } from "@/components/shadcn/switch";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 
@@ -299,9 +300,13 @@ export function TenantWalletManagement() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {summary?.totalWallets?.toLocaleString() ?? "—"}
-            </div>
+            {walletsQuery.isLoading
+              ? <Skeleton className="h-8 w-24" />
+              : (
+                  <div className="text-2xl font-bold">
+                    {summary?.totalWallets?.toLocaleString() ?? "—"}
+                  </div>
+                )}
             <p className="text-xs text-muted-foreground">Active tenant wallets</p>
           </CardContent>
         </Card>
@@ -312,11 +317,15 @@ export function TenantWalletManagement() {
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {summary
-                ? `₦${Math.round((summary.totalBalanceKobo ?? 0) / 100).toLocaleString()}`
-                : "—"}
-            </div>
+            {walletsQuery.isLoading
+              ? <Skeleton className="h-8 w-32" />
+              : (
+                  <div className="text-2xl font-bold">
+                    {summary
+                      ? `₦${Math.round((summary.totalBalanceKobo ?? 0) / 100).toLocaleString()}`
+                      : "—"}
+                  </div>
+                )}
             <p className="text-xs text-muted-foreground">Across all tenants</p>
           </CardContent>
         </Card>
@@ -327,9 +336,13 @@ export function TenantWalletManagement() {
             <TrendingDown className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning">
-              {summary?.lowBalance?.toLocaleString() ?? "—"}
-            </div>
+            {walletsQuery.isLoading
+              ? <Skeleton className="h-8 w-24" />
+              : (
+                  <div className="text-2xl font-bold text-warning">
+                    {summary?.lowBalance?.toLocaleString() ?? "—"}
+                  </div>
+                )}
             <p className="text-xs text-muted-foreground">Below threshold</p>
           </CardContent>
         </Card>
@@ -340,9 +353,13 @@ export function TenantWalletManagement() {
             <AlertTriangle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">
-              {summary?.negativeBalance?.toLocaleString() ?? "—"}
-            </div>
+            {walletsQuery.isLoading
+              ? <Skeleton className="h-8 w-24" />
+              : (
+                  <div className="text-2xl font-bold text-destructive">
+                    {summary?.negativeBalance?.toLocaleString() ?? "—"}
+                  </div>
+                )}
             <p className="text-xs text-muted-foreground">Using credit</p>
           </CardContent>
         </Card>
