@@ -41,6 +41,14 @@ import { ExportButton } from "@/components/shadcn/export-button";
 import { Separator } from "@/components/shadcn/separator";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shadcn/data-table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/shadcn/table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import {
   Tabs,
