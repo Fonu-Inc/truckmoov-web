@@ -27,6 +27,7 @@ import { PayoutsInvoicingLayout } from "@/features/payouts-invoicing/components/
 import { ReportsLayout } from "@/features/reports/components/layout/ReportsLayout";
 import { SettingsLayout } from "@/features/settings/components/layout/SettingsLayout";
 import { SETTINGS_TABS } from "@/features/settings/utils/settingsNav";
+import { SustainabilityLayout } from "@/features/sustainability/components/layout/SustainabilityLayout";
 
 const useRole = () => useAuthStore(s => s.user?.role);
 
@@ -123,6 +124,16 @@ const GuardedSettingsLayout = withGuard(
 const GuardedPayoutsInvoicingLayout = withGuard(
   getRolesForHref("/waybill-invoices") ?? [],
   PayoutsInvoicingLayout,
+);
+
+/**
+ * SustainabilityLayout wrapped in the sidebar's `/sustainability` role list.
+ * Same pattern as GuardedPayoutsInvoicingLayout — the pathful layout owns the
+ * page header, KPI strip and tab bar; children render into its Outlet.
+ */
+const GuardedSustainabilityLayout = withGuard(
+  getRolesForHref("/sustainability") ?? [],
+  SustainabilityLayout,
 );
 
 /**
@@ -710,12 +721,31 @@ export const router = createBrowserRouter([
               },
             ],
           },
+          // Sustainability is a pathful layout route, mirroring /waybill-invoices:
+          // SustainabilityLayout owns the header, KPI strip and tab bar; each tab
+          // is a child route. Tab list lives in
+          // features/sustainability/utils/sustainabilityNav.ts.
           {
             path: "/sustainability",
-            lazy: guarded(
-              "/sustainability",
-              () => import("@/pages/admin/Sustainability"),
-            ),
+            Component: GuardedSustainabilityLayout,
+            children: [
+              {
+                index: true,
+                lazy: async () => ({ Component: (await import("@/features/sustainability/components/pages/Co2OverviewPage")).default }),
+              },
+              {
+                path: "eco-scores",
+                lazy: async () => ({ Component: (await import("@/features/sustainability/components/pages/EcoDrivingPage")).default }),
+              },
+              {
+                path: "ev-fleet",
+                lazy: async () => ({ Component: (await import("@/features/sustainability/components/pages/EvFleetPage")).default }),
+              },
+              {
+                path: "targets",
+                lazy: async () => ({ Component: (await import("@/features/sustainability/components/pages/TargetsPage")).default }),
+              },
+            ],
           },
           // Settings is a pathful layout route: SettingsLayout owns the tab bar
           // and the Outlet, one child route per tab. The tab list it renders is
