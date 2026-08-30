@@ -297,7 +297,7 @@ function GeofenceAlertItem({ alert }: { alert: GeofenceAlert }) {
   );
 }
 
-export default function DriverBehaviorDashboard() {
+export default function BehaviourPage() {
   const {
     events,
     driverScores,

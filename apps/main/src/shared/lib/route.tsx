@@ -20,6 +20,7 @@ import { useAuthStore } from "@/features/auth/stores/authStore";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
 import { getRolesForHref } from "@/features/dashboard/utils/sidebarNav";
 import { DataBundlesLayout } from "@/features/data-bundle/components/layout/DataBundlesLayout";
+import { DriversLayout } from "@/features/drivers/components/layout/DriversLayout";
 import { FleetLayout } from "@/features/fleet/components/layout/FleetLayout";
 import { IntegrationsLayout } from "@/features/integration/components/layout/IntegrationsLayout";
 import { ReportsLayout } from "@/features/reports/components/layout/ReportsLayout";
@@ -122,6 +123,16 @@ const GuardedSettingsLayout = withGuard(
 const GuardedFleetLayout = withGuard(
   getRolesForHref("/fleet") ?? [],
   FleetLayout,
+);
+
+/**
+ * DriversLayout wrapped in the sidebar's `/drivers` role list. Same pattern as
+ * GuardedFleetLayout: the pathful layout owns the tab bar, child routes render
+ * the Drivers / Behaviour / Fatigue AI panels into its Outlet.
+ */
+const GuardedDriversLayout = withGuard(
+  getRolesForHref("/drivers") ?? [],
+  DriversLayout,
 );
 
 /**
@@ -423,12 +434,26 @@ export const router = createBrowserRouter([
               },
             ],
           },
+          // /drivers is a pathful layout route: DriversLayout owns the tab
+          // bar, each tab is a child route. See design.md § "Tabs are routes,
+          // not query params".
           {
             path: "/drivers",
-            lazy: guarded(
-              "/drivers",
-              () => import("@/pages/admin/DriverManagement"),
-            ),
+            Component: GuardedDriversLayout,
+            children: [
+              {
+                index: true,
+                lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/DriversPage")).default }),
+              },
+              {
+                path: "behaviour",
+                lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/BehaviourPage")).default }),
+              },
+              {
+                path: "fatigue-ai",
+                lazy: async () => ({ Component: (await import("@/features/drivers/components/pages/FatigueAIPage")).default }),
+              },
+            ],
           },
           {
             path: "/devices",
@@ -482,15 +507,6 @@ export const router = createBrowserRouter([
               "/map",
               () => import("@/features/map/components/pages/LiveMap"),
             ),
-          },
-          {
-            // Not in the sidebar — no guard, same as today.
-            path: "/behavior",
-            lazy: async () => ({ Component: (await import("@/pages/admin/DriverBehaviorDashboard")).default }),
-          },
-          {
-            path: "/fatigue",
-            lazy: async () => ({ Component: (await import("@/pages/admin/DriverFatigueDashboard")).default }),
           },
           // Messages is a pathful layout route: CommunicationsLayout owns the
           // outer tab bar, each tab is a child route (see design.md "Tabs are

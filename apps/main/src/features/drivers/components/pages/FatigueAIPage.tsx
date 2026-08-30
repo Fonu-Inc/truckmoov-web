@@ -200,7 +200,7 @@ function AlertCard({
   );
 }
 
-export default function DriverFatigueDashboard() {
+export default function FatigueAIPage() {
   const alerts: FatigueAlert[] = [];
   const isLoading = false;
   const getAlertsStats = () => ({

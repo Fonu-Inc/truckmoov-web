@@ -14,7 +14,7 @@ import {
   daysUntil, formatDate,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
-  Activity, AlertTriangle, Brain, Eye, Inbox, Mail, MessageSquare,
+  AlertTriangle, Eye, Inbox, Mail, MessageSquare,
   MoreHorizontal, Pencil, Phone, Plus, Search, Send, Trash2, Upload, Users,
 } from "lucide-react";
 import {
@@ -22,9 +22,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { CallInteractionModal } from "@/components/communications/CallInteractionModal";
-import { DriverBehaviorTab } from "@/components/drivers/DriverBehaviorTab";
 import { DriverBulkUploadDialog } from "@/components/drivers/DriverBulkUploadDialog";
-import { DriverFatigueTab } from "@/components/drivers/DriverFatigueTab";
 import { DriverFormDialog } from "@/components/drivers/DriverFormDialog";
 import { DriverMessagesInbox } from "@/components/drivers/DriverMessagesInbox";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
@@ -50,9 +48,6 @@ import { Label } from "@/components/shadcn/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Tabs, TabsContent, TabsList, TabsTrigger,
-} from "@/components/shadcn/tabs";
 import { Textarea } from "@/components/shadcn/textarea";
 import { useFonuCall } from "@/contexts/FonuCallContext";
 
@@ -133,7 +128,7 @@ function toDriverInput(data: DriverFormData): DriverInput {
   };
 }
 
-export default function DriverManagement() {
+export default function DriversPage() {
   const { user } = useAuthStore();
   const driversQuery = useDrivers();
   const createDriver = useCreateDriver();
@@ -145,10 +140,6 @@ export default function DriverManagement() {
     startCall, endCall, status: callStatus, durationSeconds,
   } = useFonuCall();
 
-  const [
-    mainTab,
-    setMainTab,
-  ] = useState("drivers");
   const [
     showInbox,
     setShowInbox,
@@ -537,196 +528,146 @@ export default function DriverManagement() {
 
   return (
     <div className="space-y-6">
-      <Tabs
-        value={mainTab}
-        onValueChange={setMainTab}
-        className="w-full"
-      >
-        <div className="mb-6 flex justify-center">
-          <TabsList className="bg-muted/50">
-            <TabsTrigger
-              value="drivers"
-              className="gap-2"
-            >
-              <Users className="h-4 w-4" />
-              Drivers
-            </TabsTrigger>
-            <TabsTrigger
-              value="behavior"
-              className="gap-2"
-            >
-              <Activity className="h-4 w-4" />
-              Behavior
-            </TabsTrigger>
-            <TabsTrigger
-              value="fatigue"
-              className="gap-2"
-            >
-              <Brain className="h-4 w-4" />
-              Fatigue AI
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent
-          value="drivers"
-          className="mt-0 space-y-6"
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button
+          variant="outline"
+          onClick={() => setShowInbox(value => !value)}
         >
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowInbox(value => !value)}
-            >
-              <Inbox className="mr-2 h-4 w-4" />
-              {showInbox ? "Hide Inbox" : "Message Inbox"}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setIsBulkUploadOpen(true)}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Bulk Upload
-            </Button>
-            <Button
-              variant="gradient"
-              onClick={openAdd}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Driver
-            </Button>
+          <Inbox className="mr-2 h-4 w-4" />
+          {showInbox ? "Hide Inbox" : "Message Inbox"}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => setIsBulkUploadOpen(true)}
+        >
+          <Upload className="mr-2 h-4 w-4" />
+          Bulk Upload
+        </Button>
+        <Button
+          variant="gradient"
+          onClick={openAdd}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Add Driver
+        </Button>
+      </div>
+
+      {showInbox && <DriverMessagesInbox />}
+
+      <Card className="border-border/50 bg-card/50">
+        <CardHeader className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                Drivers (
+                {filteredDrivers.length}
+                )
+              </CardTitle>
+              <CardDescription>Roster of drivers with licence, status, and contact details.</CardDescription>
+            </div>
+            <ExportButton
+              filename="drivers"
+              rows={filteredDrivers}
+              disabled={driversQuery.isLoading}
+              columns={[
+                {
+                  header: "Name", accessor: "name",
+                },
+                {
+                  header: "Phone", accessor: "phone",
+                },
+                {
+                  header: "Email", accessor: row => row.email ?? "",
+                },
+                {
+                  header: "License", accessor: "licenseNumber",
+                },
+                {
+                  header: "License Expiry", accessor: row => row.licenseExpiryDate ?? "",
+                },
+                {
+                  header: "Status", accessor: row => row.status ?? "",
+                },
+                {
+                  header: "Preferred Channel", accessor: row => row.communicationPreference ?? "",
+                },
+              ]}
+            />
           </div>
-
-          {showInbox && <DriverMessagesInbox />}
-
-          <Card className="border-border/50 bg-card/50">
-            <CardHeader className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-primary" />
-                    Drivers (
-                    {filteredDrivers.length}
-                    )
-                  </CardTitle>
-                  <CardDescription>Roster of drivers with licence, status, and contact details.</CardDescription>
-                </div>
-                <ExportButton
-                  filename="drivers"
-                  rows={filteredDrivers}
-                  disabled={driversQuery.isLoading}
-                  columns={[
-                    {
-                      header: "Name", accessor: "name",
-                    },
-                    {
-                      header: "Phone", accessor: "phone",
-                    },
-                    {
-                      header: "Email", accessor: row => row.email ?? "",
-                    },
-                    {
-                      header: "License", accessor: "licenseNumber",
-                    },
-                    {
-                      header: "License Expiry", accessor: row => row.licenseExpiryDate ?? "",
-                    },
-                    {
-                      header: "Status", accessor: row => row.status ?? "",
-                    },
-                    {
-                      header: "Preferred Channel", accessor: row => row.communicationPreference ?? "",
-                    },
-                  ]}
-                />
-              </div>
-              <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                <div className="relative min-w-0 flex-1">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    aria-label="Search drivers"
-                    placeholder="Search by name, phone, or license..."
-                    value={searchQuery}
-                    onChange={event => setSearchQuery(event.target.value)}
-                    className="border-border/50 bg-card/50 pl-10"
-                  />
-                </div>
-                <Select
-                  value={statusFilter}
-                  onValueChange={setStatusFilter}
-                >
-                  <SelectTrigger
-                    aria-label="Filter by status"
-                    className="w-full border-border/50 bg-card/50 sm:w-[170px]"
-                  >
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    {DRIVER_STATUSES.map(status => (
-                      <SelectItem
-                        key={status}
-                        value={status}
-                        className="capitalize"
-                      >
-                        {status}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={channelFilter}
-                  onValueChange={setChannelFilter}
-                >
-                  <SelectTrigger
-                    aria-label="Filter by preferred channel"
-                    className="w-full border-border/50 bg-card/50 sm:w-[190px]"
-                  >
-                    <SelectValue placeholder="Preferred channel" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Channels</SelectItem>
-                    {COMMUNICATION_PREFERENCES.map(channel => (
-                      <SelectItem
-                        key={channel}
-                        value={channel}
-                        className="capitalize"
-                      >
-                        {channel}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardHeader>
-            <CardContent className="overflow-x-auto p-0">
-              <DataTable
-                columns={columns}
-                data={filteredDrivers}
-                isLoading={driversQuery.isLoading}
-                isError={driversQuery.isError}
-                errorMessage={driversQuery.error?.message || "Unable to load drivers."}
-                onRetry={() => void driversQuery.refetch()}
-                hasActiveFilters={hasActiveFilters}
-                emptyState="No drivers have been added yet."
-                filteredEmptyState="No drivers match your filters."
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                aria-label="Search drivers"
+                placeholder="Search by name, phone, or license..."
+                value={searchQuery}
+                onChange={event => setSearchQuery(event.target.value)}
+                className="border-border/50 bg-card/50 pl-10"
               />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent
-          value="behavior"
-          className="mt-0"
-        >
-          <DriverBehaviorTab />
-        </TabsContent>
-        <TabsContent
-          value="fatigue"
-          className="mt-0"
-        >
-          <DriverFatigueTab />
-        </TabsContent>
-      </Tabs>
+            </div>
+            <Select
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+            >
+              <SelectTrigger
+                aria-label="Filter by status"
+                className="w-full border-border/50 bg-card/50 sm:w-[170px]"
+              >
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                {DRIVER_STATUSES.map(status => (
+                  <SelectItem
+                    key={status}
+                    value={status}
+                    className="capitalize"
+                  >
+                    {status}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={channelFilter}
+              onValueChange={setChannelFilter}
+            >
+              <SelectTrigger
+                aria-label="Filter by preferred channel"
+                className="w-full border-border/50 bg-card/50 sm:w-[190px]"
+              >
+                <SelectValue placeholder="Preferred channel" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Channels</SelectItem>
+                {COMMUNICATION_PREFERENCES.map(channel => (
+                  <SelectItem
+                    key={channel}
+                    value={channel}
+                    className="capitalize"
+                  >
+                    {channel}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent className="overflow-x-auto p-0">
+          <DataTable
+            columns={columns}
+            data={filteredDrivers}
+            isLoading={driversQuery.isLoading}
+            isError={driversQuery.isError}
+            errorMessage={driversQuery.error?.message || "Unable to load drivers."}
+            onRetry={() => void driversQuery.refetch()}
+            hasActiveFilters={hasActiveFilters}
+            emptyState="No drivers have been added yet."
+            filteredEmptyState="No drivers match your filters."
+          />
+        </CardContent>
+      </Card>
 
       <DriverFormDialog
         open={isFormOpen}
