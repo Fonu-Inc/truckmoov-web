@@ -21,6 +21,7 @@ import { DashboardLayout } from "@/features/dashboard/components/layout/Dashboar
 import { getRolesForHref } from "@/features/dashboard/utils/sidebarNav";
 import { DataBundlesLayout } from "@/features/data-bundle/components/layout/DataBundlesLayout";
 import { FleetLayout } from "@/features/fleet/components/layout/FleetLayout";
+import { ReportsLayout } from "@/features/reports/components/layout/ReportsLayout";
 import { SettingsLayout } from "@/features/settings/components/layout/SettingsLayout";
 import { SETTINGS_TABS } from "@/features/settings/utils/settingsNav";
 
@@ -130,6 +131,17 @@ const GuardedFleetLayout = withGuard(
 const GuardedDataBundlesLayout = withGuard(
   getRolesForHref("/data-bundles") ?? [],
   DataBundlesLayout,
+);
+
+/**
+ * ReportsLayout wrapped in the sidebar's `/reports` role list. Pathful layout:
+ * the tab bar lives here, `/reports` renders Profit & Loss, and each other
+ * tab (`compliance-audit`, `fuel-consumption`, `fleet-utilization`) is its
+ * own child route with its own lazy chunk.
+ */
+const GuardedReportsLayout = withGuard(
+  getRolesForHref("/reports") ?? [],
+  ReportsLayout,
 );
 
 /**
@@ -556,10 +568,25 @@ export const router = createBrowserRouter([
           },
           {
             path: "/reports",
-            lazy: guarded(
-              "/reports",
-              () => import("@/pages/admin/Reports"),
-            ),
+            Component: GuardedReportsLayout,
+            children: [
+              {
+                index: true,
+                lazy: async () => ({ Component: (await import("@/features/reports/components/pages/ProfitLossPage")).default }),
+              },
+              {
+                path: "compliance-audit",
+                lazy: async () => ({ Component: (await import("@/features/reports/components/pages/ComplianceAuditPage")).default }),
+              },
+              {
+                path: "fuel-consumption",
+                lazy: async () => ({ Component: (await import("@/features/reports/components/pages/FuelConsumptionPage")).default }),
+              },
+              {
+                path: "fleet-utilization",
+                lazy: async () => ({ Component: (await import("@/features/reports/components/pages/FleetUtilizationPage")).default }),
+              },
+            ],
           },
           {
             path: "/waybill-invoices",
