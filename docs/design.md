@@ -48,8 +48,8 @@ page is called the same thing everywhere, and renaming it is a one-word edit.
 Two consequences worth knowing:
 
 - **A route with no entry has no top-bar title.** That is deliberate — the list is the
-  nav. Pages off the nav (`/help`, `/architecture`, the onboarding steps) name
-  themselves in their own body.
+  nav. Pages off the nav (`/help`, the onboarding steps) name themselves in their
+  own body.
 - `fullWidth: true` on an entry drops the `p-6` on `<main>` for full-bleed pages like
   `/map`. It replaced a per-page prop.
 

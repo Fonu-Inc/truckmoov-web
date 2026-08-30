@@ -826,16 +826,6 @@ export const router = createBrowserRouter([
             lazy: async () => ({ Component: (await import("@/features/dashboard/components/pages/DispatcherDashboard")).default }),
           },
 
-          // Architecture documentation
-          {
-            path: "/architecture",
-            lazy: async () => ({ Component: (await import("@/pages/Architecture")).default }),
-          },
-          {
-            path: "/technical-architecture",
-            lazy: async () => ({ Component: (await import("@/pages/TechnicalArchitecture")).default }),
-          },
-
           // Help & Support
           {
             path: "/help",

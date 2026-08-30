@@ -59,8 +59,8 @@ export function isNavGroup(entry: SidebarEntry): entry is SidebarNavGroup {
  *
  * The label is also the top-bar title (see `matchNavEntry`). A route with no
  * entry here therefore has no top-bar title — that is deliberate: this list is
- * the nav, and pages off the nav (`/help`, `/architecture`, the onboarding
- * steps, the legacy `/supervisor/*` portal) name themselves in their own body.
+ * the nav, and pages off the nav (`/help`, the onboarding steps, the legacy
+ * `/supervisor/*` portal) name themselves in their own body.
  *
  * ponytail: `hasPermission` is required here (optional on the type only so group
  * children can inherit) — a new entry that forgets it fails to compile instead
