@@ -21,6 +21,7 @@ import { DashboardLayout } from "@/features/dashboard/components/layout/Dashboar
 import { getRolesForHref } from "@/features/dashboard/utils/sidebarNav";
 import { DataBundlesLayout } from "@/features/data-bundle/components/layout/DataBundlesLayout";
 import { FleetLayout } from "@/features/fleet/components/layout/FleetLayout";
+import { IntegrationsLayout } from "@/features/integration/components/layout/IntegrationsLayout";
 import { ReportsLayout } from "@/features/reports/components/layout/ReportsLayout";
 import { SettingsLayout } from "@/features/settings/components/layout/SettingsLayout";
 import { SETTINGS_TABS } from "@/features/settings/utils/settingsNav";
@@ -142,6 +143,17 @@ const GuardedDataBundlesLayout = withGuard(
 const GuardedReportsLayout = withGuard(
   getRolesForHref("/reports") ?? [],
   ReportsLayout,
+);
+
+/**
+ * IntegrationsLayout wrapped in the sidebar's `/integrations` role list.
+ * Pathful layout: outer tab bar (Developer Portal / ERP & WMS) lives here;
+ * DeveloperPortalLayout nests inside as a pathless layout so its inner tab
+ * bar and shared overview cards mount once for every dev-portal sub-route.
+ */
+const GuardedIntegrationsLayout = withGuard(
+  getRolesForHref("/integrations") ?? [],
+  IntegrationsLayout,
 );
 
 /**
@@ -552,12 +564,65 @@ export const router = createBrowserRouter([
               () => import("@/pages/admin/DeviceInstallation"),
             ),
           },
+          // Integrations is a pathful layout route: IntegrationsLayout owns the
+          // outer tab bar (Developer Portal / ERP & WMS); DeveloperPortalLayout
+          // is a pathless nested layout that owns the inner tab bar and the
+          // overview cards, so every dev-portal sub-route (api keys, webhooks,
+          // usage, docs, audit) keeps them mounted. `/integrations/docs` nests
+          // one more sub-tab layout for the API Reference sections. See
+          // features/integration/utils/integrationsNav.ts.
           {
             path: "/integrations",
-            lazy: guarded(
-              "/integrations",
-              () => import("@/pages/admin/Integrations"),
-            ),
+            Component: GuardedIntegrationsLayout,
+            children: [
+              {
+                lazy: async () => ({ Component: (await import("@/features/integration/components/layout/DeveloperPortalLayout")).DeveloperPortalLayout }),
+                children: [
+                  {
+                    index: true,
+                    lazy: async () => ({ Component: (await import("@/components/integrations/ApiKeyManagement")).ApiKeyManagement }),
+                  },
+                  {
+                    path: "webhooks",
+                    lazy: async () => ({ Component: (await import("@/components/integrations/WebhookManagementPanel")).WebhookManagementPanel }),
+                  },
+                  {
+                    path: "usage",
+                    lazy: async () => ({ Component: (await import("@/components/integrations/ApiUsageAnalytics")).ApiUsageAnalytics }),
+                  },
+                  {
+                    path: "docs",
+                    lazy: async () => ({ Component: (await import("@/features/integration/components/layout/ApiDocsLayout")).ApiDocsLayout }),
+                    children: [
+                      {
+                        index: true,
+                        lazy: async () => ({ Component: (await import("@/features/integration/components/pages/EndpointsPage")).default }),
+                      },
+                      {
+                        path: "authentication",
+                        lazy: async () => ({ Component: (await import("@/features/integration/components/pages/AuthenticationPage")).default }),
+                      },
+                      {
+                        path: "errors",
+                        lazy: async () => ({ Component: (await import("@/features/integration/components/pages/ErrorsPage")).default }),
+                      },
+                      {
+                        path: "webhooks-guide",
+                        lazy: async () => ({ Component: (await import("@/features/integration/components/pages/WebhookGuidePage")).default }),
+                      },
+                    ],
+                  },
+                  {
+                    path: "audit",
+                    lazy: async () => ({ Component: (await import("@/features/integration/components/pages/AuditPage")).default }),
+                  },
+                ],
+              },
+              {
+                path: "erp-wms",
+                lazy: async () => ({ Component: (await import("@/features/integration/components/pages/ErpWmsPage")).default }),
+              },
+            ],
           },
           {
             path: "/job-offers",
