@@ -456,7 +456,7 @@ export const router = createBrowserRouter([
             path: "/map",
             lazy: guarded(
               "/map",
-              () => import("@/pages/admin/LiveMap"),
+              () => import("@/features/map/components/pages/LiveMap"),
             ),
           },
           {
