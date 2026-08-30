@@ -39,6 +39,8 @@ export type SidebarNavGroup = {
   icon: LucideIcon;
   items: SidebarNavItem[];
   hasPermission?: UserRole[];
+  /** ponytail: coming-soon flag — drop the `disabled: true` on the entry when the feature ships. */
+  disabled?: boolean;
 };
 
 export type SidebarEntry = SidebarNavItem | SidebarNavGroup;
@@ -216,6 +218,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "OWNER_OPERATOR",
       "OPERATIONS_MANAGER",
     ],
+    disabled: true,
   },
   {
     label: "Communications",
@@ -229,6 +232,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       },
     ],
     hasPermission: ["DISPATCHER"],
+    disabled: true,
   },
 
   // ─── Reports & settings ────────────────────────────────────────

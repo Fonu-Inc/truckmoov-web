@@ -146,6 +146,30 @@ function NavGroupBase({
   ] = useState<boolean | null>(null);
   const Icon = group.icon;
 
+  if (group.disabled) {
+    const row = (
+      <div
+        aria-disabled="true"
+        className={cn(
+          ROW,
+          ROW_GROUP,
+          "cursor-not-allowed text-sidebar-foreground/40",
+        )}
+      >
+        <Icon className={ICON} />
+        {!collapsed && <span className="flex-1 truncate">{group.label}</span>}
+      </div>
+    );
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{row}</TooltipTrigger>
+        <TooltipContent side="right">
+          {collapsed ? `${group.label} — Coming soon` : "Coming soon"}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
   const childActive = group.items.some(
     item => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );
@@ -266,7 +290,7 @@ function DashboardSidebarBase() {
                   <img
                     src={mtnLogoDark}
                     alt="MTN"
-                    className="h-3.5 w-auto dark:brightness-0 dark:invert"
+                    className="h-3.5 w-auto opacity-70 dark:opacity-100 dark:brightness-0 dark:invert"
                   />
                 </div>
               </div>

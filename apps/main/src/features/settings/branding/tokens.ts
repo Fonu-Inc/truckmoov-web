@@ -78,10 +78,17 @@ export function readTokenAsHex(cssVar: string): string {
   return hslTripletToHex(raw) ?? "#000000";
 }
 
-export function applyBrandingToDocument(branding: Partial<OrganizationBrandingSettings> | null | undefined) {
+export function applyBrandingToDocument(
+  branding: Partial<OrganizationBrandingSettings> | null | undefined,
+  { includeSidebar = true }: { includeSidebar?: boolean } = {},
+) {
   if (typeof window === "undefined") return;
   const root = document.documentElement;
-  for (const { key, cssVar } of BRANDING_TOKENS) {
+  for (const { key, cssVar, group } of BRANDING_TOKENS) {
+    if (group === "sidebar" && !includeSidebar) {
+      root.style.removeProperty(cssVar);
+      continue;
+    }
     const hex = branding?.[key];
     const hsl = hex ? hexToHslTriplet(hex) : null;
     if (hsl) root.style.setProperty(cssVar, hsl);
