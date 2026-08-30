@@ -1,5 +1,5 @@
-import FleetManagement from "@/pages/admin/FleetManagement";
+import VehiclesPage from "@/features/fleet/components/pages/VehiclesPage";
 
 export default function OwnerOperatorVehicles() {
-  return <FleetManagement />;
+  return <VehiclesPage />;
 }

@@ -1,4 +1,4 @@
-import type { FleetMapVehicle } from "@/components/fleet/FleetMap";
+import type { FleetMapVehicle } from "@/features/fleet/components/ui/FleetMap";
 import { useVehicles } from "@truckmoov/api/fleet";
 import { formatTime } from "@truckmoov/app-core/utils/time-utils";
 import {
@@ -10,8 +10,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { DriverCommunicationActions } from "@/components/communications/DriverCommunicationActions";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { FleetMap } from "@/components/fleet/FleetMap";
-import { GeofenceManagementDialog } from "@/components/fleet/GeofenceManagementDialog";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -20,6 +18,8 @@ import {
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Switch } from "@/components/shadcn/switch";
+import { FleetMap } from "@/features/fleet/components/ui/FleetMap";
+import { GeofenceManagementDialog } from "@/features/fleet/components/ui/GeofenceManagementDialog";
 
 export default function LiveMap() {
   const {

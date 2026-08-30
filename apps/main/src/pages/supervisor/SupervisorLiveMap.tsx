@@ -1,7 +1,7 @@
 import type { MouseEvent as ReactMouseEvent } from "react";
 import type {
   FleetMapVehicle, HarshEvent,
-} from "@/components/fleet/FleetMap";
+} from "@/features/fleet/components/ui/FleetMap";
 import { formatTime } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle, Briefcase, Clock, Fuel, History,
@@ -15,8 +15,6 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { DriverCommunicationActions } from "@/components/communications/DriverCommunicationActions";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { FleetMap } from "@/components/fleet/FleetMap";
-import { GeofenceManagementDialog } from "@/components/fleet/GeofenceManagementDialog";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { JobFormDialog } from "@/components/jobs/JobFormDialog";
 import { Badge } from "@/components/shadcn/badge";
@@ -27,6 +25,8 @@ import {
 import { Input } from "@/components/shadcn/input";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Separator } from "@/components/shadcn/separator";
+import { FleetMap } from "@/features/fleet/components/ui/FleetMap";
+import { GeofenceManagementDialog } from "@/features/fleet/components/ui/GeofenceManagementDialog";
 import { cn } from "@/lib/utils";
 
 type VehicleStatusKey = "moving" | "idle" | "stopped" | "offline";

@@ -18,6 +18,7 @@ import VerifyEmailPage from "@/features/auth/components/pages/VerifyEmailPage";
 import { RoleHomeRedirect } from "@/features/auth/components/ui/RoleHomeRedirect";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
 import { getRolesForHref } from "@/features/dashboard/utils/sidebarNav";
+import { FleetLayout } from "@/features/fleet/components/layout/FleetLayout";
 import { SettingsLayout } from "@/features/settings/components/layout/SettingsLayout";
 import { SETTINGS_TABS } from "@/features/settings/utils/settingsNav";
 import { useAuthStore } from "@/stores/authStore";
@@ -106,6 +107,18 @@ function settingsTabRoles(to: string): UserRole[] | undefined {
 const GuardedSettingsLayout = withGuard(
   getRolesForHref("/settings") ?? [],
   SettingsLayout,
+);
+
+/**
+ * FleetLayout wrapped in the sidebar's `/fleet` role list. Same reason as
+ * GuardedSettingsLayout: sub-routes (`/fleet/schedules`, `/fleet/financials/*`,
+ * …) inherit the layout guard, so they don't each need to look up a permissions
+ * list, and typing a sub-URL from a role that can't see /fleet lands on
+ * /not-authorized before any child chunk loads.
+ */
+const GuardedFleetLayout = withGuard(
+  getRolesForHref("/fleet") ?? [],
+  FleetLayout,
 );
 
 /**
@@ -316,12 +329,57 @@ export const router = createBrowserRouter([
               () => import("@/features/dashboard/components/pages/TenantAdminDashboard"),
             ),
           },
+          // Fleet is a pathful layout route, mirroring /settings: FleetLayout
+          // owns the tab bar, each tab is a child route. Financials nests one
+          // more layout (the inner tab bar lives inside FleetFinancialAnalytics
+          // itself, driven by pathname), so the same component mounts at
+          // /fleet/financials and its three sub-URLs — see
+          // features/fleet/utils/fleetNav.ts.
           {
             path: "/fleet",
-            lazy: guarded(
-              "/fleet",
-              () => import("@/pages/admin/FleetManagement"),
-            ),
+            Component: GuardedFleetLayout,
+            children: [
+              {
+                index: true,
+                lazy: async () => ({ Component: (await import("@/features/fleet/components/pages/VehiclesPage")).default }),
+              },
+              {
+                path: "schedules",
+                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/MaintenanceProfilesTab")).MaintenanceProfilesTab }),
+              },
+              {
+                path: "maintenance",
+                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/MaintenanceTab")).MaintenanceTab }),
+              },
+              {
+                path: "fuel",
+                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/FuelTab")).FuelTab }),
+              },
+              {
+                path: "compliance",
+                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/ComplianceTab")).ComplianceTab }),
+              },
+              {
+                path: "analytics",
+                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/FleetAnalyticsTab")).FleetAnalyticsTab }),
+              },
+              {
+                path: "financials",
+                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/FleetFinancialAnalytics")).default }),
+              },
+              {
+                path: "financials/vehicle-pl",
+                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/FleetFinancialAnalytics")).default }),
+              },
+              {
+                path: "financials/cost-breakdown",
+                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/FleetFinancialAnalytics")).default }),
+              },
+              {
+                path: "financials/underperforming",
+                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/FleetFinancialAnalytics")).default }),
+              },
+            ],
           },
           {
             path: "/drivers",

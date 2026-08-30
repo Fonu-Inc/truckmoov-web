@@ -1,4 +1,4 @@
-import type { FleetMapVehicle } from "@/components/fleet/FleetMap";
+import type { FleetMapVehicle } from "@/features/fleet/components/ui/FleetMap";
 import { formatTime } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle, CheckCircle2, CircleDot, Clock, Loader2, MapPin, MessageSquarePlus, Package, Radio, RefreshCw, Route, Search, Shield, Truck,
@@ -9,8 +9,6 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { FleetMap } from "@/components/fleet/FleetMap";
-import { GeofenceManagementDialog } from "@/components/fleet/GeofenceManagementDialog";
 import { JobFormDialog } from "@/components/jobs/JobFormDialog";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -30,6 +28,8 @@ import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { Textarea } from "@/components/shadcn/textarea";
+import { FleetMap } from "@/features/fleet/components/ui/FleetMap";
+import { GeofenceManagementDialog } from "@/features/fleet/components/ui/GeofenceManagementDialog";
 import { cn } from "@/lib/utils";
 
 type JobData = any;
