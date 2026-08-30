@@ -87,13 +87,11 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     hasPermission: [
       "ENTERPRISE_ADMIN",
       "FLEET_ADMIN",
+      "OWNER_OPERATOR",
       "AGGREGATOR_ADMIN",
       "OPERATIONS_MANAGER",
       "DISPATCHER",
     ],
-  },
-  {
-    label: "My Jobs", href: "/owner-operator/jobs", icon: Package, hasPermission: ["OWNER_OPERATOR"],
   },
   {
     label: "Job Offers", href: "/job-offers", icon: Inbox, hasPermission: ["OWNER_OPERATOR"],
@@ -108,10 +106,8 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "AGGREGATOR_ADMIN",
       "OPERATIONS_MANAGER",
       "FINANCE_VIEWER",
+      "OWNER_OPERATOR"
     ],
-  },
-  {
-    label: "My Vehicles", href: "/owner-operator/vehicles", icon: Truck, hasPermission: ["OWNER_OPERATOR"],
   },
 
   // ─── Drivers ───────────────────────────────────────────────────

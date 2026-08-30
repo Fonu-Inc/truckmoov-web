@@ -285,9 +285,10 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            // Owner-operator alias for FleetManagement, linked from onboarding.
             path: "/owner-operator/vehicles",
-            lazy: guarded(
-              "/owner-operator/vehicles",
+            lazy: guardedBy(
+              ["OWNER_OPERATOR"],
               () => import("@/pages/owner-operator/OwnerOperatorVehicles"),
             ),
           },
@@ -299,9 +300,10 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            // Owner-operator alias for the Jobs page, linked from onboarding.
             path: "/owner-operator/jobs",
-            lazy: guarded(
-              "/owner-operator/jobs",
+            lazy: guardedBy(
+              ["OWNER_OPERATOR"],
               () => import("@/pages/owner-operator/OwnerOperatorJobs"),
             ),
           },
