@@ -67,6 +67,7 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 
 type JobData = {
   id: string;
@@ -212,6 +213,8 @@ function mapDispatchJob(job: DispatchJob): JobData {
 
 export default function JobDispatch() {
   const { format: formatCurrency } = useCurrency();
+  // ponytail: single-role check inline; extract to a helper if a third role or fourth page needs it
+  const isAggregatorAdmin = useAuthStore(s => s.user?.role) === "AGGREGATOR_ADMIN";
   const isEnterprise = false;
   const isAggregator = false;
   const isOperationsManager = false;
@@ -538,18 +541,20 @@ export default function JobDispatch() {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex justify-end">
-          <Button
-            variant="gradient"
-            onClick={() => {
-              setSelectedJob(null);
-              setIsFormOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Job
-          </Button>
-        </div>
+        {!isAggregatorAdmin && (
+          <div className="flex justify-end">
+            <Button
+              variant="gradient"
+              onClick={() => {
+                setSelectedJob(null);
+                setIsFormOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Job
+            </Button>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card>
@@ -680,9 +685,9 @@ export default function JobDispatch() {
                 <EmptyState
                   icon={Package}
                   title="No jobs found"
-                  description="Create your first job or adjust the search and filters"
-                  actionLabel="Create Job"
-                  onAction={() => {
+                  description={isAggregatorAdmin ? "No jobs match the current filters" : "Create your first job or adjust the search and filters"}
+                  actionLabel={isAggregatorAdmin ? undefined : "Create Job"}
+                  onAction={isAggregatorAdmin ? undefined : () => {
                     setSelectedJob(null);
                     setIsFormOpen(true);
                   }}
@@ -697,10 +702,10 @@ export default function JobDispatch() {
                         key={job.id}
                         job={legacyJob}
                         onView={() => openDetails(job)}
-                        onEdit={() => openEdit(job)}
-                        onDelete={() => setJobPendingDelete(job)}
-                        onMatch={() => openMatching(job)}
-                        onComplete={() => openCompletion(job)}
+                        onEdit={isAggregatorAdmin ? undefined : () => openEdit(job)}
+                        onDelete={isAggregatorAdmin ? undefined : () => setJobPendingDelete(job)}
+                        onMatch={isAggregatorAdmin ? undefined : () => openMatching(job)}
+                        onComplete={isAggregatorAdmin ? undefined : () => openCompletion(job)}
                         dispatcherMode
                         assignedByRole={job.assignedByRole}
                         recommendOnly={recommendOnly}

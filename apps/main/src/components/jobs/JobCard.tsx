@@ -31,9 +31,9 @@ import {
 type JobCardProps = {
   job: Job;
   onView: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  onMatch: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onMatch?: () => void;
   onComplete?: () => void;
   /**
    * When true, render the dispatcher-owned workflow:
@@ -177,18 +177,24 @@ export function JobCard({
                 <Eye className="h-4 w-4 mr-2" />
                 View Details
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onEdit}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={onDelete}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
+              {onEdit && (
+                <DropdownMenuItem onClick={onEdit}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+              )}
+              {onDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={onDelete}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -349,7 +355,7 @@ export function JobCard({
           )}
 
           {/* Assign / Recommend Driver CTA — visible until a driver is *assigned* (not just recommended) */}
-          {(!driver || isRecommendation) && (
+          {onMatch && (!driver || isRecommendation) && (
             <Button
               variant="ghost"
               size="sm"

@@ -86,6 +86,7 @@ import { DeviceFormDialog } from "@/features/device/components/ui/DeviceFormDial
 import { DeviceRequestsTracker } from "@/features/device/components/ui/DeviceRequestsTracker";
 import { DeviceSetupRequestDialog } from "@/features/device/components/ui/DeviceSetupRequestDialog";
 import { useDevicePermissions } from "@/hooks/useDevicePermissions";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 import { cn } from "@/lib/utils";
 
@@ -102,6 +103,8 @@ const KNOWN_DEVICE_MANUFACTURERS = [
 
 export default function DeviceManagement() {
   const { requireSubscription } = useRequireSubscription();
+  // ponytail: single-role check inline; extract to a helper if a third role or fourth page needs it
+  const isAggregatorAdmin = useAuthStore(s => s.user?.role) === "AGGREGATOR_ADMIN";
   const { canManage } = useDevicePermissions();
 
   const uploadFile = async (_file: File, _requestId: string, _type: "device_photo" | "receipt") => null;
@@ -517,13 +520,15 @@ export default function DeviceManagement() {
       <div className="space-y-6">
         {/* Top-right actions */}
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setIsBulkUploadOpen(true)}
-          >
-            <Upload className="mr-2 h-4 w-4" />
-            Bulk Import
-          </Button>
+          {!isAggregatorAdmin && (
+            <Button
+              variant="outline"
+              onClick={() => setIsBulkUploadOpen(true)}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Bulk Import
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={requireSubscription(() => setIsRequestDialogOpen(true))}
@@ -531,13 +536,16 @@ export default function DeviceManagement() {
             <Cpu className="mr-2 h-4 w-4" />
             Request Device
           </Button>
-          <Button onClick={requireSubscription(() => setIsAddDialogOpen(true))}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Device
-          </Button>
+          {!isAggregatorAdmin && (
+            <Button onClick={requireSubscription(() => setIsAddDialogOpen(true))}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Device
+            </Button>
+          )}
         </div>
 
         {/* Device List */}
+        {!isAggregatorAdmin && (
         <Card>
           <CardHeader className="space-y-4">
             <div className="flex items-center justify-between gap-3">
@@ -916,6 +924,7 @@ export default function DeviceManagement() {
                   )}
           </CardContent>
         </Card>
+        )}
 
         <DeviceRequestsTracker />
       </div>

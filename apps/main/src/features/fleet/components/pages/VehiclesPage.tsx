@@ -61,11 +61,14 @@ import {
   countActiveVehicleFilters,
 } from "@/features/fleet/components/ui/vehiclesFilter";
 import { VehiclesFilterDialog } from "@/features/fleet/components/ui/VehiclesFilterDialog";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 import { cn } from "@/lib/utils";
 
 export default function VehiclesPage() {
   const { requireSubscription } = useRequireSubscription();
+  // ponytail: single-role check inline; extract to a helper if a third role or fourth page needs it
+  const isAggregatorAdmin = useAuthStore(s => s.user?.role) === "AGGREGATOR_ADMIN";
   const [
     searchQuery,
     setSearchQuery,
@@ -316,19 +319,21 @@ export default function VehiclesPage() {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setIsBulkUploadOpen(true)}
-          >
-            <Upload className="mr-2 h-4 w-4" />
-            Bulk Import
-          </Button>
-          <Button onClick={requireSubscription(() => setIsAddDialogOpen(true))}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Vehicle
-          </Button>
-        </div>
+        {!isAggregatorAdmin && (
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsBulkUploadOpen(true)}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Bulk Import
+            </Button>
+            <Button onClick={requireSubscription(() => setIsAddDialogOpen(true))}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Vehicle
+            </Button>
+          </div>
+        )}
 
         <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
           <Card>
@@ -568,22 +573,26 @@ export default function VehiclesPage() {
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedVehicle(vehicle);
-                                setIsEditDialogOpen(true);
-                              }}
-                            >
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => setDeleteConfirmId(vehicle.id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
+                            {!isAggregatorAdmin && (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedVehicle(vehicle);
+                                    setIsEditDialogOpen(true);
+                                  }}
+                                >
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => setDeleteConfirmId(vehicle.id)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>
