@@ -376,9 +376,9 @@ function DashboardSidebarBase() {
             >
               <NavLink
                 to="/help"
-                className={cn(
+                className={({ isActive }) => cn(
                   FOOTER_ROW,
-                  "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  isActive ? ROW_ACTIVE : ROW_IDLE,
                 )}
               >
                 <Ticket className={ICON} />

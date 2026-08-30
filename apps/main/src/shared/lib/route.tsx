@@ -891,10 +891,22 @@ export const router = createBrowserRouter([
             lazy: async () => ({ Component: (await import("@/features/dashboard/components/pages/DispatcherDashboard")).default }),
           },
 
-          // Help & Support
+          // Help & Support — pathful layout route: HelpLayout owns the tab
+          // bar, each tab is a child route ("tabs are routes, not query
+          // params", see design.md). Not in the sidebar, so no guard.
           {
             path: "/help",
-            lazy: async () => ({ Component: (await import("@/pages/support/HelpSupport")).default }),
+            lazy: async () => ({ Component: (await import("@/features/help/components/layout/HelpLayout")).HelpLayout }),
+            children: [
+              {
+                index: true,
+                lazy: async () => ({ Component: (await import("@/features/help/components/pages/TicketsPage")).default }),
+              },
+              {
+                path: "report-issue",
+                lazy: async () => ({ Component: (await import("@/features/help/components/pages/ReportIssuePage")).default }),
+              },
+            ],
           },
         ],
       },
