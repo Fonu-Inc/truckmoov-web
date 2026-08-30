@@ -23,6 +23,7 @@ import { DataBundlesLayout } from "@/features/data-bundle/components/layout/Data
 import { DriversLayout } from "@/features/drivers/components/layout/DriversLayout";
 import { FleetLayout } from "@/features/fleet/components/layout/FleetLayout";
 import { IntegrationsLayout } from "@/features/integration/components/layout/IntegrationsLayout";
+import { PayoutsInvoicingLayout } from "@/features/payouts-invoicing/components/layout/PayoutsInvoicingLayout";
 import { ReportsLayout } from "@/features/reports/components/layout/ReportsLayout";
 import { SettingsLayout } from "@/features/settings/components/layout/SettingsLayout";
 import { SETTINGS_TABS } from "@/features/settings/utils/settingsNav";
@@ -111,6 +112,17 @@ function settingsTabRoles(to: string): UserRole[] | undefined {
 const GuardedSettingsLayout = withGuard(
   getRolesForHref("/settings") ?? [],
   SettingsLayout,
+);
+
+/**
+ * PayoutsInvoicingLayout wrapped in the sidebar's `/waybill-invoices` role
+ * list. Same pattern as GuardedSettingsLayout: the pathful layout owns the tab
+ * bar, child routes render the Waybills / Invoices / Pricing / Settings panels
+ * into its Outlet.
+ */
+const GuardedPayoutsInvoicingLayout = withGuard(
+  getRolesForHref("/waybill-invoices") ?? [],
+  PayoutsInvoicingLayout,
 );
 
 /**
@@ -669,12 +681,34 @@ export const router = createBrowserRouter([
               },
             ],
           },
+          // Payouts & Invoicing is a pathful layout route, mirroring /settings:
+          // PayoutsInvoicingLayout owns the tab bar, each tab is a child route.
+          // Tab list lives in features/payouts-invoicing/utils/payoutsInvoicingNav.ts.
+          //
+          // All four tabs inherit the section-level guard (empty `hasPermissions`),
+          // so the child routes have no extra wrapper — GuardedPayoutsInvoicingLayout
+          // already keeps non-sidebar roles out.
           {
             path: "/waybill-invoices",
-            lazy: guarded(
-              "/waybill-invoices",
-              () => import("@/pages/admin/WaybillInvoices"),
-            ),
+            Component: GuardedPayoutsInvoicingLayout,
+            children: [
+              {
+                index: true,
+                lazy: async () => ({ Component: (await import("@/features/payouts-invoicing/components/pages/WaybillsPage")).default }),
+              },
+              {
+                path: "invoices",
+                lazy: async () => ({ Component: (await import("@/features/payouts-invoicing/components/pages/InvoicesPage")).default }),
+              },
+              {
+                path: "pricing",
+                lazy: async () => ({ Component: (await import("@/features/payouts-invoicing/components/pages/PricingRulesPage")).default }),
+              },
+              {
+                path: "settings",
+                lazy: async () => ({ Component: (await import("@/features/payouts-invoicing/components/pages/InvoiceSettingsPage")).default }),
+              },
+            ],
           },
           {
             path: "/sustainability",
