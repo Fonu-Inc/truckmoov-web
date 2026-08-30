@@ -1,6 +1,6 @@
+import type { OrganisationUpgradeRequest } from "@truckmoov/api/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
-import type { OrganisationUpgradeRequest } from "@truckmoov/api/auth";
 import {
   getOrganisationUpgradeQueueQueryOptions,
   useRequestOrganisationUpgrade,

@@ -50,8 +50,8 @@ import {
   Tabs, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { TooltipWrapper } from "@/components/shadcn/tooltip-wrapper";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
 
 // Unified communication item
 type CommunicationItem = {

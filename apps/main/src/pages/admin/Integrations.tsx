@@ -4,7 +4,7 @@ import { ERPWMSIntegrationPanel } from "@/components/integrations/ERPWMSIntegrat
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 
 export default function IntegrationsPage() {
   const [

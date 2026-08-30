@@ -21,7 +21,7 @@ import {
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
 import { Switch } from "@/components/shadcn/switch";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { SenderIdManagement } from "./SenderIdManagement";
 
 type CommunicationConfig = {

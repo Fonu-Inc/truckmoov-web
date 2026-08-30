@@ -6,16 +6,16 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/shadcn/button";
 
-import { AssignSIMDialog } from "@/components/sims/AssignSIMDialog";
-import { SIMBulkUploadDialog } from "@/components/sims/SIMBulkUploadDialog";
-import { SIMDetailsSheet } from "@/components/sims/SIMDetailsSheet";
-import { SIMFormDialog } from "@/components/sims/SIMFormDialog";
-import { SIMInventoryTable } from "@/components/sims/SIMInventoryTable";
-import { SIMRequestFormDialog } from "@/components/sims/SIMRequestFormDialog";
-import { SIMRequestsTracker } from "@/components/sims/SIMRequestsTracker";
+import { useAuthStore } from "@/features/auth/stores/authStore";
+import { AssignSIMDialog } from "@/features/sims/components/ui/AssignSIMDialog";
+import { SIMBulkUploadDialog } from "@/features/sims/components/ui/SIMBulkUploadDialog";
+import { SIMDetailsSheet } from "@/features/sims/components/ui/SIMDetailsSheet";
+import { SIMFormDialog } from "@/features/sims/components/ui/SIMFormDialog";
+import { SIMInventoryTable } from "@/features/sims/components/ui/SIMInventoryTable";
+import { SIMRequestFormDialog } from "@/features/sims/components/ui/SIMRequestFormDialog";
+import { SIMRequestsTracker } from "@/features/sims/components/ui/SIMRequestsTracker";
 import { useDeviceTelemetry } from "@/hooks/useDeviceTelemetry";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
-import { useAuthStore } from "@/stores/authStore";
 
 type SIMCardExtended = any;
 

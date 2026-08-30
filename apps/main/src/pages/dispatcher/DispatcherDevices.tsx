@@ -23,13 +23,6 @@ import {
   useMemo, useState,
 } from "react";
 import { toast } from "sonner";
-import { AssignDeviceDialogWithLifecycle } from "@/components/devices/AssignDeviceDialogWithLifecycle";
-import { DeviceBulkUploadDialog } from "@/components/devices/DeviceBulkUploadDialog";
-import { DeviceDetailsSheet } from "@/components/devices/DeviceDetailsSheet";
-import { DeviceFormDialog } from "@/components/devices/DeviceFormDialog";
-import { DeviceRequestsTracker } from "@/components/devices/DeviceRequestsTracker";
-import { DeviceSetupRequestDialog } from "@/components/devices/DeviceSetupRequestDialog";
-import { DeviceSetupRequestsQueue } from "@/components/devices/DeviceSetupRequestsQueue";
 import {
   Alert, AlertDescription, AlertTitle,
 } from "@/components/shadcn/alert";
@@ -59,11 +52,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { useAuthStore } from "@/features/auth/stores/authStore";
+import { AssignDeviceDialogWithLifecycle } from "@/features/device/components/ui/AssignDeviceDialogWithLifecycle";
+import { DeviceBulkUploadDialog } from "@/features/device/components/ui/DeviceBulkUploadDialog";
+import { DeviceDetailsSheet } from "@/features/device/components/ui/DeviceDetailsSheet";
+import { DeviceFormDialog } from "@/features/device/components/ui/DeviceFormDialog";
+import { DeviceRequestsTracker } from "@/features/device/components/ui/DeviceRequestsTracker";
+import { DeviceSetupRequestDialog } from "@/features/device/components/ui/DeviceSetupRequestDialog";
+import { DeviceSetupRequestsQueue } from "@/features/device/components/ui/DeviceSetupRequestsQueue";
 import { useDevicePermissions } from "@/hooks/useDevicePermissions";
 import { useDeviceTelemetry } from "@/hooks/useDeviceTelemetry";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
 
 type DeviceLifecycleStatus = any;
 

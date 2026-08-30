@@ -45,7 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 
 /**
  * Stakeholder-specific label + field configuration. Same DB columns are reused

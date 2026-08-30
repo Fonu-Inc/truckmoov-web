@@ -30,7 +30,7 @@ import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
 import { Textarea } from "@/components/shadcn/textarea";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 
 // Local type aliases (hook deleted)
 type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";

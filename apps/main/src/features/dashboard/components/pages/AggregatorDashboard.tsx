@@ -61,7 +61,7 @@ import { Progress } from "@/components/shadcn/progress";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 
 /**
  * Aggregator Dashboard (Stub)

@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { OrganizationUser } from "@truckmoov/api/auth";
 import type {
   FilterField, FilterValues,
@@ -32,6 +33,7 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardHeader,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -55,13 +57,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { DataTable } from "@/components/shadcn/data-table";
-import type { ColumnDef } from "@tanstack/react-table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { getRoleLabel } from "@/features/auth/utils/role-label";
 import { RolePermissionsMatrix } from "@/features/settings/components/ui/RolePermissionsMatrix";
 import { canManageOrganizationUsers } from "@/features/settings/utils/userManagementPermissions";
-import { useAuthStore } from "@/stores/authStore";
 
 type RoleOption = {
   value: UserRole; label: string;
@@ -467,11 +467,15 @@ export default function UsersSettingsPage() {
       meta: { className: "w-[60px]" },
       cell: ({ row }) => {
         const tenantUser = row.original;
-        if (!canManage) return null;
+        if (!canManage)
+          return null;
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button
+                variant="ghost"
+                size="icon"
+              >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>

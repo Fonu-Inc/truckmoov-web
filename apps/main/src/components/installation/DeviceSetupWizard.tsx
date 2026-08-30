@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { DeviceLifecycleBadge } from "@/components/devices/DeviceLifecycleBadge";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -28,6 +27,7 @@ import {
 } from "@/components/shadcn/dialog";
 import { Separator } from "@/components/shadcn/separator";
 import { Textarea } from "@/components/shadcn/textarea";
+import { DeviceLifecycleBadge } from "@/features/device/components/ui/DeviceLifecycleBadge";
 
 type ConfigQueueDevice = any;
 type DeviceCatalogEntry = any;

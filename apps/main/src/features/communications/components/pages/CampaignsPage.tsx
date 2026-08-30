@@ -44,8 +44,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { CampaignBuilderDialog } from "@/features/communications/components/ui/CampaignBuilderDialog";
-import { useAuthStore } from "@/stores/authStore";
 
 type Campaign = {
   id: string;

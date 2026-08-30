@@ -18,9 +18,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { getRoleLabel } from "@/features/auth/utils/role-label";
 import { getRolesForHref } from "@/features/dashboard/utils/sidebarNav";
-import { useAuthStore } from "@/stores/authStore";
 
 export function UserProfileDropdown() {
   const {

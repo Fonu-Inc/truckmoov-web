@@ -3,7 +3,6 @@ import {
   AlertTriangle, ArrowRight, CheckCircle2, Cpu, Download, SlidersHorizontal as Filter, MoreHorizontal, Radio, Search, Settings,
 } from "lucide-react";
 import { useState } from "react";
-import { DeviceLifecycleBadge } from "@/components/devices/DeviceLifecycleBadge";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -39,6 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
+import { DeviceLifecycleBadge } from "@/features/device/components/ui/DeviceLifecycleBadge";
 import { cn } from "@/lib/utils";
 import { DeviceSetupWizard } from "./DeviceSetupWizard";
 

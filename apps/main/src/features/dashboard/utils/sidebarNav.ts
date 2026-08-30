@@ -108,7 +108,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "AGGREGATOR_ADMIN",
       "OPERATIONS_MANAGER",
       "FINANCE_VIEWER",
-      "OWNER_OPERATOR"
+      "OWNER_OPERATOR",
     ],
   },
 

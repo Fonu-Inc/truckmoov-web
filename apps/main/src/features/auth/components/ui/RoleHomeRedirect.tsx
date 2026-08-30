@@ -1,6 +1,6 @@
 import { Navigate } from "react-router";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { getPostLoginRedirectPath } from "@/features/auth/utils/authRedirect";
-import { useAuthStore } from "@/stores/authStore";
 
 /**
  * The `/` route. AuthGuard has already established the user is authenticated,

@@ -23,8 +23,8 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/shadcn/button";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { ROLE_REDIRECT_MAP } from "@/features/auth/utils/authRedirect";
-import { useAuthStore } from "@/stores/authStore";
 import { OnboardingLayout } from "./OnboardingLayout";
 
 type QuickAction = {

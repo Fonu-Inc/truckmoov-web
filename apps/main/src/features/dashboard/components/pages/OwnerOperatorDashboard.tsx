@@ -28,23 +28,23 @@ import {
 } from "recharts";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { DeviceSetupRequestDialog } from "@/components/devices/DeviceSetupRequestDialog";
-import { DeviceSetupRequestTracker } from "@/components/devices/DeviceSetupRequestTracker";
 import { ComplianceDocumentsPanel } from "@/components/owner-operator/ComplianceDocumentsPanel";
 import { UpgradeRequestDialog } from "@/components/owner-operator/UpgradeRequestDialog";
 import {
   Alert, AlertDescription,
 } from "@/components/shadcn/alert";
 import { Badge } from "@/components/shadcn/badge";
-
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+
 import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
 import { Progress } from "@/components/shadcn/progress";
 import { Separator } from "@/components/shadcn/separator";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { DeviceSetupRequestDialog } from "@/features/device/components/ui/DeviceSetupRequestDialog";
+import { DeviceSetupRequestTracker } from "@/features/device/components/ui/DeviceSetupRequestTracker";
 import {
   DUMMY_RECENT_JOBS,
   DUMMY_VEHICLES,

@@ -22,7 +22,6 @@ import {
 import {
   useNavigate, useParams,
 } from "react-router";
-import { DeviceHealthBadge } from "@/components/devices/DeviceHealthBadge";
 import { VehicleLiveMap } from "@/components/owner-operator/VehicleLiveMap";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -32,6 +31,7 @@ import {
 import { Separator } from "@/components/shadcn/separator";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { DeviceHealthBadge } from "@/features/device/components/ui/DeviceHealthBadge";
 
 export default function OwnerOperatorVehicleDetail() {
   const { vehicleId } = useParams<{ vehicleId: string }>();

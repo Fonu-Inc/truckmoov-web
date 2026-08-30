@@ -31,6 +31,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/shadcn/tooltip";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { getRoleShortLabel } from "@/features/auth/utils/role-label";
 import { useSidebarStore } from "@/features/dashboard/stores/sidebarStore";
 import {
@@ -38,7 +39,6 @@ import {
   isNavGroup,
 } from "@/features/dashboard/utils/sidebarNav";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
 
 /**
  * Row classes are module constants, not per-render `cn()` calls — a sidebar is

@@ -1,4 +1,4 @@
-import type { GeofenceZone } from "@/components/devices/DeviceRealtimeMap";
+import type { GeofenceZone } from "@/features/device/components/ui/DeviceRealtimeMap";
 import type {
   DeviceWithTelemetry, DriverBehaviorEvent,
 } from "@/hooks/useDeviceTelemetry";
@@ -6,15 +6,15 @@ import {
   AlertTriangle, Download, Pause, Play, Trash2,
 } from "lucide-react";
 import { useState } from "react";
-import { DeviceList } from "@/components/devices/DeviceList";
-import { DeviceRealtimeMap } from "@/components/devices/DeviceRealtimeMap";
-import { DeviceTelemetryPanel } from "@/components/devices/DeviceTelemetryPanel";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Skeleton } from "@/components/shadcn/skeleton";
+import { DeviceList } from "@/features/device/components/ui/DeviceList";
+import { DeviceRealtimeMap } from "@/features/device/components/ui/DeviceRealtimeMap";
+import { DeviceTelemetryPanel } from "@/features/device/components/ui/DeviceTelemetryPanel";
 
 type TrailPoint = {
   lat: number;

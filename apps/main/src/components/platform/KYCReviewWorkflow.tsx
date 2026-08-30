@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   formatDate, toDateParam,
 } from "@truckmoov/app-core/utils/time-utils";
@@ -22,6 +23,8 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
+
 import {
   Dialog,
   DialogContent,
@@ -31,10 +34,7 @@ import {
   DialogTitle,
 } from "@/components/shadcn/dialog";
 import { ExportButton } from "@/components/shadcn/export-button";
-
 import { Separator } from "@/components/shadcn/separator";
-import { DataTable } from "@/components/shadcn/data-table";
-import type { ColumnDef } from "@tanstack/react-table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
@@ -406,7 +406,10 @@ export function KYCReviewWorkflow() {
               {" docs"}
             </span>
             {pendingCount > 0 && (
-              <Badge variant="outline" className="text-warning border-warning/30">
+              <Badge
+                variant="outline"
+                className="text-warning border-warning/30"
+              >
                 {pendingCount}
                 {" pending"}
               </Badge>
@@ -450,7 +453,10 @@ export function KYCReviewWorkflow() {
                 variant="outline"
                 size="sm"
                 className="text-success"
-                onClick={() => handleUpdateTenantStatus(tenant.tenant_id, "verified")}
+                onClick={() => handleUpdateTenantStatus(
+                  tenant.tenant_id,
+                  "verified",
+                )}
               >
                 <CheckCircle2 className="w-4 h-4 mr-1" />
                 Verify
@@ -513,7 +519,11 @@ export function KYCReviewWorkflow() {
         const doc = row.original;
         return (
           <div className="flex items-center justify-end gap-1">
-            <Button variant="ghost" size="icon" onClick={() => handleViewDocument(doc)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleViewDocument(doc)}
+            >
               <Eye className="w-4 h-4" />
             </Button>
             {doc.status === "pending" && (
@@ -522,7 +532,10 @@ export function KYCReviewWorkflow() {
                   variant="ghost"
                   size="icon"
                   className="text-success"
-                  onClick={() => handleOpenReview(doc, "approve")}
+                  onClick={() => handleOpenReview(
+                    doc,
+                    "approve",
+                  )}
                 >
                   <CheckCircle2 className="w-4 h-4" />
                 </Button>
@@ -530,7 +543,10 @@ export function KYCReviewWorkflow() {
                   variant="ghost"
                   size="icon"
                   className="text-destructive"
-                  onClick={() => handleOpenReview(doc, "reject")}
+                  onClick={() => handleOpenReview(
+                    doc,
+                    "reject",
+                  )}
                 >
                   <XCircle className="w-4 h-4" />
                 </Button>

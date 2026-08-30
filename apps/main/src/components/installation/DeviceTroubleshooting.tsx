@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { DeviceLifecycleBadge } from "@/components/devices/DeviceLifecycleBadge";
 import {
   Accordion,
   AccordionContent,
@@ -42,6 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { DeviceLifecycleBadge } from "@/features/device/components/ui/DeviceLifecycleBadge";
 
 type ConfigQueueDevice = any;
 type DeviceLifecycleStatus = string;

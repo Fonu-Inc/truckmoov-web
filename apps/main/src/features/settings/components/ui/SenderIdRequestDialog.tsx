@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { generateSenderIdRequestLetter } from "@/utils/senderIdTemplateGenerator";
 
 type SenderIdType = string;

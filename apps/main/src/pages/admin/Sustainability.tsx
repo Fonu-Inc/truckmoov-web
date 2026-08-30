@@ -33,6 +33,7 @@ import { Progress } from "@/components/shadcn/progress";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import {
   getDummyChargingSessions,
   getDummyEcoLeaderboard,
@@ -41,7 +42,6 @@ import {
   getDummyVehicleRankings,
 } from "@/lib/sustainabilityDummyData";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
 
 const FUEL_TYPE_COLORS: Record<string, string> = {
   diesel: "#ef4444",

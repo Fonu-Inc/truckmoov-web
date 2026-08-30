@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 
 function fmt(bytes: number) {
   if (bytes < 1024)

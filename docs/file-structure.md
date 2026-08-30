@@ -68,6 +68,8 @@ of this architecture. Data comes from `packages/api`, reached through `services/
 - A feature imports from `shared/` and from `packages/*`.
 - A feature does **not** import from another feature's internals. If two features need the
   same thing, move it to `shared/`.
+- `@/features/auth/stores/authStore` is the one sanctioned exception: the session store is
+  read app-wide and stays with the auth feature rather than moving to `shared/`.
 - `shared/` never imports from `features/`.
 - shadcn primitives still come from `@/components/shadcn/*` (which resolves to
   `packages/reusables`). They are not copied into `shared/`.

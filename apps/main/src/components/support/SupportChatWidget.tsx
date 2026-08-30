@@ -32,9 +32,9 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/shadcn/popover";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { useLiveAgentSession } from "@/hooks/useLiveAgentSession";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
 import { LiveAgentPanel } from "./LiveAgentPanel";
 
 type Msg = {

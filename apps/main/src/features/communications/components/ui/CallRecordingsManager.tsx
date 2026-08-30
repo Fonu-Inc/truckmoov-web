@@ -31,7 +31,7 @@ import {
   TableRow,
 } from "@/components/shadcn/table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 
 type Language = "en" | "ha" | "yo" | "ig" | "pcm";
 

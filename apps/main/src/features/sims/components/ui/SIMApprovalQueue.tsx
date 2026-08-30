@@ -33,8 +33,8 @@ import { Textarea } from "@/components/shadcn/textarea";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/shadcn/tooltip";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { startSIMProvisioningSimulation } from "@/lib/provisioningEngineSim";
-import { useAuthStore } from "@/stores/authStore";
 import { KYCRequestDialog } from "./KYCRequestDialog";
 import { SIMApprovalSummaryCards } from "./SIMApprovalSummaryCards";
 import { SIMRequestDetailsDialog } from "./SIMRequestDetailsDialog";

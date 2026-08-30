@@ -20,9 +20,9 @@ import {
   FormMessage,
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { getPostLoginRedirectPath } from "@/features/auth/utils/authRedirect";
 import { emailSchema } from "@/features/auth/utils/schemas";
-import { useAuthStore } from "@/stores/authStore";
 
 const signInSchema = z.object({
   email: emailSchema,

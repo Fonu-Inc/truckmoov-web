@@ -43,7 +43,7 @@ import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { WhatsAppTemplatesManager } from "./WhatsAppTemplatesManager";
 
 type WhatsAppAccount = any;

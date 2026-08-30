@@ -60,7 +60,7 @@ import {
   TableRow,
 } from "@/components/shadcn/table";
 import { Textarea } from "@/components/shadcn/textarea";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { DeviceRequestDetailsDialog } from "./DeviceRequestDetailsDialog";
 
 type DeviceReq = {

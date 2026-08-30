@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import {
   Navigate, useLocation,
 } from "react-router";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { PUBLIC_ROUTES } from "@/features/auth/utils/publicRoutes";
-import { useAuthStore } from "@/stores/authStore";
 
 /**
  * Logged out -> public routes only. Logged in -> everything.

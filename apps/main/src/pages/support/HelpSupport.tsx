@@ -10,8 +10,8 @@ import {
 import { LogTicketDialog } from "@/components/support/LogTicketDialog";
 import { MyTickets } from "@/components/support/MyTickets";
 import { ReportIssue } from "@/components/support/ReportIssue";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { useSupportPermissions } from "@/hooks/useSupportPermissions";
-import { useAuthStore } from "@/stores/authStore";
 
 export default function HelpSupport() {
   const [

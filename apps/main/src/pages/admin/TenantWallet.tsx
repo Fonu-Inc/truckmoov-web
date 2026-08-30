@@ -54,7 +54,7 @@ import { AutoTopupSettings } from "@/components/wallet/AutoTopupSettings";
 import { PostpaidUsageDashboard } from "@/components/wallet/PostpaidUsageDashboard";
 import { SpendingLimitSettings } from "@/components/wallet/SpendingLimitSettings";
 import { UsageAnalyticsChart } from "@/components/wallet/UsageAnalyticsChart";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 
 type UsageRange = "today" | "yesterday" | "last_7_days" | "last_30_days" | "last_90_days";
 const USAGE_RANGE_OPTIONS: {

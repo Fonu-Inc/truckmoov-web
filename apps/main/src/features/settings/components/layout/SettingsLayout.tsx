@@ -1,11 +1,11 @@
 import {
   Navigate, NavLink, Outlet, useLocation,
 } from "react-router";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import {
   canSeeTab, SETTINGS_TABS,
 } from "@/features/settings/utils/settingsNav";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
 
 /**
  * The settings shell, mounted as a pathful layout route at `/settings` (see

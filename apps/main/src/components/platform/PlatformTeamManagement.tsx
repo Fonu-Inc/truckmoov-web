@@ -51,7 +51,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 
 type PlatformUser = {
   id: string;

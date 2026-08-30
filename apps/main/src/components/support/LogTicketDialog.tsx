@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 // Local type aliases (hook deleted)
 type TicketCategory = "device_tracking" | "sim_connectivity" | "messaging" | "billing" | "account_access" | "other";
 type ContextType = "device" | "sim" | "vehicle" | "whatsapp" | "billing" | "none";

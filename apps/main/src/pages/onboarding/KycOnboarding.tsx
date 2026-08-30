@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { OnboardingKYCStep } from "@/components/onboarding/OnboardingKYCStep";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { OnboardingLayout } from "./OnboardingLayout";
 
 /**

@@ -18,8 +18,8 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Skeleton } from "@/components/shadcn/skeleton";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
 
 type SIMRequestsTrackerProps = {
   // Reserved for future use; section is read-only and has no actions.

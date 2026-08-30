@@ -72,10 +72,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn/table";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { formatCurrency } from "@/lib/currency";
 import { downloadReceiptPDF } from "@/lib/receiptPdf";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
 
 type SubInvoiceStatus = "paid" | "pending" | "failed" | "overdue";
 type BillingType = "Monthly" | "Yearly";

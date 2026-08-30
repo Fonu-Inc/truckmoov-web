@@ -45,13 +45,6 @@ import {
   useCallback, useEffect, useMemo, useState,
 } from "react";
 import { toast } from "sonner";
-import { AssignDeviceDialogWithLifecycle } from "@/components/devices/AssignDeviceDialogWithLifecycle";
-import { DeviceBulkUploadDialog } from "@/components/devices/DeviceBulkUploadDialog";
-import { DeviceDetailsSheet } from "@/components/devices/DeviceDetailsSheet";
-import { DeviceFormDialog } from "@/components/devices/DeviceFormDialog";
-import { DeviceRequestsTracker } from "@/components/devices/DeviceRequestsTracker";
-import { DeviceSetupRequestDialog } from "@/components/devices/DeviceSetupRequestDialog";
-
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -73,6 +66,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
+
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import {
@@ -85,6 +79,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { AssignDeviceDialogWithLifecycle } from "@/features/device/components/ui/AssignDeviceDialogWithLifecycle";
+import { DeviceBulkUploadDialog } from "@/features/device/components/ui/DeviceBulkUploadDialog";
+import { DeviceDetailsSheet } from "@/features/device/components/ui/DeviceDetailsSheet";
+import { DeviceFormDialog } from "@/features/device/components/ui/DeviceFormDialog";
+import { DeviceRequestsTracker } from "@/features/device/components/ui/DeviceRequestsTracker";
+import { DeviceSetupRequestDialog } from "@/features/device/components/ui/DeviceSetupRequestDialog";
 import { useDevicePermissions } from "@/hooks/useDevicePermissions";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 import { cn } from "@/lib/utils";

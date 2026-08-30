@@ -25,8 +25,6 @@ import {
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
-import { DeviceFormDialog } from "@/components/devices/DeviceFormDialog";
-import { DeviceSetupRequestDialogMinimal } from "@/components/devices/DeviceSetupRequestDialogMinimal";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -34,11 +32,13 @@ import {
 } from "@/components/shadcn/card";
 import { Label } from "@/components/shadcn/label";
 import { Progress } from "@/components/shadcn/progress";
-
 import { Switch } from "@/components/shadcn/switch";
+import { DeviceFormDialog } from "@/features/device/components/ui/DeviceFormDialog";
 
-import { SIMFormDialog } from "@/components/sims/SIMFormDialog";
-import { SIMRequestFormDialogMinimal } from "@/components/sims/SIMRequestFormDialogMinimal";
+import { DeviceSetupRequestDialogMinimal } from "@/features/device/components/ui/DeviceSetupRequestDialogMinimal";
+
+import { SIMFormDialog } from "@/features/sims/components/ui/SIMFormDialog";
+import { SIMRequestFormDialogMinimal } from "@/features/sims/components/ui/SIMRequestFormDialogMinimal";
 import { cn } from "@/lib/utils";
 import { OnboardingLayout } from "./OnboardingLayout";
 

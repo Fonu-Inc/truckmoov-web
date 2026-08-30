@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/components/shadcn/button";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 
 /**
  * US-E01-008 — Trial banner shown to tenants in trial status.

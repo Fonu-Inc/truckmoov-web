@@ -16,12 +16,13 @@ import ResetPasswordPage from "@/features/auth/components/pages/ResetPasswordPag
 import SignUpPage from "@/features/auth/components/pages/SignUpPage";
 import VerifyEmailPage from "@/features/auth/components/pages/VerifyEmailPage";
 import { RoleHomeRedirect } from "@/features/auth/components/ui/RoleHomeRedirect";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
 import { getRolesForHref } from "@/features/dashboard/utils/sidebarNav";
+import { DataBundlesLayout } from "@/features/data-bundle/components/layout/DataBundlesLayout";
 import { FleetLayout } from "@/features/fleet/components/layout/FleetLayout";
 import { SettingsLayout } from "@/features/settings/components/layout/SettingsLayout";
 import { SETTINGS_TABS } from "@/features/settings/utils/settingsNav";
-import { useAuthStore } from "@/stores/authStore";
 
 const useRole = () => useAuthStore(s => s.user?.role);
 
@@ -119,6 +120,16 @@ const GuardedSettingsLayout = withGuard(
 const GuardedFleetLayout = withGuard(
   getRolesForHref("/fleet") ?? [],
   FleetLayout,
+);
+
+/**
+ * DataBundlesLayout wrapped in the sidebar's `/data-bundles` role list. Same
+ * pattern as GuardedFleetLayout: the pathful layout owns the header, KPIs,
+ * shared dialogs and tab bar; child routes render into its Outlet.
+ */
+const GuardedDataBundlesLayout = withGuard(
+  getRolesForHref("/data-bundles") ?? [],
+  DataBundlesLayout,
 );
 
 /**
@@ -331,10 +342,11 @@ export const router = createBrowserRouter([
           },
           // Fleet is a pathful layout route, mirroring /settings: FleetLayout
           // owns the tab bar, each tab is a child route. Financials nests one
-          // more layout (the inner tab bar lives inside FleetFinancialAnalytics
-          // itself, driven by pathname), so the same component mounts at
-          // /fleet/financials and its three sub-URLs — see
-          // features/fleet/utils/fleetNav.ts.
+          // more pathful layout — FleetFinancialsLayout owns the KPI cards,
+          // inner tab bar, config dialog and statement builder; each financials
+          // sub-route is one of its children (Overview / Vehicle P&L / Cost
+          // Breakdown / Underperforming). See features/fleet/utils/fleetNav.ts
+          // and features/fleet/utils/fleetFinancialsNav.ts.
           {
             path: "/fleet",
             Component: GuardedFleetLayout,
@@ -365,19 +377,25 @@ export const router = createBrowserRouter([
               },
               {
                 path: "financials",
-                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/FleetFinancialAnalytics")).default }),
-              },
-              {
-                path: "financials/vehicle-pl",
-                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/FleetFinancialAnalytics")).default }),
-              },
-              {
-                path: "financials/cost-breakdown",
-                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/FleetFinancialAnalytics")).default }),
-              },
-              {
-                path: "financials/underperforming",
-                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/FleetFinancialAnalytics")).default }),
+                lazy: async () => ({ Component: (await import("@/features/fleet/components/layout/FleetFinancialsLayout")).FleetFinancialsLayout }),
+                children: [
+                  {
+                    index: true,
+                    lazy: async () => ({ Component: (await import("@/features/fleet/components/pages/FinancialsOverviewPage")).default }),
+                  },
+                  {
+                    path: "vehicle-pl",
+                    lazy: async () => ({ Component: (await import("@/features/fleet/components/pages/FinancialsVehiclePLPage")).default }),
+                  },
+                  {
+                    path: "cost-breakdown",
+                    lazy: async () => ({ Component: (await import("@/features/fleet/components/pages/FinancialsCostBreakdownPage")).default }),
+                  },
+                  {
+                    path: "underperforming",
+                    lazy: async () => ({ Component: (await import("@/features/fleet/components/pages/FinancialsUnderperformingPage")).default }),
+                  },
+                ],
               },
             ],
           },
@@ -392,22 +410,40 @@ export const router = createBrowserRouter([
             path: "/devices",
             lazy: guarded(
               "/devices",
-              () => import("@/pages/admin/DeviceManagement"),
+              () => import("@/features/device/components/pages/DeviceManagementPage"),
             ),
           },
           {
             path: "/sims",
             lazy: guarded(
               "/sims",
-              () => import("@/pages/admin/SIMManagement"),
+              () => import("@/features/sims/components/pages/SIMManagementPage"),
             ),
           },
+          // /data-bundles is a pathful layout route: DataBundlesLayout owns the header,
+          // KPI cards, alerts, tab bar and shared dialogs; each tab is a child route.
+          // See design.md § "Tabs are routes, not query params".
           {
             path: "/data-bundles",
-            lazy: guarded(
-              "/data-bundles",
-              () => import("@/pages/admin/DataBundles"),
-            ),
+            Component: GuardedDataBundlesLayout,
+            children: [
+              {
+                index: true,
+                lazy: async () => ({ Component: (await import("@/features/data-bundle/components/pages/MyBundlesPage")).default }),
+              },
+              {
+                path: "topups",
+                lazy: async () => ({ Component: (await import("@/features/data-bundle/components/pages/TransactionHistoryPage")).default }),
+              },
+              {
+                path: "analytics",
+                lazy: async () => ({ Component: (await import("@/features/data-bundle/components/pages/AnalyticsPage")).default }),
+              },
+              {
+                path: "rates",
+                lazy: async () => ({ Component: (await import("@/features/data-bundle/components/pages/CurrentRatesPage")).default }),
+              },
+            ],
           },
           {
             path: "/jobs",
