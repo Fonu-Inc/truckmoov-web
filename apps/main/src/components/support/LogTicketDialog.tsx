@@ -1,5 +1,12 @@
+import type {
+  SupportTicketCategory, SupportTicketChannel, SupportTicketPriority,
+} from "@truckmoov/api/auth";
 import {
-  FileText, Image as ImageIcon, Loader2, Ticket, UploadCloud, X,
+  useAttachSupportTicketFiles,
+  useCreateSupportTicket,
+} from "@truckmoov/api/auth";
+import {
+  FileText, Image as ImageIcon, Ticket, UploadCloud, X,
 } from "lucide-react";
 import {
   useRef, useState,
@@ -25,10 +32,8 @@ import {
 } from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
 import { useAuthStore } from "@/features/auth/stores/authStore";
-// Local type aliases (hook deleted)
-type TicketCategory = "device_tracking" | "sim_connectivity" | "messaging" | "billing" | "account_access" | "other";
+
 type ContextType = "device" | "sim" | "vehicle" | "whatsapp" | "billing" | "none";
-type TicketPriority = "low" | "medium" | "high" | "critical";
 
 type LogTicketDialogProps = {
   open: boolean;
@@ -60,7 +65,7 @@ const CHANNELS: {
 ];
 
 const CATEGORIES: {
-  value: TicketCategory; label: string;
+  value: SupportTicketCategory; label: string;
 }[] = [
   {
     value: "device_tracking", label: "Device & Tracking",
@@ -89,7 +94,8 @@ export function LogTicketDialog({
   open, onOpenChange, onSuccess,
 }: LogTicketDialogProps) {
   const { user } = useAuthStore();
-  const createTicket = async (..._args: any[]): Promise<any> => null;
+  const createTicket = useCreateSupportTicket();
+  const attachFiles = useAttachSupportTicketFiles();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [
@@ -111,26 +117,23 @@ export function LogTicketDialog({
   const [
     category,
     setCategory,
-  ] = useState<TicketCategory>("device_tracking");
+  ] = useState<SupportTicketCategory>("device_tracking");
   const [
     priority,
     setPriority,
-  ] = useState<TicketPriority>("medium");
+  ] = useState<SupportTicketPriority>("medium");
   const [
     attachments,
     setAttachments,
   ] = useState<File[]>([]);
-  const [
-    isSubmitting,
-    setIsSubmitting,
-  ] = useState(false);
   const [
     isDragging,
     setIsDragging,
   ] = useState(false);
 
   const reporterName
-    = user?.name || user?.email || "Current user";
+    = user?.email || "Current user";
+  const isSubmitting = createTicket.isPending || attachFiles.isPending;
 
   const reset = () => {
     setTitle("");
@@ -176,36 +179,45 @@ export function LogTicketDialog({
       return;
     }
 
-    setIsSubmitting(true);
     try {
-      const ticket = await createTicket({
-        category,
-        subject: title.trim(),
-        description: message.trim(),
-        priority,
-        contextType: channel,
-        contextSnapshot: {
-          channel_label:
-            channel === "none"
-              ? otherChannel.trim()
-              : CHANNELS.find(c => c.value === channel)?.label,
-          attachments: attachments.map(f => ({
-            name: f.name,
-            size: f.size,
-            type: f.type,
-          })),
+      const response = await createTicket.mutateAsync({
+        data: {
+          category,
+          subject: title.trim(),
+          description: message.trim(),
+          priority,
+          channel: channel === "whatsapp"
+            ? "messaging"
+            : channel === "none"
+              ? "other"
+              : channel as SupportTicketChannel,
+          otherChannel: channel === "none" ? otherChannel.trim() : undefined,
         },
       });
 
-      if (ticket) {
-        toast.success("Ticket logged successfully");
-        reset();
-        onOpenChange(false);
-        onSuccess?.();
+      if (attachments.length > 0) {
+        try {
+          await attachFiles.mutateAsync({
+            id: response.data.id,
+            data: attachments,
+          });
+        }
+        catch {
+          toast.warning("Ticket logged, but attachments could not be uploaded");
+          reset();
+          onOpenChange(false);
+          onSuccess?.();
+          return;
+        }
       }
+
+      toast.success("Ticket logged successfully");
+      reset();
+      onOpenChange(false);
+      onSuccess?.();
     }
-    finally {
-      setIsSubmitting(false);
+    catch {
+      toast.error("Unable to log ticket. Please try again.");
     }
   };
 
@@ -310,7 +322,7 @@ export function LogTicketDialog({
               <Label htmlFor="ticket-category">Category *</Label>
               <Select
                 value={category}
-                onValueChange={v => setCategory(v as TicketCategory)}
+                onValueChange={v => setCategory(v as SupportTicketCategory)}
               >
                 <SelectTrigger id="ticket-category">
                   <SelectValue />
@@ -334,7 +346,7 @@ export function LogTicketDialog({
             <Label htmlFor="ticket-priority">Priority</Label>
             <Select
               value={priority}
-              onValueChange={v => setPriority(v as TicketPriority)}
+              onValueChange={v => setPriority(v as SupportTicketPriority)}
             >
               <SelectTrigger id="ticket-priority">
                 <SelectValue />
@@ -397,7 +409,7 @@ export function LogTicketDialog({
                   const isImage = file.type.startsWith("image/");
                   return (
                     <li
-                      key={`${file.name}-${idx}`}
+                      key={`${file.name}-${file.size}-${file.lastModified}`}
                       className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm"
                     >
                       {isImage
@@ -443,16 +455,10 @@ export function LogTicketDialog({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            loading={isSubmitting}
             size="sm"
           >
-            {isSubmitting
-              ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                )
-              : (
-                  <Ticket className="h-4 w-4 mr-2" />
-                )}
+            <Ticket className="h-4 w-4 mr-2" />
             Submit Ticket
           </Button>
         </DialogFooter>

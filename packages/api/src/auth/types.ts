@@ -459,6 +459,123 @@ export type UpdateSystemSettingsPayload = {
   data: Record<string, unknown>
 }
 
+export type SupportTicketCategory =
+  | 'device_tracking'
+  | 'sim_connectivity'
+  | 'messaging'
+  | 'billing'
+  | 'billing_subscription'
+  | 'account_access'
+  | 'compliance'
+  | 'onboarding'
+  | 'other'
+
+export type SupportTicketStatus =
+  | 'open'
+  | 'in_progress'
+  | 'waiting_on_tenant'
+  | 'escalated'
+  | 'resolved'
+  | 'closed'
+
+export type SupportTicketPriority = 'low' | 'medium' | 'high' | 'critical'
+
+export type SupportTicketChannel = 'device' | 'sim' | 'vehicle' | 'messaging' | 'billing' | 'other'
+
+export type SupportTicketsQuery = {
+  params?: {
+    status?: SupportTicketStatus
+    category?: string
+    priority?: SupportTicketPriority
+    search?: string
+  }
+}
+
+export type CreateSupportTicketPayload = {
+  data: {
+    subject: string
+    description: string
+    category: SupportTicketCategory
+    channel?: SupportTicketChannel
+    otherChannel?: string
+    priority?: SupportTicketPriority
+  }
+}
+
+export type AttachSupportTicketFilesPayload = {
+  id: string
+  data: File[]
+  messageId?: string
+}
+
+export type SupportTicket = {
+  id: string
+  tenantId: string
+  category: string
+  subject: string
+  description: string
+  status: SupportTicketStatus
+  priority: SupportTicketPriority
+  channel: SupportTicketChannel | null
+  otherChannel: string | null
+  contextType: string
+  contextId: string | null
+  contextSnapshot: Record<string, unknown> | null
+  escalatedTo: string | null
+  escalatedReferenceId: string | null
+  escalationNotes: string | null
+  escalatedAt: string | null
+  escalatedBy: string | null
+  assignedTo: string | null
+  createdBy: string
+  resolvedAt: string | null
+  closedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type SupportTicketCountsByStatus = Record<SupportTicketStatus, number>
+
+export type SupportTicketsListResponse = ServerResponse<{
+  tickets: SupportTicket[]
+  countsByStatus: SupportTicketCountsByStatus
+  total: number
+}>
+
+export type SupportTicketResponse = ServerResponse<SupportTicket>
+
+export type SupportTicketMessage = {
+  id: string
+  ticketId: string
+  senderId: string
+  senderName: string
+  senderRole: string
+  message: string
+  isInternal?: boolean
+  createdAt: string
+}
+
+export type SupportTicketAttachment = {
+  id: string
+  ticketId: string
+  tenantId: string
+  messageId: string | null
+  key: string
+  filename: string
+  contentType: string
+  sizeBytes: number
+  uploadedBy: string
+  createdAt: string
+}
+
+export type SupportTicketDetail = {
+  ticket: SupportTicket
+  messages: SupportTicketMessage[]
+  attachments: SupportTicketAttachment[]
+}
+
+export type SupportTicketDetailResponse = ServerResponse<SupportTicketDetail>
+
 // ─── System admin — support tickets ──────────────────────────────────────────
 
 export type UpdateTicketStatusPayload = {

@@ -7,6 +7,7 @@ import type {
   ActivityLogVerifyResponse,
   ApproveSIMRequestPayload,
   AssignSystemSupportTicketPayload,
+  AttachSupportTicketFilesPayload,
   CommunicationRateHistoryPayload,
   CommunicationRateHistoryResponse,
   CommunicationRatesResponse,
@@ -98,6 +99,7 @@ import type {
   CreateDeviceCatalogPayload,
   CreateSystemAdminInvitePayload,
   CreateSystemAdminPayload,
+  CreateSupportTicketPayload,
   CreateTenantPayload,
   CreateTicketMessagePayload,
   DispatcherPreferencesResponse,
@@ -174,6 +176,10 @@ import type {
   SimImportResponse,
   SimRequestDeviceMappingProcessResponse,
   StandardApiResponse,
+  SupportTicketDetailResponse,
+  SupportTicketResponse,
+  SupportTicketsListResponse,
+  SupportTicketsQuery,
   SystemSimBatchRetryResult,
   SystemSimRequestActionResult,
   SystemSupportEscalatedResponse,
@@ -1127,6 +1133,34 @@ export async function completeOnboarding() {
 }
 
 // ─── System admin — support tickets ──────────────────────────────────────────
+
+export async function getSupportTickets(payload?: SupportTicketsQuery) {
+  const { data } = await axiosInstance.get<SupportTicketsListResponse>('/auth/support-tickets', {
+    params: payload?.params,
+  })
+  return data
+}
+
+export async function createSupportTicket({ data: body }: CreateSupportTicketPayload) {
+  const { data } = await axiosInstance.post<SupportTicketResponse>('/auth/support-tickets', body)
+  return data
+}
+
+export async function getSupportTicket({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<SupportTicketDetailResponse>(`/auth/support-tickets/${id}`)
+  return data
+}
+
+export async function attachSupportTicketFiles({ id, data: files, messageId }: AttachSupportTicketFilesPayload) {
+  const body = new FormData()
+  files.forEach(file => body.append('files', file))
+
+  const { data } = await axiosInstance.post<StandardApiResponse>(`/auth/support-tickets/${id}/attachments`, body, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    params: { messageId },
+  })
+  return data
+}
 
 export async function getSystemSupportDashboard() {
   const { data } = await axiosInstance.get<SystemSupportDashboardResponse>('/auth/system/support/dashboard')

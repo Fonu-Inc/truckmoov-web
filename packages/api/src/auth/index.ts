@@ -3,11 +3,13 @@ import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../lib/auth-store'
 import { queryClient } from '../lib/query-client'
 import {
+  attachSupportTicketFiles,
   assignSystemDeviceSetupRequest,
   approveSIMRequest,
   changeRole,
   completeProfile,
   createDeviceCatalogEntry,
+  createSupportTicket,
   createSupportTicketMessage,
   createSystemAdmin,
   createSystemAdminInvite,
@@ -46,6 +48,8 @@ import {
   getOrganizationUsers,
   getProfile,
   getSubscriptionPlans,
+  getSupportTicket,
+  getSupportTickets,
   getSupportTicketMessages,
   getSystemActivityLog,
   getSystemAdminInvites,
@@ -227,6 +231,7 @@ import type {
   SystemSimRequestsQuery,
   SystemSimsQuery,
   SystemSupportTicketsQuery,
+  SupportTicketsQuery,
   SystemTenantsQuery,
   DataBundleAnalyticsRangeQuery,
   DataBundleAllocationsQuery,
@@ -265,6 +270,10 @@ export const AUTH_QUERY_KEY = {
   organizationSettings: ['organizationSettings'],
 
   activityLog: (payload?: ActivityLogQuery) => ['activityLog', payload],
+
+  supportTickets: (payload?: SupportTicketsQuery) =>
+    payload ? ['supportTickets', payload] : ['supportTickets'],
+  supportTicket: (id: string) => ['supportTicket', id],
 
   systemAdmins: ['systemAdmins'],
   systemAdminInvites: ['systemAdminInvites'],
@@ -1541,6 +1550,34 @@ export function useCompleteOnboarding() {
 }
 
 // Support tickets
+
+export function getSupportTicketsQueryOptions(payload?: SupportTicketsQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.supportTickets(payload),
+    queryFn: () => getSupportTickets(payload),
+  })
+}
+
+export function getSupportTicketQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.supportTicket(id),
+    queryFn: () => getSupportTicket({ id }),
+    enabled: !!id,
+  })
+}
+
+export function useCreateSupportTicket() {
+  return useMutation({
+    mutationFn: createSupportTicket,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.supportTickets() })
+    },
+  })
+}
+
+export function useAttachSupportTicketFiles() {
+  return useMutation({ mutationFn: attachSupportTicketFiles })
+}
 
 export function getSystemSupportDashboardQueryOptions() {
   return queryOptions({

@@ -141,6 +141,17 @@ When a request returns 401 the axios instance:
 
 Concurrent 401 responses are queued and replayed once the single refresh resolves. If the refresh itself fails, `logout()` is called and all queued requests reject with `{ error: 'TOKEN_REFRESH_FAILED', statusCode: 401 }`.
 
+### Tenant support tickets
+
+Tenant-facing support uses the auth service through `@truckmoov/api/auth`:
+
+- `getSupportTicketsQueryOptions({ params })` calls `GET /auth/support-tickets`; `search`, `status`, `category`, and `priority` are server-side filters. The response data is `{ tickets, countsByStatus, total }`.
+- `getSupportTicketQueryOptions(id)` calls `GET /auth/support-tickets/{id}` when the ticket detail dialog opens. The response data is `{ ticket, messages, attachments }`.
+- `useCreateSupportTicket()` calls `POST /auth/support-tickets`.
+- `useAttachSupportTicketFiles()` posts one or more files to `POST /auth/support-tickets/{id}/attachments` as multipart fields named `files`.
+
+The attachment endpoint accepts images, PDF, DOC/DOCX, TXT, CSV, XLS/XLSX up to 10 MB per file. Create the ticket first, then use the returned ticket id for its attachments.
+
 ### Login / logout mutations
 
 `useLogin` and `useSystemLogin` call `setSession` automatically on success. `useLogout` calls `logout()` automatically on success. Components do not need to manage the store directly for these flows.

@@ -1,3 +1,11 @@
+import type {
+  SupportTicketAttachment,
+  SupportTicketDetail,
+  SupportTicketPriority,
+  SupportTicketStatus,
+} from "@truckmoov/api/auth";
+import { useQuery } from "@tanstack/react-query";
+import { getSupportTicketQueryOptions } from "@truckmoov/api/auth";
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   formatRelative, formatWithPattern,
@@ -6,9 +14,12 @@ import {
   ArrowUpRight,
   FileText,
   Image as ImageIcon,
+  Loader2,
+  MessageSquare,
   Paperclip,
 } from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/shadcn/button";
 import {
   Dialog,
   DialogContent,
@@ -20,16 +31,12 @@ import { Label } from "@/components/shadcn/label";
 import { Separator } from "@/components/shadcn/separator";
 import { TicketCsatPanel } from "./TicketCsatPanel";
 
-type SupportTicket = any;
-type TicketStatus = any;
-type TicketPriority = any;
-
 type TicketDetailSheetProps = {
-  ticket: SupportTicket | null;
+  ticketId: string | null;
   onClose: () => void;
 };
 
-const statusConfig: Record<TicketStatus, {
+const statusConfig: Record<SupportTicketStatus, {
   label: string; className: string;
 }> = {
   open: {
@@ -52,7 +59,7 @@ const statusConfig: Record<TicketStatus, {
   },
 };
 
-const priorityStyles: Record<TicketPriority, {
+const priorityStyles: Record<SupportTicketPriority, {
   label: string; className: string;
 }> = {
   low: {
@@ -69,70 +76,246 @@ const priorityStyles: Record<TicketPriority, {
   },
 };
 
-const REPORTER_NAMES: Record<string, string> = {
-  "usr-21f4a8c0": "Adaeze Okafor",
-  "usr-9a3b1c44": "Tunde Bakare",
-  "usr-55cd0091": "Chinedu Eze",
-  "usr-ab991122": "Funmi Adeyemi",
-  "usr-31aa55b9": "Ibrahim Musa",
-  "usr-7711eecc": "Kemi Lawal",
-  "usr-cc220011": "Oluwaseun Bello",
-  "usr-66aa00ee": "Ngozi Uche",
-  "usr-aa11bbcc": "Yusuf Sani",
-  "usr-12340987": "Blessing Akpan",
-};
+function isImageAttachment(attachment: SupportTicketAttachment) {
+  return attachment.contentType.startsWith("image/")
+    || /\.(?:png|jpe?g|gif|webp|svg|bmp)$/i.test(attachment.filename);
+}
 
-type Attachment = {
-  name: string;
-  size?: number;
-  type?: string;
-  url?: string;
-};
+function formatBytes(bytes: number) {
+  if (bytes < 1024)
+    return `${bytes} B`;
+  return `${(bytes / 1024).toFixed(0)} KB`;
+}
 
-function isImageAttachment(att: Attachment) {
-  return (att.type && att.type.startsWith("image/"))
-    || /\.(?:png|jpe?g|gif|webp|svg|bmp)$/i.test(att.name || "");
+function TicketDetails({ detail }: { detail: SupportTicketDetail }) {
+  const {
+    attachments, messages, ticket,
+  } = detail;
+  const status = statusConfig[ticket.status];
+  const priority = priorityStyles[ticket.priority];
+  const reporterDisplay = ticket.createdBy
+    ? `User #${ticket.createdBy.slice(
+      0,
+      8,
+    )}`
+    : "—";
+  const channelLabel = ticket.otherChannel ?? ticket.channel ?? ticket.contextType;
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+        <div className="space-y-1 sm:col-span-2">
+          <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Title</Label>
+          <p className="text-sm font-semibold leading-snug">{ticket.subject}</p>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Ticket ID</Label>
+          <p className="text-sm font-medium font-mono">
+            #
+            {ticket.id.slice(
+              0,
+              8,
+            )}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+        <div className="space-y-1">
+          <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Category</Label>
+          <p className="text-sm font-medium capitalize">
+            {ticket.category.replace(
+              /_/g,
+              " ",
+            )}
+          </p>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Priority</Label>
+          <div>
+            <Badge
+              variant="outline"
+              className={priority.className}
+            >
+              {priority.label}
+            </Badge>
+          </div>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Channel</Label>
+          <p className="text-sm font-medium capitalize">
+            {String(channelLabel || "—").replace(
+              /_/g,
+              " ",
+            )}
+          </p>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Reporter</Label>
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-[11px] font-semibold">
+              {getInitials(reporterDisplay)}
+            </div>
+            <p className="text-sm font-medium truncate">{reporterDisplay}</p>
+          </div>
+        </div>
+        <div className="space-y-1 col-span-2">
+          <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Created</Label>
+          <p className="text-sm">
+            {formatWithPattern(
+              ticket.createdAt,
+              "PPp",
+            )}
+            {" "}
+            <span className="text-muted-foreground">
+              (
+              {formatRelative(ticket.createdAt)}
+              )
+            </span>
+          </p>
+        </div>
+      </div>
+
+      <Separator />
+
+      <div className="space-y-2">
+        <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Issue Description</Label>
+        <p className="text-sm p-3 rounded-lg bg-muted/50 leading-relaxed whitespace-pre-wrap">
+          {ticket.description}
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+          <Paperclip className="h-3 w-3" />
+          Attachments (
+          {attachments.length}
+          )
+        </Label>
+        {attachments.length === 0
+          ? <p className="text-sm text-muted-foreground">No attachments.</p>
+          : (
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {attachments.map(attachment => (
+                  <div
+                    key={attachment.id}
+                    className="flex items-center gap-2 rounded-lg border bg-card p-2.5"
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
+                      {isImageAttachment(attachment)
+                        ? <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                        : <FileText className="h-4 w-4 text-muted-foreground" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-medium">{attachment.filename}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {attachment.contentType}
+                        {" · "}
+                        {formatBytes(attachment.sizeBytes)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+          <MessageSquare className="h-3 w-3" />
+          Conversation (
+          {messages.length}
+          )
+        </Label>
+        {messages.length === 0
+          ? <p className="text-sm text-muted-foreground">No replies yet.</p>
+          : (
+              <div className="space-y-2">
+                {messages.map(message => (
+                  <div
+                    key={message.id}
+                    className="rounded-lg border bg-muted/30 p-3"
+                  >
+                    <div className="mb-1 flex items-center justify-between gap-3">
+                      <p className="text-xs font-medium">
+                        {message.senderName || `User #${message.senderId.slice(
+                          0,
+                          8,
+                        )}`}
+                      </p>
+                      <p className="shrink-0 text-[10px] text-muted-foreground">
+                        {formatRelative(message.createdAt)}
+                      </p>
+                    </div>
+                    <p className="whitespace-pre-wrap text-sm">{message.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+      </div>
+
+      <div className="flex flex-col gap-2 p-4 rounded-lg border bg-muted/40 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-0.5">
+          <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Current Status</Label>
+          <p className="text-xs text-muted-foreground">Only the platform support team can change ticket status.</p>
+        </div>
+        <Badge
+          variant="outline"
+          className={status.className}
+        >
+          {status.label}
+        </Badge>
+      </div>
+
+      {ticket.escalatedTo && (
+        <div className="p-3 rounded-lg border border-destructive/50 bg-destructive/5 space-y-2">
+          <div className="flex items-center gap-2 text-sm text-destructive">
+            <ArrowUpRight className="h-4 w-4" />
+            <span className="font-medium">
+              Escalated to
+              {ticket.escalatedTo.replace(
+                /_/g,
+                " ",
+              )}
+            </span>
+          </div>
+          {ticket.escalatedReferenceId && (
+            <p className="text-xs">
+              <span className="text-muted-foreground">Reference ID: </span>
+              {ticket.escalatedReferenceId}
+            </p>
+          )}
+          {ticket.escalationNotes && <p className="text-xs">{ticket.escalationNotes}</p>}
+          {ticket.escalatedAt && (
+            <p className="text-xs text-muted-foreground">
+              Escalated
+              {formatRelative(ticket.escalatedAt)}
+            </p>
+          )}
+        </div>
+      )}
+
+      <TicketCsatPanel
+        ticketId={ticket.id}
+        ticketStatus={ticket.status}
+      />
+    </div>
+  );
 }
 
 export function TicketDetailSheet({
-  ticket, onClose,
+  ticketId, onClose,
 }: TicketDetailSheetProps) {
-  if (!ticket)
+  const {
+    data, error, isLoading, refetch,
+  } = useQuery(getSupportTicketQueryOptions(ticketId ?? ""));
+
+  if (!ticketId)
     return null;
-
-  const status = statusConfig[ticket.status];
-  const priority = priorityStyles[ticket.priority] ?? {
-    label: ticket.priority, className: "",
-  };
-  const ctx = (ticket.contextSnapshot ?? {}) as Record<string, unknown>;
-  const realAttachments: Attachment[] = Array.isArray(ctx.attachments)
-    ? (ctx.attachments as Attachment[])
-    : [];
-  const demoAttachments: Attachment[] = [
-    {
-      name: "screenshot-error.png", type: "image/png", size: 248 * 1024,
-    },
-    {
-      name: "device-log.txt", type: "text/plain", size: 12 * 1024,
-    },
-  ];
-  const display = realAttachments.length > 0 ? realAttachments : demoAttachments;
-
-  const reporterDisplay
-    = (ticket as SupportTicket & { reporterName?: string }).reporterName
-      || (ticket.createdBy
-        ? REPORTER_NAMES[ticket.createdBy] || `User #${ticket.createdBy.slice(
-          0,
-          8,
-        )}`
-        : "—");
-  const reporterInitials = getInitials(reporterDisplay);
-
-  const channelLabel = (ctx.channel_label as string | undefined) ?? ticket.contextType;
 
   return (
     <Dialog
-      open={!!ticket}
+      open
       onOpenChange={open => !open && onClose()}
     >
       <DialogContent className="max-w-xl p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col">
@@ -143,220 +326,24 @@ export function TicketDetailSheet({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
-          {/* Title + Ticket ID */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-            <div className="space-y-1 sm:col-span-2">
-              <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                Title
-              </Label>
-              <p className="text-sm font-semibold leading-snug">{ticket.subject}</p>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                Ticket ID
-              </Label>
-              <p className="text-sm font-medium font-mono">
-                #
-                {ticket.id.slice(
-                  0,
-                  8,
-                )}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-            <div className="space-y-1">
-              <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Category</Label>
-              <p className="text-sm font-medium capitalize">
-                {ticket.category.replace(
-                  /_/g,
-                  " ",
-                )}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Priority</Label>
-              <div>
-                <Badge
-                  variant="outline"
-                  className={priority.className}
-                >
-                  {priority.label}
-                </Badge>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Channel</Label>
-              <p className="text-sm font-medium capitalize">
-                {String(channelLabel || "—").replace(
-                  /_/g,
-                  " ",
-                )}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Reporter</Label>
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-[11px] font-semibold">
-                  {reporterInitials}
-                </div>
-                <p className="text-sm font-medium truncate">{reporterDisplay}</p>
-              </div>
-            </div>
-            <div className="space-y-1 col-span-2">
-              <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Created</Label>
-              <p className="text-sm">
-                {formatWithPattern(
-                  ticket.createdAt,
-                  "PPp",
-                )}
-                {" "}
-                <span className="text-muted-foreground">
-                  (
-                  {formatRelative(ticket.createdAt)}
-                  )
-                </span>
-              </p>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-2">
-            <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              Issue Description
-            </Label>
-            <p className="text-sm p-3 rounded-lg bg-muted/50 leading-relaxed whitespace-pre-wrap">
-              {ticket.description}
-            </p>
-          </div>
-
-          {/* Attachments */}
-          <div className="space-y-2">
-            <Label className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-              <Paperclip className="h-3 w-3" />
-              Attachments (
-              {display.length}
-              )
-            </Label>
-
-            {display.some(isImageAttachment) && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {display.filter(isImageAttachment).map((att, i) => (
-                  <a
-                    key={`img-${i}`}
-                    href={att.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group relative block aspect-video overflow-hidden rounded-md border bg-muted"
-                  >
-                    {att.url
-                      ? (
-                          <img
-                            src={att.url}
-                            alt={att.name}
-                            className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                          />
-                        )
-                      : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                        )}
-                    <div className="absolute inset-x-0 bottom-0 truncate bg-background/80 px-2 py-1 text-[10px]">
-                      {att.name}
-                    </div>
-                  </a>
-                ))}
-              </div>
-            )}
-
-            {display.some(a => !isImageAttachment(a)) && (
-              <div className="grid grid-cols-2 gap-2">
-                {display
-                  .filter(a => !isImageAttachment(a))
-                  .map((att, i) => (
-                    <div
-                      key={`file-${i}`}
-                      className="flex items-center gap-2 p-2.5 rounded-lg border bg-card"
-                    >
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium truncate">{att.name}</p>
-                        {att.size != null && (
-                          <p className="text-[10px] text-muted-foreground">
-                            {(att.size / 1024).toFixed(0)}
-                            {" "}
-                            KB
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
-
-          {/* Current Status (read-only — no update control for non-admins) */}
-          <div className="flex flex-col gap-2 p-4 rounded-lg border bg-muted/40 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-0.5">
-              <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                Current Status
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Only the platform support team can change ticket status.
-              </p>
-            </div>
-            <Badge
-              variant="outline"
-              className={status.className}
-            >
-              {status.label}
-            </Badge>
-          </div>
-
-          {/* Escalation */}
-          {ticket.escalatedTo && (
-            <div className="p-3 rounded-lg border border-destructive/50 bg-destructive/5 space-y-2">
-              <div className="flex items-center gap-2 text-sm text-destructive">
-                <ArrowUpRight className="h-4 w-4" />
-                <span className="font-medium">
-                  Escalated to
-                  {" "}
-                  {ticket.escalatedTo.replace(
-                    /_/g,
-                    " ",
-                  )}
-                </span>
-              </div>
-              {ticket.escalatedReferenceId && (
-                <p className="text-xs">
-                  <span className="text-muted-foreground">Reference ID: </span>
-                  {ticket.escalatedReferenceId}
-                </p>
-              )}
-              {ticket.escalationNotes && (
-                <p className="text-xs">{ticket.escalationNotes}</p>
-              )}
-              {ticket.escalatedAt && (
-                <p className="text-xs text-muted-foreground">
-                  Escalated
-                  {" "}
-                  {formatRelative(ticket.escalatedAt)}
-                </p>
-              )}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {isLoading && (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
             </div>
           )}
-
-          {/* CSAT — only renders when ticket is resolved/closed */}
-          <TicketCsatPanel
-            ticketId={ticket.id}
-            ticketStatus={ticket.status}
-          />
+          {error && (
+            <div className="py-16 text-center">
+              <p className="text-sm text-muted-foreground">Unable to load this ticket.</p>
+              <Button
+                variant="link"
+                onClick={() => refetch()}
+              >
+                Try again
+              </Button>
+            </div>
+          )}
+          {data?.data && <TicketDetails detail={data.data} />}
         </div>
       </DialogContent>
     </Dialog>
