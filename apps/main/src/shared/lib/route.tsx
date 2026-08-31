@@ -600,8 +600,26 @@ export const router = createBrowserRouter([
             path: "/installation",
             lazy: guarded(
               "/installation",
-              () => import("@/pages/admin/DeviceInstallation"),
+              () => import("@/features/installation/components/layout/InstallationLayout"),
             ),
+            children: [
+              {
+                index: true,
+                lazy: async () => ({ Component: (await import("@/features/installation/components/pages/ConfigQueuePage")).default }),
+              },
+              {
+                path: "installer-guide",
+                lazy: async () => ({ Component: (await import("@/features/installation/components/pages/InstallerGuidePage")).default }),
+              },
+              {
+                path: "verification",
+                lazy: async () => ({ Component: (await import("@/features/installation/components/pages/VerificationPage")).default }),
+              },
+              {
+                path: "troubleshooting",
+                lazy: async () => ({ Component: (await import("@/features/installation/components/pages/TroubleshootingPage")).default }),
+              },
+            ],
           },
           // Integrations is a pathful layout route: IntegrationsLayout owns the
           // outer tab bar (Developer Portal / ERP & WMS); DeveloperPortalLayout
