@@ -118,6 +118,7 @@ import {
   updateOrganizationUser,
   updateOrganizationUserStatus,
   updateProfile,
+  updateSubscriptionPlanPrice,
   updateSupportTicketStatus,
   updateSystemAdminStatus,
   updateSystemSettings,
@@ -1082,6 +1083,17 @@ export function getSystemSubscriptionPlansQueryOptions() {
   return queryOptions({
     queryKey: AUTH_QUERY_KEY.systemSubscriptionPlans,
     queryFn: getSystemSubscriptionPlans,
+  })
+}
+
+export function useUpdateSubscriptionPlanPrice() {
+  return useMutation({
+    mutationFn: updateSubscriptionPlanPrice,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSubscriptionPlans })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.subscriptionPlans })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingPlans })
+    },
   })
 }
 

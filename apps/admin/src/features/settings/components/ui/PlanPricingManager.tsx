@@ -1,4 +1,7 @@
-import { getSystemSubscriptionPlansQueryOptions } from "@truckmoov/api/auth";
+import {
+  getSystemSubscriptionPlansQueryOptions,
+  useUpdateSubscriptionPlanPrice,
+} from "@truckmoov/api/auth";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -11,6 +14,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -111,7 +115,7 @@ export function PlanPricingManager() {
           Monthly and yearly NGN pricing for each plan, sourced from
           {" "}
           <code>/auth/system/subscription-plans</code>
-          . USD equivalents use the rate configured under Configurations.
+          . Each field saves independently. USD equivalents use the rate configured under Configurations.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -119,63 +123,120 @@ export function PlanPricingManager() {
         {!isLoading && plans.length === 0 && (
           <p className="text-sm text-muted-foreground">No subscription plans configured.</p>
         )}
-        {plans.map((p) => {
-          const yearlyNgn = p.yearlyMonthlyEquivalentNgn !== null
-            ? p.yearlyMonthlyEquivalentNgn * 12
-            : null;
-          const usdMonthly = rate > 0 && p.monthlyPriceNgn !== null ? p.monthlyPriceNgn / rate : null;
-          const usdYearly = rate > 0 && yearlyNgn !== null ? yearlyNgn / rate : null;
-          return (
-            <div
-              key={p.code}
-              className="rounded-lg border p-4 space-y-3"
-            >
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium">{p.name}</span>
-                <Badge variant="outline" className="capitalize">{p.tier}</Badge>
-                {p.badge && <Badge variant="secondary">{p.badge}</Badge>}
-                {p.customPricing && <Badge variant="secondary">Custom pricing</Badge>}
-              </div>
-              <Separator />
-              <div className="grid gap-4 md:grid-cols-2">
-                <PriceCell
-                  label="Monthly Price (NGN)"
-                  ngn={p.monthlyPriceNgn}
-                  usd={usdMonthly}
-                  customPricing={p.customPricing}
-                />
-                <PriceCell
-                  label="Yearly Price (NGN)"
-                  ngn={yearlyNgn}
-                  usd={usdYearly}
-                  customPricing={p.customPricing}
-                />
-              </div>
+        {plans.map(p => (
+          <div key={p.code} className="rounded-lg border p-4 space-y-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium">{p.name}</span>
+              <Badge variant="outline" className="capitalize">{p.tier}</Badge>
+              {p.badge && <Badge variant="secondary">{p.badge}</Badge>}
+              {p.customPricing && <Badge variant="secondary">Custom pricing</Badge>}
             </div>
-          );
-        })}
+            <Separator />
+            <div className="grid gap-4 md:grid-cols-2">
+              <PriceEditor
+                label="Monthly Price (NGN)"
+                planCode={p.code}
+                field="monthlyPriceNgn"
+                serverValue={p.monthlyPriceNgn}
+                customPricing={p.customPricing}
+              />
+              <PriceEditor
+                label="Yearly Monthly-Equivalent (NGN)"
+                helperText="Rate a yearly subscriber pays per month. ×12 shown below."
+                planCode={p.code}
+                field="yearlyMonthlyEquivalentNgn"
+                serverValue={p.yearlyMonthlyEquivalentNgn}
+                customPricing={p.customPricing}
+                showYearlyTotal
+              />
+            </div>
+          </div>
+        ))}
       </CardContent>
     </Card>
   );
 }
 
-function PriceCell({
+function PriceEditor({
   label,
-  ngn,
-  usd,
+  helperText,
+  planCode,
+  field,
+  serverValue,
   customPricing,
+  showYearlyTotal = false,
 }: {
   label: string;
-  ngn: number | null;
-  usd: number | null;
+  helperText?: string;
+  planCode: string;
+  field: "monthlyPriceNgn" | "yearlyMonthlyEquivalentNgn";
+  serverValue: number | null;
   customPricing: boolean;
+  showYearlyTotal?: boolean;
 }) {
+  const [draft, setDraft] = useState<string>(serverValue !== null ? String(serverValue) : "");
+  useEffect(() => {
+    setDraft(serverValue !== null ? String(serverValue) : "");
+  }, [serverValue]);
+
+  const mutation = useUpdateSubscriptionPlanPrice();
+  const parsed = Number(draft);
+  const isValid = draft.trim() !== "" && Number.isFinite(parsed) && parsed >= 0;
+  const changed = isValid && parsed !== serverValue;
+
+  if (customPricing) {
+    return (
+      <div className="space-y-1">
+        <Label>{label}</Label>
+        <p className="text-lg font-semibold">Contact sales</p>
+      </div>
+    );
+  }
+
+  const usdRate = rate;
+  const usd = usdRate > 0 && isValid ? parsed / usdRate : null;
+  const yearlyTotal = showYearlyTotal && isValid ? parsed * 12 : null;
+
+  const handleSave = () => {
+    mutation.mutate(
+      { id: planCode, data: { [field]: parsed } },
+      {
+        onSuccess: () => toast.success("Plan price updated"),
+        onError: error => toast.error(error.message),
+      },
+    );
+  };
+
   return (
-    <div className="space-y-1">
+    <div className="space-y-2">
       <Label>{label}</Label>
-      <p className="text-lg font-semibold">
-        {customPricing || ngn === null ? "Contact sales" : `₦${ngnFormatter.format(ngn)}`}
-      </p>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">₦</span>
+        <Input
+          type="number"
+          min={0}
+          step="1"
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          disabled={mutation.isPending}
+          className="w-40"
+        />
+        <Button size="sm" onClick={handleSave} disabled={!changed || mutation.isPending}>
+          {mutation.isPending
+            ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            : <Save className="h-4 w-4 mr-2" />}
+          Save
+        </Button>
+      </div>
+      {helperText && <p className="text-xs text-muted-foreground">{helperText}</p>}
+      {yearlyTotal !== null && (
+        <p className="text-xs text-muted-foreground">
+          ≈ ₦
+          {ngnFormatter.format(yearlyTotal)}
+          {" "}
+          / year
+        </p>
+      )}
       {usd !== null && (
         <p className="text-xs text-muted-foreground">
           ≈ $

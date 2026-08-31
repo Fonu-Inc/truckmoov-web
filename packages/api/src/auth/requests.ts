@@ -239,6 +239,7 @@ import type {
   UpdateProfilePayload,
   ReassignSystemSimPayload,
   SuspendSystemSimPayload,
+  UpdateSubscriptionPlanPricePayload,
   UpdateSystemSettingsPayload,
   UpdateSystemSimPayload,
   UpdateTenantPayload,
@@ -741,6 +742,10 @@ export async function getSystemRefDataTenantOnboarding() {
 export async function getSystemSubscriptionPlans() {
   const { data } = await axiosInstance.get<SystemSubscriptionPlansResponse>('/auth/system/subscription-plans')
   return data
+}
+
+export async function updateSubscriptionPlanPrice({ id, data }: UpdateSubscriptionPlanPricePayload) {
+  await axiosInstance.patch(`/auth/system/subscription-plans/${id}`, data)
 }
 
 // ponytail: /auth/subscription-plans is not in the spec — use

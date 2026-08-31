@@ -835,8 +835,6 @@ import type { ServerResponse } from '../lib/types'
 // ─── Entity types ─────────────────────────────────────────────────────────────
 
 export type SubscriptionPlan = {
-  /** ponytail: not in the published schema — drop it if the server never sends it. */
-  id?: string
   code: string
   tier: 'starter' | 'professional' | 'enterprise'
   name: string
@@ -851,6 +849,16 @@ export type SubscriptionPlan = {
   badge: string | null
   ctaLabel: string
   features: string[]
+}
+
+// PATCH /auth/system/subscription-plans/{id}. Both price fields optional;
+// omit either to leave it unchanged. `id` is the plan's `code`.
+export type UpdateSubscriptionPlanPricePayload = {
+  id: string
+  data: {
+    monthlyPriceNgn?: number
+    yearlyMonthlyEquivalentNgn?: number
+  }
 }
 
 export type OnboardingExchangeRate = {
