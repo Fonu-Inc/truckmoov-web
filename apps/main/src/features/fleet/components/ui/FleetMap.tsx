@@ -300,6 +300,14 @@ type FleetMapProps = {
   showGeofences?: boolean;
   showRoutes?: boolean;
   showAlerts?: boolean;
+  /** Show the built-in legend overlay (bottom-left). Pages that render their own legend/KPI row should set false. */
+  showLegend?: boolean;
+  /** Show the built-in Leaflet zoom control (bottom-right). Pages that render their own zoom buttons should set false. */
+  showZoomControl?: boolean;
+  /** Show the top-left "Live / Connecting" connection badge. */
+  showRealtimeBadge?: boolean;
+  /** Called once when the Leaflet map is initialised, for pages that need to drive zoom/pan externally. */
+  onMapReady?: (map: L.Map) => void;
   /** External vehicle data from parent (real DB vehicles). When provided and non-empty, mock data is skipped. */
   externalVehicles?: Vehicle[];
   /** Harsh driving event pins to render on the map (filtered to recent events by parent) */
@@ -314,6 +322,10 @@ export function FleetMap({
   showGeofences = true,
   showRoutes = true,
   showAlerts = true,
+  showLegend = true,
+  showZoomControl = true,
+  showRealtimeBadge = true,
+  onMapReady,
   externalVehicles,
   harshEvents,
   onHarshEventPlayback,
@@ -478,7 +490,10 @@ export function FleetMap({
         initialCenter,
         11,
       );
-      L.control.zoom({ position: "bottomright" }).addTo(map);
+      if (showZoomControl) {
+        L.control.zoom({ position: "bottomright" }).addTo(map);
+      }
+      onMapReady?.(map);
 
       L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -859,6 +874,7 @@ export function FleetMap({
       />
 
       {/* Map Legend */}
+      {showLegend && (
       <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm rounded-lg border border-border p-3 shadow-lg z-[1000]">
         <p className="text-xs font-medium mb-2">Legend</p>
         <div className="space-y-1.5">
@@ -910,8 +926,10 @@ export function FleetMap({
           )}
         </div>
       </div>
+      )}
 
       {/* Live indicator with connection status */}
+      {showRealtimeBadge && (
       <div className="absolute top-4 left-4 bg-card/95 backdrop-blur-sm rounded-full px-3 py-1.5 border border-border shadow-lg z-[1000] flex items-center gap-2">
         {isConnected
           ? (
@@ -934,6 +952,7 @@ export function FleetMap({
           </span>
         )}
       </div>
+      )}
 
       {/* Realtime data indicator */}
       {realtimeLocations.length > 0 && (

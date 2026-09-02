@@ -269,6 +269,23 @@ export const router = createBrowserRouter([
         Component: NotAuthorized,
       },
 
+      {
+        path: "/onboarding",
+        lazy: async () => ({ Component: (await import("@/pages/onboarding/SubscriptionOnboarding")).default }),
+      },
+      {
+        path: "/onboarding/kyc",
+        lazy: async () => ({ Component: (await import("@/pages/onboarding/KycOnboarding")).default }),
+      },
+      {
+        path: "/onboarding/activate",
+        lazy: async () => ({ Component: (await import("@/pages/onboarding/ActivationOnboarding")).default }),
+      },
+      {
+        path: "/onboarding/quick-access",
+        lazy: async () => ({ Component: (await import("@/pages/onboarding/WelcomeDashboard")).default }),
+      },
+
       // No dashboard shell of their own: a bare redirect, a print-only
       // preview, and a scratch page.
       {
@@ -319,22 +336,6 @@ export const router = createBrowserRouter([
         Component: DashboardLayout,
         children: [
           // Onboarding — no sidebar entry, no guard.
-          {
-            path: "/onboarding",
-            lazy: async () => ({ Component: (await import("@/pages/onboarding/SubscriptionOnboarding")).default }),
-          },
-          {
-            path: "/onboarding/kyc",
-            lazy: async () => ({ Component: (await import("@/pages/onboarding/KycOnboarding")).default }),
-          },
-          {
-            path: "/onboarding/activate",
-            lazy: async () => ({ Component: (await import("@/pages/onboarding/ActivationOnboarding")).default }),
-          },
-          {
-            path: "/onboarding/quick-access",
-            lazy: async () => ({ Component: (await import("@/pages/onboarding/WelcomeDashboard")).default }),
-          },
 
           // Role dashboards (each home has a single-role sidebar entry).
           {

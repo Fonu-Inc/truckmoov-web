@@ -88,7 +88,7 @@ Never hardcode a color. Use the semantic Tailwind token (`bg-card`,
 | `info` | `199 89% 42%` | `199 89% 48%` | Informational |
 | `ring` | primary | primary | Focus rings are always yellow |
 
-`--radius: 0.5rem`. The sidebar keeps its own token set
+`--radius: 0.875rem`. The sidebar keeps its own token set
 (`sidebar-background`, `sidebar-accent`, …) and flips with the theme — light
 surface in light mode, dark charcoal in dark mode. The auth branding panel
 (`AuthBrandingPanel`) is the one exception: it scopes `.dark` on itself so
@@ -99,13 +99,15 @@ not the shadcn defaults.
 
 ### Typography
 
-Inter, imported at the top of `index.css` (`index.html` also preloads
-Instrument Sans). Base heading scale is set globally in `@layer base`, so plain
+Inter for body, Inter Tight for headings — both imported at the top of
+`index.css` (`index.html` also preloads Instrument Sans). Inter Tight is applied
+to `h1`–`h5` and `.font-display` with `letter-spacing: -0.02em` for a tighter,
+display-grade feel. Base heading scale is set globally in `@layer base`, so plain
 `<h1>`–`<h4>` are already styled:
 
 - `h1` — `text-3xl font-bold tracking-tight`
 - `h2` — `text-2xl font-semibold tracking-tight`
-- `h3` — `text-xl font-semibold`
+- `h3` — `text-xl font-semibold tracking-tight`
 - `h4` — `text-lg font-medium`
 
 ### Custom utilities
@@ -113,7 +115,7 @@ Instrument Sans). Base heading scale is set globally in `@layer base`, so plain
 Defined in `index.css`, prefer these over ad-hoc CSS:
 
 - Gradients: `bg-gradient-primary`, `bg-gradient-hero`, `bg-gradient-auth`, `text-gradient`
-- Surfaces: `bg-glass` (blur 16px), `bg-overlay` (map scrim), `card-elevated` (hover-lift shadow)
+- Surfaces: `bg-glass` (blur 16px), `bg-overlay` (map scrim), `card-elevated` (hover-lift shadow), `surface-sleek` (elevated card + hover shadow), `lift-on-hover` (2px translateY on hover)
 - Emphasis: `glow-primary`, `glow-success`, `mtn-highlight`, `animate-pulse-slow`
 - Status pills: `status-active`, `status-idle`, `status-offline`, `status-moving`
 - Map/vehicle: `map-marker` (ping ring), `vehicle-active` (pulse)
