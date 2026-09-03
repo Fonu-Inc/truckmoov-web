@@ -10,7 +10,6 @@ import {
  */
 const HELP_MODE: Record<string, AuthHelpMode> = {
   "/auth": "sign-in",
-  "/auth/signup": "sign-up",
   "/auth/forgot-password": "sign-in",
 };
 

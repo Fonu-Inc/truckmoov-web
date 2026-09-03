@@ -7,7 +7,6 @@
  */
 export const PUBLIC_ROUTES: readonly string[] = [
   "/auth",
-  "/auth/signup",
   "/auth/forgot-password",
   "/auth/reset-password",
   "/auth/invite",

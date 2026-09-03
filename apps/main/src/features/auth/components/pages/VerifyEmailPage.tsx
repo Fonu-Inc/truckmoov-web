@@ -25,8 +25,8 @@ const COPY: Record<VerifyType, {
   "new-user": {
     title: "Verifying your email",
     description: "Hold tight while we confirm your account.",
-    requestLinkHref: "/auth/signup",
-    requestLinkLabel: "Start over",
+    requestLinkHref: "/auth",
+    requestLinkLabel: "Back to sign in",
   },
   "reset-password": {
     title: "Verifying your reset link",

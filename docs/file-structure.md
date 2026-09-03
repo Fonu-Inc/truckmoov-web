@@ -1,6 +1,16 @@
 # File Structure
 
-Feature-based architecture. Applies to `apps/main`, `apps/admin`, and `apps/landing-page`.
+Feature-based architecture. Applies to `apps/main` and `apps/admin`.
+
+`apps/landing-page` is the exception — it is a marketing site with no features to speak of,
+so it uses `src/ui/{pages,components,shadcn}` plus `src/lib`, wired that way in its
+`components.json`. It also keeps its **own copies** of the shadcn primitives it needs in
+`src/ui/shadcn/` rather than importing `packages/reusables`, which targets React 18 +
+Tailwind v3 + the split `@radix-ui/react-*` packages and cannot be consumed by a React 19 +
+Tailwind v4 + unified `radix-ui` app. A multi-part component gets its own folder under
+`src/ui/components/` (`get-started/` is the worked example: dialog shell, step bodies, and a
+`.ts` data module — the `react-refresh/only-export-components` lint rule forbids exporting
+constants from a file that also exports components).
 
 `src/` has exactly two buckets plus entry files:
 

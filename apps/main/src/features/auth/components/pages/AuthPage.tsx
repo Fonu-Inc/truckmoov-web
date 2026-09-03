@@ -1,4 +1,3 @@
-import { Link } from "react-router";
 import { SignInForm } from "@/features/auth/components/forms/SignInForm";
 
 /** Rendered inside AuthLayout, which supplies the branding panel and mobile logo. */
@@ -11,17 +10,6 @@ export default function AuthPage() {
       </div>
 
       <SignInForm />
-
-      <p className="text-center text-sm text-muted-foreground">
-        New to FleetPro?
-        {" "}
-        <Link
-          to="/auth/signup"
-          className="font-medium text-primary hover:underline"
-        >
-          Create an account
-        </Link>
-      </p>
     </div>
   );
 }

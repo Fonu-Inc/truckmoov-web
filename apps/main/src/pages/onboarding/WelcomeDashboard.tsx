@@ -115,9 +115,6 @@ const OWNER_OPERATOR_ACTIONS: QuickAction[] = [
     id: "my-jobs", title: "My Jobs", description: "View your current and past jobs.", icon: Package, to: "/owner-operator/jobs",
   },
   {
-    id: "job-offers", title: "Job Offers", description: "Browse and accept available job offers.", icon: Bell, to: "/job-offers",
-  },
-  {
     id: "vehicles", title: "My Vehicles", description: "Manage the vehicles you own.", icon: Truck, to: "/owner-operator/vehicles",
   },
   {

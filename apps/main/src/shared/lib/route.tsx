@@ -13,7 +13,6 @@ import CompleteProfilePage from "@/features/auth/components/pages/CompleteProfil
 import ForgotPasswordPage from "@/features/auth/components/pages/ForgotPasswordPage";
 import InvitePage from "@/features/auth/components/pages/InvitePage";
 import ResetPasswordPage from "@/features/auth/components/pages/ResetPasswordPage";
-import SignUpPage from "@/features/auth/components/pages/SignUpPage";
 import VerifyEmailPage from "@/features/auth/components/pages/VerifyEmailPage";
 import { RoleHomeRedirect } from "@/features/auth/components/ui/RoleHomeRedirect";
 import { useAuthStore } from "@/features/auth/stores/authStore";
@@ -230,10 +229,6 @@ export const router = createBrowserRouter([
           {
             path: "/auth",
             Component: AuthPage,
-          },
-          {
-            path: "/auth/signup",
-            Component: SignUpPage,
           },
           {
             path: "/auth/forgot-password",
@@ -681,13 +676,6 @@ export const router = createBrowserRouter([
                 lazy: async () => ({ Component: (await import("@/features/integration/components/pages/ErpWmsPage")).default }),
               },
             ],
-          },
-          {
-            path: "/job-offers",
-            lazy: guarded(
-              "/job-offers",
-              () => import("@/pages/admin/JobOffers"),
-            ),
           },
           {
             path: "/reports",

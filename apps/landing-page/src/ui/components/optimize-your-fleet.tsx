@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "../shadcn/button";
+import GetStartedDialog from "./get-started/get-started-dialog";
 import SectionContainerTwo from "./section-container-two";
 
 export default function OptimizeYourFleet() {
@@ -14,12 +15,12 @@ export default function OptimizeYourFleet() {
           Ready to Optimize your fleet management?
         </h1>
         <div className="flex items-center gap-4">
-          <Button asChild>
-            <Link to="#">
+          <GetStartedDialog>
+            <Button>
               Get Started
               <ArrowRight />
-            </Link>
-          </Button>
+            </Button>
+          </GetStartedDialog>
           <Button
             asChild
             variant="outline"

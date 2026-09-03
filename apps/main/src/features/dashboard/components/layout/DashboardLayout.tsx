@@ -4,10 +4,11 @@ import {
 } from "react-router";
 import { OnboardingRouteGate } from "@/components/onboarding/OnboardingRouteGate";
 import { TrialBanner } from "@/components/onboarding/TrialBanner";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { DashboardHeader } from "@/features/dashboard/components/ui/DashboardHeader";
 import { DashboardSidebar } from "@/features/dashboard/components/ui/DashboardSidebar";
 import { useSidebarStore } from "@/features/dashboard/stores/sidebarStore";
-import { matchNavEntry } from "@/features/dashboard/utils/sidebarNav";
+import { matchNavEntry, resolveLabel } from "@/features/dashboard/utils/sidebarNav";
 import { cn } from "@/lib/utils";
 
 /**
@@ -24,6 +25,7 @@ import { cn } from "@/lib/utils";
  */
 export function DashboardLayout() {
   const collapsed = useSidebarStore(s => s.collapsed);
+  const role = useAuthStore(s => s.user?.role);
   const { pathname } = useLocation();
   const navigating = useNavigation().state !== "idle";
   const entry = matchNavEntry(pathname);
@@ -47,7 +49,7 @@ export function DashboardLayout() {
         )}
       >
         <ErrorBoundary>
-          <DashboardHeader title={entry?.label ?? ""} />
+          <DashboardHeader title={entry ? resolveLabel(entry, role) : ""} />
         </ErrorBoundary>
         <TrialBanner />
         <main className={cn(

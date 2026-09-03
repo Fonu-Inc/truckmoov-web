@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router";
 import { appLinks } from "@/lib/app-links";
+import GetStartedDialog from "../components/get-started/get-started-dialog";
 import SectionContainer from "../components/section-container";
 import SectionHeader from "../components/section-header";
 import { Button } from "../shadcn/button";
@@ -91,12 +92,12 @@ export default function Home() {
         <h1 className="font-bold text-[60px] text-white w-full max-w-[583px]">Modern Fleet Management Built for Africa</h1>
         <p className="text-[18px] text-[#FFFFFFCC] w-full max-w-[538px]">FleetPro Enterprise helps organisations manage fleets, optimise logistics, monitor live operations, automate dispatch, and scale intelligently across regions and stakeholders.</p>
         <div className="flex items-center gap-4">
-          <Button asChild>
-            <Link to="#">
+          <GetStartedDialog>
+            <Button>
               Get Started
               <ArrowRight />
-            </Link>
-          </Button>
+            </Button>
+          </GetStartedDialog>
           <Button
             asChild
             variant="outline"

@@ -24,8 +24,10 @@ import {
 } from "lucide-react";
 
 export type SidebarNavItem = {
-  /** Nav link text. Doubles as the top-bar title — a route is called one thing. */
+  /** Default nav link text (also the top-bar title). Roles in `labelByRole` override this. */
   label: string;
+  /** Sparse per-role overrides. A role not listed here sees `label`. */
+  labelByRole?: Partial<Record<UserRole, string>>;
   href: string;
   icon: LucideIcon;
   /** Page owns its own padding — DashboardLayout drops the `p-6` on `<main>`. */
@@ -36,6 +38,7 @@ export type SidebarNavItem = {
 
 export type SidebarNavGroup = {
   label: string;
+  labelByRole?: Partial<Record<UserRole, string>>;
   icon: LucideIcon;
   items: SidebarNavItem[];
   hasPermission?: UserRole[];
@@ -53,14 +56,15 @@ export function isNavGroup(entry: SidebarEntry): entry is SidebarNavGroup {
  * Every sidebar entry across every role, in one list.
  *
  * `hasPermission` is what decides visibility — a role sees an entry iff its key
- * is listed. One route means one entry with one label: a page is called the same
- * thing for everybody who can reach it, so `/fleet` is "Fleet" whether you
- * are a fleet provider or an aggregator.
+ * is listed. One route means one entry, but the label may vary by role via
+ * `labelByRole` (e.g. `/jobs` reads as "Shipments" for an enterprise admin and
+ * "Dispatch" for a dispatcher). Roles not listed in `labelByRole` see `label`.
  *
- * The label is also the top-bar title (see `matchNavEntry`). A route with no
- * entry here therefore has no top-bar title — that is deliberate: this list is
- * the nav, and pages off the nav (`/help`, the onboarding steps, the legacy
- * `/supervisor/*` portal) name themselves in their own body.
+ * The resolved label is also the top-bar title (see `matchNavEntry` +
+ * `resolveLabel`). A route with no entry here therefore has no top-bar title —
+ * that is deliberate: this list is the nav, and pages off the nav (`/help`, the
+ * onboarding steps, the legacy `/supervisor/*` portal) name themselves in their
+ * own body.
  *
  * ponytail: `hasPermission` is required here (optional on the type only so group
  * children can inherit) — a new entry that forgets it fails to compile instead
@@ -69,23 +73,32 @@ export function isNavGroup(entry: SidebarEntry): entry is SidebarNavGroup {
 export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] = [
   // ─── Overview ──────────────────────────────────────────────────
   {
-    label: "Overview", href: "/enterprise", icon: LayoutDashboard, hasPermission: ["ENTERPRISE_ADMIN"],
+    label: "Logistic Overview", href: "/enterprise", icon: LayoutDashboard, hasPermission: ["ENTERPRISE_ADMIN"],
   },
   {
-    label: "Overview", href: "/overview", icon: LayoutDashboard, hasPermission: [
+    label: "Overview", href: "/overview", icon: LayoutDashboard,
+    labelByRole: {
+      FLEET_ADMIN: "Logistic Overview",
+      OPERATIONS_MANAGER: "Fleet Operations",
+    },
+    hasPermission: [
       "FLEET_ADMIN",
       "OPERATIONS_MANAGER",
     ],
   },
   {
-    label: "Overview", href: "/aggregator", icon: LayoutDashboard, hasPermission: ["AGGREGATOR_ADMIN"],
+    label: "Logistic Overview", href: "/aggregator", icon: LayoutDashboard, hasPermission: ["AGGREGATOR_ADMIN"],
   },
   {
-    label: "Overview", href: "/owner-operator", icon: LayoutDashboard, hasPermission: ["OWNER_OPERATOR"],
+    label: "My Overview", href: "/owner-operator", icon: LayoutDashboard, hasPermission: ["OWNER_OPERATOR"],
   },
   // ─── Jobs & dispatch ───────────────────────────────────────────
   {
-    label: "Jobs", href: "/jobs", icon: Package,
+    label: "Shipments", href: "/jobs", icon: Package,
+    labelByRole: {
+      DISPATCHER: "Dispatch",
+      OPERATIONS_MANAGER: "Dispatch",
+    },
     hasPermission: [
       "ENTERPRISE_ADMIN",
       "FLEET_ADMIN",
@@ -95,13 +108,14 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
       "DISPATCHER",
     ],
   },
-  {
-    label: "Job Offers", href: "/job-offers", icon: Inbox, hasPermission: ["OWNER_OPERATOR"],
-  },
 
   // ─── Fleet ─────────────────────────────────────────────────────
   {
-    label: "Fleet", href: "/fleet", icon: Truck,
+    label: "Fleets", href: "/fleet", icon: Truck,
+    labelByRole: {
+      OWNER_OPERATOR: "My Vehicles",
+      OPERATIONS_MANAGER: "Vehicles",
+    },
     hasPermission: [
       "ENTERPRISE_ADMIN",
       "FLEET_ADMIN",
@@ -134,10 +148,10 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     ],
   },
   {
-    label: "Installation", href: "/installation", icon: Wrench, hasPermission: ["FLEET_ADMIN"],
+    label: "Installation", href: "/installation", icon: Wrench, hasPermission: ["FLEET_ADMIN", "ENTERPRISE_ADMIN"],
   },
   {
-    label: "SIM Cards", href: "/sims", icon: Wifi,
+    label: "IoT SIMS", href: "/sims", icon: Wifi,
     hasPermission: [
       "ENTERPRISE_ADMIN",
       "FLEET_ADMIN",
@@ -146,7 +160,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     ],
   },
   {
-    label: "Data Bundles", href: "/data-bundles", icon: Database,
+    label: "M2M IoT Bundles", href: "/data-bundles", icon: Database,
     hasPermission: [
       "ENTERPRISE_ADMIN",
       "FLEET_ADMIN",
@@ -157,7 +171,11 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
 
   // ─── Map ───────────────────────────────────────────────────────
   {
-    label: "Live Map", href: "/map", icon: MapPin, fullWidth: true,
+    label: "Live Tracking", href: "/map", icon: MapPin, fullWidth: true,
+    labelByRole: {
+      DISPATCHER: "Live Map & Zones",
+      OPERATIONS_MANAGER: "Live Map & Zones",
+    },
     hasPermission: [
       "ENTERPRISE_ADMIN",
       "FLEET_ADMIN",
@@ -171,6 +189,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   {
     label: "Payouts & Invoicing", href: "/waybill-invoices", icon: Receipt,
     hasPermission: [
+      "ENTERPRISE_ADMIN",
       "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "OWNER_OPERATOR",
@@ -259,7 +278,11 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     ],
   },
   {
-    label: "Settings", href: "/settings", icon: Settings,
+    label: "Organization Settings", href: "/settings", icon: Settings,
+    labelByRole: {
+      DISPATCHER: "Profile",
+      OWNER_OPERATOR: "Profile",
+    },
     hasPermission: [
       "ENTERPRISE_ADMIN",
       "DISPATCHER",
@@ -267,6 +290,10 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     ],
   },
 ];
+
+export function resolveLabel(entry: SidebarEntry, role: UserRole | undefined): string {
+  return (role && entry.labelByRole?.[role]) || entry.label;
+}
 
 const entriesByRole = new Map<UserRole, SidebarEntry[]>();
 
@@ -291,17 +318,24 @@ export function getEntriesForRole(role: UserRole): SidebarEntry[] {
       continue;
     if (isNavGroup(entry)) {
       // A group child omits `hasPermission` to inherit the group's.
-      const items = entry.items.filter(i => i.hasPermission?.includes(role) ?? true);
+      const items = entry.items
+        .filter(i => i.hasPermission?.includes(role) ?? true)
+        .map(i => (i.labelByRole?.[role] ? { ...i, label: resolveLabel(i, role) } : i));
+      const label = resolveLabel(entry, role);
+      const changed = items.length !== entry.items.length
+        || items.some((it, idx) => it !== entry.items[idx])
+        || label !== entry.label;
       if (items.length) {
-        visible.push(items.length === entry.items.length
-          ? entry
-          : {
-              ...entry, items,
-            });
+        visible.push(changed
+          ? {
+            ...entry, items, label,
+          }
+          : entry);
       }
       continue;
     }
-    visible.push(entry);
+    const label = resolveLabel(entry, role);
+    visible.push(label === entry.label ? entry : { ...entry, label });
   }
 
   entriesByRole.set(
