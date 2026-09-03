@@ -361,6 +361,9 @@ export type DispatchJob = {
   // ponytail: not in the published dispatch schema, but the UI renders these.
   // Drop them once the server confirms it never sends them.
   assigned_driver_name?: string
+  assigned_vehicle_reg?: string
+  assigned_vehicle_make?: string
+  assigned_vehicle_model?: string
   stops?: DispatchStop[]
 }
 
