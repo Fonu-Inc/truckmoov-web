@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   GeofenceAlert,
   MessageLog,
@@ -25,7 +26,9 @@ import {
   WifiOff,
   Zap,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, {
+  useMemo, useState,
+} from "react";
 import { SimulatorDeviceMap } from "@/components/devices/SimulatorDeviceMap";
 import { SimulatorGeofenceMap } from "@/components/devices/SimulatorGeofenceMap";
 import { Badge } from "@/components/shadcn/badge";
@@ -37,6 +40,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
@@ -50,14 +54,6 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import {
   Tabs,
   TabsContent,
@@ -284,6 +280,131 @@ export default function DeviceSimulator() {
         totalConnections: 14,
         errorsCount: 1,
       };
+
+  const deviceColumns: ColumnDef<SimulatedDevice>[] = useMemo(
+    () => [
+      {
+        id: "imei",
+        header: "IMEI",
+        cell: ({ row }) => <span className="font-mono text-xs">{row.original.imei}</span>,
+      },
+      {
+        id: "device",
+        header: "Device",
+        cell: ({ row }) => (
+          <div>
+            <p className="font-medium text-sm">{row.original.manufacturer}</p>
+            <p className="text-xs text-muted-foreground">{row.original.model}</p>
+          </div>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <DeviceStatusBadge status={row.original.status} />,
+      },
+      {
+        id: "position",
+        header: "Position",
+        cell: ({ row }) => (
+          <span className="text-xs font-mono">
+            {row.original.latitude.toFixed(4)}
+            ,
+            {row.original.longitude.toFixed(4)}
+          </span>
+        ),
+      },
+      {
+        id: "speed",
+        header: "Speed",
+        cell: ({ row }) => `${row.original.speed.toFixed(0)} km/h`,
+      },
+      {
+        id: "messages",
+        header: "Messages",
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2">
+            <span className="text-success">{row.original.messageCount}</span>
+            {row.original.errorCount > 0 && (
+              <span className="text-destructive">
+                (
+                {row.original.errorCount}
+                {" "}
+                err)
+              </span>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        enableSorting: false,
+        cell: ({ row }) => {
+          const device = row.original;
+          return (
+            <div className="flex items-center gap-1">
+              {device.status === "connected"
+                ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          sendTelemetry(device.id);
+                        }}
+                      >
+                        <Send className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          disconnectDevice(device.id);
+                        }}
+                      >
+                        <WifiOff className="h-3 w-3" />
+                      </Button>
+                    </>
+                  )
+                : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        connectDevice(device.id);
+                      }}
+                      disabled={device.status === "connecting"}
+                    >
+                      <Wifi className="h-3 w-3" />
+                    </Button>
+                  )}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeDevice(device.id);
+                }}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          );
+        },
+      },
+    ],
+    [
+      sendTelemetry,
+      disconnectDevice,
+      connectDevice,
+      removeDevice,
+    ],
+  );
 
   const connectedCount = devices.length > 0
     ? devices.filter(d => d.status === "connected").length
@@ -546,129 +667,21 @@ export default function DeviceSimulator() {
                 </div>
               </CardHeader>
               <CardContent>
-                {devices.length === 0
-                  ? (
-                      <div className="text-center py-12 text-muted-foreground">
+                <div className="overflow-x-auto">
+                  <DataTable
+                    columns={deviceColumns}
+                    data={devices}
+                    onRowClick={d => setSelectedDevice(d.id)}
+                    rowClassName={d => (selectedDevice === d.id ? "bg-muted/50" : "")}
+                    emptyState={(
+                      <>
                         <Server className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <p>No devices added yet</p>
                         <p className="text-sm">Click "Add" to create simulated devices</p>
-                      </div>
-                    )
-                  : (
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>IMEI</TableHead>
-                              <TableHead>Device</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead>Position</TableHead>
-                              <TableHead>Speed</TableHead>
-                              <TableHead>Messages</TableHead>
-                              <TableHead>Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {devices.map(device => (
-                              <TableRow
-                                key={device.id}
-                                className={selectedDevice === device.id ? "bg-muted/50" : ""}
-                                onClick={() => setSelectedDevice(device.id)}
-                              >
-                                <TableCell className="font-mono text-xs">
-                                  {device.imei}
-                                </TableCell>
-                                <TableCell>
-                                  <div>
-                                    <p className="font-medium text-sm">{device.manufacturer}</p>
-                                    <p className="text-xs text-muted-foreground">{device.model}</p>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <DeviceStatusBadge status={device.status} />
-                                </TableCell>
-                                <TableCell className="text-xs font-mono">
-                                  {device.latitude.toFixed(4)}
-                                  ,
-                                  {device.longitude.toFixed(4)}
-                                </TableCell>
-                                <TableCell>
-                                  {device.speed.toFixed(0)}
-                                  {" "}
-                                  km/h
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-success">{device.messageCount}</span>
-                                    {device.errorCount > 0 && (
-                                      <span className="text-destructive">
-                                        (
-                                        {device.errorCount}
-                                        {" "}
-                                        err)
-                                      </span>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-1">
-                                    {device.status === "connected"
-                                      ? (
-                                          <>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                sendTelemetry(device.id);
-                                              }}
-                                            >
-                                              <Send className="h-3 w-3" />
-                                            </Button>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                disconnectDevice(device.id);
-                                              }}
-                                            >
-                                              <WifiOff className="h-3 w-3" />
-                                            </Button>
-                                          </>
-                                        )
-                                      : (
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              connectDevice(device.id);
-                                            }}
-                                            disabled={device.status === "connecting"}
-                                          >
-                                            <Wifi className="h-3 w-3" />
-                                          </Button>
-                                        )}
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="text-destructive"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeDevice(device.id);
-                                      }}
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
+                      </>
                     )}
+                  />
+                </div>
               </CardContent>
             </Card>
           </div>

@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
   Activity,
@@ -14,7 +15,9 @@ import {
   Star,
   Unlink,
 } from "lucide-react";
-import { useState } from "react";
+import {
+  useMemo, useState,
+} from "react";
 import { toast } from "sonner";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import {
@@ -27,6 +30,7 @@ import {
   Card,
   CardContent,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -44,14 +48,6 @@ import {
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 
 type Tenant = {
@@ -225,6 +221,134 @@ export function WhatsAppAssistPanel() {
     }
     return true;
   });
+
+  const tenantColumns: ColumnDef<Tenant>[] = useMemo(
+    () => [
+      {
+        id: "tenant",
+        header: "Tenant",
+        cell: ({ row }) => {
+          const tenant = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="font-medium">{tenant.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {tenant.id.slice(
+                    0,
+                    8,
+                  )}
+                  ...
+                </p>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        id: "kyc",
+        header: "KYC Status",
+        cell: ({ row }) => getKycBadge(row.original.kyc_status),
+      },
+      {
+        id: "whatsapp",
+        header: "WhatsApp Status",
+        cell: ({ row }) => {
+          const tenantAccounts = getTenantAccounts(row.original.id);
+          const hasConnected = tenantAccounts.some(a => a.status === "CONNECTED");
+          return hasConnected
+            ? getStatusBadge("CONNECTED")
+            : tenantAccounts.length > 0
+              ? getStatusBadge(tenantAccounts[0].status)
+              : getStatusBadge("NOT_CONNECTED");
+        },
+      },
+      {
+        id: "default",
+        header: "Default Sender",
+        cell: ({ row }) => {
+          const defaultAccount = getTenantAccounts(row.original.id).find(a => a.is_default_sender && a.status === "CONNECTED");
+          return defaultAccount
+            ? (
+                <div className="flex items-center gap-2">
+                  <Phone className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-sm">{defaultAccount.display_phone_number || "Not set"}</span>
+                </div>
+              )
+            : <span className="text-muted-foreground text-sm">—</span>;
+        },
+      },
+      {
+        id: "connected",
+        header: "Connected At",
+        cell: ({ row }) => {
+          const defaultAccount = getTenantAccounts(row.original.id).find(a => a.is_default_sender && a.status === "CONNECTED");
+          return defaultAccount?.connected_at
+            ? <span className="text-sm">{formatDate(defaultAccount.connected_at)}</span>
+            : <span className="text-muted-foreground text-sm">—</span>;
+        },
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        enableSorting: false,
+        meta: { className: "w-[100px]" },
+        cell: ({ row }) => {
+          const tenant = row.original;
+          const tenantAccounts = getTenantAccounts(tenant.id);
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => {
+                    setSelectedTenant(tenant);
+                    setIsAddDialogOpen(true);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Sender
+                </DropdownMenuItem>
+                {tenantAccounts.map(account => (
+                  <div key={account.id}>
+                    {account.status === "CONNECTED" && !account.is_default_sender && (
+                      <DropdownMenuItem onClick={() => handleSetDefault(account)}>
+                        <Star className="h-4 w-4 mr-2" />
+                        Set as Default
+                      </DropdownMenuItem>
+                    )}
+                    {account.status === "CONNECTED" && (
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={() => handleDisconnect(account)}
+                      >
+                        <Unlink className="h-4 w-4 mr-2" />
+                        Disconnect
+                      </DropdownMenuItem>
+                    )}
+                  </div>
+                ))}
+                <DropdownMenuItem onClick={() => setAuditTenant(tenant)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Audit Log
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
+    ],
+    [accounts],
+  );
 
   if (isLoading) {
     return (
@@ -406,131 +530,13 @@ export function WhatsAppAssistPanel() {
 
       {/* Tenants Table */}
       <Card className="bg-card/50 border-border/50">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border/50">
-              <TableHead>Tenant</TableHead>
-              <TableHead>KYC Status</TableHead>
-              <TableHead>WhatsApp Status</TableHead>
-              <TableHead>Default Sender</TableHead>
-              <TableHead>Connected At</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredTenants.map((tenant) => {
-              const tenantAccounts = getTenantAccounts(tenant.id);
-              const defaultAccount = tenantAccounts.find(a => a.is_default_sender && a.status === "CONNECTED");
-              const hasConnected = tenantAccounts.some(a => a.status === "CONNECTED");
-
-              return (
-                <TableRow
-                  key={tenant.id}
-                  className="border-border/50"
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">{tenant.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {tenant.id.slice(
-                            0,
-                            8,
-                          )}
-                          ...
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{getKycBadge(tenant.kyc_status)}</TableCell>
-                  <TableCell>
-                    {hasConnected
-                      ? (
-                          getStatusBadge("CONNECTED")
-                        )
-                      : tenantAccounts.length > 0
-                        ? (
-                            getStatusBadge(tenantAccounts[0].status)
-                          )
-                        : (
-                            getStatusBadge("NOT_CONNECTED")
-                          )}
-                  </TableCell>
-                  <TableCell>
-                    {defaultAccount
-                      ? (
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-sm">{defaultAccount.display_phone_number || "Not set"}</span>
-                          </div>
-                        )
-                      : (
-                          <span className="text-muted-foreground text-sm">—</span>
-                        )}
-                  </TableCell>
-                  <TableCell>
-                    {defaultAccount?.connected_at
-                      ? (
-                          <span className="text-sm">
-                            {formatDate(defaultAccount.connected_at)}
-                          </span>
-                        )
-                      : (
-                          <span className="text-muted-foreground text-sm">—</span>
-                        )}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setSelectedTenant(tenant);
-                            setIsAddDialogOpen(true);
-                          }}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Sender
-                        </DropdownMenuItem>
-                        {tenantAccounts.map(account => (
-                          <div key={account.id}>
-                            {account.status === "CONNECTED" && !account.is_default_sender && (
-                              <DropdownMenuItem onClick={() => handleSetDefault(account)}>
-                                <Star className="h-4 w-4 mr-2" />
-                                Set as Default
-                              </DropdownMenuItem>
-                            )}
-                            {account.status === "CONNECTED" && (
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => handleDisconnect(account)}
-                              >
-                                <Unlink className="h-4 w-4 mr-2" />
-                                Disconnect
-                              </DropdownMenuItem>
-                            )}
-                          </div>
-                        ))}
-                        <DropdownMenuItem onClick={() => setAuditTenant(tenant)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Audit Log
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <DataTable
+          columns={tenantColumns}
+          data={filteredTenants}
+          hasActiveFilters={!!searchQuery || statusFilter !== "all" || kycFilter !== "all" || connectionFilter !== "all" || defaultSenderFilter !== "all"}
+          emptyState="No tenants"
+          filteredEmptyState="No tenants match your filters."
+        />
       </Card>
 
       {/* Add Sender Dialog */}

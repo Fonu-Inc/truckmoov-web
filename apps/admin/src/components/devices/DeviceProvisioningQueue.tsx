@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { FilterDraft } from "@/components/shadcn/platform-filter-popover";
 import {
   formatDate,
@@ -34,6 +35,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -58,15 +60,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { Textarea } from "@/components/shadcn/textarea";
 import { useTenants } from "@/hooks/useTenants";
 import { DeviceRequestDetailsDialog } from "./DeviceRequestDetailsDialog";
@@ -370,6 +363,131 @@ export function DeviceProvisioningQueue() {
     toast.info("Coming soon");
   };
 
+  const requestColumns: ColumnDef<DeviceReq>[] = useMemo(
+    () => [
+      {
+        id: "org",
+        header: "Organisation",
+        cell: ({ row }) => <div className="font-medium">{tenantName(row.original.tenant_id)}</div>,
+      },
+      {
+        id: "email",
+        header: "Request Email",
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">{tenantEmail(row.original.tenant_id)}</span>
+        ),
+      },
+      {
+        id: "manufacturer",
+        header: "Manufacturer",
+        cell: ({ row }) => <span className="font-medium">{row.original.manufacturer}</span>,
+      },
+      {
+        id: "model",
+        header: "Model",
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">{row.original.model || "—"}</span>
+        ),
+      },
+      {
+        id: "quantity",
+        header: "Quantity",
+        cell: ({ row }) => row.original.quantity ?? 1,
+      },
+      {
+        id: "kyc",
+        header: "KYC Status",
+        cell: ({ row }) => <KycCell status={kycCache[row.original.tenant_id]?.status ?? null} />,
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => {
+          const sd = deviceStatusDisplay(row.original.status);
+          return (
+            <Badge
+              variant="outline"
+              className={sd.className}
+            >
+              {sd.label}
+            </Badge>
+          );
+        },
+      },
+      {
+        id: "requested",
+        header: "Date Requested",
+        cell: ({ row }) => (
+          <div className="text-sm text-muted-foreground whitespace-nowrap">
+            <div>{formatDate(row.original.created_at)}</div>
+            <div className="text-xs opacity-70">{formatRelative(row.original.created_at)}</div>
+          </div>
+        ),
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        enableSorting: false,
+        meta: { className: "text-right" },
+        cell: ({ row }) => {
+          const r = row.original;
+          const isPending = [
+            "pending_review",
+            "assigned",
+            "awaiting_heartbeat",
+          ].includes(r.status);
+          return (
+            <div className="text-right">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setDetailsReq(r);
+                      setDetailsOpen(true);
+                    }}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Details
+                  </DropdownMenuItem>
+                  {isPending && (
+                    <>
+                      <DropdownMenuItem onClick={() => approveDirect(r.id)}>
+                        <ThumbsUp className="h-4 w-4 mr-2" />
+                        Approve
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => openAction({
+                          action: "reject", id: r.id, label: r.imei,
+                        })}
+                        className="text-destructive"
+                      >
+                        <ThumbsDown className="h-4 w-4 mr-2" />
+                        Reject
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      },
+    ],
+    [
+      tenantNameMap,
+      tenantEmailMap,
+    ],
+  );
+
   const statusOptions = [
     {
       v: "all",
@@ -565,128 +683,28 @@ export function DeviceProvisioningQueue() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading
-            ? (
-                <div className="space-y-2">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton
-                      key={i}
-                      className="h-12 w-full"
-                    />
-                  ))}
-                </div>
-              )
-            : filtered.length === 0
-              ? (
-                  <div className="text-center py-12 text-muted-foreground text-sm">
-                    <Cpu className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No device provisioning requests found</p>
-                    <p className="text-xs">Adjust filters or wait for tenants to request devices</p>
-                  </div>
-                )
-              : (
-                  <div className="overflow-x-auto rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Organisation</TableHead>
-                          <TableHead>Request Email</TableHead>
-                          <TableHead>Manufacturer</TableHead>
-                          <TableHead>Model</TableHead>
-                          <TableHead>Quantity</TableHead>
-                          <TableHead>KYC Status</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Date Requested</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filtered.map((r) => {
-                          const sd = deviceStatusDisplay(r.status);
-                          const isPending = [
-                            "pending_review",
-                            "assigned",
-                            "awaiting_heartbeat",
-                          ].includes(r.status);
-                          return (
-                            <TableRow key={r.id}>
-                              <TableCell>
-                                <div className="font-medium">{tenantName(r.tenant_id)}</div>
-                              </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {tenantEmail(r.tenant_id)}
-                              </TableCell>
-                              <TableCell className="font-medium">{r.manufacturer}</TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {r.model || "—"}
-                              </TableCell>
-                              <TableCell>{r.quantity ?? 1}</TableCell>
-                              <TableCell>
-                                <KycCell status={kycCache[r.tenant_id]?.status ?? null} />
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className={sd.className}
-                                >
-                                  {sd.label}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                                <div>{formatDate(r.created_at)}</div>
-                                <div className="text-xs opacity-70">{formatRelative(r.created_at)}</div>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                    >
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setDetailsReq(r);
-                                        setDetailsOpen(true);
-                                      }}
-                                    >
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      View Details
-                                    </DropdownMenuItem>
-                                    {isPending && (
-                                      <>
-                                        <DropdownMenuItem
-                                          onClick={() => approveDirect(r.id)}
-                                        >
-                                          <ThumbsUp className="h-4 w-4 mr-2" />
-                                          Approve
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          onClick={() => openAction({
-                                            action: "reject",
-                                            id: r.id,
-                                            label: r.imei,
-                                          })}
-                                          className="text-destructive"
-                                        >
-                                          <ThumbsDown className="h-4 w-4 mr-2" />
-                                          Reject
-                                        </DropdownMenuItem>
-                                      </>
-                                    )}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+          <div className="overflow-x-auto rounded-md border">
+            <DataTable
+              columns={requestColumns}
+              data={filtered}
+              isLoading={loading}
+              hasActiveFilters={!!search || statusFilter !== "all"}
+              emptyState={(
+                <>
+                  <Cpu className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No device provisioning requests found</p>
+                  <p className="text-xs">Adjust filters or wait for tenants to request devices</p>
+                </>
+              )}
+              filteredEmptyState={(
+                <>
+                  <Cpu className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No device provisioning requests found</p>
+                  <p className="text-xs">Adjust filters or wait for tenants to request devices</p>
+                </>
+              )}
+            />
+          </div>
         </CardContent>
       </Card>
 

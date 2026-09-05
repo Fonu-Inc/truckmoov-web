@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   Building2,
   Loader2,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import {
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import { Badge } from "@/components/shadcn/badge";
@@ -23,6 +25,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -48,14 +51,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import { Textarea } from "@/components/shadcn/textarea";
 import { useTenants } from "@/hooks/useTenants";
@@ -296,6 +291,140 @@ export function PhoneNumberManagement() {
       || num.tenant_name?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });
+
+  const numberColumns: ColumnDef<any>[] = useMemo(
+    () => [
+      {
+        id: "number",
+        header: "Phone Number",
+        cell: ({ row }) => <span className="font-mono font-medium">{row.original.phone_number}</span>,
+      },
+      {
+        id: "type",
+        header: "Type",
+        cell: ({ row }) => (
+          <span className="capitalize">
+            {row.original.phone_number_type.replace(
+              "_",
+              " ",
+            )}
+          </span>
+        ),
+      },
+      {
+        id: "capabilities",
+        header: "Capabilities",
+        cell: ({ row }) => (
+          <div className="flex gap-1">
+            {row.original.capabilities.includes("sms") && (
+              <Badge
+                variant="outline"
+                className="text-xs"
+              >
+                <MessageSquare className="h-3 w-3 mr-1" />
+                SMS
+              </Badge>
+            )}
+            {row.original.capabilities.includes("voice") && (
+              <Badge
+                variant="outline"
+                className="text-xs"
+              >
+                <PhoneCall className="h-3 w-3 mr-1" />
+                Voice
+              </Badge>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => getStatusBadge(row.original.status),
+      },
+      {
+        id: "assigned",
+        header: "Assigned To",
+        cell: ({ row }) => row.original.tenant_name
+          ? (
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <span>{row.original.tenant_name}</span>
+              </div>
+            )
+          : <span className="text-muted-foreground">—</span>,
+      },
+      {
+        id: "cost",
+        header: "Monthly Cost",
+        cell: ({ row }) => `₦${row.original.monthly_cost_ngn?.toLocaleString() || "0"}`,
+      },
+      {
+        id: "actions",
+        header: "",
+        enableSorting: false,
+        meta: { className: "w-[50px]" },
+        cell: ({ row }) => {
+          const num = row.original;
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {num.status === "available" && (
+                  <DropdownMenuItem onClick={() => {
+                    setSelectedNumber(num);
+                    setIsAssignDialogOpen(true);
+                  }}
+                  >
+                    <Building2 className="h-4 w-4 mr-2" />
+                    Assign to Tenant
+                  </DropdownMenuItem>
+                )}
+                {num.status === "assigned" && (
+                  <>
+                    <DropdownMenuItem onClick={() => unassignFromTenant(num.id)}>
+                      <PhoneOff className="h-4 w-4 mr-2" />
+                      Unassign
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => suspendNumber(num.id)}
+                      className="text-destructive"
+                    >
+                      <PhoneOff className="h-4 w-4 mr-2" />
+                      Suspend
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {num.status === "suspended" && (
+                  <DropdownMenuItem onClick={() => releaseNumber(num.id)}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Release
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => deleteNumber(num.id)}
+                  className="text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
+    ],
+    [],
+  );
 
   const stats = {
     total: phoneNumbers.length,
@@ -554,148 +683,14 @@ export function PhoneNumberManagement() {
 
           {/* Table */}
           <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Phone Number</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Capabilities</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Assigned To</TableHead>
-                  <TableHead>Monthly Cost</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading
-                  ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={7}
-                          className="text-center py-8 text-muted-foreground"
-                        >
-                          Loading...
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : filteredNumbers.length === 0
-                    ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={7}
-                            className="text-center py-8 text-muted-foreground"
-                          >
-                            No phone numbers found
-                          </TableCell>
-                        </TableRow>
-                      )
-                    : (
-                        filteredNumbers.map(num => (
-                          <TableRow key={num.id}>
-                            <TableCell className="font-mono font-medium">{num.phone_number}</TableCell>
-                            <TableCell className="capitalize">
-                              {num.phone_number_type.replace(
-                                "_",
-                                " ",
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                {num.capabilities.includes("sms") && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-xs"
-                                  >
-                                    <MessageSquare className="h-3 w-3 mr-1" />
-                                    SMS
-                                  </Badge>
-                                )}
-                                {num.capabilities.includes("voice") && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-xs"
-                                  >
-                                    <PhoneCall className="h-3 w-3 mr-1" />
-                                    Voice
-                                  </Badge>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>{getStatusBadge(num.status)}</TableCell>
-                            <TableCell>
-                              {num.tenant_name
-                                ? (
-                                    <div className="flex items-center gap-2">
-                                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                                      <span>{num.tenant_name}</span>
-                                    </div>
-                                  )
-                                : (
-                                    <span className="text-muted-foreground">—</span>
-                                  )}
-                            </TableCell>
-                            <TableCell>
-                              ₦
-                              {num.monthly_cost_ngn?.toLocaleString() || "0"}
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  {num.status === "available" && (
-                                    <DropdownMenuItem onClick={() => {
-                                      setSelectedNumber(num);
-                                      setIsAssignDialogOpen(true);
-                                    }}
-                                    >
-                                      <Building2 className="h-4 w-4 mr-2" />
-                                      Assign to Tenant
-                                    </DropdownMenuItem>
-                                  )}
-                                  {num.status === "assigned" && (
-                                    <>
-                                      <DropdownMenuItem onClick={() => unassignFromTenant(num.id)}>
-                                        <PhoneOff className="h-4 w-4 mr-2" />
-                                        Unassign
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        onClick={() => suspendNumber(num.id)}
-                                        className="text-destructive"
-                                      >
-                                        <PhoneOff className="h-4 w-4 mr-2" />
-                                        Suspend
-                                      </DropdownMenuItem>
-                                    </>
-                                  )}
-                                  {num.status === "suspended" && (
-                                    <DropdownMenuItem onClick={() => releaseNumber(num.id)}>
-                                      <RefreshCw className="h-4 w-4 mr-2" />
-                                      Release
-                                    </DropdownMenuItem>
-                                  )}
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onClick={() => deleteNumber(num.id)}
-                                    className="text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-              </TableBody>
-            </Table>
+            <DataTable
+              columns={numberColumns}
+              data={filteredNumbers}
+              isLoading={loading}
+              hasActiveFilters={!!searchQuery || filterStatus !== "all"}
+              emptyState="No phone numbers found"
+              filteredEmptyState="No phone numbers match your filters."
+            />
           </div>
         </CardContent>
       </Card>

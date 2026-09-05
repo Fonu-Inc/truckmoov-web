@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   FilterDraft,
   FilterField,
@@ -17,7 +18,9 @@ import {
   Shield,
   XCircle,
 } from "lucide-react";
-import { useState } from "react";
+import {
+  useMemo, useState,
+} from "react";
 import { toast } from "sonner";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/shadcn/badge";
@@ -29,6 +32,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -61,15 +65,6 @@ import {
 
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-
-} from "@/components/shadcn/table";
 import { formatCurrency } from "@/lib/currency";
 
 type PostpaidInvoice = {
@@ -547,6 +542,225 @@ export function PostpaidBillingTab({
     setCreditDialogOpen(true);
   };
 
+  const creditLimitColumns: ColumnDef<any>[] = useMemo(
+    () => [
+      {
+        id: "tenant",
+        header: "Tenant",
+        cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+      },
+      {
+        id: "cycle",
+        header: "Billing Cycle",
+        cell: ({ row }) => {
+          const cycles = [
+            "Monthly",
+            "Quarterly",
+            "Annual",
+          ] as const;
+          const cycle = cycles[Math.abs(row.original.id.charCodeAt(0) + row.original.id.length) % cycles.length];
+          return <Badge variant="outline">{cycle}</Badge>;
+        },
+      },
+      {
+        id: "limit",
+        header: "Credit Limit",
+        cell: ({ row }) => {
+          const cl = creditLimits.find(c => c.tenant_id === row.original.id);
+          return cl
+            ? formatCurrency(
+                getDisplayAmount(Number(cl.credit_limit_ngn)),
+                currency,
+              )
+            : "Not set";
+        },
+      },
+      {
+        id: "usage",
+        header: "Current Usage",
+        cell: ({ row }) => {
+          const cl = creditLimits.find(c => c.tenant_id === row.original.id);
+          return cl
+            ? formatCurrency(
+                getDisplayAmount(Number(cl.current_usage_ngn)),
+                currency,
+              )
+            : "₦0";
+        },
+      },
+      {
+        id: "utilization",
+        header: "Utilization",
+        cell: ({ row }) => {
+          const cl = creditLimits.find(c => c.tenant_id === row.original.id);
+          if (!cl)
+            return "-";
+          const utilization = cl.credit_limit_ngn > 0
+            ? (Number(cl.current_usage_ngn) / Number(cl.credit_limit_ngn)) * 100
+            : 0;
+          return (
+            <div className="flex items-center gap-2">
+              <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${utilization >= 90 ? "bg-destructive" : utilization >= 70 ? "bg-warning" : "bg-success"}`}
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      utilization,
+                    )}%`,
+                  }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {utilization.toFixed(0)}
+                %
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        id: "action",
+        header: "Action on Limit",
+        cell: ({ row }) => {
+          const cl = creditLimits.find(c => c.tenant_id === row.original.id);
+          return cl?.hard_limit_action === "suspend_services"
+            ? <Badge variant="destructive">Suspend</Badge>
+            : <Badge variant="outline">Notify</Badge>;
+        },
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => {
+          const cl = creditLimits.find(c => c.tenant_id === row.original.id);
+          return cl?.is_suspended
+            ? <Badge variant="destructive">Suspended</Badge>
+            : <Badge className="bg-success/10 text-success border-success/30">Active</Badge>;
+        },
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        enableSorting: false,
+        meta: { className: "w-[60px] text-right" },
+        cell: ({ row }) => (
+          <div className="text-right">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-44"
+              >
+                <DropdownMenuItem onClick={() => openCreditDialog(row.original.id)}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Configure
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setBillingCycleTenantId(row.original.id);
+                    setBillingCyclePhase("idle");
+                    setBillingCycleStepIdx(0);
+                    setBillingCycleError(null);
+                  }}
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  Run Billing Cycle
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ),
+      },
+    ],
+    [
+      creditLimits,
+      currency,
+      getDisplayAmount,
+    ],
+  );
+
+  const invoiceColumns: ColumnDef<PostpaidInvoice>[] = useMemo(
+    () => [
+      {
+        id: "invoice",
+        header: "Invoice #",
+        cell: ({ row }) => <span className="font-mono text-sm">{row.original.invoice_number}</span>,
+      },
+      {
+        id: "period",
+        header: "Period",
+        cell: ({ row }) => row.original.billing_period,
+      },
+      {
+        id: "cycle",
+        header: "Billing Cycle",
+        cell: ({ row }) => {
+          const cycles = [
+            "Monthly",
+            "Quarterly",
+            "Annual",
+          ] as const;
+          const inv = row.original;
+          const cycle = cycles[Math.abs(inv.invoice_number.length + inv.invoice_number.charCodeAt(inv.invoice_number.length - 1)) % cycles.length];
+          return <Badge variant="outline">{cycle}</Badge>;
+        },
+      },
+      {
+        id: "usage",
+        header: "Total Usage",
+        cell: ({ row }) => formatCurrency(
+          getDisplayAmount(Number(row.original.total_usage_ngn)),
+          currency,
+        ),
+      },
+      {
+        id: "wallet",
+        header: "Wallet Deducted",
+        cell: ({ row }) => formatCurrency(
+          getDisplayAmount(Number(row.original.wallet_deducted_ngn)),
+          currency,
+        ),
+      },
+      {
+        id: "balance",
+        header: "Balance Due",
+        cell: ({ row }) => (
+          <span className="font-semibold">
+            {formatCurrency(
+              getDisplayAmount(Number(row.original.invoice_balance_ngn)),
+              currency,
+            )}
+          </span>
+        ),
+      },
+      {
+        id: "due",
+        header: "Due Date",
+        cell: ({ row }) => row.original.due_date,
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => getStatusBadge(row.original.status),
+      },
+    ],
+    [
+      currency,
+      getDisplayAmount,
+    ],
+  );
+
   return (
     <div className="space-y-6">
       {/* Stats */}
@@ -657,143 +871,13 @@ export function PostpaidBillingTab({
             />
           </div>
 
-          {filteredTenants.length === 0
-            ? (
-                <p className="text-sm text-muted-foreground">
-                  {postpaidTenants.length === 0
-                    ? "No postpaid tenants configured yet."
-                    : "No tenants match the current filters."}
-                </p>
-              )
-            : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tenant</TableHead>
-                      <TableHead>Billing Cycle</TableHead>
-                      <TableHead>Credit Limit</TableHead>
-                      <TableHead>Current Usage</TableHead>
-                      <TableHead>Utilization</TableHead>
-                      <TableHead>Action on Limit</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-[60px] text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTenants.map((tenant) => {
-                      const cl = creditLimits.find(c => c.tenant_id === tenant.id);
-                      const utilization = cl && cl.credit_limit_ngn > 0
-                        ? (Number(cl.current_usage_ngn) / Number(cl.credit_limit_ngn)) * 100
-                        : 0;
-                      const cycles = [
-                        "Monthly",
-                        "Quarterly",
-                        "Annual",
-                      ] as const;
-                      const tenantCycle = cycles[Math.abs(tenant.id.charCodeAt(0) + tenant.id.length) % cycles.length];
-                      return (
-                        <TableRow key={tenant.id}>
-                          <TableCell className="font-medium">{tenant.name}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{tenantCycle}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            {cl
-                              ? formatCurrency(
-                                  getDisplayAmount(Number(cl.credit_limit_ngn)),
-                                  currency,
-                                )
-                              : "Not set"}
-                          </TableCell>
-                          <TableCell>
-                            {cl
-                              ? formatCurrency(
-                                  getDisplayAmount(Number(cl.current_usage_ngn)),
-                                  currency,
-                                )
-                              : "₦0"}
-                          </TableCell>
-                          <TableCell>
-                            {cl
-                              ? (
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                                      <div
-                                        className={`h-full rounded-full ${utilization >= 90 ? "bg-destructive" : utilization >= 70 ? "bg-warning" : "bg-success"}`}
-                                        style={{
-                                          width: `${Math.min(
-                                            100,
-                                            utilization,
-                                          )}%`,
-                                        }}
-                                      />
-                                    </div>
-                                    <span className="text-xs text-muted-foreground">
-                                      {utilization.toFixed(0)}
-                                      %
-                                    </span>
-                                  </div>
-                                )
-                              : "-"}
-                          </TableCell>
-                          <TableCell>
-                            {cl?.hard_limit_action === "suspend_services"
-                              ? (
-                                  <Badge variant="destructive">Suspend</Badge>
-                                )
-                              : (
-                                  <Badge variant="outline">Notify</Badge>
-                                )}
-                          </TableCell>
-                          <TableCell>
-                            {cl?.is_suspended
-                              ? (
-                                  <Badge variant="destructive">Suspended</Badge>
-                                )
-                              : (
-                                  <Badge className="bg-success/10 text-success border-success/30">Active</Badge>
-                                )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Open menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="end"
-                                className="w-44"
-                              >
-                                <DropdownMenuItem onClick={() => openCreditDialog(tenant.id)}>
-                                  <Settings className="h-4 w-4 mr-2" />
-                                  Configure
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    setBillingCycleTenantId(tenant.id);
-                                    setBillingCyclePhase("idle");
-                                    setBillingCycleStepIdx(0);
-                                    setBillingCycleError(null);
-                                  }}
-                                >
-                                  <Play className="h-4 w-4 mr-2" />
-                                  Run Billing Cycle
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              )}
+          <DataTable
+            columns={creditLimitColumns}
+            data={filteredTenants}
+            hasActiveFilters={!!creditSearch || Object.values(creditFilters).some(f => f?.enabled)}
+            emptyState="No postpaid tenants configured yet."
+            filteredEmptyState="No tenants match the current filters."
+          />
         </CardContent>
       </Card>
 
@@ -881,70 +965,13 @@ export function PostpaidBillingTab({
             />
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Period</TableHead>
-                <TableHead>Billing Cycle</TableHead>
-                <TableHead>Total Usage</TableHead>
-                <TableHead>Wallet Deducted</TableHead>
-                <TableHead>Balance Due</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredInvoices.length === 0
-                ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={8}
-                        className="text-center text-muted-foreground py-8"
-                      >
-                        No postpaid invoices found
-                      </TableCell>
-                    </TableRow>
-                  )
-                : (
-                    filteredInvoices.map((inv) => {
-                      const cycles = [
-                        "Monthly",
-                        "Quarterly",
-                        "Annual",
-                      ] as const;
-                      const cycle = cycles[Math.abs(inv.invoice_number.length + inv.invoice_number.charCodeAt(inv.invoice_number.length - 1)) % cycles.length];
-                      return (
-                        <TableRow key={inv.id}>
-                          <TableCell className="font-mono text-sm">{inv.invoice_number}</TableCell>
-                          <TableCell>{inv.billing_period}</TableCell>
-                          <TableCell><Badge variant="outline">{cycle}</Badge></TableCell>
-                          <TableCell>
-                            {formatCurrency(
-                              getDisplayAmount(Number(inv.total_usage_ngn)),
-                              currency,
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {formatCurrency(
-                              getDisplayAmount(Number(inv.wallet_deducted_ngn)),
-                              currency,
-                            )}
-                          </TableCell>
-                          <TableCell className="font-semibold">
-                            {formatCurrency(
-                              getDisplayAmount(Number(inv.invoice_balance_ngn)),
-                              currency,
-                            )}
-                          </TableCell>
-                          <TableCell>{inv.due_date}</TableCell>
-                          <TableCell>{getStatusBadge(inv.status)}</TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={invoiceColumns}
+            data={filteredInvoices}
+            hasActiveFilters={!!searchQuery || statusFilter !== "all" || Object.values(postpaidFilters).some(f => f?.enabled)}
+            emptyState="No postpaid invoices found"
+            filteredEmptyState="No invoices match your filters."
+          />
         </CardContent>
       </Card>
 

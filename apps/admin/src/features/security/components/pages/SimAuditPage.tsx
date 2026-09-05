@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   FilterDraft,
   FilterField,
@@ -10,11 +11,12 @@ import {
   Building2,
   Clock,
   Download,
-  Loader2,
   Search,
   Zap,
 } from "lucide-react";
-import { useState } from "react";
+import {
+  useMemo, useState,
+} from "react";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -24,19 +26,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import {
   buildEmptyDraft,
   PlatformFilterPopover,
 } from "@/components/shadcn/platform-filter-popover";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { usePreferences } from "@/contexts/PreferencesContext";
 import {
   getSecurityEventIcon,
@@ -65,19 +60,15 @@ const AUDIT_FILTER_FIELDS: FilterField[] = [
     type: "select",
     options: [
       {
-        value: "card",
-        label: "Card",
+        value: "card", label: "Card",
       },
       {
-        value: "wallet",
-        label: "Wallet",
+        value: "wallet", label: "Wallet",
       },
       {
-        value: "bank",
-        label: "Bank Transfer",
+        value: "bank", label: "Bank Transfer",
       },
     ],
-
   },
   {
     key: "event",
@@ -85,23 +76,18 @@ const AUDIT_FILTER_FIELDS: FilterField[] = [
     type: "select",
     options: [
       {
-        value: "sim_activated",
-        label: "SIM Activated",
+        value: "sim_activated", label: "SIM Activated",
       },
       {
-        value: "sim_request_approved",
-        label: "SIM Request Approved",
+        value: "sim_request_approved", label: "SIM Request Approved",
       },
       {
-        value: "sim_request_rejected",
-        label: "SIM Request Rejected",
+        value: "sim_request_rejected", label: "SIM Request Rejected",
       },
       {
-        value: "kyb_requested",
-        label: "KYB Requested",
+        value: "kyb_requested", label: "KYB Requested",
       },
     ],
-
   },
   {
     key: "severity",
@@ -109,27 +95,21 @@ const AUDIT_FILTER_FIELDS: FilterField[] = [
     type: "select",
     options: [
       {
-        value: "critical",
-        label: "Critical",
+        value: "critical", label: "Critical",
       },
       {
-        value: "high",
-        label: "High",
+        value: "high", label: "High",
       },
       {
-        value: "medium",
-        label: "Medium",
+        value: "medium", label: "Medium",
       },
       {
-        value: "low",
-        label: "Low",
+        value: "low", label: "Low",
       },
       {
-        value: "info",
-        label: "Info",
+        value: "info", label: "Info",
       },
     ],
-
   },
   {
     key: "time",
@@ -151,8 +131,7 @@ const DEMO_AUDIT_LOGS: SecurityAuditLog[] = [
     description: "Approved SIM activation request for 25 SIMs",
     ip_address: "102.89.34.12",
     metadata: {
-      quantity: 25,
-      request_id: "SIM-REQ-2025-0142",
+      quantity: 25, request_id: "SIM-REQ-2025-0142",
     },
     created_at: new Date(Date.now() - 1000 * 60 * 8).toISOString(),
   },
@@ -168,9 +147,7 @@ const DEMO_AUDIT_LOGS: SecurityAuditLog[] = [
     description: "Auto-activated 25 SIMs via Fonu API",
     ip_address: null,
     metadata: {
-      quantity: 25,
-      batch_id: "BATCH-2025-0142",
-      provider: "Fonu",
+      quantity: 25, batch_id: "BATCH-2025-0142", provider: "Fonu",
     },
     created_at: new Date(Date.now() - 1000 * 60 * 7).toISOString(),
   },
@@ -186,8 +163,7 @@ const DEMO_AUDIT_LOGS: SecurityAuditLog[] = [
     description: "Rejected SIM request — KYC documents incomplete",
     ip_address: "102.89.34.12",
     metadata: {
-      quantity: 10,
-      reason: "missing_business_reg",
+      quantity: 10, reason: "missing_business_reg",
     },
     created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
   },
@@ -203,9 +179,7 @@ const DEMO_AUDIT_LOGS: SecurityAuditLog[] = [
     description: "Auto-activated 12 SIMs via Fonu API",
     ip_address: null,
     metadata: {
-      quantity: 12,
-      batch_id: "BATCH-2025-0141",
-      provider: "Fonu",
+      quantity: 12, batch_id: "BATCH-2025-0141", provider: "Fonu",
     },
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
   },
@@ -221,8 +195,7 @@ const DEMO_AUDIT_LOGS: SecurityAuditLog[] = [
     description: "Approved SIM activation request for 50 SIMs",
     ip_address: "102.89.34.12",
     metadata: {
-      quantity: 50,
-      request_id: "SIM-REQ-2025-0140",
+      quantity: 50, request_id: "SIM-REQ-2025-0140",
     },
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
   },
@@ -238,9 +211,7 @@ const DEMO_AUDIT_LOGS: SecurityAuditLog[] = [
     description: "Auto-activated 50 SIMs via Fonu API",
     ip_address: null,
     metadata: {
-      quantity: 50,
-      batch_id: "BATCH-2025-0140",
-      provider: "Fonu",
+      quantity: 50, batch_id: "BATCH-2025-0140", provider: "Fonu",
     },
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 5 + 1000 * 60).toISOString(),
   },
@@ -256,8 +227,7 @@ const DEMO_AUDIT_LOGS: SecurityAuditLog[] = [
     description: "Approved SIM activation request for 8 SIMs",
     ip_address: "102.89.34.12",
     metadata: {
-      quantity: 8,
-      request_id: "SIM-REQ-2025-0139",
+      quantity: 8, request_id: "SIM-REQ-2025-0139",
     },
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(),
   },
@@ -273,9 +243,7 @@ const DEMO_AUDIT_LOGS: SecurityAuditLog[] = [
     description: "Auto-activated 8 SIMs via Fonu API",
     ip_address: null,
     metadata: {
-      quantity: 8,
-      batch_id: "BATCH-2025-0139",
-      provider: "Fonu",
+      quantity: 8, batch_id: "BATCH-2025-0139", provider: "Fonu",
     },
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 18 + 1000 * 60).toISOString(),
   },
@@ -291,9 +259,7 @@ const DEMO_AUDIT_LOGS: SecurityAuditLog[] = [
     description: "Fonu activation failed for 1 SIM — invalid ICCID",
     ip_address: null,
     metadata: {
-      quantity: 1,
-      error: "INVALID_ICCID",
-      iccid: "8923400001234567890",
+      quantity: 1, error: "INVALID_ICCID", iccid: "8923400001234567890",
     },
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
   },
@@ -309,8 +275,7 @@ const DEMO_AUDIT_LOGS: SecurityAuditLog[] = [
     description: "Approved SIM activation request for 15 SIMs",
     ip_address: "102.89.34.12",
     metadata: {
-      quantity: 15,
-      request_id: "SIM-REQ-2025-0137",
+      quantity: 15, request_id: "SIM-REQ-2025-0137",
     },
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
   },
@@ -330,6 +295,166 @@ export default function SimAuditPage() {
   const rawAuditLogs: SecurityAuditLog[] = [];
   const isLoadingLogs = false;
   const auditLogs = rawAuditLogs.length > 0 ? rawAuditLogs : DEMO_AUDIT_LOGS;
+
+  const filteredLogs = useMemo(
+    () => auditLogs.filter(log =>
+      log.event_type.includes("sim_") || log.event_type === "kyb_requested"),
+    [auditLogs],
+  );
+
+  const columns: ColumnDef<SecurityAuditLog>[] = useMemo(
+    () => [
+      {
+        id: "event",
+        header: "Event",
+        cell: ({ row }) => {
+          const log = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
+                log.event_type === "sim_activated"
+                  ? "bg-success/10 text-success"
+                  : log.event_type === "sim_request_approved"
+                    ? "bg-primary/10 text-primary"
+                    : log.event_type === "sim_request_rejected"
+                      ? "bg-destructive/10 text-destructive"
+                      : log.event_type === "sim_activation_triggered"
+                        ? "bg-warning/10 text-warning"
+                        : log.event_type === "kyb_requested"
+                          ? "bg-secondary text-secondary-foreground"
+                          : "bg-muted text-muted-foreground"
+              }`}
+              >
+                {getSecurityEventIcon(log.event_type)}
+              </div>
+              <p className="font-medium text-sm capitalize">
+                {log.event_type.replace(
+                  /_/g,
+                  " ",
+                )}
+              </p>
+            </div>
+          );
+        },
+      },
+      {
+        id: "severity",
+        header: "Severity",
+        cell: ({ row }) => getSeverityBadge(row.original.severity as any),
+      },
+      {
+        id: "actor",
+        header: "Actor",
+        cell: ({ row }) => {
+          const log = row.original;
+          return log.user_name
+            ? (
+                <div>
+                  <p className="font-medium text-sm">{log.user_name}</p>
+                  {log.user_email && <p className="text-xs text-muted-foreground">{log.user_email}</p>}
+                </div>
+              )
+            : <span className="text-muted-foreground">System</span>;
+        },
+      },
+      {
+        id: "tenant",
+        header: "Tenant",
+        cell: ({ row }) => {
+          const log = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">
+                {log.tenant_name || log.tenant_id?.slice(
+                  0,
+                  8,
+                ) || "-"}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        id: "details",
+        header: "Details",
+        cell: ({ row }) => {
+          const log = row.original;
+          return (
+            <>
+              <p className="text-sm max-w-[300px] truncate text-muted-foreground">
+                {log.description}
+              </p>
+              {log.metadata && Object.keys(log.metadata).length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {log.metadata.quantity && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs"
+                    >
+                      {String(log.metadata.quantity)}
+                      {" "}
+                      SIM(s)
+                    </Badge>
+                  )}
+                  {log.metadata.operator && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs"
+                    >
+                      {String(log.metadata.operator)}
+                    </Badge>
+                  )}
+                  {log.metadata.activated !== undefined && (
+                    <Badge className="bg-success/10 text-success text-xs">
+                      {String(log.metadata.activated)}
+                      {" "}
+                      activated
+                    </Badge>
+                  )}
+                  {log.metadata.failed !== undefined && Number(log.metadata.failed) > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="text-xs"
+                    >
+                      {String(log.metadata.failed)}
+                      {" "}
+                      failed
+                    </Badge>
+                  )}
+                  {log.metadata.override_applied && (
+                    <Badge className="bg-warning/10 text-warning text-xs">
+                      Override
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </>
+          );
+        },
+      },
+      {
+        id: "time",
+        header: `Time (${TIMEZONES[timezone].offset})`,
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2 text-sm">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            {formatDateInTimezone(
+              row.original.created_at,
+              timezone,
+              {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              },
+            )}
+          </div>
+        ),
+      },
+    ],
+    [timezone],
+  );
 
   return (
     <div className="space-y-6">
@@ -373,175 +498,21 @@ export default function SimAuditPage() {
               onReset={() => setAuditFilters(buildEmptyDraft(AUDIT_FILTER_FIELDS))}
             />
           </div>
-          {isLoadingLogs
-            ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              )
-            : (
-                <div className="rounded-lg border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Event</TableHead>
-                        <TableHead>Severity</TableHead>
-                        <TableHead>Actor</TableHead>
-                        <TableHead>Tenant</TableHead>
-                        <TableHead>Details</TableHead>
-                        <TableHead>
-                          Time (
-                          {TIMEZONES[timezone].offset}
-                          )
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {auditLogs
-                        .filter(log =>
-                          log.event_type.includes("sim_")
-                          || log.event_type === "kyb_requested")
-                        .map(log => (
-                          <TableRow
-                            key={log.id}
-                            className={log.severity === "high" ? "bg-warning/5" : ""}
-                          >
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
-                                  log.event_type === "sim_activated"
-                                    ? "bg-success/10 text-success"
-                                    : log.event_type === "sim_request_approved"
-                                      ? "bg-primary/10 text-primary"
-                                      : log.event_type === "sim_request_rejected"
-                                        ? "bg-destructive/10 text-destructive"
-                                        : log.event_type === "sim_activation_triggered"
-                                          ? "bg-warning/10 text-warning"
-                                          : log.event_type === "kyb_requested"
-                                            ? "bg-secondary text-secondary-foreground"
-                                            : "bg-muted text-muted-foreground"
-                                }`}
-                                >
-                                  {getSecurityEventIcon(log.event_type)}
-                                </div>
-                                <div>
-                                  <p className="font-medium text-sm capitalize">
-                                    {log.event_type.replace(
-                                      /_/g,
-                                      " ",
-                                    )}
-                                  </p>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>{getSeverityBadge(log.severity as any)}</TableCell>
-                            <TableCell>
-                              {log.user_name
-                                ? (
-                                    <div>
-                                      <p className="font-medium text-sm">{log.user_name}</p>
-                                      {log.user_email && <p className="text-xs text-muted-foreground">{log.user_email}</p>}
-                                    </div>
-                                  )
-                                : (
-                                    <span className="text-muted-foreground">System</span>
-                                  )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Building2 className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm">
-                                  {log.tenant_name || log.tenant_id?.slice(
-                                    0,
-                                    8,
-                                  ) || "-"}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <p className="text-sm max-w-[300px] truncate text-muted-foreground">
-                                {log.description}
-                              </p>
-                              {log.metadata && Object.keys(log.metadata).length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {log.metadata.quantity && (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs"
-                                    >
-                                      {String(log.metadata.quantity)}
-                                      {" "}
-                                      SIM(s)
-                                    </Badge>
-                                  )}
-                                  {log.metadata.operator && (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs"
-                                    >
-                                      {String(log.metadata.operator)}
-                                    </Badge>
-                                  )}
-                                  {log.metadata.activated !== undefined && (
-                                    <Badge className="bg-success/10 text-success text-xs">
-                                      {String(log.metadata.activated)}
-                                      {" "}
-                                      activated
-                                    </Badge>
-                                  )}
-                                  {log.metadata.failed !== undefined && Number(log.metadata.failed) > 0 && (
-                                    <Badge
-                                      variant="destructive"
-                                      className="text-xs"
-                                    >
-                                      {String(log.metadata.failed)}
-                                      {" "}
-                                      failed
-                                    </Badge>
-                                  )}
-                                  {log.metadata.override_applied && (
-                                    <Badge className="bg-warning/10 text-warning text-xs">
-                                      Override
-                                    </Badge>
-                                  )}
-                                </div>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2 text-sm">
-                                <Clock className="h-4 w-4 text-muted-foreground" />
-                                {formatDateInTimezone(
-                                  log.created_at,
-                                  timezone,
-                                  {
-                                    month: "short",
-                                    day: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  },
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      {!auditLogs.some(log =>
-                        log.event_type.includes("sim_")
-                        || log.event_type === "kyb_requested") && (
-                        <TableRow>
-                          <TableCell
-                            colSpan={6}
-                            className="text-center py-12 text-muted-foreground"
-                          >
-                            <Zap className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                            <p>No SIM audit events found</p>
-                            <p className="text-sm">Events will appear here when SIM requests are processed</p>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+          <div className="rounded-lg border">
+            <DataTable
+              columns={columns}
+              data={filteredLogs}
+              isLoading={isLoadingLogs}
+              emptyState={(
+                <>
+                  <Zap className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                  <p>No SIM audit events found</p>
+                  <p className="text-sm">Events will appear here when SIM requests are processed</p>
+                </>
               )}
+              rowClassName={log => (log.severity === "high" ? "bg-warning/5" : "")}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

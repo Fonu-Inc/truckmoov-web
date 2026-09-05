@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   SystemSupportTicketCategory, SystemSupportTicketsQuery,
 } from "@truckmoov/api/auth";
@@ -41,6 +42,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import {
   Popover,
@@ -54,14 +56,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { AdminTicketSheet } from "./AdminTicketSheet";
 
 type TicketStatus = "open" | "in_progress" | "waiting_on_tenant" | "escalated" | "resolved" | "closed";
@@ -500,6 +494,113 @@ export function AllTickets() {
     [summary],
   );
 
+  const ticketColumns: ColumnDef<TicketRow>[] = useMemo(
+    () => [
+      {
+        id: "id",
+        header: "Ticket ID",
+        cell: ({ row }) => (
+          <span className="font-mono text-xs font-semibold">
+            #
+            {shortId(row.original.id)}
+          </span>
+        ),
+      },
+      {
+        id: "title",
+        header: "Title",
+        cell: ({ row }) => (
+          <span className="block max-w-[260px] truncate font-semibold">{row.original.subject}</span>
+        ),
+      },
+      {
+        id: "tenant",
+        header: "Tenant",
+        cell: ({ row }) => (
+          <span className="block max-w-[220px] truncate font-semibold">{tenantLabel(row.original)}</span>
+        ),
+      },
+      {
+        id: "reporter",
+        header: "Reporter",
+        cell: ({ row }) => {
+          const reporter = reporterLabel(row.original);
+          return (
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                {getInitials(reporter)}
+              </div>
+              <span className="truncate font-semibold">{reporter}</span>
+            </div>
+          );
+        },
+      },
+      {
+        id: "channel",
+        header: "Channel",
+        cell: ({ row }) => <span className="font-semibold">{channelFromContext(row.original.contextType)}</span>,
+      },
+      {
+        id: "category",
+        header: "Category",
+        cell: ({ row }) => <span className="font-semibold">{titleCase(row.original.category)}</span>,
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => {
+          const s = statusConfig[row.original.status as TicketStatus] ?? statusConfig.open;
+          return (
+            <Badge
+              variant="outline"
+              className={s.className}
+            >
+              {s.label}
+            </Badge>
+          );
+        },
+      },
+      {
+        id: "priority",
+        header: "Priority",
+        cell: ({ row }) => {
+          const p = priorityConfig[row.original.priority as TicketPriority] ?? priorityConfig.medium;
+          return (
+            <Badge
+              variant="outline"
+              className={p.className}
+            >
+              {p.label}
+            </Badge>
+          );
+        },
+      },
+      {
+        id: "action",
+        header: "Action",
+        enableSorting: false,
+        meta: { className: "text-right" },
+        cell: ({ row }) => (
+          <div className="text-right">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 font-semibold"
+              onClick={(event) => {
+                event.stopPropagation();
+                setSelectedTicket(row.original);
+              }}
+            >
+              <Eye className="mr-3 h-4 w-4" />
+              Manage
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
+
   async function handleExport() {
     setIsExporting(true);
     try {
@@ -701,111 +802,34 @@ export function AllTickets() {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Ticket ID</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Tenant</TableHead>
-                  <TableHead>Reporter</TableHead>
-                  <TableHead>Channel</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ticketsQuery.isLoading || ticketsQuery.isFetching || ticketsQuery.isError || tickets.length === 0
-                  ? (
-                      <TableRow>
-                        <TableCell colSpan={9}>
-                          <div className="py-12 text-center">
-                            {ticketsQuery.isLoading || ticketsQuery.isFetching
-                              ? (
-                                  <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-muted-foreground" />
-                                )
-                              : (
-                                  <MessageSquare className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                                )}
-                            <h3 className="mb-2 text-lg font-medium">
-                              {ticketsQuery.isLoading || ticketsQuery.isFetching ? "Loading tickets" : "No tickets found"}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                              {ticketsQuery.isError
-                                ? "Unable to load support tickets right now"
-                                : search
-                                  ? "Try adjusting your search or filters"
-                                  : "No support tickets have been logged yet"}
-                            </p>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : (
-                      tickets.map((ticket) => {
-                        const status = statusConfig[ticket.status as TicketStatus] ?? statusConfig.open;
-                        const priority = priorityConfig[ticket.priority as TicketPriority] ?? priorityConfig.medium;
-                        const reporter = reporterLabel(ticket);
-
-                        return (
-                          <TableRow
-                            key={ticket.id}
-                            className="h-[73px] cursor-pointer hover:bg-secondary/40"
-                            onClick={() => setSelectedTicket(ticket)}
-                          >
-                            <TableCell className="font-mono text-xs font-semibold">
-                              #
-                              {shortId(ticket.id)}
-                            </TableCell>
-                            <TableCell className="max-w-[260px] truncate font-semibold">{ticket.subject}</TableCell>
-                            <TableCell className="max-w-[220px] truncate font-semibold">{tenantLabel(ticket)}</TableCell>
-                            <TableCell>
-                              <div className="flex min-w-0 items-center gap-2">
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
-                                  {getInitials(reporter)}
-                                </div>
-                                <span className="truncate font-semibold">{reporter}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-semibold">{channelFromContext(ticket.contextType)}</TableCell>
-                            <TableCell className="font-semibold">{titleCase(ticket.category)}</TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={status.className}
-                              >
-                                {status.label}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={priority.className}
-                              >
-                                {priority.label}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 font-semibold"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  setSelectedTicket(ticket);
-                                }}
-                              >
-                                <Eye className="mr-3 h-4 w-4" />
-                                Manage
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
-              </TableBody>
-            </Table>
+            <DataTable
+              columns={ticketColumns}
+              data={tickets}
+              isLoading={ticketsQuery.isLoading || ticketsQuery.isFetching}
+              isError={ticketsQuery.isError}
+              errorMessage="Unable to load support tickets right now"
+              hasActiveFilters={!!search || statusFilter !== "all" || categoryFilter !== "all"}
+              emptyState={(
+                <>
+                  <MessageSquare className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <h3 className="mb-2 text-lg font-medium">No tickets found</h3>
+                  <p className="text-sm text-muted-foreground">
+                    No support tickets have been logged yet
+                  </p>
+                </>
+              )}
+              filteredEmptyState={(
+                <>
+                  <MessageSquare className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <h3 className="mb-2 text-lg font-medium">No tickets found</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Try adjusting your search or filters
+                  </p>
+                </>
+              )}
+              rowClassName={() => "h-[73px]"}
+              onRowClick={ticket => setSelectedTicket(ticket)}
+            />
           </CardContent>
         </Card>
       </div>

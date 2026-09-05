@@ -1,8 +1,9 @@
+import type { ColumnDef } from "@tanstack/react-table";
+
 import type {
   SystemSimBatch,
   SystemSimBatchesQuery,
 } from "@truckmoov/api/auth";
-
 import type { FilterDraft } from "@/components/shadcn/platform-filter-popover";
 import {
   useQuery,
@@ -45,6 +46,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -56,14 +58,6 @@ import {
 import { Input } from "@/components/shadcn/input";
 import { PlatformFilterPopover } from "@/components/shadcn/platform-filter-popover";
 import { Progress } from "@/components/shadcn/progress";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 
 const emptyValue = "-";
 
@@ -301,6 +295,123 @@ export function ActivationBatchesPanel() {
     );
   };
 
+  const batchColumns: ColumnDef<SystemSimBatch>[] = useMemo(
+    () => [
+      {
+        id: "tenant",
+        header: "Tenant",
+        meta: { className: "min-w-[220px]" },
+        cell: ({ row }) => <span className="font-semibold">{row.original.tenantName || row.original.tenantId}</span>,
+      },
+      {
+        id: "mode",
+        header: "Mode",
+        meta: { className: "min-w-[100px]" },
+        cell: ({ row }) => <Badge variant="outline">{titleCase(row.original.activationMode)}</Badge>,
+      },
+      {
+        id: "quantity",
+        header: "Quantity",
+        meta: { className: "min-w-[100px]" },
+        cell: ({ row }) => <span className="font-semibold">{row.original.quantity}</span>,
+      },
+      {
+        id: "operator",
+        header: "Operator",
+        meta: { className: "min-w-[170px]" },
+        cell: ({ row }) => <span className="font-medium">{row.original.operator || emptyValue}</span>,
+      },
+      {
+        id: "progress",
+        header: "Progress",
+        meta: { className: "min-w-[170px]" },
+        cell: ({ row }) => {
+          const batch = row.original;
+          return (
+            <div className="w-28 space-y-1">
+              <Progress
+                value={getProgressPercentage(batch)}
+                variant="warning"
+                className="h-2"
+              />
+              <p className="text-xs text-muted-foreground">
+                {batch.simsActivated}
+                {" "}
+                /
+                {batch.quantity}
+                {batch.simsFailed > 0 && (
+                  <span className="ml-1 text-destructive">
+                    (
+                    {batch.simsFailed}
+                    {" "}
+                    failed)
+                  </span>
+                )}
+              </p>
+            </div>
+          );
+        },
+      },
+      {
+        id: "status",
+        header: "Status",
+        meta: { className: "min-w-[150px]" },
+        cell: ({ row }) => getStatusBadge(row.original.status),
+      },
+      {
+        id: "created",
+        header: "Created",
+        meta: { className: "min-w-[150px]" },
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {formatDayMonthTime(
+              row.original.createdAt,
+              emptyValue,
+            )}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        enableSorting: false,
+        meta: { className: "min-w-[160px] text-right" },
+        cell: ({ row }) => {
+          const batch = row.original;
+          return (
+            <div className="flex items-center justify-end gap-2">
+              {canRetryBatch(batch.status) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRetry(batch);
+                  }}
+                  disabled={retryBatch.isPending}
+                >
+                  <RotateCcw className="mr-1 h-4 w-4" />
+                  Retry
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDetailBatchId(batch.id);
+                }}
+              >
+                Details
+              </Button>
+            </div>
+          );
+        },
+      },
+    ],
+    [retryBatch.isPending],
+  );
+
   const handleExport = async () => {
     setIsExporting(true);
     try {
@@ -440,106 +551,26 @@ export function ActivationBatchesPanel() {
 
         <CardContent>
           <div className="overflow-x-auto rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[220px]">Tenant</TableHead>
-                  <TableHead className="min-w-[100px]">Mode</TableHead>
-                  <TableHead className="min-w-[100px]">Quantity</TableHead>
-                  <TableHead className="min-w-[170px]">Operator</TableHead>
-                  <TableHead className="min-w-[170px]">Progress</TableHead>
-                  <TableHead className="min-w-[150px]">Status</TableHead>
-                  <TableHead className="min-w-[150px]">Created</TableHead>
-                  <TableHead className="min-w-[160px] text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {batchesQuery.isLoading
-                  ? (
-                      <TableRow>
-                        <TableCell colSpan={8}>
-                          <div className="py-12 text-center text-muted-foreground">Loading activation batches...</div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : filteredBatches.length === 0
-                    ? (
-                        <TableRow>
-                          <TableCell colSpan={8}>
-                            <div className="py-12 text-center text-muted-foreground">
-                              <Zap className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                              <p>No activation batches match your filters</p>
-                              <p className="text-sm">Adjust the search, status, or filter options above</p>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    : (
-                        filteredBatches.map(batch => (
-                          <TableRow key={batch.id}>
-                            <TableCell className="font-semibold">{batch.tenantName || batch.tenantId}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{titleCase(batch.activationMode)}</Badge>
-                            </TableCell>
-                            <TableCell className="font-semibold">{batch.quantity}</TableCell>
-                            <TableCell className="font-medium">{batch.operator || emptyValue}</TableCell>
-                            <TableCell>
-                              <div className="w-28 space-y-1">
-                                <Progress
-                                  value={getProgressPercentage(batch)}
-                                  variant="warning"
-                                  className="h-2"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                  {batch.simsActivated}
-                                  {" "}
-                                  /
-                                  {batch.quantity}
-                                  {batch.simsFailed > 0 && (
-                                    <span className="ml-1 text-destructive">
-                                      (
-                                      {batch.simsFailed}
-                                      {" "}
-                                      failed)
-                                    </span>
-                                  )}
-                                </p>
-                              </div>
-                            </TableCell>
-                            <TableCell>{getStatusBadge(batch.status)}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {formatDayMonthTime(
-                                batch.createdAt,
-                                emptyValue,
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                {canRetryBatch(batch.status) && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleRetry(batch)}
-                                    disabled={retryBatch.isPending}
-                                  >
-                                    <RotateCcw className="mr-1 h-4 w-4" />
-                                    Retry
-                                  </Button>
-                                )}
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => setDetailBatchId(batch.id)}
-                                >
-                                  Details
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-              </TableBody>
-            </Table>
+            <DataTable
+              columns={batchColumns}
+              data={filteredBatches}
+              isLoading={batchesQuery.isLoading}
+              hasActiveFilters={!!searchQuery || Object.values(filterDraft).some(f => f?.enabled)}
+              emptyState={(
+                <>
+                  <Zap className="mx-auto mb-4 h-12 w-12 opacity-50" />
+                  <p>No activation batches yet</p>
+                  <p className="text-sm">Batches will appear here once tenants request SIM activation</p>
+                </>
+              )}
+              filteredEmptyState={(
+                <>
+                  <Zap className="mx-auto mb-4 h-12 w-12 opacity-50" />
+                  <p>No activation batches match your filters</p>
+                  <p className="text-sm">Adjust the search, status, or filter options above</p>
+                </>
+              )}
+            />
           </div>
         </CardContent>
       </Card>

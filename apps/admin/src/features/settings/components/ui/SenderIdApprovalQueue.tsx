@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
   CheckCircle2,
@@ -10,7 +11,9 @@ import {
   Trash2,
   XCircle,
 } from "lucide-react";
-import { useState } from "react";
+import {
+  useMemo, useState,
+} from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -21,6 +24,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -39,15 +43,6 @@ import {
 
 } from "@/components/shadcn/dropdown-menu";
 import { Input } from "@/components/shadcn/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-
-} from "@/components/shadcn/table";
 import { Textarea } from "@/components/shadcn/textarea";
 
 type SenderIdStatus = "pending" | "whitelisting" | "approved" | "rejected";
@@ -197,6 +192,164 @@ export function SenderIdApprovalQueue() {
     });
   };
 
+  const requestColumns: ColumnDef<TenantSenderId>[] = useMemo(
+    () => [
+      {
+        id: "sender_id",
+        header: "Sender ID",
+        cell: ({ row }) => {
+          const request = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              {request.sender_type === "voice"
+                ? <Phone className="h-4 w-4 text-muted-foreground" />
+                : <MessageSquare className="h-4 w-4 text-muted-foreground" />}
+              <span className="font-mono font-medium">{request.sender_id}</span>
+            </div>
+          );
+        },
+      },
+      {
+        id: "tenant",
+        header: "Tenant",
+        cell: ({ row }) => row.original.tenant_name || row.original.tenant_id,
+      },
+      {
+        id: "type",
+        header: "Type",
+        cell: ({ row }) => (
+          <span className="capitalize">
+            {row.original.sender_type === "both" ? "SMS & Voice" : row.original.sender_type}
+          </span>
+        ),
+      },
+      {
+        id: "letter",
+        header: "Letter",
+        cell: ({ row }) => row.original.request_letter_url
+          ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1 text-xs"
+                onClick={() => toast.info("Coming soon")}
+              >
+                <FileText className="h-3 w-3" />
+                View
+              </Button>
+            )
+          : <span className="text-xs text-muted-foreground">—</span>,
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => {
+          const config = statusConfig[row.original.status];
+          return (
+            <Badge
+              variant={config.variant}
+              className="gap-1"
+            >
+              {config.icon}
+              {config.label}
+            </Badge>
+          );
+        },
+      },
+      {
+        id: "requested",
+        header: "Requested",
+        cell: ({ row }) => (
+          <span className="text-muted-foreground text-sm">
+            {formatRelative(row.original.requested_at)}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        header: "",
+        enableSorting: false,
+        meta: { className: "w-[70px]" },
+        cell: ({ row }) => {
+          const request = row.original;
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {request.status === "pending" && (
+                  <>
+                    <DropdownMenuItem onClick={() => openActionDialog(
+                      request,
+                      "whitelist",
+                    )}
+                    >
+                      <Loader2 className="h-4 w-4 mr-2" />
+                      Mark as Whitelisting
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openActionDialog(
+                      request,
+                      "approve",
+                    )}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Approve
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openActionDialog(
+                      request,
+                      "reject",
+                    )}
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Reject
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {request.status === "whitelisting" && (
+                  <>
+                    <DropdownMenuItem onClick={() => openActionDialog(
+                      request,
+                      "approve",
+                    )}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Approve (Whitelisting Complete)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openActionDialog(
+                      request,
+                      "reject",
+                    )}
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Reject
+                    </DropdownMenuItem>
+                  </>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => deleteRequest(request.id)}
+                  className="text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
+    ],
+    [],
+  );
+
   if (loading) {
     return (
       <Card>
@@ -237,158 +390,19 @@ export function SenderIdApprovalQueue() {
           </div>
         </CardHeader>
         <CardContent>
-          {requests.length === 0
-            ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p className="font-medium">No sender ID requests</p>
-                  <p className="text-sm mt-1">
-                    Tenant requests will appear here for review
-                  </p>
-                </div>
-              )
-            : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Sender ID</TableHead>
-                      <TableHead>Tenant</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Letter</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Requested</TableHead>
-                      <TableHead className="w-[70px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {requests.map((request) => {
-                      const config = statusConfig[request.status];
-                      return (
-                        <TableRow key={request.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {request.sender_type === "voice"
-                                ? (
-                                    <Phone className="h-4 w-4 text-muted-foreground" />
-                                  )
-                                : (
-                                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                                  )}
-                              <span className="font-mono font-medium">{request.sender_id}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>{request.tenant_name || request.tenant_id}</TableCell>
-                          <TableCell className="capitalize">
-                            {request.sender_type === "both" ? "SMS & Voice" : request.sender_type}
-                          </TableCell>
-                          <TableCell>
-                            {request.request_letter_url
-                              ? (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 gap-1 text-xs"
-                                    onClick={() => {
-                                      toast.info("Coming soon");
-                                    }}
-                                  >
-                                    <FileText className="h-3 w-3" />
-                                    View
-                                  </Button>
-                                )
-                              : (
-                                  <span className="text-xs text-muted-foreground">—</span>
-                                )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={config.variant}
-                              className="gap-1"
-                            >
-                              {config.icon}
-                              {config.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-sm">
-                            {formatRelative(request.requested_at)}
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                {request.status === "pending" && (
-                                  <>
-                                    <DropdownMenuItem onClick={() => openActionDialog(
-                                      request,
-                                      "whitelist",
-                                    )}
-                                    >
-                                      <Loader2 className="h-4 w-4 mr-2" />
-                                      Mark as Whitelisting
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => openActionDialog(
-                                      request,
-                                      "approve",
-                                    )}
-                                    >
-                                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                                      Approve
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => openActionDialog(
-                                      request,
-                                      "reject",
-                                    )}
-                                    >
-                                      <XCircle className="h-4 w-4 mr-2" />
-                                      Reject
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                                {request.status === "whitelisting" && (
-                                  <>
-                                    <DropdownMenuItem onClick={() => openActionDialog(
-                                      request,
-                                      "approve",
-                                    )}
-                                    >
-                                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                                      Approve (Whitelisting Complete)
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => openActionDialog(
-                                      request,
-                                      "reject",
-                                    )}
-                                    >
-                                      <XCircle className="h-4 w-4 mr-2" />
-                                      Reject
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => deleteRequest(request.id)}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              )}
+          <DataTable
+            columns={requestColumns}
+            data={requests}
+            emptyState={(
+              <>
+                <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">No sender ID requests</p>
+                <p className="text-sm mt-1">
+                  Tenant requests will appear here for review
+                </p>
+              </>
+            )}
+          />
         </CardContent>
       </Card>
 

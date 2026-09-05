@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   Activity,
   AlertTriangle,
@@ -20,17 +21,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Progress } from "@/components/shadcn/progress";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { TableToolbar } from "@/components/shadcn/table-toolbar";
 
 type WebhookStats = {
@@ -55,6 +49,41 @@ type TenantHealth = {
   messages_failed: number;
   last_activity: string | null;
 };
+
+const tenantHealthColumns: ColumnDef<TenantHealth>[] = [
+  {
+    id: "tenant",
+    header: "Tenant",
+    cell: ({ row }) => <span className="font-medium">{row.original.tenant_name}</span>,
+  },
+  {
+    id: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const s = row.original.status;
+      return (
+        <Badge className={s === "healthy" ? "bg-success/20 text-success" : "bg-warning/20 text-warning"}>
+          {s === "healthy" ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertTriangle className="h-3 w-3 mr-1" />}
+          {s}
+        </Badge>
+      );
+    },
+  },
+  {
+    id: "sent",
+    header: "Sent",
+    cell: ({ row }) => row.original.messages_sent,
+  },
+  {
+    id: "failed",
+    header: "Failed",
+    cell: ({ row }) => (
+      <span className={row.original.messages_failed > 0 ? "text-destructive" : ""}>
+        {row.original.messages_failed}
+      </span>
+    ),
+  },
+];
 
 export function WhatsAppHealthDashboard() {
   const [
@@ -400,47 +429,13 @@ export function WhatsAppHealthDashboard() {
               </div>
             )}
           />
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border/50">
-                <TableHead>Tenant</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Sent</TableHead>
-                <TableHead>Failed</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTenantHealth.length === 0
-                ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={4}
-                        className="text-center text-muted-foreground py-4"
-                      >
-                        No connected tenants
-                      </TableCell>
-                    </TableRow>
-                  )
-                : (
-                    filteredTenantHealth.map(t => (
-                      <TableRow
-                        key={t.tenant_id}
-                        className="border-border/50"
-                      >
-                        <TableCell className="font-medium">{t.tenant_name}</TableCell>
-                        <TableCell>
-                          <Badge className={t.status === "healthy" ? "bg-success/20 text-success" : "bg-warning/20 text-warning"}>
-                            {t.status === "healthy" ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertTriangle className="h-3 w-3 mr-1" />}
-                            {t.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{t.messages_sent}</TableCell>
-                        <TableCell className={t.messages_failed > 0 ? "text-destructive" : ""}>{t.messages_failed}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={tenantHealthColumns}
+            data={filteredTenantHealth}
+            hasActiveFilters={!!tenantSearch || tenantStatusFilter !== "all"}
+            emptyState="No connected tenants"
+            filteredEmptyState="No tenants match your filters."
+          />
         </CardContent>
       </Card>
 

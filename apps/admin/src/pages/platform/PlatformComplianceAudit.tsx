@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   Lock,
@@ -19,6 +20,7 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
@@ -34,14 +36,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import { useTenants } from "@/hooks/useTenants";
 
 type AuditFilters = {
@@ -329,6 +323,96 @@ export default function PlatformComplianceAudit() {
       8,
     );
   };
+
+  const columns: ColumnDef<any>[] = useMemo(
+    () => [
+      {
+        id: "timestamp",
+        header: "Timestamp",
+        cell: ({ row }) => (
+          <span className="font-mono text-xs whitespace-nowrap">
+            {formatWithPattern(
+              row.original.timestamp,
+              "yyyy-MM-dd HH:mm:ss",
+            )}
+          </span>
+        ),
+      },
+      {
+        id: "actor",
+        header: "Actor",
+        cell: ({ row }) => {
+          const e = row.original;
+          return (
+            <>
+              <div className="text-sm font-medium">{e.actor_name || "System"}</div>
+              <div className="text-xs text-muted-foreground font-mono">
+                {e.actor_email || e.actor_id?.slice(
+                  0,
+                  8,
+                ) || "—"}
+              </div>
+            </>
+          );
+        },
+      },
+      {
+        id: "action",
+        header: "Action",
+        cell: ({ row }) => (
+          <Badge
+            variant="outline"
+            className="text-xs"
+          >
+            {row.original.action_type}
+          </Badge>
+        ),
+      },
+      {
+        id: "resource",
+        header: "Resource",
+        cell: ({ row }) => {
+          const e = row.original;
+          return (
+            <>
+              <div className="text-sm">{e.resource_type}</div>
+              {e.resource_id && (
+                <div className="text-xs text-muted-foreground font-mono">
+                  {e.resource_id.slice(
+                    0,
+                    8,
+                  )}
+                </div>
+              )}
+            </>
+          );
+        },
+      },
+      {
+        id: "tenant",
+        header: "Tenant",
+        cell: ({ row }) => <span className="text-sm">{tenantNameOf(row.original.tenant_id)}</span>,
+      },
+      {
+        id: "ip",
+        header: "IP Address",
+        cell: ({ row }) => <span className="font-mono text-xs">{row.original.ip_address || "—"}</span>,
+      },
+      {
+        id: "source",
+        header: "Source",
+        cell: ({ row }) => (
+          <Badge
+            variant={row.original.source === "security" ? "destructive" : "secondary"}
+            className="text-xs"
+          >
+            {row.original.source}
+          </Badge>
+        ),
+      },
+    ],
+    [tenants],
+  );
 
   const exportColumns = [
     {
@@ -689,93 +773,14 @@ export default function PlatformComplianceAudit() {
           </div>
 
           <div className="border rounded-md overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Timestamp</TableHead>
-                  <TableHead>Actor</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Resource</TableHead>
-                  <TableHead>Tenant</TableHead>
-                  <TableHead>IP Address</TableHead>
-                  <TableHead>Source</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading
-                  ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={7}
-                          className="text-center text-muted-foreground py-8"
-                        >
-                          Loading…
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : entries.length === 0
-                    ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={7}
-                            className="text-center text-muted-foreground py-8"
-                          >
-                            No audit entries found
-                          </TableCell>
-                        </TableRow>
-                      )
-                    : (
-                        entries.map(e => (
-                          <TableRow key={`${e.source}-${e.id}`}>
-                            <TableCell className="font-mono text-xs whitespace-nowrap">
-                              {formatWithPattern(
-                                e.timestamp,
-                                "yyyy-MM-dd HH:mm:ss",
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm font-medium">{e.actor_name || "System"}</div>
-                              <div className="text-xs text-muted-foreground font-mono">
-                                {e.actor_email || e.actor_id?.slice(
-                                  0,
-                                  8,
-                                ) || "—"}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className="text-xs"
-                              >
-                                {e.action_type}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm">{e.resource_type}</div>
-                              {e.resource_id && (
-                                <div className="text-xs text-muted-foreground font-mono">
-                                  {e.resource_id.slice(
-                                    0,
-                                    8,
-                                  )}
-                                </div>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-sm">{tenantNameOf(e.tenant_id)}</TableCell>
-                            <TableCell className="font-mono text-xs">{e.ip_address || "—"}</TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={e.source === "security" ? "destructive" : "secondary"}
-                                className="text-xs"
-                              >
-                                {e.source}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-              </TableBody>
-            </Table>
+            <DataTable
+              columns={columns}
+              data={entries}
+              isLoading={isLoading}
+              hasActiveFilters={Object.keys(filters).length > 0 || !!search}
+              emptyState="No audit entries found"
+              filteredEmptyState="No audit entries match your filters."
+            />
           </div>
 
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">

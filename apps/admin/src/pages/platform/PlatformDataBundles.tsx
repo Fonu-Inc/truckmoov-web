@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   Building2,
   ChevronDown,
@@ -35,6 +36,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/shadcn/collapsible";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -58,6 +60,9 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Switch } from "@/components/shadcn/switch";
+// ponytail: keeping raw Table primitives for TenantAdoptionTable — its per-row
+// <Collapsible> expander (tenant → SIMs → bundles) doesn't fit DataTable's
+// column model; a wrapper would cost more than it saves.
 import {
   Table,
   TableBody,
@@ -575,6 +580,104 @@ export default function PlatformDataBundles() {
     setFormOpen(true);
   };
 
+  const handleToggle = async (b: BundleCatalogItem) => {
+    try {
+      await toggle.mutateAsync({
+        id: b.id,
+        is_active: !b.is_active,
+      });
+      toast.success(`Bundle ${!b.is_active ? "activated" : "deactivated"}`);
+    }
+    catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const catalogColumns: ColumnDef<BundleCatalogItem>[] = useMemo(
+    () => [
+      {
+        id: "bundle",
+        header: "Bundle",
+        cell: ({ row }) => (
+          <div className="font-medium">
+            <div>{row.original.name}</div>
+            <div className="text-xs text-muted-foreground font-mono">{row.original.code}</div>
+          </div>
+        ),
+      },
+      {
+        id: "carrier",
+        header: "Carrier",
+        cell: ({ row }) => <Badge variant="outline">{row.original.carrier}</Badge>,
+      },
+      {
+        id: "data",
+        header: "Data",
+        cell: ({ row }) => formatBundleSize(row.original.data_mb),
+      },
+      {
+        id: "validity",
+        header: "Validity",
+        cell: ({ row }) => `${row.original.validity_days}d`,
+      },
+      {
+        id: "cycle",
+        header: "Cycle",
+        cell: ({ row }) => <Badge variant="secondary">{row.original.billing_cycle}</Badge>,
+      },
+      {
+        id: "price",
+        header: "Price",
+        cell: ({ row }) => <span className="font-semibold">{fmtCurrency(Number(row.original.price_ngn))}</span>,
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => (
+          <Badge variant={row.original.is_active ? "default" : "outline"}>
+            {row.original.is_active ? "Active" : "Inactive"}
+          </Badge>
+        ),
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        enableSorting: false,
+        meta: { className: "text-right" },
+        cell: ({ row }) => {
+          const b = row.original;
+          return (
+            <div className="flex items-center justify-end gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openEdit(b);
+                }}
+                title="Edit"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggle(b);
+                }}
+                title={b.is_active ? "Deactivate" : "Activate"}
+              >
+                <Power className={`h-4 w-4 ${b.is_active ? "text-success" : "text-muted-foreground"}`} />
+              </Button>
+            </div>
+          );
+        },
+      },
+    ],
+    [fmtCurrency],
+  );
+
   const handleSave = async () => {
     if (!form.code || !form.name) {
       toast.error("Code and name are required");
@@ -595,19 +698,6 @@ export default function PlatformDataBundles() {
     }
     catch {
       // toast handled in hook
-    }
-  };
-
-  const handleToggle = async (b: BundleCatalogItem) => {
-    try {
-      await toggle.mutateAsync({
-        id: b.id,
-        is_active: !b.is_active,
-      });
-      toast.success(`Bundle ${!b.is_active ? "activated" : "deactivated"}`);
-    }
-    catch (e) {
-      toast.error((e as Error).message);
     }
   };
 
@@ -774,74 +864,13 @@ export default function PlatformDataBundles() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Bundle</TableHead>
-                    <TableHead>Carrier</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Validity</TableHead>
-                    <TableHead>Cycle</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.length === 0
-                    ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={8}
-                            className="text-center py-6 text-muted-foreground"
-                          >
-                            No bundles match your filters
-                          </TableCell>
-                        </TableRow>
-                      )
-                    : filtered.map(b => (
-                        <TableRow key={b.id}>
-                          <TableCell className="font-medium">
-                            <div>{b.name}</div>
-                            <div className="text-xs text-muted-foreground font-mono">{b.code}</div>
-                          </TableCell>
-                          <TableCell><Badge variant="outline">{b.carrier}</Badge></TableCell>
-                          <TableCell>{formatBundleSize(b.data_mb)}</TableCell>
-                          <TableCell>
-                            {b.validity_days}
-                            d
-                          </TableCell>
-                          <TableCell><Badge variant="secondary">{b.billing_cycle}</Badge></TableCell>
-                          <TableCell className="font-semibold">{fmtCurrency(Number(b.price_ngn))}</TableCell>
-                          <TableCell>
-                            <Badge variant={b.is_active ? "default" : "outline"}>
-                              {b.is_active ? "Active" : "Inactive"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => openEdit(b)}
-                                title="Edit"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleToggle(b)}
-                                title={b.is_active ? "Deactivate" : "Activate"}
-                              >
-                                <Power className={`h-4 w-4 ${b.is_active ? "text-success" : "text-muted-foreground"}`} />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                </TableBody>
-              </Table>
+              <DataTable
+                columns={catalogColumns}
+                data={filtered}
+                hasActiveFilters={!!search || carrierFilterEnabled || statusFilter !== "all"}
+                emptyState="No bundles"
+                filteredEmptyState="No bundles match your filters"
+              />
             </CardContent>
           </Card>
         </TabsContent>

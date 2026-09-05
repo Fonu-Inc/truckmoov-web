@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   formatDayMonthTime,
   formatRelativeStrict,
@@ -39,6 +40,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -57,14 +59,6 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
 import {
   Tabs,
   TabsContent,
@@ -212,6 +206,94 @@ const POOL: PoolNumber[] = [
   },
 ];
 
+const poolColumns: ColumnDef<PoolNumber>[] = [
+  {
+    id: "msisdn",
+    header: "MSISDN",
+    cell: ({ row }) => <span className="font-mono text-sm">{row.original.msisdn}</span>,
+  },
+  {
+    id: "state",
+    header: "State",
+    cell: ({ row }) => <PoolBadge state={row.original.state} />,
+  },
+  {
+    id: "notes",
+    header: "Notes",
+    cell: ({ row }) => {
+      const p = row.original;
+      return (
+        <span className="text-xs text-muted-foreground">
+          {p.state === "cooldown" && p.cooldownUntil
+            ? `Available in ${formatRelativeStrict(p.cooldownUntil)}`
+            : p.state === "in_use"
+              ? "Assigned to a tenant WABA"
+              : "Ready to allocate"}
+        </span>
+      );
+    },
+  },
+];
+
+const historyColumns: ColumnDef<NumberRequest>[] = [
+  {
+    id: "tenant",
+    header: "Tenant",
+    cell: ({ row }) => {
+      const r = row.original;
+      return (
+        <div className="text-sm">
+          <div className="font-medium">{r.tenantName}</div>
+          <div className="text-xs text-muted-foreground font-mono">{r.id}</div>
+        </div>
+      );
+    },
+  },
+  {
+    id: "msisdn",
+    header: "MSISDN",
+    cell: ({ row }) => <span className="font-mono text-xs">{row.original.msisdn ?? "—"}</span>,
+  },
+  {
+    id: "wabaId",
+    header: "WABA ID",
+    cell: ({ row }) => <span className="font-mono text-xs">{row.original.wabaId ?? "—"}</span>,
+  },
+  {
+    id: "verified",
+    header: "Verified",
+    cell: ({ row }) => (
+      <span className="text-xs">
+        {row.original.verifiedAt ? formatDayMonthTime(row.original.verifiedAt) : "—"}
+      </span>
+    ),
+  },
+  {
+    id: "actor",
+    header: "Actor",
+    cell: ({ row }) => <span className="text-xs">{row.original.actor ?? "—"}</span>,
+  },
+  {
+    id: "status",
+    header: "Status",
+    cell: ({ row }) => row.original.status === "active"
+      ? (
+          <Badge className="bg-success/15 text-success border-success/30">
+            <CheckCircle2 className="h-3 w-3 mr-1" />
+            {" "}
+            Active
+          </Badge>
+        )
+      : (
+          <Badge variant="destructive">
+            <AlertTriangle className="h-3 w-3 mr-1" />
+            {" "}
+            Failed
+          </Badge>
+        ),
+  },
+];
+
 export default function PlatformCommunications() {
   const [
     tab,
@@ -231,6 +313,73 @@ export default function PlatformCommunications() {
   ] = useState<NumberRequest | null>(null);
 
   const pendingCount = requests.filter(r => r.status === "pending").length;
+
+  const pendingColumns: ColumnDef<NumberRequest>[] = useMemo(
+    () => [
+      {
+        id: "tenant",
+        header: "Tenant",
+        cell: ({ row }) => {
+          const r = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <div className="font-medium text-sm">{r.tenantName}</div>
+                <div className="text-xs text-muted-foreground font-mono">{r.id}</div>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        id: "displayName",
+        header: "Display Name",
+        cell: ({ row }) => <span className="text-sm">{row.original.displayName}</span>,
+      },
+      {
+        id: "category",
+        header: "Category",
+        cell: ({ row }) => <span className="text-sm">{row.original.category}</span>,
+      },
+      {
+        id: "description",
+        header: "Description",
+        cell: ({ row }) => (
+          <span className="text-sm max-w-xs truncate block">{row.original.description}</span>
+        ),
+      },
+      {
+        id: "submitted",
+        header: "Submitted",
+        cell: ({ row }) => (
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <Calendar className="h-3 w-3" />
+            {formatDayMonthTime(row.original.submittedAt)}
+          </div>
+        ),
+      },
+      {
+        id: "action",
+        header: "Action",
+        enableSorting: false,
+        meta: { className: "text-right" },
+        cell: ({ row }) => (
+          <div className="text-right">
+            <Button
+              size="sm"
+              onClick={() => setProvisionFor(row.original)}
+            >
+              Provision
+              {" "}
+              <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
 
   const handleProvisioned = (req: NumberRequest) => {
     setRequests(rs => rs.filter(r => r.id !== req.id));
@@ -327,65 +476,16 @@ export default function PlatformCommunications() {
                 </div>
               </CardHeader>
               <CardContent>
-                {requests.length === 0
-                  ? (
-                      <div className="text-center py-12 text-sm text-muted-foreground">
-                        <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success" />
-                        No pending requests.
-                      </div>
-                    )
-                  : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Tenant</TableHead>
-                            <TableHead>Display Name</TableHead>
-                            <TableHead>Category</TableHead>
-                            <TableHead>Description</TableHead>
-                            <TableHead>Submitted</TableHead>
-                            <TableHead className="text-right">Action</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {requests.map(r => (
-                            <TableRow key={r.id}>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                                  <div>
-                                    <div className="font-medium text-sm">{r.tenantName}</div>
-                                    <div className="text-xs text-muted-foreground font-mono">
-                                      {r.id}
-                                    </div>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-sm">{r.displayName}</TableCell>
-                              <TableCell className="text-sm">{r.category}</TableCell>
-                              <TableCell className="text-sm max-w-xs truncate">
-                                {r.description}
-                              </TableCell>
-                              <TableCell className="text-sm">
-                                <div className="flex items-center gap-1 text-muted-foreground">
-                                  <Calendar className="h-3 w-3" />
-                                  {formatDayMonthTime(r.submittedAt)}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Button
-                                  size="sm"
-                                  onClick={() => setProvisionFor(r)}
-                                >
-                                  Provision
-                                  {" "}
-                                  <ArrowRight className="h-3 w-3 ml-1" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    )}
+                <DataTable
+                  columns={pendingColumns}
+                  data={requests}
+                  emptyState={(
+                    <>
+                      <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success" />
+                      No pending requests.
+                    </>
+                  )}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -403,32 +503,10 @@ export default function PlatformCommunications() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>MSISDN</TableHead>
-                      <TableHead>State</TableHead>
-                      <TableHead>Notes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {POOL.map(p => (
-                      <TableRow key={p.msisdn}>
-                        <TableCell className="font-mono text-sm">{p.msisdn}</TableCell>
-                        <TableCell>
-                          <PoolBadge state={p.state} />
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {p.state === "cooldown" && p.cooldownUntil
-                            ? `Available in ${formatRelativeStrict(p.cooldownUntil)}`
-                            : p.state === "in_use"
-                              ? "Assigned to a tenant WABA"
-                              : "Ready to allocate"}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <DataTable
+                  columns={poolColumns}
+                  data={POOL}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -445,59 +523,10 @@ export default function PlatformCommunications() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tenant</TableHead>
-                      <TableHead>MSISDN</TableHead>
-                      <TableHead>WABA ID</TableHead>
-                      <TableHead>Verified</TableHead>
-                      <TableHead>Actor</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {history.map(r => (
-                      <TableRow key={r.id}>
-                        <TableCell className="text-sm">
-                          <div className="font-medium">{r.tenantName}</div>
-                          <div className="text-xs text-muted-foreground font-mono">
-                            {r.id}
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {r.msisdn ?? "—"}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {r.wabaId ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {r.verifiedAt
-                            ? formatDayMonthTime(r.verifiedAt)
-                            : "—"}
-                        </TableCell>
-                        <TableCell className="text-xs">{r.actor ?? "—"}</TableCell>
-                        <TableCell>
-                          {r.status === "active"
-                            ? (
-                                <Badge className="bg-success/15 text-success border-success/30">
-                                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  {" "}
-                                  Active
-                                </Badge>
-                              )
-                            : (
-                                <Badge variant="destructive">
-                                  <AlertTriangle className="h-3 w-3 mr-1" />
-                                  {" "}
-                                  Failed
-                                </Badge>
-                              )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <DataTable
+                  columns={historyColumns}
+                  data={history}
+                />
               </CardContent>
             </Card>
           </TabsContent>

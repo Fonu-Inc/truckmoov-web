@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import { formatDateInTimezone } from "@truckmoov/app-core/utils/time-utils";
 import {
   ArrowRight,
@@ -26,6 +27,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Label } from "@/components/shadcn/label";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import {
@@ -37,15 +39,6 @@ import {
 
 } from "@/components/shadcn/select";
 import { Separator } from "@/components/shadcn/separator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-
-} from "@/components/shadcn/table";
 import { usePreferences } from "@/contexts/PreferencesContext";
 
 type Tenant = {
@@ -303,6 +296,68 @@ export function IsolationCheckPanel() {
     );
   };
 
+  const progressColumns: ColumnDef<TestResult>[] = useMemo(
+    () => [
+      {
+        id: "method",
+        header: "Method",
+        meta: { className: "w-20" },
+        cell: ({ row }) => (
+          <Badge
+            variant="outline"
+            className="font-mono text-xs"
+          >
+            {row.original.method}
+          </Badge>
+        ),
+      },
+      {
+        id: "endpoint",
+        header: "Endpoint",
+        cell: ({ row }) => <span className="font-mono text-xs">{row.original.endpoint}</span>,
+      },
+      {
+        id: "resource",
+        header: "Resource",
+        cell: ({ row }) => <span className="text-sm">{row.original.resource}</span>,
+      },
+      {
+        id: "status",
+        header: "Status",
+        meta: { className: "w-24" },
+        cell: ({ row }) => (
+          <Badge
+            variant={row.original.status === 403 ? "secondary" : "destructive"}
+            className="font-mono"
+          >
+            {row.original.status}
+          </Badge>
+        ),
+      },
+      {
+        id: "result",
+        header: "Result",
+        meta: { className: "w-24" },
+        cell: ({ row }) => row.original.outcome === "pass"
+          ? (
+              <span className="inline-flex items-center gap-1 text-success text-sm">
+                <CheckCircle2 className="h-4 w-4" />
+                {" "}
+                Blocked
+              </span>
+            )
+          : (
+              <span className="inline-flex items-center gap-1 text-destructive text-sm">
+                <XCircle className="h-4 w-4" />
+                {" "}
+                Leak
+              </span>
+            ),
+      },
+    ],
+    [],
+  );
+
   const exportReport = (r: IsolationReport) => {
     const lines: string[] = [];
     lines.push(`Tenant Isolation Report ${r.id}`);
@@ -331,6 +386,109 @@ export function IsolationCheckPanel() {
     URL.revokeObjectURL(url);
     toast.success("Report exported");
   };
+
+  const historyColumns: ColumnDef<IsolationReport>[] = useMemo(
+    () => [
+      {
+        id: "id",
+        header: "Report ID",
+        cell: ({ row }) => <span className="font-mono text-xs">{row.original.id}</span>,
+      },
+      {
+        id: "tenants",
+        header: "Tenant A → Tenant B",
+        cell: ({ row }) => (
+          <span className="text-sm">
+            {row.original.tenantA.name}
+            {" "}
+            →
+            {row.original.tenantB.name}
+          </span>
+        ),
+      },
+      {
+        id: "trigger",
+        header: "Trigger",
+        cell: ({ row }) => (
+          <Badge
+            variant="outline"
+            className="capitalize"
+          >
+            {row.original.trigger.replace(
+              "_",
+              " ",
+            )}
+          </Badge>
+        ),
+      },
+      {
+        id: "runAt",
+        header: "Run At",
+        cell: ({ row }) => (
+          <span className="text-sm">
+            {formatDateInTimezone(
+              row.original.completedAt,
+              timezone,
+              {
+                dateStyle: "medium",
+                timeStyle: "short",
+              },
+            )}
+          </span>
+        ),
+      },
+      {
+        id: "result",
+        header: "Result",
+        cell: ({ row }) => {
+          const r = row.original;
+          return r.overall === "pass"
+            ? (
+                <Badge className="bg-success/10 text-success hover:bg-success/15 border-success/20">
+                  <ShieldCheck className="mr-1 h-3 w-3" />
+                  {" "}
+                  Pass (
+                  {r.passed}
+                  /
+                  {r.results.length || 10}
+                  )
+                </Badge>
+              )
+            : (
+                <Badge variant="destructive">
+                  <ShieldAlert className="mr-1 h-3 w-3" />
+                  {" "}
+                  Fail (
+                  {r.failed}
+                  {" "}
+                  leak
+                  {r.failed === 1 ? "" : "s"}
+                  )
+                </Badge>
+              );
+        },
+      },
+      {
+        id: "action",
+        header: "Action",
+        enableSorting: false,
+        meta: { className: "text-right" },
+        cell: ({ row }) => (
+          <div className="text-right">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => exportReport(row.original)}
+              disabled={row.original.results.length === 0}
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [timezone],
+  );
 
   return (
     <div className="space-y-6">
@@ -464,58 +622,10 @@ export function IsolationCheckPanel() {
                   </span>
                 </div>
                 <ScrollArea className="h-[260px] rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-20">Method</TableHead>
-                        <TableHead>Endpoint</TableHead>
-                        <TableHead>Resource</TableHead>
-                        <TableHead className="w-24">Status</TableHead>
-                        <TableHead className="w-24">Result</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {progress.map((r, i) => (
-                        <TableRow key={i}>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className="font-mono text-xs"
-                            >
-                              {r.method}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">{r.endpoint}</TableCell>
-                          <TableCell className="text-sm">{r.resource}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={r.status === 403 ? "secondary" : "destructive"}
-                              className="font-mono"
-                            >
-                              {r.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {r.outcome === "pass"
-                              ? (
-                                  <span className="inline-flex items-center gap-1 text-success text-sm">
-                                    <CheckCircle2 className="h-4 w-4" />
-                                    {" "}
-                                    Blocked
-                                  </span>
-                                )
-                              : (
-                                  <span className="inline-flex items-center gap-1 text-destructive text-sm">
-                                    <XCircle className="h-4 w-4" />
-                                    {" "}
-                                    Leak
-                                  </span>
-                                )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <DataTable
+                    columns={progressColumns}
+                    data={progress}
+                  />
                 </ScrollArea>
               </div>
             </>
@@ -627,89 +737,10 @@ export function IsolationCheckPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Report ID</TableHead>
-                <TableHead>Tenant A → Tenant B</TableHead>
-                <TableHead>Trigger</TableHead>
-                <TableHead>Run At</TableHead>
-                <TableHead>Result</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {history.map(r => (
-                <TableRow key={r.id}>
-                  <TableCell className="font-mono text-xs">{r.id}</TableCell>
-                  <TableCell className="text-sm">
-                    {r.tenantA.name}
-                    {" "}
-                    →
-                    {r.tenantB.name}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className="capitalize"
-                    >
-                      {r.trigger.replace(
-                        "_",
-                        " ",
-                      )}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {formatDateInTimezone(
-                      r.completedAt,
-                      timezone,
-                      {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-
-                      },
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {r.overall === "pass"
-                      ? (
-                          <Badge className="bg-success/10 text-success hover:bg-success/15 border-success/20">
-                            <ShieldCheck className="mr-1 h-3 w-3" />
-                            {" "}
-                            Pass (
-                            {r.passed}
-                            /
-                            {r.results.length || 10}
-                            )
-                          </Badge>
-                        )
-                      : (
-                          <Badge variant="destructive">
-                            <ShieldAlert className="mr-1 h-3 w-3" />
-                            {" "}
-                            Fail (
-                            {r.failed}
-                            {" "}
-                            leak
-                            {r.failed === 1 ? "" : "s"}
-                            )
-                          </Badge>
-                        )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => exportReport(r)}
-                      disabled={r.results.length === 0}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={historyColumns}
+            data={history}
+          />
         </CardContent>
       </Card>
     </div>
