@@ -97,7 +97,7 @@ export function DataTable<TData>({
               return (
                 <TableHead
                   key={header.id}
-                  className={cn(headerClass, canSort && "cursor-pointer select-none")}
+                  className={cn("whitespace-nowrap", headerClass, canSort && "cursor-pointer select-none")}
                   onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                 >
                   {header.isPlaceholder

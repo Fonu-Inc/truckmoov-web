@@ -153,7 +153,7 @@ export function PlatformAISettings() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
+        <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />
@@ -178,7 +178,7 @@ export function PlatformAISettings() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Bot className="h-6 w-6 text-primary" />
@@ -204,7 +204,7 @@ export function PlatformAISettings() {
         value={activeTab}
         onValueChange={setActiveTab}
       >
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="w-fit max-w-full">
           <TabsTrigger
             value="providers"
             className="flex items-center gap-2"
@@ -240,7 +240,7 @@ export function PlatformAISettings() {
           value="providers"
           className="space-y-4"
         >
-          <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
+          <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(16rem,1fr))]">
             {/* OpenAI */}
             <Card className={config.openai_enabled ? "border-primary/50" : "opacity-75"}>
               <CardHeader className="pb-3">
@@ -377,7 +377,7 @@ export function PlatformAISettings() {
           value="guardrails"
           className="space-y-4"
         >
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 grid-cols-[repeat(auto-fit,minmax(18rem,1fr))]">
             {/* Rate Limits */}
             <Card>
               <CardHeader>
@@ -732,7 +732,7 @@ export function PlatformAISettings() {
 
           {/* Recent Logs */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardHeader className="flex flex-col gap-2 space-y-0 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-sm">Recent AI Requests</CardTitle>
               <ExportButton
                 rows={filteredLogs}

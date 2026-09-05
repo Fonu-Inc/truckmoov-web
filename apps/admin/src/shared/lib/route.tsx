@@ -182,6 +182,12 @@ export const router = createBrowserRouter([
               {
                 path: "telephony",
                 lazy: async () => ({ Component: (await import("@/features/settings/components/pages/TelephonySettingsPage")).default }),
+                children: [
+                  { index: true, lazy: async () => ({ Component: (await import("@/features/settings/components/ui/TelephonySettings")).TelephonySettings }) },
+                  { path: "numbers", lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PhoneNumberManagement")).PhoneNumberManagement }) },
+                  { path: "sender-ids", lazy: async () => ({ Component: (await import("@/features/settings/components/ui/SenderIdApprovalQueue")).SenderIdApprovalQueue }) },
+                  { path: "config", lazy: async () => ({ Component: (await import("@/features/settings/components/ui/FonuApiConfig")).FonuApiConfig }) },
+                ],
               },
               {
                 path: "notifications",

@@ -39,9 +39,10 @@ export function SettingsLayout() {
             <NavLink
               key={tab.to}
               to={tab.to}
-              // Every settings route is a leaf, so nothing wants prefix
-              // matching: without `end`, /settings would stay lit everywhere.
-              end
+              // `end` on the index tab only ("/settings"), otherwise it'd stay
+              // lit on every child route. Non-index tabs prefix-match so parent
+              // tabs (e.g. Telephony) stay active on their sub-routes.
+              end={tab.to === "/settings"}
               className={({ isActive }) => cn(
                 "inline-flex items-center justify-center whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ring-offset-background transition-all duration-150",
                 "hover:text-foreground/80",
