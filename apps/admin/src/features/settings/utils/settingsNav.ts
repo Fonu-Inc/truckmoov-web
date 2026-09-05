@@ -29,21 +29,6 @@ export const SETTINGS_TABS: SettingsTab[] = [
     to: "/settings/ai-providers", label: "AI", hasPermissions: [],
   },
   {
-    to: "/settings/integrations", label: "Integrations", hasPermissions: [],
-  },
-  {
-    to: "/settings/api-governance", label: "API Governance", hasPermissions: [],
-  },
-  {
-    to: "/settings/whatsapp", label: "WhatsApp", hasPermissions: [],
-  },
-  {
-    to: "/settings/webhooks", label: "Webhooks", hasPermissions: [],
-  },
-  {
-    to: "/settings/kyc-review", label: "KYC Review", hasPermissions: [],
-  },
-  {
     to: "/settings/telephony", label: "Telephony", hasPermissions: [],
   },
   {
@@ -51,21 +36,6 @@ export const SETTINGS_TABS: SettingsTab[] = [
   },
   {
     to: "/settings/security", label: "Security", hasPermissions: [],
-  },
-  {
-    to: "/settings/service-tiers", label: "Service Tiers", hasPermissions: [],
-  },
-  {
-    to: "/settings/billing", label: "Billing", hasPermissions: [],
-  },
-  {
-    to: "/settings/api", label: "API", hasPermissions: [],
-  },
-  {
-    to: "/settings/feature-flags", label: "Feature Flags", hasPermissions: [],
-  },
-  {
-    to: "/settings/upgrades", label: "Upgrades", hasPermissions: [],
   },
 ];
 

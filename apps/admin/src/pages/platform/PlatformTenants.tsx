@@ -16,29 +16,21 @@ import {
   getSystemTenantsExportQueryOptions,
   getSystemTenantsQueryOptions,
   getSystemTenantsSummaryQueryOptions,
-
-  useResendTenantInvite,
   useUpdateTenantStatus,
 } from "@truckmoov/api/auth";
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import { formatDate } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle,
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
   Ban,
   Building2,
   CheckCircle,
-  Clock,
   Cpu,
   Download,
   Eye,
   MoreHorizontal,
-  Pencil,
   Search,
   Smartphone,
-  Sparkles,
   Truck,
   Users,
   XCircle,
@@ -50,9 +42,9 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { KYCReviewPanel } from "@/components/platform/KYCReviewPanel";
 import { TenantDetailsSheet } from "@/components/platform/TenantDetailsSheet";
 import { TenantEditDialog } from "@/components/platform/TenantEditDialog";
-import { TenantOnboardingWizard } from "@/components/platform/TenantOnboardingWizard";
 import { TerminateTenantDialog } from "@/components/platform/TerminateTenantDialog";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -77,7 +69,20 @@ import {
 
   PlatformFilterPopover,
 } from "@/components/shadcn/platform-filter-popover";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
+import { Skeleton } from "@/components/shadcn/skeleton";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/shadcn/tabs";
 
 const ORG_TYPE_LABELS: Record<string, string> = {
   enterprise: "Enterprise",
@@ -198,26 +203,9 @@ const TIER_COLORS: Record<string, string> = {
   enterprise: "bg-success/10 text-success",
 };
 
-type SortKey = "name" | "orgType" | "plan" | "status" | "vehicleCount" | "simCount" | "monthlyRevenueNgn" | "lastActiveAt";
-type SortDir = "asc" | "desc";
-
-function SortIcon({
-  active, dir,
-}: {
-  active: boolean; dir: SortDir;
-}) {
-  if (!active)
-    return <ArrowUpDown className="h-3 w-3 ml-1 inline opacity-50" />;
-  return dir === "asc"
-    ? <ArrowUp className="h-3 w-3 ml-1 inline" />
-    : <ArrowDown className="h-3 w-3 ml-1 inline" />;
-}
-
 export default function PlatformTenants() {
-  const { currency } = useCurrency();
   const queryClient = useQueryClient();
   const updateTenantStatusMutation = useUpdateTenantStatus();
-  const resendTenantInviteMutation = useResendTenantInvite();
   const [
     isExporting,
     setIsExporting,
@@ -304,10 +292,6 @@ export default function PlatformTenants() {
   const refetchDbTenants = tenantsQuery.refetch;
 
   const [
-    isWizardOpen,
-    setIsWizardOpen,
-  ] = useState(false);
-  const [
     selectedDbTenant,
     setSelectedDbTenant,
   ] = useState<SystemTenant | null>(null);
@@ -324,24 +308,6 @@ export default function PlatformTenants() {
     setDeleteConfirmDbTenant,
   ] = useState<SystemTenant | null>(null);
 
-  // Sorting state
-  const [
-    sortKey,
-    setSortKey,
-  ] = useState<SortKey>("name");
-  const [
-    sortDir,
-    setSortDir,
-  ] = useState<SortDir>("asc");
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDir(sortDir === "asc" ? "desc" : "asc");
-    }
-    else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  };
   // Auto-refresh every 60 seconds
   useEffect(
     () => {
@@ -391,63 +357,6 @@ export default function PlatformTenants() {
     [tenantsPayload],
   );
 
-  // Apply sorting
-  const sortedDbTenants = useMemo(
-    () => {
-      const arr = [...dbTenants];
-      arr.sort((a, b) => {
-        let av: string | number;
-        let bv: string | number;
-        switch (sortKey) {
-          case "name":
-            av = a.name?.toLowerCase() || "";
-            bv = b.name?.toLowerCase() || "";
-            break;
-          case "orgType":
-            av = (tenantOrgTypesState[a.id] || []).join(",");
-            bv = (tenantOrgTypesState[b.id] || []).join(",");
-            break;
-          case "plan":
-            av = a.plan || "";
-            bv = b.plan || "";
-            break;
-          case "status":
-            av = a.status || "";
-            bv = b.status || "";
-            break;
-          case "vehicleCount":
-            av = a.vehicleCount || 0;
-            bv = b.vehicleCount || 0;
-            break;
-          case "simCount":
-            av = a.simCount || 0;
-            bv = b.simCount || 0;
-            break;
-          case "monthlyRevenueNgn":
-            av = a.monthlyRevenueNgn || 0;
-            bv = b.monthlyRevenueNgn || 0;
-            break;
-          case "lastActiveAt":
-            av = a.lastActiveAt ? new Date(a.lastActiveAt).getTime() : 0;
-            bv = b.lastActiveAt ? new Date(b.lastActiveAt).getTime() : 0;
-            break;
-        }
-        if (av < bv)
-          return sortDir === "asc" ? -1 : 1;
-        if (av > bv)
-          return sortDir === "asc" ? 1 : -1;
-        return 0;
-      });
-      return arr;
-    },
-    [
-      dbTenants,
-      sortKey,
-      sortDir,
-      tenantOrgTypesState,
-    ],
-  );
-
   // Stats — sourced exclusively from the summary API; show "N/A" when not available
   const {
     totalTenants,
@@ -461,8 +370,8 @@ export default function PlatformTenants() {
       totalTenants: summaryPayload?.totalTenants ?? "N/A",
       activeTenants: summaryPayload?.activeTenants ?? "N/A",
       suspendedTenants: summaryPayload?.suspendedTenants ?? "N/A",
-      totalVehicles: summaryPayload?.totalVehicles ?? "N/A",
-      totalSims: summaryPayload?.totalSims ?? "N/A",
+      totalVehicles: summaryPayload?.totalVehicles ?? 0,
+      totalSims: summaryPayload?.totalSims ?? 0,
       overdueInvoices: summaryPayload?.overdueInvoices ?? "N/A",
     }),
     [summaryPayload],
@@ -487,10 +396,6 @@ export default function PlatformTenants() {
     }
   };
 
-  const handleWizardComplete = (wizardData: { companyName?: string }) => {
-    toast.success(`${wizardData.companyName || "New tenant"} onboarded`);
-  };
-
   // DB Tenant handlers
   const handleDbTenantStatusChange = async (tenant: SystemTenant, newStatus: SystemTenant["status"]) => {
     try {
@@ -505,25 +410,11 @@ export default function PlatformTenants() {
     }
   };
 
-  const handleOpenDbEdit = (tenant: SystemTenant) => {
-    setSelectedDbTenant(tenant);
-    setIsDbEditDialogOpen(true);
-  };
-
-  const handleResendInvitation = async (tenant: SystemTenant) => {
-    try {
-      await resendTenantInviteMutation.mutateAsync({ id: tenant.id });
-      toast.success(`Invitation resent to ${tenant.name}`);
-    }
-    catch {
-      // error handled by react-query
-    }
-  };
-
   const tenantColumns: ColumnDef<SystemTenant>[] = [
     {
       id: "tenantId",
       header: "Tenant ID",
+      enableSorting: false,
       cell: ({ row }) => (
         <span className="font-mono text-xs px-2 py-1 rounded bg-muted text-foreground">
           TENANT-
@@ -539,18 +430,8 @@ export default function PlatformTenants() {
     },
     {
       id: "name",
-      header: () => (
-        <span
-          className="cursor-pointer select-none"
-          onClick={() => toggleSort("name")}
-        >
-          Tenant
-          <SortIcon
-            active={sortKey === "name"}
-            dir={sortDir}
-          />
-        </span>
-      ),
+      accessorFn: row => row.name?.toLowerCase() ?? "",
+      header: "Tenant",
       cell: ({ row }) => {
         const tenant = row.original;
         return (
@@ -569,6 +450,7 @@ export default function PlatformTenants() {
     {
       id: "primaryContact",
       header: "Primary Contact",
+      enableSorting: false,
       cell: ({ row }) => (
         <div className="text-sm">
           {row.original.primaryContactName
@@ -579,18 +461,8 @@ export default function PlatformTenants() {
     },
     {
       id: "orgType",
-      header: () => (
-        <span
-          className="cursor-pointer select-none"
-          onClick={() => toggleSort("orgType")}
-        >
-          Org Type
-          <SortIcon
-            active={sortKey === "orgType"}
-            dir={sortDir}
-          />
-        </span>
-      ),
+      accessorFn: row => (tenantOrgTypesState[row.id] || []).join(","),
+      header: "Org Type",
       cell: ({ row }) => (
         <div className="flex flex-wrap gap-1">
           {(tenantOrgTypesState[row.original.id] || []).length > 0
@@ -613,18 +485,8 @@ export default function PlatformTenants() {
     },
     {
       id: "plan",
-      header: () => (
-        <span
-          className="cursor-pointer select-none"
-          onClick={() => toggleSort("plan")}
-        >
-          Plan
-          <SortIcon
-            active={sortKey === "plan"}
-            dir={sortDir}
-          />
-        </span>
-      ),
+      accessorFn: row => row.plan ?? "",
+      header: "Plan",
       cell: ({ row }) => (
         <Badge className={`${TIER_COLORS[row.original.plan]} capitalize`}>
           {row.original.plan}
@@ -632,88 +494,24 @@ export default function PlatformTenants() {
       ),
     },
     {
-      id: "status",
-      header: () => (
-        <span
-          className="cursor-pointer select-none"
-          onClick={() => toggleSort("status")}
-        >
-          Status
-          <SortIcon
-            active={sortKey === "status"}
-            dir={sortDir}
-          />
-        </span>
+      id: "billingModel",
+      header: "Billing Model",
+      enableSorting: false,
+      cell: () => (
+        // ponytail: replace with real Prepaid/Postpaid badge when SystemTenant exposes billing model
+        <span className="text-muted-foreground">—</span>
       ),
-      cell: ({ row }) => {
-        const tenant = row.original;
-        return (
-          <div className="flex items-center gap-1.5">
-            {getStatusBadge(tenant.status)}
-            {tenant.status === "pending" && (
-              <span className="text-xs text-muted-foreground">
-                {!tenant.invitationStatus?.invitationAccepted && tenant.invitationStatus?.hasPendingInvitation
-                  ? "(Awaiting Invite Acceptance)"
-                  : (!tenant.businessInfo?.verificationStatus || tenant.businessInfo?.verificationStatus === "pending")
-                      ? "(Awaiting KYC)"
-                      : null}
-              </span>
-            )}
-          </div>
-        );
-      },
     },
     {
-      id: "kycStatus",
-      header: "KYC Status",
-      cell: ({ row }) => {
-        const status = row.original.businessInfo?.verificationStatus;
-        if (status === "verified") {
-          return (
-            <Badge className="bg-success/10 text-success border-success/30">
-              <CheckCircle className="h-3 w-3 mr-1" />
-              Verified
-            </Badge>
-          );
-        }
-        if (status === "under_review") {
-          return (
-            <Badge className="bg-warning/10 text-warning border-warning/30">
-              <Clock className="h-3 w-3 mr-1" />
-              Under Review
-            </Badge>
-          );
-        }
-        if (status === "rejected") {
-          return (
-            <Badge variant="destructive">
-              <XCircle className="h-3 w-3 mr-1" />
-              Rejected
-            </Badge>
-          );
-        }
-        return (
-          <Badge variant="secondary">
-            <Clock className="h-3 w-3 mr-1" />
-            Not Submitted
-          </Badge>
-        );
-      },
+      id: "status",
+      accessorFn: row => row.status ?? "",
+      header: "Status",
+      cell: ({ row }) => getStatusBadge(row.original.status),
     },
     {
       id: "vehicleCount",
-      header: () => (
-        <span
-          className="cursor-pointer select-none"
-          onClick={() => toggleSort("vehicleCount")}
-        >
-          Vehicles
-          <SortIcon
-            active={sortKey === "vehicleCount"}
-            dir={sortDir}
-          />
-        </span>
-      ),
+      accessorFn: row => row.vehicleCount ?? 0,
+      header: "Vehicles",
       cell: ({ row }) => {
         const tenant = row.original;
         return (
@@ -731,6 +529,7 @@ export default function PlatformTenants() {
     {
       id: "drivers",
       header: "Drivers",
+      enableSorting: false,
       cell: ({ row }) => {
         const tenant = row.original;
         return (
@@ -748,6 +547,7 @@ export default function PlatformTenants() {
     {
       id: "devices",
       header: "Devices",
+      enableSorting: false,
       cell: ({ row }) => {
         const tenant = row.original;
         return (
@@ -764,18 +564,8 @@ export default function PlatformTenants() {
     },
     {
       id: "simCount",
-      header: () => (
-        <span
-          className="cursor-pointer select-none"
-          onClick={() => toggleSort("simCount")}
-        >
-          SIMs
-          <SortIcon
-            active={sortKey === "simCount"}
-            dir={sortDir}
-          />
-        </span>
-      ),
+      accessorFn: row => row.simCount ?? 0,
+      header: "SIMs",
       cell: ({ row }) => {
         const tenant = row.original;
         return (
@@ -791,41 +581,9 @@ export default function PlatformTenants() {
       },
     },
     {
-      id: "monthlyRevenueNgn",
-      header: () => (
-        <span
-          className="cursor-pointer select-none"
-          onClick={() => toggleSort("monthlyRevenueNgn")}
-        >
-          Revenue
-          <SortIcon
-            active={sortKey === "monthlyRevenueNgn"}
-            dir={sortDir}
-          />
-        </span>
-      ),
-      cell: ({ row }) => (
-        <span className="font-medium">
-          {currency === "NGN"
-            ? `₦${(row.original.monthlyRevenueNgn || 0).toLocaleString()}`
-            : `$${Math.round((row.original.monthlyRevenueNgn || 0) / 1550).toLocaleString()}`}
-        </span>
-      ),
-    },
-    {
       id: "lastActiveAt",
-      header: () => (
-        <span
-          className="cursor-pointer select-none"
-          onClick={() => toggleSort("lastActiveAt")}
-        >
-          Last Active
-          <SortIcon
-            active={sortKey === "lastActiveAt"}
-            dir={sortDir}
-          />
-        </span>
-      ),
+      accessorFn: row => (row.lastActiveAt ? new Date(row.lastActiveAt).getTime() : 0),
+      header: "Last Active",
       cell: ({ row }) => (
         <span className="text-sm text-muted-foreground">
           {row.original.lastActiveAt ? formatDate(row.original.lastActiveAt) : "Never"}
@@ -835,6 +593,7 @@ export default function PlatformTenants() {
     {
       id: "actions",
       header: "",
+      enableSorting: false,
       meta: { className: "w-[50px]" },
       cell: ({ row }) => {
         const tenant = row.original;
@@ -858,18 +617,21 @@ export default function PlatformTenants() {
                 <Eye className="h-4 w-4 mr-2" />
                 View Details
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleOpenDbEdit(tenant)}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit
-              </DropdownMenuItem>
-              {(tenant.status === "pending" || tenant.status === "inactive") && (
-                <DropdownMenuItem onClick={() => handleResendInvitation(tenant)}>
-                  Resend Invitation
-                </DropdownMenuItem>
-              )}
               <DropdownMenuSeparator />
-              {tenant.status === "active"
+              {tenant.status === "suspended"
                 ? (
+                    <DropdownMenuItem
+                      onClick={() => handleDbTenantStatusChange(
+                        tenant,
+                        "active",
+                      )}
+                      className="text-success"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Reinstate
+                    </DropdownMenuItem>
+                  )
+                : (
                     <DropdownMenuItem
                       onClick={() => handleDbTenantStatusChange(
                         tenant,
@@ -880,21 +642,7 @@ export default function PlatformTenants() {
                       <XCircle className="h-4 w-4 mr-2" />
                       Suspend
                     </DropdownMenuItem>
-                  )
-                : tenant.status === "suspended"
-                  ? (
-                      <DropdownMenuItem
-                        onClick={() => handleDbTenantStatusChange(
-                          tenant,
-                          "active",
-                        )}
-                        className="text-success"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Activate
-                      </DropdownMenuItem>
-                    )
-                  : null}
+                  )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => setDeleteConfirmDbTenant(tenant)}
@@ -946,19 +694,8 @@ export default function PlatformTenants() {
   return (
     <>
       <div className="space-y-6">
-        {/* Top-right grouped controls (currency configured globally in Settings → Billing) */}
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            size="sm"
-            onClick={() => setIsWizardOpen(true)}
-          >
-            <Sparkles className="h-4 w-4 mr-2" />
-            Onboard Tenant
-          </Button>
-        </div>
-
         {/* Stats */}
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 2xl:grid-cols-6">
+        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
           <StatCard
             title="Total Tenants"
             value={totalTenants}
@@ -997,84 +734,146 @@ export default function PlatformTenants() {
             title="Overdue Invoices"
             value={overdueInvoices}
             icon={AlertTriangle}
-            variant="default"
+            variant={typeof overdueInvoices === "number" && overdueInvoices > 0 ? "warning" : "default"}
             loading={summaryQuery.isPending}
           />
         </div>
 
-        {/* All Tenants */}
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-primary" />
-                  All Tenants
-                </CardTitle>
-                <CardDescription>
-                  Complete directory of tenant organizations with plan, KYC status, fleet size, and revenue.
-                </CardDescription>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExport}
-                disabled={isExporting}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                {isExporting ? "Exporting…" : "Export Data"}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-4 md:flex-row md:items-center mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type="search"
-                  name="tenants-search"
-                  autoComplete="off"
-                  placeholder="Search by name or email..."
-                  className="pl-10"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <PlatformFilterPopover
-                entity="tenants"
-                fields={tenantFilterFields}
-                value={advancedFilters}
-                onApply={setAdvancedFilters}
-                onReset={() => setAdvancedFilters(buildEmptyDraft(tenantFilterFields))}
-              />
-            </div>
+        {/* Tenants Tabs */}
+        <Tabs
+          defaultValue="all-tenants"
+          className="space-y-4"
+        >
+          <TabsList>
+            <TabsTrigger value="all-tenants">All Tenants</TabsTrigger>
+            <TabsTrigger value="kyc-review">KYC Review</TabsTrigger>
+          </TabsList>
 
-            <div className="rounded-lg border overflow-x-auto">
-              <DataTable
-                columns={tenantColumns}
-                data={sortedDbTenants}
-                isLoading={isLoadingDbTenants}
-                isError={tenantsQuery.isError}
-                errorMessage="Unable to load tenants."
-                onRetry={() => tenantsQuery.refetch()}
-                hasActiveFilters={!!debouncedSearch || !!apiStatus || !!apiPlan || !!apiOrganizationType || !!apiKycStatus || apiRevenueFrom !== undefined || apiRevenueTo !== undefined || !!apiLastActiveFrom || !!apiLastActiveTo}
-                emptyState="No tenants found"
-                filteredEmptyState="No tenants match your filters."
-                className="[&_th]:px-6 [&_td]:px-6 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap"
-              />
-            </div>
-          </CardContent>
-        </Card>
+          <TabsContent
+            value="all-tenants"
+            className="space-y-4"
+          >
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <CardTitle className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-primary" />
+                      All Tenants
+                    </CardTitle>
+                    <CardDescription>
+                      Complete directory of tenant organizations with plan, lifecycle status, and quota usage.
+                    </CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExport}
+                    disabled={isExporting}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    {isExporting ? "Exporting…" : "Export Data"}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-4 md:flex-row md:items-center mb-6">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      type="search"
+                      name="tenants-search"
+                      autoComplete="off"
+                      placeholder="Search by name or email..."
+                      className="pl-10"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <Select
+                    value={apiStatus ?? "all"}
+                    onValueChange={(v) => {
+                      setAdvancedFilters(prev => ({
+                        ...prev,
+                        status: v === "all"
+                          ? {
+                              enabled: false, value: "",
+                            }
+                          : {
+                              enabled: true, value: v,
+                            },
+                      }));
+                    }}
+                  >
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue placeholder="All Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="suspended">Suspended</SelectItem>
+                      <SelectItem value="terminated">Terminated</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <PlatformFilterPopover
+                    entity="tenants"
+                    fields={tenantFilterFields}
+                    value={advancedFilters}
+                    onApply={setAdvancedFilters}
+                    onReset={() => setAdvancedFilters(buildEmptyDraft(tenantFilterFields))}
+                  />
+                </div>
+
+                {isLoadingDbTenants
+                  ? (
+                      <div className="space-y-4">
+                        {[
+                          1,
+                          2,
+                          3,
+                        ].map(i => (
+                          <div
+                            key={i}
+                            className="flex items-center gap-4"
+                          >
+                            <Skeleton className="h-10 w-10 rounded-lg" />
+                            <div className="space-y-2 flex-1">
+                              <Skeleton className="h-4 w-[200px]" />
+                              <Skeleton className="h-3 w-[150px]" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  : dbTenants.length === 0
+                    ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          No tenants found
+                        </div>
+                      )
+                    : (
+                        <div className="rounded-lg border overflow-x-auto">
+                          <DataTable
+                            columns={tenantColumns}
+                            data={dbTenants}
+                            isError={tenantsQuery.isError}
+                            errorMessage="Unable to load tenants."
+                            onRetry={() => tenantsQuery.refetch()}
+                            className="[&_th]:px-6 [&_td]:px-6 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap"
+                          />
+                        </div>
+                      )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="kyc-review">
+            <KYCReviewPanel />
+          </TabsContent>
+        </Tabs>
       </div>
 
-      {/* Tenant Onboarding Wizard */}
-      <TenantOnboardingWizard
-        open={isWizardOpen}
-        onOpenChange={setIsWizardOpen}
-        subscriptionPlans={plansQuery.data?.data?.plans ?? []}
-        isSubscriptionPlansLoading={plansQuery.isLoading}
-        onComplete={handleWizardComplete}
-      />
       {/* Database Tenant Details Sheet */}
       <TenantDetailsSheet
         tenant={selectedDbTenant}

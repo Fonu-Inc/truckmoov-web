@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   SystemDeviceInventoryItem,
   SystemDevicesQuery,
@@ -15,15 +16,22 @@ import {
 } from "@truckmoov/api/auth";
 import { formatCompactRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
+  AlertTriangle,
+  ArrowUpDown,
   Battery,
   Building2,
+  CheckCircle,
   Cpu,
   Download,
   Eye,
   MoreHorizontal,
+  Navigation,
+  Pencil,
   Search,
   Signal,
   SlidersHorizontal,
+  Trash2,
+  XCircle,
 } from "lucide-react";
 import {
   useEffect,
@@ -41,17 +49,12 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/shadcn/dialog";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
 import { Input } from "@/components/shadcn/input";
@@ -68,9 +71,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/shadcn/sheet";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/shadcn/data-table";
 
 const lifecycleStatuses = [
   {
@@ -276,6 +284,11 @@ export function PlatformDeviceManagement() {
   const summaryCards = useMemo(
     () => [
       {
+        label: "All Devices",
+        value: summary?.totalDevices ?? "N/A",
+        className: "",
+      },
+      {
         label: "Registered",
         value: summary?.registeredDevices ?? "N/A",
         className: "text-muted-foreground",
@@ -299,6 +312,11 @@ export function PlatformDeviceManagement() {
         label: "Active",
         value: summary?.activeDevices ?? "N/A",
         className: "text-success",
+      },
+      {
+        label: "Faulty",
+        value: summary?.faultyDevices ?? "N/A",
+        className: "text-destructive",
       },
     ],
     [summary],
@@ -382,7 +400,10 @@ export function PlatformDeviceManagement() {
       header: "Last Seen",
       cell: ({ row }) => (
         <span className="text-sm text-muted-foreground">
-          {formatCompactRelative(row.original.lastSeen, "Never")}
+          {formatCompactRelative(
+            row.original.lastSeen,
+            "Never",
+          )}
         </span>
       ),
     },
@@ -390,25 +411,100 @@ export function PlatformDeviceManagement() {
       id: "actions",
       header: "",
       meta: { className: "w-[50px]" },
-      cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setSelectedDevice(row.original)}>
-              <Eye className="h-4 w-4 mr-2" />
-              View Details
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
+      cell: ({ row }) => {
+        const device = row.original;
+        const isAssigned = Boolean(device.tenantId);
+        const isFaulty = device.lifecycleStatus === "faulty";
+        const isSuspended = device.operationalStatus === "decommissioned";
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setSelectedDevice(device)}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                // ponytail: wire useUpdateDevice when the API exposes it
+                toast.info("Not yet implemented");
+              }}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit Details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                // ponytail: wire useAssignDeviceToTenant when the API exposes it
+                toast.info("Not yet implemented");
+              }}
+              >
+                <ArrowUpDown className="h-4 w-4 mr-2" />
+                {isAssigned ? "Reassign" : "Assign to Tenant"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {isSuspended
+                ? (
+                    <DropdownMenuItem
+                      className="text-success"
+                      onClick={() => {
+                        // ponytail: wire useUpdateDeviceStatus when the API exposes it
+                        toast.info("Not yet implemented");
+                      }}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Reactivate
+                    </DropdownMenuItem>
+                  )
+                : (
+                    <DropdownMenuItem
+                      className="text-warning"
+                      onClick={() => {
+                        // ponytail: wire useUpdateDeviceStatus when the API exposes it
+                        toast.info("Not yet implemented");
+                      }}
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Suspend
+                    </DropdownMenuItem>
+                  )}
+              {!isAssigned && (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => {
+                    // ponytail: wire useDeleteDevice when the API exposes it
+                    toast.info("Not yet implemented");
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              )}
+              {isFaulty && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => {
+                      // ponytail: wire fault details view when the API exposes it
+                      toast.info("Not yet implemented");
+                    }}
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    View Fault Details
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
     },
   ];
 
@@ -469,16 +565,16 @@ export function PlatformDeviceManagement() {
               </div>
             )
           : (
-              <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="grid grid-cols-4 gap-4 mt-4 lg:grid-cols-7">
                 {summaryCards.map(stat => (
                   <div
                     key={stat.label}
-                    className="flex min-h-[84px] flex-col justify-center rounded-lg border bg-card px-4 py-3"
+                    className="rounded-lg border bg-card p-3"
                   >
                     {summaryQuery.isLoading
                       ? <Skeleton className="h-8 w-16" />
-                      : <p className={`text-2xl font-bold leading-none ${stat.className}`}>{stat.value}</p>}
-                    <p className="mt-2 text-sm leading-tight text-muted-foreground">{stat.label}</p>
+                      : <p className={`text-2xl font-bold ${stat.className}`}>{stat.value}</p>}
+                    <p className="text-xs text-muted-foreground">{stat.label}</p>
                   </div>
                 ))}
               </div>
@@ -490,12 +586,44 @@ export function PlatformDeviceManagement() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search by tenant..."
+              placeholder="Search by ID, IMEI, or tenant..."
               className="pl-10"
               value={searchQuery}
               onChange={event => setSearchQuery(event.target.value)}
             />
           </div>
+
+          <Select
+            value={appliedFilters.lifecycleStatus.enabled && appliedFilters.lifecycleStatus.value
+              ? appliedFilters.lifecycleStatus.value
+              : "all"}
+            onValueChange={(value) => {
+              setAppliedFilters(current => ({
+                ...current,
+                lifecycleStatus: value === "all"
+                  ? {
+                      enabled: false, value: "",
+                    }
+                  : {
+                      enabled: true, value,
+                    },
+              }));
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              {lifecycleStatuses.map(status => (
+                <SelectItem
+                  key={status.value}
+                  value={status.value}
+                >
+                  {status.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           <Popover
             open={filterOpen}
@@ -715,31 +843,31 @@ export function PlatformDeviceManagement() {
         </div>
       </CardContent>
 
-      <Dialog
+      <Sheet
         open={!!selectedDevice}
         onOpenChange={open => !open && setSelectedDevice(null)}
       >
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-4">
-              <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-warning/15 text-warning">
-                <Cpu className="h-7 w-7" />
-              </span>
-              <span>
-                <span className="block text-xl">
+        <SheetContent className="w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                <Cpu className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <span className="block">
                   {detailDevice?.manufacturer}
                   {" "}
                   {detailDevice?.model}
                 </span>
-                <span className="block font-mono text-sm font-normal text-muted-foreground">
+                <span className="text-sm font-normal text-muted-foreground font-mono">
                   IMEI:
                   {" "}
                   {detailDevice?.imei}
                 </span>
-              </span>
-            </DialogTitle>
-            <DialogDescription className="sr-only">Device details</DialogDescription>
-          </DialogHeader>
+              </div>
+            </SheetTitle>
+            <SheetDescription className="sr-only">Device details</SheetDescription>
+          </SheetHeader>
 
           {detailDevice && (
             <div className="mt-6 space-y-4">
@@ -758,64 +886,76 @@ export function PlatformDeviceManagement() {
                   </Button>
                 </div>
               )}
-              <div className="grid gap-6 rounded-lg border bg-card p-5 sm:grid-cols-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Lifecycle / Operational</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <Badge className={getStatusBadgeClass(detailDevice.lifecycleStatus)}>
-                      {formatStatusLabel(detailDevice.lifecycleStatus)}
-                    </Badge>
-                    {detailDevice.operationalStatus && detailDevice.operationalStatus !== detailDevice.lifecycleStatus && (
-                      <Badge className={getStatusBadgeClass(detailDevice.operationalStatus)}>
-                        {formatStatusLabel(detailDevice.operationalStatus)}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Last Seen</p>
-                  <p className="mt-2 font-semibold">
-                    {formatCompactRelative(
-                      detailDevice.lastSeen,
-                      "Never",
-                    )}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Tenant</p>
-                  <p className="mt-2 max-w-[220px] truncate font-semibold">
-                    {detailDevice.tenantName ?? detailDevice.tenantId ?? "Unknown tenant"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Protocol</p>
-                  <p className="mt-2 font-semibold uppercase">{detailDevice.protocol ?? "N/A"}</p>
-                </div>
-              </div>
 
-              <div className="rounded-lg border bg-card p-5">
-                <h3 className="font-semibold">Device Health</h3>
-                <div className="mt-4 space-y-5">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 font-medium">
-                        <Signal className="h-4 w-4 text-muted-foreground" />
-                        Signal Strength
+              {/* Status & Basic Info */}
+              <Card>
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Lifecycle / Operational</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <Badge className={getStatusBadgeClass(detailDevice.lifecycleStatus)}>
+                          {formatStatusLabel(detailDevice.lifecycleStatus)}
+                        </Badge>
+                        {detailDevice.operationalStatus && detailDevice.operationalStatus !== detailDevice.lifecycleStatus && (
+                          <Badge className={getStatusBadgeClass(detailDevice.operationalStatus)}>
+                            {formatStatusLabel(detailDevice.operationalStatus)}
+                          </Badge>
+                        )}
                       </div>
-                      <span className="font-semibold">
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Last Seen</p>
+                      <p className="text-sm font-medium mt-1">
+                        {formatCompactRelative(
+                          detailDevice.lastSeen,
+                          "Never",
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Tenant</p>
+                      <p className="text-sm font-medium mt-1 max-w-[220px] truncate">
+                        {detailDevice.tenantName ?? detailDevice.tenantId ?? "Unknown tenant"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Protocol</p>
+                      <p className="text-sm font-medium mt-1 uppercase">{detailDevice.protocol ?? "N/A"}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Device Health */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Device Health</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <Signal className="h-4 w-4 text-muted-foreground" />
+                        <span>Signal Strength</span>
+                      </div>
+                      <span className="font-medium">
                         {detailDevice.signalStrength ?? 0}
                         %
                       </span>
                     </div>
-                    <Progress value={selectedSignal} />
+                    <Progress
+                      value={selectedSignal}
+                      className="h-2"
+                    />
                   </div>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 font-medium">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
                         <Battery className="h-4 w-4 text-muted-foreground" />
-                        Battery Level
+                        <span>Battery Level</span>
                       </div>
-                      <span className="font-semibold">
+                      <span className="font-medium">
                         {detailDevice.batteryLevel === null || detailDevice.batteryLevel === undefined
                           ? "N/A"
                           : `${detailDevice.batteryLevel}%`}
@@ -823,33 +963,50 @@ export function PlatformDeviceManagement() {
                     </div>
                     <Progress
                       value={selectedBattery}
-                      variant="warning"
+                      className="h-2"
                     />
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
-              <div className="rounded-lg border bg-card p-5">
-                <h3 className="font-semibold">Configuration</h3>
-                <div className="mt-4 space-y-3">
-                  <div className="flex items-center justify-between gap-4 text-sm">
+              {/* Current Location — ponytail: wire lat/lng/speed when SystemDevice DTO exposes GPS fields */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Navigation className="h-4 w-4 text-primary" />
+                    Current Location
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="font-mono text-sm text-muted-foreground">—</div>
+                  <div className="mt-2 text-sm text-muted-foreground">Speed: —</div>
+                </CardContent>
+              </Card>
+
+              {/* Configuration */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Configuration</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Firmware Version</span>
-                    <span className="font-mono font-semibold">{detailDevice.firmwareVersion ?? "N/A"}</span>
+                    <span className="font-mono">{detailDevice.firmwareVersion ?? "Unknown"}</span>
                   </div>
-                  <div className="flex items-center justify-between gap-4 text-sm">
+                  <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Manufacturer</span>
-                    <span className="font-semibold">{detailDevice.manufacturer}</span>
+                    <span>{detailDevice.manufacturer}</span>
                   </div>
-                  <div className="flex items-center justify-between gap-4 text-sm">
+                  <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Model</span>
-                    <span className="font-semibold">{detailDevice.model}</span>
+                    <span>{detailDevice.model || "N/A"}</span>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </Card>
   );
 }

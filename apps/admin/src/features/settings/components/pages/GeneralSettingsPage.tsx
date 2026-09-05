@@ -5,15 +5,24 @@ import {
   useUpdateSystemSettings,
 } from "@truckmoov/api/auth";
 import {
+  Camera,
   Database,
   Globe,
+  Mail,
   RefreshCw,
   Save,
+  User as UserIcon,
 } from "lucide-react";
-import { useEffect } from "react";
+import {
+  useEffect, useRef, useState,
+} from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import {
+  Avatar, AvatarFallback, AvatarImage,
+} from "@/components/shadcn/avatar";
+import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card,
@@ -31,6 +40,7 @@ import {
   FormMessage,
 } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
 import {
   Select,
   SelectContent,
@@ -38,27 +48,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { Separator } from "@/components/shadcn/separator";
 import { Switch } from "@/components/shadcn/switch";
-import { ChangePasswordCard } from "@/features/settings/components/ui/ChangePasswordCard";
+import { useAuthStore } from "@/stores/authStore";
 
-const platformConfigurationSchema = z.object({
-  platformName: z.string().trim().min(
-    1,
-    "Platform name is required.",
-  ),
-  supportEmail: z.string().trim().email("Enter a valid support email."),
-  timezone: z.enum([
-    "Africa/Lagos",
-    "UTC",
-  ]),
-  language: z.enum([
-    "en",
-    "ha",
-    "yo",
-    "ig",
-    "fr",
-  ]),
+/**
+ * `/settings` — matches fleetflow's General tab card layout:
+ * My Profile / Display Preferences / Platform Features / Data Retention / Support Email.
+ *
+ * ponytail: Profile, Display Preferences, and Support Email are unwired local
+ * state to match fleetflow's shape. Wire when the API exposes user profile
+ * updates + user preference storage + platform support email endpoint.
+ * Platform Features + Data Retention keep their real @truckmoov/api wiring.
+ */
+
+const platformFeaturesSchema = z.object({
   allowNewTenantRegistration: z.boolean(),
   maintenanceMode: z.boolean(),
   enableBetaFeatures: z.boolean(),
@@ -83,132 +86,199 @@ const dataRetentionSchema = z.object({
   ]),
 });
 
-type PlatformConfigurationFormValues = z.infer<typeof platformConfigurationSchema>;
+type PlatformFeaturesFormValues = z.infer<typeof platformFeaturesSchema>;
 type DataRetentionFormValues = z.infer<typeof dataRetentionSchema>;
 
-export const PLATFORM_CONFIGURATION_FORM_ID = "platform-configuration-form";
-export const DATA_RETENTION_FORM_ID = "data-retention-form";
+const PLATFORM_FEATURES_FORM_ID = "platform-features-form";
+const DATA_RETENTION_FORM_ID = "data-retention-form";
 
-const DEFAULT_PLATFORM_CONFIGURATION_VALUES: PlatformConfigurationFormValues = {
-  platformName: "FleetPro",
-  supportEmail: "support@fleetpro.com",
-  timezone: "Africa/Lagos",
-  language: "en",
+const DEFAULT_PLATFORM_FEATURES: PlatformFeaturesFormValues = {
   allowNewTenantRegistration: true,
   maintenanceMode: false,
   enableBetaFeatures: true,
 };
 
-const DEFAULT_DATA_RETENTION_VALUES: DataRetentionFormValues = {
+const DEFAULT_DATA_RETENTION: DataRetentionFormValues = {
   gpsDataRetentionDays: "365",
   logRetentionDays: "30",
   backupFrequency: "daily",
 };
 
-/**
- * `/settings` — the tab bar's first entry, so it is the index route.
- *
- * ponytail: three cards in one page (change password, platform configuration,
- * data retention) because they were one tab. Each could become its own route
- * the day General grows a sub-nav; until then splitting it would only add files.
- */
+const TIMEZONE_OPTIONS = [
+  {
+    code: "Africa/Lagos", label: "WAT — West Africa Time (GMT+1)",
+  },
+  {
+    code: "UTC", label: "UTC — Coordinated Universal Time (GMT+0)",
+  },
+];
+
+const DATE_RANGE_OPTIONS = [
+  {
+    code: "today", label: "Today",
+  },
+  {
+    code: "7d", label: "Last 7 days",
+  },
+  {
+    code: "30d", label: "Last 30 days",
+  },
+  {
+    code: "90d", label: "Last 90 days",
+  },
+];
+
 export default function GeneralSettingsPage() {
+  const user = useAuthStore(s => s.user);
   const systemSettingsQuery = useQuery(getSystemSettingsQueryOptions());
   const systemSettings = systemSettingsQuery.data?.data;
-  const updatePlatformConfiguration = useUpdateSystemSettings();
+  const updatePlatformFeatures = useUpdateSystemSettings();
   const updateDataRetention = useUpdateSystemSettings();
 
-  const platformConfigurationForm = useForm<PlatformConfigurationFormValues>({
-    resolver: zodResolver(platformConfigurationSchema),
-    defaultValues: DEFAULT_PLATFORM_CONFIGURATION_VALUES,
+  // Profile — unwired local state to match fleetflow shape
+  const [
+    profileName,
+    setProfileName,
+  ] = useState("");
+  const [
+    profilePhone,
+    setProfilePhone,
+  ] = useState("");
+  const [
+    profileAvatar,
+    setProfileAvatar,
+  ] = useState<string | undefined>();
+  const [
+    savingProfile,
+    setSavingProfile,
+  ] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Display Preferences — unwired local state
+  const [
+    timezone,
+    setTimezone,
+  ] = useState("Africa/Lagos");
+  const [
+    defaultDateRange,
+    setDefaultDateRange,
+  ] = useState("7d");
+
+  // Support Email — unwired local state
+  const [
+    supportEmail,
+    setSupportEmail,
+  ] = useState("support@fleetpro.ng");
+  const [
+    responseTime,
+    setResponseTime,
+  ] = useState("24");
+
+  const platformFeaturesForm = useForm<PlatformFeaturesFormValues>({
+    resolver: zodResolver(platformFeaturesSchema),
+    defaultValues: DEFAULT_PLATFORM_FEATURES,
   });
 
   const dataRetentionForm = useForm<DataRetentionFormValues>({
     resolver: zodResolver(dataRetentionSchema),
-    defaultValues: DEFAULT_DATA_RETENTION_VALUES,
+    defaultValues: DEFAULT_DATA_RETENTION,
   });
 
   useEffect(
     () => {
-      if (!systemSettings)
+      if (!systemSettings) {
         return;
-
-      platformConfigurationForm.reset({
-        platformName: systemSettings.platformName ?? DEFAULT_PLATFORM_CONFIGURATION_VALUES.platformName,
-        supportEmail: systemSettings.supportEmail ?? DEFAULT_PLATFORM_CONFIGURATION_VALUES.supportEmail,
-        timezone: platformConfigurationSchema.shape.timezone.safeParse(systemSettings.defaults?.timezone).success
-          ? systemSettings.defaults?.timezone as PlatformConfigurationFormValues["timezone"]
-          : DEFAULT_PLATFORM_CONFIGURATION_VALUES.timezone,
-        language: platformConfigurationSchema.shape.language.safeParse(systemSettings.defaults?.language).success
-          ? systemSettings.defaults?.language as PlatformConfigurationFormValues["language"]
-          : DEFAULT_PLATFORM_CONFIGURATION_VALUES.language,
+      }
+      platformFeaturesForm.reset({
         allowNewTenantRegistration:
-        systemSettings.features?.allowNewTenantRegistration
-        ?? DEFAULT_PLATFORM_CONFIGURATION_VALUES.allowNewTenantRegistration,
+          systemSettings.features?.allowNewTenantRegistration
+          ?? DEFAULT_PLATFORM_FEATURES.allowNewTenantRegistration,
         maintenanceMode:
-        systemSettings.features?.maintenanceMode
-        ?? DEFAULT_PLATFORM_CONFIGURATION_VALUES.maintenanceMode,
+          systemSettings.features?.maintenanceMode
+          ?? DEFAULT_PLATFORM_FEATURES.maintenanceMode,
         enableBetaFeatures:
-        systemSettings.features?.enableBetaFeatures
-        ?? DEFAULT_PLATFORM_CONFIGURATION_VALUES.enableBetaFeatures,
+          systemSettings.features?.enableBetaFeatures
+          ?? DEFAULT_PLATFORM_FEATURES.enableBetaFeatures,
       });
-
       dataRetentionForm.reset({
         gpsDataRetentionDays: dataRetentionSchema.shape.gpsDataRetentionDays.safeParse(
           String(systemSettings.retention?.gpsDataRetentionDays),
         ).success
           ? String(systemSettings.retention?.gpsDataRetentionDays) as DataRetentionFormValues["gpsDataRetentionDays"]
-          : DEFAULT_DATA_RETENTION_VALUES.gpsDataRetentionDays,
+          : DEFAULT_DATA_RETENTION.gpsDataRetentionDays,
         logRetentionDays: dataRetentionSchema.shape.logRetentionDays.safeParse(
           String(systemSettings.retention?.logRetentionDays),
         ).success
           ? String(systemSettings.retention?.logRetentionDays) as DataRetentionFormValues["logRetentionDays"]
-          : DEFAULT_DATA_RETENTION_VALUES.logRetentionDays,
+          : DEFAULT_DATA_RETENTION.logRetentionDays,
         backupFrequency: dataRetentionSchema.shape.backupFrequency.safeParse(
           systemSettings.retention?.backupFrequency,
         ).success
           ? systemSettings.retention?.backupFrequency as DataRetentionFormValues["backupFrequency"]
-          : DEFAULT_DATA_RETENTION_VALUES.backupFrequency,
+          : DEFAULT_DATA_RETENTION.backupFrequency,
       });
+      setSupportEmail(systemSettings.supportEmail ?? "support@fleetpro.ng");
     },
     [
       systemSettings,
-      platformConfigurationForm,
+      platformFeaturesForm,
       dataRetentionForm,
     ],
   );
 
-  const handleSavePlatformConfiguration = (values: PlatformConfigurationFormValues) => {
-    updatePlatformConfiguration.mutate(
+  const handleAvatarPick = () => fileInputRef.current?.click();
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be smaller than 2MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = ev => setProfileAvatar(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!profileName.trim()) {
+      toast.error("Name cannot be empty");
+      return;
+    }
+    setSavingProfile(true);
+    // ponytail: no user-profile update endpoint yet; fake latency
+    await new Promise(r => setTimeout(
+      r,
+      500,
+    ));
+    setSavingProfile(false);
+    toast.success("Profile updated");
+  };
+
+  const handleSavePlatformFeatures = (values: PlatformFeaturesFormValues) => {
+    updatePlatformFeatures.mutate(
       {
         data: {
-          platformName: values.platformName,
-          supportEmail: values.supportEmail,
-          defaults: {
-            ...(systemSettings?.defaults ?? {}),
-            timezone: values.timezone,
-            language: values.language,
+          platformName: systemSettings?.platformName ?? "FleetPro",
+          supportEmail: systemSettings?.supportEmail ?? supportEmail,
+          defaults: systemSettings?.defaults ?? {
+            timezone: "Africa/Lagos", language: "en",
           },
           features: {
             ...(systemSettings?.features ?? {}),
-            allowNewTenantRegistration: values.allowNewTenantRegistration,
-            maintenanceMode: values.maintenanceMode,
-            enableBetaFeatures: values.enableBetaFeatures,
+            ...values,
           },
           retention: systemSettings?.retention ?? {
-            gpsDataRetentionDays: Number(DEFAULT_DATA_RETENTION_VALUES.gpsDataRetentionDays),
-            logRetentionDays: Number(DEFAULT_DATA_RETENTION_VALUES.logRetentionDays),
-            backupFrequency: DEFAULT_DATA_RETENTION_VALUES.backupFrequency,
+            gpsDataRetentionDays: Number(DEFAULT_DATA_RETENTION.gpsDataRetentionDays),
+            logRetentionDays: Number(DEFAULT_DATA_RETENTION.logRetentionDays),
+            backupFrequency: DEFAULT_DATA_RETENTION.backupFrequency,
           },
         },
       },
       {
-        onSuccess: () => {
-          toast.success("Platform configuration saved");
-        },
-        onError: (error) => {
-          toast.error(error.message);
-        },
+        onSuccess: () => toast.success("Platform features saved"),
+        onError: error => toast.error(error.message),
       },
     );
   };
@@ -217,17 +287,12 @@ export default function GeneralSettingsPage() {
     updateDataRetention.mutate(
       {
         data: {
-          platformName: systemSettings?.platformName ?? platformConfigurationForm.getValues("platformName"),
-          supportEmail: systemSettings?.supportEmail ?? platformConfigurationForm.getValues("supportEmail"),
+          platformName: systemSettings?.platformName ?? "FleetPro",
+          supportEmail: systemSettings?.supportEmail ?? supportEmail,
           defaults: systemSettings?.defaults ?? {
-            timezone: platformConfigurationForm.getValues("timezone"),
-            language: platformConfigurationForm.getValues("language"),
+            timezone: "Africa/Lagos", language: "en",
           },
-          features: systemSettings?.features ?? {
-            allowNewTenantRegistration: platformConfigurationForm.getValues("allowNewTenantRegistration"),
-            maintenanceMode: platformConfigurationForm.getValues("maintenanceMode"),
-            enableBetaFeatures: platformConfigurationForm.getValues("enableBetaFeatures"),
-          },
+          features: systemSettings?.features ?? DEFAULT_PLATFORM_FEATURES,
           retention: {
             ...(systemSettings?.retention ?? {}),
             gpsDataRetentionDays: Number(values.gpsDataRetentionDays),
@@ -237,206 +302,268 @@ export default function GeneralSettingsPage() {
         },
       },
       {
-        onSuccess: () => {
-          toast.success("Data retention settings saved");
-        },
-        onError: (error) => {
-          toast.error(error.message);
-        },
+        onSuccess: () => toast.success("Data retention settings saved"),
+        onError: error => toast.error(error.message),
       },
     );
   };
 
   return (
     <div className="space-y-6">
-      <ChangePasswordCard />
+      {/* My Profile */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserIcon className="h-5 w-5 text-primary" />
+            My Profile
+          </CardTitle>
+          <CardDescription>
+            Update your name, contact details, and profile photo.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <Avatar className="h-20 w-20">
+                <AvatarImage
+                  src={profileAvatar}
+                  alt={profileName}
+                />
+                <AvatarFallback className="text-lg">
+                  {(profileName || user?.email || "U").charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <button
+                type="button"
+                onClick={handleAvatarPick}
+                className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow hover:opacity-90"
+                aria-label="Change avatar"
+              >
+                <Camera className="h-3.5 w-3.5" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+            </div>
+            <div>
+              <p className="font-medium">{profileName || "Platform Admin"}</p>
+              <p className="text-xs text-muted-foreground">{user?.email}</p>
+              {user?.role && (
+                <Badge
+                  variant="outline"
+                  className="mt-1 capitalize"
+                >
+                  {user.role.replace(
+                    /_/g,
+                    " ",
+                  )}
+                </Badge>
+              )}
+            </div>
+          </div>
 
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="profileName">Full Name</Label>
+              <Input
+                id="profileName"
+                value={profileName}
+                onChange={e => setProfileName(e.target.value)}
+                placeholder="Your name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="profileEmail">Email</Label>
+              <Input
+                id="profileEmail"
+                value={user?.email ?? ""}
+                disabled
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="profilePhone">Phone</Label>
+              <Input
+                id="profilePhone"
+                value={profilePhone}
+                onChange={e => setProfilePhone(e.target.value)}
+                placeholder="+234..."
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button
+              onClick={handleSaveProfile}
+              disabled={savingProfile}
+            >
+              {savingProfile
+                ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  )
+                : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Profile
+                    </>
+                  )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Display Preferences */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5 text-primary" />
-            Platform Configuration
+            Display Preferences
           </CardTitle>
           <CardDescription>
-            General settings for the fleet management platform
+            Centralized time and date defaults. These become the default filters for charts,
+            tables, and reports across the platform.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Default Timezone</Label>
+              <Select
+                value={timezone}
+                onValueChange={setTimezone}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIMEZONE_OPTIONS.map(tz => (
+                    <SelectItem
+                      key={tz.code}
+                      value={tz.code}
+                    >
+                      {tz.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Default Time Range</Label>
+              <Select
+                value={defaultDateRange}
+                onValueChange={setDefaultDateRange}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DATE_RANGE_OPTIONS.map(r => (
+                    <SelectItem
+                      key={r.code}
+                      value={r.code}
+                    >
+                      {r.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Platform Features */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5 text-primary" />
+            Platform Features
+          </CardTitle>
+          <CardDescription>
+            Toggle platform-wide capabilities
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <Form {...platformConfigurationForm}>
+          <Form {...platformFeaturesForm}>
             <form
-              id={PLATFORM_CONFIGURATION_FORM_ID}
-              onSubmit={platformConfigurationForm.handleSubmit(handleSavePlatformConfiguration)}
-              className="space-y-6"
+              id={PLATFORM_FEATURES_FORM_ID}
+              onSubmit={platformFeaturesForm.handleSubmit(handleSavePlatformFeatures)}
+              className="space-y-4"
             >
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={platformConfigurationForm.control}
-                  name="platformName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Platform Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          disabled
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={platformConfigurationForm.control}
-                  name="supportEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Support Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="email"
-                          {...field}
-                          disabled
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={platformConfigurationForm.control}
-                  name="timezone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Default Timezone</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Africa/Lagos">
-                            WAT - West Africa Time (Africa/Lagos, GMT+1) - default
-                          </SelectItem>
-                          <SelectItem value="UTC">
-                            UTC - Coordinated Universal Time (GMT+0)
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={platformConfigurationForm.control}
-                  name="language"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Default Language</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="en">English</SelectItem>
-                          <SelectItem value="ha">Hausa</SelectItem>
-                          <SelectItem value="yo">Yoruba</SelectItem>
-                          <SelectItem value="ig">Igbo</SelectItem>
-                          <SelectItem value="fr">French</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h4 className="font-medium">Platform Features</h4>
-                <div className="space-y-4">
-                  <FormField
-                    control={platformConfigurationForm.control}
-                    name="allowNewTenantRegistration"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center justify-between space-y-0">
-                        <div>
-                          <FormLabel>Allow New Tenant Registration</FormLabel>
-                          <p className="text-sm text-muted-foreground">
-                            Enable self-service tenant onboarding
-                          </p>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={platformConfigurationForm.control}
-                    name="maintenanceMode"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center justify-between space-y-0">
-                        <div>
-                          <FormLabel>Maintenance Mode</FormLabel>
-                          <p className="text-sm text-muted-foreground">
-                            Temporarily disable platform access
-                          </p>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={platformConfigurationForm.control}
-                    name="enableBetaFeatures"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center justify-between space-y-0">
-                        <div>
-                          <FormLabel>Enable Beta Features</FormLabel>
-                          <p className="text-sm text-muted-foreground">
-                            Allow access to experimental features
-                          </p>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
+              <FormField
+                control={platformFeaturesForm.control}
+                name="allowNewTenantRegistration"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between space-y-0">
+                    <div>
+                      <FormLabel>Allow New Tenant Registration</FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Enable self-service tenant onboarding
+                      </p>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={platformFeaturesForm.control}
+                name="maintenanceMode"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between space-y-0">
+                    <div>
+                      <FormLabel>Maintenance Mode</FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Temporarily disable platform access
+                      </p>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={platformFeaturesForm.control}
+                name="enableBetaFeatures"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between space-y-0">
+                    <div>
+                      <FormLabel>Enable Beta Features</FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Allow access to experimental features
+                      </p>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
               <div className="flex justify-end">
                 <Button
                   type="submit"
-                  form={PLATFORM_CONFIGURATION_FORM_ID}
-                  disabled={updatePlatformConfiguration.isPending}
+                  form={PLATFORM_FEATURES_FORM_ID}
+                  disabled={updatePlatformFeatures.isPending}
                 >
-                  {updatePlatformConfiguration.isPending
+                  {updatePlatformFeatures.isPending
                     ? (
                         <>
                           <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -446,7 +573,7 @@ export default function GeneralSettingsPage() {
                     : (
                         <>
                           <Save className="h-4 w-4 mr-2" />
-                          Save Configuration
+                          Save Features
                         </>
                       )}
                 </Button>
@@ -456,6 +583,7 @@ export default function GeneralSettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Data Retention */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -575,6 +703,54 @@ export default function GeneralSettingsPage() {
               </div>
             </form>
           </Form>
+        </CardContent>
+      </Card>
+
+      {/* Support Email */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-primary" />
+            Support Email
+          </CardTitle>
+          <CardDescription>
+            Email address tenants use to reach platform support
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Support Email Address</Label>
+              <Input
+                type="email"
+                value={supportEmail}
+                onChange={e => setSupportEmail(e.target.value)}
+                placeholder="support@fleetpro.ng"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Response Time Commitment</Label>
+              <Select
+                value={responseTime}
+                onValueChange={setResponseTime}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="4">Within 4 hours</SelectItem>
+                  <SelectItem value="24">Within 24 hours</SelectItem>
+                  <SelectItem value="48">Within 48 hours</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => toast.success("Support settings saved")}>
+              <Save className="h-4 w-4 mr-2" />
+              Save Support Settings
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -4,6 +4,7 @@ import {
   Activity,
   AlertTriangle,
   BookOpen,
+  ClipboardCheck,
   Cpu,
   Satellite,
   Signal,
@@ -17,7 +18,6 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { DeviceCatalogManager } from "@/components/devices/DeviceCatalogManager";
 import { DeviceProvisioningQueue } from "@/components/devices/DeviceProvisioningQueue";
 import { PlatformDeviceManagement } from "@/components/devices/PlatformDeviceManagement";
-import { PlatformDeviceTrackingContent } from "@/components/devices/PlatformDeviceTracking";
 import { Button } from "@/components/shadcn/button";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {
@@ -26,7 +26,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/shadcn/tabs";
-import { useDeviceTelemetry } from "@/hooks/useDeviceTelemetry";
 
 export default function PlatformDevices() {
   const [
@@ -34,23 +33,6 @@ export default function PlatformDevices() {
     setActiveTab,
   ] = useState("management");
   const summaryQuery = useQuery(getSystemDevicesSummaryQueryOptions());
-
-  // Single source of truth for device data
-  const {
-    devices,
-    recentEvents,
-    loading,
-    error,
-    refetch,
-    isSimulating,
-    startSimulation,
-    stopSimulation,
-    trailHistory,
-    clearTrailHistory,
-  } = useDeviceTelemetry(
-    undefined,
-    true,
-  );
 
   // Stats are sourced from the system summary endpoint.
   const stats = useMemo(
@@ -146,14 +128,13 @@ export default function PlatformDevices() {
               <Cpu className="h-4 w-4" />
               Device Inventory
             </TabsTrigger>
-            {/* <TabsTrigger value="tracking" className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
-              Live Tracking
-            </TabsTrigger>
-            <TabsTrigger value="approval" className="flex items-center gap-2">
+            <TabsTrigger
+              value="approval"
+              className="flex items-center gap-2"
+            >
               <ClipboardCheck className="h-4 w-4" />
               Approval Queue
-            </TabsTrigger> */}
+            </TabsTrigger>
             <TabsTrigger
               value="catalog"
               className="flex items-center gap-2"
@@ -169,25 +150,6 @@ export default function PlatformDevices() {
           className="mt-4"
         >
           <PlatformDeviceManagement />
-        </TabsContent>
-
-        <TabsContent
-          value="tracking"
-          className="mt-4"
-        >
-          <PlatformDeviceTrackingContent
-            devices={devices}
-            recentEvents={recentEvents}
-            loading={loading}
-            error={error}
-            onRefresh={refetch}
-            isSimulating={isSimulating}
-            startSimulation={startSimulation}
-            stopSimulation={stopSimulation}
-            trailHistory={trailHistory}
-            clearTrailHistory={clearTrailHistory}
-            geofences={[]}
-          />
         </TabsContent>
 
         <TabsContent

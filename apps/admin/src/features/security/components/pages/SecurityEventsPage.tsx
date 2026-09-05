@@ -1,18 +1,23 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { useQuery } from "@tanstack/react-query";
-import {
-  getSystemSecurityEventsQueryOptions,
-} from "@truckmoov/api/auth";
 import type {
   SystemSecurityEvent,
   SystemSecurityEventSeverity,
 } from "@truckmoov/api/auth";
+import type {
+  FilterField, FilterValues,
+} from "@/components/shadcn/table-toolbar";
+import { useQuery } from "@tanstack/react-query";
+import { getSystemSecurityEventsQueryOptions } from "@truckmoov/api/auth";
 import {
   formatDateInTimezone,
   TIMEZONES,
 } from "@truckmoov/app-core/utils/time-utils";
-import { Building2, Clock, Download, ShieldAlert } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  Building2, Clock, Download, Eye, MoreHorizontal, ShieldAlert, User,
+} from "lucide-react";
+import {
+  useEffect, useMemo, useState,
+} from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -24,10 +29,12 @@ import {
 } from "@/components/shadcn/card";
 import { DataTable } from "@/components/shadcn/data-table";
 import {
-  TableToolbar,
-  type FilterField,
-  type FilterValues,
-} from "@/components/shadcn/table-toolbar";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/shadcn/dropdown-menu";
+import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import { usePreferences } from "@/contexts/PreferencesContext";
 import {
   getSecurityEventIcon,
@@ -37,49 +44,107 @@ import {
 // ponytail: `tenantId` filter dropped — mocked list was hard-coded and the
 // server takes a raw tenantId string. Re-add when there's a tenant lookup source.
 const SECURITY_EVENT_FILTER_FIELDS: FilterField[] = [
-  { key: "dateRange", label: "Date range", type: "daterange" },
+  {
+    key: "dateRange", label: "Date range", type: "daterange",
+  },
 ];
 
 const SEVERITY_OPTIONS = [
-  { value: "all", label: "All severities" },
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
-  { value: "critical", label: "Critical" },
+  {
+    value: "all", label: "All severities",
+  },
+  {
+    value: "low", label: "Low",
+  },
+  {
+    value: "medium", label: "Medium",
+  },
+  {
+    value: "high", label: "High",
+  },
+  {
+    value: "critical", label: "Critical",
+  },
 ];
 
 function useDebouncedValue<T>(value: T, delayMs: number) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timeout = window.setTimeout(setDebounced, delayMs, value);
-    return () => window.clearTimeout(timeout);
-  }, [delayMs, value]);
+  const [
+    debounced,
+    setDebounced,
+  ] = useState(value);
+  useEffect(
+    () => {
+      const timeout = window.setTimeout(
+        setDebounced,
+        delayMs,
+        value,
+      );
+      return () => window.clearTimeout(timeout);
+    },
+    [
+      delayMs,
+      value,
+    ],
+  );
   return debounced;
 }
 
 function formatEventType(type: string) {
-  return type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  return type.replace(
+    /_/g,
+    " ",
+  ).replace(
+    /\b\w/g,
+    c => c.toUpperCase(),
+  );
 }
 
 export default function SecurityEventsPage() {
   const { timezone } = usePreferences();
-  const [search, setSearch] = useState("");
-  const [severity, setSeverity] = useState("all");
-  const [filters, setFilters] = useState<FilterValues>({});
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+  const [
+    severity,
+    setSeverity,
+  ] = useState("all");
+  const [
+    filters,
+    setFilters,
+  ] = useState<FilterValues>({});
+  const [
+    page,
+    setPage,
+  ] = useState(1);
+  const [
+    pageSize,
+    setPageSize,
+  ] = useState(25);
 
-  const debouncedSearch = useDebouncedValue(search, 300);
+  const debouncedSearch = useDebouncedValue(
+    search,
+    300,
+  );
   const from = filters.dateRange?.enabled ? filters.dateRange.dateFrom : undefined;
   const to = filters.dateRange?.enabled ? filters.dateRange.dateTo : undefined;
-  const severityParam =
-    severity === "low" || severity === "medium" || severity === "high" || severity === "critical"
+  const severityParam
+    = severity === "low" || severity === "medium" || severity === "high" || severity === "critical"
       ? (severity as SystemSecurityEventSeverity)
       : undefined;
 
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, severityParam, from, to, pageSize]);
+  useEffect(
+    () => {
+      setPage(1);
+    },
+    [
+      debouncedSearch,
+      severityParam,
+      from,
+      to,
+      pageSize,
+    ],
+  );
 
   const eventsQuery = useQuery(
     getSystemSecurityEventsQueryOptions({
@@ -97,73 +162,106 @@ export default function SecurityEventsPage() {
   const items = eventsQuery.data?.data.items ?? [];
   const total = eventsQuery.data?.data.total ?? 0;
 
-  const columns = useMemo<ColumnDef<SystemSecurityEvent>[]>(() => [
-    {
-      id: "event",
-      header: "Event",
-      cell: ({ row }) => (
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
-            {getSecurityEventIcon(row.original.eventType)}
+  const columns = useMemo<ColumnDef<SystemSecurityEvent>[]>(
+    () => [
+      {
+        id: "event",
+        header: "Event",
+        cell: ({ row }) => (
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
+              {getSecurityEventIcon(row.original.eventType)}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium">
+                {formatEventType(row.original.eventType)}
+              </p>
+              <p className="text-xs text-muted-foreground truncate max-w-[360px]">
+                {row.original.summary ?? "—"}
+              </p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-medium">
-              {formatEventType(row.original.eventType)}
-            </p>
-            <p className="text-xs text-muted-foreground truncate max-w-[360px]">
-              {row.original.summary ?? "—"}
-            </p>
-          </div>
-        </div>
-      ),
-    },
-    {
-      id: "severity",
-      header: "Severity",
-      cell: ({ row }) => getSeverityBadge((row.original.severity ?? "low") as SystemSecurityEventSeverity),
-    },
-    {
-      id: "tenant",
-      header: "Tenant",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2 text-sm">
-          <Building2 className="h-4 w-4 text-muted-foreground" />
-          <span className="font-mono text-xs truncate max-w-[200px]">
-            {row.original.tenantId ?? "System"}
-          </span>
-        </div>
-      ),
-    },
-    {
-      id: "related",
-      header: "Related",
-      cell: ({ row }) => {
-        const t = row.original.relatedEntityType;
-        const id = row.original.relatedEntityId;
-        if (!t && !id) return <span className="text-muted-foreground">—</span>;
-        return (
-          <div className="text-sm">
-            <p className="text-xs text-muted-foreground">{t ?? "—"}</p>
-            <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono truncate inline-block max-w-[200px]">
-              {id ?? "—"}
-            </code>
-          </div>
-        );
+        ),
       },
-    },
-    {
-      id: "time",
-      header: `Time (${TIMEZONES[timezone].offset})`,
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2 text-sm">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          {row.original.occurredAt
-            ? formatDateInTimezone(row.original.occurredAt, timezone, { hour: "2-digit", minute: "2-digit" })
-            : "—"}
-        </div>
-      ),
-    },
-  ], [timezone]);
+      {
+        id: "severity",
+        header: "Severity",
+        cell: ({ row }) => getSeverityBadge((row.original.severity ?? "low") as SystemSecurityEventSeverity),
+      },
+      {
+      // ponytail: SystemSecurityEvent doesn't expose userId/email; render placeholder until API adds it
+        id: "user",
+        header: "User",
+        cell: () => (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <User className="h-4 w-4" />
+            <span>—</span>
+          </div>
+        ),
+      },
+      {
+        id: "tenant",
+        header: "Tenant",
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2 text-sm">
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <span className="font-mono text-xs truncate max-w-[200px]">
+              {row.original.tenantId ?? "System"}
+            </span>
+          </div>
+        ),
+      },
+      {
+      // ponytail: SystemSecurityEvent doesn't expose ipAddress; render placeholder until API adds it
+        id: "ip",
+        header: "IP Address",
+        cell: () => <span className="text-muted-foreground">—</span>,
+      },
+      {
+        id: "time",
+        header: `Time (${TIMEZONES[timezone].offset})`,
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2 text-sm">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            {row.original.occurredAt
+              ? formatDateInTimezone(
+                  row.original.occurredAt,
+                  timezone,
+                  {
+                    hour: "2-digit", minute: "2-digit",
+                  },
+                )
+              : "—"}
+          </div>
+        ),
+      },
+      {
+        id: "actions",
+        header: "",
+        meta: { className: "w-[50px]" },
+        cell: () => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => toast.info("Details coming soon")}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Details
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
+      },
+    ],
+    [timezone],
+  );
 
   return (
     <div className="space-y-6">
@@ -219,6 +317,7 @@ export default function SecurityEventsPage() {
                 || Boolean(severityParam)
                 || Object.values(filters).some(f => f?.enabled)
               }
+              rowClassName={row => (row.severity === "critical" ? "bg-destructive/5 hover:bg-destructive/10" : "")}
               emptyState="No security events."
               filteredEmptyState="No events match your filters."
               pagination={{

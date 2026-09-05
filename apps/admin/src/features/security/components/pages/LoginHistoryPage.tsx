@@ -1,17 +1,20 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import type { SystemAuthEvent } from "@truckmoov/api/auth";
+import type {
+  FilterField, FilterValues,
+} from "@/components/shadcn/table-toolbar";
 import { useQuery } from "@tanstack/react-query";
 import {
   getSystemAuthEventsQueryOptions,
   useBlockSystemIp,
 } from "@truckmoov/api/auth";
-import type { SystemAuthEvent } from "@truckmoov/api/auth";
-import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import {
   formatDateInTimezone,
   TIMEZONES,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
   Ban,
+  Building2,
   CheckCircle,
   Clock,
   Download,
@@ -19,14 +22,17 @@ import {
   Loader2,
   LogIn,
   LogOut,
+  MapPin,
+  Monitor,
   MoreHorizontal,
   RefreshCw,
+  Smartphone,
   User,
   XCircle,
-  Monitor,
-  Smartphone,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect, useMemo, useState,
+} from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -55,30 +61,47 @@ import {
 } from "@/components/shadcn/dropdown-menu";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import {
-  TableToolbar,
-  type FilterField,
-  type FilterValues,
-} from "@/components/shadcn/table-toolbar";
+import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import { usePreferences } from "@/contexts/PreferencesContext";
 
 // ponytail: extra filters (event type, tenant) not documented; re-add when swagger publishes params
 const LOGIN_FILTER_FIELDS: FilterField[] = [
-  { key: "dateRange", label: "Date range", type: "daterange" },
+  {
+    key: "dateRange", label: "Date range", type: "daterange",
+  },
 ];
 
 const STATUS_OPTIONS = [
-  { value: "all", label: "All Status" },
-  { value: "success", label: "Success" },
-  { value: "failed", label: "Failed" },
+  {
+    value: "all", label: "All Status",
+  },
+  {
+    value: "success", label: "Success",
+  },
+  {
+    value: "failed", label: "Failed",
+  },
 ];
 
 function useDebouncedValue<T>(value: T, delayMs: number) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timeout = window.setTimeout(setDebounced, delayMs, value);
-    return () => window.clearTimeout(timeout);
-  }, [delayMs, value]);
+  const [
+    debounced,
+    setDebounced,
+  ] = useState(value);
+  useEffect(
+    () => {
+      const timeout = window.setTimeout(
+        setDebounced,
+        delayMs,
+        value,
+      );
+      return () => window.clearTimeout(timeout);
+    },
+    [
+      delayMs,
+      value,
+    ],
+  );
   return debounced;
 }
 
@@ -132,7 +155,11 @@ function getStatusBadge(status: SystemAuthEvent["status"]) {
 
 // ponytail: naive UA sniff, upgrade to a real parser (ua-parser-js) if we need reliable device breakdowns
 function parseUserAgent(ua: string | null | undefined) {
-  if (!ua) return { device: "Unknown", browser: "Unknown", isMobile: false };
+  if (!ua) {
+    return {
+      device: "Unknown", browser: "Unknown", isMobile: false,
+    };
+  }
   const isMobile = /Mobi|Android|iPhone|iPad|iPod/.test(ua);
   const device = /iPhone|iPod/.test(ua)
     ? "iPhone"
@@ -156,28 +183,68 @@ function parseUserAgent(ua: string | null | undefined) {
         : /Safari\//.test(ua)
           ? "Safari"
           : "Unknown";
-  return { device, browser, isMobile };
+  return {
+    device, browser, isMobile,
+  };
 }
 
 export default function LoginHistoryPage() {
   const { timezone } = usePreferences();
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
-  const [filters, setFilters] = useState<FilterValues>({});
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-  const [selected, setSelected] = useState<SystemAuthEvent | null>(null);
-  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
-  const [newBlock, setNewBlock] = useState({ ipAddress: "", reason: "" });
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+  const [
+    status,
+    setStatus,
+  ] = useState("all");
+  const [
+    filters,
+    setFilters,
+  ] = useState<FilterValues>({});
+  const [
+    page,
+    setPage,
+  ] = useState(1);
+  const [
+    pageSize,
+    setPageSize,
+  ] = useState(25);
+  const [
+    selected,
+    setSelected,
+  ] = useState<SystemAuthEvent | null>(null);
+  const [
+    blockDialogOpen,
+    setBlockDialogOpen,
+  ] = useState(false);
+  const [
+    newBlock,
+    setNewBlock,
+  ] = useState({
+    ipAddress: "", reason: "",
+  });
 
-  const debouncedSearch = useDebouncedValue(search, 300);
+  const debouncedSearch = useDebouncedValue(
+    search,
+    300,
+  );
   const from = filters.dateRange?.enabled ? filters.dateRange.dateFrom : undefined;
   const to = filters.dateRange?.enabled ? filters.dateRange.dateTo : undefined;
   const statusParam = status === "success" || status === "failed" ? status : undefined;
 
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, statusParam, from, to, pageSize]);
+  useEffect(
+    () => {
+      setPage(1);
+    },
+    [
+      debouncedSearch,
+      statusParam,
+      from,
+      to,
+      pageSize,
+    ],
+  );
 
   const eventsQuery = useQuery(
     getSystemAuthEventsQueryOptions({
@@ -210,12 +277,18 @@ export default function LoginHistoryPage() {
       return;
     }
     blockMutation.mutate(
-      { data: { ipAddress: newBlock.ipAddress, reason: newBlock.reason } },
+      {
+        data: {
+          ipAddress: newBlock.ipAddress, reason: newBlock.reason,
+        },
+      },
       {
         onSuccess: () => {
           toast.success(`IP ${newBlock.ipAddress} blocked`);
           setBlockDialogOpen(false);
-          setNewBlock({ ipAddress: "", reason: "" });
+          setNewBlock({
+            ipAddress: "", reason: "",
+          });
         },
         onError: (error) => {
           toast.error(error.message);
@@ -224,115 +297,141 @@ export default function LoginHistoryPage() {
     );
   };
 
-  const columns = useMemo<ColumnDef<SystemAuthEvent>[]>(() => [
-    {
-      id: "user",
-      header: "User",
-      cell: ({ row }) => {
-        const email = row.original.email ?? "—";
-        return (
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-              {getInitials(email)}
+  const columns = useMemo<ColumnDef<SystemAuthEvent>[]>(
+    () => [
+      {
+        id: "user",
+        header: "User",
+        cell: ({ row }) => {
+          const email = row.original.email ?? "—";
+          return (
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                {email.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="font-medium text-sm">{email}</p>
+              </div>
             </div>
-            <div>
-              <p className="font-medium text-sm">{email}</p>
-              <p className="text-xs text-muted-foreground font-mono">
-                {row.original.tenantId ?? "—"}
-              </p>
-            </div>
-          </div>
-        );
+          );
+        },
       },
-    },
-    {
-      id: "event",
-      header: "Event",
-      cell: ({ row }) => getEventTypeBadge(row.original.eventType),
-    },
-    {
-      id: "status",
-      header: "Status",
-      cell: ({ row }) => (
-        <div className="space-y-1">
-          {getStatusBadge(row.original.status)}
-          {row.original.failureReason && (
-            <p className="text-xs text-muted-foreground">{row.original.failureReason}</p>
-          )}
-        </div>
-      ),
-    },
-    {
-      id: "ip",
-      header: "IP Address",
-      cell: ({ row }) =>
-        row.original.ipAddress
-          ? <code className="text-xs bg-muted px-2 py-1 rounded">{row.original.ipAddress}</code>
-          : <span className="text-muted-foreground">—</span>,
-    },
-    {
-      id: "device",
-      header: "Device",
-      cell: ({ row }) => {
-        const { device, browser, isMobile } = parseUserAgent(row.original.userAgent);
-        const Icon = isMobile ? Smartphone : Monitor;
-        return (
-          <div className="flex items-center gap-2 text-sm">
-            <Icon className="h-4 w-4 text-muted-foreground" />
-            <span>{browser} · {device}</span>
-          </div>
-        );
+      {
+      // ponytail: SystemAuthEvent only exposes tenantId; render name when API adds it
+        id: "tenant",
+        header: "Tenant",
+        cell: ({ row }) =>
+          row.original.tenantId
+            ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-mono text-xs">{row.original.tenantId}</span>
+                </div>
+              )
+            : <span className="text-muted-foreground">—</span>,
       },
-    },
-    {
-      id: "time",
-      header: `Time (${TIMEZONES[timezone].offset})`,
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2 text-sm">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          {row.original.occurredAt
-            ? formatDateInTimezone(row.original.occurredAt, timezone, { hour: "2-digit", minute: "2-digit" })
-            : "—"}
-        </div>
-      ),
-    },
-    {
-      id: "actions",
-      header: "",
-      meta: { className: "w-[50px]" },
-      cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setSelected(row.original)}>
-              <Eye className="h-4 w-4 mr-2" />
-              View Details
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => toast.info("Coming soon")}>
-              <User className="h-4 w-4 mr-2" />
-              View User Profile
-            </DropdownMenuItem>
-            {row.original.ipAddress && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => openBlockDialogForRow(row.original)}
-                >
-                  <Ban className="h-4 w-4 mr-2" />
-                  Block IP
-                </DropdownMenuItem>
-              </>
+      {
+        id: "event",
+        header: "Event",
+        cell: ({ row }) => getEventTypeBadge(row.original.eventType),
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => (
+          <div className="space-y-1">
+            {getStatusBadge(row.original.status)}
+            {row.original.failureReason && (
+              <p className="text-xs text-muted-foreground">{row.original.failureReason}</p>
             )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
-    },
-  ], [timezone]);
+          </div>
+        ),
+      },
+      {
+      // ponytail: geolocation not exposed by SystemAuthEvent; render '—' until API adds it
+        id: "location",
+        header: "Location",
+        cell: () => (
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4" />
+            <span>—</span>
+          </div>
+        ),
+      },
+      {
+        id: "device",
+        header: "Device",
+        cell: ({ row }) => {
+          const {
+            browser, isMobile,
+          } = parseUserAgent(row.original.userAgent);
+          const Icon = isMobile ? Smartphone : Monitor;
+          return (
+            <div className="flex items-center gap-2 text-sm">
+              <Icon className="h-4 w-4 text-muted-foreground" />
+              <span>{browser}</span>
+            </div>
+          );
+        },
+      },
+      {
+        id: "time",
+        header: `Time (${TIMEZONES[timezone].offset})`,
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2 text-sm">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            {row.original.occurredAt
+              ? formatDateInTimezone(
+                  row.original.occurredAt,
+                  timezone,
+                  {
+                    hour: "2-digit", minute: "2-digit",
+                  },
+                )
+              : "—"}
+          </div>
+        ),
+      },
+      {
+        id: "actions",
+        header: "",
+        meta: { className: "w-[50px]" },
+        cell: ({ row }) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setSelected(row.original)}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => toast.info("Coming soon")}>
+                <User className="h-4 w-4 mr-2" />
+                View User Profile
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive"
+                disabled={!row.original.ipAddress}
+                onClick={() => openBlockDialogForRow(row.original)}
+              >
+                <Ban className="h-4 w-4 mr-2" />
+                Block IP
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
+      },
+    ],
+    [timezone],
+  );
 
   const selectedUa = selected ? parseUserAgent(selected.userAgent) : null;
 
@@ -365,7 +464,7 @@ export default function LoginHistoryPage() {
             <TableToolbar
               search={search}
               onSearchChange={setSearch}
-              searchPlaceholder="Search by email or IP..."
+              searchPlaceholder="Search by user, email, or tenant..."
               status={status}
               onStatusChange={setStatus}
               statusOptions={STATUS_OPTIONS}
@@ -403,7 +502,10 @@ export default function LoginHistoryPage() {
       </Card>
 
       {/* Block IP Dialog */}
-      <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
+      <Dialog
+        open={blockDialogOpen}
+        onOpenChange={setBlockDialogOpen}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
@@ -423,7 +525,9 @@ export default function LoginHistoryPage() {
               <Input
                 id="ip_address"
                 value={newBlock.ipAddress}
-                onChange={e => setNewBlock({ ...newBlock, ipAddress: e.target.value })}
+                onChange={e => setNewBlock({
+                  ...newBlock, ipAddress: e.target.value,
+                })}
                 placeholder="e.g., 192.168.1.1"
               />
             </div>
@@ -433,7 +537,9 @@ export default function LoginHistoryPage() {
               <Input
                 id="reason"
                 value={newBlock.reason}
-                onChange={e => setNewBlock({ ...newBlock, reason: e.target.value })}
+                onChange={e => setNewBlock({
+                  ...newBlock, reason: e.target.value,
+                })}
                 placeholder="e.g., Suspicious activity, multiple failed attempts"
               />
             </div>
@@ -477,7 +583,9 @@ export default function LoginHistoryPage() {
       >
         <DialogContent className="max-w-lg p-0 overflow-hidden">
           <DialogTitle className="sr-only">
-            Authentication event · {selected?.status ?? "unknown"}
+            Authentication event ·
+            {" "}
+            {selected?.status ?? "unknown"}
           </DialogTitle>
           <DialogDescription className="sr-only">
             Full context for this authentication event.
@@ -488,16 +596,23 @@ export default function LoginHistoryPage() {
             const statusText = isFail ? "text-destructive" : "text-success";
             const verb = (selected.eventType ?? "event").toString();
             const when = selected.occurredAt
-              ? formatDateInTimezone(selected.occurredAt, timezone)
+              ? formatDateInTimezone(
+                  selected.occurredAt,
+                  timezone,
+                )
               : "—";
             return (
               <div className="flex">
-                <div aria-hidden className={`w-[2px] shrink-0 ${railColor}`} />
+                <div
+                  aria-hidden
+                  className={`w-[2px] shrink-0 ${railColor}`}
+                />
                 <div className="flex-1 min-w-0">
                   {/* Verdict band */}
                   <div className="px-6 pt-5 pb-5">
                     <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                      Authentication event ·{" "}
+                      Authentication event ·
+                      {" "}
                       <span className={`${statusText} font-medium`}>
                         {isFail ? "Failed" : "Success"}
                       </span>

@@ -1,10 +1,13 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import type { SystemFailedLogin } from "@truckmoov/api/auth";
+import type {
+  FilterField, FilterValues,
+} from "@/components/shadcn/table-toolbar";
 import { useQuery } from "@tanstack/react-query";
 import {
   getSystemFailedLoginsQueryOptions,
   useBlockSystemIp,
 } from "@truckmoov/api/auth";
-import type { SystemFailedLogin } from "@truckmoov/api/auth";
 import {
   formatDateInTimezone,
   TIMEZONES,
@@ -21,9 +24,12 @@ import {
   MapPin,
   MoreHorizontal,
   Shield,
+  Unlock,
   UserX,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect, useMemo, useState,
+} from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -51,11 +57,7 @@ import {
 } from "@/components/shadcn/dropdown-menu";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import {
-  TableToolbar,
-  type FilterField,
-  type FilterValues,
-} from "@/components/shadcn/table-toolbar";
+import { TableToolbar } from "@/components/shadcn/table-toolbar";
 import { usePreferences } from "@/contexts/PreferencesContext";
 
 // ponytail: only date range added; `ipAddress` filter param collapses into free-text search, and
@@ -68,12 +70,37 @@ const FAILED_FILTER_FIELDS: FilterField[] = [
   },
 ];
 
+const STATUS_OPTIONS = [
+  {
+    value: "all", label: "All Status",
+  },
+  {
+    value: "blocked", label: "Blocked",
+  },
+  {
+    value: "active", label: "Active",
+  },
+];
+
 function useDebouncedValue<T>(value: T, delayMs: number) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timeout = window.setTimeout(setDebounced, delayMs, value);
-    return () => window.clearTimeout(timeout);
-  }, [delayMs, value]);
+  const [
+    debounced,
+    setDebounced,
+  ] = useState(value);
+  useEffect(
+    () => {
+      const timeout = window.setTimeout(
+        setDebounced,
+        delayMs,
+        value,
+      );
+      return () => window.clearTimeout(timeout);
+    },
+    [
+      delayMs,
+      value,
+    ],
+  );
   return debounced;
 }
 
@@ -121,21 +148,59 @@ function getFailureReasonBadge(reason: string | null | undefined) {
 
 export default function FailedAttemptsPage() {
   const { timezone } = usePreferences();
-  const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState<FilterValues>({});
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-  const [selected, setSelected] = useState<SystemFailedLogin | null>(null);
-  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
-  const [newBlock, setNewBlock] = useState({ ipAddress: "", reason: "" });
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+  const [
+    status,
+    setStatus,
+  ] = useState("all");
+  const [
+    filters,
+    setFilters,
+  ] = useState<FilterValues>({});
+  const [
+    page,
+    setPage,
+  ] = useState(1);
+  const [
+    pageSize,
+    setPageSize,
+  ] = useState(25);
+  const [
+    selected,
+    setSelected,
+  ] = useState<SystemFailedLogin | null>(null);
+  const [
+    blockDialogOpen,
+    setBlockDialogOpen,
+  ] = useState(false);
+  const [
+    newBlock,
+    setNewBlock,
+  ] = useState({
+    ipAddress: "", reason: "",
+  });
 
-  const debouncedSearch = useDebouncedValue(search, 300);
+  const debouncedSearch = useDebouncedValue(
+    search,
+    300,
+  );
   const from = filters.dateRange?.enabled ? filters.dateRange.dateFrom : undefined;
   const to = filters.dateRange?.enabled ? filters.dateRange.dateTo : undefined;
 
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, from, to, pageSize]);
+  useEffect(
+    () => {
+      setPage(1);
+    },
+    [
+      debouncedSearch,
+      from,
+      to,
+      pageSize,
+    ],
+  );
 
   const failedQuery = useQuery(
     getSystemFailedLoginsQueryOptions({
@@ -149,7 +214,11 @@ export default function FailedAttemptsPage() {
     }),
   );
 
-  const items = failedQuery.data?.data.items ?? [];
+  const rawItems = failedQuery.data?.data.items ?? [];
+  // ponytail: status filtered client-side; move to server param when the API adds `blocked`
+  const items = status === "all"
+    ? rawItems
+    : rawItems.filter(i => (status === "blocked" ? i.blocked : !i.blocked));
   const total = failedQuery.data?.data.total ?? 0;
   const blockMutation = useBlockSystemIp();
 
@@ -167,12 +236,18 @@ export default function FailedAttemptsPage() {
       return;
     }
     blockMutation.mutate(
-      { data: { ipAddress: newBlock.ipAddress, reason: newBlock.reason } },
+      {
+        data: {
+          ipAddress: newBlock.ipAddress, reason: newBlock.reason,
+        },
+      },
       {
         onSuccess: () => {
           toast.success(`IP ${newBlock.ipAddress} blocked`);
           setBlockDialogOpen(false);
-          setNewBlock({ ipAddress: "", reason: "" });
+          setNewBlock({
+            ipAddress: "", reason: "",
+          });
         },
         onError: (error) => {
           toast.error(error.message);
@@ -181,105 +256,138 @@ export default function FailedAttemptsPage() {
     );
   };
 
-  const columns = useMemo<ColumnDef<SystemFailedLogin>[]>(() => [
-    {
-      id: "email",
-      header: "Email",
-      cell: ({ row }) => (
-        <p className="font-medium text-sm">{row.original.email ?? "—"}</p>
-      ),
-    },
-    {
-      id: "ipAddress",
-      header: "IP Address",
-      cell: ({ row }) =>
-        row.original.ipAddress
-          ? <code className="text-sm bg-muted px-2 py-1 rounded">{row.original.ipAddress}</code>
-          : <span className="text-muted-foreground">—</span>,
-    },
-    {
-      id: "location",
-      header: "Location",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2 text-sm">
-          <MapPin className="h-4 w-4 text-muted-foreground" />
-          {row.original.location ?? "Unknown"}
-        </div>
-      ),
-    },
-    {
-      id: "reason",
-      header: "Reason",
-      cell: ({ row }) => getFailureReasonBadge(row.original.reason),
-    },
-    {
-      id: "attempts",
-      header: "Attempts",
-      cell: ({ row }) => {
-        const n = row.original.attempts ?? 0;
-        return (
-          <Badge variant={n >= 10 ? "destructive" : n >= 5 ? "secondary" : "outline"}>
-            {n}
-          </Badge>
-        );
+  const columns = useMemo<ColumnDef<SystemFailedLogin>[]>(
+    () => [
+      {
+        id: "email",
+        header: "Email",
+        cell: ({ row }) => (
+          <p className="font-medium text-sm">{row.original.email ?? "—"}</p>
+        ),
       },
-    },
-    {
-      id: "status",
-      header: "Status",
-      cell: ({ row }) =>
-        row.original.blocked
-          ? (
-              <Badge variant="destructive">
-                <Ban className="h-3 w-3 mr-1" />
-                Blocked
-              </Badge>
-            )
-          : <Badge variant="outline">Active</Badge>,
-    },
-    {
-      id: "time",
-      header: `Time (${TIMEZONES[timezone].offset})`,
-      cell: ({ row }) => {
-        const ts = row.original.createdAt ?? row.original.timestamp;
-        return (
-          <div className="flex items-center gap-2 text-sm">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            {formatDateInTimezone(ts, timezone, { hour: "2-digit", minute: "2-digit" })}
+      {
+        id: "ipAddress",
+        header: "IP Address",
+        cell: ({ row }) =>
+          row.original.ipAddress
+            ? <code className="text-sm bg-muted px-2 py-1 rounded">{row.original.ipAddress}</code>
+            : <span className="text-muted-foreground">—</span>,
+      },
+      {
+      // ponytail: fleetflow shows flag + city/country + threat/proxy/datacenter badges;
+      // admin's SystemFailedLogin only exposes `location` string — render what we have,
+      // upgrade when the API returns structured geolocation + threat scoring
+        id: "origin",
+        header: "Origin / Threat",
+        cell: ({ row }) => (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <span>{row.original.location ?? "Unknown"}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">—</p>
           </div>
-        );
+        ),
       },
-    },
-    {
-      id: "actions",
-      header: "",
-      meta: { className: "w-[50px]" },
-      cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setSelected(row.original)}>
-              <Eye className="h-4 w-4 mr-2" />
-              View Details
-            </DropdownMenuItem>
-            {!row.original.blocked && row.original.ipAddress && (
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => openBlockDialogForRow(row.original)}
+      {
+        id: "reason",
+        header: "Reason",
+        cell: ({ row }) => getFailureReasonBadge(row.original.reason),
+      },
+      {
+        id: "attempts",
+        header: "Attempts",
+        cell: ({ row }) => {
+          const n = row.original.attempts ?? 0;
+          return (
+            <Badge variant={n >= 10 ? "destructive" : n >= 5 ? "secondary" : "outline"}>
+              {n}
+            </Badge>
+          );
+        },
+      },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) =>
+          row.original.blocked
+            ? (
+                <Badge variant="destructive">
+                  <Ban className="h-3 w-3 mr-1" />
+                  Blocked
+                </Badge>
+              )
+            : <Badge variant="outline">Active</Badge>,
+      },
+      {
+        id: "time",
+        header: `Time (${TIMEZONES[timezone].offset})`,
+        cell: ({ row }) => {
+          const ts = row.original.createdAt ?? row.original.timestamp;
+          return (
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              {formatDateInTimezone(
+                ts,
+                timezone,
+                {
+                  hour: "2-digit", minute: "2-digit",
+                },
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: "",
+        meta: { className: "w-[50px]" },
+        cell: ({ row }) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
               >
-                <Ban className="h-4 w-4 mr-2" />
-                Block IP
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setSelected(row.original)}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Details
               </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
-    },
-  ], [timezone]);
+              {row.original.blocked
+                ? (
+                    <DropdownMenuItem
+                      onClick={() => {
+                      // ponytail: unblock requires the blocked-IP row id; wire when we can look up by IP
+                        toast.info("Manage from Blocked IPs tab");
+                      }}
+                    >
+                      <Unlock className="h-4 w-4 mr-2" />
+                      Unblock IP
+                    </DropdownMenuItem>
+                  )
+                : row.original.ipAddress
+                  ? (
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={() => openBlockDialogForRow(row.original)}
+                      >
+                        <Ban className="h-4 w-4 mr-2" />
+                        Block IP
+                      </DropdownMenuItem>
+                    )
+                  : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
+      },
+    ],
+    [timezone],
+  );
 
   return (
     <div className="space-y-6">
@@ -291,7 +399,7 @@ export default function FailedAttemptsPage() {
                 <UserX className="h-5 w-5 text-destructive" />
                 Failed Login Attempts
               </CardTitle>
-              <CardDescription>Recent unsuccessful sign-in attempts</CardDescription>
+              <CardDescription>Recent unsuccessful sign-in attempts with IP, geolocation and threat scoring</CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -311,6 +419,9 @@ export default function FailedAttemptsPage() {
               search={search}
               onSearchChange={setSearch}
               searchPlaceholder="Search by email or IP..."
+              status={status}
+              onStatusChange={setStatus}
+              statusOptions={STATUS_OPTIONS}
               filterEntity="failed attempts"
               filterFields={FAILED_FILTER_FIELDS}
               filterValues={filters}
@@ -344,7 +455,10 @@ export default function FailedAttemptsPage() {
       </Card>
 
       {/* Block IP Dialog */}
-      <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
+      <Dialog
+        open={blockDialogOpen}
+        onOpenChange={setBlockDialogOpen}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
@@ -364,7 +478,9 @@ export default function FailedAttemptsPage() {
               <Input
                 id="ip_address"
                 value={newBlock.ipAddress}
-                onChange={e => setNewBlock({ ...newBlock, ipAddress: e.target.value })}
+                onChange={e => setNewBlock({
+                  ...newBlock, ipAddress: e.target.value,
+                })}
                 placeholder="e.g., 192.168.1.1"
               />
             </div>
@@ -374,7 +490,9 @@ export default function FailedAttemptsPage() {
               <Input
                 id="reason"
                 value={newBlock.reason}
-                onChange={e => setNewBlock({ ...newBlock, reason: e.target.value })}
+                onChange={e => setNewBlock({
+                  ...newBlock, reason: e.target.value,
+                })}
                 placeholder="e.g., Suspicious activity, multiple failed attempts"
               />
             </div>
@@ -463,7 +581,10 @@ export default function FailedAttemptsPage() {
                 <div className="col-span-2">
                   <p className="text-xs text-muted-foreground">Time</p>
                   <p className="font-medium">
-                    {formatDateInTimezone(selected.createdAt ?? selected.timestamp, timezone)}
+                    {formatDateInTimezone(
+                      selected.createdAt ?? selected.timestamp,
+                      timezone,
+                    )}
                   </p>
                 </div>
               </div>

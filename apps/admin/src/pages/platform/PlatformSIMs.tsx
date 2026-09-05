@@ -37,6 +37,7 @@ import {
   Signal,
   SignalLow,
   SignalZero,
+  Trash2,
   TrendingUp,
   Upload,
   Wifi,
@@ -445,8 +446,6 @@ export default function PlatformSIMs() {
         total: summary?.total ?? "N/A",
         active: summary?.active ?? getStatusCount("active") ?? "N/A",
         unassigned: summary?.unassigned ?? getStatusCount("unassigned") ?? "N/A",
-        pendingRequests: summary?.pendingRequests ?? "N/A",
-        carriers: summary?.carriers ?? (summary?.byCarrier ? Object.keys(summary.byCarrier).length : "N/A"),
       };
     },
     [summary],
@@ -484,6 +483,20 @@ export default function PlatformSIMs() {
       systemSimsQuery.data,
       tenantNamesById,
     ],
+  );
+  // ponytail: aggregated client-side; move to server summary when the API exposes them
+  const aggregateStats = useMemo(
+    () => ({
+      totalDataUsageGb: sims.reduce(
+        (sum, s) => sum + (s.dataUsage ?? 0),
+        0,
+      ) / 1000,
+      totalMonthlyCost: sims.reduce(
+        (sum, s) => sum + (s.monthlyCost ?? 0),
+        0,
+      ),
+    }),
+    [sims],
   );
   const selectedSIMDetails = useMemo(
     () =>
@@ -759,6 +772,19 @@ export default function PlatformSIMs() {
         ),
       },
       {
+        id: "simId",
+        meta: { className: "min-w-[110px]" },
+        header: "SIM ID",
+        cell: ({ row }) => (
+          <span className="font-mono text-xs px-2 py-1 rounded bg-muted text-foreground">
+            {row.original.id.slice(
+              0,
+              8,
+            )}
+          </span>
+        ),
+      },
+      {
         id: "iccid",
         meta: { className: "min-w-[220px]" },
         header: "ICCID / Phone",
@@ -925,6 +951,18 @@ export default function PlatformSIMs() {
                       )}
                   {sim.status === "suspended" ? "Reactivate" : "Suspend"}
                 </DropdownMenuItem>
+                {!sim.tenantId && (
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => {
+                      // ponytail: wire useDeleteSystemSim when the API exposes it
+                      toast.info("Not yet implemented");
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           );
@@ -958,7 +996,7 @@ export default function PlatformSIMs() {
             <TabsTrigger value="inventory">SIM Inventory</TabsTrigger>
             <TabsTrigger value="approval">Approval Queue</TabsTrigger>
             <TabsTrigger value="activation">Activation</TabsTrigger>
-            {/* <TabsTrigger value="analytics">Analytics</TabsTrigger> */}
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
         </div>
 
@@ -990,16 +1028,16 @@ export default function PlatformSIMs() {
               loading={systemSimsSummaryQuery.isLoading}
             />
             <StatCard
-              title="Pending Requests"
-              value={summaryStats.pendingRequests}
+              title="Data Usage"
+              value={`${aggregateStats.totalDataUsageGb.toFixed(1)} GB`}
               icon={TrendingUp}
-              loading={systemSimsSummaryQuery.isLoading}
+              loading={systemSimsQuery.isLoading}
             />
             <StatCard
-              title="Carriers"
-              value={summaryStats.carriers}
+              title="Monthly Cost"
+              value={`₦${aggregateStats.totalMonthlyCost.toLocaleString()}`}
               icon={CreditCard}
-              loading={systemSimsSummaryQuery.isLoading}
+              loading={systemSimsQuery.isLoading}
             />
           </div>
 
@@ -1036,6 +1074,36 @@ export default function PlatformSIMs() {
                     onChange={e => setSearchQuery(e.target.value)}
                   />
                 </div>
+                <Select
+                  value={simFilterDraft.status?.enabled && simFilterDraft.status?.value
+                    ? simFilterDraft.status.value
+                    : "all"}
+                  onValueChange={(v) => {
+                    setSimFilterDraft(prev => ({
+                      ...prev,
+                      status: v === "all"
+                        ? { enabled: false }
+                        : {
+                            enabled: true, value: v,
+                          },
+                    }));
+                  }}
+                >
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    {statuses.filter(s => s !== "all").map(s => (
+                      <SelectItem
+                        key={s}
+                        value={s}
+                      >
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <PlatformFilterPopover
                   entity="SIMs"
                   fields={[

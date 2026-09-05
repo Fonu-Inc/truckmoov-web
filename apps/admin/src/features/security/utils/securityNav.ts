@@ -17,11 +17,8 @@ export const SECURITY_TABS: SecurityTab[] = [
   { to: "/security", label: "Overview" },
   { to: "/security/login-history", label: "Login History" },
   { to: "/security/failed-attempts", label: "Failed Attempts" },
-  { to: "/security/geographic-map", label: "Geographic Map" },
   { to: "/security/blocked-ips", label: "Blocked IPs" },
-  { to: "/security/auto-block-rules", label: "Auto-Block Rules" },
   { to: "/security/notifications", label: "Notifications" },
   { to: "/security/events", label: "Security Events" },
   { to: "/security/sim-audit", label: "SIM Audit" },
-  { to: "/security/isolation-check", label: "Isolation Check" },
 ];

@@ -137,7 +137,7 @@ export const router = createBrowserRouter([
             lazy: async () => ({ Component: (await import("@/pages/platform/PlatformMessagingCenter")).default }),
           },
           {
-            path: "/billing",
+            path: "/subscription",
             lazy: async () => ({ Component: (await import("@/pages/platform/PlatformBilling")).default }),
           },
           {
@@ -147,13 +147,10 @@ export const router = createBrowserRouter([
               { index: true, lazy: async () => ({ Component: (await import("@/features/security/components/pages/SecurityOverviewPage")).default }) },
               { path: "login-history", lazy: async () => ({ Component: (await import("@/features/security/components/pages/LoginHistoryPage")).default }) },
               { path: "failed-attempts", lazy: async () => ({ Component: (await import("@/features/security/components/pages/FailedAttemptsPage")).default }) },
-              { path: "geographic-map", lazy: async () => ({ Component: (await import("@/features/security/components/pages/GeographicMapPage")).default }) },
               { path: "blocked-ips", lazy: async () => ({ Component: (await import("@/features/security/components/pages/BlockedIpsPage")).default }) },
-              { path: "auto-block-rules", lazy: async () => ({ Component: (await import("@/features/security/components/pages/AutoBlockRulesPage")).default }) },
               { path: "notifications", lazy: async () => ({ Component: (await import("@/features/security/components/pages/NotificationsPage")).default }) },
               { path: "events", lazy: async () => ({ Component: (await import("@/features/security/components/pages/SecurityEventsPage")).default }) },
               { path: "sim-audit", lazy: async () => ({ Component: (await import("@/features/security/components/pages/SimAuditPage")).default }) },
-              { path: "isolation-check", lazy: async () => ({ Component: (await import("@/features/security/components/pages/IsolationCheckPage")).default }) },
             ],
           },
           {
@@ -177,40 +174,10 @@ export const router = createBrowserRouter([
               {
                 path: "team",
                 lazy: async () => ({ Component: (await import("@/features/settings/components/pages/TeamSettingsPage")).default }),
-                children: [
-                  {
-                    index: true,
-                    lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PlatformAdminsPanel")).PlatformAdminsPanel }),
-                  },
-                  {
-                    path: "invitations",
-                    lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PlatformAdminInvitesPanel")).PlatformAdminInvitesPanel }),
-                  },
-                ],
               },
               {
                 path: "ai-providers",
                 lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PlatformAISettings")).PlatformAISettings }),
-              },
-              {
-                path: "integrations",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/IntegrationSettings")).IntegrationSettings }),
-              },
-              {
-                path: "api-governance",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/IntegrationsGovernance")).IntegrationsGovernance }),
-              },
-              {
-                path: "whatsapp",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/WhatsAppSettingsPage")).default }),
-              },
-              {
-                path: "webhooks",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/WebhookManagement")).WebhookManagement }),
-              },
-              {
-                path: "kyc-review",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/KYCReviewWorkflow")).KYCReviewWorkflow }),
               },
               {
                 path: "telephony",
@@ -223,44 +190,6 @@ export const router = createBrowserRouter([
               {
                 path: "security",
                 lazy: async () => ({ Component: (await import("@/features/settings/components/pages/SecuritySettingsPage")).default }),
-              },
-              {
-                path: "service-tiers",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/TieredServicesManager")).TieredServicesManager }),
-              },
-              {
-                path: "billing",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/BillingSettingsPage")).default }),
-                children: [
-                  {
-                    index: true,
-                    lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PlanPricingManager")).PlanPricingManager }),
-                  },
-                  {
-                    path: "communication",
-                    lazy: async () => ({ Component: (await import("@/features/settings/components/ui/CommunicationPricing")).CommunicationPricing }),
-                  },
-                  {
-                    path: "wallet",
-                    lazy: async () => ({ Component: (await import("@/features/settings/components/pages/BillingWalletPage")).default }),
-                  },
-                  {
-                    path: "configurations",
-                    lazy: async () => ({ Component: (await import("@/features/settings/components/pages/BillingConfigurationsPage")).default }),
-                  },
-                ],
-              },
-              {
-                path: "api",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/pages/ApiSettingsPage")).default }),
-              },
-              {
-                path: "feature-flags",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/FeatureFlagsPanel")).FeatureFlagsPanel }),
-              },
-              {
-                path: "upgrades",
-                lazy: async () => ({ Component: (await import("@/features/settings/components/ui/OrgUpgradeQueue")).OrgUpgradeQueue }),
               },
             ],
           },

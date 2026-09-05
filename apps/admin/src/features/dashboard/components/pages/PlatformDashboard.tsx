@@ -40,7 +40,6 @@ import {
   YAxis,
 } from "recharts";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { StakeholderOverviewTab } from "@/components/platform/StakeholderOverviewTab";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -459,38 +458,96 @@ export default function PlatformDashboard() {
           loading={systemDashboardLoading}
         />
         <StatCard
-          title="Total SIM Cards"
-          value={formatMetric(systemDashboard?.totalSimCards)}
-          icon={CreditCard}
-          variant="success"
-          loading={systemDashboardLoading}
-        />
-        <StatCard
-          title="IoT Devices"
-          value={formatMetric(systemDashboard?.totalSensors)}
-          icon={Cpu}
-          loading={systemDashboardLoading}
-        />
-        <StatCard
-          title="Total Drivers"
-          value={formatMetric(systemDashboard?.totalDrivers)}
-          icon={Users}
-          variant="success"
-          loading={systemDashboardLoading}
-        />
-        <StatCard
-          title="Data Usage Today"
-          value={formatDataUsage(systemDashboard?.dataUsageTodayMb)}
-          icon={Radio}
-          variant="warning"
-          loading={systemDashboardLoading}
-        />
-        <StatCard
           title="GPS Messages/hr"
           value={formatMetric(systemDashboard?.sensorGpsMessagesPerHour)}
           icon={MapPin}
           loading={systemDashboardLoading}
         />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start gap-4">
+              <div className="h-12 w-12 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
+                <Smartphone className="h-6 w-6 text-success" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Total IoT SIMs</p>
+                <p className="text-2xl font-bold">{formatMetric(systemDashboard?.totalSimCards)}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge className="bg-success/10 text-success border-success/30 text-xs">
+                    Active
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start gap-4">
+              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Cpu className="h-6 w-6 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Total IoT Devices</p>
+                <p className="text-2xl font-bold">{formatMetric(systemDashboard?.totalSensors)}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge className="bg-success/10 text-success border-success/30 text-xs">
+                    Online
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start gap-4">
+              <div className="h-12 w-12 rounded-lg bg-warning/10 flex items-center justify-center shrink-0">
+                <Radio className="h-6 w-6 text-warning" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Data Usage Today</p>
+                <p className="text-2xl font-bold">{formatDataUsage(systemDashboard?.dataUsageTodayMb)}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge
+                    variant="outline"
+                    className="text-xs"
+                  >
+                    <TrendingUp className="h-3 w-3 mr-1" />
+                    Live
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-start gap-4">
+              <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                <Database className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Total Data Bought</p>
+                <p className="text-2xl font-bold">8.6 TB</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge
+                    variant="outline"
+                    className="text-xs"
+                  >
+                    Across all bundles
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs
@@ -500,7 +557,6 @@ export default function PlatformDashboard() {
         <div className="flex justify-center">
           <TabsList>
             <TabsTrigger value="overview">System Overview</TabsTrigger>
-            <TabsTrigger value="stakeholders">Stakeholders</TabsTrigger>
             <TabsTrigger value="tenants">Tenants</TabsTrigger>
             <TabsTrigger value="iot">IoT & SIMs</TabsTrigger>
           </TabsList>
@@ -722,13 +778,6 @@ export default function PlatformDashboard() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent
-          value="stakeholders"
-          className="space-y-6"
-        >
-          <StakeholderOverviewTab />
         </TabsContent>
 
         <TabsContent

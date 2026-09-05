@@ -1,46 +1,18 @@
-import {
-  Mail, Users,
-} from "lucide-react";
-import {
-  NavLink, Outlet,
-} from "react-router";
-import { cn } from "@/lib/utils";
+import { PlatformAdminInvitesPanel } from "@/features/settings/components/ui/PlatformAdminInvitesPanel";
+import { PlatformAdminsPanel } from "@/features/settings/components/ui/PlatformAdminsPanel";
 
-const SUB_TABS = [
-  {
-    to: "/settings/team", label: "Admins", icon: Users, end: true,
-  },
-  {
-    to: "/settings/team/invitations", label: "Invitations", icon: Mail, end: true,
-  },
-];
-
+/**
+ * `/settings/team` — matches fleetflow's single-page shape: Platform Team on
+ * top, Pending Invitations underneath. Sub-routed NavLink tabs dropped.
+ *
+ * ponytail: /settings/team/invitations still resolves via the child route
+ * for URL compatibility, but nothing links there anymore.
+ */
 export default function TeamSettingsPage() {
   return (
     <div className="space-y-6">
-      <nav
-        aria-label="Team sections"
-        className="bg-muted/50 text-muted-foreground flex flex-wrap gap-1 h-auto rounded-md p-1"
-      >
-        {SUB_TABS.map(tab => (
-          <NavLink
-            key={tab.to}
-            to={tab.to}
-            end={tab.end}
-            className={({ isActive }) => cn(
-              "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all duration-150",
-              "hover:text-foreground/80",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              isActive && "bg-background text-foreground shadow-sm border-b-2 border-primary",
-            )}
-          >
-            <tab.icon className="h-4 w-4" />
-            <span className="hidden sm:inline">{tab.label}</span>
-          </NavLink>
-        ))}
-      </nav>
-
-      <Outlet />
+      <PlatformAdminsPanel />
+      <PlatformAdminInvitesPanel />
     </div>
   );
 }

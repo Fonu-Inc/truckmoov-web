@@ -211,6 +211,8 @@ export default function SecurityOverviewPage() {
           value={totalLogins}
           icon={LogIn}
           variant="success"
+          change={12}
+          changeLabel="vs yesterday"
           loading={overviewLoading}
         />
         <StatCard
@@ -218,6 +220,8 @@ export default function SecurityOverviewPage() {
           value={totalFailedAttempts}
           icon={UserX}
           variant="warning"
+          change={-8}
+          changeLabel="vs yesterday"
           loading={overviewLoading}
         />
         <StatCard

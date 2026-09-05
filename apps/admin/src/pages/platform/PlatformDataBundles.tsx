@@ -442,24 +442,6 @@ const DUMMY_TENANT_USAGE: TenantAdoption[] = [
   },
 ];
 
-const CARRIER_TABS = [
-  {
-    value: "MTN",
-    label: "MTN",
-  },
-  {
-    value: "Airtel",
-    label: "Airtel",
-  },
-  {
-    value: "Glo",
-    label: "Glo",
-  },
-  {
-    value: "Fonu",
-    label: "FONU",
-  },
-] as const;
 const CARRIER_OPTIONS = [
   "MTN",
   "Airtel",
@@ -506,8 +488,14 @@ export default function PlatformDataBundles() {
     search,
     setSearch,
   ] = useState("");
-  const [carrierFilter] = useState<string>("");
-  const [carrierFilterEnabled] = useState(false);
+  const [
+    carrierFilter,
+    setCarrierFilter,
+  ] = useState<string>("");
+  const [
+    carrierFilterEnabled,
+    setCarrierFilterEnabled,
+  ] = useState(false);
   const [
     statusFilter,
     setStatusFilter,
@@ -661,12 +649,28 @@ export default function PlatformDataBundles() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Data Bundles Catalog</h1>
-        <p className="text-sm text-muted-foreground">
-          Platform-wide carrier plans available to every tenant. Manage pricing, validity and activation.
-        </p>
+      {/* KPI strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          title="Total Active Bundles"
+          value={totalActive}
+          icon={Layers}
+        />
+        <StatCard
+          title="Carriers"
+          value={carrierCount}
+          icon={Tag}
+        />
+        <StatCard
+          title="SIMs Across Tenants"
+          value={totalSimsAcrossTenants}
+          icon={Building2}
+        />
+        <StatCard
+          title="Monthly Bundle Spend"
+          value={fmtCurrency(totalMonthlySpend)}
+          icon={TrendingUp}
+        />
       </div>
 
       {/* Top-level: Data Bundles vs Tenant Adoption */}
@@ -682,209 +686,164 @@ export default function PlatformDataBundles() {
         {/* DATA BUNDLES */}
         <TabsContent
           value="catalog"
-          className="space-y-6"
+          className="space-y-4"
         >
-          {/* KPI strip */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard
-              title="Active Bundles"
-              value={totalActive}
-              icon={Layers}
-            />
-            <StatCard
-              title="Carriers"
-              value={carrierCount}
-              icon={Tag}
-            />
-            <StatCard
-              title="SIMs Across Tenants"
-              value={totalSimsAcrossTenants}
-              icon={Building2}
-            />
-            <StatCard
-              title="Monthly Bundle Spend"
-              value={fmtCurrency(totalMonthlySpend)}
-              icon={TrendingUp}
-            />
+          <div className="flex justify-end">
+            <Button
+              variant="gradient"
+              size="sm"
+              onClick={() => {
+                setForm(emptyForm);
+                setEditing(false);
+                setFormOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Bundle
+            </Button>
           </div>
 
-          {/* Carrier sub-tabs */}
-          <Tabs
-            defaultValue="MTN"
-            className="space-y-4"
-          >
-            <TabsList>
-              {CARRIER_TABS.map(c => (
-                <TabsTrigger
-                  key={c.value}
-                  value={c.value}
+          <Card className="bg-card/50 border-border/50">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>All Bundles</CardTitle>
+                  <CardDescription>
+                    {filtered.length}
+                    {" of "}
+                    {catalog.length}
+                    {" bundle(s)"}
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportCsv}
                 >
-                  {c.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            {CARRIER_TABS.map((c) => {
-              const carrier = c.value;
-              const label = c.label;
-              const carrierBundles = filtered.filter(b => b.carrier === carrier);
-              const carrierTotal = catalog.filter(b => b.carrier === carrier).length;
-              return (
-                <TabsContent
-                  key={carrier}
-                  value={carrier}
-                  className="space-y-4"
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Data
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-3">
+                <div className="relative flex-1 min-w-[220px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    className="pl-9"
+                    placeholder="Search bundles..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                  />
+                </div>
+                <Select
+                  value={carrierFilterEnabled && carrierFilter ? carrierFilter : "all"}
+                  onValueChange={(v) => {
+                    if (v === "all") {
+                      setCarrierFilterEnabled(false);
+                      setCarrierFilter("");
+                    }
+                    else {
+                      setCarrierFilterEnabled(true);
+                      setCarrierFilter(v);
+                    }
+                  }}
                 >
-                  {/* Add bundle button outside the table */}
-                  <div className="flex justify-end">
-                    <Button
-                      variant="gradient"
-                      size="sm"
-                      onClick={() => {
-                        setForm({
-                          ...emptyForm,
-                          carrier,
-                        });
-                        setEditing(false);
-                        setFormOpen(true);
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      {" "}
-                      Add
-                      {label}
-                      {" "}
-                      Bundle
-                    </Button>
-                  </div>
-
-                  <Card className="bg-card/50 border-border/50">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle>
-                            {label}
-                            {" "}
-                            Bundles
-                          </CardTitle>
-                          <CardDescription>
-                            {carrierBundles.length}
-                            {" "}
-                            of
-                            {carrierTotal}
-                            {" "}
-                            bundle(s)
-                          </CardDescription>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={exportCsv}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          {" "}
-                          Export Data
-                        </Button>
-                      </div>
-                      <div className="flex flex-wrap gap-2 pt-3">
-                        <div className="relative flex-1 min-w-[220px]">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            className="pl-9"
-                            placeholder={`Search ${label} bundles...`}
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                          />
-                        </div>
-                        <Select
-                          value={statusFilter}
-                          onValueChange={v => setStatusFilter(v as typeof statusFilter)}
-                        >
-                          <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All status</SelectItem>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Bundle</TableHead>
-                            <TableHead>Data</TableHead>
-                            <TableHead>Validity</TableHead>
-                            <TableHead>Cycle</TableHead>
-                            <TableHead>Price</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {carrierBundles.length === 0
-                            ? (
-                                <TableRow>
-                                  <TableCell
-                                    colSpan={7}
-                                    className="text-center py-6 text-muted-foreground"
-                                  >
-                                    No
-                                    {label}
-                                    {" "}
-                                    bundles yet
-                                  </TableCell>
-                                </TableRow>
-                              )
-                            : carrierBundles.map(b => (
-                                <TableRow key={b.id}>
-                                  <TableCell className="font-medium">
-                                    <div>{b.name}</div>
-                                    <div className="text-xs text-muted-foreground font-mono">{b.code}</div>
-                                  </TableCell>
-                                  <TableCell>{formatBundleSize(b.data_mb)}</TableCell>
-                                  <TableCell>
-                                    {b.validity_days}
-                                    d
-                                  </TableCell>
-                                  <TableCell><Badge variant="secondary">{b.billing_cycle}</Badge></TableCell>
-                                  <TableCell className="font-semibold">{fmtCurrency(Number(b.price_ngn))}</TableCell>
-                                  <TableCell>
-                                    <Badge variant={b.is_active ? "default" : "outline"}>
-                                      {b.is_active ? "Active" : "Inactive"}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    <div className="flex items-center justify-end gap-1">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => openEdit(b)}
-                                        title="Edit"
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleToggle(b)}
-                                        title={b.is_active ? "Deactivate" : "Activate"}
-                                      >
-                                        <Power className={`h-4 w-4 ${b.is_active ? "text-success" : "text-muted-foreground"}`} />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              );
-            })}
-          </Tabs>
+                  <SelectTrigger className="w-[170px]"><SelectValue placeholder="All Carriers" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Carriers</SelectItem>
+                    {carriers.map(c => (
+                      <SelectItem
+                        key={c}
+                        value={c}
+                      >
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={statusFilter}
+                  onValueChange={v => setStatusFilter(v as typeof statusFilter)}
+                >
+                  <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Bundle</TableHead>
+                    <TableHead>Carrier</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Validity</TableHead>
+                    <TableHead>Cycle</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.length === 0
+                    ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={8}
+                            className="text-center py-6 text-muted-foreground"
+                          >
+                            No bundles match your filters
+                          </TableCell>
+                        </TableRow>
+                      )
+                    : filtered.map(b => (
+                        <TableRow key={b.id}>
+                          <TableCell className="font-medium">
+                            <div>{b.name}</div>
+                            <div className="text-xs text-muted-foreground font-mono">{b.code}</div>
+                          </TableCell>
+                          <TableCell><Badge variant="outline">{b.carrier}</Badge></TableCell>
+                          <TableCell>{formatBundleSize(b.data_mb)}</TableCell>
+                          <TableCell>
+                            {b.validity_days}
+                            d
+                          </TableCell>
+                          <TableCell><Badge variant="secondary">{b.billing_cycle}</Badge></TableCell>
+                          <TableCell className="font-semibold">{fmtCurrency(Number(b.price_ngn))}</TableCell>
+                          <TableCell>
+                            <Badge variant={b.is_active ? "default" : "outline"}>
+                              {b.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openEdit(b)}
+                                title="Edit"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleToggle(b)}
+                                title={b.is_active ? "Deactivate" : "Activate"}
+                              >
+                                <Power className={`h-4 w-4 ${b.is_active ? "text-success" : "text-muted-foreground"}`} />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* TENANT ADOPTION */}
