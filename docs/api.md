@@ -25,9 +25,11 @@ Use a local backend URL for development when needed.
 ```text
 packages/api/src/
 ├── lib/
-│   ├── auth-store.ts     — zustand session store (accessToken, refreshToken, user, setSession, logout)
-│   ├── axios-instance.ts — axios instance with token injection and 401-refresh interceptors
-│   └── query-client.ts   — shared QueryClient singleton
+│   ├── auth-store.ts          — zustand session store (accessToken, refreshToken, user, setSession, logout)
+│   ├── axios-instance.ts      — axios instance with token injection and 401-refresh interceptors
+│   ├── http-errors.ts         — shared isServerErrorResponse + normalizeError helpers
+│   ├── onboarding-instance.ts — axios instance for the public onboarding-applications flow (X-Application-Token)
+│   └── query-client.ts        — shared QueryClient singleton
 └── [service-name]/
     ├── types.ts
     ├── requests.ts
@@ -39,6 +41,9 @@ packages/api/src/
 ```ts
 import { useAuthStore }                   from "@truckmoov/api/lib/auth-store"
 import { axiosInstance }                  from "@truckmoov/api/lib/axios-instance"
+import { onboardingInstance,
+         setOnboardingToken,
+         getOnboardingToken }             from "@truckmoov/api/lib/onboarding-instance"
 import { queryClient }                    from "@truckmoov/api/lib/query-client"
 import type { ServerResponse, ServerErrorResponse } from "@truckmoov/api/lib/types"
 import { ... }                            from "@truckmoov/api/auth"
@@ -156,6 +161,16 @@ The attachment endpoint accepts images, PDF, DOC/DOCX, TXT, CSV, XLS/XLSX up to 
 
 `useLogin` and `useSystemLogin` call `setSession` automatically on success. `useLogout` calls `logout()` automatically on success. Components do not need to manage the store directly for these flows.
 
+## Public onboarding-applications flow
+
+The tenant-onboarding landing page uses a separate axios instance, `onboardingInstance`, defined in `packages/api/src/lib/onboarding-instance.ts`. It has its own auth model and does not read the auth store:
+
+- No JWT. `POST /auth/onboarding/applications` returns an `applicationToken` once. Every subsequent call carries it as `X-Application-Token`.
+- `useCreateOnboardingApplication()` persists the token via `setOnboardingToken` on success.
+- The token is kept in memory and mirrored to `sessionStorage` under the key `truckmoov_onboarding_token` — per tab, never in a URL or cookie. If it is lost, the application cannot be resumed.
+- A wrong or missing token returns **404 deliberately** — do not treat it as "not found" in the UI. The `admin request-changes` flow re-issues a fresh token by email; the app's resume route should call `setOnboardingToken` with the token from the query string.
+- The onboarding-applications endpoints are the only ones that go through `onboardingInstance`. Everything else (including admin review at `/auth/system/onboarding/applications/*`) still goes through `axiosInstance` with a bearer.
+
 ## Service structure
 
 Each service owns three files under `src/[service-name]/`.
@@ -231,17 +246,19 @@ axiosInstance.get<ServerResponse<ActivityLog[]>>('/auth/activity-log')
 
 ### Error responses
 
-Failed API calls are normalized by `axiosInstance` to the shared `ServerErrorResponse` shape:
+Failed API calls are normalized by `axiosInstance` and `onboardingInstance` to the shared `ServerErrorResponse` shape:
 
 ```ts
 export type ServerErrorResponse = {
   error: string
   message: string
   statusCode: number
+  field?: string             // set on 400s that come with a per-field validation message
+  retryAfterSeconds?: number // set on 429 cooldown responses
 }
 ```
 
-`query-client.ts` registers `ServerErrorResponse` as React Query's default error type. Mutation `onError` callbacks can use `error.message` directly for toasts without casting to `Error` or reading Axios internals.
+`query-client.ts` registers `ServerErrorResponse` as React Query's default error type. Mutation `onError` callbacks can use `error.message` directly for toasts without casting to `Error` or reading Axios internals. Forms can bind `error.field` via `react-hook-form`'s `setError`.
 
 ## `requests.ts`
 

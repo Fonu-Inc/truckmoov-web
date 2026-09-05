@@ -8,4 +8,6 @@ export type ServerErrorResponse = {
   error: string
   message: string
   statusCode: number
+  field?: string
+  retryAfterSeconds?: number
 }

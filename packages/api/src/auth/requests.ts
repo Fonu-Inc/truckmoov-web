@@ -1,4 +1,7 @@
+import axios from 'axios'
+
 import { axiosInstance } from '../lib/axios-instance'
+import { onboardingInstance } from '../lib/onboarding-instance'
 import type { ServerResponse } from '../lib/types'
 
 import type {
@@ -174,7 +177,6 @@ import type {
   SimActionResponse,
   SimDataBundlesResponse,
   SimImportResponse,
-  SimRequestDeviceMappingProcessResponse,
   StandardApiResponse,
   SupportTicketDetailResponse,
   SupportTicketResponse,
@@ -257,6 +259,40 @@ import type {
   ValidateInviteQuery,
   VerifyEmailPayload,
   VerifyResetPayload,
+  BundleAdoptionResponse,
+  BundleCatalogListResponse,
+  BundleCatalogQuery,
+  CloseSupportTicketPayload,
+  CommunicationsWalletRangeQuery,
+  CommunicationsWalletRatesResponse,
+  CommunicationsWalletSpendBreakdownResponse,
+  CommunicationsWalletSpendTrendResponse,
+  CreateOnboardingApplicationPayload,
+  CreateOnboardingApplicationResponse,
+  DeleteOnboardingApplicationDocumentPayload,
+  MailboxMessageFlagsResponse,
+  OnboardingApplication,
+  OnboardingApplicationResponse,
+  OnboardingApplicationStatusResponse,
+  OnboardingApplicationVerifyPayload,
+  OnboardingApplicationVerifySendResponse,
+  PlatformIntegrationResponse,
+  PlatformIntegrationsResponse,
+  ReopenSupportTicketPayload,
+  ReplySupportTicketPayload,
+  SubmitOnboardingApplicationIncomplete,
+  SystemOnboardingApplicationDocumentActionPayload,
+  SystemOnboardingApplicationDocumentResponse,
+  SystemOnboardingApplicationsListResponse,
+  SystemOnboardingApplicationsQuery,
+  SystemRejectOnboardingApplicationDocumentPayload,
+  SystemRejectOnboardingApplicationPayload,
+  SystemRequestChangesOnboardingApplicationPayload,
+  UpdateMailboxMessageFlagsPayload,
+  UpdateOnboardingApplicationPayload,
+  UpdatePlatformIntegrationPayload,
+  UpdateSubscriptionPlanEntitlementsPayload,
+  UploadOnboardingApplicationDocumentPayload,
 } from './types'
 
 // ─── Public auth ─────────────────────────────────────────────────────────────
@@ -1522,4 +1558,322 @@ export async function getSystemSecurityEvents(payload?: SystemSecurityEventsQuer
     { params: payload?.params },
   )
   return data
+}
+
+// ─── Onboarding Applications (public, X-Application-Token) ───────────────────
+// 404 from onboardingInstance means "wrong or missing token" — do NOT surface
+// it as "not found" in the UI.
+
+export async function createOnboardingApplication({ data }: CreateOnboardingApplicationPayload) {
+  const { data: res } = await onboardingInstance.post<CreateOnboardingApplicationResponse>(
+    '/auth/onboarding/applications',
+    data,
+  )
+  return res
+}
+
+export async function getOnboardingApplication({ id }: { id: string }) {
+  const { data } = await onboardingInstance.get<OnboardingApplicationResponse>(
+    `/auth/onboarding/applications/${id}`,
+  )
+  return data
+}
+
+export async function updateOnboardingApplication({ id, data }: UpdateOnboardingApplicationPayload) {
+  const { data: res } = await onboardingInstance.patch<OnboardingApplicationResponse>(
+    `/auth/onboarding/applications/${id}`,
+    data,
+  )
+  return res
+}
+
+export async function uploadOnboardingApplicationDocument({
+  id,
+  documentType,
+  file,
+}: UploadOnboardingApplicationDocumentPayload) {
+  const form = new FormData()
+  form.append('document_type', documentType)
+  form.append('file', file)
+  const { data } = await onboardingInstance.post<OnboardingApplicationResponse>(
+    `/auth/onboarding/applications/${id}/documents`,
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return data
+}
+
+export async function deleteOnboardingApplicationDocument({
+  id,
+  documentId,
+}: DeleteOnboardingApplicationDocumentPayload) {
+  const { data } = await onboardingInstance.delete<OnboardingApplicationResponse>(
+    `/auth/onboarding/applications/${id}/documents/${documentId}`,
+  )
+  return data
+}
+
+export async function sendOnboardingApplicationEmailVerification({ id }: { id: string }) {
+  const { data } = await onboardingInstance.post<OnboardingApplicationVerifySendResponse>(
+    `/auth/onboarding/applications/${id}/verify/email/send`,
+  )
+  return data
+}
+
+export async function verifyOnboardingApplicationEmail({
+  id,
+  data: body,
+}: OnboardingApplicationVerifyPayload) {
+  const { data } = await onboardingInstance.post<OnboardingApplicationResponse>(
+    `/auth/onboarding/applications/${id}/verify/email`,
+    body,
+  )
+  return data
+}
+
+export async function sendOnboardingApplicationPhoneVerification({ id }: { id: string }) {
+  const { data } = await onboardingInstance.post<OnboardingApplicationVerifySendResponse>(
+    `/auth/onboarding/applications/${id}/verify/phone/send`,
+  )
+  return data
+}
+
+export async function verifyOnboardingApplicationPhone({
+  id,
+  data: body,
+}: OnboardingApplicationVerifyPayload) {
+  const { data } = await onboardingInstance.post<OnboardingApplicationResponse>(
+    `/auth/onboarding/applications/${id}/verify/phone`,
+    body,
+  )
+  return data
+}
+
+// 400 from /submit carries emailVerified, phoneVerified, missingDocuments at
+// the top level of the body. Returned as SubmitOnboardingApplicationIncomplete
+// so callers can jump the user to the right step instead of showing a generic
+// error. Any other failure is rethrown as ServerErrorResponse.
+export async function submitOnboardingApplication({
+  id,
+}: {
+  id: string
+}): Promise<OnboardingApplicationResponse | SubmitOnboardingApplicationIncomplete> {
+  try {
+    const { data } = await onboardingInstance.post<OnboardingApplicationResponse>(
+      `/auth/onboarding/applications/${id}/submit`,
+    )
+    return data
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 400) {
+      const body = error.response.data as {
+        message?: string
+        emailVerified?: boolean
+        phoneVerified?: boolean
+        missingDocuments?: OnboardingApplication['missingDocuments']
+      }
+      return {
+        incomplete: true,
+        emailVerified: body.emailVerified ?? false,
+        phoneVerified: body.phoneVerified ?? false,
+        missingDocuments: body.missingDocuments ?? [],
+        message: body.message ?? 'Application is incomplete.',
+      }
+    }
+    throw error
+  }
+}
+
+export async function getOnboardingApplicationStatus({ id }: { id: string }) {
+  const { data } = await onboardingInstance.get<OnboardingApplicationStatusResponse>(
+    `/auth/onboarding/applications/${id}/status`,
+  )
+  return data
+}
+
+// ─── System Onboarding Applications (bearer) ─────────────────────────────────
+
+export async function getSystemOnboardingApplications(payload?: SystemOnboardingApplicationsQuery) {
+  const { data } = await axiosInstance.get<SystemOnboardingApplicationsListResponse>(
+    '/auth/system/onboarding/applications',
+    { params: payload?.params },
+  )
+  return data
+}
+
+export async function getSystemOnboardingApplication({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<OnboardingApplicationResponse>(
+    `/auth/system/onboarding/applications/${id}`,
+  )
+  return data
+}
+
+export async function approveSystemOnboardingApplicationDocument({
+  id,
+  documentId,
+}: SystemOnboardingApplicationDocumentActionPayload) {
+  const { data } = await axiosInstance.patch<SystemOnboardingApplicationDocumentResponse>(
+    `/auth/system/onboarding/applications/${id}/documents/${documentId}/approve`,
+  )
+  return data
+}
+
+export async function rejectSystemOnboardingApplicationDocument({
+  id,
+  documentId,
+  data: body,
+}: SystemRejectOnboardingApplicationDocumentPayload) {
+  const { data } = await axiosInstance.patch<SystemOnboardingApplicationDocumentResponse>(
+    `/auth/system/onboarding/applications/${id}/documents/${documentId}/reject`,
+    body,
+  )
+  return data
+}
+
+export async function approveSystemOnboardingApplication({ id }: { id: string }) {
+  const { data } = await axiosInstance.post<OnboardingApplicationResponse>(
+    `/auth/system/onboarding/applications/${id}/approve`,
+  )
+  return data
+}
+
+export async function rejectSystemOnboardingApplication({
+  id,
+  data: body,
+}: SystemRejectOnboardingApplicationPayload) {
+  const { data } = await axiosInstance.post<OnboardingApplicationResponse>(
+    `/auth/system/onboarding/applications/${id}/reject`,
+    body,
+  )
+  return data
+}
+
+export async function requestChangesSystemOnboardingApplication({
+  id,
+  data: body,
+}: SystemRequestChangesOnboardingApplicationPayload) {
+  const { data } = await axiosInstance.post<OnboardingApplicationResponse>(
+    `/auth/system/onboarding/applications/${id}/request-changes`,
+    body,
+  )
+  return data
+}
+
+export async function resendSystemOnboardingApplicationSetupLink({ id }: { id: string }) {
+  const { data } = await axiosInstance.post<ServerResponse<{ message: string }>>(
+    `/auth/system/onboarding/applications/${id}/setup-link/resend`,
+  )
+  return data
+}
+
+// ─── Platform Integrations ───────────────────────────────────────────────────
+
+export async function getPlatformIntegrations() {
+  const { data } = await axiosInstance.get<PlatformIntegrationsResponse>('/auth/system/integrations')
+  return data
+}
+
+export async function updatePlatformIntegration({
+  serviceKey,
+  data: body,
+}: UpdatePlatformIntegrationPayload) {
+  const { data } = await axiosInstance.put<PlatformIntegrationResponse>(
+    `/auth/system/integrations/${serviceKey}`,
+    body,
+  )
+  return data
+}
+
+// ─── Communications Wallet ───────────────────────────────────────────────────
+
+export async function getCommunicationsWalletRates() {
+  const { data } = await axiosInstance.get<CommunicationsWalletRatesResponse>(
+    '/auth/communications-wallet/rates',
+  )
+  return data
+}
+
+export async function getCommunicationsWalletSpendTrend(payload?: CommunicationsWalletRangeQuery) {
+  const { data } = await axiosInstance.get<CommunicationsWalletSpendTrendResponse>(
+    '/auth/communications-wallet/spend-trend',
+    { params: payload?.params },
+  )
+  return data
+}
+
+export async function getCommunicationsWalletSpendBreakdown(
+  payload?: CommunicationsWalletRangeQuery,
+) {
+  const { data } = await axiosInstance.get<CommunicationsWalletSpendBreakdownResponse>(
+    '/auth/communications-wallet/spend-breakdown',
+    { params: payload?.params },
+  )
+  return data
+}
+
+// ─── System Billing — bundle adoption + bundle catalog list ──────────────────
+
+export async function getBundleAdoption() {
+  const { data } = await axiosInstance.get<BundleAdoptionResponse>('/auth/system/bundle-adoption')
+  return data
+}
+
+export async function exportBundleAdoption() {
+  const { data } = await axiosInstance.get<Blob>('/auth/system/bundle-adoption/export', {
+    responseType: 'blob',
+  })
+  return data
+}
+
+export async function getBundleCatalog(payload?: BundleCatalogQuery) {
+  const { data } = await axiosInstance.get<BundleCatalogListResponse>('/auth/system/bundle-catalog', {
+    params: payload?.params,
+  })
+  return data
+}
+
+// ─── Mailbox message flags ───────────────────────────────────────────────────
+
+export async function updateMailboxMessageFlags({
+  id,
+  data: body,
+}: UpdateMailboxMessageFlagsPayload) {
+  const { data } = await axiosInstance.patch<MailboxMessageFlagsResponse>(
+    `/auth/mailbox/messages/${id}/flags`,
+    body,
+  )
+  return data
+}
+
+// ─── Support Tickets (tenant) — reply / close / reopen ───────────────────────
+
+export async function replySupportTicket({ id, data: body }: ReplySupportTicketPayload) {
+  const { data } = await axiosInstance.post<ServerResponse<unknown>>(
+    `/auth/support-tickets/${id}/reply`,
+    body,
+  )
+  return data
+}
+
+export async function closeSupportTicket({ id }: CloseSupportTicketPayload) {
+  const { data } = await axiosInstance.post<ServerResponse<unknown>>(
+    `/auth/support-tickets/${id}/close`,
+  )
+  return data
+}
+
+export async function reopenSupportTicket({ id, data: body }: ReopenSupportTicketPayload) {
+  const { data } = await axiosInstance.post<ServerResponse<unknown>>(
+    `/auth/support-tickets/${id}/reopen`,
+    body,
+  )
+  return data
+}
+
+// ─── System Subscription Plans — entitlements ────────────────────────────────
+
+export async function updateSubscriptionPlanEntitlements({
+  id,
+  data: body,
+}: UpdateSubscriptionPlanEntitlementsPayload) {
+  await axiosInstance.patch(`/auth/system/subscription-plans/${id}/entitlements`, body)
 }

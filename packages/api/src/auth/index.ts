@@ -1,6 +1,7 @@
 import { queryOptions, useMutation, useQuery } from '@tanstack/react-query'
 
 import { useAuthStore } from '../lib/auth-store'
+import { setOnboardingToken as persistOnboardingToken } from '../lib/onboarding-instance'
 import { queryClient } from '../lib/query-client'
 import {
   attachSupportTicketFiles,
@@ -209,6 +210,38 @@ import {
   getPlatformWalletLedger,
   platformTopUpWallet,
   updatePlatformWalletCreditSettings,
+  approveSystemOnboardingApplication,
+  approveSystemOnboardingApplicationDocument,
+  closeSupportTicket,
+  createOnboardingApplication,
+  deleteOnboardingApplicationDocument,
+  exportBundleAdoption,
+  getBundleAdoption,
+  getBundleCatalog,
+  getCommunicationsWalletRates,
+  getCommunicationsWalletSpendBreakdown,
+  getCommunicationsWalletSpendTrend,
+  getOnboardingApplication,
+  getOnboardingApplicationStatus,
+  getPlatformIntegrations,
+  getSystemOnboardingApplication,
+  getSystemOnboardingApplications,
+  rejectSystemOnboardingApplication,
+  rejectSystemOnboardingApplicationDocument,
+  reopenSupportTicket,
+  replySupportTicket,
+  requestChangesSystemOnboardingApplication,
+  resendSystemOnboardingApplicationSetupLink,
+  sendOnboardingApplicationEmailVerification,
+  sendOnboardingApplicationPhoneVerification,
+  submitOnboardingApplication,
+  updateMailboxMessageFlags,
+  updateOnboardingApplication,
+  updatePlatformIntegration,
+  updateSubscriptionPlanEntitlements,
+  uploadOnboardingApplicationDocument,
+  verifyOnboardingApplicationEmail,
+  verifyOnboardingApplicationPhone,
 } from './requests'
 import type {
   ActivityLogQuery,
@@ -222,9 +255,7 @@ import type {
   SystemKycReviewQueueQuery,
   OrganizationUsersQuery,
   GetSimBatchPayload,
-  SystemSimBatchesSummary,
   SystemDeviceCatalogQuery,
-  SystemDeviceSetupRequestPayload,
   SystemDeviceSetupRequestsQuery,
   SystemDevicesQuery,
   SystemSimBatchesQuery,
@@ -241,16 +272,15 @@ import type {
   SimDataBundlesQuery,
   SimsQuery,
   GetSimPayload,
-  UpdateSimPayload,
-  DeleteSimPayload,
-  SuspendSimPayload,
-  ReactivateSimPayload,
-  UnassignSimDevicePayload,
   GetSimRequestPayload,
   SystemFailedLoginsQuery,
   SystemAuthEventsQuery,
   SystemBlockedIpsQuery,
   SystemSecurityEventsQuery,
+  BundleCatalogQuery,
+  CommunicationsWalletRangeQuery,
+  CreateOnboardingApplicationResponse,
+  SystemOnboardingApplicationsQuery,
 } from './types'
 
 // Every type in ./types is public — no hand-maintained list to fall out of date.
@@ -388,6 +418,25 @@ export const AUTH_QUERY_KEY = {
 
   platformWallets: (payload?: PlatformWalletsQuery) => ['platformWallets', payload],
   platformWalletLedger: (payload?: PlatformWalletLedgerQuery) => ['platformWalletLedger', payload],
+
+  onboardingApplication: (id: string) => ['onboardingApplication', id],
+  onboardingApplicationStatus: (id: string) => ['onboardingApplicationStatus', id],
+
+  systemOnboardingApplications: (payload?: SystemOnboardingApplicationsQuery) =>
+    payload ? ['systemOnboardingApplications', payload] : ['systemOnboardingApplications'],
+  systemOnboardingApplication: (id: string) => ['systemOnboardingApplication', id],
+
+  platformIntegrations: ['platformIntegrations'],
+
+  communicationsWalletRates: ['communicationsWalletRates'],
+  communicationsWalletSpendTrend: (payload?: CommunicationsWalletRangeQuery) =>
+    ['communicationsWalletSpendTrend', payload],
+  communicationsWalletSpendBreakdown: (payload?: CommunicationsWalletRangeQuery) =>
+    ['communicationsWalletSpendBreakdown', payload],
+
+  bundleAdoption: ['bundleAdoption'],
+  bundleCatalog: (payload?: BundleCatalogQuery) =>
+    payload ? ['bundleCatalog', payload] : ['bundleCatalog'],
 } as const
 
 // Public auth/session
@@ -1947,6 +1996,274 @@ export function useUpdatePlatformWalletCreditSettings() {
     mutationFn: updatePlatformWalletCreditSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platformWallets'] })
+    },
+  })
+}
+
+// ─── Onboarding Applications (public) ────────────────────────────────────────
+
+export {
+  getOnboardingToken,
+  setOnboardingToken,
+  ONBOARDING_TOKEN_STORAGE_KEY,
+} from '../lib/onboarding-instance'
+
+export function useCreateOnboardingApplication() {
+  return useMutation({
+    mutationFn: createOnboardingApplication,
+    onSuccess: (res: CreateOnboardingApplicationResponse) => {
+      persistOnboardingToken(res.data.applicationToken)
+    },
+  })
+}
+
+export function getOnboardingApplicationQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.onboardingApplication(id),
+    queryFn: () => getOnboardingApplication({ id }),
+    enabled: Boolean(id),
+  })
+}
+
+export function getOnboardingApplicationStatusQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.onboardingApplicationStatus(id),
+    queryFn: () => getOnboardingApplicationStatus({ id }),
+    enabled: Boolean(id),
+  })
+}
+
+function invalidateOnboardingApplication(id: string) {
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingApplication(id) })
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.onboardingApplicationStatus(id) })
+}
+
+export function useUpdateOnboardingApplication() {
+  return useMutation({
+    mutationFn: updateOnboardingApplication,
+    onSuccess: (_res, variables) => invalidateOnboardingApplication(variables.id),
+  })
+}
+
+export function useUploadOnboardingApplicationDocument() {
+  return useMutation({
+    mutationFn: uploadOnboardingApplicationDocument,
+    onSuccess: (_res, variables) => invalidateOnboardingApplication(variables.id),
+  })
+}
+
+export function useDeleteOnboardingApplicationDocument() {
+  return useMutation({
+    mutationFn: deleteOnboardingApplicationDocument,
+    onSuccess: (_res, variables) => invalidateOnboardingApplication(variables.id),
+  })
+}
+
+export function useSendOnboardingApplicationEmailVerification() {
+  return useMutation({ mutationFn: sendOnboardingApplicationEmailVerification })
+}
+
+export function useVerifyOnboardingApplicationEmail() {
+  return useMutation({
+    mutationFn: verifyOnboardingApplicationEmail,
+    onSuccess: (_res, variables) => invalidateOnboardingApplication(variables.id),
+  })
+}
+
+export function useSendOnboardingApplicationPhoneVerification() {
+  return useMutation({ mutationFn: sendOnboardingApplicationPhoneVerification })
+}
+
+export function useVerifyOnboardingApplicationPhone() {
+  return useMutation({
+    mutationFn: verifyOnboardingApplicationPhone,
+    onSuccess: (_res, variables) => invalidateOnboardingApplication(variables.id),
+  })
+}
+
+export function useSubmitOnboardingApplication() {
+  return useMutation({
+    mutationFn: submitOnboardingApplication,
+    onSuccess: (_res, variables) => invalidateOnboardingApplication(variables.id),
+  })
+}
+
+// ─── System Onboarding Applications (bearer) ─────────────────────────────────
+
+export function getSystemOnboardingApplicationsQueryOptions(
+  payload?: SystemOnboardingApplicationsQuery,
+) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemOnboardingApplications(payload),
+    queryFn: () => getSystemOnboardingApplications(payload),
+  })
+}
+
+export function getSystemOnboardingApplicationQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemOnboardingApplication(id),
+    queryFn: () => getSystemOnboardingApplication({ id }),
+    enabled: Boolean(id),
+  })
+}
+
+function invalidateSystemOnboardingApplication(id: string) {
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemOnboardingApplication(id) })
+  queryClient.invalidateQueries({ queryKey: ['systemOnboardingApplications'] })
+}
+
+export function useApproveSystemOnboardingApplicationDocument() {
+  return useMutation({
+    mutationFn: approveSystemOnboardingApplicationDocument,
+    onSuccess: (_res, variables) => invalidateSystemOnboardingApplication(variables.id),
+  })
+}
+
+export function useRejectSystemOnboardingApplicationDocument() {
+  return useMutation({
+    mutationFn: rejectSystemOnboardingApplicationDocument,
+    onSuccess: (_res, variables) => invalidateSystemOnboardingApplication(variables.id),
+  })
+}
+
+export function useApproveSystemOnboardingApplication() {
+  return useMutation({
+    mutationFn: approveSystemOnboardingApplication,
+    onSuccess: (_res, variables) => invalidateSystemOnboardingApplication(variables.id),
+  })
+}
+
+export function useRejectSystemOnboardingApplication() {
+  return useMutation({
+    mutationFn: rejectSystemOnboardingApplication,
+    onSuccess: (_res, variables) => invalidateSystemOnboardingApplication(variables.id),
+  })
+}
+
+export function useRequestChangesSystemOnboardingApplication() {
+  return useMutation({
+    mutationFn: requestChangesSystemOnboardingApplication,
+    onSuccess: (_res, variables) => invalidateSystemOnboardingApplication(variables.id),
+  })
+}
+
+export function useResendSystemOnboardingApplicationSetupLink() {
+  return useMutation({ mutationFn: resendSystemOnboardingApplicationSetupLink })
+}
+
+// ─── Platform Integrations ───────────────────────────────────────────────────
+
+export function getPlatformIntegrationsQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.platformIntegrations,
+    queryFn: getPlatformIntegrations,
+  })
+}
+
+export function useUpdatePlatformIntegration() {
+  return useMutation({
+    mutationFn: updatePlatformIntegration,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.platformIntegrations })
+    },
+  })
+}
+
+// ─── Communications Wallet ───────────────────────────────────────────────────
+
+export function getCommunicationsWalletRatesQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.communicationsWalletRates,
+    queryFn: getCommunicationsWalletRates,
+  })
+}
+
+export function getCommunicationsWalletSpendTrendQueryOptions(
+  payload?: CommunicationsWalletRangeQuery,
+) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.communicationsWalletSpendTrend(payload),
+    queryFn: () => getCommunicationsWalletSpendTrend(payload),
+  })
+}
+
+export function getCommunicationsWalletSpendBreakdownQueryOptions(
+  payload?: CommunicationsWalletRangeQuery,
+) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.communicationsWalletSpendBreakdown(payload),
+    queryFn: () => getCommunicationsWalletSpendBreakdown(payload),
+  })
+}
+
+// ─── System Billing — bundle adoption + bundle catalog list ──────────────────
+
+export function getBundleAdoptionQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.bundleAdoption,
+    queryFn: getBundleAdoption,
+  })
+}
+
+export function getBundleCatalogQueryOptions(payload?: BundleCatalogQuery) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.bundleCatalog(payload),
+    queryFn: () => getBundleCatalog(payload),
+  })
+}
+
+export function useExportBundleAdoption() {
+  return useMutation({ mutationFn: exportBundleAdoption })
+}
+
+// ─── Mailbox message flags ───────────────────────────────────────────────────
+
+export function useUpdateMailboxMessageFlags() {
+  return useMutation({
+    mutationFn: updateMailboxMessageFlags,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mailboxThreads'] })
+      queryClient.invalidateQueries({ queryKey: ['mailboxThread'] })
+    },
+  })
+}
+
+// ─── Support Tickets (tenant) — reply / close / reopen ───────────────────────
+
+function invalidateSupportTicket(id: string) {
+  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.supportTicket(id) })
+  queryClient.invalidateQueries({ queryKey: ['supportTickets'] })
+}
+
+export function useReplySupportTicket() {
+  return useMutation({
+    mutationFn: replySupportTicket,
+    onSuccess: (_res, variables) => invalidateSupportTicket(variables.id),
+  })
+}
+
+export function useCloseSupportTicket() {
+  return useMutation({
+    mutationFn: closeSupportTicket,
+    onSuccess: (_res, variables) => invalidateSupportTicket(variables.id),
+  })
+}
+
+export function useReopenSupportTicket() {
+  return useMutation({
+    mutationFn: reopenSupportTicket,
+    onSuccess: (_res, variables) => invalidateSupportTicket(variables.id),
+  })
+}
+
+// ─── System Subscription Plans — entitlements ────────────────────────────────
+
+export function useUpdateSubscriptionPlanEntitlements() {
+  return useMutation({
+    mutationFn: updateSubscriptionPlanEntitlements,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemSubscriptionPlans })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.subscriptionPlans })
     },
   })
 }

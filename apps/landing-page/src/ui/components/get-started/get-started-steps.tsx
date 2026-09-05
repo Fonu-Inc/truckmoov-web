@@ -1,10 +1,12 @@
+import type { UseFormReturn } from "react-hook-form";
 import type {
-  FieldKey,
-  Fields,
+  OrganizationFormValues,
   Upload,
   Uploads,
+  VerifyCodeValues,
   VerifyStatus,
 } from "./get-started-data";
+
 import {
   AlertTriangle,
   Check,
@@ -15,11 +17,24 @@ import {
   RefreshCw,
   Trash2,
 } from "lucide-react";
-
 import { useRef } from "react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/ui/shadcn/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/ui/shadcn/form";
+import { Input } from "@/ui/shadcn/input";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/ui/shadcn/input-otp";
 import {
   DOCUMENTS,
   ORG_FIELDS,
@@ -60,44 +75,10 @@ function InfoRow({
   );
 }
 
-function Field({
-  label,
-  type,
-  placeholder,
-  value,
-  onChange,
-}: {
-  label: string;
-  type: string;
-  placeholder: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-base">{label}</span>
-      <input
-        type={type}
-        placeholder={placeholder}
-        value={value}
-        onChange={event => onChange(event.target.value)}
-        className="h-13 w-full rounded-2xl border border-border-100 px-5 text-base outline-none transition-colors placeholder:text-[#9A9A9A] focus:border-primary"
-      />
-    </label>
-  );
-}
+export function OrganizationStep({ form }: { form: UseFormReturn<OrganizationFormValues> }) {
+  const applicantType = form.watch("applicantType");
+  const applicantError = form.formState.errors.applicantType?.message;
 
-export function OrganizationStep({
-  orgType,
-  onOrgTypeChange,
-  fields,
-  onFieldChange,
-}: {
-  orgType: string | null;
-  onOrgTypeChange: (id: string) => void;
-  fields: Fields;
-  onFieldChange: (key: FieldKey, value: string) => void;
-}) {
   return (
     <div className="space-y-8">
       <Heading
@@ -109,10 +90,18 @@ export function OrganizationStep({
           <button
             key={type.id}
             type="button"
-            onClick={() => onOrgTypeChange(type.id)}
+            onClick={() => form.setValue(
+              "applicantType",
+              type.id,
+              {
+                shouldValidate: true,
+                shouldDirty: true,
+              },
+            )}
+            aria-pressed={applicantType === type.id}
             className={cn(
               "relative flex h-[132px] cursor-pointer flex-col rounded-2xl border p-5 text-left transition-colors",
-              orgType === type.id ? "border-2 border-primary" : "border-border-100 hover:border-border",
+              applicantType === type.id ? "border-2 border-primary" : "border-border-100 hover:border-border",
             )}
           >
             <span className="text-xl font-bold">{type.title}</span>
@@ -125,22 +114,40 @@ export function OrganizationStep({
           </button>
         ))}
       </div>
-      <div className="space-y-6">
-        <h3 className="text-xl font-bold">Organization Details</h3>
-        {ORG_FIELDS.map(field => (
-          <Field
-            key={field.key}
-            label={field.label}
-            type={field.type}
-            placeholder={field.placeholder}
-            value={fields[field.key]}
-            onChange={value => onFieldChange(
-              field.key,
-              value,
-            )}
-          />
-        ))}
-      </div>
+      {applicantError && (
+        <p className="text-sm text-destructive">{applicantError}</p>
+      )}
+      <Form {...form}>
+        <form
+          className="space-y-6"
+          onSubmit={(event) => {
+            event.preventDefault();
+          }}
+        >
+          <h3 className="text-xl font-bold">Organization Details</h3>
+          {ORG_FIELDS.map(field => (
+            <FormField
+              key={field.key}
+              control={form.control}
+              name={field.key}
+              render={({ field: rhfField }) => (
+                <FormItem>
+                  <FormLabel className="text-base font-normal">{field.label}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type={field.type}
+                      placeholder={field.placeholder}
+                      className="rounded-2xl border-border-100 h-13 text-base placeholder:text-[#9A9A9A]"
+                      {...rhfField}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ))}
+        </form>
+      </Form>
     </div>
   );
 }
@@ -359,57 +366,9 @@ export function StatusScreen({
   );
 }
 
-function OtpBoxes({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
-
-  return (
-    <div className="flex gap-3">
-      {Array.from({ length: 6 }).map((_, index) => (
-        <input
-          // eslint-disable-next-line react/no-array-index-key -- fixed-length OTP boxes
-          key={index}
-          ref={(element) => {
-            inputsRef.current[index] = element;
-          }}
-          type="text"
-          inputMode="numeric"
-          maxLength={1}
-          value={value[index] ?? ""}
-          onChange={(event) => {
-            const digit = event.target.value.replace(
-              /\D/g,
-              "",
-            ).slice(-1);
-            const next = value.padEnd(
-              6,
-              " ",
-            ).split("");
-            next[index] = digit || " ";
-            onChange(next.join("").trimEnd());
-            if (digit)
-              inputsRef.current[index + 1]?.focus();
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Backspace" && !value[index])
-              inputsRef.current[index - 1]?.focus();
-          }}
-          className="h-20 w-17 rounded-2xl border border-border-100 bg-[#F7F7F7] text-center text-lg font-bold outline-none transition-colors focus:border-primary"
-        />
-      ))}
-    </div>
-  );
-}
-
 export function VerifyStep({
+  form,
   description,
-  code,
-  onCodeChange,
   onVerify,
   resendLabel,
   resendPrompt,
@@ -417,10 +376,9 @@ export function VerifyStep({
   changePrompt,
   actionLabel,
 }: {
+  form: UseFormReturn<VerifyCodeValues>;
   description: React.ReactNode;
-  code: string;
-  onCodeChange: (value: string) => void;
-  onVerify: () => void;
+  onVerify: (values: VerifyCodeValues) => void;
   resendPrompt: string;
   resendLabel: string;
   changePrompt: string;
@@ -428,45 +386,73 @@ export function VerifyStep({
   actionLabel: string;
 }) {
   return (
-    <div className="space-y-8">
-      <Heading
-        title={actionLabel === "Verify Email" ? "Verify your email" : "Verify your phone number"}
-        description={description}
-      />
-      <OtpBoxes
-        value={code}
-        onChange={onCodeChange}
-      />
-      <div className="space-y-3">
-        <InfoRow>
-          {resendPrompt}
-          {" "}
-          <button
-            type="button"
-            className="cursor-pointer font-bold text-primary-100"
-          >
-            {resendLabel}
-          </button>
-        </InfoRow>
-        <InfoRow>
-          {changePrompt}
-          {" "}
-          <button
-            type="button"
-            className="cursor-pointer font-bold text-primary-100"
-          >
-            {changeLabel}
-          </button>
-        </InfoRow>
-      </div>
-      <Button
-        onClick={onVerify}
-        disabled={code.length < 6}
-        className="h-14 w-full rounded-2xl text-base font-bold"
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onVerify)}
+        className="space-y-8"
       >
-        {actionLabel}
-      </Button>
-    </div>
+        <Heading
+          title={actionLabel === "Verify Email" ? "Verify your email" : "Verify your phone number"}
+          description={description}
+        />
+        <FormField
+          control={form.control}
+          name="code"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <InputOTP
+                  maxLength={6}
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                >
+                  <InputOTPGroup>
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <InputOTPSlot
+                        // eslint-disable-next-line react/no-array-index-key -- fixed-length OTP boxes
+                        key={index}
+                        index={index}
+                      />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="space-y-3">
+          <InfoRow>
+            {resendPrompt}
+            {" "}
+            <button
+              type="button"
+              className="cursor-pointer font-bold text-primary-100"
+            >
+              {resendLabel}
+            </button>
+          </InfoRow>
+          <InfoRow>
+            {changePrompt}
+            {" "}
+            <button
+              type="button"
+              className="cursor-pointer font-bold text-primary-100"
+            >
+              {changeLabel}
+            </button>
+          </InfoRow>
+        </div>
+        <Button
+          type="submit"
+          disabled={!form.formState.isValid}
+          className="h-14 w-full rounded-2xl text-base font-bold"
+        >
+          {actionLabel}
+        </Button>
+      </form>
+    </Form>
   );
 }
 
@@ -484,11 +470,11 @@ function EditButton({ onClick }: { onClick: () => void }) {
 }
 
 export function ReviewStep({
-  fields,
+  values,
   uploads,
   onEdit,
 }: {
-  fields: Fields;
+  values: OrganizationFormValues;
   uploads: Uploads;
   onEdit: (step: number) => void;
 }) {
@@ -503,7 +489,7 @@ export function ReviewStep({
           {ORG_FIELDS.map(field => (
             <div key={field.key}>
               <dt className="text-sm text-[#6B6B6B] uppercase">{field.reviewLabel}</dt>
-              <dd className="mt-1 text-base">{fields[field.key]}</dd>
+              <dd className="mt-1 text-base">{values[field.key]}</dd>
             </div>
           ))}
         </dl>

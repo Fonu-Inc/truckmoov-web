@@ -2480,3 +2480,307 @@ export type SystemSecurityEventsResponse = ServerResponse<{
   items: SystemSecurityEvent[]
   total: number
 }>
+
+// ─── Onboarding Applications (public, X-Application-Token) ───────────────────
+
+export type OnboardingApplicantType = 'fleet_provider' | 'owner_operator'
+
+export type OnboardingApplicationDocumentType =
+  | 'customer_request_letter'
+  | 'letter_of_authorization'
+  | 'signed_indemnity_form'
+  | 'cac_document'
+  | 'tax_certificate_or_tin'
+  | 'signature_card'
+  | 'utility_bill'
+  | 'identification_card'
+  | 'form_c02_c07'
+  | 'agreement_form'
+
+export type OnboardingApplicationStatus =
+  | 'draft'
+  | 'submitted'
+  | 'under_review'
+  | 'approved'
+  | 'rejected'
+  | 'changes_requested'
+
+export type OnboardingApplicationDocumentReviewStatus = 'pending' | 'approved' | 'rejected'
+
+export type OnboardingApplicationDocument = {
+  id: string
+  documentType: OnboardingApplicationDocumentType
+  fileName: string
+  contentType: string
+  sizeBytes: number
+  uploadedAt: string
+  reviewStatus?: OnboardingApplicationDocumentReviewStatus
+  reviewReason?: string | null
+  // ponytail: signed download URL is only present on the system detail endpoint;
+  // field name may differ once confirmed on the live spec.
+  downloadUrl?: string
+}
+
+export type OnboardingApplication = {
+  id: string
+  applicantType: OnboardingApplicantType
+  organizationName: string
+  businessEmail: string
+  organizationPhone: string
+  contactFullName: string
+  contactRole: string
+  streetAddress: string
+  city: string
+  state: string
+  emailVerified: boolean
+  phoneVerified: boolean
+  documents: OnboardingApplicationDocument[]
+  missingDocuments: OnboardingApplicationDocumentType[]
+  applicationStatus: OnboardingApplicationStatus
+  createdAt: string
+  updatedAt: string
+}
+
+export type CreateOnboardingApplicationPayload = {
+  data: {
+    applicantType: OnboardingApplicantType
+    organizationName: string
+    businessEmail: string
+    organizationPhone: string
+    contactFullName: string
+    contactRole: string
+    streetAddress: string
+    city: string
+    state: string
+  }
+}
+
+export type CreateOnboardingApplicationResponse = ServerResponse<{
+  applicationId: string
+  applicationToken: string
+  application: OnboardingApplication
+}>
+
+export type OnboardingApplicationResponse = ServerResponse<OnboardingApplication>
+
+export type UpdateOnboardingApplicationPayload = {
+  id: string
+  data: Partial<CreateOnboardingApplicationPayload['data']>
+}
+
+export type UploadOnboardingApplicationDocumentPayload = {
+  id: string
+  documentType: OnboardingApplicationDocumentType
+  file: File
+}
+
+export type DeleteOnboardingApplicationDocumentPayload = {
+  id: string
+  documentId: string
+}
+
+export type OnboardingApplicationVerifySendResponse = ServerResponse<{
+  maskedDestination: string
+  expiresInSeconds: number
+}>
+
+export type OnboardingApplicationVerifyPayload = {
+  id: string
+  data: { code: string }
+}
+
+export type SubmitOnboardingApplicationIncomplete = {
+  incomplete: true
+  emailVerified: boolean
+  phoneVerified: boolean
+  missingDocuments: OnboardingApplicationDocumentType[]
+  message: string
+}
+
+export type OnboardingApplicationTimelineEntry = {
+  step: string
+  label: string
+  complete: boolean
+  inProgress: boolean
+  completedAt?: string
+}
+
+export type OnboardingApplicationStatusResponse = ServerResponse<{
+  applicationStatus: OnboardingApplicationStatus
+  decisionReason?: string
+  timeline: OnboardingApplicationTimelineEntry[]
+}>
+
+// ─── System Onboarding Applications (bearer) ─────────────────────────────────
+
+export type SystemOnboardingApplicationsQuery = {
+  params?: {
+    status?: OnboardingApplicationStatus
+    applicantType?: OnboardingApplicantType
+    search?: string
+    page?: number
+    limit?: number
+  }
+}
+
+export type SystemOnboardingApplicationsListResponse = ServerResponse<{
+  items: OnboardingApplication[]
+  total: number
+  page: number
+  limit: number
+}>
+
+export type SystemOnboardingApplicationDocumentActionPayload = {
+  id: string
+  documentId: string
+}
+
+export type SystemRejectOnboardingApplicationDocumentPayload = {
+  id: string
+  documentId: string
+  data: { reason: string }
+}
+
+export type SystemOnboardingApplicationDocumentResponse =
+  ServerResponse<OnboardingApplicationDocument>
+
+export type SystemRejectOnboardingApplicationPayload = {
+  id: string
+  data: { reason: string }
+}
+
+export type SystemRequestChangesOnboardingApplicationPayload = {
+  id: string
+  data: { reason: string }
+}
+
+// ─── Platform Integrations ───────────────────────────────────────────────────
+
+export type PlatformIntegration = {
+  serviceKey: string
+  category: string
+  enabled: boolean
+  // ponytail: `config` shape is provider-specific — kept as Record for now.
+  config?: Record<string, unknown>
+  updatedAt?: string
+}
+
+export type PlatformIntegrationsResponse = ServerResponse<{
+  items: PlatformIntegration[]
+}>
+
+export type UpdatePlatformIntegrationPayload = {
+  serviceKey: string
+  data: {
+    category: string
+    enabled: boolean
+    secret?: string
+    config?: Record<string, unknown>
+  }
+}
+
+export type PlatformIntegrationResponse = ServerResponse<PlatformIntegration>
+
+// ─── Communications Wallet ───────────────────────────────────────────────────
+
+export type CommunicationsWalletRangeQuery = {
+  params?: {
+    range?: '7d' | '30d' | '90d' | 'custom'
+    startDate?: string
+    endDate?: string
+  }
+}
+
+// ponytail: response data shapes not declared in the current spec.
+export type CommunicationsWalletRatesResponse = ServerResponse<unknown>
+export type CommunicationsWalletSpendTrendResponse = ServerResponse<unknown>
+export type CommunicationsWalletSpendBreakdownResponse = ServerResponse<unknown>
+
+// ─── System Billing — bundle adoption + bundle catalog list ──────────────────
+
+// ponytail: bundle-adoption response shape not declared in the current spec.
+export type BundleAdoptionResponse = ServerResponse<unknown>
+
+export type BundleCatalogQuery = {
+  params?: {
+    carrierId?: string
+    billingCycle?: string
+    search?: string
+    status?: 'all' | 'active' | 'inactive'
+    page?: number
+    limit?: number
+  }
+}
+
+export type BundleCatalogItem = {
+  id: string
+  code: string
+  name: string
+  carrierId: string
+  dataAmountGb: number
+  validityDays: number
+  billingCycle: string
+  priceNaira: number
+  currency?: string
+  active?: boolean
+}
+
+export type BundleCatalogListResponse = ServerResponse<{
+  items: BundleCatalogItem[]
+  total: number
+}>
+
+// ─── Mailbox message flags ───────────────────────────────────────────────────
+
+export type UpdateMailboxMessageFlagsPayload = {
+  id: string
+  data: {
+    starred?: boolean
+    addLabels?: string[]
+    removeLabels?: string[]
+  }
+}
+
+// ponytail: flag-update response shape not declared in the current spec.
+export type MailboxMessageFlagsResponse = ServerResponse<unknown>
+
+// ─── Support Tickets (tenant) — reply / close / reopen ───────────────────────
+
+export type ReplySupportTicketPayload = {
+  id: string
+  data: { message: string }
+}
+
+export type CloseSupportTicketPayload = {
+  id: string
+}
+
+export type ReopenSupportTicketPayload = {
+  id: string
+  data: { reason: string }
+}
+
+// ─── System Subscription Plans — entitlements ────────────────────────────────
+
+export type SubscriptionPlanPaymentModel = 'prepaid' | 'postpaid'
+
+export type SubscriptionPlanAvailableFor =
+  | 'fleet_provider'
+  | 'enterprise'
+  | 'aggregator'
+  | 'owner_operator'
+
+export type UpdateSubscriptionPlanEntitlementsPayload = {
+  id: string
+  data: {
+    paymentModel?: SubscriptionPlanPaymentModel
+    // ponytail: quotas & limitBehaviour are free-form in the spec; typing
+    // stricter than Record<string, unknown> would be speculation.
+    quotas?: Record<string, unknown>
+    limitBehaviour?: Record<string, unknown>
+    features?: string[]
+    allowances?: string[]
+    availableFor?: SubscriptionPlanAvailableFor[]
+    trialDays?: number
+  }
+}

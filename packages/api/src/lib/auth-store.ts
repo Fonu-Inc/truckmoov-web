@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { AuthSession, AuthUser } from '../auth'
+import type { AuthSession, AuthUser } from '../auth'
 
 type AuthStoreState = {
   accessToken: string | null

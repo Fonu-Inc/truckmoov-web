@@ -17,6 +17,14 @@ export default defineConfig({
       ),
 
     },
+    // Prevent duplicate React/react-query instances causing hooks/QueryClient errors
+    dedupe: [
+      "react",
+      "react-dom",
+      "react/jsx-runtime",
+      "zustand",
+      "@tanstack/react-query",
+    ],
   },
   server: {
     port: 3000,

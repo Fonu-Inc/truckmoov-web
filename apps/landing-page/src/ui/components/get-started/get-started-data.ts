@@ -1,3 +1,4 @@
+import * as z from "zod";
 import mapIllustration from "@/ui/images/map.png";
 import truckIllustration from "@/ui/images/truck.png";
 
@@ -90,35 +91,25 @@ export const DOCUMENTS = [
 
 export const ORG_TYPES = [
   {
-    id: "fleet-provider",
+    id: "fleet_provider",
     title: "Fleet Provider",
     description: "Operates Vehicles & Drivers, Executes Transport Jobs.",
     illustration: mapIllustration,
   },
   {
-    id: "owner-operator",
+    id: "owner_operator",
     title: "Owner Operator",
     description: "Independent Operator With Own Vehicle(S)",
     illustration: truckIllustration,
   },
-];
+] as const;
 
 export type FieldKey = typeof ORG_FIELDS[number]["key"];
-export type Fields = Record<FieldKey, string>;
 export type Upload = {
   file: File | null; error: string | null;
 };
 export type Uploads = Record<string, Upload>;
 export type VerifyStatus = "idle" | "verifying" | "verified";
-
-export const EMPTY_FIELDS: Fields = {
-  organizationName: "",
-  businessEmail: "",
-  phone: "",
-  contactName: "",
-  contactRole: "",
-  address: "",
-};
 
 export const EMPTY_UPLOADS: Uploads = Object.fromEntries(DOCUMENTS.map(document => [
   document.id,
@@ -140,3 +131,121 @@ export function checkFile(file: File) {
 
   return null;
 }
+
+// Server validation contract (mirrored client-side so users don't wait on a
+// round trip to see obvious mistakes). Server is authoritative — a 400 with
+// `{ field, message }` will still land on the right input via setError.
+
+// 36 Nigerian states + FCT.
+const NIGERIAN_STATES = [
+  "Abia",
+  "Adamawa",
+  "Akwa Ibom",
+  "Anambra",
+  "Bauchi",
+  "Bayelsa",
+  "Benue",
+  "Borno",
+  "Cross River",
+  "Delta",
+  "Ebonyi",
+  "Edo",
+  "Ekiti",
+  "Enugu",
+  "FCT",
+  "Gombe",
+  "Imo",
+  "Jigawa",
+  "Kaduna",
+  "Kano",
+  "Katsina",
+  "Kebbi",
+  "Kogi",
+  "Kwara",
+  "Lagos",
+  "Nasarawa",
+  "Niger",
+  "Ogun",
+  "Ondo",
+  "Osun",
+  "Oyo",
+  "Plateau",
+  "Rivers",
+  "Sokoto",
+  "Taraba",
+  "Yobe",
+  "Zamfara",
+] as const;
+
+const NG_PHONE = /^(?:\+234|234|0)[789][01]\d{8}$/;
+
+export const organizationSchema = z.object({
+  applicantType: z.enum(
+    [
+      "fleet_provider",
+      "owner_operator",
+    ],
+    { message: "Please pick what best describes you." },
+  ),
+  organizationName: z.string().trim().min(
+    2,
+    "Organization name is required.",
+  ),
+  businessEmail: z.string().trim().email("Enter a valid business email."),
+  phone: z
+    .string()
+    .trim()
+    .refine(
+      value => !/[a-z]/i.test(value),
+      "Phone number can only contain digits.",
+    )
+    .refine(
+      value => NG_PHONE.test(value.replace(
+        /\s/g,
+        "",
+      )),
+      "Enter a Nigerian mobile number (e.g. +2348012345678).",
+    ),
+  contactName: z
+    .string()
+    .trim()
+    .refine(
+      value => !/\d/.test(value),
+      "Contact name can't contain digits.",
+    )
+    .refine(
+      value => value.split(/\s+/).filter(Boolean).length >= 2,
+      "Enter first and last name.",
+    ),
+  contactRole: z.string().trim().min(
+    2,
+    "Contact role is required.",
+  ),
+  address: z.string().trim().min(
+    5,
+    "Enter your organization address.",
+  ),
+  // Client-only until the API exposes a `state` field. Kept optional so the
+  // step doesn't break existing state; wire when the server accepts it.
+  state: z.enum(
+    NIGERIAN_STATES,
+    { message: "Pick a state." },
+  ).optional(),
+});
+
+export type OrganizationFormValues = z.infer<typeof organizationSchema>;
+
+export const verifyCodeSchema = z.object({
+  code: z
+    .string()
+    .length(
+      6,
+      "Enter the 6-digit code.",
+    )
+    .regex(
+      /^\d{6}$/,
+      "Code must be 6 digits.",
+    ),
+});
+
+export type VerifyCodeValues = z.infer<typeof verifyCodeSchema>;

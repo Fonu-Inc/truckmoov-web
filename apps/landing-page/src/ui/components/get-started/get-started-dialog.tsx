@@ -1,9 +1,11 @@
 import type {
-  FieldKey,
-  Fields,
+  OrganizationFormValues,
   Uploads,
+  VerifyCodeValues,
   VerifyStatus,
 } from "./get-started-data";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import {
   ArrowLeft,
   ArrowRight,
@@ -11,11 +13,11 @@ import {
   Rocket,
   X,
 } from "lucide-react";
-
 import { useState } from "react";
+
+import { useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
 import { Button } from "@/ui/shadcn/button";
-
 import {
   Dialog,
   DialogClose,
@@ -26,9 +28,10 @@ import {
 } from "@/ui/shadcn/dialog";
 import {
   checkFile,
-  EMPTY_FIELDS,
   EMPTY_UPLOADS,
+  organizationSchema,
   STEPS,
+  verifyCodeSchema,
 } from "./get-started-data";
 import {
   DocumentCheckStep,
@@ -41,7 +44,16 @@ import {
 } from "./get-started-steps";
 
 const VERIFY_DELAY_MS = 1200;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/;
+
+const EMPTY_ORG_VALUES: OrganizationFormValues = {
+  applicantType: undefined as unknown as OrganizationFormValues["applicantType"],
+  organizationName: "",
+  businessEmail: "",
+  phone: "",
+  contactName: "",
+  contactRole: "",
+  address: "",
+};
 
 function Stepper({
   current,
@@ -106,51 +118,47 @@ export default function GetStartedDialog({ children }: { children: React.ReactNo
     setSubmitted,
   ] = useState(false);
   const [
-    orgType,
-    setOrgType,
-  ] = useState<string | null>(null);
-  const [
-    fields,
-    setFields,
-  ] = useState<Fields>(EMPTY_FIELDS);
-  const [
     uploads,
     setUploads,
   ] = useState<Uploads>(EMPTY_UPLOADS);
-  const [
-    emailCode,
-    setEmailCode,
-  ] = useState("");
   const [
     emailStatus,
     setEmailStatus,
   ] = useState<VerifyStatus>("idle");
   const [
-    phoneCode,
-    setPhoneCode,
-  ] = useState("");
-  const [
     phoneStatus,
     setPhoneStatus,
   ] = useState<VerifyStatus>("idle");
 
+  const orgForm = useForm<OrganizationFormValues>({
+    resolver: zodResolver(organizationSchema),
+    mode: "onTouched",
+    defaultValues: EMPTY_ORG_VALUES,
+  });
+
+  const emailForm = useForm<VerifyCodeValues>({
+    resolver: zodResolver(verifyCodeSchema),
+    mode: "onChange",
+    defaultValues: { code: "" },
+  });
+
+  const phoneForm = useForm<VerifyCodeValues>({
+    resolver: zodResolver(verifyCodeSchema),
+    mode: "onChange",
+    defaultValues: { code: "" },
+  });
+
+  const orgValues = orgForm.watch();
+
   function reset() {
     setStep(0);
     setSubmitted(false);
-    setOrgType(null);
-    setFields(EMPTY_FIELDS);
     setUploads(EMPTY_UPLOADS);
-    setEmailCode("");
     setEmailStatus("idle");
-    setPhoneCode("");
     setPhoneStatus("idle");
-  }
-
-  function setField(key: FieldKey, value: string) {
-    setFields(previous => ({
-      ...previous,
-      [key]: value,
-    }));
+    orgForm.reset(EMPTY_ORG_VALUES);
+    emailForm.reset({ code: "" });
+    phoneForm.reset({ code: "" });
   }
 
   function setUpload(id: string, file: File | null) {
@@ -163,8 +171,8 @@ export default function GetStartedDialog({ children }: { children: React.ReactNo
     }));
   }
 
-  // ponytail: mocked — any six digits pass. Swap for the real verify call when the API lands.
-  function verify(setStatus: (status: VerifyStatus) => void) {
+  // ponytail: mocked — swap for the real verify mutation when wiring the API.
+  function fakeVerify(setStatus: (status: VerifyStatus) => void) {
     setStatus("verifying");
     setTimeout(
       setStatus,
@@ -175,9 +183,7 @@ export default function GetStartedDialog({ children }: { children: React.ReactNo
 
   const documentsReady = Object.values(uploads).every(upload => upload.file && !upload.error);
   const canContinue = [
-    orgType !== null
-    && Object.values(fields).every(value => value.trim() !== "")
-    && EMAIL_PATTERN.test(fields.businessEmail),
+    orgForm.formState.isValid,
     documentsReady,
     documentsReady,
     emailStatus === "verified",
@@ -185,7 +191,12 @@ export default function GetStartedDialog({ children }: { children: React.ReactNo
     true,
   ][step];
 
-  function onContinue() {
+  async function onContinue() {
+    if (step === 0) {
+      const ok = await orgForm.trigger();
+      if (!ok)
+        return;
+    }
     if (step === STEPS.length - 1)
       setSubmitted(true);
     else
@@ -235,16 +246,9 @@ export default function GetStartedDialog({ children }: { children: React.ReactNo
         />
 
         <div className="flex-1 overflow-y-auto px-9 py-10">
-          {submitted && <SubmittedStep email={fields.businessEmail} />}
+          {submitted && <SubmittedStep email={orgValues.businessEmail} />}
 
-          {!submitted && step === 0 && (
-            <OrganizationStep
-              orgType={orgType}
-              onOrgTypeChange={setOrgType}
-              fields={fields}
-              onFieldChange={setField}
-            />
-          )}
+          {!submitted && step === 0 && <OrganizationStep form={orgForm} />}
 
           {!submitted && step === 1 && (
             <UploadStep
@@ -263,16 +267,15 @@ export default function GetStartedDialog({ children }: { children: React.ReactNo
             emailStatus === "idle"
               ? (
                   <VerifyStep
+                    form={emailForm}
                     description={(
                       <>
                         We've Sent A Verification Code To
                         {" "}
-                        <span className="font-bold text-foreground">{fields.businessEmail}</span>
+                        <span className="font-bold text-foreground">{orgValues.businessEmail}</span>
                       </>
                     )}
-                    code={emailCode}
-                    onCodeChange={setEmailCode}
-                    onVerify={() => verify(setEmailStatus)}
+                    onVerify={() => fakeVerify(setEmailStatus)}
                     resendPrompt="Didn't receive the Email?"
                     resendLabel="Resend Email"
                     changePrompt="Made a mistake with the Email?"
@@ -295,10 +298,9 @@ export default function GetStartedDialog({ children }: { children: React.ReactNo
             phoneStatus === "idle"
               ? (
                   <VerifyStep
+                    form={phoneForm}
                     description="We'll Use This Number For Important Updates About Your Fleet Pro Application."
-                    code={phoneCode}
-                    onCodeChange={setPhoneCode}
-                    onVerify={() => verify(setPhoneStatus)}
+                    onVerify={() => fakeVerify(setPhoneStatus)}
                     resendPrompt="Didn't receive the Code?"
                     resendLabel="Resend Code"
                     changePrompt="Made a mistake with the Phone Number?"
@@ -319,7 +321,7 @@ export default function GetStartedDialog({ children }: { children: React.ReactNo
 
           {!submitted && step === 5 && (
             <ReviewStep
-              fields={fields}
+              values={orgValues}
               uploads={uploads}
               onEdit={setStep}
             />

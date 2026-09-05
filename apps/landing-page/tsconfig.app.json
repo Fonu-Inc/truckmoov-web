@@ -10,7 +10,9 @@
     /* Bundler mode */
     "moduleResolution": "bundler",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@truckmoov/api/lib/*": ["../../packages/api/src/lib/*.ts"],
+      "@truckmoov/api/*": ["../../packages/api/src/*/index.ts"]
     },
 
     "types": ["vite/client"],

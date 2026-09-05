@@ -7,6 +7,8 @@
     "./package.json": "./package.json",
     "./lib/auth-store": "./src/lib/auth-store.ts",
     "./lib/axios-instance": "./src/lib/axios-instance.ts",
+    "./lib/http-errors": "./src/lib/http-errors.ts",
+    "./lib/onboarding-instance": "./src/lib/onboarding-instance.ts",
     "./lib/query-client": "./src/lib/query-client.ts",
     "./lib/types": "./src/lib/types.ts",
     "./auth": "./src/auth/index.ts",
