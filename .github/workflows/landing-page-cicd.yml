@@ -1,0 +1,125 @@
+name: Landing Page CI/CD
+
+on:
+  pull_request:
+    paths:
+      - apps/landing-page/**
+      - packages/**
+      - package.json
+      - pnpm-lock.yaml
+  push:
+    branches:
+      - main
+    paths:
+      - apps/landing-page/**
+      - packages/**
+      - package.json
+      - pnpm-lock.yaml
+  workflow_dispatch:
+
+concurrency:
+  group: truckmoov-landing-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_NAME: truckmoov-landing
+  RELEASE_ARCHIVE: truckmoov-landing-release.tar.gz
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build environment file
+        run: |
+          if [ -n "${LANDING_ENV}" ]; then
+            printf '%s' "${LANDING_ENV}" | base64 -d > apps/landing-page/.env.production
+          elif [ -f apps/landing-page/.env.example ]; then
+            cp apps/landing-page/.env.example apps/landing-page/.env.production
+          fi
+        env:
+          LANDING_ENV: ${{ secrets.LANDING_ENV }}
+
+      - name: Build landing page
+        run: pnpm turbo build --filter landing-page
+
+      - name: Package release
+        if: github.event_name != 'pull_request'
+        run: |
+          tar --owner=0 --group=0 --mode='go-w' -czf "${RELEASE_ARCHIVE}" -C apps/landing-page/dist .
+          ls -lh "${RELEASE_ARCHIVE}"
+          test -f "${RELEASE_ARCHIVE}"
+
+      - name: Upload build artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: truckmoov-landing-release
+          path: ${{ env.RELEASE_ARCHIVE }}
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: validate
+    permissions:
+      contents: read
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: truckmoov-landing-release
+
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.DEV_SSH_KEY }}
+          SSH_HOST: ${{ secrets.DEV_SSH_HOST }}
+          SSH_PORT_RAW: ${{ secrets.DEV_SSH_PORT }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          PORT="${SSH_PORT_RAW:-22}"
+          echo "SSH_PORT=$PORT" >> $GITHUB_ENV
+          echo "SSH_HOST=$SSH_HOST" >> $GITHUB_ENV
+          ssh-keyscan -t ed25519 -p "$PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Write .env to shared
+        env:
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          ENV_B64: ${{ secrets.LANDING_ENV }}
+        run: |
+          printf '%s' "$ENV_B64" | ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" \
+            "$SSH_USER@$SSH_HOST" "write-env $APP_NAME"
+
+      - name: Deploy via wrapper
+        env:
+          SSH_USER: ${{ secrets.DEV_SSH_USER }}
+          RUN_NUMBER: ${{ github.run_number }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          RELEASE="release-$(date +%s)-${RUN_NUMBER}-${COMMIT_SHA}"
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
+            "deploy $APP_NAME $RELEASE" < "${RELEASE_ARCHIVE}"
+
+      - name: Tear down SSH
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
