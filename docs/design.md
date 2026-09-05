@@ -89,9 +89,10 @@ Never hardcode a color. Use the semantic Tailwind token (`bg-card`,
 | `ring` | primary | primary | Focus rings are always yellow |
 
 `--radius: 0.875rem`. The sidebar keeps its own token set
-(`sidebar-background`, `sidebar-accent`, …) and flips with the theme — light
-surface in light mode, dark charcoal in dark mode. The auth branding panel
-(`AuthBrandingPanel`) is the one exception: it scopes `.dark` on itself so
+(`sidebar-background`, `sidebar-accent`, …) and **stays dark charcoal in both
+themes** — only the content column and page surfaces flip with the theme, so
+the sidebar always reads as the app's identity rail. The auth branding panel
+(`AuthBrandingPanel`) also renders dark: it scopes `.dark` on itself so
 `bg-sidebar` resolves to the dark values regardless of the app-level theme.
 
 Charts use `--chart-1..5` (yellow, green, blue, purple, red) — MTN-aligned,
@@ -157,11 +158,11 @@ Scrollbars are restyled globally to a 6px muted thumb.
 - A 2px primary bar at the very top of the shell shows `useNavigation().state`.
   Page chunks load on demand (see below), so a click can block briefly; without
   the bar that wait reads as the app freezing.
-- Content column is `bg-card` and the sidebar is `bg-sidebar` — both flip
-  with the theme, so the layout separation comes from a `border-r
-  border-sidebar-border` on the sidebar. In dark mode the sidebar is
-  darker than the card; in light mode it's a near-white surface next to a
-  white content column with a hairline between them.
+- Content column is `bg-card` and the sidebar is `bg-sidebar`. The content
+  column flips with the theme; the sidebar stays dark charcoal in both
+  themes, so it always contrasts against the content column — dark on
+  darker in dark mode, dark on white in light mode. A `border-r
+  border-sidebar-border` marks the seam.
 - Sidebar, header, and page content each sit in their own `ErrorBoundary`; one
   broken page never blanks the shell. See [Status screens](#status-screens).
 - `OnboardingRouteGate` wraps children and is a pass-through in both apps today
