@@ -565,7 +565,7 @@ export function PlatformDeviceManagement() {
               </div>
             )
           : (
-              <div className="grid grid-cols-4 gap-4 mt-4 lg:grid-cols-7">
+              <div className="grid gap-4 mt-4 grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
                 {summaryCards.map(stat => (
                   <div
                     key={stat.label}

@@ -550,7 +550,7 @@ export function PostpaidBillingTab({
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
         <StatCard
           title="Postpaid Tenants"
           value={postpaidTenants.length.toString()}

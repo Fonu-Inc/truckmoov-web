@@ -521,7 +521,7 @@ export function AllTickets() {
   return (
     <>
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
           <StatCard
             label="Total Tickets"
             value={counts.total}
@@ -830,9 +830,9 @@ function StatCard({
   return (
     <Card>
       <CardContent className="flex items-center gap-3 p-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted">{icon}</div>
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">{icon}</div>
         <div className="min-w-0">
-          <p className="truncate text-xs text-muted-foreground">{label}</p>
+          <p className="break-words text-xs text-muted-foreground">{label}</p>
           <p className="text-xl font-semibold leading-tight">{value}</p>
         </div>
       </CardContent>

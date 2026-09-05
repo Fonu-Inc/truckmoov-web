@@ -237,7 +237,7 @@ export function DeviceLinkingResolver({
         ) : (
           <div className="flex-1 overflow-hidden space-y-4">
             {/* Summary */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
               <Card>
                 <CardHeader className="py-3">
                   <CardTitle className="text-sm flex items-center gap-2">

@@ -312,7 +312,7 @@ export function SupportDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-start gap-4">
@@ -434,7 +434,11 @@ export function SupportDashboard() {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* ponytail: `[&>*]:min-w-0` lets grid tracks shrink below their
+          content min-width — without it, a card's truncated text still counts
+          as full min-content, so a long ticket title inflates the column past
+          the viewport on mobile. */}
+      <div className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -544,7 +548,7 @@ export function SupportDashboard() {
             <CardDescription>Support load distribution</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {topTenants.slice(
                 0,
                 8,

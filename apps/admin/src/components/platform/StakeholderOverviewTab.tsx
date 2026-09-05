@@ -98,14 +98,14 @@ export function StakeholderOverviewTab() {
   return (
     <div className="space-y-6">
       {/* Stat cards per org type */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
         {typeSummaries.map((summary) => {
           const Icon = ORG_TYPE_ICONS[summary.type] || Building2;
           return (
             <Card key={summary.type}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <div className="space-y-1">
+                  <div className="space-y-1 min-w-0">
                     <p className="text-sm font-medium text-muted-foreground">
                       {summary.label}
                       s
@@ -123,7 +123,7 @@ export function StakeholderOverviewTab() {
                     </div>
                   </div>
                   <div
-                    className={`h-12 w-12 rounded-lg flex items-center justify-center ${ORG_TYPE_BG[summary.type]}`}
+                    className={`h-12 w-12 shrink-0 rounded-lg flex items-center justify-center ${ORG_TYPE_BG[summary.type]}`}
                   >
                     <Icon className="h-6 w-6" />
                   </div>

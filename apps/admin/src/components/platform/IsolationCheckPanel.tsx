@@ -578,7 +578,7 @@ export function IsolationCheckPanel() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-3">
               <Stat
                 label="Caller (Tenant A)"
                 value={report.tenantA.name}
@@ -735,7 +735,7 @@ function Stat({
   return (
     <div className="rounded-lg border p-3">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={`text-lg font-semibold truncate ${valueClass}`}>{value}</div>
+      <div className={`text-lg font-semibold break-words ${valueClass}`}>{value}</div>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   formatDate,
   formatWithPattern,
@@ -26,6 +27,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import {
@@ -35,8 +37,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/shadcn/data-table";
 
 type NotificationLog = {
   id: string;
@@ -393,7 +393,10 @@ export function KYCNotificationHistory() {
         <div className="text-sm">
           <p>{formatDate(row.original.sent_at)}</p>
           <p className="text-muted-foreground text-xs">
-            {formatWithPattern(row.original.sent_at, "h:mm a")}
+            {formatWithPattern(
+              row.original.sent_at,
+              "h:mm a",
+            )}
           </p>
         </div>
       ),
@@ -411,15 +414,15 @@ export function KYCNotificationHistory() {
   return (
     <div className="space-y-6">
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
         <Card className="bg-card border-border">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">Total Sent</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
-              <div className="p-3 rounded-full bg-primary/10">
+              <div className="shrink-0 p-3 rounded-full bg-primary/10">
                 <Mail className="w-5 h-5 text-primary" />
               </div>
             </div>
@@ -428,11 +431,11 @@ export function KYCNotificationHistory() {
         <Card className="bg-card border-border">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">Delivered</p>
                 <p className="text-2xl font-bold">{stats.sent}</p>
               </div>
-              <div className="p-3 rounded-full bg-success/10">
+              <div className="shrink-0 p-3 rounded-full bg-success/10">
                 <MailCheck className="w-5 h-5 text-success" />
               </div>
             </div>
@@ -441,11 +444,11 @@ export function KYCNotificationHistory() {
         <Card className="bg-card border-border">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">Failed</p>
                 <p className="text-2xl font-bold">{stats.failed}</p>
               </div>
-              <div className="p-3 rounded-full bg-destructive/10">
+              <div className="shrink-0 p-3 rounded-full bg-destructive/10">
                 <MailX className="w-5 h-5 text-destructive" />
               </div>
             </div>
@@ -454,11 +457,11 @@ export function KYCNotificationHistory() {
         <Card className="bg-card border-border">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">Pending</p>
                 <p className="text-2xl font-bold">{stats.pending}</p>
               </div>
-              <div className="p-3 rounded-full bg-warning/10">
+              <div className="shrink-0 p-3 rounded-full bg-warning/10">
                 <Clock className="w-5 h-5 text-warning" />
               </div>
             </div>
@@ -523,12 +526,12 @@ export function KYCNotificationHistory() {
               columns={logColumns}
               data={filteredLogs}
               hasActiveFilters={!!searchQuery || statusFilter !== "all" || typeFilter !== "all"}
-              emptyState={
+              emptyState={(
                 <div className="text-muted-foreground">
                   <Mail className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>No notification logs found</p>
                 </div>
-              }
+              )}
               filteredEmptyState="No notification logs match your filters."
             />
           </ScrollArea>

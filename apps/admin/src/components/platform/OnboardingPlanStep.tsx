@@ -257,10 +257,8 @@ export function OnboardingPlanStep({
       )}
 
       {/* Plan Cards */}
-      <div className={`grid gap-4 ${
-        plans.length <= 3 ? `grid-cols-1 md:grid-cols-${plans.length}` : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
-      }`}
-      >
+      {/* ponytail: auto-fit sizes to plan count without interpolated (JIT-invisible) column classes */}
+      <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(16rem,1fr))]">
         {plans.map((plan) => {
           const p = plan as any;
           const isSelected = selectedPlanKey === p.plan_key;

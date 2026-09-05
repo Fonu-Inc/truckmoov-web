@@ -1006,7 +1006,7 @@ export default function PlatformSIMs() {
         >
 
           {/* Stats */}
-          <div className="grid gap-4 md:grid-cols-5">
+          <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
             <StatCard
               title="Total SIMs"
               value={summaryStats.total}

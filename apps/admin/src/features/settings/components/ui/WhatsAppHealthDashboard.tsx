@@ -209,7 +209,7 @@ export function WhatsAppHealthDashboard() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
           {[
             1,
             2,
@@ -241,14 +241,14 @@ export function WhatsAppHealthDashboard() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/20">
+              <div className="shrink-0 p-2 rounded-lg bg-success/20">
                 <Send className="h-5 w-5 text-success" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">{messageStats.sent}</p>
                 <p className="text-xs text-muted-foreground">Messages Sent</p>
               </div>
@@ -258,10 +258,10 @@ export function WhatsAppHealthDashboard() {
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/20">
+              <div className="shrink-0 p-2 rounded-lg bg-primary/20">
                 <TrendingUp className="h-5 w-5 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">
                   {deliveryRate}
                   %
@@ -274,10 +274,10 @@ export function WhatsAppHealthDashboard() {
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-warning/20">
+              <div className="shrink-0 p-2 rounded-lg bg-warning/20">
                 <Inbox className="h-5 w-5 text-warning" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">{webhookStats.total}</p>
                 <p className="text-xs text-muted-foreground">Webhook Events</p>
               </div>
@@ -287,10 +287,10 @@ export function WhatsAppHealthDashboard() {
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-destructive/20">
+              <div className="shrink-0 p-2 rounded-lg bg-destructive/20">
                 <AlertTriangle className="h-5 w-5 text-destructive" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">{webhookStats.failed}</p>
                 <p className="text-xs text-muted-foreground">Failed Events</p>
               </div>

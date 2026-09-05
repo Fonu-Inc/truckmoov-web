@@ -251,14 +251,14 @@ export function WhatsAppAssistPanel() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/20">
+              <div className="shrink-0 p-2 rounded-lg bg-success/20">
                 <CheckCircle className="h-5 w-5 text-success" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">{accounts.filter(a => a.status === "CONNECTED").length}</p>
                 <p className="text-xs text-muted-foreground">Connected</p>
               </div>
@@ -268,10 +268,10 @@ export function WhatsAppAssistPanel() {
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-warning/20">
+              <div className="shrink-0 p-2 rounded-lg bg-warning/20">
                 <Clock className="h-5 w-5 text-warning" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">{accounts.filter(a => a.status === "PENDING").length}</p>
                 <p className="text-xs text-muted-foreground">Pending</p>
               </div>
@@ -281,10 +281,10 @@ export function WhatsAppAssistPanel() {
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-destructive/20">
+              <div className="shrink-0 p-2 rounded-lg bg-destructive/20">
                 <AlertTriangle className="h-5 w-5 text-destructive" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">{accounts.filter(a => a.status === "NEEDS_ATTENTION").length}</p>
                 <p className="text-xs text-muted-foreground">Needs Attention</p>
               </div>
@@ -294,10 +294,10 @@ export function WhatsAppAssistPanel() {
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/20">
+              <div className="shrink-0 p-2 rounded-lg bg-primary/20">
                 <Building2 className="h-5 w-5 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">{tenants.length}</p>
                 <p className="text-xs text-muted-foreground">Total Tenants</p>
               </div>

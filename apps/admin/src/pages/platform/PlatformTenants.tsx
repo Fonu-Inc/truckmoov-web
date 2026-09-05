@@ -695,7 +695,7 @@ export default function PlatformTenants() {
     <>
       <div className="space-y-6">
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+        <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
           <StatCard
             title="Total Tenants"
             value={totalTenants}

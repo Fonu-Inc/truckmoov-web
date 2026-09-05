@@ -246,7 +246,7 @@ export default function PlatformCommunications() {
     <>
       <div className="space-y-6">
         {/* KPI strip */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
           <Kpi
             icon={Inbox}
             label="Pending Requests"
@@ -537,12 +537,12 @@ function Kpi({
   return (
     <Card>
       <CardContent className="p-4 flex items-center gap-3">
-        <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${iconBg}`}>
+        <div className={`h-10 w-10 shrink-0 rounded-lg flex items-center justify-center ${iconBg}`}>
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <div className="text-xs text-muted-foreground truncate">{label}</div>
-          <div className="text-xl font-semibold truncate">{value}</div>
+          <div className="text-xs text-muted-foreground break-words">{label}</div>
+          <div className="text-xl font-semibold break-words">{value}</div>
         </div>
       </CardContent>
     </Card>

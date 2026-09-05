@@ -19,7 +19,9 @@ export function SecurityLayout() {
       <div className="w-full">
         <nav
           aria-label="Security sections"
-          className="bg-secondary/60 text-muted-foreground flex h-auto w-full flex-wrap justify-center gap-1 rounded-md p-1"
+          // ponytail: horizontal scroll on mobile, wrap on desktop — see
+          // SettingsLayout for the same reasoning.
+          className="bg-secondary/60 text-muted-foreground flex h-auto w-full gap-1 overflow-x-auto rounded-md p-1 md:flex-wrap md:justify-center md:overflow-visible"
         >
           {SECURITY_TABS.map(tab => (
             <NavLink

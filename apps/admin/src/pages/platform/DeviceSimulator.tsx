@@ -324,7 +324,7 @@ export default function DeviceSimulator() {
       </div>
 
       {/* Stats Dashboard */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
         <StatCard
           title="Total Devices"
           value={devices.length}

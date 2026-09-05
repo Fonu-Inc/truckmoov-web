@@ -316,7 +316,7 @@ export function TelephonySettings() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
             {/* API Status */}
             <Card className="border-border/50">
               <CardContent className="pt-4">
@@ -410,7 +410,7 @@ export function TelephonySettings() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
             <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30">
               <div className="p-2 rounded-full bg-primary/10">
                 <Phone className="h-5 w-5 text-primary" />
@@ -575,7 +575,7 @@ export function TelephonySettings() {
           </div>
 
           {/* Cost Breakdown */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
             <div className="p-4 rounded-lg border border-border/50">
               <div className="flex items-center gap-2 mb-2">
                 <PhoneOutgoing className="h-4 w-4 text-primary" />
@@ -915,7 +915,7 @@ export function TelephonySettings() {
             </div>
           </div>
 
-          <div className="flex gap-2 pt-4">
+          <div className="flex flex-wrap gap-2 pt-4">
             <Button
               variant="outline"
               onClick={handleTestConnection}

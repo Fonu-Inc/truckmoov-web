@@ -198,7 +198,7 @@ export function GeographicHeatmap({ attempts }: GeographicHeatmapProps) {
       </CardHeader>
       <CardContent>
         {/* Heatmap Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-3 mb-6">
           {countryData.slice(
             0,
             8,

@@ -67,7 +67,7 @@ export default function PlatformDevices() {
             </div>
           )
         : (
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
               {summaryQuery.isLoading
                 ? (
                     Array.from({ length: 5 }).fill(0).map((_, i) => (

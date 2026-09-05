@@ -12,7 +12,12 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-9 items-center justify-center rounded-md bg-secondary/60 p-1 text-muted-foreground",
+      // ponytail: `max-w-full overflow-x-auto` lets a long tab strip scroll
+      // within its container instead of punching the page wider on narrow
+      // viewports. Keeps `inline-flex` so callers using centered/auto layouts
+      // still render at fit-content when they fit. Scrollbar chrome hidden;
+      // swipe/drag still works.
+      "inline-flex h-9 max-w-full items-center justify-center overflow-x-auto rounded-md bg-secondary/60 p-1 text-muted-foreground [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
       className,
     )}
     {...props}

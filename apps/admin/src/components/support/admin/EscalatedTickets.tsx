@@ -419,7 +419,7 @@ export function EscalatedTickets() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
         {Object.entries(escalationConfig).map(([
           key,
           config,

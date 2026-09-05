@@ -1,8 +1,11 @@
 import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
+import type {
+  LoginEvent, SecurityEvent,
+} from "@/features/security/types";
+import { useQuery } from "@tanstack/react-query";
+import { getSystemSecurityOverviewQueryOptions } from "@truckmoov/api/auth";
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
 import { formatDateInTimezone } from "@truckmoov/app-core/utils/time-utils";
-import { getSystemSecurityOverviewQueryOptions } from "@truckmoov/api/auth";
-import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   Ban,
@@ -53,7 +56,6 @@ import {
 import { ScrollArea } from "@/components/shadcn/scroll-area";
 import { Separator } from "@/components/shadcn/separator";
 import { usePreferences } from "@/contexts/PreferencesContext";
-import type { LoginEvent, SecurityEvent } from "@/features/security/types";
 import {
   mockLoginEvents,
   mockSecurityEvents,
@@ -205,7 +207,7 @@ export default function SecurityOverviewPage() {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
         <StatCard
           title="Successful Logins (24h)"
           value={totalLogins}

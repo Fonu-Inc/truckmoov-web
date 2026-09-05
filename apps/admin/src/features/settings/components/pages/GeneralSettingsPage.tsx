@@ -5,24 +5,19 @@ import {
   useUpdateSystemSettings,
 } from "@truckmoov/api/auth";
 import {
-  Camera,
   Database,
   Globe,
   Mail,
   RefreshCw,
   Save,
-  User as UserIcon,
 } from "lucide-react";
 import {
-  useEffect, useRef, useState,
+  useEffect, useState,
 } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import {
-  Avatar, AvatarFallback, AvatarImage,
-} from "@/components/shadcn/avatar";
-import { Badge } from "@/components/shadcn/badge";
+
 import { Button } from "@/components/shadcn/button";
 import {
   Card,
@@ -49,16 +44,14 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Switch } from "@/components/shadcn/switch";
-import { useAuthStore } from "@/stores/authStore";
 
 /**
- * `/settings` — matches fleetflow's General tab card layout:
- * My Profile / Display Preferences / Platform Features / Data Retention / Support Email.
+ * `/settings` — matches fleetflow's General tab card layout minus the
+ * removed My Profile + Display Preferences cards. Now:
+ * Platform Features / Data Retention / Support Email.
  *
- * ponytail: Profile, Display Preferences, and Support Email are unwired local
- * state to match fleetflow's shape. Wire when the API exposes user profile
- * updates + user preference storage + platform support email endpoint.
- * Platform Features + Data Retention keep their real @truckmoov/api wiring.
+ * ponytail: Support Email is unwired local state. Platform Features + Data
+ * Retention keep their real @truckmoov/api wiring.
  */
 
 const platformFeaturesSchema = z.object({
@@ -104,65 +97,11 @@ const DEFAULT_DATA_RETENTION: DataRetentionFormValues = {
   backupFrequency: "daily",
 };
 
-const TIMEZONE_OPTIONS = [
-  {
-    code: "Africa/Lagos", label: "WAT — West Africa Time (GMT+1)",
-  },
-  {
-    code: "UTC", label: "UTC — Coordinated Universal Time (GMT+0)",
-  },
-];
-
-const DATE_RANGE_OPTIONS = [
-  {
-    code: "today", label: "Today",
-  },
-  {
-    code: "7d", label: "Last 7 days",
-  },
-  {
-    code: "30d", label: "Last 30 days",
-  },
-  {
-    code: "90d", label: "Last 90 days",
-  },
-];
-
 export default function GeneralSettingsPage() {
-  const user = useAuthStore(s => s.user);
   const systemSettingsQuery = useQuery(getSystemSettingsQueryOptions());
   const systemSettings = systemSettingsQuery.data?.data;
   const updatePlatformFeatures = useUpdateSystemSettings();
   const updateDataRetention = useUpdateSystemSettings();
-
-  // Profile — unwired local state to match fleetflow shape
-  const [
-    profileName,
-    setProfileName,
-  ] = useState("");
-  const [
-    profilePhone,
-    setProfilePhone,
-  ] = useState("");
-  const [
-    profileAvatar,
-    setProfileAvatar,
-  ] = useState<string | undefined>();
-  const [
-    savingProfile,
-    setSavingProfile,
-  ] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Display Preferences — unwired local state
-  const [
-    timezone,
-    setTimezone,
-  ] = useState("Africa/Lagos");
-  const [
-    defaultDateRange,
-    setDefaultDateRange,
-  ] = useState("7d");
 
   // Support Email — unwired local state
   const [
@@ -226,36 +165,6 @@ export default function GeneralSettingsPage() {
     ],
   );
 
-  const handleAvatarPick = () => fileInputRef.current?.click();
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) {
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Image must be smaller than 2MB");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = ev => setProfileAvatar(ev.target?.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const handleSaveProfile = async () => {
-    if (!profileName.trim()) {
-      toast.error("Name cannot be empty");
-      return;
-    }
-    setSavingProfile(true);
-    // ponytail: no user-profile update endpoint yet; fake latency
-    await new Promise(r => setTimeout(
-      r,
-      500,
-    ));
-    setSavingProfile(false);
-    toast.success("Profile updated");
-  };
-
   const handleSavePlatformFeatures = (values: PlatformFeaturesFormValues) => {
     updatePlatformFeatures.mutate(
       {
@@ -310,174 +219,6 @@ export default function GeneralSettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* My Profile */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserIcon className="h-5 w-5 text-primary" />
-            My Profile
-          </CardTitle>
-          <CardDescription>
-            Update your name, contact details, and profile photo.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Avatar className="h-20 w-20">
-                <AvatarImage
-                  src={profileAvatar}
-                  alt={profileName}
-                />
-                <AvatarFallback className="text-lg">
-                  {(profileName || user?.email || "U").charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <button
-                type="button"
-                onClick={handleAvatarPick}
-                className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow hover:opacity-90"
-                aria-label="Change avatar"
-              >
-                <Camera className="h-3.5 w-3.5" />
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleAvatarChange}
-              />
-            </div>
-            <div>
-              <p className="font-medium">{profileName || "Platform Admin"}</p>
-              <p className="text-xs text-muted-foreground">{user?.email}</p>
-              {user?.role && (
-                <Badge
-                  variant="outline"
-                  className="mt-1 capitalize"
-                >
-                  {user.role.replace(
-                    /_/g,
-                    " ",
-                  )}
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="profileName">Full Name</Label>
-              <Input
-                id="profileName"
-                value={profileName}
-                onChange={e => setProfileName(e.target.value)}
-                placeholder="Your name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="profileEmail">Email</Label>
-              <Input
-                id="profileEmail"
-                value={user?.email ?? ""}
-                disabled
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="profilePhone">Phone</Label>
-              <Input
-                id="profilePhone"
-                value={profilePhone}
-                onChange={e => setProfilePhone(e.target.value)}
-                placeholder="+234..."
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <Button
-              onClick={handleSaveProfile}
-              disabled={savingProfile}
-            >
-              {savingProfile
-                ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  )
-                : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Profile
-                    </>
-                  )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Display Preferences */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-primary" />
-            Display Preferences
-          </CardTitle>
-          <CardDescription>
-            Centralized time and date defaults. These become the default filters for charts,
-            tables, and reports across the platform.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Default Timezone</Label>
-              <Select
-                value={timezone}
-                onValueChange={setTimezone}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIMEZONE_OPTIONS.map(tz => (
-                    <SelectItem
-                      key={tz.code}
-                      value={tz.code}
-                    >
-                      {tz.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Default Time Range</Label>
-              <Select
-                value={defaultDateRange}
-                onValueChange={setDefaultDateRange}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {DATE_RANGE_OPTIONS.map(r => (
-                    <SelectItem
-                      key={r.code}
-                      value={r.code}
-                    >
-                      {r.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Platform Features */}
       <Card>
         <CardHeader>

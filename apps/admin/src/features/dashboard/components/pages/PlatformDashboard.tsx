@@ -437,7 +437,7 @@ export default function PlatformDashboard() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
         <StatCard
           title="Total Tenants"
           value={formatMetric(systemDashboard?.totalTenants)}
@@ -465,7 +465,7 @@ export default function PlatformDashboard() {
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-start gap-4">
@@ -669,7 +669,11 @@ export default function PlatformDashboard() {
               <CardContent className="space-y-3">
                 {systemHealthLoading && (
                   <>
-                    {[0, 1, 2].map(i => (
+                    {[
+                      0,
+                      1,
+                      2,
+                    ].map(i => (
                       <div
                         key={i}
                         className="flex items-center justify-between rounded-lg border border-border p-3"

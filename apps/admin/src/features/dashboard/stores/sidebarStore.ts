@@ -5,6 +5,9 @@ type SidebarState = {
   collapsed: boolean;
   toggle: () => void;
   setCollapsed: (v: boolean) => void;
+  mobileOpen: boolean;
+  openMobile: () => void;
+  closeMobile: () => void;
 };
 
 /**
@@ -14,13 +17,17 @@ type SidebarState = {
  * localStorage across ports, so a shared key would let the two apps overwrite
  * each other's sidebar.
  *
- * ponytail: only `collapsed` is persisted — the actions are code, not state.
+ * ponytail: only `collapsed` is persisted — `mobileOpen` is transient (a
+ * reload should not restore an open drawer), and actions are code.
  */
 export const useSidebarStore = create<SidebarState>()(persist(
   set => ({
     collapsed: false,
     toggle: () => set(s => ({ collapsed: !s.collapsed })),
     setCollapsed: v => set({ collapsed: v }),
+    mobileOpen: false,
+    openMobile: () => set({ mobileOpen: true }),
+    closeMobile: () => set({ mobileOpen: false }),
   }),
   {
     name: "admin-sidebar",

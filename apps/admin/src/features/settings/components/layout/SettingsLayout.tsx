@@ -26,7 +26,11 @@ export function SettingsLayout() {
       <div className="w-full">
         <nav
           aria-label="Settings sections"
-          className="bg-secondary/60 text-muted-foreground flex h-auto w-full flex-wrap justify-center gap-1 rounded-md p-1"
+          // ponytail: horizontal scroll on mobile is the standard tab-bar
+          // pattern (keeps every tab visible, no hidden overflow menu). Desktop
+          // still wraps and centers so long tab lists don't horizontal-scroll
+          // when they fit.
+          className="bg-secondary/60 text-muted-foreground flex h-auto w-full gap-1 overflow-x-auto rounded-md p-1 md:flex-wrap md:justify-center md:overflow-visible"
         >
           {SETTINGS_TABS.filter(tab => canSeeTab(
             tab,

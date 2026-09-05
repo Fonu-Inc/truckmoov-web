@@ -153,7 +153,7 @@ export function PlatformAISettings() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />
@@ -240,7 +240,7 @@ export function PlatformAISettings() {
           value="providers"
           className="space-y-4"
         >
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
             {/* OpenAI */}
             <Card className={config.openai_enabled ? "border-primary/50" : "opacity-75"}>
               <CardHeader className="pb-3">
@@ -582,7 +582,7 @@ export function PlatformAISettings() {
           </div>
 
           {stats && (
-            <div className="grid gap-4 md:grid-cols-4 mb-6">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4 mb-6">
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-2xl font-bold">{stats.totalRequests}</div>

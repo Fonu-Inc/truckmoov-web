@@ -484,7 +484,7 @@ export function KYCReviewPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
         {[
           {
             label: "Awaiting review", value: pendingCount, icon: Clock, tone: "text-warning bg-warning/10",

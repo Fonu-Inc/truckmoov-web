@@ -406,37 +406,37 @@ export default function PlatformComplianceAudit() {
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-3">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center">
+            <div className="h-10 w-10 shrink-0 rounded-md bg-primary/10 flex items-center justify-center">
               <ShieldCheck className="h-5 w-5 text-primary" />
             </div>
             <div className="min-w-0">
               <div className="text-xs text-muted-foreground">Total Entries</div>
-              <div className="text-xl font-bold truncate">{entries.length.toLocaleString()}</div>
+              <div className="text-xl font-bold break-words">{entries.length.toLocaleString()}</div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center">
+            <div className="h-10 w-10 shrink-0 rounded-md bg-primary/10 flex items-center justify-center">
               <Lock className="h-5 w-5 text-primary" />
             </div>
             <div className="min-w-0">
               <div className="text-xs text-muted-foreground">Immutability</div>
-              <div className="text-xl font-bold truncate">Enforced</div>
+              <div className="text-xl font-bold break-words">Enforced</div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center">
+            <div className="h-10 w-10 shrink-0 rounded-md bg-primary/10 flex items-center justify-center">
               <ShieldCheck className="h-5 w-5 text-primary" />
             </div>
             <div className="min-w-0">
               <div className="text-xs text-muted-foreground">Retention (NCC)</div>
-              <div className="text-xl font-bold truncate">7 years</div>
+              <div className="text-xl font-bold break-words">7 years</div>
             </div>
           </CardContent>
         </Card>
