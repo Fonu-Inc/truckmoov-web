@@ -102,7 +102,7 @@ export function OrganizationStep({ form }: { form: UseFormReturn<OrganizationFor
             )}
             aria-pressed={applicantType === type.id}
             className={cn(
-              "relative flex h-[132px] cursor-pointer flex-col rounded-2xl border p-5 text-left transition-colors",
+              "relative flex h-33 cursor-pointer flex-col rounded-2xl border p-5 text-left transition-colors",
               applicantType === type.id ? "border-2 border-primary" : "border-border-100 hover:border-border",
             )}
           >
@@ -241,48 +241,48 @@ function DocCard({
       />
       {upload.file
         ? (
-            <div className="flex items-center gap-3 rounded-xl border border-border-100 px-4 py-3">
-              <Paperclip className="size-4 shrink-0" />
-              <span className="flex-1 truncate text-base">{upload.file.name}</span>
-              <button
-                type="button"
-                aria-label="Replace document"
-                onClick={() => inputRef.current?.click()}
-                disabled={isBusy}
-                className="cursor-pointer p-1 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <RefreshCw className={cn(
-                  "size-4.5",
-                  isBusy && "animate-spin",
-                )}
-                />
-              </button>
-              <button
-                type="button"
-                aria-label="Remove document"
-                onClick={onRemove}
-                disabled={isBusy}
-                className="cursor-pointer p-1 text-[#E5484D] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Trash2 className="size-4.5" />
-              </button>
-            </div>
-          )
-        : (
+          <div className="flex items-center gap-3 rounded-xl border border-border-100 px-4 py-3">
+            <Paperclip className="size-4 shrink-0" />
+            <span className="flex-1 truncate text-base">{upload.file.name}</span>
             <button
               type="button"
+              aria-label="Replace document"
               onClick={() => inputRef.current?.click()}
               disabled={isBusy}
-              className="flex h-13 w-full cursor-pointer items-center justify-center gap-3 rounded-xl border border-border-100 text-base transition-colors hover:border-border disabled:cursor-not-allowed disabled:opacity-50"
+              className="cursor-pointer p-1 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <CloudUpload className={cn(
-                "size-5",
+              <RefreshCw className={cn(
+                "size-4.5",
                 isBusy && "animate-spin",
               )}
               />
-              {isBusy ? "Uploading…" : "Upload Document"}
             </button>
-          )}
+            <button
+              type="button"
+              aria-label="Remove document"
+              onClick={onRemove}
+              disabled={isBusy}
+              className="cursor-pointer p-1 text-[#E5484D] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Trash2 className="size-4.5" />
+            </button>
+          </div>
+        )
+        : (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={isBusy}
+            className="flex h-13 w-full cursor-pointer items-center justify-center gap-3 rounded-xl border border-border-100 text-base transition-colors hover:border-border disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <CloudUpload className={cn(
+              "size-5",
+              isBusy && "animate-spin",
+            )}
+            />
+            {isBusy ? "Uploading…" : "Upload Document"}
+          </button>
+        )}
       {upload.error && (
         <p className="flex items-center gap-2 text-sm text-[#E5484D]">
           <AlertTriangle className="size-4 shrink-0" />
@@ -357,17 +357,17 @@ export function DocumentCheckStep({ uploads }: { uploads: Uploads }) {
       />
       {allPassed
         ? (
-            <p className="flex items-center gap-3 rounded-2xl bg-[#E9FBE9] px-6 py-5 text-lg font-medium text-[#16A34A]">
-              <Check className="size-5 shrink-0" />
-              All Documents Passed The Format Check.
-            </p>
-          )
+          <p className="flex items-center gap-3 rounded-2xl bg-[#E9FBE9] px-6 py-5 text-lg font-medium text-[#16A34A]">
+            <Check className="size-5 shrink-0" />
+            All Documents Passed The Format Check.
+          </p>
+        )
         : (
-            <p className="flex items-center gap-3 rounded-2xl bg-[#FDF0CE] px-6 py-5 text-lg font-medium text-[#B58A00]">
-              <AlertTriangle className="size-5 shrink-0" />
-              Some Documents Need Attention.
-            </p>
-          )}
+          <p className="flex items-center gap-3 rounded-2xl bg-[#FDF0CE] px-6 py-5 text-lg font-medium text-[#B58A00]">
+            <AlertTriangle className="size-5 shrink-0" />
+            Some Documents Need Attention.
+          </p>
+        )}
       <div className="space-y-5">
         {DOCUMENTS.map((document) => {
           const upload = uploads[document.id];
@@ -415,15 +415,15 @@ export function StatusScreen({
       {status === "verifying"
         ? <span className="size-14 animate-spin rounded-full border-4 border-primary/25 border-t-primary" />
         : (
-            <span className="flex size-28 items-center justify-center rounded-full bg-[#F1FBE9]">
-              <span className="flex size-24 items-center justify-center rounded-full bg-[#A9DE7C]">
-                <Check
-                  className="size-11 text-[#1E6A1E]"
-                  strokeWidth={3}
-                />
-              </span>
+          <span className="flex size-28 items-center justify-center rounded-full bg-[#F1FBE9]">
+            <span className="flex size-24 items-center justify-center rounded-full bg-[#A9DE7C]">
+              <Check
+                className="size-11 text-[#1E6A1E]"
+                strokeWidth={3}
+              />
             </span>
-          )}
+          </span>
+        )}
       <h2 className="mt-10 text-2xl font-bold">
         {status === "verifying" ? verifyingTitle : verifiedTitle}
       </h2>
@@ -652,13 +652,13 @@ export function SubmittedStep({
             <div className="flex flex-col items-center">
               {row.complete
                 ? (
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-100">
-                      <Check
-                        className="size-3.5 text-white"
-                        strokeWidth={3.5}
-                      />
-                    </span>
-                  )
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-100">
+                    <Check
+                      className="size-3.5 text-white"
+                      strokeWidth={3.5}
+                    />
+                  </span>
+                )
                 : row.inProgress
                   ? <span className="size-6 shrink-0 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
                   : <span className="size-6 shrink-0 rounded-full bg-[#EAEAEA]" />}
