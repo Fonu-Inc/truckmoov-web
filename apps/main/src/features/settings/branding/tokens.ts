@@ -49,6 +49,53 @@ export const BRANDING_TOKENS: readonly {
 
 export const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
+export type ThemeMode = "dark" | "light";
+
+// ponytail: pair encoded as "dark:light" in one string; keeps the backend
+// schema untouched. Legacy single-hex values parse as { dark: X, light: X }.
+export function parseColorPair(v: string | undefined | null): { dark: string; light: string } {
+  if (!v)
+    return { dark: "", light: "" };
+  const [dark, light] = v.split(":");
+  return { dark: dark ?? "", light: light ?? dark ?? "" };
+}
+
+export function formatColorPair(dark: string, light: string): string {
+  return `${dark}:${light}`;
+}
+
+export function pickForTheme(v: string | undefined | null, theme: ThemeMode): string | undefined {
+  const p = parseColorPair(v);
+  const primary = theme === "dark" ? p.dark : p.light;
+  const fallback = theme === "dark" ? p.light : p.dark;
+  return primary || fallback || undefined;
+}
+
+// From docs/design.md "Core tokens" table. Sidebar values match the
+// dark-charcoal-in-both-themes rule.
+export const BRANDING_DEFAULTS: Record<BrandingColorKey, { dark: string; light: string }> = {
+  primaryColor: { dark: "#FFD400", light: "#E6B800" },
+  secondaryColor: { dark: "#262A33", light: "#F1F3F5" },
+  accentColor: { dark: "#E0A806", light: "#E0A806" },
+  successColor: { dark: "#22C55E", light: "#16A34A" },
+  warningColor: { dark: "#F5A524", light: "#EAB308" },
+  destructiveColor: { dark: "#EF4444", light: "#DC2626" },
+  sidebarBackground: { dark: "#0F1115", light: "#0F1115" },
+  sidebarText: { dark: "#E5E7EB", light: "#E5E7EB" },
+  sidebarAccent: { dark: "#1F2430", light: "#1F2430" },
+};
+
+// Perceived-luminance check; returns near-black or white for max contrast.
+export function readableTextOn(hex: string): string {
+  if (!HEX_COLOR_PATTERN.test(hex))
+    return "#111";
+  const r = Number.parseInt(hex.slice(1, 3), 16) / 255;
+  const g = Number.parseInt(hex.slice(3, 5), 16) / 255;
+  const b = Number.parseInt(hex.slice(5, 7), 16) / 255;
+  const l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return l > 0.55 ? "#111" : "#fff";
+}
+
 export function hexToHslTriplet(hex: string): string | null {
   if (!HEX_COLOR_PATTERN.test(hex))
     return null;
@@ -146,7 +193,10 @@ export function readTokenAsHex(cssVar: string): string {
 
 export function applyBrandingToDocument(
   branding: Partial<OrganizationBrandingSettings> | null | undefined,
-  { includeSidebar = true }: { includeSidebar?: boolean } = {},
+  {
+    theme = "dark",
+    includeSidebar = true,
+  }: { theme?: ThemeMode; includeSidebar?: boolean } = {},
 ) {
   if (typeof window === "undefined")
     return;
@@ -158,7 +208,7 @@ export function applyBrandingToDocument(
       root.style.removeProperty(cssVar);
       continue;
     }
-    const hex = branding?.[key];
+    const hex = pickForTheme(branding?.[key], theme);
     const hsl = hex ? hexToHslTriplet(hex) : null;
     if (hsl) {
       root.style.setProperty(

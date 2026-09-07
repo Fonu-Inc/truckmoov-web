@@ -7,8 +7,9 @@ import {
   useUploadMedia,
 } from "@truckmoov/api/auth";
 import {
-  Bell, Home, Image as ImageIcon, Palette, RotateCcw, Save, Search, Settings2, Upload,
+  Bell, Home, Image as ImageIcon, Moon, Palette, RotateCcw, Save, Search, Settings2, Sun, Upload,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import {
   useEffect, useMemo, useRef, useState,
 } from "react";
@@ -27,12 +28,15 @@ import { Separator } from "@/components/shadcn/separator";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   applyBrandingToDocument,
+  BRANDING_DEFAULTS,
   BRANDING_TOKENS,
-
   clearBrandingFromDocument,
+  formatColorPair,
   HEX_COLOR_PATTERN,
   hexToHslTriplet,
-  readTokenAsHex,
+  parseColorPair,
+  readableTextOn,
+  type ThemeMode,
 } from "../../branding/tokens";
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
@@ -43,43 +47,80 @@ const IMAGE_TYPES = [
   "image/webp",
 ];
 
-function ColorField({
-  label, value, onChange, description,
+function HexInput({
+  label, value, onChange,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+}) {
+  const valid = HEX_COLOR_PATTERN.test(value);
+  return (
+    <div className="flex items-center gap-1.5">
+      <input
+        aria-label={`${label} picker`}
+        type="color"
+        value={valid ? value : "#000000"}
+        onChange={event => onChange(event.target.value.toUpperCase())}
+        className="h-8 w-8 shrink-0 cursor-pointer rounded-md border border-border bg-transparent p-0"
+      />
+      <Input
+        aria-label={`${label} hex`}
+        value={value}
+        onChange={event => onChange(event.target.value.toUpperCase())}
+        className="w-24 font-mono text-xs uppercase"
+        maxLength={7}
+        aria-invalid={!valid}
+      />
+    </div>
+  );
+}
+
+function ColorField({
+  label, dark, light, onChange, description,
+}: {
+  label: string;
+  dark: string;
+  light: string;
+  onChange: (mode: ThemeMode, value: string) => void;
   description: string;
 }) {
-  const validColor = HEX_COLOR_PATTERN.test(value);
+  const darkValid = HEX_COLOR_PATTERN.test(dark);
+  const lightValid = HEX_COLOR_PATTERN.test(light);
   return (
     <div className="space-y-1.5">
       <Label className="text-sm">{label}</Label>
-      <div className="flex items-center gap-3">
-        <input
-          aria-label={`${label} color picker`}
-          type="color"
-          value={validColor ? value : "#000000"}
-          onChange={event => onChange(event.target.value.toUpperCase())}
-          className="h-10 w-10 cursor-pointer rounded-md border border-border bg-transparent p-0"
-        />
-        <Input
-          aria-label={`${label} hex color`}
-          value={value}
-          onChange={event => onChange(event.target.value.toUpperCase())}
-          className="w-28 font-mono text-xs uppercase"
-          maxLength={7}
-          aria-invalid={!validColor}
-        />
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center gap-2">
+          <Moon
+            className="h-3.5 w-3.5 text-muted-foreground"
+            aria-hidden
+          />
+          <HexInput
+            label={`${label} dark`}
+            value={dark}
+            onChange={v => onChange("dark", v)}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Sun
+            className="h-3.5 w-3.5 text-muted-foreground"
+            aria-hidden
+          />
+          <HexInput
+            label={`${label} light`}
+            value={light}
+            onChange={v => onChange("light", v)}
+          />
+        </div>
       </div>
-      {!validColor && <p className="text-xs text-destructive">Enter a 6-digit hex color.</p>}
+      {(!darkValid || !lightValid) && <p className="text-xs text-destructive">Enter a 6-digit hex color.</p>}
       <p className="text-xs text-muted-foreground">{description}</p>
     </div>
   );
 }
 
 function LivePreview({ colors }: { colors: Record<BrandingColorKey, string> }) {
-  const swatch = (key: BrandingColorKey) => ({ backgroundColor: colors[key] });
   const text = (key: BrandingColorKey) => ({ color: colors[key] });
   return (
     <div className="overflow-hidden rounded-lg border border-border">
@@ -94,7 +135,7 @@ function LivePreview({ colors }: { colors: Record<BrandingColorKey, string> }) {
             <div
               className="flex h-7 w-7 items-center justify-center rounded-md text-[10px] font-bold"
               style={{
-                backgroundColor: colors.primaryColor, color: colors.sidebarBackground,
+                backgroundColor: colors.primaryColor, color: readableTextOn(colors.primaryColor),
               }}
             >
               T
@@ -127,7 +168,7 @@ function LivePreview({ colors }: { colors: Record<BrandingColorKey, string> }) {
               type="button"
               className="rounded-md px-3 py-1.5 text-xs font-medium"
               style={{
-                backgroundColor: colors.primaryColor, color: colors.sidebarBackground,
+                backgroundColor: colors.primaryColor, color: readableTextOn(colors.primaryColor),
               }}
             >
               New trip
@@ -136,7 +177,7 @@ function LivePreview({ colors }: { colors: Record<BrandingColorKey, string> }) {
               type="button"
               className="rounded-md px-3 py-1.5 text-xs font-medium"
               style={{
-                backgroundColor: colors.accentColor, color: colors.sidebarBackground,
+                backgroundColor: colors.accentColor, color: readableTextOn(colors.accentColor),
               }}
             >
               Assign
@@ -148,7 +189,7 @@ function LivePreview({ colors }: { colors: Record<BrandingColorKey, string> }) {
               <span
                 className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
                 style={{
-                  backgroundColor: colors.successColor, color: "#fff",
+                  backgroundColor: colors.successColor, color: readableTextOn(colors.successColor),
                 }}
               >
                 On time
@@ -158,7 +199,7 @@ function LivePreview({ colors }: { colors: Record<BrandingColorKey, string> }) {
               <span
                 className="rounded-full px-2 py-0.5"
                 style={{
-                  backgroundColor: colors.warningColor, color: "#111",
+                  backgroundColor: colors.warningColor, color: readableTextOn(colors.warningColor),
                 }}
               >
                 Idle 3
@@ -166,7 +207,7 @@ function LivePreview({ colors }: { colors: Record<BrandingColorKey, string> }) {
               <span
                 className="rounded-full px-2 py-0.5"
                 style={{
-                  backgroundColor: colors.destructiveColor, color: "#fff",
+                  backgroundColor: colors.destructiveColor, color: readableTextOn(colors.destructiveColor),
                 }}
               >
                 Alert 1
@@ -197,17 +238,50 @@ export function TenantBrandingPanel() {
   const settingsQuery = useQuery(getOrganizationSettingsQueryOptions());
   const uploadMutation = useUploadMedia();
   const updateMutation = useUpdateOrganizationSettings();
+  const { resolvedTheme, setTheme } = useTheme();
+  const currentTheme: ThemeMode = resolvedTheme === "light" ? "light" : "dark";
   const [
     localColors,
     setLocalColors,
-  ] = useState<Partial<Record<BrandingColorKey, string>>>({});
+  ] = useState<Partial<Record<BrandingColorKey, { dark: string; light: string }>>>({});
 
   const savedBranding = settingsQuery.data?.data?.branding;
   useEffect(
     () => () => {
-      applyBrandingToDocument(savedBranding);
+      applyBrandingToDocument(
+        savedBranding,
+        {
+          theme: currentTheme,
+          includeSidebar: currentTheme === "dark",
+        },
+      );
     },
-    [savedBranding],
+    [savedBranding, currentTheme],
+  );
+
+  const branding = savedBranding ?? {};
+  const getPair = (key: BrandingColorKey) => {
+    if (localColors[key])
+      return localColors[key]!;
+    const saved = parseColorPair(branding[key]);
+    const fallback = BRANDING_DEFAULTS[key];
+    return {
+      dark: (saved.dark || fallback.dark).toUpperCase(),
+      light: (saved.light || fallback.light).toUpperCase(),
+    };
+  };
+
+  const previewColors = useMemo(
+    () => Object.fromEntries(BRANDING_TOKENS.map(t => [
+      t.key,
+      getPair(t.key)[currentTheme],
+    ])) as Record<BrandingColorKey, string>,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      localColors,
+      branding,
+      currentTheme,
+    ],
   );
 
   if (settingsQuery.isPending) {
@@ -239,39 +313,25 @@ export function TenantBrandingPanel() {
     );
   }
 
-  const branding = settingsQuery.data.data.branding ?? {};
-  const getColor = (key: BrandingColorKey) => {
-    const cssVar = BRANDING_TOKENS.find(t => t.key === key)!.cssVar;
-    return (localColors[key] ?? branding[key] ?? readTokenAsHex(cssVar)).toUpperCase();
-  };
-
-  const previewColors = useMemo(
-    () => Object.fromEntries(BRANDING_TOKENS.map(t => [
-      t.key,
-      getColor(t.key),
-    ])) as Record<BrandingColorKey, string>,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      localColors,
-      branding,
-    ],
+  const hasChanges = Object.keys(localColors).length > 0;
+  const hasInvalidColor = Object.values(localColors).some(
+    p => !p || !HEX_COLOR_PATTERN.test(p.dark) || !HEX_COLOR_PATTERN.test(p.light),
   );
 
-  const hasChanges = Object.keys(localColors).length > 0;
-  const hasInvalidColor = Object.values(localColors).some(c => !c || !HEX_COLOR_PATTERN.test(c));
-
-  function updateColor(key: BrandingColorKey, value: string) {
-    setLocalColors(current => ({
-      ...current, [key]: value,
-    }));
+  function updateColor(key: BrandingColorKey, mode: ThemeMode, value: string) {
+    setLocalColors((current) => {
+      const existing = current[key] ?? getPair(key);
+      return {
+        ...current,
+        [key]: { ...existing, [mode]: value },
+      };
+    });
+    if (mode !== currentTheme)
+      return;
     const cssVar = BRANDING_TOKENS.find(t => t.key === key)!.cssVar;
     const hsl = hexToHslTriplet(value);
-    if (hsl) {
-      document.documentElement.style.setProperty(
-        cssVar,
-        hsl,
-      );
-    }
+    if (hsl)
+      document.documentElement.style.setProperty(cssVar, hsl);
   }
 
   function saveBranding(
@@ -297,8 +357,17 @@ export function TenantBrandingPanel() {
       toast.error("Correct invalid color values before saving.");
       return;
     }
+    const changes: Partial<OrganizationBrandingSettings> = Object.fromEntries(
+      Object.entries(localColors).map(([
+        key,
+        pair,
+      ]) => [
+        key,
+        formatColorPair(pair!.dark, pair!.light),
+      ]),
+    );
     saveBranding(
-      localColors,
+      changes,
       "Brand colors saved successfully.",
       true,
     );
@@ -306,23 +375,13 @@ export function TenantBrandingPanel() {
 
   function handleReset() {
     clearBrandingFromDocument();
-    const defaults = Object.fromEntries(
-      BRANDING_TOKENS.map(t => [
-        t.key,
-        readTokenAsHex(t.cssVar),
-      ]),
-    ) as Record<BrandingColorKey, string>;
-    setLocalColors(defaults);
+    setLocalColors(BRANDING_DEFAULTS);
     for (const {
       key, cssVar,
     } of BRANDING_TOKENS) {
-      const hsl = hexToHslTriplet(defaults[key]);
-      if (hsl) {
-        document.documentElement.style.setProperty(
-          cssVar,
-          hsl,
-        );
-      }
+      const hsl = hexToHslTriplet(BRANDING_DEFAULTS[key][currentTheme]);
+      if (hsl)
+        document.documentElement.style.setProperty(cssVar, hsl);
     }
   }
 
@@ -421,7 +480,27 @@ export function TenantBrandingPanel() {
               </CardTitle>
               <CardDescription>Customize platform colors for everyone in your organization.</CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex rounded-md border border-border p-0.5">
+                <Button
+                  variant={currentTheme === "dark" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setTheme("dark")}
+                  className="h-7 px-2"
+                >
+                  <Moon className="h-3.5 w-3.5" />
+                  Dark
+                </Button>
+                <Button
+                  variant={currentTheme === "light" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setTheme("light")}
+                  className="h-7 px-2"
+                >
+                  <Sun className="h-3.5 w-3.5" />
+                  Light
+                </Button>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -454,23 +533,24 @@ export function TenantBrandingPanel() {
                     variant="outline"
                     className="text-[10px]"
                   >
-                    applied in both themes
+                    sidebar stays dark in both themes
                   </Badge>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                {BRANDING_TOKENS.filter(t => t.group === group.id).map(t => (
-                  <ColorField
-                    key={t.key}
-                    label={t.label}
-                    value={getColor(t.key)}
-                    onChange={v => updateColor(
-                      t.key,
-                      v,
-                    )}
-                    description={t.description}
-                  />
-                ))}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {BRANDING_TOKENS.filter(t => t.group === group.id).map((t) => {
+                  const pair = getPair(t.key);
+                  return (
+                    <ColorField
+                      key={t.key}
+                      label={t.label}
+                      dark={pair.dark}
+                      light={pair.light}
+                      onChange={(mode, v) => updateColor(t.key, mode, v)}
+                      description={t.description}
+                    />
+                  );
+                })}
               </div>
             </section>
           ))}

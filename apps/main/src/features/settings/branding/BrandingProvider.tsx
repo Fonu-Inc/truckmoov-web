@@ -16,12 +16,16 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(
     () => {
-    // ponytail: sidebar branding is a dark-mode-only surface — the light
-    // sidebar has its own design tokens and inline `--sidebar-*` overrides
-    // beat both `:root` and `.dark`, so in light mode we skip them.
+      const theme = resolvedTheme === "light" ? "light" : "dark";
+      // ponytail: sidebar branding is a dark-mode-only surface — the light
+      // sidebar has its own design tokens and inline `--sidebar-*` overrides
+      // beat both `:root` and `.dark`, so in light mode we skip them.
       applyBrandingToDocument(
         data?.data?.branding,
-        { includeSidebar: resolvedTheme === "dark" },
+        {
+          theme,
+          includeSidebar: theme === "dark",
+        },
       );
       return () => clearBrandingFromDocument();
     },
