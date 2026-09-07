@@ -7,7 +7,6 @@ import {
   Cpu,
   CreditCard,
   Database,
-  FileText,
   Gauge,
   Inbox,
   LayoutDashboard,
@@ -63,8 +62,7 @@ export function isNavGroup(entry: SidebarEntry): entry is SidebarNavGroup {
  * The resolved label is also the top-bar title (see `matchNavEntry` +
  * `resolveLabel`). A route with no entry here therefore has no top-bar title —
  * that is deliberate: this list is the nav, and pages off the nav (`/help`, the
- * onboarding steps, the legacy `/supervisor/*` portal) name themselves in their
- * own body.
+ * onboarding steps) name themselves in their own body.
  *
  * ponytail: `hasPermission` is required here (optional on the type only so group
  * children can inherit) — a new entry that forgets it fails to compile instead
@@ -73,7 +71,10 @@ export function isNavGroup(entry: SidebarEntry): entry is SidebarNavGroup {
 export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] = [
   // ─── Overview ──────────────────────────────────────────────────
   {
-    label: "Logistic Overview", href: "/enterprise", icon: LayoutDashboard, hasPermission: ["ENTERPRISE_ADMIN"],
+    label: "Overview", href: "/", icon: LayoutDashboard, hasPermission: [
+      "ENTERPRISE_ADMIN",
+      "OWNER_OPERATOR",
+    ],
   },
   {
     label: "Overview", href: "/overview", icon: LayoutDashboard,
@@ -88,9 +89,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   },
   {
     label: "Logistic Overview", href: "/aggregator", icon: LayoutDashboard, hasPermission: ["AGGREGATOR_ADMIN"],
-  },
-  {
-    label: "My Overview", href: "/owner-operator", icon: LayoutDashboard, hasPermission: ["OWNER_OPERATOR"],
   },
   // ─── Jobs & dispatch ───────────────────────────────────────────
   {
@@ -148,7 +146,10 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     ],
   },
   {
-    label: "Installation", href: "/installation", icon: Wrench, hasPermission: ["FLEET_ADMIN", "ENTERPRISE_ADMIN"],
+    label: "Installation", href: "/installation", icon: Wrench, hasPermission: [
+      "FLEET_ADMIN",
+      "ENTERPRISE_ADMIN",
+    ],
   },
   {
     label: "IoT SIMS", href: "/sims", icon: Wifi,
@@ -206,10 +207,6 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
     label: "Wallet & Billing", href: "/wallet", icon: CreditCard, hasPermission: ["FINANCE_VIEWER"],
   },
 
-  // ─── Documents & alerts ────────────────────────────────────────
-  {
-    label: "Documents", href: "/owner-operator/documents", icon: FileText, hasPermission: ["OWNER_OPERATOR"],
-  },
   // ─── Analytics ─────────────────────────────────────────────────
   {
     label: "Analytics", href: "/analytics", icon: BarChart3, hasPermission: [
@@ -320,22 +317,35 @@ export function getEntriesForRole(role: UserRole): SidebarEntry[] {
       // A group child omits `hasPermission` to inherit the group's.
       const items = entry.items
         .filter(i => i.hasPermission?.includes(role) ?? true)
-        .map(i => (i.labelByRole?.[role] ? { ...i, label: resolveLabel(i, role) } : i));
-      const label = resolveLabel(entry, role);
+        .map(i => (i.labelByRole?.[role] ? {
+          ...i, label: resolveLabel(
+            i,
+            role,
+          ),
+        } : i));
+      const label = resolveLabel(
+        entry,
+        role,
+      );
       const changed = items.length !== entry.items.length
         || items.some((it, idx) => it !== entry.items[idx])
         || label !== entry.label;
       if (items.length) {
         visible.push(changed
           ? {
-            ...entry, items, label,
-          }
+              ...entry, items, label,
+            }
           : entry);
       }
       continue;
     }
-    const label = resolveLabel(entry, role);
-    visible.push(label === entry.label ? entry : { ...entry, label });
+    const label = resolveLabel(
+      entry,
+      role,
+    );
+    visible.push(label === entry.label ? entry : {
+      ...entry, label,
+    });
   }
 
   entriesByRole.set(

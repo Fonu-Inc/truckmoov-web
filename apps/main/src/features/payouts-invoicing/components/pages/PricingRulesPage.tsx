@@ -1,21 +1,15 @@
 import {
   CheckCircle2, DollarSign, FileText, Plus, Truck,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  useEffect, useState,
+} from "react";
 import { Button } from "@/components/shadcn/button";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import {
-  PricingRulesPanel,
-} from "@/features/payouts-invoicing/components/ui/PricingRulesPanel";
-import {
-  TabKpiCards,
-} from "@/features/payouts-invoicing/components/ui/TabKpiCards";
-import {
-  useWaybillInvoice,
-} from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
-import {
-  DEMO_PRICING_RULES,
-} from "@/features/payouts-invoicing/utils/demoData";
+import { PricingRulesPanel } from "@/features/payouts-invoicing/components/ui/PricingRulesPanel";
+import { TabKpiCards } from "@/features/payouts-invoicing/components/ui/TabKpiCards";
+import { useWaybillInvoice } from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
+import { DEMO_PRICING_RULES } from "@/features/payouts-invoicing/utils/demoData";
 
 export default function PricingRulesPage() {
   const {

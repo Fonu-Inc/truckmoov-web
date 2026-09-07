@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   SystemDeviceCatalogModel,
   SystemDeviceCatalogQuery,
@@ -31,8 +32,8 @@ import {
   useEffect,
   useState,
 } from "react";
-import { useForm } from "react-hook-form";
 
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 import { Badge } from "@/components/shadcn/badge";
@@ -45,6 +46,7 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -76,8 +78,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/shadcn/data-table";
 import { Textarea } from "@/components/shadcn/textarea";
 
 type CatalogStatusFilter = "all" | "supported" | "deprecated" | "blocked";

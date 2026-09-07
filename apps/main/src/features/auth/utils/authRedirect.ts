@@ -1,9 +1,9 @@
 import type { UserRole } from "@truckmoov/api/auth";
 
 export const ROLE_REDIRECT_MAP: Partial<Record<UserRole, string>> = {
-  ENTERPRISE_ADMIN: "/enterprise",
+  ENTERPRISE_ADMIN: "/",
   AGGREGATOR_ADMIN: "/aggregator",
-  OWNER_OPERATOR: "/owner-operator",
+  OWNER_OPERATOR: "/",
   FLEET_ADMIN: "/overview",
   OPERATIONS_MANAGER: "/overview",
   DISPATCHER: "/jobs",

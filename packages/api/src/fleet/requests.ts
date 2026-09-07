@@ -142,6 +142,7 @@ import type {
   ComplianceDocumentResponse,
   CreateComplianceDocumentPayload,
   CreateMaintenanceProfilePayload,
+  FleetOverviewResponse,
   UpdateComplianceDocumentPayload,
 } from './types'
 
@@ -886,5 +887,12 @@ export async function getAuditLog(payload?: AuditLogQuery) {
 
 export async function verifyAuditChain() {
   const { data } = await axiosInstance.get<AuditChainVerificationResponse>('/fleet/audit/verify')
+  return data
+}
+
+// ─── Overview ─────────────────────────────────────────────────────────────────
+
+export async function getFleetOverview() {
+  const { data } = await axiosInstance.get<FleetOverviewResponse>('/fleet/overview')
   return data
 }

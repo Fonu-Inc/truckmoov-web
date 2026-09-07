@@ -144,13 +144,27 @@ export const router = createBrowserRouter([
             path: "/security",
             Component: GuardedSecurityLayout,
             children: [
-              { index: true, lazy: async () => ({ Component: (await import("@/features/security/components/pages/SecurityOverviewPage")).default }) },
-              { path: "login-history", lazy: async () => ({ Component: (await import("@/features/security/components/pages/LoginHistoryPage")).default }) },
-              { path: "failed-attempts", lazy: async () => ({ Component: (await import("@/features/security/components/pages/FailedAttemptsPage")).default }) },
-              { path: "blocked-ips", lazy: async () => ({ Component: (await import("@/features/security/components/pages/BlockedIpsPage")).default }) },
-              { path: "notifications", lazy: async () => ({ Component: (await import("@/features/security/components/pages/NotificationsPage")).default }) },
-              { path: "events", lazy: async () => ({ Component: (await import("@/features/security/components/pages/SecurityEventsPage")).default }) },
-              { path: "sim-audit", lazy: async () => ({ Component: (await import("@/features/security/components/pages/SimAuditPage")).default }) },
+              {
+                index: true, lazy: async () => ({ Component: (await import("@/features/security/components/pages/SecurityOverviewPage")).default }),
+              },
+              {
+                path: "login-history", lazy: async () => ({ Component: (await import("@/features/security/components/pages/LoginHistoryPage")).default }),
+              },
+              {
+                path: "failed-attempts", lazy: async () => ({ Component: (await import("@/features/security/components/pages/FailedAttemptsPage")).default }),
+              },
+              {
+                path: "blocked-ips", lazy: async () => ({ Component: (await import("@/features/security/components/pages/BlockedIpsPage")).default }),
+              },
+              {
+                path: "notifications", lazy: async () => ({ Component: (await import("@/features/security/components/pages/NotificationsPage")).default }),
+              },
+              {
+                path: "events", lazy: async () => ({ Component: (await import("@/features/security/components/pages/SecurityEventsPage")).default }),
+              },
+              {
+                path: "sim-audit", lazy: async () => ({ Component: (await import("@/features/security/components/pages/SimAuditPage")).default }),
+              },
             ],
           },
           {
@@ -183,10 +197,18 @@ export const router = createBrowserRouter([
                 path: "telephony",
                 lazy: async () => ({ Component: (await import("@/features/settings/components/pages/TelephonySettingsPage")).default }),
                 children: [
-                  { index: true, lazy: async () => ({ Component: (await import("@/features/settings/components/ui/TelephonySettings")).TelephonySettings }) },
-                  { path: "numbers", lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PhoneNumberManagement")).PhoneNumberManagement }) },
-                  { path: "sender-ids", lazy: async () => ({ Component: (await import("@/features/settings/components/ui/SenderIdApprovalQueue")).SenderIdApprovalQueue }) },
-                  { path: "config", lazy: async () => ({ Component: (await import("@/features/settings/components/ui/FonuApiConfig")).FonuApiConfig }) },
+                  {
+                    index: true, lazy: async () => ({ Component: (await import("@/features/settings/components/ui/TelephonySettings")).TelephonySettings }),
+                  },
+                  {
+                    path: "numbers", lazy: async () => ({ Component: (await import("@/features/settings/components/ui/PhoneNumberManagement")).PhoneNumberManagement }),
+                  },
+                  {
+                    path: "sender-ids", lazy: async () => ({ Component: (await import("@/features/settings/components/ui/SenderIdApprovalQueue")).SenderIdApprovalQueue }),
+                  },
+                  {
+                    path: "config", lazy: async () => ({ Component: (await import("@/features/settings/components/ui/FonuApiConfig")).FonuApiConfig }),
+                  },
                 ],
               },
               {

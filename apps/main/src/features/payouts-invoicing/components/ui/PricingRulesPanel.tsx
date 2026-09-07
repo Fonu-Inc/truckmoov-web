@@ -1,3 +1,4 @@
+import type { PricingRule } from "@/features/payouts-invoicing/utils/demoData";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   ArrowRight, DollarSign, MoreHorizontal, Pencil, Search, SlidersHorizontal, ToggleLeft, ToggleRight, Trash2,
@@ -32,7 +33,6 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
 import { Textarea } from "@/components/shadcn/textarea";
-import type { PricingRule } from "@/features/payouts-invoicing/utils/demoData";
 
 export function PricingRulesPanel({
   rules, onAdd, onUpdate, onDelete, formatAmount, showDialog, setShowDialog,

@@ -875,83 +875,83 @@ export function FleetMap({
 
       {/* Map Legend */}
       {showLegend && (
-      <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm rounded-lg border border-border p-3 shadow-lg z-[1000]">
-        <p className="text-xs font-medium mb-2">Legend</p>
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-success" />
-            <span className="text-xs text-muted-foreground">Moving</span>
+        <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm rounded-lg border border-border p-3 shadow-lg z-[1000]">
+          <p className="text-xs font-medium mb-2">Legend</p>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded-full bg-success" />
+              <span className="text-xs text-muted-foreground">Moving</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded-full bg-warning" />
+              <span className="text-xs text-muted-foreground">Idle</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded-full bg-destructive" />
+              <span className="text-xs text-muted-foreground">Stopped</span>
+            </div>
+            {showGeofences && (
+              <>
+                <div className="h-px bg-border my-1.5" />
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full border-2 border-primary bg-primary/20" />
+                  <span className="text-xs text-muted-foreground">Depot</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full border-2 border-success bg-success/20" />
+                  <span className="text-xs text-muted-foreground">Delivery</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full border-2 border-destructive bg-destructive/20" />
+                  <span className="text-xs text-muted-foreground">Restricted</span>
+                </div>
+              </>
+            )}
+            {(harshEvents && harshEvents.length > 0) && (
+              <>
+                <div className="h-px bg-border my-1.5" />
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-warning/70" />
+                  <span className="text-xs text-muted-foreground">Harsh — minor</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-warning" />
+                  <span className="text-xs text-muted-foreground">Harsh — moderate</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-destructive" />
+                  <span className="text-xs text-muted-foreground">Harsh — severe</span>
+                </div>
+              </>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-warning" />
-            <span className="text-xs text-muted-foreground">Idle</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-destructive" />
-            <span className="text-xs text-muted-foreground">Stopped</span>
-          </div>
-          {showGeofences && (
-            <>
-              <div className="h-px bg-border my-1.5" />
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full border-2 border-primary bg-primary/20" />
-                <span className="text-xs text-muted-foreground">Depot</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full border-2 border-success bg-success/20" />
-                <span className="text-xs text-muted-foreground">Delivery</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full border-2 border-destructive bg-destructive/20" />
-                <span className="text-xs text-muted-foreground">Restricted</span>
-              </div>
-            </>
-          )}
-          {(harshEvents && harshEvents.length > 0) && (
-            <>
-              <div className="h-px bg-border my-1.5" />
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-warning/70" />
-                <span className="text-xs text-muted-foreground">Harsh — minor</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-warning" />
-                <span className="text-xs text-muted-foreground">Harsh — moderate</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-destructive" />
-                <span className="text-xs text-muted-foreground">Harsh — severe</span>
-              </div>
-            </>
-          )}
         </div>
-      </div>
       )}
 
       {/* Live indicator with connection status */}
       {showRealtimeBadge && (
-      <div className="absolute top-4 left-4 bg-card/95 backdrop-blur-sm rounded-full px-3 py-1.5 border border-border shadow-lg z-[1000] flex items-center gap-2">
-        {isConnected
-          ? (
-              <>
-                <Wifi className="h-3.5 w-3.5 text-success" />
-                <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
-                <span className="text-xs font-medium">Live</span>
-              </>
-            )
-          : (
-              <>
-                <WifiOff className="h-3.5 w-3.5 text-warning" />
-                <div className="h-2 w-2 rounded-full bg-warning" />
-                <span className="text-xs font-medium">Connecting...</span>
-              </>
-            )}
-        {lastUpdate && (
-          <span className="text-xs text-muted-foreground ml-1">
-            {formatRelative(lastUpdate)}
-          </span>
-        )}
-      </div>
+        <div className="absolute top-4 left-4 bg-card/95 backdrop-blur-sm rounded-full px-3 py-1.5 border border-border shadow-lg z-[1000] flex items-center gap-2">
+          {isConnected
+            ? (
+                <>
+                  <Wifi className="h-3.5 w-3.5 text-success" />
+                  <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
+                  <span className="text-xs font-medium">Live</span>
+                </>
+              )
+            : (
+                <>
+                  <WifiOff className="h-3.5 w-3.5 text-warning" />
+                  <div className="h-2 w-2 rounded-full bg-warning" />
+                  <span className="text-xs font-medium">Connecting...</span>
+                </>
+              )}
+          {lastUpdate && (
+            <span className="text-xs text-muted-foreground ml-1">
+              {formatRelative(lastUpdate)}
+            </span>
+          )}
+        </div>
       )}
 
       {/* Realtime data indicator */}

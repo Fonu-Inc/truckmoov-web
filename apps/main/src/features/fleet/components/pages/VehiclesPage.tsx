@@ -52,6 +52,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
 import { Input } from "@/components/shadcn/input";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { BulkUploadDialog } from "@/features/fleet/components/ui/BulkUploadDialog";
 import { GeofenceManagementDialog } from "@/features/fleet/components/ui/GeofenceManagementDialog";
 import { VehicleDetailsSheet } from "@/features/fleet/components/ui/VehicleDetailsSheet";
@@ -61,7 +62,6 @@ import {
   countActiveVehicleFilters,
 } from "@/features/fleet/components/ui/vehiclesFilter";
 import { VehiclesFilterDialog } from "@/features/fleet/components/ui/VehiclesFilterDialog";
-import { useAuthStore } from "@/features/auth/stores/authStore";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 import { cn } from "@/lib/utils";
 

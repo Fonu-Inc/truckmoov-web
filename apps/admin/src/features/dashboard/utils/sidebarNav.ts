@@ -1,13 +1,11 @@
 import type { UserRole } from "@truckmoov/api/auth";
 import type { ElementType } from "react";
 import {
-  Bell,
   Building2,
   Cpu,
   CreditCard,
   Database,
   LayoutDashboard,
-  Radio,
   Send,
   Settings,
   ShieldCheck,
@@ -33,9 +31,11 @@ export type SidebarNavItem = {
   hasPermission?: UserRole[];
 };
 
-/** The three roles that can sign in to the admin app. Exported so route.tsx
+/**
+ * The three roles that can sign in to the admin app. Exported so route.tsx
  * can gate the whole dashboard shell (and the settings tabs) with the same
- * list the sidebar uses. */
+ * list the sidebar uses.
+ */
 export const ADMIN_ROLES: UserRole[] = [
   "SUPER_ADMIN",
   "SYSTEM_ADMIN",

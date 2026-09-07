@@ -14,11 +14,25 @@ export type SecurityTab = {
  * the day a tab needs finer gating.
  */
 export const SECURITY_TABS: SecurityTab[] = [
-  { to: "/security", label: "Overview" },
-  { to: "/security/login-history", label: "Login History" },
-  { to: "/security/failed-attempts", label: "Failed Attempts" },
-  { to: "/security/blocked-ips", label: "Blocked IPs" },
-  { to: "/security/notifications", label: "Notifications" },
-  { to: "/security/events", label: "Security Events" },
-  { to: "/security/sim-audit", label: "SIM Audit" },
+  {
+    to: "/security", label: "Overview",
+  },
+  {
+    to: "/security/login-history", label: "Login History",
+  },
+  {
+    to: "/security/failed-attempts", label: "Failed Attempts",
+  },
+  {
+    to: "/security/blocked-ips", label: "Blocked IPs",
+  },
+  {
+    to: "/security/notifications", label: "Notifications",
+  },
+  {
+    to: "/security/events", label: "Security Events",
+  },
+  {
+    to: "/security/sim-audit", label: "SIM Audit",
+  },
 ];

@@ -1,61 +1,114 @@
 import type L from "leaflet";
-import { useVehicles, useDrivers, useAlerts } from "@truckmoov/api/fleet";
 import { useJobs } from "@truckmoov/api/dispatch";
+import {
+  useAlerts, useDrivers, useVehicles,
+} from "@truckmoov/api/fleet";
 import {
   AlertTriangle, Clock, Crosshair, ExternalLink, Eye, Fuel, LayoutGrid,
   Loader2, Map as MapIcon, MapPin, Maximize2, MessageSquare, Minimize2, Minus, Navigation,
   Package, Plus, Route, Search, Settings, Shield, X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect, useMemo, useRef, useState,
+} from "react";
 import { toast } from "sonner";
 import { DriverCommunicationActions } from "@/components/communications/DriverCommunicationActions";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Switch } from "@/components/shadcn/switch";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/shadcn/tooltip";
-import { FleetMap, type FleetMapVehicle } from "@/features/fleet/components/ui/FleetMap";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/shadcn/tooltip";
+import { FleetMap } from "@/features/fleet/components/ui/FleetMap";
 import { GeofenceManagementDialog } from "@/features/fleet/components/ui/GeofenceManagementDialog";
 
 type PanelKey = "settings" | "geofences" | "vehicles" | "alerts" | "streetview" | null;
 type LiveStatus = "active" | "in_progress" | "idle" | "offline";
 
-const STATUS_META: Record<LiveStatus, { label: string; dot: string; text: string }> = {
-  active: { label: "Active", dot: "bg-success", text: "text-success" },
-  in_progress: { label: "In progress", dot: "bg-primary", text: "text-primary" },
-  idle: { label: "Idle", dot: "bg-warning", text: "text-warning" },
-  offline: { label: "Offline", dot: "bg-muted-foreground", text: "text-muted-foreground" },
+const STATUS_META: Record<LiveStatus, {
+  label: string; dot: string; text: string;
+}> = {
+  active: {
+    label: "Active", dot: "bg-success", text: "text-success",
+  },
+  in_progress: {
+    label: "In progress", dot: "bg-primary", text: "text-primary",
+  },
+  idle: {
+    label: "Idle", dot: "bg-warning", text: "text-warning",
+  },
+  offline: {
+    label: "Offline", dot: "bg-muted-foreground", text: "text-muted-foreground",
+  },
 };
 
 // ponytail: demo fallback rendered when the API returns zero vehicles, so the
 // page still shows the full design (KPI pills, rail, list). Real telemetry
 // replaces it once at least one vehicle exists.
 const DEMO_VEHICLES = [
-  { id: "LAG-234-XY", vehicleId: "LAG-234-XY", model: "Mercedes Actros 2545", driver: "Chukwuemeka Okafor", driverId: "", phone: "+234 801 234 5678", status: "moving", onJob: true, speed: 45, fuel: 72, destination: "Victoria Island" },
-  { id: "LAG-567-AB", vehicleId: "LAG-567-AB", model: "MAN TGS 33.480", driver: "Adebayo Johnson", driverId: "", phone: "+234 802 345 6789", status: "moving", onJob: false, speed: 62, fuel: 45, destination: "Lekki Phase 1" },
-  { id: "LAG-890-CD", vehicleId: "LAG-890-CD", model: "Volvo FH16 750", driver: "Unassigned", driverId: "", phone: "", status: "stopped", onJob: false, speed: 0, fuel: 30, destination: "Maintenance Bay" },
-  { id: "LAG-112-EF", vehicleId: "LAG-112-EF", model: "Scania R500 6x4", driver: "Ngozi Obi", driverId: "", phone: "+234 804 567 8901", status: "moving", onJob: true, speed: 28, fuel: 92, destination: "Ajah" },
-  { id: "LAG-445-GH", vehicleId: "LAG-445-GH", model: "DAF XF 480 FT", driver: "Tunde Bakare", driverId: "", phone: "+234 805 678 9012", status: "idle", onJob: true, speed: 0, fuel: 65, destination: "Agege" },
+  {
+    id: "LAG-234-XY", vehicleId: "LAG-234-XY", model: "Mercedes Actros 2545", driver: "Chukwuemeka Okafor", driverId: "", phone: "+234 801 234 5678", status: "moving", onJob: true, speed: 45, fuel: 72, destination: "Victoria Island",
+  },
+  {
+    id: "LAG-567-AB", vehicleId: "LAG-567-AB", model: "MAN TGS 33.480", driver: "Adebayo Johnson", driverId: "", phone: "+234 802 345 6789", status: "moving", onJob: false, speed: 62, fuel: 45, destination: "Lekki Phase 1",
+  },
+  {
+    id: "LAG-890-CD", vehicleId: "LAG-890-CD", model: "Volvo FH16 750", driver: "Unassigned", driverId: "", phone: "", status: "stopped", onJob: false, speed: 0, fuel: 30, destination: "Maintenance Bay",
+  },
+  {
+    id: "LAG-112-EF", vehicleId: "LAG-112-EF", model: "Scania R500 6x4", driver: "Ngozi Obi", driverId: "", phone: "+234 804 567 8901", status: "moving", onJob: true, speed: 28, fuel: 92, destination: "Ajah",
+  },
+  {
+    id: "LAG-445-GH", vehicleId: "LAG-445-GH", model: "DAF XF 480 FT", driver: "Tunde Bakare", driverId: "", phone: "+234 805 678 9012", status: "idle", onJob: true, speed: 0, fuel: 65, destination: "Agege",
+  },
 ];
 
 const DEMO_POSITIONS: Record<string, [number, number]> = {
-  "LAG-234-XY": [6.5244, 3.3792],
-  "LAG-567-AB": [6.4550, 3.3941],
-  "LAG-890-CD": [6.5833, 3.3500],
-  "LAG-112-EF": [6.4698, 3.5852],
-  "LAG-445-GH": [6.6018, 3.3515],
+  "LAG-234-XY": [
+    6.5244,
+    3.3792,
+  ],
+  "LAG-567-AB": [
+    6.4550,
+    3.3941,
+  ],
+  "LAG-890-CD": [
+    6.5833,
+    3.3500,
+  ],
+  "LAG-112-EF": [
+    6.4698,
+    3.5852,
+  ],
+  "LAG-445-GH": [
+    6.6018,
+    3.3515,
+  ],
 };
 
-const DEMO_JOBS: Record<string, { reference: string; from: string; to: string; eta: string }> = {
-  "LAG-234-XY": { reference: "JOB-2481", from: "Apapa Port", to: "Victoria Island", eta: "14 min" },
-  "LAG-112-EF": { reference: "JOB-2493", from: "Ikeja Depot", to: "Ajah", eta: "38 min" },
-  "LAG-445-GH": { reference: "JOB-2502", from: "Agege Hub", to: "Ogba", eta: "9 min" },
+const DEMO_JOBS: Record<string, {
+  reference: string; from: string; to: string; eta: string;
+}> = {
+  "LAG-234-XY": {
+    reference: "JOB-2481", from: "Apapa Port", to: "Victoria Island", eta: "14 min",
+  },
+  "LAG-112-EF": {
+    reference: "JOB-2493", from: "Ikeja Depot", to: "Ajah", eta: "38 min",
+  },
+  "LAG-445-GH": {
+    reference: "JOB-2502", from: "Agege Hub", to: "Ogba", eta: "9 min",
+  },
 };
 
 export default function LiveMap() {
-  const { data: vehiclesResponse, isLoading: vehiclesLoading } = useVehicles();
+  const {
+    data: vehiclesResponse, isLoading: vehiclesLoading,
+  } = useVehicles();
   const { data: driversResponse } = useDrivers();
   const { data: alertsResponse } = useAlerts();
   const { data: jobsResponse } = useJobs();
@@ -64,22 +117,59 @@ export default function LiveMap() {
   const alerts = alertsResponse?.data ?? [];
   const jobs = jobsResponse?.data ?? [];
 
-  const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
-  const [showGeofences, setShowGeofences] = useState(true);
-  const [showRoutes, setShowRoutes] = useState(true);
-  const [showAlerts, setShowAlerts] = useState(true);
-  const [showLegend, setShowLegend] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [geofenceDialogOpen, setGeofenceDialogOpen] = useState(false);
-  const [streetViewCoords, setStreetViewCoords] = useState<[number, number] | null>(null);
-  const [panel, setPanel] = useState<PanelKey>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [trackedVehicle, setTrackedVehicle] = useState<string | null>(null);
+  const [
+    selectedVehicle,
+    setSelectedVehicle,
+  ] = useState<string | null>(null);
+  const [
+    showGeofences,
+    setShowGeofences,
+  ] = useState(true);
+  const [
+    showRoutes,
+    setShowRoutes,
+  ] = useState(true);
+  const [
+    showAlerts,
+    setShowAlerts,
+  ] = useState(true);
+  const [
+    showLegend,
+    setShowLegend,
+  ] = useState(true);
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+  const [
+    geofenceDialogOpen,
+    setGeofenceDialogOpen,
+  ] = useState(false);
+  const [
+    streetViewCoords,
+    setStreetViewCoords,
+  ] = useState<[number, number] | null>(null);
+  const [
+    panel,
+    setPanel,
+  ] = useState<PanelKey>(null);
+  const [
+    isFullscreen,
+    setIsFullscreen,
+  ] = useState(false);
+  const [
+    trackedVehicle,
+    setTrackedVehicle,
+  ] = useState<string | null>(null);
   const mapInstance = useRef<L.Map | null>(null);
 
   const realVehicles = vehicles.map((v) => {
     const driver = v.assignedDriverId ? drivers.find(d => d.id === v.assignedDriverId) : null;
-    const modelParts = [v.make, v.model, v.year ? `(${v.year})` : null].filter(Boolean).join(" ");
+    const modelParts = [
+      v.make,
+      v.model,
+      v.year ? `(${v.year})` : null,
+    ].filter(Boolean).join(" ");
     return {
       id: v.registrationNumber || v.id,
       vehicleId: v.id,
@@ -113,30 +203,13 @@ export default function LiveMap() {
             : v.onJob
               ? "in_progress"
               : "active";
-      return { ...v, liveStatus };
+      return {
+        ...v, liveStatus,
+      };
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react/exhaustive-deps
     [JSON.stringify(baseVehicles)],
   );
-
-  const mapVehicles: FleetMapVehicle[] = vehiclesWithDrivers.map(v => ({
-    id: v.id,
-    driver: v.driver,
-    phone: v.phone,
-    position: [6.5244, 3.3792] as [number, number],
-    heading: 0,
-    speed: v.speed,
-    status: v.status,
-    fuel: v.fuel,
-    lastUpdate: "—",
-    route: [],
-    startLocation: "—",
-    destination: v.destination,
-    eta: "—",
-    networkStatus: "offline" as const,
-    batteryVoltage: null,
-    signalStrength: null,
-  }));
 
   const filteredVehicles = vehiclesWithDrivers.filter(v =>
     v.id.toLowerCase().includes(searchQuery.toLowerCase())
@@ -149,7 +222,10 @@ export default function LiveMap() {
     offline: vehiclesWithDrivers.filter(v => v.liveStatus === "offline").length,
   };
 
-  const recentAlerts = alerts.slice(0, 8).map((a: any) => ({
+  const recentAlerts = alerts.slice(
+    0,
+    8,
+  ).map((a: any) => ({
     id: a.id,
     type: a.type,
     message: a.message,
@@ -157,12 +233,16 @@ export default function LiveMap() {
     severity: a.severity === "high" ? "error" : a.severity === "medium" ? "warning" : "info",
   }));
 
-  const jobForVehicle = (v: { id: string; vehicleId: string }) => {
-    if (usingDemo) return DEMO_JOBS[v.id] ?? null;
+  const jobForVehicle = (v: {
+    id: string; vehicleId: string;
+  }) => {
+    if (usingDemo)
+      return DEMO_JOBS[v.id] ?? null;
     const job = jobs.find(
       (j: any) => j.vehicleId === v.vehicleId && (j.status === "in_progress" || j.status === "assigned"),
     );
-    if (!job) return null;
+    if (!job)
+      return null;
     return {
       reference: (job as any).reference,
       from: (job as any).pickupAddress || "—",
@@ -171,26 +251,59 @@ export default function LiveMap() {
     };
   };
 
-  const positionFor = (id: string): [number, number] => DEMO_POSITIONS[id] ?? [6.5244, 3.3792];
+  const positionFor = (id: string): [number, number] => DEMO_POSITIONS[id] ?? [
+    6.5244,
+    3.3792,
+  ];
 
-  useEffect(() => {
-    if (!trackedVehicle) return;
-    const follow = () => {
-      const map = mapInstance.current;
-      if (!map) return;
-      const [lat, lng] = positionFor(trackedVehicle);
-      map.setView([lat, lng], Math.max(map.getZoom() ?? 13, 15), { animate: true });
-    };
-    follow();
-    const timer = window.setInterval(follow, 5000);
-    return () => window.clearInterval(timer);
-  }, [trackedVehicle]);
+  useEffect(
+    () => {
+      if (!trackedVehicle)
+        return;
+      const follow = () => {
+        const map = mapInstance.current;
+        if (!map)
+          return;
+        const [
+          lat,
+          lng,
+        ] = positionFor(trackedVehicle);
+        map.setView(
+          [
+            lat,
+            lng,
+          ],
+          Math.max(
+            map.getZoom() ?? 13,
+            15,
+          ),
+          { animate: true },
+        );
+      };
+      follow();
+      const timer = window.setInterval(
+        follow,
+        5000,
+      );
+      return () => window.clearInterval(timer);
+    },
+    [trackedVehicle],
+  );
 
   const togglePanel = (key: Exclude<PanelKey, null>) => setPanel(p => (p === key ? null : key));
 
   const openStreetView = () => {
-    const coords = selectedVehicle ? DEMO_POSITIONS[selectedVehicle] ?? [6.5244, 3.3792] : [6.5244, 3.3792];
-    setStreetViewCoords([coords[0], coords[1]]);
+    const coords = selectedVehicle ? DEMO_POSITIONS[selectedVehicle] ?? [
+      6.5244,
+      3.3792,
+    ] : [
+      6.5244,
+      3.3792,
+    ];
+    setStreetViewCoords([
+      coords[0],
+      coords[1],
+    ]);
   };
 
   if (vehiclesLoading) {
@@ -201,13 +314,27 @@ export default function LiveMap() {
     );
   }
 
-  const railItems: { key: Exclude<PanelKey, null> | "viewall"; icon: typeof Settings; label: string; onClick: () => void }[] = [
-    { key: "settings", icon: Settings, label: "Map settings", onClick: () => togglePanel("settings") },
-    { key: "geofences", icon: MapIcon, label: "Manage geofences", onClick: () => setGeofenceDialogOpen(true) },
-    { key: "vehicles", icon: Search, label: "Search vehicles", onClick: () => togglePanel("vehicles") },
-    { key: "alerts", icon: AlertTriangle, label: "Alerts", onClick: () => togglePanel("alerts") },
-    { key: "streetview", icon: Eye, label: "Street view", onClick: openStreetView },
-    { key: "viewall", icon: LayoutGrid, label: "View all vehicles", onClick: () => setSelectedVehicle(null) },
+  const railItems: {
+    key: Exclude<PanelKey, null> | "viewall"; icon: typeof Settings; label: string; onClick: () => void;
+  }[] = [
+    {
+      key: "settings", icon: Settings, label: "Map settings", onClick: () => togglePanel("settings"),
+    },
+    {
+      key: "geofences", icon: MapIcon, label: "Manage geofences", onClick: () => setGeofenceDialogOpen(true),
+    },
+    {
+      key: "vehicles", icon: Search, label: "Search vehicles", onClick: () => togglePanel("vehicles"),
+    },
+    {
+      key: "alerts", icon: AlertTriangle, label: "Alerts", onClick: () => togglePanel("alerts"),
+    },
+    {
+      key: "streetview", icon: Eye, label: "Street view", onClick: openStreetView,
+    },
+    {
+      key: "viewall", icon: LayoutGrid, label: "View all vehicles", onClick: () => setSelectedVehicle(null),
+    },
   ];
 
   const mapSurface = (
@@ -256,7 +383,12 @@ export default function LiveMap() {
               {panel === "alerts" && "Alerts"}
               {panel === "geofences" && "Geofences"}
             </p>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPanel(null)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setPanel(null)}
+            >
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -265,36 +397,64 @@ export default function LiveMap() {
             {panel === "settings" && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="geofences" className="text-sm flex items-center gap-2">
+                  <Label
+                    htmlFor="geofences"
+                    className="text-sm flex items-center gap-2"
+                  >
                     <Shield className="h-4 w-4 text-muted-foreground" />
                     {" "}
                     Geofences
                   </Label>
-                  <Switch id="geofences" checked={showGeofences} onCheckedChange={setShowGeofences} />
+                  <Switch
+                    id="geofences"
+                    checked={showGeofences}
+                    onCheckedChange={setShowGeofences}
+                  />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="routes" className="text-sm flex items-center gap-2">
+                  <Label
+                    htmlFor="routes"
+                    className="text-sm flex items-center gap-2"
+                  >
                     <Route className="h-4 w-4 text-muted-foreground" />
                     {" "}
                     Routes
                   </Label>
-                  <Switch id="routes" checked={showRoutes} onCheckedChange={setShowRoutes} />
+                  <Switch
+                    id="routes"
+                    checked={showRoutes}
+                    onCheckedChange={setShowRoutes}
+                  />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="alerts" className="text-sm flex items-center gap-2">
+                  <Label
+                    htmlFor="alerts"
+                    className="text-sm flex items-center gap-2"
+                  >
                     <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                     {" "}
                     Alerts
                   </Label>
-                  <Switch id="alerts" checked={showAlerts} onCheckedChange={setShowAlerts} />
+                  <Switch
+                    id="alerts"
+                    checked={showAlerts}
+                    onCheckedChange={setShowAlerts}
+                  />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="legend" className="text-sm flex items-center gap-2">
+                  <Label
+                    htmlFor="legend"
+                    className="text-sm flex items-center gap-2"
+                  >
                     <LayoutGrid className="h-4 w-4 text-muted-foreground" />
                     {" "}
                     Legend
                   </Label>
-                  <Switch id="legend" checked={showLegend} onCheckedChange={setShowLegend} />
+                  <Switch
+                    id="legend"
+                    checked={showLegend}
+                    onCheckedChange={setShowLegend}
+                  />
                 </div>
               </div>
             )}
@@ -329,7 +489,10 @@ export default function LiveMap() {
                             <span className="text-[10px] text-muted-foreground block truncate">{vehicle.model}</span>
                           </div>
                         </div>
-                        <Badge variant="outline" className={`text-[10px] shrink-0 ${STATUS_META[vehicle.liveStatus].text}`}>
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] shrink-0 ${STATUS_META[vehicle.liveStatus].text}`}
+                        >
                           {STATUS_META[vehicle.liveStatus].label}
                         </Badge>
                       </div>
@@ -394,8 +557,14 @@ export default function LiveMap() {
                             className="w-full text-xs gap-1.5"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const coords = DEMO_POSITIONS[vehicle.id] ?? [6.5244, 3.3792];
-                              window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords[0]},${coords[1]}`, "_blank");
+                              const coords = DEMO_POSITIONS[vehicle.id] ?? [
+                                6.5244,
+                                3.3792,
+                              ];
+                              window.open(
+                                `https://www.google.com/maps/dir/?api=1&destination=${coords[0]},${coords[1]}`,
+                                "_blank",
+                              );
                             }}
                           >
                             <ExternalLink className="h-3.5 w-3.5" />
@@ -408,10 +577,16 @@ export default function LiveMap() {
                             className="w-full text-xs gap-1.5"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const trackingId = `trk_${vehicle.id.toLowerCase().replace(/-/g, "")}_${Date.now().toString(36)}`;
+                              const trackingId = `trk_${vehicle.id.toLowerCase().replace(
+                                /-/g,
+                                "",
+                              )}_${Date.now().toString(36)}`;
                               const link = `${window.location.origin}/track/${trackingId}`;
                               navigator.clipboard?.writeText(link).catch(() => {});
-                              window.open(`https://wa.me/?text=${encodeURIComponent(`Track your delivery (${vehicle.id}) live: ${link} — link expires in 24h.`)}`, "_blank");
+                              window.open(
+                                `https://wa.me/?text=${encodeURIComponent(`Track your delivery (${vehicle.id}) live: ${link} — link expires in 24h.`)}`,
+                                "_blank",
+                              );
                               toast.success("Tracking link copied & WhatsApp opened (valid 24h)");
                             }}
                           >
@@ -428,7 +603,8 @@ export default function LiveMap() {
                               if (trackedVehicle === vehicle.id) {
                                 setTrackedVehicle(null);
                                 toast.info(`Stopped tracking ${vehicle.id}`);
-                              } else {
+                              }
+                              else {
                                 setTrackedVehicle(vehicle.id);
                                 setSelectedVehicle(vehicle.id);
                                 toast.success(`Now following ${vehicle.id} on the map`);
@@ -482,7 +658,9 @@ export default function LiveMap() {
 
       <TooltipProvider delayDuration={200}>
         <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
-          {railItems.map(({ key, icon: Icon, label, onClick }) => (
+          {railItems.map(({
+            key, icon: Icon, label, onClick,
+          }) => (
             <Tooltip key={key}>
               <TooltipTrigger asChild>
                 <Button
@@ -524,7 +702,10 @@ export default function LiveMap() {
 
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-2 rounded-2xl border border-border bg-card/95 backdrop-blur-md px-3 py-2 shadow-lg">
         {(Object.keys(STATUS_META) as LiveStatus[]).map(key => (
-          <div key={key} className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-muted/40">
+          <div
+            key={key}
+            className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-muted/40"
+          >
             <span className={`h-2 w-2 rounded-full ${STATUS_META[key].dot}`} />
             <span className={`text-sm font-semibold ${STATUS_META[key].text}`}>{counts[key]}</span>
             <span className="text-[11px] text-muted-foreground whitespace-nowrap">{STATUS_META[key].label}</span>
@@ -539,7 +720,10 @@ export default function LiveMap() {
           className="h-10 w-10 rounded-full shadow-lg"
           onClick={() => {
             setIsFullscreen(f => !f);
-            setTimeout(() => mapInstance.current?.invalidateSize(), 250);
+            setTimeout(
+              () => mapInstance.current?.invalidateSize(),
+              250,
+            );
           }}
           aria-label={isFullscreen ? "Minimize map" : "Maximize map"}
         >
@@ -560,7 +744,10 @@ export default function LiveMap() {
         onOpenChange={setGeofenceDialogOpen}
       />
 
-      <Dialog open={!!streetViewCoords} onOpenChange={o => !o && setStreetViewCoords(null)}>
+      <Dialog
+        open={!!streetViewCoords}
+        onOpenChange={o => !o && setStreetViewCoords(null)}
+      >
         <DialogContent className="max-w-4xl p-0 overflow-hidden">
           <DialogHeader className="p-4 pb-2">
             <DialogTitle>Street View</DialogTitle>

@@ -1,4 +1,6 @@
-import { NavLink, Outlet } from "react-router";
+import {
+  NavLink, Outlet,
+} from "react-router";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import {
   canSeeTab, PAYOUTS_INVOICING_TABS,

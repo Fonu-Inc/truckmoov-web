@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -33,6 +34,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -69,8 +71,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/shadcn/data-table";
 import { useAuthStore } from "@/stores/authStore";
 
 type AdminUser = {
@@ -203,7 +203,10 @@ export function PlatformAdminsPanel() {
       accessorKey: "role",
       header: "Role",
       cell: () => (
-        <Badge variant="outline" className="border-primary/30 text-primary">
+        <Badge
+          variant="outline"
+          className="border-primary/30 text-primary"
+        >
           <Shield className="h-3 w-3 mr-1" />
           Platform Admin
         </Badge>
@@ -225,11 +228,15 @@ export function PlatformAdminsPanel() {
       cell: ({ row }) => {
         const admin = row.original;
         const isSelf = admin.userId === user?.id;
-        if (isSelf) return <span className="text-xs text-muted-foreground">You</span>;
+        if (isSelf)
+          return <span className="text-xs text-muted-foreground">You</span>;
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
+              <Button
+                variant="ghost"
+                size="sm"
+              >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -362,29 +369,45 @@ export function PlatformAdminsPanel() {
               </div>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
                     <SlidersHorizontal className="h-4 w-4" />
                     Filter
                     {teamRoleFilter.length > 0 && (
-                      <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                      <Badge
+                        variant="secondary"
+                        className="ml-1 h-5 px-1.5 text-xs"
+                      >
                         {teamRoleFilter.length}
                       </Badge>
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent align="end" className="w-72 space-y-4">
+                <PopoverContent
+                  align="end"
+                  className="w-72 space-y-4"
+                >
                   <div>
                     <p className="text-xs font-medium mb-2">Only show team members by...</p>
                     <p className="text-xs text-muted-foreground mb-1">Role</p>
                     <div className="space-y-1">
                       {["platform_admin"].map(r => (
-                        <label key={r} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <label
+                          key={r}
+                          className="flex items-center gap-2 text-sm cursor-pointer"
+                        >
                           <input
                             type="checkbox"
                             checked={teamRoleFilter.includes(r)}
                             onChange={e =>
                               setTeamRoleFilter(prev =>
-                                e.target.checked ? [...prev, r] : prev.filter(x => x !== r))}
+                                e.target.checked ? [
+                                  ...prev,
+                                  r,
+                                ] : prev.filter(x => x !== r))}
                           />
                           Platform Admin
                         </label>
@@ -392,7 +415,11 @@ export function PlatformAdminsPanel() {
                     </div>
                   </div>
                   <div className="flex justify-between pt-2 border-t">
-                    <Button variant="ghost" size="sm" onClick={() => setTeamRoleFilter([])}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setTeamRoleFilter([])}
+                    >
                       Show All
                     </Button>
                   </div>
@@ -409,13 +436,13 @@ export function PlatformAdminsPanel() {
             errorMessage="Failed to load platform admins."
             onRetry={() => adminsQuery.refetch()}
             hasActiveFilters={!!teamSearch.trim() || teamRoleFilter.length > 0}
-            emptyState={
+            emptyState={(
               <div className="text-muted-foreground">
                 <Shield className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>No platform administrators found</p>
                 <p className="text-sm">Invite your first admin to get started</p>
               </div>
-            }
+            )}
             filteredEmptyState="No platform admins match your filters."
           />
         </CardContent>

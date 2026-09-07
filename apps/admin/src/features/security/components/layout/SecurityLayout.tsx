@@ -1,4 +1,6 @@
-import { NavLink, Outlet } from "react-router";
+import {
+  NavLink, Outlet,
+} from "react-router";
 import { SECURITY_TABS } from "@/features/security/utils/securityNav";
 import { cn } from "@/lib/utils";
 

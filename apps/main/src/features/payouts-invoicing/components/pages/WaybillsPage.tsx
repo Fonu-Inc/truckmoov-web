@@ -1,4 +1,7 @@
-import { formatWithPattern, toDateParam } from "@truckmoov/app-core/utils/time-utils";
+import type { WaybillRecord } from "@/features/payouts-invoicing/utils/demoData";
+import {
+  formatWithPattern, toDateParam,
+} from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle, CheckCircle2, Download, Eye, FileText, ImageIcon, Loader2, MoreHorizontal, Scan, Search, SlidersHorizontal, Upload,
 } from "lucide-react";
@@ -33,18 +36,14 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import {
-  useWaybillInvoice, useWaybillRealtimeEvents,
-} from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
-import {
-  TabKpiCards,
-} from "@/features/payouts-invoicing/components/ui/TabKpiCards";
+import { TabKpiCards } from "@/features/payouts-invoicing/components/ui/TabKpiCards";
 import {
   WaybillDetailView, WaybillThumbnail,
 } from "@/features/payouts-invoicing/components/ui/WaybillDetailView";
 import {
-  DEMO_WAYBILLS, type WaybillRecord,
-} from "@/features/payouts-invoicing/utils/demoData";
+  useWaybillInvoice, useWaybillRealtimeEvents,
+} from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
+import { DEMO_WAYBILLS } from "@/features/payouts-invoicing/utils/demoData";
 import { statusConfig } from "@/features/payouts-invoicing/utils/statusConfig";
 import {
   inferVehicleType, VEHICLE_TYPE_OPTIONS,

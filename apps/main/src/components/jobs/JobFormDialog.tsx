@@ -70,44 +70,101 @@ import { cn } from "@/lib/utils";
 // the server accepts it.
 
 const CARGO_CATEGORIES = [
-  "Electronics", "Food & Beverage", "Textiles", "Machinery",
-  "Building materials", "Automotive", "Chemicals", "Pharmaceuticals",
-  "Documents", "Furniture", "Agricultural", "Other",
+  "Electronics",
+  "Food & Beverage",
+  "Textiles",
+  "Machinery",
+  "Building materials",
+  "Automotive",
+  "Chemicals",
+  "Pharmaceuticals",
+  "Documents",
+  "Furniture",
+  "Agricultural",
+  "Other",
 ] as const;
 
-const CARGO_UNITS = ["kg", "tons", "lbs", "cbm", "pallets", "boxes"] as const;
+const CARGO_UNITS = [
+  "kg",
+  "tons",
+  "lbs",
+  "cbm",
+  "pallets",
+  "boxes",
+] as const;
 
 const VEHICLE_TYPES = [
-  "Any Available Vehicle", "Pickup Truck", "Van", "Truck", "Trailer",
-  "Container Truck", "Refrigerated Truck", "Flatbed", "Tanker",
+  "Any Available Vehicle",
+  "Pickup Truck",
+  "Van",
+  "Truck",
+  "Trailer",
+  "Container Truck",
+  "Refrigerated Truck",
+  "Flatbed",
+  "Tanker",
 ] as const;
 
 const SPECIAL_HANDLING = [
-  "Fragile", "Refrigerated", "Frozen", "Hazardous", "Perishable",
-  "Oversized", "Live cargo", "High value", "Other",
+  "Fragile",
+  "Refrigerated",
+  "Frozen",
+  "Hazardous",
+  "Perishable",
+  "Oversized",
+  "Live cargo",
+  "High value",
+  "Other",
 ] as const;
 
 const EQUIPMENT_OPTIONS = [
-  "Crane", "Forklift", "Pallet jack", "Straps", "Tarpaulin", "Chains",
-  "Refrigeration", "Loading dock", "Other",
+  "Crane",
+  "Forklift",
+  "Pallet jack",
+  "Straps",
+  "Tarpaulin",
+  "Chains",
+  "Refrigeration",
+  "Loading dock",
+  "Other",
 ] as const;
 
 const MAX_FILE_BYTES = 3 * 1024 * 1024;
 
 const jobSchema = z.object({
   reference: z.string().min(3).max(50),
-  pickupAddress: z.string().min(5, "Pickup address required").max(200),
+  pickupAddress: z.string().min(
+    5,
+    "Pickup address required",
+  ).max(200),
   pickupLat: z.coerce.number().min(-90).max(90),
   pickupLng: z.coerce.number().min(-180).max(180),
-  deliveryAddress: z.string().min(5, "Delivery address required").max(200),
+  deliveryAddress: z.string().min(
+    5,
+    "Delivery address required",
+  ).max(200),
   deliveryLat: z.coerce.number().min(-90).max(90),
   deliveryLng: z.coerce.number().min(-180).max(180),
   cargoType: z.string().max(100).optional(),
-  cargoWeight: z.coerce.number().min(0.1, "Weight must be positive"),
+  cargoWeight: z.coerce.number().min(
+    0.1,
+    "Weight must be positive",
+  ),
   cargoDescription: z.string().max(500).optional(),
-  amount: z.coerce.number().min(0, "Amount must be positive"),
-  deadline: z.string().min(1, "Deadline required"),
-  priority: z.enum(["low", "medium", "high", "urgent"]),
+  amount: z.coerce.number().min(
+    0,
+    "Amount must be positive",
+  ),
+  deadline: z.string().min(
+    1,
+    "Deadline required",
+  ),
+  priority: z.enum([
+    "low",
+    "medium",
+    "high",
+    "urgent",
+  ]),
   cargoCategory: z.string().optional(),
   cargoCategoryOther: z.string().optional(),
   packagesCount: z.coerce.number().min(0).optional(),
@@ -148,7 +205,9 @@ type IntermediateStop = {
   deliveryDetails: LocationDetails;
 };
 
-type Dimensions = { length?: number; width?: number; height?: number };
+type Dimensions = {
+  length?: number; width?: number; height?: number;
+};
 
 export type JobFormSubmitData = JobFormData & {
   stops: Array<{
@@ -178,9 +237,15 @@ type JobRoutePoint = {
 };
 
 const STEPS = [
-  { id: 1, label: "Locations", icon: MapPin },
-  { id: 2, label: "Details", icon: ClipboardList },
-  { id: 3, label: "Review", icon: Check },
+  {
+    id: 1, label: "Locations", icon: MapPin,
+  },
+  {
+    id: 2, label: "Details", icon: ClipboardList,
+  },
+  {
+    id: 3, label: "Review", icon: Check,
+  },
 ] as const;
 
 function generateReference() {
@@ -205,20 +270,59 @@ export function JobFormDialog({
   open, onOpenChange, job, onSubmit, isSubmitting = false,
 }: JobFormDialogProps) {
   const isEditing = !!job;
-  const [step, setStep] = useState(1);
-  const [stops, setStops] = useState<IntermediateStop[]>([]);
-  const [pickupDetails, setPickupDetails] = useState<LocationDetails>(emptyDetails);
-  const [deliveryDetails, setDeliveryDetails] = useState<LocationDetails>(emptyDetails);
+  const [
+    step,
+    setStep,
+  ] = useState(1);
+  const [
+    stops,
+    setStops,
+  ] = useState<IntermediateStop[]>([]);
+  const [
+    pickupDetails,
+    setPickupDetails,
+  ] = useState<LocationDetails>(emptyDetails);
+  const [
+    deliveryDetails,
+    setDeliveryDetails,
+  ] = useState<LocationDetails>(emptyDetails);
 
-  const [dimensionsOn, setDimensionsOn] = useState(false);
-  const [dimensions, setDimensions] = useState<Dimensions>({});
-  const [specialHandlingOn, setSpecialHandlingOn] = useState(false);
-  const [specialHandling, setSpecialHandling] = useState<string[]>([]);
-  const [specialHandlingOther, setSpecialHandlingOther] = useState("");
-  const [equipmentOn, setEquipmentOn] = useState(false);
-  const [equipment, setEquipment] = useState<string[]>([]);
-  const [equipmentOther, setEquipmentOther] = useState("");
-  const [attachments, setAttachments] = useState<File[]>([]);
+  const [
+    dimensionsOn,
+    setDimensionsOn,
+  ] = useState(false);
+  const [
+    dimensions,
+    setDimensions,
+  ] = useState<Dimensions>({});
+  const [
+    specialHandlingOn,
+    setSpecialHandlingOn,
+  ] = useState(false);
+  const [
+    specialHandling,
+    setSpecialHandling,
+  ] = useState<string[]>([]);
+  const [
+    specialHandlingOther,
+    setSpecialHandlingOther,
+  ] = useState("");
+  const [
+    equipmentOn,
+    setEquipmentOn,
+  ] = useState(false);
+  const [
+    equipment,
+    setEquipment,
+  ] = useState<string[]>([]);
+  const [
+    equipmentOther,
+    setEquipmentOther,
+  ] = useState("");
+  const [
+    attachments,
+    setAttachments,
+  ] = useState<File[]>([]);
 
   const form = useForm<JobFormData>({
     resolver: zodResolver(jobSchema),
@@ -234,118 +338,188 @@ export function JobFormDialog({
     },
   });
 
-  useEffect(() => {
-    if (!open)
-      return;
-    setStep(1);
-    setStops([]);
-    setPickupDetails(emptyDetails());
-    setDeliveryDetails(emptyDetails());
-    setDimensionsOn(false); setDimensions({});
-    setSpecialHandlingOn(false); setSpecialHandling([]); setSpecialHandlingOther("");
-    setEquipmentOn(false); setEquipment([]); setEquipmentOther("");
-    setAttachments([]);
-    if (job) {
-      const jobStops = (job as Job & {
-        stops?: Array<{ address?: string; latitude?: number; longitude?: number; lat?: number; lng?: number }>;
-      }).stops ?? [];
-      form.reset({
-        reference: job.reference,
-        pickupAddress: job.pickup.address,
-        pickupLat: job.pickup.lat, pickupLng: job.pickup.lng,
-        deliveryAddress: job.delivery.address,
-        deliveryLat: job.delivery.lat, deliveryLng: job.delivery.lng,
-        cargoType: job.cargo.type,
-        cargoWeight: job.cargo.weight,
-        cargoDescription: job.cargo.description,
-        amount: job.amount,
-        deadline: toDateTimeInputValue(job.deadline),
-        priority: "medium",
-        cargoCategory: "", cargoCategoryOther: "",
-        packagesCount: undefined, cargoUnit: "kg", cargoValue: undefined,
-        vehicleType: "Any Available Vehicle",
-      });
-      setStops(jobStops.map(stop => ({
-        ...makeStop("simple"),
-        address: stop.address ?? "",
-        lat: stop.latitude ?? stop.lat ?? 0,
-        lng: stop.longitude ?? stop.lng ?? 0,
-      })));
-    }
-    else {
-      form.reset({
-        reference: generateReference(),
-        pickupAddress: "", pickupLat: 0, pickupLng: 0,
-        deliveryAddress: "", deliveryLat: 0, deliveryLng: 0,
-        cargoType: "", cargoWeight: 0, cargoDescription: "",
-        amount: 0, deadline: "", priority: "medium",
-        cargoCategory: "", cargoCategoryOther: "",
-        packagesCount: undefined, cargoUnit: "kg", cargoValue: undefined,
-        vehicleType: "Any Available Vehicle",
-      });
-    }
-  }, [open, job, form]);
+  useEffect(
+    () => {
+      if (!open)
+        return;
+      setStep(1);
+      setStops([]);
+      setPickupDetails(emptyDetails());
+      setDeliveryDetails(emptyDetails());
+      setDimensionsOn(false);
+      setDimensions({});
+      setSpecialHandlingOn(false);
+      setSpecialHandling([]);
+      setSpecialHandlingOther("");
+      setEquipmentOn(false);
+      setEquipment([]);
+      setEquipmentOther("");
+      setAttachments([]);
+      if (job) {
+        const jobStops = (job as Job & {
+          stops?: Array<{
+            address?: string; latitude?: number; longitude?: number; lat?: number; lng?: number;
+          }>;
+        }).stops ?? [];
+        form.reset({
+          reference: job.reference,
+          pickupAddress: job.pickup.address,
+          pickupLat: job.pickup.lat, pickupLng: job.pickup.lng,
+          deliveryAddress: job.delivery.address,
+          deliveryLat: job.delivery.lat, deliveryLng: job.delivery.lng,
+          cargoType: job.cargo.type,
+          cargoWeight: job.cargo.weight,
+          cargoDescription: job.cargo.description,
+          amount: job.amount,
+          deadline: toDateTimeInputValue(job.deadline),
+          priority: "medium",
+          cargoCategory: "", cargoCategoryOther: "",
+          packagesCount: undefined, cargoUnit: "kg", cargoValue: undefined,
+          vehicleType: "Any Available Vehicle",
+        });
+        setStops(jobStops.map(stop => ({
+          ...makeStop("simple"),
+          address: stop.address ?? "",
+          lat: stop.latitude ?? stop.lat ?? 0,
+          lng: stop.longitude ?? stop.lng ?? 0,
+        })));
+      }
+      else {
+        form.reset({
+          reference: generateReference(),
+          pickupAddress: "", pickupLat: 0, pickupLng: 0,
+          deliveryAddress: "", deliveryLat: 0, deliveryLng: 0,
+          cargoType: "", cargoWeight: 0, cargoDescription: "",
+          amount: 0, deadline: "", priority: "medium",
+          cargoCategory: "", cargoCategoryOther: "",
+          packagesCount: undefined, cargoUnit: "kg", cargoValue: undefined,
+          vehicleType: "Any Available Vehicle",
+        });
+      }
+    },
+    [
+      open,
+      job,
+      form,
+    ],
+  );
 
   const values = form.watch();
 
-  const pickupValue = useMemo<MapLocation>(() => ({
-    address: values.pickupAddress || "", lat: values.pickupLat || 0, lng: values.pickupLng || 0,
-  }), [values.pickupAddress, values.pickupLat, values.pickupLng]);
+  const pickupValue = useMemo<MapLocation>(
+    () => ({
+      address: values.pickupAddress || "", lat: values.pickupLat || 0, lng: values.pickupLng || 0,
+    }),
+    [
+      values.pickupAddress,
+      values.pickupLat,
+      values.pickupLng,
+    ],
+  );
 
-  const deliveryValue = useMemo<MapLocation>(() => ({
-    address: values.deliveryAddress || "", lat: values.deliveryLat || 0, lng: values.deliveryLng || 0,
-  }), [values.deliveryAddress, values.deliveryLat, values.deliveryLng]);
+  const deliveryValue = useMemo<MapLocation>(
+    () => ({
+      address: values.deliveryAddress || "", lat: values.deliveryLat || 0, lng: values.deliveryLng || 0,
+    }),
+    [
+      values.deliveryAddress,
+      values.deliveryLat,
+      values.deliveryLng,
+    ],
+  );
 
-  const routePoints: JobRoutePoint[] = useMemo(() => {
-    const arr: JobRoutePoint[] = [];
-    if (pickupValue.lat && pickupValue.lng)
-      arr.push({ lat: pickupValue.lat, lng: pickupValue.lng, label: pickupValue.address, type: "pickup" });
-    stops.forEach((s) => {
-      if (s.kind === "simple" && s.lat && s.lng) {
-        arr.push({ lat: s.lat, lng: s.lng, label: s.address, type: "stop" });
+  const routePoints: JobRoutePoint[] = useMemo(
+    () => {
+      const arr: JobRoutePoint[] = [];
+      if (pickupValue.lat && pickupValue.lng) {
+        arr.push({
+          lat: pickupValue.lat, lng: pickupValue.lng, label: pickupValue.address, type: "pickup",
+        });
       }
-      else if (s.kind === "pickup-delivery") {
-        if (s.pickupLat && s.pickupLng)
-          arr.push({ lat: s.pickupLat, lng: s.pickupLng, label: s.pickupAddress, type: "stop" });
-        if (s.deliveryLat && s.deliveryLng)
-          arr.push({ lat: s.deliveryLat, lng: s.deliveryLng, label: s.deliveryAddress, type: "stop" });
+      stops.forEach((s) => {
+        if (s.kind === "simple" && s.lat && s.lng) {
+          arr.push({
+            lat: s.lat, lng: s.lng, label: s.address, type: "stop",
+          });
+        }
+        else if (s.kind === "pickup-delivery") {
+          if (s.pickupLat && s.pickupLng) {
+            arr.push({
+              lat: s.pickupLat, lng: s.pickupLng, label: s.pickupAddress, type: "stop",
+            });
+          }
+          if (s.deliveryLat && s.deliveryLng) {
+            arr.push({
+              lat: s.deliveryLat, lng: s.deliveryLng, label: s.deliveryAddress, type: "stop",
+            });
+          }
+        }
+      });
+      if (deliveryValue.lat && deliveryValue.lng) {
+        arr.push({
+          lat: deliveryValue.lat, lng: deliveryValue.lng, label: deliveryValue.address, type: "delivery",
+        });
       }
-    });
-    if (deliveryValue.lat && deliveryValue.lng)
-      arr.push({ lat: deliveryValue.lat, lng: deliveryValue.lng, label: deliveryValue.address, type: "delivery" });
-    return arr;
-  }, [pickupValue, deliveryValue, stops]);
+      return arr;
+    },
+    [
+      pickupValue,
+      deliveryValue,
+      stops,
+    ],
+  );
 
-  const mapMarkers = useMemo<RoutePreviewMapMarker[]>(() => routePoints.map(point => ({
-    position: [point.lat, point.lng] as LatLngTuple,
-    label: point.label,
-    color: point.type === "pickup" ? "#22c55e" : point.type === "delivery" ? "#ef4444" : "#f59e0b",
-  })), [routePoints]);
+  const mapMarkers = useMemo<RoutePreviewMapMarker[]>(
+    () => routePoints.map(point => ({
+      position: [
+        point.lat,
+        point.lng,
+      ] as LatLngTuple,
+      label: point.label,
+      color: point.type === "pickup" ? "#22c55e" : point.type === "delivery" ? "#ef4444" : "#f59e0b",
+    })),
+    [routePoints],
+  );
 
   const mapWaypoints = useMemo<LatLngTuple[]>(
-    () => routePoints.map(p => [p.lat, p.lng]),
+    () => routePoints.map(p => [
+      p.lat,
+      p.lng,
+    ]),
     [routePoints],
   );
 
   const handleNext = async () => {
     if (step === 1) {
       const ok = await form.trigger([
-        "pickupAddress", "pickupLat", "pickupLng",
-        "deliveryAddress", "deliveryLat", "deliveryLng",
+        "pickupAddress",
+        "pickupLat",
+        "pickupLng",
+        "deliveryAddress",
+        "deliveryLat",
+        "deliveryLng",
       ]);
       if (!ok)
         return;
       setStep(2);
     }
     else if (step === 2) {
-      const ok = await form.trigger(["priority", "cargoWeight", "amount", "deadline"]);
+      const ok = await form.trigger([
+        "priority",
+        "cargoWeight",
+        "amount",
+        "deadline",
+      ]);
       if (!ok)
         return;
       setStep(3);
     }
   };
 
-  const handleBack = () => setStep(s => Math.max(1, s - 1));
+  const handleBack = () => setStep(s => Math.max(
+    1,
+    s - 1,
+  ));
 
   const handleFinalSubmit = (data: JobFormData) => {
     const metadata: Record<string, unknown> = {
@@ -365,7 +539,9 @@ export function JobFormDialog({
       stops: stops.map(s => ({
         kind: s.kind,
         ...(s.kind === "simple"
-          ? { address: s.address, lat: s.lat, lng: s.lng, details: s.details.include ? s.details : undefined }
+          ? {
+              address: s.address, lat: s.lat, lng: s.lng, details: s.details.include ? s.details : undefined,
+            }
           : {
               pickupAddress: s.pickupAddress, pickupLat: s.pickupLat, pickupLng: s.pickupLng,
               pickupDetails: s.pickupDetails.include ? s.pickupDetails : undefined,
@@ -374,29 +550,52 @@ export function JobFormDialog({
             }),
       })),
       // ponytail: file uploads are UI-only — the /jobs endpoint doesn't accept them.
-      attachments: attachments.map(f => ({ name: f.name, size: f.size, type: f.type })),
+      attachments: attachments.map(f => ({
+        name: f.name, size: f.size, type: f.type,
+      })),
     };
     const flatStops = stops.flatMap((s) => {
-      if (s.kind === "simple" && s.address.trim())
-        return [{ address: s.address, latitude: s.lat, longitude: s.lng }];
-      const out: Array<{ address: string; latitude: number; longitude: number }> = [];
-      if (s.pickupAddress.trim())
-        out.push({ address: s.pickupAddress, latitude: s.pickupLat, longitude: s.pickupLng });
-      if (s.deliveryAddress.trim())
-        out.push({ address: s.deliveryAddress, latitude: s.deliveryLat, longitude: s.deliveryLng });
+      if (s.kind === "simple" && s.address.trim()) {
+        return [
+          {
+            address: s.address, latitude: s.lat, longitude: s.lng,
+          },
+        ];
+      }
+      const out: Array<{
+        address: string; latitude: number; longitude: number;
+      }> = [];
+      if (s.pickupAddress.trim()) {
+        out.push({
+          address: s.pickupAddress, latitude: s.pickupLat, longitude: s.pickupLng,
+        });
+      }
+      if (s.deliveryAddress.trim()) {
+        out.push({
+          address: s.deliveryAddress, latitude: s.deliveryLat, longitude: s.deliveryLng,
+        });
+      }
       return out;
     });
-    onSubmit({ ...data, stops: flatStops, metadata });
+    onSubmit({
+      ...data, stops: flatStops, metadata,
+    });
   };
 
-  const addStop = (kind: StopKind) => setStops(p => [...p, makeStop(kind)]);
+  const addStop = (kind: StopKind) => setStops(p => [
+    ...p,
+    makeStop(kind),
+  ]);
   const removeStop = (id: string) => setStops(p => p.filter(s => s.id !== id));
   const patchStop = (id: string, patch: Partial<IntermediateStop>) =>
-    setStops(p => p.map(s => s.id === id ? { ...s, ...patch } : s));
+    setStops(p => p.map(s => s.id === id ? {
+      ...s, ...patch,
+    } : s));
 
-  const toggleMulti = (
-    list: string[], setter: (v: string[]) => void, value: string,
-  ) => setter(list.includes(value) ? list.filter(v => v !== value) : [...list, value]);
+  const toggleMulti = (list: string[], setter: (v: string[]) => void, value: string) => setter(list.includes(value) ? list.filter(v => v !== value) : [
+    ...list,
+    value,
+  ]);
 
   const handleFileAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -404,12 +603,18 @@ export function JobFormDialog({
     if (kept.length !== files.length) {
       // ponytail: silent skip on oversized files; wire toast when file endpoint lands
     }
-    setAttachments(prev => [...prev, ...kept]);
+    setAttachments(prev => [
+      ...prev,
+      ...kept,
+    ]);
     e.target.value = "";
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="sm:max-w-[720px] max-h-[90vh] overflow-y-auto bg-card border-border p-5">
         <DialogHeader>
           <DialogTitle className="text-xl">
@@ -428,7 +633,10 @@ export function JobFormDialog({
             const isComplete = step > s.id;
             const Icon = s.icon;
             return (
-              <div key={s.id} className="flex items-center flex-1">
+              <div
+                key={s.id}
+                className="flex items-center flex-1"
+              >
                 <div className="flex items-center gap-2">
                   <div className={cn(
                     "h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all shrink-0",
@@ -467,7 +675,10 @@ export function JobFormDialog({
         <Separator />
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFinalSubmit)} className="space-y-5">
+          <form
+            onSubmit={form.handleSubmit(handleFinalSubmit)}
+            className="space-y-5"
+          >
             {/* STEP 1 — LOCATIONS */}
             {step === 1 && (
               <div className="space-y-4">
@@ -489,9 +700,21 @@ export function JobFormDialog({
                     pinColor="#22c55e"
                     value={pickupValue}
                     onLocationSelect={(v) => {
-                      form.setValue("pickupAddress", v.address, { shouldValidate: true });
-                      form.setValue("pickupLat", v.lat, { shouldValidate: true });
-                      form.setValue("pickupLng", v.lng, { shouldValidate: true });
+                      form.setValue(
+                        "pickupAddress",
+                        v.address,
+                        { shouldValidate: true },
+                      );
+                      form.setValue(
+                        "pickupLat",
+                        v.lat,
+                        { shouldValidate: true },
+                      );
+                      form.setValue(
+                        "pickupLng",
+                        v.lng,
+                        { shouldValidate: true },
+                      );
                     }}
                   />
                   <MapLocationInput
@@ -500,9 +723,21 @@ export function JobFormDialog({
                     pinColor="#ef4444"
                     value={deliveryValue}
                     onLocationSelect={(v) => {
-                      form.setValue("deliveryAddress", v.address, { shouldValidate: true });
-                      form.setValue("deliveryLat", v.lat, { shouldValidate: true });
-                      form.setValue("deliveryLng", v.lng, { shouldValidate: true });
+                      form.setValue(
+                        "deliveryAddress",
+                        v.address,
+                        { shouldValidate: true },
+                      );
+                      form.setValue(
+                        "deliveryLat",
+                        v.lat,
+                        { shouldValidate: true },
+                      );
+                      form.setValue(
+                        "deliveryLng",
+                        v.lng,
+                        { shouldValidate: true },
+                      );
                     }}
                   />
                 </div>
@@ -513,16 +748,25 @@ export function JobFormDialog({
                       Intermediate stops
                     </p>
                     {stops.map((s, idx) => (
-                      <div key={s.id} className="rounded-md border border-border/60 p-3 bg-background/60 space-y-3">
+                      <div
+                        key={s.id}
+                        className="rounded-md border border-border/60 p-3 bg-background/60 space-y-3"
+                      >
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-primary border-primary/40 shrink-0">
+                          <Badge
+                            variant="outline"
+                            className="text-primary border-primary/40 shrink-0"
+                          >
                             Stop
                             {" "}
                             {idx + 1}
                           </Badge>
                           <Select
                             value={s.kind}
-                            onValueChange={(v: StopKind) => patchStop(s.id, { kind: v })}
+                            onValueChange={(v: StopKind) => patchStop(
+                              s.id,
+                              { kind: v },
+                            )}
                           >
                             <SelectTrigger className="h-8 flex-1 max-w-[280px]">
                               <SelectValue />
@@ -548,10 +792,15 @@ export function JobFormDialog({
                                 label="Stop location"
                                 placeholder="e.g. Fuel station, Lokoja"
                                 pinColor="#f59e0b"
-                                value={{ address: s.address, lat: s.lat, lng: s.lng }}
-                                onLocationSelect={v => patchStop(s.id, {
-                                  address: v.address, lat: v.lat, lng: v.lng,
-                                })}
+                                value={{
+                                  address: s.address, lat: s.lat, lng: s.lng,
+                                }}
+                                onLocationSelect={v => patchStop(
+                                  s.id,
+                                  {
+                                    address: v.address, lat: v.lat, lng: v.lng,
+                                  },
+                                )}
                               />
                             )
                           : (
@@ -560,19 +809,29 @@ export function JobFormDialog({
                                   label="Intermediate pickup"
                                   placeholder="e.g. Warehouse B"
                                   pinColor="#3b82f6"
-                                  value={{ address: s.pickupAddress, lat: s.pickupLat, lng: s.pickupLng }}
-                                  onLocationSelect={v => patchStop(s.id, {
-                                    pickupAddress: v.address, pickupLat: v.lat, pickupLng: v.lng,
-                                  })}
+                                  value={{
+                                    address: s.pickupAddress, lat: s.pickupLat, lng: s.pickupLng,
+                                  }}
+                                  onLocationSelect={v => patchStop(
+                                    s.id,
+                                    {
+                                      pickupAddress: v.address, pickupLat: v.lat, pickupLng: v.lng,
+                                    },
+                                  )}
                                 />
                                 <MapLocationInput
                                   label="Intermediate delivery"
                                   placeholder="e.g. Store C"
                                   pinColor="#a855f7"
-                                  value={{ address: s.deliveryAddress, lat: s.deliveryLat, lng: s.deliveryLng }}
-                                  onLocationSelect={v => patchStop(s.id, {
-                                    deliveryAddress: v.address, deliveryLat: v.lat, deliveryLng: v.lng,
-                                  })}
+                                  value={{
+                                    address: s.deliveryAddress, lat: s.deliveryLat, lng: s.deliveryLng,
+                                  }}
+                                  onLocationSelect={v => patchStop(
+                                    s.id,
+                                    {
+                                      deliveryAddress: v.address, deliveryLat: v.lat, deliveryLng: v.lng,
+                                    },
+                                  )}
                                 />
                               </div>
                             )}
@@ -615,7 +874,10 @@ export function JobFormDialog({
                           : "Route preview"}
                     </p>
                     {routePoints.length >= 2 && (
-                      <Badge variant="outline" className="text-xs">
+                      <Badge
+                        variant="outline"
+                        className="text-xs"
+                      >
                         {routePoints.length}
                         {" "}
                         points
@@ -685,22 +947,34 @@ export function JobFormDialog({
                             title={`Stop ${i + 1}`}
                             subtitle={s.address}
                             value={s.details}
-                            onChange={d => patchStop(s.id, { details: d })}
+                            onChange={d => patchStop(
+                              s.id,
+                              { details: d },
+                            )}
                           />
                         )
                       : (
-                          <div key={s.id} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div
+                            key={s.id}
+                            className="grid grid-cols-1 md:grid-cols-2 gap-3"
+                          >
                             <LocationDetailsCard
                               title={`Stop ${i + 1} · Pickup`}
                               subtitle={s.pickupAddress}
                               value={s.pickupDetails}
-                              onChange={d => patchStop(s.id, { pickupDetails: d })}
+                              onChange={d => patchStop(
+                                s.id,
+                                { pickupDetails: d },
+                              )}
                             />
                             <LocationDetailsCard
                               title={`Stop ${i + 1} · Delivery`}
                               subtitle={s.deliveryAddress}
                               value={s.deliveryDetails}
-                              onChange={d => patchStop(s.id, { deliveryDetails: d })}
+                              onChange={d => patchStop(
+                                s.id,
+                                { deliveryDetails: d },
+                              )}
                             />
                           </div>
                         )
@@ -725,7 +999,12 @@ export function JobFormDialog({
                           Job Reference (system-generated)
                         </FormLabel>
                         <FormControl>
-                          <Input {...field} readOnly disabled className="font-mono bg-muted/60" />
+                          <Input
+                            {...field}
+                            readOnly
+                            disabled
+                            className="font-mono bg-muted/60"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -737,7 +1016,10 @@ export function JobFormDialog({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Priority</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger><SelectValue placeholder="Select priority" /></SelectTrigger>
                           </FormControl>
@@ -767,13 +1049,21 @@ export function JobFormDialog({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Cargo category</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value || ""}
+                          >
                             <FormControl>
                               <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                             </FormControl>
                             <SelectContent>
                               {CARGO_CATEGORIES.map(c => (
-                                <SelectItem key={c} value={c}>{c}</SelectItem>
+                                <SelectItem
+                                  key={c}
+                                  value={c}
+                                >
+                                  {c}
+                                </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -788,7 +1078,12 @@ export function JobFormDialog({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Specify other category</FormLabel>
-                            <FormControl><Input {...field} placeholder="Custom category" /></FormControl>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="Custom category"
+                              />
+                            </FormControl>
                           </FormItem>
                         )}
                       />
@@ -801,7 +1096,11 @@ export function JobFormDialog({
                       <FormItem>
                         <FormLabel>Description (optional)</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Contents, packaging notes, handling remarks…" rows={3} {...field} />
+                          <Textarea
+                            placeholder="Contents, packaging notes, handling remarks…"
+                            rows={3}
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -840,7 +1139,13 @@ export function JobFormDialog({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Weight</FormLabel>
-                          <FormControl><Input type="number" step="0.1" {...field} /></FormControl>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.1"
+                              {...field}
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -851,10 +1156,20 @@ export function JobFormDialog({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Unit</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value || "kg"}>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value || "kg"}
+                          >
                             <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>
-                              {CARGO_UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                              {CARGO_UNITS.map(u => (
+                                <SelectItem
+                                  key={u}
+                                  value={u}
+                                >
+                                  {u}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </FormItem>
@@ -867,15 +1182,30 @@ export function JobFormDialog({
                         <FormItem>
                           <FormLabel>Estimated value (NGN)</FormLabel>
                           <FormControl>
-                            <Input type="number" min={0} placeholder="0" {...field} value={field.value ?? ""} />
+                            <Input
+                              type="number"
+                              min={0}
+                              placeholder="0"
+                              {...field}
+                              value={field.value ?? ""}
+                            />
                           </FormControl>
                         </FormItem>
                       )}
                     />
                   </div>
                   <div className="flex items-center gap-2 pt-2">
-                    <Switch checked={dimensionsOn} onCheckedChange={setDimensionsOn} id="dim-toggle" />
-                    <Label htmlFor="dim-toggle" className="text-sm">Add package dimensions (L × W × H)</Label>
+                    <Switch
+                      checked={dimensionsOn}
+                      onCheckedChange={setDimensionsOn}
+                      id="dim-toggle"
+                    />
+                    <Label
+                      htmlFor="dim-toggle"
+                      className="text-sm"
+                    >
+                      Add package dimensions (L × W × H)
+                    </Label>
                   </div>
                   {dimensionsOn && (
                     <div className="grid grid-cols-3 gap-3">
@@ -885,7 +1215,9 @@ export function JobFormDialog({
                           type="number"
                           min={0}
                           value={dimensions.length ?? ""}
-                          onChange={e => setDimensions(d => ({ ...d, length: e.target.value ? Number(e.target.value) : undefined }))}
+                          onChange={e => setDimensions(d => ({
+                            ...d, length: e.target.value ? Number(e.target.value) : undefined,
+                          }))}
                         />
                       </div>
                       <div>
@@ -894,7 +1226,9 @@ export function JobFormDialog({
                           type="number"
                           min={0}
                           value={dimensions.width ?? ""}
-                          onChange={e => setDimensions(d => ({ ...d, width: e.target.value ? Number(e.target.value) : undefined }))}
+                          onChange={e => setDimensions(d => ({
+                            ...d, width: e.target.value ? Number(e.target.value) : undefined,
+                          }))}
                         />
                       </div>
                       <div>
@@ -903,7 +1237,9 @@ export function JobFormDialog({
                           type="number"
                           min={0}
                           value={dimensions.height ?? ""}
-                          onChange={e => setDimensions(d => ({ ...d, height: e.target.value ? Number(e.target.value) : undefined }))}
+                          onChange={e => setDimensions(d => ({
+                            ...d, height: e.target.value ? Number(e.target.value) : undefined,
+                          }))}
                         />
                       </div>
                     </div>
@@ -922,10 +1258,20 @@ export function JobFormDialog({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Vehicle type</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || "Any Available Vehicle"}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || "Any Available Vehicle"}
+                        >
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent>
-                            {VEHICLE_TYPES.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                            {VEHICLE_TYPES.map(v => (
+                              <SelectItem
+                                key={v}
+                                value={v}
+                              >
+                                {v}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </FormItem>
@@ -940,7 +1286,10 @@ export function JobFormDialog({
                       <ShieldAlert className="h-4 w-4 text-primary" />
                       Special Handling (optional)
                     </h4>
-                    <Switch checked={specialHandlingOn} onCheckedChange={setSpecialHandlingOn} />
+                    <Switch
+                      checked={specialHandlingOn}
+                      onCheckedChange={setSpecialHandlingOn}
+                    />
                   </div>
                   {specialHandlingOn && (
                     <>
@@ -955,7 +1304,11 @@ export function JobFormDialog({
                           >
                             <Checkbox
                               checked={specialHandling.includes(option)}
-                              onCheckedChange={() => toggleMulti(specialHandling, setSpecialHandling, option)}
+                              onCheckedChange={() => toggleMulti(
+                                specialHandling,
+                                setSpecialHandling,
+                                option,
+                              )}
                             />
                             {option}
                           </label>
@@ -964,7 +1317,10 @@ export function JobFormDialog({
                       {specialHandling.includes("Other") && (
                         <div>
                           <Label className="text-xs text-muted-foreground">Specify other special handling</Label>
-                          <Input value={specialHandlingOther} onChange={e => setSpecialHandlingOther(e.target.value)} />
+                          <Input
+                            value={specialHandlingOther}
+                            onChange={e => setSpecialHandlingOther(e.target.value)}
+                          />
                         </div>
                       )}
                     </>
@@ -978,7 +1334,10 @@ export function JobFormDialog({
                       <Wrench className="h-4 w-4 text-primary" />
                       Required Equipment (optional)
                     </h4>
-                    <Switch checked={equipmentOn} onCheckedChange={setEquipmentOn} />
+                    <Switch
+                      checked={equipmentOn}
+                      onCheckedChange={setEquipmentOn}
+                    />
                   </div>
                   {equipmentOn && (
                     <>
@@ -993,7 +1352,11 @@ export function JobFormDialog({
                           >
                             <Checkbox
                               checked={equipment.includes(option)}
-                              onCheckedChange={() => toggleMulti(equipment, setEquipment, option)}
+                              onCheckedChange={() => toggleMulti(
+                                equipment,
+                                setEquipment,
+                                option,
+                              )}
                             />
                             {option}
                           </label>
@@ -1002,7 +1365,10 @@ export function JobFormDialog({
                       {equipment.includes("Other") && (
                         <div>
                           <Label className="text-xs text-muted-foreground">Specify other equipment</Label>
-                          <Input value={equipmentOther} onChange={e => setEquipmentOther(e.target.value)} />
+                          <Input
+                            value={equipmentOther}
+                            onChange={e => setEquipmentOther(e.target.value)}
+                          />
                         </div>
                       )}
                     </>
@@ -1022,7 +1388,13 @@ export function JobFormDialog({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Amount (NGN)</FormLabel>
-                          <FormControl><Input type="number" step="100" {...field} /></FormControl>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="100"
+                              {...field}
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1036,7 +1408,12 @@ export function JobFormDialog({
                             <Calendar className="h-3 w-3" />
                             Deadline
                           </FormLabel>
-                          <FormControl><Input type="datetime-local" {...field} /></FormControl>
+                          <FormControl>
+                            <Input
+                              type="datetime-local"
+                              {...field}
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1059,7 +1436,10 @@ export function JobFormDialog({
                   {attachments.length > 0 && (
                     <ul className="space-y-1">
                       {attachments.map((f, i) => (
-                        <li key={`${f.name}-${i}`} className="flex items-center justify-between rounded-md border border-border/60 px-3 py-1.5 text-xs">
+                        <li
+                          key={`${f.name}-${i}`}
+                          className="flex items-center justify-between rounded-md border border-border/60 px-3 py-1.5 text-xs"
+                        >
                           <span className="truncate">
                             {f.name}
                             {" "}
@@ -1109,7 +1489,10 @@ export function JobFormDialog({
                       <Route className="h-4 w-4 text-primary" />
                       Route
                     </h4>
-                    <Badge variant="outline" className="text-xs">
+                    <Badge
+                      variant="outline"
+                      className="text-xs"
+                    >
                       {routePoints.length}
                       {" "}
                       stops
@@ -1128,18 +1511,44 @@ export function JobFormDialog({
                     />
                   </div>
                   <div className="space-y-2 text-sm">
-                    <RouteRow color="bg-success" label="Pickup" value={values.pickupAddress} />
+                    <RouteRow
+                      color="bg-success"
+                      label="Pickup"
+                      value={values.pickupAddress}
+                    />
                     {stops.map((s, i) => (
                       s.kind === "simple"
-                        ? <RouteRow key={s.id} color="bg-warning" label={`Stop ${i + 1}`} value={s.address} />
+                        ? (
+                            <RouteRow
+                              key={s.id}
+                              color="bg-warning"
+                              label={`Stop ${i + 1}`}
+                              value={s.address}
+                            />
+                          )
                         : (
-                            <div key={s.id} className="space-y-1">
-                              <RouteRow color="bg-primary" label={`Stop ${i + 1} pickup`} value={s.pickupAddress} />
-                              <RouteRow color="bg-accent" label={`Stop ${i + 1} delivery`} value={s.deliveryAddress} />
+                            <div
+                              key={s.id}
+                              className="space-y-1"
+                            >
+                              <RouteRow
+                                color="bg-primary"
+                                label={`Stop ${i + 1} pickup`}
+                                value={s.pickupAddress}
+                              />
+                              <RouteRow
+                                color="bg-accent"
+                                label={`Stop ${i + 1} delivery`}
+                                value={s.deliveryAddress}
+                              />
                             </div>
                           )
                     ))}
-                    <RouteRow color="bg-destructive" label="Delivery" value={values.deliveryAddress} />
+                    <RouteRow
+                      color="bg-destructive"
+                      label="Delivery"
+                      value={values.deliveryAddress}
+                    />
                   </div>
                 </div>
 
@@ -1148,32 +1557,84 @@ export function JobFormDialog({
                   || stops.some(s => s.details.include || s.pickupDetails.include || s.deliveryDetails.include)) && (
                   <div className="p-4 rounded-md bg-muted/30 border border-border/50 space-y-3">
                     <h4 className="font-medium text-sm">Location Details</h4>
-                    <ReviewLocationBlock title="Pickup" details={pickupDetails} />
+                    <ReviewLocationBlock
+                      title="Pickup"
+                      details={pickupDetails}
+                    />
                     {stops.map((s, i) => (
                       s.kind === "simple"
-                        ? <ReviewLocationBlock key={s.id} title={`Stop ${i + 1}`} details={s.details} />
+                        ? (
+                            <ReviewLocationBlock
+                              key={s.id}
+                              title={`Stop ${i + 1}`}
+                              details={s.details}
+                            />
+                          )
                         : (
-                            <div key={s.id} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              <ReviewLocationBlock title={`Stop ${i + 1} · Pickup`} details={s.pickupDetails} />
-                              <ReviewLocationBlock title={`Stop ${i + 1} · Delivery`} details={s.deliveryDetails} />
+                            <div
+                              key={s.id}
+                              className="grid grid-cols-1 md:grid-cols-2 gap-3"
+                            >
+                              <ReviewLocationBlock
+                                title={`Stop ${i + 1} · Pickup`}
+                                details={s.pickupDetails}
+                              />
+                              <ReviewLocationBlock
+                                title={`Stop ${i + 1} · Delivery`}
+                                details={s.deliveryDetails}
+                              />
                             </div>
                           )
                     ))}
-                    <ReviewLocationBlock title="Delivery" details={deliveryDetails} />
+                    <ReviewLocationBlock
+                      title="Delivery"
+                      details={deliveryDetails}
+                    />
                   </div>
                 )}
 
                 {/* Summary cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <SummaryCard label="Reference" value={values.reference} mono />
-                  <SummaryCard label="Priority" value={values.priority?.toUpperCase()} />
-                  <SummaryCard label="Cargo category" value={values.cargoCategory === "Other" ? values.cargoCategoryOther : values.cargoCategory} />
-                  <SummaryCard label="Weight" value={values.cargoWeight ? `${values.cargoWeight} ${values.cargoUnit || "kg"}` : undefined} />
-                  <SummaryCard label="Packages" value={values.packagesCount != null ? String(values.packagesCount) : undefined} />
-                  <SummaryCard label="Estimated value" value={values.cargoValue ? `₦ ${Number(values.cargoValue).toLocaleString()}` : undefined} />
-                  <SummaryCard label="Vehicle type" value={values.vehicleType} />
-                  <SummaryCard label="Job price" value={values.amount ? `₦ ${Number(values.amount).toLocaleString()}` : undefined} />
-                  <SummaryCard label="Deadline" value={values.deadline ? formatWithPattern(values.deadline, "PPp") : undefined} />
+                  <SummaryCard
+                    label="Reference"
+                    value={values.reference}
+                    mono
+                  />
+                  <SummaryCard
+                    label="Priority"
+                    value={values.priority?.toUpperCase()}
+                  />
+                  <SummaryCard
+                    label="Cargo category"
+                    value={values.cargoCategory === "Other" ? values.cargoCategoryOther : values.cargoCategory}
+                  />
+                  <SummaryCard
+                    label="Weight"
+                    value={values.cargoWeight ? `${values.cargoWeight} ${values.cargoUnit || "kg"}` : undefined}
+                  />
+                  <SummaryCard
+                    label="Packages"
+                    value={values.packagesCount != null ? String(values.packagesCount) : undefined}
+                  />
+                  <SummaryCard
+                    label="Estimated value"
+                    value={values.cargoValue ? `₦ ${Number(values.cargoValue).toLocaleString()}` : undefined}
+                  />
+                  <SummaryCard
+                    label="Vehicle type"
+                    value={values.vehicleType}
+                  />
+                  <SummaryCard
+                    label="Job price"
+                    value={values.amount ? `₦ ${Number(values.amount).toLocaleString()}` : undefined}
+                  />
+                  <SummaryCard
+                    label="Deadline"
+                    value={values.deadline ? formatWithPattern(
+                      values.deadline,
+                      "PPp",
+                    ) : undefined}
+                  />
                 </div>
 
                 {values.cargoDescription && (
@@ -1207,7 +1668,11 @@ export function JobFormDialog({
                     <p className="text-xs uppercase text-muted-foreground tracking-wide mb-1.5">Special handling</p>
                     <div className="flex flex-wrap gap-1.5">
                       {specialHandling.map(h => (
-                        <Badge key={h} variant="outline" className="text-xs">
+                        <Badge
+                          key={h}
+                          variant="outline"
+                          className="text-xs"
+                        >
                           {h === "Other" && specialHandlingOther ? specialHandlingOther : h}
                         </Badge>
                       ))}
@@ -1220,7 +1685,11 @@ export function JobFormDialog({
                     <p className="text-xs uppercase text-muted-foreground tracking-wide mb-1.5">Required equipment</p>
                     <div className="flex flex-wrap gap-1.5">
                       {equipment.map(e => (
-                        <Badge key={e} variant="outline" className="text-xs">
+                        <Badge
+                          key={e}
+                          variant="outline"
+                          className="text-xs"
+                        >
                           {e === "Other" && equipmentOther ? equipmentOther : e}
                         </Badge>
                       ))}
@@ -1253,22 +1722,40 @@ export function JobFormDialog({
 
             <Separator />
             <div className="flex items-center justify-between gap-3">
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+              >
+                Cancel
+              </Button>
               <div className="flex items-center gap-2">
                 {step > 1 && (
-                  <Button type="button" variant="outline" onClick={handleBack}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBack}
+                  >
                     <ArrowLeft className="h-4 w-4 mr-1" />
                     Back
                   </Button>
                 )}
                 {step < 3 && (
-                  <Button type="button" onClick={handleNext} variant="gradient">
+                  <Button
+                    type="button"
+                    onClick={handleNext}
+                    variant="gradient"
+                  >
                     Next
                     <ArrowRight className="h-4 w-4 ml-1" />
                   </Button>
                 )}
                 {step === 3 && (
-                  <Button type="submit" variant="gradient" loading={isSubmitting}>
+                  <Button
+                    type="submit"
+                    variant="gradient"
+                    loading={isSubmitting}
+                  >
                     <Check className="h-4 w-4 mr-1" />
                     {isEditing ? "Update Job" : "Create Job"}
                   </Button>
@@ -1290,7 +1777,9 @@ function LocationDetailsCard({
   value: LocationDetails;
   onChange: (d: LocationDetails) => void;
 }) {
-  const set = (patch: Partial<LocationDetails>) => onChange({ ...value, ...patch });
+  const set = (patch: Partial<LocationDetails>) => onChange({
+    ...value, ...patch,
+  });
   return (
     <div className="rounded-md border border-border/60 p-3 space-y-3 bg-background/40">
       <div className="flex items-start justify-between gap-2">
@@ -1299,65 +1788,129 @@ function LocationDetailsCard({
           {subtitle && <p className="text-[11px] text-muted-foreground truncate">{subtitle}</p>}
         </div>
         <label className="flex items-center gap-1.5 text-xs">
-          <Checkbox checked={value.include} onCheckedChange={c => set({ include: !!c })} />
+          <Checkbox
+            checked={value.include}
+            onCheckedChange={c => set({ include: !!c })}
+          />
           Include Details
         </label>
       </div>
-      <fieldset disabled={!value.include} className={cn("space-y-2", !value.include && "opacity-50")}>
+      <fieldset
+        disabled={!value.include}
+        className={cn(
+          "space-y-2",
+          !value.include && "opacity-50",
+        )}
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div>
             <Label className="text-xs text-muted-foreground">Contact person</Label>
-            <Input value={value.contactName ?? ""} onChange={e => set({ contactName: e.target.value })} />
+            <Input
+              value={value.contactName ?? ""}
+              onChange={e => set({ contactName: e.target.value })}
+            />
           </div>
           <div>
             <Label className="text-xs text-muted-foreground">Company (optional)</Label>
-            <Input value={value.companyName ?? ""} onChange={e => set({ companyName: e.target.value })} />
+            <Input
+              value={value.companyName ?? ""}
+              onChange={e => set({ companyName: e.target.value })}
+            />
           </div>
           <div>
             <Label className="text-xs text-muted-foreground">Phone number</Label>
-            <Input value={value.contactPhone ?? ""} onChange={e => set({ contactPhone: e.target.value })} />
+            <Input
+              value={value.contactPhone ?? ""}
+              onChange={e => set({ contactPhone: e.target.value })}
+            />
           </div>
           <div>
             <Label className="text-xs text-muted-foreground">Date</Label>
-            <Input type="date" value={value.date ?? ""} onChange={e => set({ date: e.target.value })} />
+            <Input
+              type="date"
+              value={value.date ?? ""}
+              onChange={e => set({ date: e.target.value })}
+            />
           </div>
           <div>
             <Label className="text-xs text-muted-foreground">Time from</Label>
-            <Input type="time" value={value.timeFrom ?? ""} onChange={e => set({ timeFrom: e.target.value })} />
+            <Input
+              type="time"
+              value={value.timeFrom ?? ""}
+              onChange={e => set({ timeFrom: e.target.value })}
+            />
           </div>
           <div>
             <Label className="text-xs text-muted-foreground">Time to</Label>
-            <Input type="time" value={value.timeTo ?? ""} onChange={e => set({ timeTo: e.target.value })} />
+            <Input
+              type="time"
+              value={value.timeTo ?? ""}
+              onChange={e => set({ timeTo: e.target.value })}
+            />
           </div>
         </div>
         <div>
           <Label className="text-xs text-muted-foreground">Instructions</Label>
-          <Textarea rows={2} value={value.instructions ?? ""} onChange={e => set({ instructions: e.target.value })} />
+          <Textarea
+            rows={2}
+            value={value.instructions ?? ""}
+            onChange={e => set({ instructions: e.target.value })}
+          />
         </div>
       </fieldset>
     </div>
   );
 }
 
-function ReviewLocationBlock({ title, details }: { title: string; details: LocationDetails }) {
+function ReviewLocationBlock({
+  title, details,
+}: {
+  title: string; details: LocationDetails;
+}) {
   if (!details.include)
     return null;
   const rows: Array<[string, string | undefined]> = [
-    ["Contact", details.contactName],
-    ["Company", details.companyName],
-    ["Phone", details.contactPhone],
-    ["Date", details.date],
-    ["Time window", details.timeFrom && details.timeTo ? `${details.timeFrom} → ${details.timeTo}` : details.timeFrom ?? details.timeTo],
-    ["Instructions", details.instructions],
+    [
+      "Contact",
+      details.contactName,
+    ],
+    [
+      "Company",
+      details.companyName,
+    ],
+    [
+      "Phone",
+      details.contactPhone,
+    ],
+    [
+      "Date",
+      details.date,
+    ],
+    [
+      "Time window",
+      details.timeFrom && details.timeTo ? `${details.timeFrom} → ${details.timeTo}` : details.timeFrom ?? details.timeTo,
+    ],
+    [
+      "Instructions",
+      details.instructions,
+    ],
   ];
-  const filled = rows.filter(([, v]) => v && v.trim());
+  const filled = rows.filter(([
+    , v,
+  ]) => v && v.trim());
   if (filled.length === 0)
     return null;
   return (
     <div className="rounded-md border border-border/50 p-2.5 space-y-1">
       <p className="text-[11px] uppercase text-muted-foreground tracking-wide">{title}</p>
-      {filled.map(([k, v]) => (
-        <p key={k} className="text-xs">
+      {filled.map(([
+        k,
+        v,
+      ]) => (
+        <p
+          key={k}
+          className="text-xs"
+        >
           <span className="text-muted-foreground">
             {k}
             :
@@ -1370,10 +1923,18 @@ function ReviewLocationBlock({ title, details }: { title: string; details: Locat
   );
 }
 
-function RouteRow({ color, label, value }: { color: string; label: string; value?: string }) {
+function RouteRow({
+  color, label, value,
+}: {
+  color: string; label: string; value?: string;
+}) {
   return (
     <div className="flex items-start gap-2">
-      <span className={cn("h-2 w-2 rounded-full mt-1.5", color)} />
+      <span className={cn(
+        "h-2 w-2 rounded-full mt-1.5",
+        color,
+      )}
+      />
       <div className="flex-1 min-w-0">
         <p className="text-xs uppercase text-muted-foreground tracking-wide">{label}</p>
         <p className="font-medium truncate">{value || "—"}</p>
@@ -1392,7 +1953,11 @@ function SummaryCard({
   return (
     <div className="p-3 rounded-md bg-muted/30 border border-border/50">
       <p className="text-xs uppercase text-muted-foreground tracking-wide">{label}</p>
-      <p className={cn("text-sm font-medium mt-0.5", mono && "font-mono")}>
+      <p className={cn(
+        "text-sm font-medium mt-0.5",
+        mono && "font-mono",
+      )}
+      >
         {value || "—"}
       </p>
     </div>

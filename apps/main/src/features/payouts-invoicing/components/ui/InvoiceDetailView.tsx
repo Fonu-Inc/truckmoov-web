@@ -1,3 +1,5 @@
+import type { InvoiceConfig } from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
+import type { WaybillInvoice } from "@/features/payouts-invoicing/utils/demoData";
 import {
   CheckCircle2, FileText, Loader2, Mail, MessageSquare, Pencil, Receipt,
 } from "lucide-react";
@@ -16,8 +18,6 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
 import { Textarea } from "@/components/shadcn/textarea";
-import type { InvoiceConfig } from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
-import type { WaybillInvoice } from "@/features/payouts-invoicing/utils/demoData";
 import { invoiceStatusConfig } from "@/features/payouts-invoicing/utils/statusConfig";
 
 export function InvoiceDetailView({

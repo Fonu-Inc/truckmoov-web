@@ -1495,3 +1495,124 @@ export type RenewComplianceDocumentPayload = {
 export type ComplianceDocumentResponse = ServerResponse<ComplianceDocument>
 export type ComplianceDocumentListResponse = ServerResponse<ComplianceDocument[]>
 export type ComplianceDocumentSummaryResponse = ServerResponse<ComplianceDocumentSummary>
+
+// ─── Overview ─────────────────────────────────────────────────────────────────
+
+export type FleetOverviewCards = {
+  totalVehicles: number
+  totalJobs: number
+  totalDrivers: number
+  revenueThisMonthNgn: number
+}
+
+export type FleetOverviewMapWaypoint = {
+  sequence: number
+  type: 'pickup' | 'dropoff'
+  address: string
+  latitude: number
+  longitude: number
+}
+
+export type FleetOverviewMapJob = {
+  jobId: string
+  reference: string
+  status: string
+  assignedDriverId: string | null
+  assignedVehicleId: string | null
+  waypoints: FleetOverviewMapWaypoint[]
+  routeShape: string | null
+  routeEncoding: string | null
+}
+
+export type FleetOverviewMap = {
+  jobs: FleetOverviewMapJob[]
+  counts: {
+    activeDeliveries: number
+    stops: number
+    pickups: number
+    dropoffs: number
+  }
+}
+
+export type FleetOverviewJobItem = {
+  id: string
+  reference: string
+  status: string
+  pickupAddress: string
+  dropoffAddress: string
+  amountNgn: number
+  createdAt: string
+}
+
+export type FleetOverviewVehicleItem = {
+  id: string
+  plateNumber: string
+  make: string
+  model: string
+  year: number
+  status: string
+}
+
+export type FleetOverviewDriverItem = {
+  id: string
+  name: string
+  phone: string
+  licenseNumber: string
+  status: string
+  performanceScore: number
+}
+
+export type FleetOverviewUtilizationRegion = {
+  region: string
+  inUse: number
+  idle: number
+  total: number
+  utilizationPercent: number
+}
+
+export type FleetOverviewAlertItem = {
+  id: string
+  type: string
+  severity: string
+  status: string
+  details: string
+  vehicleId: string | null
+  triggeredAt: string
+}
+
+export type FleetOverviewActivityItem = {
+  id: string
+  action: string
+  entityType: string
+  entityId: string
+  summary: string
+  occurredAt: string
+}
+
+export type FleetOverviewChatItem = {
+  id: string
+  contactName: string
+  channel: string
+  lastMessage: string
+  lastMessageAt: string
+  unreadCount: number
+}
+
+export type FleetOverview = {
+  cards: FleetOverviewCards
+  map: FleetOverviewMap
+  jobs: { total: number; items: FleetOverviewJobItem[] }
+  vehicles: { total: number; items: FleetOverviewVehicleItem[] }
+  drivers: { total: number; items: FleetOverviewDriverItem[] }
+  fleetUtilization: FleetOverviewUtilizationRegion[]
+  alerts: {
+    total: number
+    thresholdHours: number
+    items: FleetOverviewAlertItem[]
+  }
+  recentActivity: FleetOverviewActivityItem[]
+  recentChats: FleetOverviewChatItem[]
+  generatedAt: string
+}
+
+export type FleetOverviewResponse = ServerResponse<FleetOverview>

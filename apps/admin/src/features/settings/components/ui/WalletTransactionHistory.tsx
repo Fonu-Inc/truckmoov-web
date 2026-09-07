@@ -14,7 +14,9 @@ import {
   MessageSquare,
   Phone,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect, useMemo, useState,
+} from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -45,20 +47,45 @@ type WalletTransaction = {
 };
 
 function useDebouncedValue<T>(value: T, delayMs: number) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timeout = window.setTimeout(setDebounced, delayMs, value);
-    return () => window.clearTimeout(timeout);
-  }, [delayMs, value]);
+  const [
+    debounced,
+    setDebounced,
+  ] = useState(value);
+  useEffect(
+    () => {
+      const timeout = window.setTimeout(
+        setDebounced,
+        delayMs,
+        value,
+      );
+      return () => window.clearTimeout(timeout);
+    },
+    [
+      delayMs,
+      value,
+    ],
+  );
   return debounced;
 }
 
 export function WalletTransactionHistory() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [commTypeFilter, setCommTypeFilter] = useState<string>("all");
+  const [
+    searchTerm,
+    setSearchTerm,
+  ] = useState("");
+  const [
+    typeFilter,
+    setTypeFilter,
+  ] = useState<string>("all");
+  const [
+    commTypeFilter,
+    setCommTypeFilter,
+  ] = useState<string>("all");
 
-  const debouncedSearch = useDebouncedValue(searchTerm, 300);
+  const debouncedSearch = useDebouncedValue(
+    searchTerm,
+    300,
+  );
 
   const ledgerQuery = useQuery(
     getPlatformWalletLedgerQueryOptions({
@@ -69,7 +96,9 @@ export function WalletTransactionHistory() {
     }),
   );
 
-  const responseData = ledgerQuery.data?.data as { items?: WalletTransaction[]; total?: number } | undefined;
+  const responseData = ledgerQuery.data?.data as {
+    items?: WalletTransaction[]; total?: number;
+  } | undefined;
   const transactions = useMemo<WalletTransaction[]>(
     () => responseData?.items ?? [],
     [responseData],
@@ -81,9 +110,11 @@ export function WalletTransactionHistory() {
   const filteredTransactions = useMemo(
     () =>
       transactions.filter(tx =>
-        commTypeFilter === "all" || tx.communication_type === commTypeFilter,
-      ),
-    [transactions, commTypeFilter],
+        commTypeFilter === "all" || tx.communication_type === commTypeFilter),
+    [
+      transactions,
+      commTypeFilter,
+    ],
   );
 
   const getTypeIcon = (commType: string | null) => {
@@ -262,10 +293,18 @@ export function WalletTransactionHistory() {
           status={typeFilter}
           onStatusChange={setTypeFilter}
           statusOptions={[
-            { value: "debit", label: "Debit" },
-            { value: "credit", label: "Credit" },
-            { value: "topup", label: "Top Up" },
-            { value: "refund", label: "Refund" },
+            {
+              value: "debit", label: "Debit",
+            },
+            {
+              value: "credit", label: "Credit",
+            },
+            {
+              value: "topup", label: "Top Up",
+            },
+            {
+              value: "refund", label: "Refund",
+            },
           ]}
           filterEntity="transactions"
           filterFields={[
@@ -274,9 +313,15 @@ export function WalletTransactionHistory() {
               key: "channel",
               label: "Channel",
               options: [
-                { value: "call", label: "Voice Call" },
-                { value: "sms", label: "SMS" },
-                { value: "whatsapp", label: "WhatsApp" },
+                {
+                  value: "call", label: "Voice Call",
+                },
+                {
+                  value: "sms", label: "SMS",
+                },
+                {
+                  value: "whatsapp", label: "WhatsApp",
+                },
               ],
             },
           ]}

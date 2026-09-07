@@ -6,8 +6,12 @@ import {
   LogOut,
   Truck,
 } from "lucide-react";
-import { memo, useEffect } from "react";
-import { NavLink, useLocation } from "react-router";
+import {
+  memo, useEffect,
+} from "react";
+import {
+  NavLink, useLocation,
+} from "react-router";
 import {
   Sheet,
   SheetContent,
@@ -223,16 +227,25 @@ function DashboardSidebarBase() {
 
   // Auto-close the drawer on navigation. Only wired when mobile — desktop
   // never opens it, so nothing to close.
-  useEffect(() => {
-    if (isMobile && mobileOpen)
-      closeMobile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+  useEffect(
+    () => {
+      if (isMobile && mobileOpen)
+        closeMobile();
+    // eslint-disable-next-line react/exhaustive-deps
+    },
+    [pathname],
+  );
 
   if (isMobile) {
     return (
-      <Sheet open={mobileOpen} onOpenChange={o => (o ? undefined : closeMobile())}>
-        <SheetContent side="left" className="w-64 border-r border-sidebar-border bg-sidebar p-0 [&>button]:text-sidebar-foreground">
+      <Sheet
+        open={mobileOpen}
+        onOpenChange={o => (o ? undefined : closeMobile())}
+      >
+        <SheetContent
+          side="left"
+          className="w-64 border-r border-sidebar-border bg-sidebar p-0 [&>button]:text-sidebar-foreground"
+        >
           {/* Required by Radix Dialog for a11y — the logo header inside
               SidebarBody is decorative, so give screen readers a real title. */}
           <SheetTitle className="sr-only">Navigation menu</SheetTitle>

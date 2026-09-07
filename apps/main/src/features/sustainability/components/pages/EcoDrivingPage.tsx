@@ -1,3 +1,4 @@
+import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import { Users } from "lucide-react";
 import { useState } from "react";
 import {
@@ -8,9 +9,7 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import {
-  ChartDateFilter, type ChartDateRange,
-} from "@/components/shadcn/chart-date-filter";
+import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/shadcn/dialog";

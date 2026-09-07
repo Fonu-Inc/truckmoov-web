@@ -6,7 +6,6 @@ import {
   Code2,
   Cpu,
   CreditCard,
-  FileText,
   Gauge,
   Info,
   Map,
@@ -112,19 +111,16 @@ const AGGREGATOR_ADMIN_ACTIONS: QuickAction[] = [
 
 const OWNER_OPERATOR_ACTIONS: QuickAction[] = [
   {
-    id: "my-jobs", title: "My Jobs", description: "View your current and past jobs.", icon: Package, to: "/owner-operator/jobs",
+    id: "my-jobs", title: "My Jobs", description: "View your current and past jobs.", icon: Package, to: "/jobs",
   },
   {
-    id: "vehicles", title: "My Vehicles", description: "Manage the vehicles you own.", icon: Truck, to: "/owner-operator/vehicles",
+    id: "vehicles", title: "My Vehicles", description: "Manage the vehicles you own.", icon: Truck, to: "/fleet",
   },
   {
     id: "devices", title: "Devices", description: "Manage IoT devices on your vehicles.", icon: Cpu, to: "/devices",
   },
   {
     id: "payouts", title: "Payouts & Invoicing", description: "Track your earnings and invoices.", icon: Receipt, to: "/waybill-invoices",
-  },
-  {
-    id: "documents", title: "Documents", description: "Upload and manage your compliance documents.", icon: FileText, to: "/owner-operator/documents",
   },
   {
     id: "profile", title: "Profile", description: "Update your personal and business details.", icon: Users, to: "/settings",

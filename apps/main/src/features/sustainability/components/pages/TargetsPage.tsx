@@ -1,4 +1,6 @@
-import { Target, Zap } from "lucide-react";
+import {
+  Target, Zap,
+} from "lucide-react";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";

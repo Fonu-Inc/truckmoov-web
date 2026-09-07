@@ -16,8 +16,14 @@ import {
 } from "@/features/integration/utils/apiDocsData";
 
 export default function EndpointsPage() {
-  const [copiedText, setCopiedText] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [
+    copiedText,
+    setCopiedText,
+  ] = useState<string | null>(null);
+  const [
+    selectedCategory,
+    setSelectedCategory,
+  ] = useState<string>("all");
 
   const categories = [
     "all",
@@ -225,9 +231,9 @@ export default function EndpointsPage() {
                   {`curl -X ${endpoint.method} "${API_BASE_URL}${endpoint.path}" \\
   -H "X-API-Key: tm_your_api_key" \\
   -H "Content-Type: application/json"${endpoint.requestBody
-                ? ` \\
+            ? ` \\
   -d '${JSON.stringify(endpoint.requestBody.example)}'`
-                : ""}`}
+            : ""}`}
                 </pre>
               </div>
             </AccordionContent>

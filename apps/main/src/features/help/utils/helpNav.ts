@@ -1,7 +1,11 @@
 import type { ElementType } from "react";
-import { LifeBuoy, Ticket } from "lucide-react";
+import {
+  LifeBuoy, Ticket,
+} from "lucide-react";
 
-export type HelpTab = { to: string; label: string; icon: ElementType };
+export type HelpTab = {
+  to: string; label: string; icon: ElementType;
+};
 
 export const HELP_TABS: HelpTab[] = [
   {

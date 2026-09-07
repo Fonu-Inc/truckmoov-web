@@ -1,5 +1,7 @@
 import type { OrganizationBrandingSettings } from "@truckmoov/api/auth";
-import type { BrandingColorKey } from "../../branding/tokens";
+import type {
+  BrandingColorKey, ThemeMode,
+} from "../../branding/tokens";
 import { useQuery } from "@tanstack/react-query";
 import {
   getOrganizationSettingsQueryOptions,
@@ -27,16 +29,7 @@ import { Label } from "@/components/shadcn/label";
 import { Separator } from "@/components/shadcn/separator";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import {
-  applyBrandingToDocument,
-  BRANDING_DEFAULTS,
-  BRANDING_TOKENS,
-  clearBrandingFromDocument,
-  formatColorPair,
-  HEX_COLOR_PATTERN,
-  hexToHslTriplet,
-  parseColorPair,
-  readableTextOn,
-  type ThemeMode,
+  applyBrandingToDocument, BRANDING_DEFAULTS, BRANDING_TOKENS, clearBrandingFromDocument, formatColorPair, HEX_COLOR_PATTERN, hexToHslTriplet, parseColorPair, readableTextOn,
 } from "../../branding/tokens";
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
@@ -99,7 +92,10 @@ function ColorField({
           <HexInput
             label={`${label} dark`}
             value={dark}
-            onChange={v => onChange("dark", v)}
+            onChange={v => onChange(
+              "dark",
+              v,
+            )}
           />
         </div>
         <div className="flex items-center gap-2">
@@ -110,7 +106,10 @@ function ColorField({
           <HexInput
             label={`${label} light`}
             value={light}
-            onChange={v => onChange("light", v)}
+            onChange={v => onChange(
+              "light",
+              v,
+            )}
           />
         </div>
       </div>
@@ -238,12 +237,16 @@ export function TenantBrandingPanel() {
   const settingsQuery = useQuery(getOrganizationSettingsQueryOptions());
   const uploadMutation = useUploadMedia();
   const updateMutation = useUpdateOrganizationSettings();
-  const { resolvedTheme, setTheme } = useTheme();
+  const {
+    resolvedTheme, setTheme,
+  } = useTheme();
   const currentTheme: ThemeMode = resolvedTheme === "light" ? "light" : "dark";
   const [
     localColors,
     setLocalColors,
-  ] = useState<Partial<Record<BrandingColorKey, { dark: string; light: string }>>>({});
+  ] = useState<Partial<Record<BrandingColorKey, {
+    dark: string; light: string;
+  }>>>({});
 
   const savedBranding = settingsQuery.data?.data?.branding;
   useEffect(
@@ -256,7 +259,10 @@ export function TenantBrandingPanel() {
         },
       );
     },
-    [savedBranding, currentTheme],
+    [
+      savedBranding,
+      currentTheme,
+    ],
   );
 
   const branding = savedBranding ?? {};
@@ -276,7 +282,7 @@ export function TenantBrandingPanel() {
       t.key,
       getPair(t.key)[currentTheme],
     ])) as Record<BrandingColorKey, string>,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react/exhaustive-deps
     [
       localColors,
       branding,
@@ -323,15 +329,21 @@ export function TenantBrandingPanel() {
       const existing = current[key] ?? getPair(key);
       return {
         ...current,
-        [key]: { ...existing, [mode]: value },
+        [key]: {
+          ...existing, [mode]: value,
+        },
       };
     });
     if (mode !== currentTheme)
       return;
     const cssVar = BRANDING_TOKENS.find(t => t.key === key)!.cssVar;
     const hsl = hexToHslTriplet(value);
-    if (hsl)
-      document.documentElement.style.setProperty(cssVar, hsl);
+    if (hsl) {
+      document.documentElement.style.setProperty(
+        cssVar,
+        hsl,
+      );
+    }
   }
 
   function saveBranding(
@@ -363,7 +375,10 @@ export function TenantBrandingPanel() {
         pair,
       ]) => [
         key,
-        formatColorPair(pair!.dark, pair!.light),
+        formatColorPair(
+          pair!.dark,
+          pair!.light,
+        ),
       ]),
     );
     saveBranding(
@@ -380,8 +395,12 @@ export function TenantBrandingPanel() {
       key, cssVar,
     } of BRANDING_TOKENS) {
       const hsl = hexToHslTriplet(BRANDING_DEFAULTS[key][currentTheme]);
-      if (hsl)
-        document.documentElement.style.setProperty(cssVar, hsl);
+      if (hsl) {
+        document.documentElement.style.setProperty(
+          cssVar,
+          hsl,
+        );
+      }
     }
   }
 
@@ -546,7 +565,11 @@ export function TenantBrandingPanel() {
                       label={t.label}
                       dark={pair.dark}
                       light={pair.light}
-                      onChange={(mode, v) => updateColor(t.key, mode, v)}
+                      onChange={(mode, v) => updateColor(
+                        t.key,
+                        mode,
+                        v,
+                      )}
                       description={t.description}
                     />
                   );

@@ -2,15 +2,9 @@ import {
   DollarSign, Download, Send, Settings2,
 } from "lucide-react";
 import { useEffect } from "react";
-import {
-  InvoiceSettingsPanel,
-} from "@/features/payouts-invoicing/components/ui/InvoiceSettingsPanel";
-import {
-  TabKpiCards,
-} from "@/features/payouts-invoicing/components/ui/TabKpiCards";
-import {
-  useWaybillInvoice,
-} from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
+import { InvoiceSettingsPanel } from "@/features/payouts-invoicing/components/ui/InvoiceSettingsPanel";
+import { TabKpiCards } from "@/features/payouts-invoicing/components/ui/TabKpiCards";
+import { useWaybillInvoice } from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
 import {
   DEMO_INVOICES, DEMO_PRICING_RULES,
 } from "@/features/payouts-invoicing/utils/demoData";

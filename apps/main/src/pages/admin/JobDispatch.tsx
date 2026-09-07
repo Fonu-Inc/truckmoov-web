@@ -2,6 +2,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type {
   DispatchJob, JobsQuery,
 } from "@truckmoov/api/dispatch";
+import type { AssignResourceKind } from "@/components/jobs/AssignResourceDialog";
 import type { JobFormSubmitData } from "@/components/jobs/JobFormDialog";
 import type {
   JobsFilterBounds, JobsFilterValue,
@@ -17,6 +18,7 @@ import {
   useUpdateJobDetails,
   useUpdateJobScheduling,
 } from "@truckmoov/api/dispatch";
+
 import {
   CheckCircle,
   Clock,
@@ -34,12 +36,11 @@ import {
   Trash2,
   Truck,
 } from "lucide-react";
-
 import {
   useEffect, useMemo, useState,
 } from "react";
 import { toast } from "sonner";
-import { AssignResourceDialog, type AssignResourceKind } from "@/components/jobs/AssignResourceDialog";
+import { AssignResourceDialog } from "@/components/jobs/AssignResourceDialog";
 import { JobDetailsSheet } from "@/components/jobs/JobDetailsSheet";
 import { JobFormDialog } from "@/components/jobs/JobFormDialog";
 import { JobOffersInbox } from "@/components/jobs/JobOffersInbox";
@@ -63,6 +64,7 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,7 +80,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import { DataTable } from "@/components/shadcn/data-table";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
@@ -128,28 +129,63 @@ type JobStatusFilter = NonNullable<NonNullable<JobsQuery["params"]>["status"]>;
 const JOB_STATUS_OPTIONS: Array<{
   value: JobStatusFilter; label: string;
 }> = [
-  { value: "all", label: "All Statuses" },
-  { value: "pending", label: "Pending" },
-  { value: "created", label: "Created" },
-  { value: "assigned", label: "Assigned" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "en-route", label: "En Route" },
-  { value: "arrived", label: "Arrived" },
-  { value: "loaded", label: "Loaded" },
-  { value: "completed", label: "Completed" },
-  { value: "delivered", label: "Delivered" },
-  { value: "cancelled", label: "Cancelled" },
+  {
+    value: "all", label: "All Statuses",
+  },
+  {
+    value: "pending", label: "Pending",
+  },
+  {
+    value: "created", label: "Created",
+  },
+  {
+    value: "assigned", label: "Assigned",
+  },
+  {
+    value: "in_progress", label: "In Progress",
+  },
+  {
+    value: "en-route", label: "En Route",
+  },
+  {
+    value: "arrived", label: "Arrived",
+  },
+  {
+    value: "loaded", label: "Loaded",
+  },
+  {
+    value: "completed", label: "Completed",
+  },
+  {
+    value: "delivered", label: "Delivered",
+  },
+  {
+    value: "cancelled", label: "Cancelled",
+  },
 ];
 
 const EMPTY = "—";
 
 function useDebouncedValue<T>(value: T, delayMs = 400) {
-  const [debouncedValue, setDebouncedValue] = useState(value);
+  const [
+    debouncedValue,
+    setDebouncedValue,
+  ] = useState(value);
 
-  useEffect(() => {
-    const timeout = window.setTimeout(setDebouncedValue, delayMs, value);
-    return () => window.clearTimeout(timeout);
-  }, [value, delayMs]);
+  useEffect(
+    () => {
+      const timeout = window.setTimeout(
+        setDebouncedValue,
+        delayMs,
+        value,
+      );
+      return () => window.clearTimeout(timeout);
+    },
+    [
+      value,
+      delayMs,
+    ],
+  );
 
   return debouncedValue;
 }
@@ -199,17 +235,17 @@ function mapDispatchJob(job: DispatchJob): JobData {
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  pending: "text-warning border-warning/30",
-  created: "text-warning border-warning/30",
-  unassigned: "text-warning border-warning/30",
-  assigned: "text-primary border-primary/30",
-  in_progress: "text-primary border-primary/30",
+  "pending": "text-warning border-warning/30",
+  "created": "text-warning border-warning/30",
+  "unassigned": "text-warning border-warning/30",
+  "assigned": "text-primary border-primary/30",
+  "in_progress": "text-primary border-primary/30",
   "en-route": "text-primary border-primary/30",
-  arrived: "text-primary border-primary/30",
-  loaded: "text-primary border-primary/30",
-  completed: "text-success border-success/30",
-  delivered: "text-success border-success/30",
-  cancelled: "text-destructive border-destructive/30",
+  "arrived": "text-primary border-primary/30",
+  "loaded": "text-primary border-primary/30",
+  "completed": "text-success border-success/30",
+  "delivered": "text-success border-success/30",
+  "cancelled": "text-destructive border-destructive/30",
 };
 
 const PRIORITY_BADGE: Record<string, string> = {
@@ -226,26 +262,51 @@ export default function JobDispatch() {
   const isAggregator = false;
   const isOperationsManager = false;
   const recommendOnly = isEnterprise || isAggregator || isOperationsManager;
-  const recommendedByLabel = isEnterprise
-    ? "Enterprise Admin"
-    : isAggregator
-      ? "Aggregator"
-      : isOperationsManager
-        ? "Operations Manager"
-        : undefined;
 
-  const [tab, setTab] = useState<"my-jobs" | "job-offers">("my-jobs");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [
+    tab,
+    setTab,
+  ] = useState<"my-jobs" | "job-offers">("my-jobs");
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
   const debouncedSearchQuery = useDebouncedValue(searchQuery);
-  const [statusFilter, setStatusFilter] = useState<JobStatusFilter>("all");
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [matchingKind, setMatchingKind] = useState<AssignResourceKind | null>(null);
-  const [selectedJob, setSelectedJob] = useState<JobData | null>(null);
-  const [jobPendingDelete, setJobPendingDelete] = useState<JobData | null>(null);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filterValue, setFilterValue] = useState<JobsFilterValue>(() =>
-    buildDefaultFilterValue({ weightMin: 0, weightMax: 0, amountMin: 0, amountMax: 0 }));
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState<JobStatusFilter>("all");
+  const [
+    isFormOpen,
+    setIsFormOpen,
+  ] = useState(false);
+  const [
+    isDetailsOpen,
+    setIsDetailsOpen,
+  ] = useState(false);
+  const [
+    matchingKind,
+    setMatchingKind,
+  ] = useState<AssignResourceKind | null>(null);
+  const [
+    selectedJob,
+    setSelectedJob,
+  ] = useState<JobData | null>(null);
+  const [
+    jobPendingDelete,
+    setJobPendingDelete,
+  ] = useState<JobData | null>(null);
+  const [
+    isFilterOpen,
+    setIsFilterOpen,
+  ] = useState(false);
+  const [
+    filterValue,
+    setFilterValue,
+  ] = useState<JobsFilterValue>(() =>
+    buildDefaultFilterValue({
+      weightMin: 0, weightMax: 0, amountMin: 0, amountMax: 0,
+    }));
   const createJobMutation = useCreateJob();
   const updateJobDetailsMutation = useUpdateJobDetails();
   const updateJobSchedulingMutation = useUpdateJobScheduling();
@@ -253,29 +314,39 @@ export default function JobDispatch() {
   const assignJobMutation = useAssignJob();
 
   const filterBounds: JobsFilterBounds = useMemo(
-    () => ({ weightMin: 0, weightMax: 0, amountMin: 0, amountMax: 0 }),
+    () => ({
+      weightMin: 0, weightMax: 0, amountMin: 0, amountMax: 0,
+    }),
     [],
   );
 
   const activeFilterCount = countActiveFilters(filterValue);
 
-  const jobsQueryPayload = useMemo<JobsQuery | undefined>(() => {
-    const params: NonNullable<JobsQuery["params"]> = {};
-    const query = debouncedSearchQuery.trim();
-    const driverId = filterValue.driverId.trim();
-    const vehicleId = filterValue.vehicleId.trim();
+  const jobsQueryPayload = useMemo<JobsQuery | undefined>(
+    () => {
+      const params: NonNullable<JobsQuery["params"]> = {};
+      const query = debouncedSearchQuery.trim();
+      const driverId = filterValue.driverId.trim();
+      const vehicleId = filterValue.vehicleId.trim();
 
-    if (statusFilter !== "all")
-      params.status = statusFilter;
-    if (query)
-      params.query = query;
-    if (driverId)
-      params.driver_id = driverId;
-    if (vehicleId)
-      params.vehicle_id = vehicleId;
+      if (statusFilter !== "all")
+        params.status = statusFilter;
+      if (query)
+        params.query = query;
+      if (driverId)
+        params.driver_id = driverId;
+      if (vehicleId)
+        params.vehicle_id = vehicleId;
 
-    return Object.keys(params).length > 0 ? { params } : undefined;
-  }, [debouncedSearchQuery, filterValue.driverId, filterValue.vehicleId, statusFilter]);
+      return Object.keys(params).length > 0 ? { params } : undefined;
+    },
+    [
+      debouncedSearchQuery,
+      filterValue.driverId,
+      filterValue.vehicleId,
+      statusFilter,
+    ],
+  );
 
   const jobsQuery = useJobs(jobsQueryPayload);
   const jobsSummaryQuery = useJobsSummary();
@@ -439,172 +510,197 @@ export default function JobDispatch() {
     return !j.assigned_driver_id || s === "pending" || s === "created" || s === "unassigned";
   };
   const openDetailsRaw = (j: DispatchJob) => openDetails(mapDispatchJob(j));
-  const openMatchingRaw = (j: DispatchJob, kind: AssignResourceKind) => openMatching(mapDispatchJob(j), kind);
+  const openMatchingRaw = (j: DispatchJob, kind: AssignResourceKind) => openMatching(
+    mapDispatchJob(j),
+    kind,
+  );
 
-  const columns = useMemo<ColumnDef<DispatchJob>[]>(() => [
-    {
-      id: "reference",
-      header: "Job Reference ID",
-      meta: { className: "font-mono text-xs" },
-      cell: ({ row }) => row.original.reference || row.original.id || "Unreferenced",
-    },
-    {
-      id: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.original.status || "created";
-        return (
-          <Badge
-            variant="outline"
-            className={STATUS_BADGE[status] ?? "text-muted-foreground border-border"}
-          >
-            {status.replace("_", " ")}
-          </Badge>
-        );
+  const columns = useMemo<ColumnDef<DispatchJob>[]>(
+    () => [
+      {
+        id: "reference",
+        header: "Job Reference ID",
+        meta: { className: "font-mono text-xs" },
+        cell: ({ row }) => row.original.reference || row.original.id || "Unreferenced",
       },
-    },
-    {
-      id: "priority",
-      header: "Priority",
-      cell: ({ row }) => {
-        const p = row.original.priority;
-        return p
-          ? (
-              <Badge
-                variant="outline"
-                className={PRIORITY_BADGE[p.toLowerCase()] ?? "text-muted-foreground border-border"}
-              >
-                {p.toUpperCase()}
-              </Badge>
-            )
-          : <span className="text-muted-foreground">{EMPTY}</span>;
-      },
-    },
-    {
-      id: "locations",
-      header: "Locations",
-      meta: { className: "max-w-[280px]" },
-      cell: ({ row }) => {
-        const job = row.original;
-        return (
-          <>
-            <p className="text-sm flex items-center gap-1.5 truncate">
-              <MapPin className="h-3 w-3 text-primary shrink-0" />
-              <span className="truncate">{job.pickup?.address || "No pickup address"}</span>
-            </p>
-            {job.stops && job.stops.length > 0 && (
-              <p className="text-xs text-muted-foreground ml-4.5 mt-0.5">
-                +
-                {job.stops.length}
-                {" "}
-                intermediate
-                {job.stops.length === 1 ? " stop" : " stops"}
-              </p>
-            )}
-            <p className="text-sm flex items-center gap-1.5 truncate mt-0.5">
-              <span className="text-success shrink-0">→</span>
-              <span className="truncate">{job.dropoff?.address || "No delivery address"}</span>
-            </p>
-          </>
-        );
-      },
-    },
-    {
-      id: "driver",
-      header: "Driver",
-      cell: ({ row }) => {
-        const job = row.original;
-        if (isUnassignedRaw(job) && !isAggregatorAdmin) {
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => {
+          const status = row.original.status || "created";
           return (
-            <Button
+            <Badge
               variant="outline"
-              size="sm"
-              className="border-border/60"
-              onClick={() => openMatchingRaw(job, "driver")}
+              className={STATUS_BADGE[status] ?? "text-muted-foreground border-border"}
             >
-              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-              Recommend Driver
-            </Button>
-          );
-        }
-        return job.assigned_driver_name
-          ? <p className="text-sm">{job.assigned_driver_name}</p>
-          : <span className="text-muted-foreground">{EMPTY}</span>;
-      },
-    },
-    {
-      id: "vehicle",
-      header: "Vehicle",
-      cell: ({ row }) => {
-        const job = row.original;
-        if (isUnassignedRaw(job) && !isAggregatorAdmin) {
-          return (
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-border/60"
-              onClick={() => openMatchingRaw(job, "vehicle")}
-            >
-              <Truck className="h-3.5 w-3.5 mr-1.5" />
-              Recommend Vehicle
-            </Button>
-          );
-        }
-        const makeModel = [job.assigned_vehicle_make, job.assigned_vehicle_model].filter(Boolean).join(" ");
-        return job.assigned_vehicle_reg || makeModel
-          ? (
-              <div>
-                {job.assigned_vehicle_reg && <p className="text-sm font-mono">{job.assigned_vehicle_reg}</p>}
-                {makeModel && <p className="text-xs text-muted-foreground">{makeModel}</p>}
-              </div>
-            )
-          : <span className="text-muted-foreground">{EMPTY}</span>;
-      },
-    },
-    {
-      id: "amount",
-      header: "Amount",
-      meta: { className: "text-right font-medium" },
-      cell: ({ row }) => row.original.amount_ngn
-        ? formatCurrency(row.original.amount_ngn)
-        : <span className="text-muted-foreground">{EMPTY}</span>,
-    },
-    {
-      id: "actions",
-      header: "",
-      meta: { className: "w-[60px] text-right" },
-      cell: ({ row }) => {
-        const job = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => openDetailsRaw(job)}>
-                <Eye className="h-4 w-4 mr-2" />
-                View Details
-              </DropdownMenuItem>
-              {!isAggregatorAdmin && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={() => setJobPendingDelete(mapDispatchJob(job))}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                </>
+              {status.replace(
+                "_",
+                " ",
               )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
+            </Badge>
+          );
+        },
       },
-    },
-  ], [isAggregatorAdmin, formatCurrency]);
+      {
+        id: "priority",
+        header: "Priority",
+        cell: ({ row }) => {
+          const p = row.original.priority;
+          return p
+            ? (
+                <Badge
+                  variant="outline"
+                  className={PRIORITY_BADGE[p.toLowerCase()] ?? "text-muted-foreground border-border"}
+                >
+                  {p.toUpperCase()}
+                </Badge>
+              )
+            : <span className="text-muted-foreground">{EMPTY}</span>;
+        },
+      },
+      {
+        id: "locations",
+        header: "Locations",
+        meta: { className: "max-w-[280px]" },
+        cell: ({ row }) => {
+          const job = row.original;
+          return (
+            <>
+              <p className="text-sm flex items-center gap-1.5 truncate">
+                <MapPin className="h-3 w-3 text-primary shrink-0" />
+                <span className="truncate">{job.pickup?.address || "No pickup address"}</span>
+              </p>
+              {job.stops && job.stops.length > 0 && (
+                <p className="text-xs text-muted-foreground ml-4.5 mt-0.5">
+                  +
+                  {job.stops.length}
+                  {" "}
+                  intermediate
+                  {job.stops.length === 1 ? " stop" : " stops"}
+                </p>
+              )}
+              <p className="text-sm flex items-center gap-1.5 truncate mt-0.5">
+                <span className="text-success shrink-0">→</span>
+                <span className="truncate">{job.dropoff?.address || "No delivery address"}</span>
+              </p>
+            </>
+          );
+        },
+      },
+      {
+        id: "driver",
+        header: "Driver",
+        cell: ({ row }) => {
+          const job = row.original;
+          if (isUnassignedRaw(job) && !isAggregatorAdmin) {
+            return (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-border/60"
+                onClick={() => openMatchingRaw(
+                  job,
+                  "driver",
+                )}
+              >
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                Recommend Driver
+              </Button>
+            );
+          }
+          return job.assigned_driver_name
+            ? <p className="text-sm">{job.assigned_driver_name}</p>
+            : <span className="text-muted-foreground">{EMPTY}</span>;
+        },
+      },
+      {
+        id: "vehicle",
+        header: "Vehicle",
+        cell: ({ row }) => {
+          const job = row.original;
+          if (isUnassignedRaw(job) && !isAggregatorAdmin) {
+            return (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-border/60"
+                onClick={() => openMatchingRaw(
+                  job,
+                  "vehicle",
+                )}
+              >
+                <Truck className="h-3.5 w-3.5 mr-1.5" />
+                Recommend Vehicle
+              </Button>
+            );
+          }
+          const makeModel = [
+            job.assigned_vehicle_make,
+            job.assigned_vehicle_model,
+          ].filter(Boolean).join(" ");
+          return job.assigned_vehicle_reg || makeModel
+            ? (
+                <div>
+                  {job.assigned_vehicle_reg && <p className="text-sm font-mono">{job.assigned_vehicle_reg}</p>}
+                  {makeModel && <p className="text-xs text-muted-foreground">{makeModel}</p>}
+                </div>
+              )
+            : <span className="text-muted-foreground">{EMPTY}</span>;
+        },
+      },
+      {
+        id: "amount",
+        header: "Amount",
+        meta: { className: "text-right font-medium" },
+        cell: ({ row }) => row.original.amount_ngn
+          ? formatCurrency(row.original.amount_ngn)
+          : <span className="text-muted-foreground">{EMPTY}</span>,
+      },
+      {
+        id: "actions",
+        header: "",
+        meta: { className: "w-[60px] text-right" },
+        cell: ({ row }) => {
+          const job = row.original;
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => openDetailsRaw(job)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Details
+                </DropdownMenuItem>
+                {!isAggregatorAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => setJobPendingDelete(mapDispatchJob(job))}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
+    ],
+    [
+      isAggregatorAdmin,
+      formatCurrency,
+    ],
+  );
 
   const mapToLegacyJob = (job: JobData) => ({
     id: job.id,
@@ -635,19 +731,32 @@ export default function JobDispatch() {
 
   return (
     <>
-      <Tabs value={tab} onValueChange={v => setTab(v as typeof tab)} className="space-y-6">
+      <Tabs
+        value={tab}
+        onValueChange={v => setTab(v as typeof tab)}
+        className="space-y-6"
+      >
         <TabsList className="mx-auto grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="my-jobs" className="gap-2">
+          <TabsTrigger
+            value="my-jobs"
+            className="gap-2"
+          >
             <Package className="h-4 w-4" />
             My Jobs
           </TabsTrigger>
-          <TabsTrigger value="job-offers" className="gap-2">
+          <TabsTrigger
+            value="job-offers"
+            className="gap-2"
+          >
             <Inbox className="h-4 w-4" />
             Job Offers
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="my-jobs" className="space-y-6">
+        <TabsContent
+          value="my-jobs"
+          className="space-y-6"
+        >
           {!isAggregatorAdmin && (
             <div className="flex justify-end">
               <Button
@@ -733,7 +842,10 @@ export default function JobDispatch() {
               </SelectTrigger>
               <SelectContent>
                 {JOB_STATUS_OPTIONS.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                  >
                     {option.label}
                   </SelectItem>
                 ))}
@@ -747,7 +859,10 @@ export default function JobDispatch() {
               onApply={value => setFilterValue(value)}
               onReset={() => setFilterValue(buildDefaultFilterValue(filterBounds))}
               trigger={(
-                <Button variant="outline" className="bg-card/50 border-border/50 relative">
+                <Button
+                  variant="outline"
+                  className="bg-card/50 border-border/50 relative"
+                >
                   <SlidersHorizontal className="h-4 w-4 mr-2" />
                   Filter
                   {activeFilterCount > 0 && (
@@ -780,7 +895,10 @@ export default function JobDispatch() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="job-offers" className="space-y-6">
+        <TabsContent
+          value="job-offers"
+          className="space-y-6"
+        >
           <JobOffersInbox />
         </TabsContent>
       </Tabs>
@@ -808,7 +926,10 @@ export default function JobDispatch() {
         onOpenChange={open => !open && setMatchingKind(null)}
         kind={matchingKind ?? "driver"}
         jobReference={selectedJob?.reference}
-        onAssign={id => handleAssignResource(matchingKind ?? "driver", id)}
+        onAssign={id => handleAssignResource(
+          matchingKind ?? "driver",
+          id,
+        )}
         recommendOnly={recommendOnly}
       />
 

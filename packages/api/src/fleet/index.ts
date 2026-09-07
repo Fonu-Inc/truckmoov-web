@@ -126,6 +126,7 @@ import {
   sendComplianceReminders,
   exportComplianceDocs,
   verifyAuditChain,
+  getFleetOverview,
 } from './requests'
 
 export type * from './types'
@@ -167,6 +168,7 @@ import type {
 } from './types'
 
 export const FLEET_QUERY_KEY = {
+  overview: ['fleet', 'overview'] as const,
   vehiclesRoot: ['fleet', 'vehicles'],
   vehicles: (payload?: VehiclesQuery) => ['fleet', 'vehicles', payload],
   vehiclesSummary: ['fleet', 'vehiclesSummary'],
@@ -246,6 +248,13 @@ function invalidateVehicles() {
 }
 
 // ─── queryOptions factories ───────────────────────────────────────────────────
+
+export function getFleetOverviewQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.overview,
+    queryFn: getFleetOverview,
+  })
+}
 
 export function getVehiclesQueryOptions(payload?: VehiclesQuery) {
   return queryOptions({
@@ -650,6 +659,10 @@ export function getAuditChainVerificationQueryOptions() {
 }
 
 // ─── useQuery hooks ────────────────────────────────────────────────────────────
+
+export function useFleetOverview() {
+  return useQuery(getFleetOverviewQueryOptions())
+}
 
 export function useVehicles(payload?: VehiclesQuery) {
   return useQuery(getVehiclesQueryOptions(payload))

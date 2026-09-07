@@ -1,3 +1,4 @@
+import type { SecurityEvent } from "@/features/security/types";
 import {
   Ban,
   FileWarning,
@@ -9,7 +10,6 @@ import {
   ShieldX,
   Unlock,
 } from "lucide-react";
-import type { SecurityEvent } from "@/features/security/types";
 import { Badge } from "@/components/shadcn/badge";
 
 export function getSeverityBadge(severity: SecurityEvent["severity"] | "info" | "warning") {

@@ -1,7 +1,9 @@
 import {
   Fuel, Leaf, TreePine, TrendingDown, Zap,
 } from "lucide-react";
-import { NavLink, Outlet } from "react-router";
+import {
+  NavLink, Outlet,
+} from "react-router";
 import {
   Card, CardContent,
 } from "@/components/shadcn/card";

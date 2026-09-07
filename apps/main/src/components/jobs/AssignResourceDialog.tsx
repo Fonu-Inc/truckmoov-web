@@ -1,9 +1,15 @@
-import type { FleetDriver, Vehicle } from "@truckmoov/api/fleet";
-import { useDrivers, useVehicles } from "@truckmoov/api/fleet";
+import type {
+  FleetDriver, Vehicle,
+} from "@truckmoov/api/fleet";
+import {
+  useDrivers, useVehicles,
+} from "@truckmoov/api/fleet";
 import {
   ArrowLeft, CheckCircle2, Fuel, Gauge, Loader2, MapPin, Package, Search, Sparkles, Truck, User,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect, useMemo, useState,
+} from "react";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -20,9 +26,11 @@ import { cn } from "@/lib/utils";
 
 export type AssignResourceKind = "driver" | "vehicle";
 
-type Ranked = { id: string; score: number; reasons: string[] };
+type Ranked = {
+  id: string; score: number; reasons: string[];
+};
 
-interface AssignResourceDialogProps {
+type AssignResourceDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   kind: AssignResourceKind;
@@ -30,7 +38,7 @@ interface AssignResourceDialogProps {
   onAssign: (id: string) => void;
   /** When true the CTA reads "Recommend" rather than "Assign". */
   recommendOnly?: boolean;
-}
+};
 
 // ponytail: proximity/perf scoring uses only fields the API returns today. When the
 // dispatch API exposes real driver performance / vehicle fuel scoring, replace the
@@ -38,27 +46,46 @@ interface AssignResourceDialogProps {
 function scoreDriver(d: FleetDriver): Ranked {
   const trips = (d as unknown as { total_trips?: number }).total_trips ?? 0;
   const available = d.status === "available";
-  const base = Math.min(100, 40 + Math.min(trips, 400) / 8);
+  const base = Math.min(
+    100,
+    40 + Math.min(
+      trips,
+      400,
+    ) / 8,
+  );
   const bonus = available ? 12 : 0;
   const score = Math.round(base + bonus);
   const reasons = [
     `Performance baseline ${Math.round(base)}% (${trips} completed trips)`,
     available ? "Currently available for dispatch" : "On duty — can be re-routed",
   ];
-  return { id: d.id, score, reasons };
+  return {
+    id: d.id, score, reasons,
+  };
 }
 
 function scoreVehicle(v: Vehicle): Ranked {
   const capacity = Number((v as unknown as { capacity_kg?: number }).capacity_kg ?? 0) / 1000;
   const fuel = (v as unknown as { fuel_level?: number }).fuel_level;
-  const base = 60 + Math.min(capacity, 40) * 0.8;
-  const fuelBonus = typeof fuel === "number" ? Math.max(0, (fuel - 40) / 3) : 0;
-  const score = Math.round(Math.min(100, base + fuelBonus));
+  const base = 60 + Math.min(
+    capacity,
+    40,
+  ) * 0.8;
+  const fuelBonus = typeof fuel === "number" ? Math.max(
+    0,
+    (fuel - 40) / 3,
+  ) : 0;
+  const score = Math.round(Math.min(
+    100,
+    base + fuelBonus,
+  ));
   const reasons = [
     capacity > 0 ? `Rated capacity ${capacity.toFixed(1)}t` : "Capacity not reported",
     typeof fuel === "number" ? `Fuel level ${fuel}%` : "Fuel not reported",
   ];
-  return { id: v.id, score, reasons };
+  return {
+    id: v.id, score, reasons,
+  };
 }
 
 export function AssignResourceDialog({
@@ -69,11 +96,26 @@ export function AssignResourceDialog({
   onAssign,
   recommendOnly = false,
 }: AssignResourceDialogProps) {
-  const [view, setView] = useState<"list" | "ai">("list");
-  const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [isThinking, setIsThinking] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [
+    view,
+    setView,
+  ] = useState<"list" | "ai">("list");
+  const [
+    query,
+    setQuery,
+  ] = useState("");
+  const [
+    selectedId,
+    setSelectedId,
+  ] = useState<string | null>(null);
+  const [
+    isThinking,
+    setIsThinking,
+  ] = useState(false);
+  const [
+    progress,
+    setProgress,
+  ] = useState(0);
 
   const driversQuery = useDrivers();
   const vehiclesQuery = useVehicles();
@@ -87,15 +129,21 @@ export function AssignResourceDialog({
     [vehiclesQuery.data?.data],
   );
 
-  useEffect(() => {
-    if (open) {
-      setView("list");
-      setQuery("");
-      setSelectedId(null);
-      setIsThinking(false);
-      setProgress(0);
-    }
-  }, [open, kind]);
+  useEffect(
+    () => {
+      if (open) {
+        setView("list");
+        setQuery("");
+        setSelectedId(null);
+        setIsThinking(false);
+        setProgress(0);
+      }
+    },
+    [
+      open,
+      kind,
+    ],
+  );
 
   const rankedDrivers = useMemo(
     () => availableDrivers.map(scoreDriver).sort((a, b) => b.score - a.score),
@@ -111,13 +159,22 @@ export function AssignResourceDialog({
     setView("ai");
     setIsThinking(true);
     setProgress(0);
-    const iv = setInterval(() => setProgress(p => Math.min(p + 12, 95)), 120);
-    setTimeout(() => {
-      clearInterval(iv);
-      setProgress(100);
-      setIsThinking(false);
-      setSelectedId(ranked[0]?.id ?? null);
-    }, 1200);
+    const iv = setInterval(
+      () => setProgress(p => Math.min(
+        p + 12,
+        95,
+      )),
+      120,
+    );
+    setTimeout(
+      () => {
+        clearInterval(iv);
+        setProgress(100);
+        setIsThinking(false);
+        setSelectedId(ranked[0]?.id ?? null);
+      },
+      1200,
+    );
   };
 
   const q = query.toLowerCase();
@@ -161,12 +218,23 @@ export function AssignResourceDialog({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-sm font-medium truncate">{d.full_name ?? "Unnamed driver"}</p>
-              <Badge variant="outline" className="text-[10px] capitalize">{d.status}</Badge>
+              <Badge
+                variant="outline"
+                className="text-[10px] capitalize"
+              >
+                {d.status}
+              </Badge>
             </div>
             <div className="mt-1 flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1 rounded-full border px-1.5 py-0.5 font-medium border-border">
                 <Gauge className="h-3 w-3" />
-                {rank ? rank.score : trips ? Math.min(100, 40 + Math.min(trips, 400) / 8) : 0}
+                {rank ? rank.score : trips ? Math.min(
+                  100,
+                  40 + Math.min(
+                    trips,
+                    400,
+                  ) / 8,
+                ) : 0}
                 % performance
               </span>
               <span>
@@ -179,7 +247,10 @@ export function AssignResourceDialog({
             {rank && (
               <ul className="mt-2 space-y-0.5">
                 {rank.reasons.map(r => (
-                  <li key={r} className="text-[11px] text-muted-foreground flex items-start gap-1">
+                  <li
+                    key={r}
+                    className="text-[11px] text-muted-foreground flex items-start gap-1"
+                  >
                     <CheckCircle2 className="h-3 w-3 mt-0.5 text-success shrink-0" />
                     {r}
                   </li>
@@ -204,7 +275,9 @@ export function AssignResourceDialog({
     const capacity = Number((v as unknown as { capacity_kg?: number }).capacity_kg ?? 0) / 1000;
     const fuel = (v as unknown as { fuel_level?: number }).fuel_level;
     const hasLocation = Boolean(
-      (v as unknown as { location?: unknown; latitude?: number; last_position?: unknown })
+      (v as unknown as {
+        location?: unknown; latitude?: number; last_position?: unknown;
+      })
         .location
         ?? (v as unknown as { latitude?: number }).latitude
         ?? (v as unknown as { last_position?: unknown }).last_position,
@@ -233,7 +306,14 @@ export function AssignResourceDialog({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-sm font-medium truncate">{reg}</p>
-              {v.type && <Badge variant="outline" className="text-[10px] capitalize">{v.type}</Badge>}
+              {v.type && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] capitalize"
+                >
+                  {v.type}
+                </Badge>
+              )}
               <Badge
                 variant="outline"
                 className={cn(
@@ -280,7 +360,10 @@ export function AssignResourceDialog({
             {rank && (
               <ul className="mt-2 space-y-0.5">
                 {rank.reasons.map(r => (
-                  <li key={r} className="text-[11px] text-muted-foreground flex items-start gap-1">
+                  <li
+                    key={r}
+                    className="text-[11px] text-muted-foreground flex items-start gap-1"
+                  >
                     <CheckCircle2 className="h-3 w-3 mt-0.5 text-success shrink-0" />
                     {r}
                   </li>
@@ -303,7 +386,10 @@ export function AssignResourceDialog({
   const emptyList = kind === "driver" ? listDrivers.length === 0 : listVehicles.length === 0;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="max-w-2xl p-0 overflow-hidden">
         <DialogHeader className="p-5 pb-3">
           <DialogTitle className="flex items-center gap-2">
@@ -344,7 +430,10 @@ export function AssignResourceDialog({
                     {kind === "driver" ? "driver performance, availability and proximity" : "capacity, fuel, status and proximity"}
                     …
                   </p>
-                  <Progress value={progress} className="h-1.5 max-w-sm mx-auto" />
+                  <Progress
+                    value={progress}
+                    className="h-1.5 max-w-sm mx-auto"
+                  />
                 </div>
               )
             : (
@@ -357,7 +446,10 @@ export function AssignResourceDialog({
                           Why this ranking
                         </p>
                         <ol className="mt-2 space-y-1.5">
-                          {ranked.slice(0, 3).map((r, i) => {
+                          {ranked.slice(
+                            0,
+                            3,
+                          ).map((r, i) => {
                             const label = kind === "driver"
                               ? availableDrivers.find(d => d.id === r.id)?.full_name
                               : (() => {
@@ -368,7 +460,10 @@ export function AssignResourceDialog({
                             if (!label)
                               return null;
                             return (
-                              <li key={r.id} className="text-[11px] leading-relaxed">
+                              <li
+                                key={r.id}
+                                className="text-[11px] leading-relaxed"
+                              >
                                 <span className="font-medium">
                                   #
                                   {i + 1}
@@ -414,11 +509,19 @@ export function AssignResourceDialog({
                         : kind === "driver"
                           ? ranked.map((r, i) => {
                               const d = availableDrivers.find(x => x.id === r.id);
-                              return d ? renderDriverRow(d, r, i) : null;
+                              return d ? renderDriverRow(
+                                d,
+                                r,
+                                i,
+                              ) : null;
                             })
                           : ranked.map((r, i) => {
                               const v = availableVehicles.find(x => x.id === r.id);
-                              return v ? renderVehicleRow(v, r, i) : null;
+                              return v ? renderVehicleRow(
+                                v,
+                                r,
+                                i,
+                              ) : null;
                             })}
                   </div>
                 </ScrollArea>
@@ -440,7 +543,11 @@ export function AssignResourceDialog({
         <div className="flex items-center justify-between gap-2 border-t border-border/60 p-4">
           {view === "ai"
             ? (
-                <Button variant="ghost" size="sm" onClick={() => setView("list")}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setView("list")}
+                >
                   <ArrowLeft className="h-4 w-4 mr-1" />
                   {" "}
                   Back to list
@@ -454,7 +561,13 @@ export function AssignResourceDialog({
                 </span>
               )}
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
             <Button
               size="sm"
               disabled={!selectedId}

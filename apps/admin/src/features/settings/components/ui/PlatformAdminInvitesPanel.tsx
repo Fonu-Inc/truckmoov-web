@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { AdminInvite } from "@truckmoov/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -25,6 +26,7 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,8 +34,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
-import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/shadcn/data-table";
 
 export function PlatformAdminInvitesPanel() {
   const invitesQuery = useQuery(getSystemAdminInvitesQueryOptions());
@@ -141,13 +141,13 @@ export function PlatformAdminInvitesPanel() {
             isError={invitesQuery.isError}
             errorMessage="Failed to load invitations."
             onRetry={() => invitesQuery.refetch()}
-            emptyState={
+            emptyState={(
               <div className="text-muted-foreground">
                 <Mail className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>No pending invitations</p>
                 <p className="text-sm">Invites you send from the Admins tab will appear here.</p>
               </div>
-            }
+            )}
           />
         </CardContent>
       </Card>

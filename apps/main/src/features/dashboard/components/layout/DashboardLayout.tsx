@@ -8,7 +8,9 @@ import { useAuthStore } from "@/features/auth/stores/authStore";
 import { DashboardHeader } from "@/features/dashboard/components/ui/DashboardHeader";
 import { DashboardSidebar } from "@/features/dashboard/components/ui/DashboardSidebar";
 import { useSidebarStore } from "@/features/dashboard/stores/sidebarStore";
-import { matchNavEntry, resolveLabel } from "@/features/dashboard/utils/sidebarNav";
+import {
+  matchNavEntry, resolveLabel,
+} from "@/features/dashboard/utils/sidebarNav";
 import { cn } from "@/lib/utils";
 
 /**
@@ -49,7 +51,11 @@ export function DashboardLayout() {
         )}
       >
         <ErrorBoundary>
-          <DashboardHeader title={entry ? resolveLabel(entry, role) : ""} />
+          <DashboardHeader title={entry ? resolveLabel(
+            entry,
+            role,
+          ) : ""}
+          />
         </ErrorBoundary>
         <TrialBanner />
         <main className={cn(

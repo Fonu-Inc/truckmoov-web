@@ -1,7 +1,7 @@
+import type React from "react";
 import {
   AlertTriangle, CheckCircle2, Clock, FileText, Loader2, Receipt, XCircle,
 } from "lucide-react";
-import type React from "react";
 
 export const statusConfig: Record<string, {
   label: string; color: string; icon: React.ElementType;

@@ -14,7 +14,6 @@ import ForgotPasswordPage from "@/features/auth/components/pages/ForgotPasswordP
 import InvitePage from "@/features/auth/components/pages/InvitePage";
 import ResetPasswordPage from "@/features/auth/components/pages/ResetPasswordPage";
 import VerifyEmailPage from "@/features/auth/components/pages/VerifyEmailPage";
-import { RoleHomeRedirect } from "@/features/auth/components/ui/RoleHomeRedirect";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { DashboardLayout } from "@/features/dashboard/components/layout/DashboardLayout";
 import { getRolesForHref } from "@/features/dashboard/utils/sidebarNav";
@@ -212,9 +211,9 @@ const GuardedIntegrationsLayout = withGuard(
  * opened. `DashboardLayout` renders the router's pending state while a chunk
  * loads. No `Suspense` boundary is involved — the router owns the wait.
  *
- * `App`, the two layouts, the auth pages, `RoleHomeRedirect` and the status
- * screens stay eager: they are small and on the critical path, and a spinner in
- * place of the login form would be worse than the bytes.
+ * `App`, the two layouts, the auth pages and the status screens stay eager:
+ * they are small and on the critical path, and a spinner in place of the login
+ * form would be worse than the bytes.
  */
 export const router = createBrowserRouter([
   {
@@ -255,10 +254,6 @@ export const router = createBrowserRouter([
         Component: CompleteProfilePage,
       },
 
-      {
-        path: "/",
-        Component: RoleHomeRedirect,
-      },
       {
         path: "/not-authorized",
         Component: NotAuthorized,
@@ -333,10 +328,12 @@ export const router = createBrowserRouter([
           // Onboarding — no sidebar entry, no guard.
 
           // Role dashboards (each home has a single-role sidebar entry).
+          // `/` is the shared overview for ENTERPRISE_ADMIN and OWNER_OPERATOR;
+          // the sidebar entry pins the role list, guarded() reads it.
           {
-            path: "/enterprise",
+            index: true,
             lazy: guarded(
-              "/enterprise",
+              "/",
               () => import("@/features/dashboard/components/pages/EnterpriseLogisticsDashboard"),
             ),
           },
@@ -345,44 +342,6 @@ export const router = createBrowserRouter([
             lazy: guarded(
               "/aggregator",
               () => import("@/features/dashboard/components/pages/AggregatorDashboard"),
-            ),
-          },
-          {
-            path: "/owner-operator",
-            lazy: guarded(
-              "/owner-operator",
-              () => import("@/features/dashboard/components/pages/OwnerOperatorDashboard"),
-            ),
-          },
-          {
-            // Detail page for the same feature as /owner-operator/vehicles.
-            path: "/owner-operator/vehicle/:vehicleId",
-            lazy: guardedBy(
-              ["OWNER_OPERATOR"],
-              () => import("@/pages/owner-operator/OwnerOperatorVehicleDetail"),
-            ),
-          },
-          {
-            // Owner-operator alias for FleetManagement, linked from onboarding.
-            path: "/owner-operator/vehicles",
-            lazy: guardedBy(
-              ["OWNER_OPERATOR"],
-              () => import("@/pages/owner-operator/OwnerOperatorVehicles"),
-            ),
-          },
-          {
-            path: "/owner-operator/documents",
-            lazy: guarded(
-              "/owner-operator/documents",
-              () => import("@/pages/owner-operator/OwnerOperatorDocuments"),
-            ),
-          },
-          {
-            // Owner-operator alias for the Jobs page, linked from onboarding.
-            path: "/owner-operator/jobs",
-            lazy: guardedBy(
-              ["OWNER_OPERATOR"],
-              () => import("@/pages/owner-operator/OwnerOperatorJobs"),
             ),
           },
 
@@ -894,45 +853,7 @@ export const router = createBrowserRouter([
             ],
           },
 
-          // Supervisor
-          {
-            path: "/supervisor",
-            lazy: async () => ({ Component: (await import("@/pages/supervisor/SupervisorDashboard")).default }),
-          },
-          {
-            path: "/supervisor/map",
-            lazy: async () => ({ Component: (await import("@/pages/supervisor/SupervisorLiveMap")).default }),
-          },
-          {
-            path: "/supervisor/dispatch",
-            lazy: async () => ({ Component: (await import("@/pages/supervisor/SupervisorDispatch")).default }),
-          },
-          {
-            path: "/supervisor/drivers",
-            lazy: async () => ({ Component: (await import("@/pages/supervisor/SupervisorDrivers")).default }),
-          },
-          {
-            path: "/supervisor/alerts",
-            lazy: async () => ({ Component: (await import("@/pages/supervisor/SupervisorAlerts")).default }),
-          },
-          {
-            path: "/supervisor/messages",
-            lazy: async () => ({ Component: (await import("@/pages/supervisor/SupervisorMessages")).default }),
-          },
-          {
-            path: "/supervisor/inbox",
-            lazy: async () => ({ Component: (await import("@/pages/admin/OmnichannelInbox")).default }),
-          },
-          {
-            path: "/supervisor/reports",
-            lazy: async () => ({ Component: (await import("@/pages/supervisor/SupervisorReports")).default }),
-          },
-          {
-            path: "/supervisor/*",
-            lazy: async () => ({ Component: (await import("@/pages/supervisor/SupervisorDashboard")).default }),
-          },
-
-          // Dispatcher Portal (independent — do not share with Supervisor/Admin)
+          // Dispatcher Portal
           {
             path: "/dispatcher",
             lazy: async () => ({ Component: (await import("@/features/dashboard/components/pages/DispatcherDashboard")).default }),

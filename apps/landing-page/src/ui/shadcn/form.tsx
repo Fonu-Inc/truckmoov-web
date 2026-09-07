@@ -35,6 +35,10 @@ function FormField<
   );
 }
 
+type FormItemContextValue = { id: string };
+
+const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue);
+
 function useFormField() {
   const fieldContext = React.useContext(FormFieldContext);
   const itemContext = React.useContext(FormItemContext);
@@ -59,10 +63,6 @@ function useFormField() {
     ...fieldState,
   };
 }
-
-type FormItemContextValue = { id: string };
-
-const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue);
 
 function FormItem({
   className, ...props
@@ -178,5 +178,7 @@ export {
   FormItem,
   FormLabel,
   FormMessage,
+  // ponytail: shadcn ships useFormField in this file; splitting it out for fast refresh isn't worth a new module
+  // eslint-disable-next-line react-refresh/only-export-components
   useFormField,
 };

@@ -1,4 +1,6 @@
-import type { BlockedIP, FailedAttempt, LoginEvent, SecurityEvent } from "@/features/security/types";
+import type {
+  BlockedIP, FailedAttempt, LoginEvent, SecurityEvent,
+} from "@/features/security/types";
 
 export const mockLoginEvents: LoginEvent[] = [
   {

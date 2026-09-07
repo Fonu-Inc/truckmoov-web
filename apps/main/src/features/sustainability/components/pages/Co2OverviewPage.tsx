@@ -1,3 +1,4 @@
+import type { ChartDateRange } from "@/components/shadcn/chart-date-filter";
 import { BarChart3 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -6,9 +7,7 @@ import {
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
-import {
-  ChartDateFilter, type ChartDateRange,
-} from "@/components/shadcn/chart-date-filter";
+import { ChartDateFilter } from "@/components/shadcn/chart-date-filter";
 import { Progress } from "@/components/shadcn/progress";
 import {
   FUEL_TYPE_COLORS, FUEL_TYPE_LABELS,
@@ -51,7 +50,9 @@ export default function Co2OverviewPage() {
   }));
 
   const vehicleCo2 = co2Logs.data?.reduce(
-    (acc: Record<string, { co2: number; distance: number }>, l: any) => {
+    (acc: Record<string, {
+      co2: number; distance: number;
+    }>, l: any) => {
       if (!acc[l.vehicle_id]) {
         acc[l.vehicle_id] = {
           co2: 0, distance: 0,
@@ -61,10 +62,14 @@ export default function Co2OverviewPage() {
       acc[l.vehicle_id].distance += Number(l.distance_km);
       return acc;
     },
-    {} as Record<string, { co2: number; distance: number }>,
+    {} as Record<string, {
+      co2: number; distance: number;
+    }>,
   ) || {};
 
-  const vehicleRankings = (Object.entries(vehicleCo2) as [string, { co2: number; distance: number }][])
+  const vehicleRankings = (Object.entries(vehicleCo2) as [string, {
+    co2: number; distance: number;
+  }][])
     .map(([
       id,
       data,

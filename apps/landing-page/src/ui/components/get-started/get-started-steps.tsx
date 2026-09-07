@@ -1,3 +1,4 @@
+import type { OnboardingApplicationTimelineEntry } from "@truckmoov/api/auth";
 import type { UseFormReturn } from "react-hook-form";
 import type {
   OrganizationFormValues,
@@ -37,6 +38,7 @@ import {
 } from "@/ui/shadcn/input-otp";
 import {
   DOCUMENTS,
+  NIGERIAN_STATES,
   ORG_FIELDS,
   ORG_TYPES,
 } from "./get-started-data";
@@ -146,6 +148,38 @@ export function OrganizationStep({ form }: { form: UseFormReturn<OrganizationFor
               )}
             />
           ))}
+          <FormField
+            control={form.control}
+            name="state"
+            render={({ field: rhfField }) => (
+              <FormItem>
+                <FormLabel className="text-base font-normal">State</FormLabel>
+                <FormControl>
+                  <select
+                    {...rhfField}
+                    value={rhfField.value ?? ""}
+                    className="h-13 w-full rounded-2xl border border-border-100 bg-background px-4 text-base"
+                  >
+                    <option
+                      value=""
+                      disabled
+                    >
+                      Select a state
+                    </option>
+                    {NIGERIAN_STATES.map(state => (
+                      <option
+                        key={state}
+                        value={state}
+                      >
+                        {state}
+                      </option>
+                    ))}
+                  </select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </form>
       </Form>
     </div>
@@ -171,12 +205,14 @@ function DocCard({
   title,
   description,
   upload,
+  isBusy,
   onSelect,
   onRemove,
 }: {
   title: string;
   description: string;
   upload: Upload;
+  isBusy: boolean;
   onSelect: (file: File) => void;
   onRemove: () => void;
 }) {
@@ -212,15 +248,21 @@ function DocCard({
                 type="button"
                 aria-label="Replace document"
                 onClick={() => inputRef.current?.click()}
-                className="cursor-pointer p-1"
+                disabled={isBusy}
+                className="cursor-pointer p-1 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <RefreshCw className="size-4.5" />
+                <RefreshCw className={cn(
+                  "size-4.5",
+                  isBusy && "animate-spin",
+                )}
+                />
               </button>
               <button
                 type="button"
                 aria-label="Remove document"
                 onClick={onRemove}
-                className="cursor-pointer p-1 text-[#E5484D]"
+                disabled={isBusy}
+                className="cursor-pointer p-1 text-[#E5484D] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Trash2 className="size-4.5" />
               </button>
@@ -230,10 +272,15 @@ function DocCard({
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="flex h-13 w-full cursor-pointer items-center justify-center gap-3 rounded-xl border border-border-100 text-base transition-colors hover:border-border"
+              disabled={isBusy}
+              className="flex h-13 w-full cursor-pointer items-center justify-center gap-3 rounded-xl border border-border-100 text-base transition-colors hover:border-border disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <CloudUpload className="size-5" />
-              Upload Document
+              <CloudUpload className={cn(
+                "size-5",
+                isBusy && "animate-spin",
+              )}
+              />
+              {isBusy ? "Uploading…" : "Upload Document"}
             </button>
           )}
       {upload.error && (
@@ -248,10 +295,12 @@ function DocCard({
 
 export function UploadStep({
   uploads,
+  busy,
   onSelect,
   onRemove,
 }: {
   uploads: Uploads;
+  busy: Partial<Record<string, boolean>>;
   onSelect: (id: string, file: File) => void;
   onRemove: (id: string) => void;
 }) {
@@ -269,6 +318,7 @@ export function UploadStep({
             title={document.title}
             description={document.description}
             upload={uploads[document.id]}
+            isBusy={Boolean(busy[document.id])}
             onSelect={file => onSelect(
               document.id,
               file,
@@ -297,33 +347,51 @@ function GreenCheck({ className }: { className?: string }) {
 }
 
 export function DocumentCheckStep({ uploads }: { uploads: Uploads }) {
+  const allPassed = DOCUMENTS.every(document => uploads[document.id].file && !uploads[document.id].error);
+
   return (
     <div className="space-y-6">
       <Heading
         title="Check your documents"
         description="We've Done A Quick Format Check. Final Verification Happens During Application Review."
       />
-      <p className="flex items-center gap-3 rounded-2xl bg-[#E9FBE9] px-6 py-5 text-lg font-medium text-[#16A34A]">
-        <Check className="size-5 shrink-0" />
-        All Documents Passed The Format Check.
-      </p>
+      {allPassed
+        ? (
+            <p className="flex items-center gap-3 rounded-2xl bg-[#E9FBE9] px-6 py-5 text-lg font-medium text-[#16A34A]">
+              <Check className="size-5 shrink-0" />
+              All Documents Passed The Format Check.
+            </p>
+          )
+        : (
+            <p className="flex items-center gap-3 rounded-2xl bg-[#FDF0CE] px-6 py-5 text-lg font-medium text-[#B58A00]">
+              <AlertTriangle className="size-5 shrink-0" />
+              Some Documents Need Attention.
+            </p>
+          )}
       <div className="space-y-5">
-        {DOCUMENTS.map(document => (
-          <article
-            key={document.id}
-            className="flex gap-4 rounded-2xl border border-border-100 p-5 shadow-[0_2px_10px_rgba(0,0,0,0.04)]"
-          >
-            <GreenCheck className="mt-0.5" />
-            <div className="min-w-0 space-y-1">
-              <h3 className="text-base font-bold">{document.title}</h3>
-              <p className="text-sm text-[#4D4D4D]">
-                Uploaded ·
-                {" "}
-                {uploads[document.id].file?.name}
-              </p>
-            </div>
-          </article>
-        ))}
+        {DOCUMENTS.map((document) => {
+          const upload = uploads[document.id];
+          const failed = !upload.file || upload.error;
+          return (
+            <article
+              key={document.id}
+              className="flex gap-4 rounded-2xl border border-border-100 p-5 shadow-[0_2px_10px_rgba(0,0,0,0.04)]"
+            >
+              {failed
+                ? <AlertTriangle className="mt-0.5 size-6 text-[#B58A00]" />
+                : <GreenCheck className="mt-0.5" />}
+              <div className="min-w-0 space-y-1">
+                <h3 className="text-base font-bold">{document.title}</h3>
+                <p className="text-sm text-[#4D4D4D]">
+                  {upload.file
+                    ? `Uploaded · ${upload.file.name}`
+                    : "Missing"}
+                  {upload.error && ` · ${upload.error}`}
+                </p>
+              </div>
+            </article>
+          );
+        })}
       </div>
     </div>
   );
@@ -370,6 +438,11 @@ export function VerifyStep({
   form,
   description,
   onVerify,
+  onResend,
+  onChangeContact,
+  cooldownSeconds,
+  isSending,
+  isVerifying,
   resendLabel,
   resendPrompt,
   changeLabel,
@@ -379,12 +452,19 @@ export function VerifyStep({
   form: UseFormReturn<VerifyCodeValues>;
   description: React.ReactNode;
   onVerify: (values: VerifyCodeValues) => void;
+  onResend: () => void;
+  onChangeContact: () => void;
+  cooldownSeconds: number;
+  isSending: boolean;
+  isVerifying: boolean;
   resendPrompt: string;
   resendLabel: string;
   changePrompt: string;
   changeLabel: string;
   actionLabel: string;
 }) {
+  const resendDisabled = cooldownSeconds > 0 || isSending;
+
   return (
     <Form {...form}>
       <form
@@ -428,9 +508,13 @@ export function VerifyStep({
             {" "}
             <button
               type="button"
-              className="cursor-pointer font-bold text-primary-100"
+              onClick={onResend}
+              disabled={resendDisabled}
+              className="cursor-pointer font-bold text-primary-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {resendLabel}
+              {resendDisabled && cooldownSeconds > 0
+                ? `${resendLabel} (${cooldownSeconds}s)`
+                : resendLabel}
             </button>
           </InfoRow>
           <InfoRow>
@@ -438,6 +522,7 @@ export function VerifyStep({
             {" "}
             <button
               type="button"
+              onClick={onChangeContact}
               className="cursor-pointer font-bold text-primary-100"
             >
               {changeLabel}
@@ -446,10 +531,10 @@ export function VerifyStep({
         </div>
         <Button
           type="submit"
-          disabled={!form.formState.isValid}
+          disabled={!form.formState.isValid || isVerifying}
           className="h-14 w-full rounded-2xl text-base font-bold"
         >
-          {actionLabel}
+          {isVerifying ? "Verifying…" : actionLabel}
         </Button>
       </form>
     </Form>
@@ -516,13 +601,30 @@ export function ReviewStep({
   );
 }
 
-const TIMELINE = [
-  "Application submitted",
-  "Organization details received",
-  "Documents received",
+const FALLBACK_TIMELINE: OnboardingApplicationTimelineEntry[] = [
+  {
+    step: "submitted", label: "Application submitted", complete: true, inProgress: false,
+  },
+  {
+    step: "details", label: "Organization details received", complete: true, inProgress: false,
+  },
+  {
+    step: "documents", label: "Documents received", complete: true, inProgress: false,
+  },
+  {
+    step: "review", label: "Application Review", complete: false, inProgress: true,
+  },
 ];
 
-export function SubmittedStep({ email }: { email: string }) {
+export function SubmittedStep({
+  email,
+  timeline,
+}: {
+  email: string;
+  timeline?: OnboardingApplicationTimelineEntry[];
+}) {
+  const rows = timeline && timeline.length > 0 ? timeline : FALLBACK_TIMELINE;
+
   return (
     <div className="flex flex-col items-center pt-8 text-center">
       <span className="flex size-28 items-center justify-center rounded-full bg-[#F1FBE9]">
@@ -533,8 +635,8 @@ export function SubmittedStep({ email }: { email: string }) {
           />
         </span>
       </span>
-      <h2 className="mt-8 max-w-[420px] text-3xl font-bold">Application Submitted Successfully</h2>
-      <p className="mt-3 max-w-[520px] text-base text-[#4D4D4D]">
+      <h2 className="mt-8 max-w-105 text-3xl font-bold">Application Submitted Successfully</h2>
+      <p className="mt-3 max-w-130 text-base text-[#4D4D4D]">
         Your Fleet Pro Application Has Been Received And Is Being Processed. When Your
         Application Is Approved A Setup Link Would Be Sent To
         {" "}
@@ -542,36 +644,40 @@ export function SubmittedStep({ email }: { email: string }) {
         .
       </p>
       <ul className="mt-9 w-full space-y-0 rounded-2xl bg-[#FAFAFA] px-7 py-7 text-left">
-        {TIMELINE.map((item, index) => (
+        {rows.map((row, index) => (
           <li
-            key={item}
+            key={row.step}
             className="flex gap-4"
           >
             <div className="flex flex-col items-center">
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-100">
-                <Check
-                  className="size-3.5 text-white"
-                  strokeWidth={3.5}
+              {row.complete
+                ? (
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-100">
+                      <Check
+                        className="size-3.5 text-white"
+                        strokeWidth={3.5}
+                      />
+                    </span>
+                  )
+                : row.inProgress
+                  ? <span className="size-6 shrink-0 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+                  : <span className="size-6 shrink-0 rounded-full bg-[#EAEAEA]" />}
+              {index < rows.length - 1 && (
+                <span className={cn(
+                  "min-h-6 flex-1",
+                  row.complete ? "w-0.5 bg-primary-100" : "border-l-2 border-dashed border-border",
+                )}
                 />
-              </span>
-              <span className={cn(
-                "flex-1",
-                index === TIMELINE.length - 1
-                  ? "border-l-2 border-dashed border-border"
-                  : "w-0.5 bg-primary-100",
               )}
-              />
             </div>
-            <span className="pb-6 text-base">{item}</span>
+            <span className="pb-6 text-base">
+              {row.label}
+              {row.inProgress && (
+                <span className="mt-1 block text-sm text-primary-100">In-Progress</span>
+              )}
+            </span>
           </li>
         ))}
-        <li className="flex gap-4">
-          <span className="size-6 shrink-0 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
-          <span className="text-base">
-            Application Review
-            <span className="mt-1 block text-sm text-primary-100">In-Progress</span>
-          </span>
-        </li>
       </ul>
       <InfoRow className="mt-7 max-w-[520px] items-start text-sm text-[#4D4D4D]">
         This Process May Take 30 Minutes To 1 Hour. Please Be Patient While We Complete Your

@@ -1,3 +1,4 @@
+import type { WaybillRecord } from "@/features/payouts-invoicing/utils/demoData";
 import {
   Calendar, CheckCircle2, DollarSign, Download, FileText, ImageIcon, Loader2, MapPin, MessageSquare, Package, Pencil, Save, Scan, Truck, User,
 } from "lucide-react";
@@ -10,7 +11,6 @@ import { Separator } from "@/components/shadcn/separator";
 import {
   SheetDescription, SheetHeader, SheetTitle,
 } from "@/components/shadcn/sheet";
-import type { WaybillRecord } from "@/features/payouts-invoicing/utils/demoData";
 import { statusConfig } from "@/features/payouts-invoicing/utils/statusConfig";
 
 export function WaybillThumbnail({ waybill }: { waybill: WaybillRecord }) {

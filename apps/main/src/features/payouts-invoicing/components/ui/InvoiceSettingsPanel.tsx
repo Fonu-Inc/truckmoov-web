@@ -1,5 +1,8 @@
+import type { InvoiceConfig } from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
 import { Save } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  useEffect, useState,
+} from "react";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
@@ -8,7 +11,6 @@ import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Switch } from "@/components/shadcn/switch";
 import { Textarea } from "@/components/shadcn/textarea";
-import type { InvoiceConfig } from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
 
 export function InvoiceSettingsPanel({
   config, onSave,

@@ -250,13 +250,13 @@ export default function DispatcherDashboard() {
                 },
 
                 {
-                  title: "Message Drivers", desc: "Broadcast or message drivers via SMS / WhatsApp.", icon: MessageSquare, cta: "Open messages", onClick: () => navigate("/supervisor/messages"),
+                  title: "Message Drivers", desc: "Broadcast or message drivers via SMS / WhatsApp.", icon: MessageSquare, cta: "Open messages", onClick: () => navigate("/dispatcher/messages"),
                 },
                 {
-                  title: "Open Inbox", desc: "Inbound calls and conversations across channels.", icon: Phone, cta: "Open inbox", onClick: () => navigate("/supervisor/inbox"),
+                  title: "Open Inbox", desc: "Inbound calls and conversations across channels.", icon: Phone, cta: "Open inbox", onClick: () => navigate("/dispatcher/inbox"),
                 },
                 {
-                  title: "Review Alerts", desc: "Acknowledge geofence, SOS and harsh-event alerts.", icon: AlertTriangle, cta: "Open alerts", onClick: () => navigate("/supervisor/alerts"),
+                  title: "Review Alerts", desc: "Acknowledge geofence, SOS and harsh-event alerts.", icon: AlertTriangle, cta: "Open alerts", onClick: () => navigate("/dispatcher/alerts"),
                 },
               ].map(qa => (
                 <button
@@ -777,7 +777,7 @@ export default function DispatcherDashboard() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/supervisor/drivers")}
+              onClick={() => navigate("/dispatcher/drivers")}
             >
               View all
               {" "}
@@ -801,7 +801,7 @@ export default function DispatcherDashboard() {
                       <div
                         key={driver.id}
                         className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-muted/40 cursor-pointer"
-                        onClick={() => navigate(`/supervisor/drivers?id=${driver.id}`)}
+                        onClick={() => navigate(`/dispatcher/drivers?id=${driver.id}`)}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold flex-shrink-0">

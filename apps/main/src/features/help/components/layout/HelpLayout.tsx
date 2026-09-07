@@ -1,4 +1,6 @@
-import { NavLink, Outlet } from "react-router";
+import {
+  NavLink, Outlet,
+} from "react-router";
 import { HELP_TABS } from "@/features/help/utils/helpNav";
 import { cn } from "@/lib/utils";
 

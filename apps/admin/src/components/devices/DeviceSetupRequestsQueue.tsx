@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   SystemDeviceSetupRequest,
   SystemDeviceSetupRequestsQuery,
@@ -35,8 +36,8 @@ import {
   useState,
 } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 
+import { toast } from "sonner";
 import * as z from "zod";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
@@ -48,6 +49,7 @@ import {
   CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -84,8 +86,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
-import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/shadcn/data-table";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { Textarea } from "@/components/shadcn/textarea";
 
@@ -942,20 +942,20 @@ export function DeviceSetupRequestsQueue() {
               errorMessage="Unable to load setup requests."
               onRetry={() => requestsQuery.refetch()}
               hasActiveFilters={!!debouncedSearch || activeFilterCount > 0}
-              emptyState={
+              emptyState={(
                 <div>
                   <Cpu className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
                   <p className="font-medium">No device setup requests found</p>
                   <p className="text-sm text-muted-foreground">New requests will appear here.</p>
                 </div>
-              }
-              filteredEmptyState={
+              )}
+              filteredEmptyState={(
                 <div>
                   <Cpu className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
                   <p className="font-medium">No device setup requests found</p>
                   <p className="text-sm text-muted-foreground">Try adjusting your search or filters.</p>
                 </div>
-              }
+              )}
             />
           </div>
         </CardContent>

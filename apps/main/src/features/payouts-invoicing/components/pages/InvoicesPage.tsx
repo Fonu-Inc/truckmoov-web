@@ -1,8 +1,11 @@
+import type { WaybillInvoice } from "@/features/payouts-invoicing/utils/demoData";
 import { formatWithPattern } from "@truckmoov/app-core/utils/time-utils";
 import {
   AlertTriangle, ArrowRight, CheckCircle2, Clock, Download, Eye, MoreHorizontal, Search, Share2, SlidersHorizontal, Trash2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  useEffect, useState,
+} from "react";
 import { toast } from "sonner";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -33,18 +36,12 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/shadcn/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { InvoiceDetailView } from "@/features/payouts-invoicing/components/ui/InvoiceDetailView";
+import { TabKpiCards } from "@/features/payouts-invoicing/components/ui/TabKpiCards";
 import {
   useWaybillInvoice, useWaybillRealtimeEvents,
 } from "@/features/payouts-invoicing/hooks/useWaybillInvoice";
-import {
-  InvoiceDetailView,
-} from "@/features/payouts-invoicing/components/ui/InvoiceDetailView";
-import {
-  TabKpiCards,
-} from "@/features/payouts-invoicing/components/ui/TabKpiCards";
-import {
-  DEMO_INVOICES, type WaybillInvoice,
-} from "@/features/payouts-invoicing/utils/demoData";
+import { DEMO_INVOICES } from "@/features/payouts-invoicing/utils/demoData";
 import { invoiceStatusConfig } from "@/features/payouts-invoicing/utils/statusConfig";
 import {
   inferVehicleType, VEHICLE_TYPE_OPTIONS,

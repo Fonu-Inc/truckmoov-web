@@ -79,6 +79,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/shadcn/select";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 import { AssignDeviceDialogWithLifecycle } from "@/features/device/components/ui/AssignDeviceDialogWithLifecycle";
 import { DeviceBulkUploadDialog } from "@/features/device/components/ui/DeviceBulkUploadDialog";
 import { DeviceDetailsSheet } from "@/features/device/components/ui/DeviceDetailsSheet";
@@ -86,7 +87,6 @@ import { DeviceFormDialog } from "@/features/device/components/ui/DeviceFormDial
 import { DeviceRequestsTracker } from "@/features/device/components/ui/DeviceRequestsTracker";
 import { DeviceSetupRequestDialog } from "@/features/device/components/ui/DeviceSetupRequestDialog";
 import { useDevicePermissions } from "@/hooks/useDevicePermissions";
-import { useAuthStore } from "@/features/auth/stores/authStore";
 import { useRequireSubscription } from "@/hooks/useRequireSubscription";
 import { cn } from "@/lib/utils";
 
@@ -546,384 +546,384 @@ export default function DeviceManagement() {
 
         {/* Device List */}
         {!isAggregatorAdmin && (
-        <Card>
-          <CardHeader className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Cpu className="h-5 w-5 text-primary" />
-                  Devices (
-                  {filteredDevices.length}
-                  )
-                </CardTitle>
-                <CardDescription className="mt-1">All trackers in your fleet — monitor lifecycle status, signal health, and last-seen timestamps.</CardDescription>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportDevices}
-                disabled={isExporting}
-              >
-                {isExporting
-                  ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Card>
+            <CardHeader className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Cpu className="h-5 w-5 text-primary" />
+                    Devices (
+                    {filteredDevices.length}
                     )
-                  : (
-                      <Download className="mr-2 h-4 w-4" />
-                    )}
-                {isExporting ? "Exporting..." : "Export Data"}
-              </Button>
-            </div>
-            <div className="flex flex-col gap-3 md:flex-row md:items-center">
-              <div className="relative flex-1 min-w-0">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search by IMEI, manufacturer, model..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <Select
-                value={statusFilter}
-                onValueChange={setStatusFilter}
-              >
-                <SelectTrigger className="w-full sm:w-[170px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="registered">Registered</SelectItem>
-                  <SelectItem value="configured">Configured</SelectItem>
-                  <SelectItem value="assignable">Assignable</SelectItem>
-                  <SelectItem value="assigned">Assigned</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="faulty">Faulty</SelectItem>
-                </SelectContent>
-              </Select>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="relative"
-                  >
-                    <SlidersHorizontal className="h-4 w-4 mr-2" />
-                    Filter
-                    {(manufacturerFilters.length > 0 || lastSeenFilters.length > 0) && (
-                      <Badge
-                        variant="secondary"
-                        className="ml-2 h-5 px-1.5 text-[10px]"
-                      >
-                        {manufacturerFilters.length + lastSeenFilters.length}
-                      </Badge>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  align="end"
-                  sideOffset={8}
-                  className="w-80 p-3 rounded-xl space-y-3 max-h-[70vh] overflow-y-auto"
+                  </CardTitle>
+                  <CardDescription className="mt-1">All trackers in your fleet — monitor lifecycle status, signal health, and last-seen timestamps.</CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportDevices}
+                  disabled={isExporting}
                 >
-                  <h4 className="text-xs font-medium text-foreground px-0.5">Only show devices by...</h4>
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-medium">Manufacturer</p>
-                    <div className="space-y-1.5 pl-0.5">
-                      {manufacturers.map(m => (
-                        <label
-                          key={m}
-                          className="flex items-center gap-2 cursor-pointer select-none"
-                        >
-                          <Checkbox
-                            checked={manufacturerFilters.includes(m)}
-                            onCheckedChange={(c) => {
-                              setManufacturerFilters(prev =>
-                                c
-                                  ? [
-                                      ...prev,
-                                      m,
-                                    ]
-                                  : prev.filter(x => x !== m));
-                            }}
-                            className="h-3.5 w-3.5"
-                          />
-                          <span className="text-xs">{m}</span>
-                        </label>
-                      ))}
-                      {manufacturers.length === 0 && (
-                        <p className="text-xs text-muted-foreground">No manufacturers</p>
+                  {isExporting
+                    ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )
+                    : (
+                        <Download className="mr-2 h-4 w-4" />
                       )}
-                    </div>
-                  </div>
-                  <div className="space-y-1.5 pt-2 border-t border-border">
-                    <p className="text-xs font-medium">Last Seen</p>
-                    <div className="space-y-1.5 pl-0.5">
-                      {[
-                        {
-                          v: "5m", l: "Last 5 minutes",
-                        },
-                        {
-                          v: "1h", l: "Last hour",
-                        },
-                        {
-                          v: "24h", l: "Last 24 hours",
-                        },
-                        {
-                          v: "7d", l: "Last 7 days",
-                        },
-                        {
-                          v: "never", l: "Never seen",
-                        },
-                      ].map(opt => (
-                        <label
-                          key={opt.v}
-                          className="flex items-center gap-2 cursor-pointer select-none"
-                        >
-                          <Checkbox
-                            checked={lastSeenFilters.includes(opt.v)}
-                            onCheckedChange={(c) => {
-                              setLastSeenFilters(prev =>
-                                c
-                                  ? [
-                                      ...prev,
-                                      opt.v,
-                                    ]
-                                  : prev.filter(x => x !== opt.v));
-                            }}
-                            className="h-3.5 w-3.5"
-                          />
-                          <span className="text-xs">{opt.l}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 pt-2 border-t border-border">
-                    <Button
-                      size="sm"
-                      className="flex-1"
-                    >
-                      Apply
-                    </Button>
+                  {isExporting ? "Exporting..." : "Export Data"}
+                </Button>
+              </div>
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                <div className="relative flex-1 min-w-0">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by IMEI, manufacturer, model..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <Select
+                  value={statusFilter}
+                  onValueChange={setStatusFilter}
+                >
+                  <SelectTrigger className="w-full sm:w-[170px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="registered">Registered</SelectItem>
+                    <SelectItem value="configured">Configured</SelectItem>
+                    <SelectItem value="assignable">Assignable</SelectItem>
+                    <SelectItem value="assigned">Assigned</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="faulty">Faulty</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => {
-                        setManufacturerFilters([]);
-                        setLastSeenFilters([]);
-                      }}
+                      className="relative"
                     >
-                      Show All
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading
-              ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                )
-              : filteredDevices.length === 0
-                ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <Cpu className="h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-medium">No devices found</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {searchQuery || statusFilter !== "all" || manufacturerFilters.length > 0
-                          ? "Try adjusting your filters"
-                          : "Add your first device to get started"}
-                      </p>
-                      {canManage && !searchQuery && statusFilter === "all" && (
-                        <Button
-                          className="mt-4"
-                          onClick={() => setIsAddDialogOpen(true)}
+                      <SlidersHorizontal className="h-4 w-4 mr-2" />
+                      Filter
+                      {(manufacturerFilters.length > 0 || lastSeenFilters.length > 0) && (
+                        <Badge
+                          variant="secondary"
+                          className="ml-2 h-5 px-1.5 text-[10px]"
                         >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add Device
-                        </Button>
+                          {manufacturerFilters.length + lastSeenFilters.length}
+                        </Badge>
                       )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="end"
+                    sideOffset={8}
+                    className="w-80 p-3 rounded-xl space-y-3 max-h-[70vh] overflow-y-auto"
+                  >
+                    <h4 className="text-xs font-medium text-foreground px-0.5">Only show devices by...</h4>
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium">Manufacturer</p>
+                      <div className="space-y-1.5 pl-0.5">
+                        {manufacturers.map(m => (
+                          <label
+                            key={m}
+                            className="flex items-center gap-2 cursor-pointer select-none"
+                          >
+                            <Checkbox
+                              checked={manufacturerFilters.includes(m)}
+                              onCheckedChange={(c) => {
+                                setManufacturerFilters(prev =>
+                                  c
+                                    ? [
+                                        ...prev,
+                                        m,
+                                      ]
+                                    : prev.filter(x => x !== m));
+                              }}
+                              className="h-3.5 w-3.5"
+                            />
+                            <span className="text-xs">{m}</span>
+                          </label>
+                        ))}
+                        {manufacturers.length === 0 && (
+                          <p className="text-xs text-muted-foreground">No manufacturers</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="space-y-1.5 pt-2 border-t border-border">
+                      <p className="text-xs font-medium">Last Seen</p>
+                      <div className="space-y-1.5 pl-0.5">
+                        {[
+                          {
+                            v: "5m", l: "Last 5 minutes",
+                          },
+                          {
+                            v: "1h", l: "Last hour",
+                          },
+                          {
+                            v: "24h", l: "Last 24 hours",
+                          },
+                          {
+                            v: "7d", l: "Last 7 days",
+                          },
+                          {
+                            v: "never", l: "Never seen",
+                          },
+                        ].map(opt => (
+                          <label
+                            key={opt.v}
+                            className="flex items-center gap-2 cursor-pointer select-none"
+                          >
+                            <Checkbox
+                              checked={lastSeenFilters.includes(opt.v)}
+                              onCheckedChange={(c) => {
+                                setLastSeenFilters(prev =>
+                                  c
+                                    ? [
+                                        ...prev,
+                                        opt.v,
+                                      ]
+                                    : prev.filter(x => x !== opt.v));
+                              }}
+                              className="h-3.5 w-3.5"
+                            />
+                            <span className="text-xs">{opt.l}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-2 border-t border-border">
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                      >
+                        Apply
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          setManufacturerFilters([]);
+                          setLastSeenFilters([]);
+                        }}
+                      >
+                        Show All
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading
+                ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                   )
-                : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-border text-left text-sm text-muted-foreground">
-                            <th className="pb-3 font-medium">Device</th>
-                            <th className="pb-3 font-medium">IMEI</th>
-                            <th className="pb-3 font-medium">Status</th>
-                            <th className="pb-3 font-medium">Vehicle</th>
-                            <th className="pb-3 font-medium">Signal</th>
-                            <th className="pb-3 font-medium">Last Seen</th>
-                            <th className="pb-3 font-medium text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {filteredDevices.map((device) => {
-                            const vehicle = getVehicleInfo(device.vehicle_id);
-                            return (
-                              <tr
-                                key={device.id}
-                                className="group transition-colors hover:bg-secondary/30"
-                              >
-                                <td className="py-4">
-                                  <div className="flex items-center gap-3">
-                                    <div className={cn(
-                                      "flex h-10 w-10 items-center justify-center rounded-lg",
-                                      device.status === "active"
-                                        ? "bg-success/10"
-                                        : device.status === "faulty"
-                                          ? "bg-destructive/10"
-                                          : "bg-secondary",
+                : filteredDevices.length === 0
+                  ? (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <Cpu className="h-12 w-12 text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-medium">No devices found</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {searchQuery || statusFilter !== "all" || manufacturerFilters.length > 0
+                            ? "Try adjusting your filters"
+                            : "Add your first device to get started"}
+                        </p>
+                        {canManage && !searchQuery && statusFilter === "all" && (
+                          <Button
+                            className="mt-4"
+                            onClick={() => setIsAddDialogOpen(true)}
+                          >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Device
+                          </Button>
+                        )}
+                      </div>
+                    )
+                  : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-border text-left text-sm text-muted-foreground">
+                              <th className="pb-3 font-medium">Device</th>
+                              <th className="pb-3 font-medium">IMEI</th>
+                              <th className="pb-3 font-medium">Status</th>
+                              <th className="pb-3 font-medium">Vehicle</th>
+                              <th className="pb-3 font-medium">Signal</th>
+                              <th className="pb-3 font-medium">Last Seen</th>
+                              <th className="pb-3 font-medium text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {filteredDevices.map((device) => {
+                              const vehicle = getVehicleInfo(device.vehicle_id);
+                              return (
+                                <tr
+                                  key={device.id}
+                                  className="group transition-colors hover:bg-secondary/30"
+                                >
+                                  <td className="py-4">
+                                    <div className="flex items-center gap-3">
+                                      <div className={cn(
+                                        "flex h-10 w-10 items-center justify-center rounded-lg",
+                                        device.status === "active"
+                                          ? "bg-success/10"
+                                          : device.status === "faulty"
+                                            ? "bg-destructive/10"
+                                            : "bg-secondary",
+                                      )}
+                                      >
+                                        <Cpu className={cn(
+                                          "h-5 w-5",
+                                          device.status === "active"
+                                            ? "text-success"
+                                            : device.status === "faulty"
+                                              ? "text-destructive"
+                                              : "text-muted-foreground",
+                                        )}
+                                        />
+                                      </div>
+                                      <div>
+                                        <p className="font-medium">{device.manufacturer}</p>
+                                        <p className="text-xs text-muted-foreground">{device.model || "—"}</p>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-4">
+                                    <span className="rounded bg-secondary px-2 py-1 font-mono text-sm">
+                                      {device.imei}
+                                    </span>
+                                  </td>
+                                  <td className="py-4">
+                                    <span className={cn(
+                                      "rounded-full px-2.5 py-1 text-xs font-medium",
+                                      device.status === "active" && "bg-success/10 text-success",
+                                      device.status === "registered" && "bg-muted text-muted-foreground",
+                                      device.status === "configured" && "bg-info/10 text-info",
+                                      device.status === "inactive" && "bg-warning/10 text-warning",
+                                      device.status === "faulty" && "bg-destructive/10 text-destructive",
                                     )}
                                     >
-                                      <Cpu className={cn(
-                                        "h-5 w-5",
-                                        device.status === "active"
-                                          ? "text-success"
-                                          : device.status === "faulty"
-                                            ? "text-destructive"
-                                            : "text-muted-foreground",
-                                      )}
-                                      />
-                                    </div>
-                                    <div>
-                                      <p className="font-medium">{device.manufacturer}</p>
-                                      <p className="text-xs text-muted-foreground">{device.model || "—"}</p>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="py-4">
-                                  <span className="rounded bg-secondary px-2 py-1 font-mono text-sm">
-                                    {device.imei}
-                                  </span>
-                                </td>
-                                <td className="py-4">
-                                  <span className={cn(
-                                    "rounded-full px-2.5 py-1 text-xs font-medium",
-                                    device.status === "active" && "bg-success/10 text-success",
-                                    device.status === "registered" && "bg-muted text-muted-foreground",
-                                    device.status === "configured" && "bg-info/10 text-info",
-                                    device.status === "inactive" && "bg-warning/10 text-warning",
-                                    device.status === "faulty" && "bg-destructive/10 text-destructive",
-                                  )}
-                                  >
-                                    {device.status}
-                                  </span>
-                                </td>
-                                <td className="py-4">
-                                  {vehicle
-                                    ? (
-                                        <span className="text-sm">{vehicle.registrationNumber}</span>
-                                      )
-                                    : (
-                                        <span className="text-muted-foreground">—</span>
-                                      )}
-                                </td>
-                                <td className="py-4">
-                                  {device.signal_strength !== undefined && device.signal_strength !== null
-                                    ? (
-                                        <div className="flex items-center gap-2">
-                                          <Signal className={cn(
-                                            "h-4 w-4",
-                                            device.signal_strength > 70
-                                              ? "text-success"
-                                              : device.signal_strength > 40 ? "text-warning" : "text-destructive",
-                                          )}
-                                          />
-                                          <span className="text-sm">
-                                            {device.signal_strength}
-                                            %
-                                          </span>
-                                        </div>
-                                      )
-                                    : (
-                                        <span className="text-muted-foreground">—</span>
-                                      )}
-                                </td>
-                                <td className="py-4 text-sm text-muted-foreground">
-                                  {device.last_seen
-                                    ? formatRelative(device.last_seen)
-                                    : "Never"}
-                                </td>
-                                <td className="py-4 text-right">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                      >
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => {
-                                        setSelectedDevice(device);
-                                        setIsDetailsOpen(true);
-                                      }}
-                                      >
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        View Details
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => {
-                                        setSelectedDevice(device);
-                                        setIsEditDialogOpen(true);
-                                      }}
-                                      >
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        Edit
-                                      </DropdownMenuItem>
-                                      <DropdownMenuSeparator />
-                                      {device.vehicle_id
-                                        ? (
-                                            <DropdownMenuItem onClick={() => handleUnassignDevice(device)}>
-                                              <Unlink className="mr-2 h-4 w-4" />
-                                              Unassign Vehicle
-                                            </DropdownMenuItem>
-                                          )
-                                        : (
-                                            <DropdownMenuItem onClick={() => {
-                                              setSelectedDevice(device);
-                                              setIsAssignDialogOpen(true);
-                                            }}
-                                            >
-                                              <Link className="mr-2 h-4 w-4" />
-                                              Assign to Vehicle
-                                            </DropdownMenuItem>
-                                          )}
-                                      {(device.lifecycle_status === "registered" || device.status === "registered") && (
-                                        <DropdownMenuItem onClick={() => handleMarkConfigured(device.id)}>
-                                          <Settings className="mr-2 h-4 w-4" />
-                                          Mark as Configured
+                                      {device.status}
+                                    </span>
+                                  </td>
+                                  <td className="py-4">
+                                    {vehicle
+                                      ? (
+                                          <span className="text-sm">{vehicle.registrationNumber}</span>
+                                        )
+                                      : (
+                                          <span className="text-muted-foreground">—</span>
+                                        )}
+                                  </td>
+                                  <td className="py-4">
+                                    {device.signal_strength !== undefined && device.signal_strength !== null
+                                      ? (
+                                          <div className="flex items-center gap-2">
+                                            <Signal className={cn(
+                                              "h-4 w-4",
+                                              device.signal_strength > 70
+                                                ? "text-success"
+                                                : device.signal_strength > 40 ? "text-warning" : "text-destructive",
+                                            )}
+                                            />
+                                            <span className="text-sm">
+                                              {device.signal_strength}
+                                              %
+                                            </span>
+                                          </div>
+                                        )
+                                      : (
+                                          <span className="text-muted-foreground">—</span>
+                                        )}
+                                  </td>
+                                  <td className="py-4 text-sm text-muted-foreground">
+                                    {device.last_seen
+                                      ? formatRelative(device.last_seen)
+                                      : "Never"}
+                                  </td>
+                                  <td className="py-4 text-right">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                        >
+                                          <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => {
+                                          setSelectedDevice(device);
+                                          setIsDetailsOpen(true);
+                                        }}
+                                        >
+                                          <Eye className="mr-2 h-4 w-4" />
+                                          View Details
                                         </DropdownMenuItem>
-                                      )}
-                                      <DropdownMenuItem onClick={() => openFirmwareDialog(device)}>
-                                        <RefreshCw className="mr-2 h-4 w-4" />
-                                        Update Firmware
-                                      </DropdownMenuItem>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem
-                                        className="text-destructive focus:text-destructive"
-                                        onClick={() => setDevicePendingDeletion(device)}
-                                      >
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete Device
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-          </CardContent>
-        </Card>
+                                        <DropdownMenuItem onClick={() => {
+                                          setSelectedDevice(device);
+                                          setIsEditDialogOpen(true);
+                                        }}
+                                        >
+                                          <Edit className="mr-2 h-4 w-4" />
+                                          Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        {device.vehicle_id
+                                          ? (
+                                              <DropdownMenuItem onClick={() => handleUnassignDevice(device)}>
+                                                <Unlink className="mr-2 h-4 w-4" />
+                                                Unassign Vehicle
+                                              </DropdownMenuItem>
+                                            )
+                                          : (
+                                              <DropdownMenuItem onClick={() => {
+                                                setSelectedDevice(device);
+                                                setIsAssignDialogOpen(true);
+                                              }}
+                                              >
+                                                <Link className="mr-2 h-4 w-4" />
+                                                Assign to Vehicle
+                                              </DropdownMenuItem>
+                                            )}
+                                        {(device.lifecycle_status === "registered" || device.status === "registered") && (
+                                          <DropdownMenuItem onClick={() => handleMarkConfigured(device.id)}>
+                                            <Settings className="mr-2 h-4 w-4" />
+                                            Mark as Configured
+                                          </DropdownMenuItem>
+                                        )}
+                                        <DropdownMenuItem onClick={() => openFirmwareDialog(device)}>
+                                          <RefreshCw className="mr-2 h-4 w-4" />
+                                          Update Firmware
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          className="text-destructive focus:text-destructive"
+                                          onClick={() => setDevicePendingDeletion(device)}
+                                        >
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Delete Device
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+            </CardContent>
+          </Card>
         )}
 
         <DeviceRequestsTracker />
