@@ -203,14 +203,14 @@ export function FleetFinancialsLayout() {
   return (
     <div className="space-y-4">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/20">
+              <div className="p-2 rounded-lg bg-success/20 shrink-0">
                 <TrendingUp className="h-5 w-5 text-success" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold text-success">{format(summaryStats.totalRevenue)}</p>
                 <p className="text-xs text-muted-foreground">
                   Total Revenue ·
@@ -226,10 +226,10 @@ export function FleetFinancialsLayout() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-destructive/20">
+              <div className="p-2 rounded-lg bg-destructive/20 shrink-0">
                 <TrendingDown className="h-5 w-5 text-destructive" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold text-destructive">{format(summaryStats.totalCost)}</p>
                 <p className="text-xs text-muted-foreground">Total Costs · Fleet total</p>
               </div>
@@ -240,10 +240,10 @@ export function FleetFinancialsLayout() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/20">
+              <div className="p-2 rounded-lg bg-primary/20 shrink-0">
                 <DollarSign className="h-5 w-5 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className={`text-2xl font-bold ${summaryStats.totalProfit >= 0 ? "text-success" : "text-destructive"}`}>
                   {format(summaryStats.totalProfit)}
                 </p>
@@ -260,14 +260,12 @@ export function FleetFinancialsLayout() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-accent/20">
+              <div className="p-2 rounded-lg bg-accent/20 shrink-0">
                 <Truck className="h-5 w-5 text-accent" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  {summaryStats.vehicleCount}
-                </p>
-                <p className="text-xs text-muted-foreground">Vehicles · In summary</p>
+              <div className="min-w-0">
+                <p className="text-2xl font-bold">-</p>
+                <p className="text-xs text-muted-foreground">Cost per KM · Fleet average</p>
               </div>
             </div>
           </CardContent>

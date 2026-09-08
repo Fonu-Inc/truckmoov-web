@@ -371,6 +371,35 @@ Conventions that repeat across pages:
 - Search/status/filter state is plain `useState` in the page; filtering is done
   client-side over the query result.
 
+### Card grids step at `sm` / `xl`, not `md`
+
+Tailwind breakpoints are **viewport** media queries, but the content column is
+inset by the fixed sidebar — `ml-64` plus `<main>`'s `p-6` means the page's
+usable width is ~304px less than the viewport `md:` measures. A KPI row written
+`grid-cols-2 md:grid-cols-4` therefore packs four cards into ~460px at a 768px
+viewport, and the labels overflow the card.
+
+So dense card grids step later than they look like they should:
+
+- 4 cards — `grid-cols-1 sm:grid-cols-2 xl:grid-cols-4`
+- 5 or 6 cards — `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5` (or `-6`)
+
+The rule of thumb is **never let a stat card get narrower than ~240px**.
+
+Two companion rules for the card internals, because the breakpoint alone is not
+enough:
+
+- The text wrapper beside the icon gets `min-w-0`. It is a flex child, so its
+  default `min-width: auto` refuses to shrink below its content and the text
+  spills past the card's rounded clip instead of wrapping.
+- The icon chip gets `shrink-0`, so a long label squashes nothing.
+
+Prefer wrapping over `truncate` on a stat label — `truncate` silently eats text
+like "Total Maintenance Records".
+
+Loading-skeleton grids must repeat the same column classes as the real grid, or
+the layout jumps when data lands.
+
 ## Status screens
 
 404, 403 and crash all render the same full-bleed diagnostic panel, shared by

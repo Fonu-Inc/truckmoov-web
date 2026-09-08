@@ -1,5 +1,6 @@
 import type { Vehicle } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useCapacityUnits } from "@truckmoov/api/fleet";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -79,11 +80,36 @@ const vehicleSchema = z.object({
   capacity: z.coerce.number().min(
     0,
     "Capacity must be positive",
-  ).max(
-    100,
-    "Capacity too large",
   ),
+  capacityUnit: z.enum([
+    "kg",
+    "lb",
+    "tons",
+    "m3",
+    "pallets",
+  ]).default("tons"),
 });
+
+// ponytail: server-truthful fallback if /capacity-units hasn't loaded yet
+const FALLBACK_UNITS: {
+  value: "kg" | "lb" | "tons" | "m3" | "pallets"; label: string;
+}[] = [
+  {
+    value: "kg", label: "Kilograms (kg)",
+  },
+  {
+    value: "lb", label: "Pounds (lb)",
+  },
+  {
+    value: "tons", label: "Tons",
+  },
+  {
+    value: "m3", label: "Cubic metres (m³)",
+  },
+  {
+    value: "pallets", label: "Pallets",
+  },
+];
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
@@ -104,6 +130,7 @@ export function VehicleFormDialog({
   title,
   isSubmitting = false,
 }: VehicleFormDialogProps) {
+  const { data: capacityUnitsResp } = useCapacityUnits();
   const form = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema),
     defaultValues: {
@@ -115,6 +142,7 @@ export function VehicleFormDialog({
       year: new Date().getFullYear(),
       type: "truck",
       capacity: 0,
+      capacityUnit: "tons",
     },
   });
 
@@ -130,6 +158,7 @@ export function VehicleFormDialog({
           year: vehicle.year,
           type: vehicle.type,
           capacity: vehicle.capacity,
+          capacityUnit: vehicle.capacityUnit ?? "tons",
         });
       }
       else {
@@ -264,7 +293,7 @@ export function VehicleFormDialog({
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
               <FormField
                 control={form.control}
                 name="year"
@@ -314,7 +343,7 @@ export function VehicleFormDialog({
                 name="capacity"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Capacity (tons)</FormLabel>
+                    <FormLabel>Capacity</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -325,6 +354,40 @@ export function VehicleFormDialog({
                     <FormMessage />
                   </FormItem>
                 )}
+              />
+
+              <FormField
+                control={form.control}
+                name="capacityUnit"
+                render={({ field }) => {
+                  const units = capacityUnitsResp?.data?.units ?? FALLBACK_UNITS;
+                  return (
+                    <FormItem>
+                      <FormLabel>Unit</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Unit" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {units.map(u => (
+                            <SelectItem
+                              key={u.value}
+                              value={u.value}
+                            >
+                              {u.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
             </div>
 

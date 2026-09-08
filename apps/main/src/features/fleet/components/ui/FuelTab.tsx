@@ -1,9 +1,10 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   FleetDriver, FuelConsumptionBucket, FuelRecord, Vehicle, VehicleEfficiency,
 } from "@truckmoov/api/fleet";
 import type { PeriodValue } from "./PeriodFilter";
 import {
-  exportFuelTransactions, useDeleteFuelTransaction, useDrivers, useFuelBudgetVsActual, useFuelEfficiency, useFuelMetrics, useFuelSummary, useFuelTransactions, useRecordFuelTransaction, useUpdateFuelTransaction, useVehicles,
+  exportFuelTransactions, useDeleteFuelTransaction, useDrivers, useFuelBudgetVsActual, useFuelEfficiency, useFuelMetrics, useFuelSummary, useFuelTransactionsList, useFuelWeeklyAnalytics, useRecordFuelTransaction, useUpdateFuelTransaction, useVehicles,
 } from "@truckmoov/api/fleet";
 import {
   formatDate, formatDayMonth, formatDayMonthTime, toDateParam,
@@ -43,6 +44,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -71,14 +73,7 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/shadcn/tabs";
@@ -98,8 +93,8 @@ type BudgetChartPoint = {
 
 type FuelConsumptionChartPoint = {
   label: string;
-  diesel: number;
-  petrol: number;
+  // dynamic fuel-type keys populated at runtime; also keep diesel/petrol for legacy monthly bucket path
+  [fuelType: string]: number | string;
 };
 
 type FuelMetricsPeriod = "weekly" | "monthly";
@@ -320,17 +315,29 @@ export function FuelTab() {
   const queryParams = useMemo(
     () => ({
       params: {
+        query: debouncedSearch.trim() || undefined,
+        fuelType: fuelTypeFilter !== "all" ? fuelTypeFilter : undefined,
+        litresFrom: qtyMin ? Number(qtyMin) : undefined,
+        litresTo: qtyMax ? Number(qtyMax) : undefined,
+        totalFrom: costMin ? Number(costMin) : undefined,
+        totalTo: costMax ? Number(costMax) : undefined,
         from: dateFrom ? dateFrom.toISOString() : undefined,
         to: dateTo ? dateTo.toISOString() : undefined,
       },
     }),
     [
+      debouncedSearch,
+      fuelTypeFilter,
+      qtyMin,
+      qtyMax,
+      costMin,
+      costMax,
       dateFrom,
       dateTo,
     ],
   );
 
-  const fuelQuery = useFuelTransactions(queryParams);
+  const fuelQuery = useFuelTransactionsList(queryParams);
   const summaryQuery = useFuelSummary();
   const efficiencyQuery = useFuelEfficiency();
   const vehiclesQuery = useVehicles();
@@ -348,7 +355,8 @@ export function FuelTab() {
       const seen = new Set<string>();
 
       return (vehiclesQuery.data?.data ?? []).flatMap((vehicle) => {
-        const value = vehicle.id;
+        // ponytail: value is the registration string, not id — server accepts vehicleRegistration
+        const value = vehicle.registrationNumber || vehicle.plateNumber || vehicle.id;
         if (!value || seen.has(value))
           return [];
         seen.add(value);
@@ -366,13 +374,14 @@ export function FuelTab() {
       const seen = new Set<string>();
 
       return (driversQuery.data?.data ?? []).flatMap((driver) => {
-        const value = driver.id;
+        // ponytail: value is the driver name, not id — server accepts driverName
+        const value = getDriverDisplayName(driver);
         if (!value || seen.has(value))
           return [];
         seen.add(value);
         return [
           {
-            value, label: getDriverDisplayName(driver),
+            value, label: value,
           },
         ];
       });
@@ -397,32 +406,8 @@ export function FuelTab() {
     station: "",
   });
 
-  const filteredTransactions = transactions.filter((t) => {
-    const query = debouncedSearch.trim().toLocaleLowerCase();
-    if (query && ![
-      t.vehiclePlateNumber,
-      t.vehicleId,
-      t.driverName,
-      t.driverId,
-      t.station,
-    ]
-      .some(value => value?.toLocaleLowerCase().includes(query))) {
-      return false;
-    }
-    if (fuelTypeFilter !== "all" && t.fuelType.toLocaleLowerCase() !== fuelTypeFilter)
-      return false;
-    const qty = t.liters;
-    if (qtyMin && qty < Number(qtyMin))
-      return false;
-    if (qtyMax && qty > Number(qtyMax))
-      return false;
-    const cost = t.totalCost;
-    if (costMin && cost < Number(costMin))
-      return false;
-    if (costMax && cost > Number(costMax))
-      return false;
-    return true;
-  });
+  // ponytail: server-side filtering via useFuelTransactionsList — no local pass
+  const filteredTransactions = transactions;
 
   const uniqueVehicleCount = new Set(filteredTransactions.map(t => t.vehicleId)).size;
   const activeFilterCount
@@ -430,9 +415,111 @@ export function FuelTab() {
       + (costMin || costMax ? 1 : 0)
       + (dateFrom || dateTo ? 1 : 0);
 
+  const hasActiveFuelFilters
+    = !!debouncedSearch
+      || fuelTypeFilter !== "all"
+      || activeFilterCount > 0;
+
+  const fuelColumns: ColumnDef<FuelTransaction>[] = [
+    {
+      id: "vehicle",
+      header: "Vehicle",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Truck className="h-4 w-4 text-muted-foreground" />
+          <span className="font-mono">{row.original.vehiclePlateNumber || row.original.vehicleId}</span>
+        </div>
+      ),
+    },
+    {
+      id: "driver",
+      header: "Driver",
+      cell: ({ row }) => row.original.driverName || row.original.driverId || "-",
+    },
+    {
+      id: "fuelType",
+      header: "Fuel Type",
+      meta: { className: "capitalize" },
+      cell: ({ row }) => row.original.fuelType || "-",
+    },
+    {
+      id: "quantity",
+      header: "Quantity",
+      cell: ({ row }) => `${row.original.liters.toFixed(1)}L`,
+    },
+    {
+      id: "total",
+      header: "Total",
+      meta: { className: "font-medium" },
+      cell: ({ row }) => `₦${row.original.totalCost.toLocaleString()}`,
+    },
+    {
+      id: "station",
+      header: "Station",
+      meta: { className: "max-w-[150px] truncate" },
+      cell: ({ row }) => row.original.station || "-",
+    },
+    {
+      id: "date",
+      header: "Date",
+      cell: ({ row }) => formatDayMonthTime(row.original.recordedAt),
+    },
+    {
+      id: "actions",
+      header: "",
+      meta: { className: "w-[60px]" },
+      cell: ({ row }) => {
+        const transaction = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="bg-popover border-border"
+            >
+              <DropdownMenuItem onClick={() => handleViewTransaction(transaction)}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleEditTransaction(transaction)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setTransactionPendingDelete(transaction)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
   const summary = summaryQuery.data?.data;
+  const weeklyAnalyticsQuery = useFuelWeeklyAnalytics();
+  const weeklyAnalytics = weeklyAnalyticsQuery.data?.data;
+
+  const useWeeklyFromApi = metricsPeriod === "weekly" && !!weeklyAnalytics;
+
   const fuelConsumptionChartData = useMemo<FuelConsumptionChartPoint[]>(
     () => {
+      if (useWeeklyFromApi) {
+        return weeklyAnalytics!.days.map(d => ({
+          label: d.day,
+          ...d.litres,
+        }));
+      }
       return (fuelMetricsQuery.data?.data ?? []).map(bucket => ({
         label: bucket.label,
         diesel: getFuelTypeLiters(
@@ -445,8 +532,26 @@ export function FuelTab() {
         ),
       }));
     },
-    [fuelMetricsQuery.data],
+    [
+      useWeeklyFromApi,
+      weeklyAnalytics,
+      fuelMetricsQuery.data,
+    ],
   );
+
+  const chartFuelTypes = useWeeklyFromApi
+    ? weeklyAnalytics!.fuelTypes
+    : [
+        "diesel",
+        "petrol",
+      ];
+  // ponytail: 4-color palette; extend when a tenant genuinely stocks a 5th fuel type
+  const FUEL_TYPE_COLORS = [
+    "hsl(var(--primary))",
+    "hsl(var(--warning))",
+    "hsl(var(--success))",
+    "hsl(var(--destructive))",
+  ];
   const budgetVsActual = budgetVsActualQuery.data?.data;
   const budgetChartData = useMemo<BudgetChartPoint[]>(
     () => {
@@ -531,8 +636,8 @@ export function FuelTab() {
     try {
       await recordMutation.mutateAsync({
         data: {
-          vehicleId: newTransaction.vehicleReg,
-          driverId: newTransaction.driverName || undefined,
+          vehicleRegistration: newTransaction.vehicleReg,
+          driverName: newTransaction.driverName || undefined,
           vehicleType: selectedVehicle?.type,
           fuelType: newTransaction.fuelType,
           liters,
@@ -545,8 +650,19 @@ export function FuelTab() {
       setIsAddDialogOpen(false);
       resetNewTransaction();
     }
-    catch {
-      toast.error("Failed to record transaction");
+    catch (error) {
+      const err = error as {
+        field?: string; message?: string;
+      };
+      if (err?.field === "vehicleRegistration") {
+        toast.error(
+          err.message ?? "Unknown vehicle registration",
+          { description: "Check the Vehicle Registration field" },
+        );
+      }
+      else {
+        toast.error(err?.message ?? "Failed to record transaction");
+      }
     }
   };
 
@@ -558,8 +674,8 @@ export function FuelTab() {
   const handleEditTransaction = (transaction: FuelTransaction) => {
     setSelectedTransaction(transaction);
     setNewTransaction({
-      vehicleReg: transaction.vehicleId,
-      driverName: transaction.driverId || "",
+      vehicleReg: transaction.vehiclePlateNumber ?? transaction.vehicleId,
+      driverName: transaction.driverName ?? "",
       fuelType: transaction.fuelType.toLocaleLowerCase() === "petrol" ? "petrol" : "diesel",
       quantity: transaction.liters.toString(),
       pricePerLitre: transaction.pricePerLiter.toFixed(0),
@@ -578,8 +694,8 @@ export function FuelTab() {
       await updateMutation.mutateAsync({
         id: selectedTransaction.id,
         data: {
-          vehicleId: newTransaction.vehicleReg,
-          driverId: newTransaction.driverName || undefined,
+          vehicleRegistration: newTransaction.vehicleReg,
+          driverName: newTransaction.driverName || undefined,
           liters,
           pricePerLiter,
           station: newTransaction.station || undefined,
@@ -629,7 +745,7 @@ export function FuelTab() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {[...Array.from({ length: 4 })].map((_, i) => (
             <Card
               key={i}
@@ -657,14 +773,14 @@ export function FuelTab() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/20">
+              <div className="p-2 rounded-lg bg-primary/20 shrink-0">
                 <Droplets className="h-5 w-5 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">
                   {stats.totalLitres.toLocaleString()}
                   L
@@ -677,10 +793,10 @@ export function FuelTab() {
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/20">
+              <div className="p-2 rounded-lg bg-success/20 shrink-0">
                 <DollarSign className="h-5 w-5 text-success" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">
                   ₦
                   {(stats.totalCost / 1000).toFixed(0)}
@@ -694,12 +810,12 @@ export function FuelTab() {
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-accent/20">
+              <div className="p-2 rounded-lg bg-accent/20 shrink-0">
                 <Gauge className="h-5 w-5 text-accent" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">
-                  {stats.avgPricePerLitre > 0 ? `₦${stats.avgPricePerLitre.toFixed(0)}/L` : "—"}
+                  {stats.avgPricePerLitre > 0 ? `₦${stats.avgPricePerLitre.toFixed(0)}/L` : "-"}
                 </p>
                 <p className="text-xs text-muted-foreground">Avg Price</p>
               </div>
@@ -709,10 +825,10 @@ export function FuelTab() {
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-warning/20">
+              <div className="p-2 rounded-lg bg-warning/20 shrink-0">
                 <AlertTriangle className="h-5 w-5 text-warning" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">{lowEfficiencyVehicles}</p>
                 <p className="text-xs text-muted-foreground">Low Efficiency</p>
               </div>
@@ -1042,97 +1158,15 @@ export function FuelTab() {
                 </Popover>
               </div>
             </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border/50 hover:bg-transparent">
-                    <TableHead>Vehicle</TableHead>
-                    <TableHead>Driver</TableHead>
-                    <TableHead>Fuel Type</TableHead>
-                    <TableHead>Quantity</TableHead>
-                    <TableHead>Total</TableHead>
-                    <TableHead>Station</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="w-[60px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTransactions.length === 0
-                    ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={8}
-                            className="text-center py-8 text-muted-foreground"
-                          >
-                            No fuel transactions found.
-                          </TableCell>
-                        </TableRow>
-                      )
-                    : (
-                        filteredTransactions.map(transaction => (
-                          <TableRow
-                            key={transaction.id}
-                            className="border-border/50"
-                          >
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Truck className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-mono">{transaction.vehiclePlateNumber || transaction.vehicleId}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>{transaction.driverName || transaction.driverId || "—"}</TableCell>
-                            <TableCell className="capitalize">
-                              {transaction.fuelType || "—"}
-                            </TableCell>
-                            <TableCell>
-                              {transaction.liters.toFixed(1)}
-                              L
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              ₦
-                              {transaction.totalCost.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="max-w-[150px] truncate">
-                              {transaction.station || "—"}
-                            </TableCell>
-                            <TableCell>{formatDayMonthTime(transaction.recordedAt)}</TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                  align="end"
-                                  className="bg-popover border-border"
-                                >
-                                  <DropdownMenuItem onClick={() => handleViewTransaction(transaction)}>
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View Details
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleEditTransaction(transaction)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => setTransactionPendingDelete(transaction)}
-                                    className="text-destructive focus:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                </TableBody>
-              </Table>
+            <CardContent className="overflow-x-auto p-0">
+              <DataTable
+                columns={fuelColumns}
+                data={filteredTransactions}
+                isLoading={isLoading}
+                hasActiveFilters={hasActiveFuelFilters}
+                emptyState="No fuel transactions recorded."
+                filteredEmptyState="No fuel transactions match your filters."
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -1219,28 +1253,20 @@ export function FuelTab() {
                               }}
                             />
                             <Legend />
-                            <Bar
-                              dataKey="diesel"
-                              name="Diesel (L)"
-                              fill="hsl(var(--primary))"
-                              radius={[
-                                4,
-                                4,
-                                0,
-                                0,
-                              ]}
-                            />
-                            <Bar
-                              dataKey="petrol"
-                              name="Petrol (L)"
-                              fill="hsl(var(--warning))"
-                              radius={[
-                                4,
-                                4,
-                                0,
-                                0,
-                              ]}
-                            />
+                            {chartFuelTypes.map((fuelType, idx) => (
+                              <Bar
+                                key={fuelType}
+                                dataKey={fuelType}
+                                name={`${fuelType.charAt(0).toUpperCase()}${fuelType.slice(1)} (L)`}
+                                fill={FUEL_TYPE_COLORS[idx % FUEL_TYPE_COLORS.length]}
+                                radius={[
+                                  4,
+                                  4,
+                                  0,
+                                  0,
+                                ]}
+                              />
+                            ))}
                           </BarChart>
                         </ResponsiveContainer>
                       )}

@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { FleetFinancialsLayoutContext } from "@/features/fleet/components/layout/FleetFinancialsLayout";
 import type { PeriodValue } from "@/features/fleet/components/ui/PeriodFilter";
 import type { ProfitabilityAnalysisRow } from "@/features/fleet/utils/fleetFinancials";
@@ -18,14 +19,13 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/shadcn/popover";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
+
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   DEMO_PL,
@@ -372,70 +372,77 @@ export default function FinancialsCostBreakdownPage() {
             </Popover>
           </div>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Vehicle</TableHead>
-                <TableHead className="text-right">Fuel</TableHead>
-                <TableHead className="text-right">Maintenance</TableHead>
-                <TableHead className="text-right">Wages</TableHead>
-                <TableHead className="text-right">Insurance</TableHead>
-                <TableHead className="text-right">Depreciation</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {displayData
-                .filter((item) => {
-                  const name = getVehicleName(item.vehicle_id).toLowerCase();
-                  if (costSearch && !name.includes(costSearch.toLowerCase()))
-                    return false;
-                  if (costTotalEnabled) {
-                    const t = item.costs?.total ?? 0;
-                    if (costTotalMin && t < Number(costTotalMin))
-                      return false;
-                    if (costTotalMax && t > Number(costTotalMax))
-                      return false;
-                  }
-                  if (costFuelEnabled) {
-                    const f = item.costs?.fuel ?? 0;
-                    if (costFuelMin && f < Number(costFuelMin))
-                      return false;
-                    if (costFuelMax && f > Number(costFuelMax))
-                      return false;
-                  }
-                  if (costWagesEnabled) {
-                    const m = item.costs?.wages ?? 0;
-                    if (costWagesMin && m < Number(costWagesMin))
-                      return false;
-                    if (costWagesMax && m > Number(costWagesMax))
-                      return false;
-                  }
-                  if (costMaintEnabled) {
-                    const mn = item.costs?.maintenance ?? 0;
-                    if (costMaintMin && mn < Number(costMaintMin))
-                      return false;
-                    if (costMaintMax && mn > Number(costMaintMax))
-                      return false;
-                  }
-                  return true;
-                })
-                .map(item => (
-                  <TableRow key={item.vehicle_id}>
-                    <TableCell className="font-medium">
-                      {getVehicleName(item.vehicle_id)}
-                    </TableCell>
-                    <TableCell className="text-right">{format(item.costs?.fuel || 0)}</TableCell>
-                    <TableCell className="text-right">{format(item.costs?.maintenance || 0)}</TableCell>
-                    <TableCell className="text-right">{format(item.costs?.wages || 0)}</TableCell>
-                    <TableCell className="text-right">{format(item.costs?.insurance || 0)}</TableCell>
-                    <TableCell className="text-right">{format(item.costs?.depreciation || 0)}</TableCell>
-                    <TableCell className="text-right font-semibold">{format(item.costs?.total || 0)}</TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
+        <CardContent className="overflow-x-auto p-0">
+          {(() => {
+            const rows = displayData.filter((item) => {
+              const name = getVehicleName(item.vehicle_id).toLowerCase();
+              if (costSearch && !name.includes(costSearch.toLowerCase()))
+                return false;
+              if (costTotalEnabled) {
+                const t = item.costs?.total ?? 0;
+                if (costTotalMin && t < Number(costTotalMin))
+                  return false;
+                if (costTotalMax && t > Number(costTotalMax))
+                  return false;
+              }
+              if (costFuelEnabled) {
+                const f = item.costs?.fuel ?? 0;
+                if (costFuelMin && f < Number(costFuelMin))
+                  return false;
+                if (costFuelMax && f > Number(costFuelMax))
+                  return false;
+              }
+              if (costWagesEnabled) {
+                const m = item.costs?.wages ?? 0;
+                if (costWagesMin && m < Number(costWagesMin))
+                  return false;
+                if (costWagesMax && m > Number(costWagesMax))
+                  return false;
+              }
+              if (costMaintEnabled) {
+                const mn = item.costs?.maintenance ?? 0;
+                if (costMaintMin && mn < Number(costMaintMin))
+                  return false;
+                if (costMaintMax && mn > Number(costMaintMax))
+                  return false;
+              }
+              return true;
+            });
+            const columns: ColumnDef<ProfitabilityAnalysisRow>[] = [
+              {
+                id: "vehicle",
+                header: "Vehicle",
+                meta: { className: "font-medium" },
+                cell: ({ row }) => getVehicleName(row.original.vehicle_id),
+              },
+              {
+                id: "fuel", header: "Fuel", meta: { className: "text-right" }, cell: ({ row }) => format(row.original.costs?.fuel || 0),
+              },
+              {
+                id: "maintenance", header: "Maintenance", meta: { className: "text-right" }, cell: ({ row }) => format(row.original.costs?.maintenance || 0),
+              },
+              {
+                id: "wages", header: "Wages", meta: { className: "text-right" }, cell: ({ row }) => format(row.original.costs?.wages || 0),
+              },
+              {
+                id: "insurance", header: "Insurance", meta: { className: "text-right" }, cell: ({ row }) => format(row.original.costs?.insurance || 0),
+              },
+              {
+                id: "depreciation", header: "Depreciation", meta: { className: "text-right" }, cell: ({ row }) => format(row.original.costs?.depreciation || 0),
+              },
+              {
+                id: "total", header: "Total", meta: { className: "text-right font-semibold" }, cell: ({ row }) => format(row.original.costs?.total || 0),
+              },
+            ];
+            return (
+              <DataTable
+                columns={columns}
+                data={rows}
+                emptyState="No cost data yet."
+                filteredEmptyState="No vehicles match your filters."
+              />
+            );
+          })()}
         </CardContent>
       </Card>
     </div>

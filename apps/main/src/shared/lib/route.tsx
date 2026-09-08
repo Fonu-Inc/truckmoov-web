@@ -369,6 +369,10 @@ export const router = createBrowserRouter([
                 lazy: async () => ({ Component: (await import("@/features/fleet/components/pages/VehiclesPage")).default }),
               },
               {
+                path: "trips",
+                lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/TripsTab")).TripsTab }),
+              },
+              {
                 path: "schedules",
                 lazy: async () => ({ Component: (await import("@/features/fleet/components/ui/MaintenanceProfilesTab")).MaintenanceProfilesTab }),
               },

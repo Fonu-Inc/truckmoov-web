@@ -80,6 +80,19 @@ export type NearestVehiclesQuery = {
   }
 }
 
+export type CapacityUnit = 'kg' | 'lb' | 'tons' | 'm3' | 'pallets'
+
+export type CapacityUnitInfo = {
+  value: CapacityUnit
+  label: string
+  measures: 'weight' | 'volume' | 'count'
+}
+
+export type CapacityUnitsResponse = ServerResponse<{
+  units: CapacityUnitInfo[]
+  default: CapacityUnit
+}>
+
 export type VehicleInput = {
   model: string
   plateNumber?: string
@@ -90,6 +103,7 @@ export type VehicleInput = {
   type?: VehicleType
   fuelType?: FuelType
   capacity?: number
+  capacityUnit?: CapacityUnit
   status?: VehicleStatus
 }
 
@@ -103,10 +117,19 @@ export type UpdateVehiclePayload = {
 }
 
 export type ImportVehiclesPayload = {
-  data: {
-    items: VehicleInput[]
-  }
+  file: File
 }
+
+export type VehicleImportColumn = {
+  header: string
+  required: boolean
+  example: string
+  note?: string
+}
+
+export type VehicleImportColumnsResponse = ServerResponse<{
+  columns: VehicleImportColumn[]
+}>
 
 export type UpdateVehicleStatusPayload = {
   id: string
@@ -474,10 +497,14 @@ export type ExportReportPayload = {
 // ─── Fuel ─────────────────────────────────────────────────────────────────────
 
 export type FuelTransactionInput = {
-  vehicleId: string
+  vehicleId?: string
+  /** Free-text registration; server rejects with `field: 'vehicleRegistration'` if unknown. */
+  vehicleRegistration?: string
   liters: number
   pricePerLiter: number
   driverId?: string | null
+  /** Free-text name; unknown name is silently accepted and stored driverless. */
+  driverName?: string | null
   vehicleType?: string | null
   fuelType?: FuelType | null
   station?: string | null
@@ -497,6 +524,34 @@ export type FuelQuery = {
     to?: string
   }
 }
+
+export type FuelTransactionsQuery = {
+  params?: {
+    query?: string
+    fuelType?: FuelType
+    litresFrom?: number
+    litresTo?: number
+    totalFrom?: number
+    totalTo?: number
+    vehicleId?: string
+    from?: string
+    to?: string
+  }
+}
+
+export type FuelWeeklyDay = {
+  day: 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat'
+  /** Keyed by fuel type name. */
+  litres: Record<string, number>
+  totalLitres: number
+}
+
+export type FuelWeeklyAnalytics = {
+  fuelTypes: string[]
+  days: FuelWeeklyDay[]
+}
+
+export type FuelWeeklyAnalyticsResponse = ServerResponse<FuelWeeklyAnalytics>
 
 export type UpdateFuelTransactionPayload = {
   id: string
@@ -810,6 +865,10 @@ export type Vehicle = {
   type: VehicleType | null
   fuelType?: FuelType | null
   capacity: number | null
+  capacityUnit?: CapacityUnit | null
+  capacityWeightKg?: number | null
+  capacityVolumeM3?: number | null
+  capacityPallets?: number | null
   tenantId: string
   status: VehicleStatus
   assignedDriverId: string | null
@@ -832,12 +891,22 @@ export type VehicleHealth = {
   healthy: boolean
 }
 
+export type VehicleAllowance = {
+  /** `null` means unlimited. */
+  limit: number | null
+  used: number
+  remaining: number | null
+  usedPercent: number | null
+  unlimited: boolean
+}
+
 export type VehicleSummary = {
   total: number
   active: number
   inactive: number
   maintenance: number
   decommissioned: number
+  allowance?: VehicleAllowance | null
 }
 
 export type DriverContactChannels = {
@@ -1147,11 +1216,18 @@ export type DeviceSetupRequest = {
   updatedAt: string
 }
 
+export type BulkImportSkipped = {
+  line: number
+  message: string
+}
+
 export type BulkImportResult<T> = {
   created: number
   updated: number
   total: number
   records: T[]
+  /** Rows the server could not import; partial success is normal. */
+  skipped?: BulkImportSkipped[]
 }
 
 export type FleetDashboard = {
@@ -1375,7 +1451,35 @@ export type MaintenanceProfilesSummaryResponse = ServerResponse<MaintenanceProfi
 export type MaintenanceServiceCategoriesResponse = ServerResponse<string[]>
 /** Deletes and "send reminders" routes reply with the standard envelope. */
 export type MaintenanceStatusResponse = ServerResponse<Record<string, unknown> | null>
-export type ReminderSendResponse = ServerResponse<{ queued: number; message: string }>
+export type ReminderSendResponse = ServerResponse<{
+  queued: number
+  message: string
+  /** Vehicles due within the schedule's leadDays window right now. */
+  dueInWindow?: number
+}>
+
+export type MaintenanceReminderLeadDays = 7 | 14 | 30 | 60 | 90
+
+export type MaintenanceReminderSchedule = {
+  recipientEmail: string
+  leadDays: MaintenanceReminderLeadDays
+  enabled: boolean
+  lastRunAt: string | null
+  lastSentCount: number | null
+}
+
+export type MaintenanceReminderScheduleResponse = ServerResponse<{
+  schedule: MaintenanceReminderSchedule | null
+  leadDayOptions: MaintenanceReminderLeadDays[]
+}>
+
+export type UpsertMaintenanceReminderSchedulePayload = {
+  data: {
+    recipientEmail: string
+    leadDays: MaintenanceReminderLeadDays
+    enabled?: boolean
+  }
+}
 export type FleetDocumentResponse = ServerResponse<FleetDocument>
 export type FleetDocumentListResponse = ServerResponse<FleetDocument[]>
 export type DownloadUrlResponse = ServerResponse<FleetDownloadUrl>
@@ -1462,6 +1566,10 @@ export type ComplianceDocumentsQuery = {
     documentType?: string
     status?: ComplianceDocumentStatus
     search?: string
+    issuedFrom?: string
+    issuedTo?: string
+    expiringFrom?: string
+    expiringTo?: string
   }
 }
 

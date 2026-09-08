@@ -1,4 +1,9 @@
-import type { Vehicle } from "@/types";
+import type { BulkImportSkipped } from "@truckmoov/api/fleet";
+import {
+  downloadVehicleImportTemplate,
+  useImportVehicles,
+  useVehicleImportColumns,
+} from "@truckmoov/api/fleet";
 import {
   AlertCircle, CheckCircle, Download, FileText, Upload, X,
 } from "lucide-react";
@@ -19,23 +24,19 @@ import { cn } from "@/lib/utils";
 type BulkUploadDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpload: (vehicles: Partial<Vehicle>[]) => void;
 };
 
-type ParsedRow = {
-  registrationNumber: string;
-  vin: string;
-  make: string;
-  model: string;
-  year: number;
-  type: "truck" | "van" | "trailer";
-  capacity: number;
-  isValid: boolean;
-  errors: string[];
+type ImportOutcome = {
+  created: number;
+  updated: number;
+  total: number;
+  skipped: BulkImportSkipped[];
 };
+
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 export function BulkUploadDialog({
-  open, onOpenChange, onUpload,
+  open, onOpenChange,
 }: BulkUploadDialogProps) {
   const [
     isDragging,
@@ -46,100 +47,24 @@ export function BulkUploadDialog({
     setFile,
   ] = useState<File | null>(null);
   const [
-    parsedData,
-    setParsedData,
-  ] = useState<ParsedRow[]>([]);
-  const [
-    _isProcessing,
-    setIsProcessing,
-  ] = useState(false);
-
-  const validateRow = (row: string[]): ParsedRow => {
-    const errors: string[] = [];
-    const [
-      registrationNumber,
-      vin,
-      make,
-      model,
-      yearStr,
-      type,
-      capacityStr,
-    ] = row.map(s =>
-      s?.trim() || "");
-
-    if (!registrationNumber)
-      errors.push("Registration number required");
-    if (!vin || vin.length !== 17)
-      errors.push("VIN must be 17 characters");
-    if (!make)
-      errors.push("Make required");
-    if (!model)
-      errors.push("Model required");
-
-    const year = parseInt(
-      yearStr,
-      10,
-    );
-    if (Number.isNaN(year) || year < 1990 || year > new Date().getFullYear() + 1) {
-      errors.push("Invalid year");
-    }
-
-    const validTypes = [
-      "truck",
-      "van",
-      "trailer",
-    ];
-    const normalizedType = type?.toLowerCase() as "truck" | "van" | "trailer";
-    if (!validTypes.includes(normalizedType)) {
-      errors.push("Type must be truck, van, or trailer");
-    }
-
-    const capacity = Number.parseFloat(capacityStr);
-    if (Number.isNaN(capacity) || capacity < 0) {
-      errors.push("Invalid capacity");
-    }
-
-    return {
-      registrationNumber,
-      vin,
-      make,
-      model,
-      year: year || new Date().getFullYear(),
-      type: normalizedType || "truck",
-      capacity: capacity || 0,
-      isValid: errors.length === 0,
-      errors,
-    };
-  };
-
-  const parseCSV = (content: string): ParsedRow[] => {
-    const lines = content.split("\n").filter(line => line.trim());
-    // Skip header row
-    const dataRows = lines.slice(1);
-    return dataRows.map(line => validateRow(line.split(",")));
-  };
+    outcome,
+    setOutcome,
+  ] = useState<ImportOutcome | null>(null);
+  const importMutation = useImportVehicles();
+  const { data: columnsResp } = useVehicleImportColumns();
 
   const handleFile = useCallback(
-    async (selectedFile: File) => {
-      if (!selectedFile.name.endsWith(".csv")) {
+    (selectedFile: File) => {
+      if (!selectedFile.name.toLowerCase().endsWith(".csv")) {
         toast.error("Please upload a CSV file");
         return;
       }
-
+      if (selectedFile.size > MAX_FILE_BYTES) {
+        toast.error("File exceeds 10 MB limit");
+        return;
+      }
       setFile(selectedFile);
-      setIsProcessing(true);
-
-      try {
-        const content = await selectedFile.text();
-        const parsed = parseCSV(content);
-        setParsedData(parsed);
-      }
-      catch {
-        toast.error("Failed to parse CSV file");
-      }
-      finally {
-        setIsProcessing(false);
-      }
+      setOutcome(null);
     },
     [],
   );
@@ -149,88 +74,96 @@ export function BulkUploadDialog({
       e.preventDefault();
       setIsDragging(false);
       const droppedFile = e.dataTransfer.files[0];
-      if (droppedFile) {
+      if (droppedFile)
         handleFile(droppedFile);
-      }
     },
     [handleFile],
   );
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
+    if (selectedFile)
       handleFile(selectedFile);
-    }
-  };
-
-  const handleImport = () => {
-    const validRows = parsedData.filter(row => row.isValid);
-    if (validRows.length === 0) {
-      toast.error("No valid rows to import");
-      return;
-    }
-    onUpload(
-      validRows.map(row => ({
-        registrationNumber: row.registrationNumber,
-        vin: row.vin,
-        make: row.make,
-        model: row.model,
-        year: row.year,
-        type: row.type,
-        capacity: row.capacity,
-      })),
-    );
   };
 
   const handleReset = () => {
     setFile(null);
-    setParsedData([]);
+    setOutcome(null);
   };
 
-  const downloadTemplate = () => {
-    const template = `Registration Number,VIN,Make,Model,Year,Type,Capacity (tons)
-LAG-123-XY,1HGCM82633A123456,Mercedes-Benz,Actros,2022,truck,40
-LAG-456-AB,2HGCM82633A654321,Volvo,FH16,2023,truck,35`;
-    const blob = new Blob(
-      [template],
-      { type: "text/csv" },
-    );
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "vehicle_import_template.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleClose = () => {
+    handleReset();
+    onOpenChange(false);
   };
 
-  const validCount = parsedData.filter(r => r.isValid).length;
-  const invalidCount = parsedData.filter(r => !r.isValid).length;
+  const handleImport = async () => {
+    if (!file)
+      return;
+    try {
+      const res = await importMutation.mutateAsync({ file });
+      const data = res.data;
+      const skipped = data.skipped ?? [];
+      setOutcome({
+        created: data.created,
+        updated: data.updated,
+        total: data.total,
+        skipped,
+      });
+      const summary = `${data.created} created, ${data.updated} updated${skipped.length ? `, ${skipped.length} skipped` : ""}`;
+      if (skipped.length > 0)
+        toast.warning(`Import complete — ${summary}`);
+      else
+        toast.success(`Import complete — ${summary}`);
+    }
+    catch (error) {
+      const err = error as { message?: string };
+      toast.error(err?.message ?? "Vehicle import failed");
+    }
+  };
+
+  const downloadTemplate = async () => {
+    try {
+      const blob = await downloadVehicleImportTemplate();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "vehicle_import_template.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    catch {
+      toast.error("Failed to download template");
+    }
+  };
+
+  const columns = columnsResp?.data?.columns ?? [];
 
   return (
     <Dialog
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(next) => {
+        if (!next)
+          handleReset();
+        onOpenChange(next);
+      }}
     >
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Bulk Import Vehicles</DialogTitle>
           <DialogDescription>
-            Upload a CSV file to import multiple vehicles at once.
+            Upload a CSV file — the server validates it and imports what it can.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {!file ? (
+          {!file && !outcome && (
             <>
-              {/* Download Template */}
               <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/30 p-3">
                 <div className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-primary" />
                   <div>
                     <p className="text-sm font-medium">Download Template</p>
-                    <p className="text-xs text-muted-foreground">
-                      Use our CSV template for correct formatting
-                    </p>
+                    <p className="text-xs text-muted-foreground">Use the server template for correct columns</p>
                   </div>
                 </div>
                 <Button
@@ -243,7 +176,29 @@ LAG-456-AB,2HGCM82633A654321,Volvo,FH16,2023,truck,35`;
                 </Button>
               </div>
 
-              {/* Drop Zone */}
+              {columns.length > 0 && (
+                <div className="max-h-40 overflow-y-auto rounded-lg border border-border">
+                  <table className="w-full text-xs">
+                    <thead className="bg-secondary sticky top-0">
+                      <tr>
+                        <th className="p-2 text-left">Column</th>
+                        <th className="p-2 text-left">Required</th>
+                        <th className="p-2 text-left">Example</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {columns.map(col => (
+                        <tr key={col.header}>
+                          <td className="p-2 font-medium">{col.header}</td>
+                          <td className="p-2">{col.required ? "yes" : "no"}</td>
+                          <td className="p-2 font-mono text-muted-foreground">{col.example}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
               <div
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -257,10 +212,8 @@ LAG-456-AB,2HGCM82633A654321,Volvo,FH16,2023,truck,35`;
                 )}
               >
                 <Upload className="h-10 w-10 text-muted-foreground mb-4" />
-                <p className="text-sm font-medium mb-1">
-                  Drag and drop your CSV file here
-                </p>
-                <p className="text-xs text-muted-foreground mb-4">or click to browse</p>
+                <p className="text-sm font-medium mb-1">Drag and drop your CSV file here</p>
+                <p className="text-xs text-muted-foreground mb-4">or click to browse (max 10 MB)</p>
                 <input
                   type="file"
                   accept=".csv"
@@ -275,130 +228,103 @@ LAG-456-AB,2HGCM82633A654321,Volvo,FH16,2023,truck,35`;
                 </Button>
               </div>
             </>
-          ) : (
-            <>
-              {/* File Info */}
-              <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                <div className="flex items-center gap-3">
-                  <FileText className="h-8 w-8 text-primary" />
-                  <div>
-                    <p className="font-medium">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(file.size / 1024).toFixed(2)}
-                      {" "}
-                      KB
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={handleReset}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+          )}
 
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-3">
+          {file && !outcome && (
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div className="flex items-center gap-3">
+                <FileText className="h-8 w-8 text-primary" />
+                <div>
+                  <p className="font-medium">{file.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(file.size / 1024).toFixed(2)}
+                    {" "}
+                    KB
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={handleReset}
+                disabled={importMutation.isPending}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          {outcome && (
+            <>
+              <div className="grid grid-cols-3 gap-3">
                 <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 p-3">
                   <CheckCircle className="h-5 w-5 text-success" />
                   <div>
-                    <p className="text-sm font-medium">
-                      {validCount}
-                      {" "}
-                      Valid
-                    </p>
-                    <p className="text-xs text-muted-foreground">Ready to import</p>
+                    <p className="text-sm font-medium">{outcome.created}</p>
+                    <p className="text-xs text-muted-foreground">Created</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-secondary/40 p-3">
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">{outcome.updated}</p>
+                    <p className="text-xs text-muted-foreground">Updated</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3">
                   <AlertCircle className="h-5 w-5 text-destructive" />
                   <div>
-                    <p className="text-sm font-medium">
-                      {invalidCount}
-                      {" "}
-                      Invalid
-                    </p>
-                    <p className="text-xs text-muted-foreground">Has errors</p>
+                    <p className="text-sm font-medium">{outcome.skipped.length}</p>
+                    <p className="text-xs text-muted-foreground">Skipped</p>
                   </div>
                 </div>
               </div>
 
-              {/* Preview */}
-              {parsedData.length > 0 && (
+              {outcome.skipped.length > 0 && (
                 <div className="max-h-48 overflow-y-auto rounded-lg border border-border">
                   <table className="w-full text-xs">
                     <thead className="bg-secondary sticky top-0">
                       <tr>
-                        <th className="p-2 text-left">Status</th>
-                        <th className="p-2 text-left">Registration</th>
-                        <th className="p-2 text-left">Make/Model</th>
-                        <th className="p-2 text-left">Issues</th>
+                        <th className="p-2 text-left">Line</th>
+                        <th className="p-2 text-left">Reason</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {parsedData.slice(
-                        0,
-                        10,
-                      ).map((row, index) => (
-                        <tr
-                          key={index}
-                          className={cn(!row.isValid && "bg-destructive/5")}
-                        >
-                          <td className="p-2">
-                            {row.isValid
-                              ? (
-                                  <CheckCircle className="h-4 w-4 text-success" />
-                                )
-                              : (
-                                  <AlertCircle className="h-4 w-4 text-destructive" />
-                                )}
-                          </td>
-                          <td className="p-2 font-mono">{row.registrationNumber || "—"}</td>
-                          <td className="p-2">
-                            {row.make}
-                            {" "}
-                            {row.model}
-                          </td>
-                          <td className="p-2 text-destructive">
-                            {row.errors.join(", ")}
-                          </td>
+                      {outcome.skipped.map((row, idx) => (
+                        <tr key={`${row.line}-${idx}`}>
+                          <td className="p-2 font-mono">{row.line}</td>
+                          <td className="p-2 text-destructive">{row.message}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  {parsedData.length > 10 && (
-                    <p className="p-2 text-center text-xs text-muted-foreground bg-secondary">
-                      ... and
-                      {" "}
-                      {parsedData.length - 10}
-                      {" "}
-                      more rows
-                    </p>
-                  )}
                 </div>
               )}
             </>
           )}
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleImport}
-              disabled={!file || validCount === 0}
-            >
-              Import
-              {" "}
-              {validCount}
-              {" "}
-              Vehicles
-            </Button>
+            {outcome
+              ? (
+                  <Button onClick={handleClose}>Done</Button>
+                )
+              : (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={handleClose}
+                      disabled={importMutation.isPending}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleImport}
+                      disabled={!file || importMutation.isPending}
+                    >
+                      {importMutation.isPending ? "Importing..." : "Import"}
+                    </Button>
+                  </>
+                )}
           </div>
         </div>
       </DialogContent>

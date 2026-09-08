@@ -2,9 +2,7 @@ import type { FleetFinancialsLayoutContext } from "@/features/fleet/components/l
 import type { PeriodValue } from "@/features/fleet/components/ui/PeriodFilter";
 import type { ProfitabilityTierKey } from "@/features/fleet/utils/fleetFinancials";
 import { useFleetProfitability } from "@truckmoov/api/fleet";
-import {
-  BarChart3, Fuel, Shield, Users, Wrench,
-} from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import {
   useMemo, useState,
 } from "react";
@@ -318,50 +316,6 @@ export default function FinancialsOverviewPage() {
                     </div>
                   )}
           </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-            <Fuel className="h-4 w-4" />
-            {" "}
-            Fuel
-          </div>
-          <div className="font-semibold">{format(costBreakdown.fuel)}</div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-            <Wrench className="h-4 w-4" />
-            {" "}
-            Maintenance
-          </div>
-          <div className="font-semibold">{format(costBreakdown.maintenance)}</div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-            <Users className="h-4 w-4" />
-            {" "}
-            Wages
-          </div>
-          <div className="font-semibold">{format(costBreakdown.wages)}</div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-            <Shield className="h-4 w-4" />
-            {" "}
-            Insurance
-          </div>
-          <div className="font-semibold">{format(costBreakdown.insurance)}</div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-            <BarChart3 className="h-4 w-4" />
-            {" "}
-            Depreciation
-          </div>
-          <div className="font-semibold">{format(costBreakdown.depreciation)}</div>
         </Card>
       </div>
     </div>

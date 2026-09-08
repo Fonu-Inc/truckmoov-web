@@ -11,9 +11,7 @@ import {
 } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/shadcn/select";
+
 import { Separator } from "@/components/shadcn/separator";
 import { Switch } from "@/components/shadcn/switch";
 import { Textarea } from "@/components/shadcn/textarea";
@@ -104,9 +102,10 @@ export function VehiclePLStatementBuilder({
     includePerVehicle,
     setIncludePerVehicle,
   ] = useState(true);
+  // ponytail: accent kept in state to preserve the request body; UI hidden
   const [
     accent,
-    setAccent,
+    _setAccent,
   ] = useState<"blue" | "green" | "amber" | "slate">("blue");
   const [
     downloadingFormat,
@@ -257,21 +256,7 @@ export function VehiclePLStatementBuilder({
                 onChange={e => setNotes(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
-              <Label>Accent Color</Label>
-              <Select
-                value={accent}
-                onValueChange={v => setAccent(v as typeof accent)}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="blue">Blue</SelectItem>
-                  <SelectItem value="green">Green</SelectItem>
-                  <SelectItem value="amber">Amber</SelectItem>
-                  <SelectItem value="slate">Slate</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* ponytail: PDF writer is text-only server-side; unhide when server supports coloured PDFs */}
           </div>
 
           <Separator />

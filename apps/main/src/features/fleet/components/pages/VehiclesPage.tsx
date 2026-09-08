@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { Vehicle as FleetApiVehicle } from "@truckmoov/api/fleet";
 import type { VehiclesFilterValue } from "@/features/fleet/components/ui/VehiclesFilterDialog";
 import type { Vehicle } from "@/types";
@@ -6,7 +7,6 @@ import {
 
   useCreateVehicle,
   useDeleteVehicle,
-  useImportVehicles,
   useUpdateVehicle,
   useVehicles,
   useVehiclesSummary,
@@ -15,7 +15,6 @@ import {
   Download,
   Edit,
   Eye,
-  Loader2,
   MapPin,
   MoreHorizontal,
   Plus,
@@ -45,6 +44,7 @@ import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +52,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
 import { Input } from "@/components/shadcn/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
 import { useAuthStore } from "@/features/auth/stores/authStore";
 import { BulkUploadDialog } from "@/features/fleet/components/ui/BulkUploadDialog";
 import { GeofenceManagementDialog } from "@/features/fleet/components/ui/GeofenceManagementDialog";
@@ -159,7 +166,6 @@ export default function VehiclesPage() {
   const createVehicleMutation = useCreateVehicle();
   const updateVehicleMutation = useUpdateVehicle();
   const deleteVehicleMutation = useDeleteVehicle();
-  const importVehiclesMutation = useImportVehicles();
 
   const vehicles = vehiclesResp?.data ?? [];
 
@@ -179,6 +185,7 @@ export default function VehiclesPage() {
         type: (String(selectedVehicle.type) as Vehicle["type"]) || "truck",
         status: (String(selectedVehicle.status) as Vehicle["status"]) || "active",
         capacity: selectedVehicle.capacity || 0,
+        capacityUnit: (selectedVehicle.capacityUnit ?? undefined) as Vehicle["capacityUnit"],
         currentDriver: selectedVehicle.assignedDriverName ?? selectedVehicle.assignedDriverId ?? undefined,
       };
     },
@@ -199,6 +206,7 @@ export default function VehiclesPage() {
           year: newVehicle.year!,
           type: newVehicle.type!,
           capacity: newVehicle.capacity,
+          capacityUnit: newVehicle.capacityUnit,
           status: "active",
         },
       });
@@ -206,7 +214,19 @@ export default function VehiclesPage() {
       setIsAddDialogOpen(false);
     }
     catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to add vehicle");
+      const err = error as {
+        statusCode?: number; message?: string;
+      };
+      const msg = err?.message ?? "Failed to add vehicle";
+      if (err?.statusCode === 409) {
+        toast.error(
+          msg,
+          { description: "Plan limit reached" },
+        );
+      }
+      else {
+        toast.error(msg);
+      }
     }
   };
 
@@ -225,6 +245,7 @@ export default function VehiclesPage() {
           year: updatedVehicle.year,
           type: updatedVehicle.type,
           capacity: updatedVehicle.capacity,
+          capacityUnit: updatedVehicle.capacityUnit,
         },
       });
       toast.success("Vehicle updated");
@@ -247,31 +268,6 @@ export default function VehiclesPage() {
     }
   };
 
-  const handleBulkUpload = async (newVehicles: Partial<Vehicle>[]) => {
-    try {
-      await importVehiclesMutation.mutateAsync({
-        data: {
-          items: newVehicles.map(v => ({
-            plateNumber: v.plateNumber ?? v.registrationNumber ?? "",
-            registrationNumber: v.registrationNumber ?? "",
-            vin: v.vin ?? "",
-            make: v.make ?? "",
-            model: v.model ?? "",
-            year: v.year ?? new Date().getFullYear(),
-            type: v.type ?? "truck",
-            capacity: v.capacity,
-            status: "active",
-          })),
-        },
-      });
-      toast.success("Vehicles imported");
-      setIsBulkUploadOpen(false);
-    }
-    catch (error) {
-      toast.error(error instanceof Error ? error.message : "Vehicle import failed");
-    }
-  };
-
   const localStatusCounts = {
     all: vehicles.length,
     active: vehicles.filter(v => v.status === "active").length,
@@ -287,6 +283,8 @@ export default function VehiclesPage() {
     maintenance: vehiclesSummaryResp?.data?.maintenance ?? localStatusCounts.maintenance,
     decommissioned: vehiclesSummaryResp?.data?.decommissioned ?? localStatusCounts.decommissioned,
   };
+
+  const allowance = vehiclesSummaryResp?.data?.allowance ?? null;
 
   const handleExportVehicles = async () => {
     setIsExporting(true);
@@ -316,6 +314,174 @@ export default function VehiclesPage() {
     }
   };
 
+  const hasActiveFilters = !!debouncedSearch || activeFilterCount > 0;
+
+  const columns: ColumnDef<FleetApiVehicle>[] = [
+    {
+      id: "vehicle",
+      header: "Vehicle",
+      cell: ({ row }) => {
+        const v = row.original;
+        return (
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+              <Truck className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="font-medium text-sm">
+                {v.make}
+                {" "}
+                {v.model}
+              </p>
+              <p className="text-[11px] text-muted-foreground">{v.year}</p>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "registrationNumber",
+      header: "Registration",
+      cell: ({ row }) => (
+        <span className="rounded bg-secondary px-2 py-1 font-mono text-xs">
+          {row.original.registrationNumber}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "type",
+      header: "Type",
+      meta: { className: "capitalize" },
+    },
+    {
+      accessorKey: "year",
+      header: "Year",
+    },
+    {
+      id: "capacity",
+      header: "Capacity",
+      cell: ({ row }) => {
+        const v = row.original;
+        if (v.capacity === null || v.capacity === undefined)
+          return <span className="text-muted-foreground">-</span>;
+        return (
+          <span>
+            {v.capacity}
+            {" "}
+            {v.capacityUnit ?? "tons"}
+          </span>
+        );
+      },
+    },
+    {
+      id: "driver",
+      header: "Driver",
+      cell: ({ row }) => {
+        const v = row.original;
+        const name = v.assignedDriverName ?? v.assignedDriverId;
+        return (
+          <span className={cn(!name && "text-muted-foreground")}>
+            {name ?? "Unassigned"}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <span
+          className={cn(
+            "rounded-full px-2.5 py-1 text-[11px] font-medium",
+            row.original.status === "active" && "bg-success/10 text-success",
+            row.original.status === "inactive" && "bg-muted text-muted-foreground",
+            row.original.status === "maintenance" && "bg-warning/10 text-warning",
+            row.original.status === "decommissioned" && "bg-destructive/10 text-destructive",
+          )}
+        >
+          {row.original.status}
+        </span>
+      ),
+    },
+    {
+      id: "fuel",
+      header: "Fuel",
+      cell: ({ row }) => {
+        const pct = row.original.fuelLevelPercent;
+        if (pct === null || pct === undefined)
+          return <span className="text-muted-foreground">-</span>;
+        return (
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-14 rounded-full bg-secondary">
+              <div
+                className={cn(
+                  "h-full rounded-full",
+                  pct > 50 ? "bg-success" : pct > 25 ? "bg-warning" : "bg-destructive",
+                )}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="text-[11px] text-muted-foreground">
+              {pct}
+              %
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "",
+      meta: { className: "w-[60px] text-right" },
+      cell: ({ row }) => {
+        const vehicle = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedVehicle(vehicle);
+                  setIsDetailsOpen(true);
+                }}
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                View Details
+              </DropdownMenuItem>
+              {!isAggregatorAdmin && (
+                <>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setSelectedVehicle(vehicle);
+                      setIsEditDialogOpen(true);
+                    }}
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => setDeleteConfirmId(vehicle.id)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
   return (
     <>
       <div className="space-y-6">
@@ -335,16 +501,56 @@ export default function VehiclesPage() {
           </div>
         )}
 
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        {/* ponytail: steps at xl, not md — the fixed w-64 sidebar makes this
+            container ~300px narrower than the viewport md: measures. */}
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
                   <Truck className="h-5 w-5 text-primary" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-sm text-muted-foreground">Total Vehicles</p>
                   <p className="text-2xl font-bold mt-1">{statusCounts.all}</p>
+                  {allowance && (
+                    allowance.unlimited || allowance.limit === null
+                      ? (
+                          <p className="text-[11px] text-muted-foreground mt-1">
+                            {allowance.used}
+                            {" "}
+                            / Unlimited
+                          </p>
+                        )
+                      : (
+                          <div className="mt-1 space-y-1">
+                            <p className="text-[11px] text-muted-foreground">
+                              {allowance.used}
+                              {" "}
+                              /
+                              {allowance.limit}
+                              {" "}
+                              used ·
+                              {allowance.usedPercent ?? 0}
+                              %
+                            </p>
+                            <div className="h-1.5 w-full rounded-full bg-secondary">
+                              <div
+                                className={cn(
+                                  "h-full rounded-full",
+                                  (allowance.usedPercent ?? 0) >= 90 ? "bg-destructive" : (allowance.usedPercent ?? 0) >= 75 ? "bg-warning" : "bg-primary",
+                                )}
+                                style={{
+                                  width: `${Math.min(
+                                    allowance.usedPercent ?? 0,
+                                    100,
+                                  )}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -355,7 +561,7 @@ export default function VehiclesPage() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10 shrink-0">
                   <MapPin className="h-5 w-5 text-success" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm text-muted-foreground">Active</p>
                   <p className="text-2xl font-bold mt-1 text-success">{statusCounts.active}</p>
                 </div>
@@ -368,7 +574,7 @@ export default function VehiclesPage() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10 shrink-0">
                   <Wrench className="h-5 w-5 text-warning" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm text-muted-foreground">In Maintenance</p>
                   <p className="text-2xl font-bold mt-1 text-warning">{statusCounts.maintenance}</p>
                 </div>
@@ -381,7 +587,7 @@ export default function VehiclesPage() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted shrink-0">
                   <Shield className="h-5 w-5 text-muted-foreground" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm text-muted-foreground">Inactive</p>
                   <p className="text-2xl font-bold mt-1 text-muted-foreground">{statusCounts.inactive}</p>
                 </div>
@@ -423,6 +629,25 @@ export default function VehiclesPage() {
                   className="pl-10 bg-card/50 border-border/50"
                 />
               </div>
+              <Select
+                value={filterValue.statusEnabled ? filterValue.status : "all"}
+                onValueChange={v => setFilterValue({
+                  ...filterValue,
+                  status: v as VehiclesFilterValue["status"],
+                  statusEnabled: v !== "all",
+                })}
+              >
+                <SelectTrigger className="w-[160px] bg-card/50 border-border/50">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                  <SelectItem value="decommissioned">Decommissioned</SelectItem>
+                </SelectContent>
+              </Select>
               <VehiclesFilterDialog
                 open={isFilterOpen}
                 onOpenChange={setIsFilterOpen}
@@ -449,166 +674,15 @@ export default function VehiclesPage() {
               />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                    <th className="pb-3 pr-6 font-medium">Vehicle</th>
-                    <th className="pb-3 pr-6 font-medium">Registration</th>
-                    <th className="pb-3 pr-6 font-medium">Type</th>
-                    <th className="pb-3 pr-6 font-medium">Year</th>
-                    <th className="pb-3 pr-6 font-medium">Driver</th>
-                    <th className="pb-3 pr-6 font-medium">Status</th>
-                    <th className="pb-3 pr-6 font-medium">Fuel</th>
-                    <th className="pb-3 font-medium text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {isLoading
-                    ? (
-                        <tr>
-                          <td
-                            colSpan={8}
-                            className="py-12 text-center text-muted-foreground"
-                          >
-                            <Loader2 className="mx-auto h-6 w-6 animate-spin" />
-                          </td>
-                        </tr>
-                      )
-                    : null}
-                  {!isLoading && filteredVehicles.map(vehicle => (
-                    <tr
-                      key={vehicle.id}
-                      className="group transition-colors hover:bg-secondary/30"
-                    >
-                      <td className="py-4 pr-6">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                            <Truck className="h-4 w-4 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">
-                              {vehicle.make}
-                              {" "}
-                              {vehicle.model}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground">{vehicle.year}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4 pr-6">
-                        <span className="rounded bg-secondary px-2 py-1 font-mono text-xs">
-                          {vehicle.registrationNumber}
-                        </span>
-                      </td>
-                      <td className="py-4 pr-6 capitalize">{vehicle.type}</td>
-                      <td className="py-4 pr-6">{vehicle.year}</td>
-                      <td className="py-4 pr-6">
-                        <span
-                          className={cn(
-                            !vehicle.assignedDriverName && !vehicle.assignedDriverId && "text-muted-foreground",
-                          )}
-                        >
-                          {vehicle.assignedDriverName ?? vehicle.assignedDriverId ?? "Unassigned"}
-                        </span>
-                      </td>
-                      <td className="py-4 pr-6">
-                        <span
-                          className={cn(
-                            "rounded-full px-2.5 py-1 text-[11px] font-medium",
-                            vehicle.status === "active" && "bg-success/10 text-success",
-                            vehicle.status === "inactive" && "bg-muted text-muted-foreground",
-                            vehicle.status === "maintenance" && "bg-warning/10 text-warning",
-                            vehicle.status === "decommissioned" && "bg-destructive/10 text-destructive",
-                          )}
-                        >
-                          {vehicle.status}
-                        </span>
-                      </td>
-                      <td className="py-4 pr-6">
-                        {vehicle.fuelLevelPercent !== null && vehicle.fuelLevelPercent !== undefined
-                          ? (
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-14 rounded-full bg-secondary">
-                                  <div
-                                    className={cn(
-                                      "h-full rounded-full",
-                                      vehicle.fuelLevelPercent > 50
-                                        ? "bg-success"
-                                        : vehicle.fuelLevelPercent > 25
-                                          ? "bg-warning"
-                                          : "bg-destructive",
-                                    )}
-                                    style={{ width: `${vehicle.fuelLevelPercent}%` }}
-                                  />
-                                </div>
-                                <span className="text-[11px] text-muted-foreground">
-                                  {vehicle.fuelLevelPercent}
-                                  %
-                                </span>
-                              </div>
-                            )
-                          : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                      </td>
-                      <td className="py-4 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedVehicle(vehicle);
-                                setIsDetailsOpen(true);
-                              }}
-                            >
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
-                            </DropdownMenuItem>
-                            {!isAggregatorAdmin && (
-                              <>
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    setSelectedVehicle(vehicle);
-                                    setIsEditDialogOpen(true);
-                                  }}
-                                >
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive"
-                                  onClick={() => setDeleteConfirmId(vehicle.id)}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {!isLoading && filteredVehicles.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                  <Truck className="h-12 w-12 mb-4 opacity-30" />
-                  <p>No vehicles found</p>
-                  <p className="text-sm">Try adjusting your search or filters</p>
-                </div>
-              )}
-            </div>
+          <CardContent className="overflow-x-auto p-0">
+            <DataTable
+              columns={columns}
+              data={filteredVehicles}
+              isLoading={isLoading}
+              hasActiveFilters={hasActiveFilters}
+              emptyState="No vehicles have been added yet."
+              filteredEmptyState="No vehicles match your search or filters."
+            />
           </CardContent>
         </Card>
       </div>
@@ -640,7 +714,6 @@ export default function VehiclesPage() {
       <BulkUploadDialog
         open={isBulkUploadOpen}
         onOpenChange={setIsBulkUploadOpen}
-        onUpload={handleBulkUpload}
       />
 
       <GeofenceManagementDialog

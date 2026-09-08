@@ -1,6 +1,6 @@
 import type { ElementType } from "react";
 import {
-  BarChart3, Fuel, Shield, TrendingUp, Truck, Wrench,
+  BarChart3, Fuel, Route, Shield, TrendingUp, Truck, Wrench,
 } from "lucide-react";
 
 export type FleetTab = {
@@ -14,6 +14,9 @@ export type FleetTab = {
 export const FLEET_TABS: FleetTab[] = [
   {
     to: "/fleet", label: "Vehicles", icon: Truck, end: true,
+  },
+  {
+    to: "/fleet/trips", label: "Trips", icon: Route, end: true,
   },
   {
     to: "/fleet/schedules", label: "Schedules", icon: Wrench, end: true,

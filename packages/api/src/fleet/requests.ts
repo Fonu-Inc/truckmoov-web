@@ -12,6 +12,7 @@ import type {
   BulkDeviceImportResponse,
   BulkDriverImportResponse,
   BulkVehicleImportResponse,
+  CapacityUnitsResponse,
   CreateMaintenanceRecordPayload,
   CreateDevicePayload,
   CreateDeviceSetupRequestPayload,
@@ -42,6 +43,7 @@ import type {
   FleetAnalyticsFuelLevelsResponse,
   FleetAnalyticsJobPipelineResponse,
   FleetAnalyticsPeriodQuery,
+  FleetAnalyticsShortPeriodDays,
   FleetAnalyticsShortPeriodQuery,
   FleetAnalyticsSummaryResponse,
   FleetArchiveResponse,
@@ -80,12 +82,15 @@ import type {
   FuelSummaryResponse,
   FuelThresholdListResponse,
   FuelThresholdResponse,
+  FuelTransactionsQuery,
+  FuelWeeklyAnalyticsResponse,
   GpsDeviceListResponse,
   ImportDevicesPayload,
   ImportDriversPayload,
   ImportVehiclesPayload,
   LegacyGpsDevicesQuery,
   MaintenanceRecordActionPayload,
+  MaintenanceReminderScheduleResponse,
   MaintenanceRecordListResponse,
   MaintenanceRecordResponse,
   MaintenanceRecordsQuery,
@@ -126,6 +131,8 @@ import type {
   UpdateGeofencePayload,
   UploadDocumentQuery,
   UpsertFuelBudgetPayload,
+  UpsertMaintenanceReminderSchedulePayload,
+  VehicleImportColumnsResponse,
   ValidateDeviceAssignmentQuery,
   VehicleDriverAssignmentResponse,
   VehicleHealthListResponse,
@@ -203,9 +210,32 @@ export async function deleteVehicle({ id }: { id: string }) {
   return data
 }
 
-export async function importVehicles({ data }: ImportVehiclesPayload) {
-  const { data: res } = await axiosInstance.post<BulkVehicleImportResponse>('/fleet/vehicles/import', data)
+export async function importVehicles({ file }: ImportVehiclesPayload) {
+  const form = new FormData()
+  form.append('file', file)
+  const { data: res } = await axiosInstance.post<BulkVehicleImportResponse>(
+    '/fleet/vehicles/import',
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
   return res
+}
+
+export async function downloadVehicleImportTemplate() {
+  const { data } = await axiosInstance.get<Blob>('/fleet/vehicles/import/template', {
+    responseType: 'blob',
+  })
+  return data
+}
+
+export async function getVehicleImportColumns() {
+  const { data } = await axiosInstance.get<VehicleImportColumnsResponse>('/fleet/vehicles/import/columns')
+  return data
+}
+
+export async function getCapacityUnits() {
+  const { data } = await axiosInstance.get<CapacityUnitsResponse>('/fleet/vehicles/capacity-units')
+  return data
 }
 
 // ─── Vehicles — status & assignment ──────────────────────────────────────────
@@ -529,6 +559,14 @@ export async function getFleetAnalyticsDriverScores(payload?: FleetAnalyticsDriv
   return data
 }
 
+export async function exportFleetAnalytics(periodDays: FleetAnalyticsShortPeriodDays) {
+  const { data } = await axiosInstance.get<Blob>('/fleet/analytics/export', {
+    params: { period_days: periodDays },
+    responseType: 'blob',
+  })
+  return data
+}
+
 export async function getFleetAnalyticsEvents(payload?: FleetAnalyticsEventsQuery) {
   const { data } = await axiosInstance.get<FleetAnalyticsEventsResponse>('/fleet/analytics/events', {
     params: payload?.params,
@@ -620,6 +658,17 @@ export async function recordFuelTransaction({ data }: RecordFuelTransactionPaylo
 
 export async function getFuelTransactions(payload?: FuelQuery) {
   const { data } = await axiosInstance.get<FuelRecordListResponse>('/fleet/fuel', { params: payload?.params })
+  return data
+}
+
+/** Filtered transactions list — takes the full filter-panel shape. Existing `getFuelTransactions` remains for the raw list. */
+export async function getFuelTransactionsList(payload?: FuelTransactionsQuery) {
+  const { data } = await axiosInstance.get<FuelRecordListResponse>('/fleet/fuel/transactions', { params: payload?.params })
+  return data
+}
+
+export async function getFuelWeeklyAnalytics() {
+  const { data } = await axiosInstance.get<FuelWeeklyAnalyticsResponse>('/fleet/fuel/analytics/weekly')
   return data
 }
 
@@ -733,6 +782,24 @@ export async function completeMaintenanceRecord({ id }: MaintenanceRecordActionP
 
 export async function sendMaintenanceReminders() {
   const { data } = await axiosInstance.post<ReminderSendResponse>('/fleet/maintenance/reminders/send')
+  return data
+}
+
+export async function getMaintenanceReminderSchedule() {
+  const { data } = await axiosInstance.get<MaintenanceReminderScheduleResponse>('/fleet/maintenance/reminders/schedule')
+  return data
+}
+
+export async function upsertMaintenanceReminderSchedule({ data }: UpsertMaintenanceReminderSchedulePayload) {
+  const { data: res } = await axiosInstance.post<MaintenanceReminderScheduleResponse>(
+    '/fleet/maintenance/reminders/schedule',
+    data,
+  )
+  return res
+}
+
+export async function deleteMaintenanceReminderSchedule() {
+  const { data } = await axiosInstance.delete<MaintenanceReminderScheduleResponse>('/fleet/maintenance/reminders/schedule')
   return data
 }
 

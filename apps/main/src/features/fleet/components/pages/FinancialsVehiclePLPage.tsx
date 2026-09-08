@@ -1,4 +1,6 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type { FleetFinancialsLayoutContext } from "@/features/fleet/components/layout/FleetFinancialsLayout";
+import type { ProfitabilityAnalysisRow } from "@/features/fleet/utils/fleetFinancials";
 import { useFleetProfitability } from "@truckmoov/api/fleet";
 import {
   FileText, Search, SlidersHorizontal,
@@ -13,6 +15,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
@@ -23,9 +26,7 @@ import { Progress } from "@/components/shadcn/progress";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/shadcn/table";
+
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   normalizeProfitabilityRow,
@@ -446,64 +447,71 @@ export default function FinancialsVehiclePLPage() {
             </Popover>
           </div>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Vehicle</TableHead>
-                <TableHead className="text-right">Revenue</TableHead>
-                <TableHead className="text-right">Costs</TableHead>
-                <TableHead className="text-right">Profit</TableHead>
-                <TableHead className="text-right">Margin</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Score</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {vehicleTableData.map(item => (
-                <TableRow key={item.vehicle_id}>
-                  <TableCell className="font-medium">
-                    {getVehicleName(item.vehicle_id)}
-                  </TableCell>
-                  <TableCell className="text-right text-success">
-                    {format(item.revenue?.total || 0)}
-                  </TableCell>
-                  <TableCell className="text-right text-destructive">
-                    {format(item.costs?.total || 0)}
-                  </TableCell>
-                  <TableCell className={`text-right font-semibold ${(item.profitability?.net_profit || 0) >= 0 ? "text-success" : "text-destructive"}`}>
-                    {format(item.profitability?.net_profit || 0)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {(item.profitability?.margin_percent || 0).toFixed(1)}
-                    %
-                  </TableCell>
-                  <TableCell>
-                    {getTierBadge(item.profitability?.tier || "marginal")}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center gap-2 justify-end">
-                      <Progress
-                        value={item.profitability?.score || 0}
-                        className="w-16 h-2"
-                      />
-                      <span className="text-sm">{item.profitability?.score || 0}</span>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {vehicleTableData.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="text-center py-8 text-muted-foreground"
-                  >
-                    {isVehicleProfitabilityFetching ? "Calculating profitability..." : "No matching vehicle profit and loss data."}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+        <CardContent className="overflow-x-auto p-0">
+          {(() => {
+            const plColumns: ColumnDef<ProfitabilityAnalysisRow>[] = [
+              {
+                id: "vehicle",
+                header: "Vehicle",
+                meta: { className: "font-medium" },
+                cell: ({ row }) => getVehicleName(row.original.vehicle_id),
+              },
+              {
+                id: "revenue",
+                header: "Revenue",
+                meta: { className: "text-right text-success" },
+                cell: ({ row }) => format(row.original.revenue?.total || 0),
+              },
+              {
+                id: "costs",
+                header: "Costs",
+                meta: { className: "text-right text-destructive" },
+                cell: ({ row }) => format(row.original.costs?.total || 0),
+              },
+              {
+                id: "profit",
+                header: "Profit",
+                meta: { className: "text-right font-semibold" },
+                cell: ({ row }) => (
+                  <span className={(row.original.profitability?.net_profit || 0) >= 0 ? "text-success" : "text-destructive"}>
+                    {format(row.original.profitability?.net_profit || 0)}
+                  </span>
+                ),
+              },
+              {
+                id: "margin",
+                header: "Margin",
+                meta: { className: "text-right" },
+                cell: ({ row }) => `${(row.original.profitability?.margin_percent || 0).toFixed(1)}%`,
+              },
+              {
+                id: "status",
+                header: "Status",
+                cell: ({ row }) => getTierBadge(row.original.profitability?.tier || "marginal"),
+              },
+              {
+                id: "score",
+                header: "Score",
+                meta: { className: "text-right" },
+                cell: ({ row }) => (
+                  <div className="flex items-center gap-2 justify-end">
+                    <Progress
+                      value={row.original.profitability?.score || 0}
+                      className="w-16 h-2"
+                    />
+                    <span className="text-sm">{row.original.profitability?.score || 0}</span>
+                  </div>
+                ),
+              },
+            ];
+            return (
+              <DataTable
+                columns={plColumns}
+                data={vehicleTableData}
+                emptyState={isVehicleProfitabilityFetching ? "Calculating profitability..." : "No matching vehicle profit and loss data."}
+              />
+            );
+          })()}
         </CardContent>
       </Card>
     </div>

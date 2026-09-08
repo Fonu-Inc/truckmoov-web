@@ -20,9 +20,12 @@ import {
   deleteFuelTransaction,
   deleteMaintenanceProfile,
   deleteMaintenanceRecord,
+  deleteMaintenanceReminderSchedule,
   deleteVehicle,
   downloadDeviceImportTemplate,
+  downloadVehicleImportTemplate,
   exportDevices,
+  exportFleetAnalytics,
   exportFleetCostBreakdown,
   exportFleetFinancialStatement,
   exportFuelTransactions,
@@ -35,6 +38,7 @@ import {
   getAlerts,
   getAllVehicleHealth,
   getAuditLog,
+  getCapacityUnits,
   getComplianceDocumentHistory,
   getDeliveryMetrics,
   getDevice,
@@ -65,6 +69,8 @@ import {
   getFuelSummary,
   getFuelThresholds,
   getFuelTransactions,
+  getFuelTransactionsList,
+  getFuelWeeklyAnalytics,
   getGeofence,
   getGeofences,
   getGeofenceZone,
@@ -74,6 +80,7 @@ import {
   getMaintenanceRecord,
   getMaintenanceRecords,
   getMaintenanceRecordsSummary,
+  getMaintenanceReminderSchedule,
   getMaintenanceServiceCategories,
   getNearestVehicles,
   getReportsDashboard,
@@ -114,7 +121,9 @@ import {
   updateVehicleStatus,
   updateGeofence,
   archiveGeofence,
+  upsertMaintenanceReminderSchedule,
   uploadDocument,
+  getVehicleImportColumns,
   getComplianceDocs,
   getComplianceSummary,
   createComplianceDoc,
@@ -153,6 +162,7 @@ import type {
   FuelBudgetVsActualQuery,
   FuelMetricsQuery,
   FuelQuery,
+  FuelTransactionsQuery,
   DataBundlesQuery,
   DocumentDownloadUrlQuery,
   RecommendDriversQuery,
@@ -207,6 +217,8 @@ export const FLEET_QUERY_KEY = {
   financialConfig: (vehicleId: string) => ['fleet', 'financials', 'config', vehicleId],
   profitability: (payload: FleetProfitabilityPayload) => ['fleet', 'financials', 'profitability', payload],
   fuelTransactions: (payload?: FuelQuery) => ['fleet', 'fuelTransactions', payload],
+  fuelTransactionsList: (payload?: FuelTransactionsQuery) => ['fleet', 'fuelTransactionsList', payload],
+  fuelWeekly: ['fleet', 'fuelWeekly'],
   fuelSummary: ['fleet', 'fuelSummary'],
   fuelMetrics: (payload?: FuelMetricsQuery) => ['fleet', 'fuelMetrics', payload],
   fuelBudgets: ['fleet', 'fuelBudgets'],
@@ -221,6 +233,7 @@ export const FLEET_QUERY_KEY = {
   maintenanceRecords: (payload?: MaintenanceRecordsQuery) => ['fleet', 'maintenanceRecords', payload],
   maintenanceRecord: (id: string) => ['fleet', 'maintenanceRecord', id],
   maintenanceRecordsSummary: ['fleet', 'maintenanceRecordsSummary'],
+  maintenanceReminderSchedule: ['fleet', 'maintenanceReminderSchedule'],
   documents: (payload: DocumentsQuery) => ['fleet', 'documents', payload],
   documentDownloadUrl: (id: string) => ['fleet', 'documentDownloadUrl', id],
   documentAccessLog: (id: string) => ['fleet', 'documentAccessLog', id],
@@ -238,6 +251,8 @@ export const FLEET_QUERY_KEY = {
     params,
   ],
   complianceSummary: ['fleet', 'complianceSummary'],
+  capacityUnits: ['fleet', 'capacityUnits'],
+  vehicleImportColumns: ['fleet', 'vehicleImportColumns'],
 } as const
 
 function invalidateVehicles() {
@@ -535,6 +550,21 @@ export function getFuelTransactionsQueryOptions(payload?: FuelQuery) {
   })
 }
 
+export function getFuelTransactionsListQueryOptions(payload?: FuelTransactionsQuery) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.fuelTransactionsList(payload),
+    queryFn: () => getFuelTransactionsList(payload),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function getFuelWeeklyAnalyticsQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.fuelWeekly,
+    queryFn: getFuelWeeklyAnalytics,
+  })
+}
+
 export function getFuelSummaryQueryOptions() {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.fuelSummary,
@@ -604,6 +634,27 @@ export function getMaintenanceRecordsSummaryQueryOptions() {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.maintenanceRecordsSummary,
     queryFn: () => getMaintenanceRecordsSummary(),
+  })
+}
+
+export function getMaintenanceReminderScheduleQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.maintenanceReminderSchedule,
+    queryFn: getMaintenanceReminderSchedule,
+  })
+}
+
+export function getCapacityUnitsQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.capacityUnits,
+    queryFn: getCapacityUnits,
+  })
+}
+
+export function getVehicleImportColumnsQueryOptions() {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.vehicleImportColumns,
+    queryFn: getVehicleImportColumns,
   })
 }
 
@@ -829,6 +880,14 @@ export function useFuelTransactions(payload?: FuelQuery) {
   return useQuery(getFuelTransactionsQueryOptions(payload))
 }
 
+export function useFuelTransactionsList(payload?: FuelTransactionsQuery) {
+  return useQuery(getFuelTransactionsListQueryOptions(payload))
+}
+
+export function useFuelWeeklyAnalytics() {
+  return useQuery(getFuelWeeklyAnalyticsQueryOptions())
+}
+
 export function useFuelSummary() {
   return useQuery(getFuelSummaryQueryOptions())
 }
@@ -867,6 +926,18 @@ export function useMaintenanceServiceCategories() {
 
 export function useMaintenanceRecordsSummary() {
   return useQuery(getMaintenanceRecordsSummaryQueryOptions())
+}
+
+export function useMaintenanceReminderSchedule() {
+  return useQuery(getMaintenanceReminderScheduleQueryOptions())
+}
+
+export function useCapacityUnits() {
+  return useQuery(getCapacityUnitsQueryOptions())
+}
+
+export function useVehicleImportColumns() {
+  return useQuery(getVehicleImportColumnsQueryOptions())
 }
 
 export function useMaintenanceRecord(id: string) {
@@ -1176,6 +1247,8 @@ export function useRecordFuelTransaction() {
     mutationFn: recordFuelTransaction,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelTransactions'] })
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelTransactionsList'] })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelWeekly })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelSummary })
       queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelMetrics'] })
       queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelBudgetVsActual'] })
@@ -1189,6 +1262,8 @@ export function useUpdateFuelTransaction() {
     mutationFn: updateFuelTransaction,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelTransactions'] })
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelTransactionsList'] })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelWeekly })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelSummary })
       queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelMetrics'] })
       queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelBudgetVsActual'] })
@@ -1202,6 +1277,8 @@ export function useDeleteFuelTransaction() {
     mutationFn: deleteFuelTransaction,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelTransactions'] })
+      queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelTransactionsList'] })
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelWeekly })
       queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.fuelSummary })
       queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelMetrics'] })
       queryClient.invalidateQueries({ queryKey: ['fleet', 'fuelBudgetVsActual'] })
@@ -1320,6 +1397,27 @@ export function useCompleteMaintenanceRecord() {
 export function useSendMaintenanceReminders() {
   return useMutation({
     mutationFn: sendMaintenanceReminders,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.maintenanceReminderSchedule })
+    },
+  })
+}
+
+export function useUpsertMaintenanceReminderSchedule() {
+  return useMutation({
+    mutationFn: upsertMaintenanceReminderSchedule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.maintenanceReminderSchedule })
+    },
+  })
+}
+
+export function useDeleteMaintenanceReminderSchedule() {
+  return useMutation({
+    mutationFn: deleteMaintenanceReminderSchedule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: FLEET_QUERY_KEY.maintenanceReminderSchedule })
+    },
   })
 }
 
@@ -1469,10 +1567,12 @@ export function useUpsertFuelBudget() {
 
 export {
   downloadDeviceImportTemplate,
-  exportFleetCostBreakdown,
-  exportFleetFinancialStatement,
+  downloadVehicleImportTemplate,
   exportComplianceDocs,
   exportDevices,
+  exportFleetAnalytics,
+  exportFleetCostBreakdown,
+  exportFleetFinancialStatement,
   exportFuelTransactions,
   exportMaintenanceProfiles,
   exportMaintenanceRecords,

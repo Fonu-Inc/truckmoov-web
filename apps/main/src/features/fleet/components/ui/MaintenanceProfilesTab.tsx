@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   MaintenanceProfile, MaintenanceProfileIntervalType, MaintenanceProfileLifecycleStatus, MaintenanceProfilesQuery,
 } from "@truckmoov/api/fleet";
@@ -42,6 +43,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -413,10 +415,167 @@ export function MaintenanceProfilesTab() {
 
   const isInitialLoading = profilesQuery.isPending;
 
+  const profileColumns: ColumnDef<MaintenanceProfile>[] = [
+    {
+      id: "vehicle",
+      header: "Vehicle",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Truck className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium">{getVehicleLabel(row.original.vehicleId)}</span>
+        </div>
+      ),
+    },
+    {
+      id: "category",
+      header: "Service Category",
+      meta: { className: "capitalize" },
+      cell: ({ row }) => row.original.serviceLabel || formatServiceLabel(row.original.serviceType),
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge className={statusColors[row.original.lifecycleStatus]}>
+          {statusIcons[row.original.lifecycleStatus]}
+          <span className="ml-1 capitalize">{row.original.lifecycleStatus}</span>
+        </Badge>
+      ),
+    },
+    {
+      id: "nextDueDate",
+      header: "Next Due Date",
+      cell: ({ row }) => {
+        const p = row.original;
+        const d = daysUntil(p.nextDueDate);
+        if (!p.nextDueDate)
+          return <span className="text-muted-foreground">-</span>;
+        return (
+          <div>
+            <p className={cn(
+              "font-medium",
+              d !== null && d < 0 && "text-destructive",
+              d !== null && d >= 0 && d <= 7 && "text-warning",
+            )}
+            >
+              {formatDate(p.nextDueDate)}
+            </p>
+            {d !== null && (
+              <p className="text-[10px] text-muted-foreground">
+                {d < 0 ? `${Math.abs(d)}d overdue` : `${d}d left`}
+              </p>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: "nextDueMileage",
+      header: "Next Due Mileage",
+      cell: ({ row }) => {
+        const p = row.original;
+        const km = getKmUntilDue(p);
+        if (!p.nextDueMileage)
+          return <span className="text-muted-foreground">-</span>;
+        return (
+          <div>
+            <p className={cn(
+              "font-medium",
+              km !== null && km < 0 && "text-destructive",
+            )}
+            >
+              {p.nextDueMileage.toLocaleString()}
+              {" "}
+              km
+            </p>
+            {km !== null && (
+              <p className="text-[10px] text-muted-foreground">
+                {km < 0 ? `${Math.abs(km)} km over` : `${km} km left`}
+              </p>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: "currentMileage",
+      header: "Current Mileage",
+      meta: { className: "font-mono text-xs" },
+      cell: ({ row }) => {
+        const p = row.original;
+        if (!p.currentMileage)
+          return <span className="text-muted-foreground">-</span>;
+        return (
+          <div className="flex items-center gap-1">
+            {p.currentMileage.toLocaleString()}
+            {" "}
+            km
+            <Badge
+              variant="outline"
+              className="text-[10px] px-1"
+            >
+              {p.mileageSource === "telemetry" ? "GPS" : "Manual"}
+            </Badge>
+          </div>
+        );
+      },
+    },
+    {
+      id: "interval",
+      header: "Interval",
+      meta: { className: "capitalize" },
+      cell: ({ row }) => {
+        const p = row.original;
+        if (p.intervalType === "mileage")
+          return `${p.intervalKm?.toLocaleString() ?? "-"} km`;
+        if (p.intervalMonths)
+          return `${p.intervalMonths} months`;
+        if (p.intervalDays)
+          return `${p.intervalDays} days`;
+        if (p.intervalKm)
+          return `${p.intervalKm.toLocaleString()} km`;
+        return "-";
+      },
+    },
+    {
+      id: "actions",
+      header: "",
+      meta: { className: "w-[180px] text-right" },
+      cell: ({ row }) => {
+        const profile = row.original;
+        return (
+          <div className="flex justify-end gap-2">
+            {profile.lifecycleStatus !== "upcoming" && profile.lifecycleStatus !== "completed" && (
+              <Button
+                size="sm"
+                loading={completeProfileMutation.isPending && selectedProfile?.id === profile.id}
+                onClick={() => {
+                  setSelectedProfile(profile);
+                  setIsCompleteDialogOpen(true);
+                }}
+              >
+                <CheckCircle className="h-4 w-4 mr-1" />
+                Complete
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              loading={deleteProfileMutation.isPending}
+              onClick={() => handleArchive(profile)}
+            >
+              <Archive className="h-4 w-4" />
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
+
   if (isInitialLoading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {[...Array.from({ length: 4 })].map((_, i) => (
             <Card
               key={i}
@@ -442,7 +601,7 @@ export function MaintenanceProfilesTab() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <Card className={cn(
           "bg-card/50 border-border/50",
           stats.overdue > 0 && "border-destructive/50",
@@ -450,10 +609,10 @@ export function MaintenanceProfilesTab() {
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-destructive/20">
+              <div className="p-2 rounded-lg bg-destructive/20 shrink-0">
                 <AlertTriangle className="h-5 w-5 text-destructive" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">{stats.overdue}</p>
                 <p className="text-xs text-muted-foreground">Overdue</p>
               </div>
@@ -467,10 +626,10 @@ export function MaintenanceProfilesTab() {
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-warning/20">
+              <div className="p-2 rounded-lg bg-warning/20 shrink-0">
                 <Clock className="h-5 w-5 text-warning" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">{stats.due}</p>
                 <p className="text-xs text-muted-foreground">Due Now</p>
               </div>
@@ -480,10 +639,10 @@ export function MaintenanceProfilesTab() {
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/20">
+              <div className="p-2 rounded-lg bg-primary/20 shrink-0">
                 <Calendar className="h-5 w-5 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">{stats.upcoming}</p>
                 <p className="text-xs text-muted-foreground">Upcoming</p>
               </div>
@@ -493,10 +652,10 @@ export function MaintenanceProfilesTab() {
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-muted">
+              <div className="p-2 rounded-lg bg-muted shrink-0">
                 <Wrench className="h-5 w-5 text-muted-foreground" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">{stats.total}</p>
                 <p className="text-xs text-muted-foreground">Total Profiles</p>
               </div>
@@ -682,187 +841,27 @@ export function MaintenanceProfilesTab() {
             </Popover>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          {profilesQuery.isError
-            ? (
-                <div className="p-12 text-center">
-                  <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
-                  <h3 className="font-semibold mb-2">Unable to load maintenance profiles</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {profilesQuery.error?.message || "Try refreshing the page."}
-                  </p>
-                  <Button
-                    variant="outline"
-                    onClick={() => profilesQuery.refetch()}
-                  >
-                    Retry
-                  </Button>
-                </div>
-              )
-            : profiles.length === 0
-              ? (
-                  <div className="p-12 text-center">
-                    <Wrench className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="font-semibold mb-2">No Maintenance Profiles</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Create maintenance profiles to track scheduled services for your vehicles.
-                    </p>
-                    <Button onClick={() => setIsAddDialogOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add First Profile
-                    </Button>
-                  </div>
-                )
-              : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                          <th className="px-4 py-3 font-medium">Vehicle</th>
-                          <th className="px-4 py-3 font-medium">Service Category</th>
-                          <th className="px-4 py-3 font-medium">Status</th>
-                          <th className="px-4 py-3 font-medium">Next Due Date</th>
-                          <th className="px-4 py-3 font-medium">Next Due Mileage</th>
-                          <th className="px-4 py-3 font-medium">Current Mileage</th>
-                          <th className="px-4 py-3 font-medium">Interval</th>
-                          <th className="px-4 py-3 font-medium text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {profiles.map((profile) => {
-                          const daysUntilDue = daysUntil(profile.nextDueDate);
-                          const kmUntil = getKmUntilDue(profile);
-                          const intervalLabel
-                            = profile.intervalType === "mileage"
-                              ? `${profile.intervalKm?.toLocaleString() ?? "-"} km`
-                              : profile.intervalMonths
-                                ? `${profile.intervalMonths} months`
-                                : profile.intervalDays
-                                  ? `${profile.intervalDays} days`
-                                  : profile.intervalKm
-                                    ? `${profile.intervalKm.toLocaleString()} km`
-                                    : "-";
-
-                          return (
-                            <tr
-                              key={profile.id}
-                              className="group transition-colors hover:bg-secondary/30"
-                            >
-                              <td className="px-4 py-4">
-                                <div className="flex items-center gap-2">
-                                  <Truck className="h-4 w-4 text-muted-foreground" />
-                                  <span className="font-medium">{getVehicleLabel(profile.vehicleId)}</span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-4 capitalize">
-                                {profile.serviceLabel || formatServiceLabel(profile.serviceType)}
-                              </td>
-                              <td className="px-4 py-4">
-                                <Badge className={statusColors[profile.lifecycleStatus]}>
-                                  {statusIcons[profile.lifecycleStatus]}
-                                  <span className="ml-1 capitalize">{profile.lifecycleStatus}</span>
-                                </Badge>
-                              </td>
-                              <td className="px-4 py-4">
-                                {profile.nextDueDate
-                                  ? (
-                                      <div>
-                                        <p
-                                          className={cn(
-                                            "font-medium",
-                                            daysUntilDue !== null && daysUntilDue < 0 && "text-destructive",
-                                            daysUntilDue !== null && daysUntilDue >= 0 && daysUntilDue <= 7 && "text-warning",
-                                          )}
-                                        >
-                                          {formatDate(profile.nextDueDate)}
-                                        </p>
-                                        {daysUntilDue !== null && (
-                                          <p className="text-[10px] text-muted-foreground">
-                                            {daysUntilDue < 0 ? `${Math.abs(daysUntilDue)}d overdue` : `${daysUntilDue}d left`}
-                                          </p>
-                                        )}
-                                      </div>
-                                    )
-                                  : (
-                                      <span className="text-muted-foreground">-</span>
-                                    )}
-                              </td>
-                              <td className="px-4 py-4">
-                                {profile.nextDueMileage
-                                  ? (
-                                      <div>
-                                        <p className={cn(
-                                          "font-medium",
-                                          kmUntil !== null && kmUntil < 0 && "text-destructive",
-                                        )}
-                                        >
-                                          {profile.nextDueMileage.toLocaleString()}
-                                          {" "}
-                                          km
-                                        </p>
-                                        {kmUntil !== null && (
-                                          <p className="text-[10px] text-muted-foreground">
-                                            {kmUntil < 0 ? `${Math.abs(kmUntil)} km over` : `${kmUntil} km left`}
-                                          </p>
-                                        )}
-                                      </div>
-                                    )
-                                  : (
-                                      <span className="text-muted-foreground">-</span>
-                                    )}
-                              </td>
-                              <td className="px-4 py-4 font-mono text-xs">
-                                {profile.currentMileage
-                                  ? (
-                                      <div className="flex items-center gap-1">
-                                        {profile.currentMileage.toLocaleString()}
-                                        {" "}
-                                        km
-                                        <Badge
-                                          variant="outline"
-                                          className="text-[10px] px-1"
-                                        >
-                                          {profile.mileageSource === "telemetry" ? "GPS" : "Manual"}
-                                        </Badge>
-                                      </div>
-                                    )
-                                  : (
-                                      <span className="text-muted-foreground">-</span>
-                                    )}
-                              </td>
-                              <td className="px-4 py-4 capitalize">{intervalLabel}</td>
-                              <td className="px-4 py-4">
-                                <div className="flex justify-end gap-2">
-                                  {profile.lifecycleStatus !== "upcoming" && profile.lifecycleStatus !== "completed" && (
-                                    <Button
-                                      size="sm"
-                                      loading={completeProfileMutation.isPending && selectedProfile?.id === profile.id}
-                                      onClick={() => {
-                                        setSelectedProfile(profile);
-                                        setIsCompleteDialogOpen(true);
-                                      }}
-                                    >
-                                      <CheckCircle className="h-4 w-4 mr-1" />
-                                      Complete
-                                    </Button>
-                                  )}
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    loading={deleteProfileMutation.isPending}
-                                    onClick={() => handleArchive(profile)}
-                                  >
-                                    <Archive className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+        <CardContent className="overflow-x-auto p-0">
+          <DataTable
+            columns={profileColumns}
+            data={profiles}
+            isError={profilesQuery.isError}
+            errorMessage={profilesQuery.error?.message || "Try refreshing the page."}
+            onRetry={() => profilesQuery.refetch()}
+            emptyState={(
+              <div className="p-12 text-center">
+                <Wrench className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-semibold mb-2">No Maintenance Profiles</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Create maintenance profiles to track scheduled services for your vehicles.
+                </p>
+                <Button onClick={() => setIsAddDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add First Profile
+                </Button>
+              </div>
+            )}
+          />
         </CardContent>
       </Card>
 

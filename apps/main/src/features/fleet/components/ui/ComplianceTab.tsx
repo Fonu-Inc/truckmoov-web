@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   ComplianceDocument, ComplianceDocumentStatus,
 } from "@truckmoov/api/fleet";
@@ -39,6 +40,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -66,14 +68,7 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+
 import { cn } from "@/lib/utils";
 
 const statusColors: Record<string, string> = {
@@ -116,24 +111,6 @@ export function ComplianceTab() {
     [searchQuery],
   );
 
-  const docsQuery = useComplianceDocs({
-    search: debouncedSearch || undefined,
-    status: statusFilter !== "all" ? (statusFilter as ComplianceDocumentStatus) : undefined,
-    documentType: docTypeFilter !== "all" ? docTypeFilter : undefined,
-  });
-  const summaryQuery = useComplianceSummary();
-  const documents = docsQuery.data?.data ?? [];
-  const isLoading = docsQuery.isLoading && !docsQuery.data;
-  const isFetching = docsQuery.isFetching;
-  const summary = summaryQuery.data?.data;
-
-  const createMutation = useCreateComplianceDoc();
-  const deleteMutation = useDeleteComplianceDoc();
-  const setFileUrlMutation = useSetComplianceDocFileUrl();
-  const renewMutation = useRenewComplianceDoc();
-  const sendRemindersMutation = useSendComplianceReminders();
-  const isSending = sendRemindersMutation.isPending;
-
   const [
     issueFrom,
     setIssueFrom,
@@ -150,6 +127,28 @@ export function ComplianceTab() {
     expiryTo,
     setExpiryTo,
   ] = useState<Date | undefined>(undefined);
+
+  const docsQuery = useComplianceDocs({
+    search: debouncedSearch || undefined,
+    status: statusFilter !== "all" ? (statusFilter as ComplianceDocumentStatus) : undefined,
+    documentType: docTypeFilter !== "all" ? docTypeFilter : undefined,
+    issuedFrom: issueFrom ? issueFrom.toISOString() : undefined,
+    issuedTo: issueTo ? issueTo.toISOString() : undefined,
+    expiringFrom: expiryFrom ? expiryFrom.toISOString() : undefined,
+    expiringTo: expiryTo ? expiryTo.toISOString() : undefined,
+  });
+  const summaryQuery = useComplianceSummary();
+  const documents = docsQuery.data?.data ?? [];
+  const isLoading = docsQuery.isLoading && !docsQuery.data;
+  const isFetching = docsQuery.isFetching;
+  const summary = summaryQuery.data?.data;
+
+  const createMutation = useCreateComplianceDoc();
+  const deleteMutation = useDeleteComplianceDoc();
+  const setFileUrlMutation = useSetComplianceDocFileUrl();
+  const renewMutation = useRenewComplianceDoc();
+  const sendRemindersMutation = useSendComplianceReminders();
+  const isSending = sendRemindersMutation.isPending;
   const [
     isFilterOpen,
     setIsFilterOpen,
@@ -279,6 +278,107 @@ export function ComplianceTab() {
     expired: summary?.expired ?? 0,
     complianceRate: summary?.complianceRatePercent ?? 0,
   };
+
+  const hasActiveComplianceFilters
+    = !!debouncedSearch
+      || statusFilter !== "all"
+      || docTypeFilter !== "all"
+      || !!issueFrom
+      || !!issueTo
+      || !!expiryFrom
+      || !!expiryTo;
+
+  const complianceColumns: ColumnDef<ComplianceDocument>[] = [
+    {
+      id: "entity",
+      header: "Entity",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Truck className="h-4 w-4 text-muted-foreground" />
+          <div>
+            <p className="font-medium">{row.original.documentName || "Unknown"}</p>
+            <p className="text-xs text-muted-foreground">Vehicle</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "docType", header: "Document Type", cell: ({ row }) => row.original.documentType,
+    },
+    {
+      id: "docNumber", header: "Document Number", meta: { className: "text-muted-foreground" }, cell: () => "-",
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge className={statusColors[row.original.status] || statusColors.valid}>{row.original.status}</Badge>
+      ),
+    },
+    {
+      id: "expiry", header: "Expiry Date", cell: ({ row }) => row.original.expiryDate ? formatDate(row.original.expiryDate) : "-",
+    },
+    {
+      id: "daysLeft",
+      header: "Days Left",
+      cell: ({ row }) => {
+        const daysLeft = row.original.expiryDate ? daysUntil(row.original.expiryDate) ?? 0 : 0;
+        return (
+          <span className={cn(
+            "font-medium",
+            daysLeft < 0 ? "text-destructive" : daysLeft <= 30 ? "text-warning" : "text-success",
+          )}
+          >
+            {daysLeft < 0 ? `${Math.abs(daysLeft)} days overdue` : `${daysLeft} days`}
+          </span>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "",
+      meta: { className: "w-[60px]" },
+      cell: ({ row }) => {
+        const doc = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="bg-popover border-border"
+            >
+              <DropdownMenuItem onClick={() => handleViewDocument(doc)}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Document
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleUploadRenewal(doc)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Renewal
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSetReminder(doc)}>
+                <Bell className="h-4 w-4 mr-2" />
+                Set Reminder
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => setDocumentPendingDelete(doc)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
 
   const handleExportData = async () => {
     try {
@@ -480,7 +580,7 @@ export function ComplianceTab() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-4">
           {[...Array.from({ length: 5 })].map((_, i) => (
             <Card
               key={i}
@@ -519,11 +619,11 @@ export function ComplianceTab() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-4">
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
-            <FileText className="h-5 w-5 text-primary" />
-            <div>
+            <FileText className="h-5 w-5 text-primary shrink-0" />
+            <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Total Documents</p>
               <p className="text-2xl font-bold">{stats.total}</p>
             </div>
@@ -531,8 +631,8 @@ export function ComplianceTab() {
         </Card>
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
-            <CheckCircle className="h-5 w-5 text-success" />
-            <div>
+            <CheckCircle className="h-5 w-5 text-success shrink-0" />
+            <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Valid</p>
               <p className="text-2xl font-bold text-success">{stats.valid}</p>
             </div>
@@ -540,8 +640,8 @@ export function ComplianceTab() {
         </Card>
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
-            <Clock className="h-5 w-5 text-warning" />
-            <div>
+            <Clock className="h-5 w-5 text-warning shrink-0" />
+            <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Expiring Soon</p>
               <p className="text-2xl font-bold text-warning">{stats.expiring}</p>
             </div>
@@ -549,8 +649,8 @@ export function ComplianceTab() {
         </Card>
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
-            <div>
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+            <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Expired</p>
               <p className="text-2xl font-bold text-destructive">{stats.expired}</p>
             </div>
@@ -558,8 +658,8 @@ export function ComplianceTab() {
         </Card>
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
-            <Shield className="h-5 w-5 text-primary" />
-            <div>
+            <Shield className="h-5 w-5 text-primary shrink-0" />
+            <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Compliance Rate</p>
               <p className="text-2xl font-bold">
                 {stats.complianceRate}
@@ -626,6 +726,20 @@ export function ComplianceTab() {
                 <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
               )}
             </div>
+            <Select
+              value={statusFilter}
+              onValueChange={v => setStatusFilter(v as typeof statusFilter)}
+            >
+              <SelectTrigger className="w-[160px] bg-card/50 border-border/50">
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="valid">Valid</SelectItem>
+                <SelectItem value="expiring">Expiring</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
             <Popover
               open={isFilterOpen}
               onOpenChange={setIsFilterOpen}
@@ -909,115 +1023,25 @@ export function ComplianceTab() {
             </Popover>
           </div>
         </CardHeader>
-        <CardContent className="relative">
+        <CardContent className="relative overflow-x-auto p-0">
           {isFetching && !isLoading && (
             <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10 rounded-md">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           )}
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border/50 hover:bg-transparent">
-                <TableHead>Entity</TableHead>
-                <TableHead>Document Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Expiry Date</TableHead>
-                <TableHead>Days Left</TableHead>
-                <TableHead className="w-[60px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDocuments.length === 0
-                ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={6}
-                        className="text-center py-8 text-muted-foreground"
-                      >
-                        No documents found. Add your first compliance document.
-                      </TableCell>
-                    </TableRow>
-                  )
-                : (
-                    filteredDocuments.map((doc) => {
-                      const daysLeft = doc.expiryDate ? daysUntil(doc.expiryDate) : 0;
-                      return (
-                        <TableRow
-                          key={doc.id}
-                          className="border-border/50"
-                        >
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Truck className="h-4 w-4 text-muted-foreground" />
-                              <div>
-                                <p className="font-medium">{doc.documentName || "Unknown"}</p>
-                                <p className="text-xs text-muted-foreground">Vehicle</p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{doc.documentType}</TableCell>
-                          <TableCell>
-                            <Badge className={statusColors[doc.status] || statusColors.valid}>{doc.status}</Badge>
-                          </TableCell>
-                          <TableCell>{doc.expiryDate ? formatDate(doc.expiryDate) : "—"}</TableCell>
-                          <TableCell>
-                            <span
-                              className={cn(
-                                "font-medium",
-                                daysLeft < 0
-                                  ? "text-destructive"
-                                  : daysLeft <= 30
-                                    ? "text-warning"
-                                    : "text-success",
-                              )}
-                            >
-                              {daysLeft < 0
-                                ? `${Math.abs(daysLeft)} days overdue`
-                                : `${daysLeft} days`}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="end"
-                                className="bg-popover border-border"
-                              >
-                                <DropdownMenuItem onClick={() => handleViewDocument(doc)}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Document
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleUploadRenewal(doc)}>
-                                  <Upload className="h-4 w-4 mr-2" />
-                                  Upload Renewal
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleSetReminder(doc)}>
-                                  <Bell className="h-4 w-4 mr-2" />
-                                  Set Reminder
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive"
-                                  onClick={() => setDocumentPendingDelete(doc)}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={complianceColumns}
+            data={filteredDocuments}
+            isLoading={isLoading}
+            hasActiveFilters={hasActiveComplianceFilters}
+            emptyState="No documents found. Add your first compliance document."
+            filteredEmptyState="No compliance documents match your filters."
+          />
+          {(issueFrom || issueTo || expiryFrom || expiryTo) && (
+            <p className="px-4 pb-3 text-[11px] text-muted-foreground">
+              Documents without a date in the filtered field are hidden.
+            </p>
+          )}
         </CardContent>
       </Card>
 

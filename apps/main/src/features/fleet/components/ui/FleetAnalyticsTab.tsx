@@ -7,6 +7,7 @@ import type {
 } from "@truckmoov/api/fleet";
 import type { PeriodValue } from "./PeriodFilter";
 import {
+  exportFleetAnalytics,
   useFleetAnalyticsDriverScores,
   useFleetAnalyticsEvents,
   useFleetAnalyticsFleetStatus,
@@ -17,11 +18,9 @@ import {
 import {
   Activity,
   AlertTriangle,
-  CheckCircle,
   DollarSign,
-  Eye,
+  Download,
   Fuel,
-  Gauge,
   Loader2,
   Package,
   RefreshCw,
@@ -54,6 +53,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { toast } from "sonner";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
@@ -317,7 +317,7 @@ function KPICard({
     <Card className="relative overflow-hidden border-border/50">
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
-          <div className="space-y-1.5">
+          <div className="min-w-0 space-y-1.5">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</p>
             <p className="text-2xl font-bold">{value}</p>
             {(subtitle || trendValue) && (
@@ -338,7 +338,7 @@ function KPICard({
               </div>
             )}
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
             <Icon className="h-5 w-5 text-primary" />
           </div>
         </div>
@@ -389,6 +389,10 @@ export function FleetAnalyticsTab() {
     eventFeedLimit,
     setEventFeedLimit,
   ] = useState<LimitValue>("10");
+  const [
+    isExporting,
+    setIsExporting,
+  ] = useState(false);
   const [
     eventFeedSeverity,
     setEventFeedSeverity,
@@ -462,11 +466,6 @@ export function FleetAnalyticsTab() {
           0,
         ) / safetyScores.length)
       : 0;
-  const recent24hEvents = events.filter((event) => {
-    const triggeredAt = new Date(event.triggeredAt).getTime();
-    return Number.isFinite(triggeredAt) && Date.now() - triggeredAt <= 24 * 60 * 60 * 1000;
-  }).length;
-
   const fleetStatusChart = useMemo(
     () => {
       const byStatus = fleetStatus?.byStatus ?? {};
@@ -611,6 +610,33 @@ export function FleetAnalyticsTab() {
           <Button
             variant="outline"
             size="sm"
+            onClick={async () => {
+              try {
+                setIsExporting(true);
+                const periodDays = toShortPeriodDays(summaryPeriod);
+                const blob = await exportFleetAnalytics(periodDays);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `fleet-analytics-${periodDays}d.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }
+              catch {
+                toast.error("Analytics export failed");
+              }
+              finally {
+                setIsExporting(false);
+              }
+            }}
+            disabled={isExporting}
+          >
+            <Download className="mr-2 h-3.5 w-3.5" />
+            Export Data
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={refreshAll}
             disabled={isRefreshing}
           >
@@ -624,7 +650,7 @@ export function FleetAnalyticsTab() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         <KPICard
           title="Fleet Utilization"
           value={`${fleetUtilization}%`}
@@ -1085,36 +1111,6 @@ export function FleetAnalyticsTab() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card className="border-border/50 bg-success/5">
-          <CardContent className="p-4 text-center">
-            <CheckCircle className="mx-auto mb-1.5 h-7 w-7 text-success" />
-            <p className="text-xl font-bold">{completedJobs}</p>
-            <p className="text-xs text-muted-foreground">Completed Jobs</p>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50 bg-warning/5">
-          <CardContent className="p-4 text-center">
-            <AlertTriangle className="mx-auto mb-1.5 h-7 w-7 text-warning" />
-            <p className="text-xl font-bold">{summary?.safety.open ?? 0}</p>
-            <p className="text-xs text-muted-foreground">Safety Alerts</p>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50 bg-primary/5">
-          <CardContent className="p-4 text-center">
-            <Gauge className="mx-auto mb-1.5 h-7 w-7 text-primary" />
-            <p className="text-xl font-bold">{averageSafetyScore || "-"}</p>
-            <p className="text-xs text-muted-foreground">Avg Safety Score</p>
-          </CardContent>
-        </Card>
-        <Card className="border-border/50 bg-accent/5">
-          <CardContent className="p-4 text-center">
-            <Eye className="mx-auto mb-1.5 h-7 w-7 text-accent-foreground" />
-            <p className="text-xl font-bold">{recent24hEvents}</p>
-            <p className="text-xs text-muted-foreground">Events (24h)</p>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

@@ -111,6 +111,7 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   {
     label: "Fleets", href: "/fleet", icon: Truck,
     labelByRole: {
+      ENTERPRISE_ADMIN: "My Vehicles",
       OWNER_OPERATOR: "My Vehicles",
       OPERATIONS_MANAGER: "Vehicles",
     },

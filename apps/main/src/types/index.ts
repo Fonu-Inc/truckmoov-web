@@ -120,6 +120,7 @@ export type Vehicle = {
   type: "truck" | "van" | "trailer";
   status: "active" | "inactive" | "maintenance" | "decommissioned";
   capacity: number;
+  capacityUnit?: "kg" | "lb" | "tons" | "m3" | "pallets";
   currentDriver?: string;
   deviceId?: string;
   location?: {

@@ -1,5 +1,7 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import type {
   MaintenanceRecord, MaintenanceRecordDisplayStatus, MaintenanceRecordPriority,
+  MaintenanceReminderLeadDays,
 } from "@truckmoov/api/fleet";
 import {
   exportMaintenanceRecords,
@@ -7,11 +9,14 @@ import {
   useCompleteMaintenanceRecord,
   useCreateMaintenanceRecord,
   useDeleteMaintenanceRecord,
+  useDeleteMaintenanceReminderSchedule,
   useMaintenanceRecords,
   useMaintenanceRecordsSummary,
+  useMaintenanceReminderSchedule,
   useSendMaintenanceReminders,
   useStartMaintenanceRecord,
   useUpdateMaintenanceRecord,
+  useUpsertMaintenanceReminderSchedule,
   useVehicles,
 } from "@truckmoov/api/fleet";
 import {
@@ -22,7 +27,6 @@ import {
   Calendar,
   CheckCircle,
   Clock,
-  DollarSign,
   Download,
   Edit,
   Eye,
@@ -57,6 +61,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
 import { Checkbox } from "@/components/shadcn/checkbox";
+import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog,
   DialogContent,
@@ -84,14 +89,7 @@ import {
   SelectValue,
 } from "@/components/shadcn/select";
 import { Skeleton } from "@/components/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/shadcn/table";
+
 import { Textarea } from "@/components/shadcn/textarea";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { cn } from "@/lib/utils";
@@ -319,6 +317,17 @@ export function MaintenanceTab() {
   const startRecordMutation = useStartMaintenanceRecord();
   const completeRecordMutation = useCompleteMaintenanceRecord();
   const sendRemindersMutation = useSendMaintenanceReminders();
+  const scheduleQuery = useMaintenanceReminderSchedule();
+  const upsertScheduleMutation = useUpsertMaintenanceReminderSchedule();
+  const deleteScheduleMutation = useDeleteMaintenanceReminderSchedule();
+  const schedule = scheduleQuery.data?.data?.schedule ?? null;
+  const leadDayOptions = scheduleQuery.data?.data?.leadDayOptions ?? [
+    7,
+    14,
+    30,
+    60,
+    90,
+  ] as MaintenanceReminderLeadDays[];
 
   const vehicles = useMemo(
     () => vehiclesQuery.data?.data ?? [],
@@ -342,6 +351,32 @@ export function MaintenanceTab() {
       if (!vehicle)
         return vehicleReference;
       return vehicle.registrationNumber || vehicle.plateNumber || `${vehicle.make ?? ""} ${vehicle.model}`.trim() || vehicle.id;
+    },
+    [vehicles],
+  );
+
+  const getVehicleMake = useCallback(
+    (vehicleReference: string) => {
+      const v = vehicles.find(
+        item =>
+          item.id === vehicleReference
+          || item.registrationNumber === vehicleReference
+          || item.plateNumber === vehicleReference,
+      );
+      return v?.make || "-";
+    },
+    [vehicles],
+  );
+
+  const getVehicleModel = useCallback(
+    (vehicleReference: string) => {
+      const v = vehicles.find(
+        item =>
+          item.id === vehicleReference
+          || item.registrationNumber === vehicleReference
+          || item.plateNumber === vehicleReference,
+      );
+      return v?.model || "-";
     },
     [vehicles],
   );
@@ -433,6 +468,7 @@ export function MaintenanceTab() {
 
   const summary = summaryQuery.data?.data;
   const stats = {
+    total: records.length,
     scheduled: summary?.scheduled ?? localStats.scheduled,
     inProgress: summary?.inProgress ?? localStats.inProgress,
     overdue: summary?.overdue ?? localStats.overdue,
@@ -442,6 +478,139 @@ export function MaintenanceTab() {
 
   const isLoading = recordsQuery.isPending;
   const isSending = sendRemindersMutation.isPending;
+  const hasActiveMaintenanceFilters
+    = !!debouncedSearch
+      || statusFilter !== "all"
+      || priorityFilter !== "all"
+      || typeFilter !== "all"
+      || !!costMin
+      || !!costMax;
+
+  const maintenanceColumns: ColumnDef<MaintenanceRecordWithDisplay>[] = [
+    {
+      id: "registration",
+      header: "Registration No.",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Truck className="h-4 w-4 text-muted-foreground" />
+          <span className="font-mono">{getVehicleLabel(row.original.vehicleId)}</span>
+        </div>
+      ),
+    },
+    {
+      id: "make",
+      header: "Make",
+      cell: ({ row }) => getVehicleMake(row.original.vehicleId),
+    },
+    {
+      id: "model",
+      header: "Model",
+      cell: ({ row }) => getVehicleModel(row.original.vehicleId),
+    },
+    {
+      id: "category",
+      header: "Service Category",
+      meta: { className: "text-muted-foreground" },
+      cell: ({ row }) => row.original.description || "-",
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge className={statusColors[row.original.displayStatus] || statusColors.scheduled}>
+          {row.original.displayStatus.replace(
+            "_",
+            " ",
+          )}
+        </Badge>
+      ),
+    },
+    {
+      id: "priority",
+      header: "Priority",
+      cell: ({ row }) => (
+        <Badge className={priorityColors[row.original.priority] || priorityColors.medium}>
+          {row.original.priority}
+        </Badge>
+      ),
+    },
+    {
+      id: "scheduled",
+      header: "Scheduled Time",
+      cell: ({ row }) => {
+        const record = row.original;
+        return (
+          <div className="text-sm">
+            {formatDate(
+              record.scheduledDate,
+              "Not scheduled",
+            )}
+            {record.displayStatus === "overdue" && record.scheduledDate
+              ? (
+                  <p className="text-xs text-destructive">
+                    {Math.abs(daysUntil(record.scheduledDate) ?? 0)}
+                    {" "}
+                    days overdue
+                  </p>
+                )
+              : null}
+          </div>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "",
+      meta: { className: "w-[60px]" },
+      cell: ({ row }) => {
+        const record = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="bg-popover border-border"
+            >
+              <DropdownMenuItem onClick={() => handleViewDetails(record)}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Details
+              </DropdownMenuItem>
+              {record.status === "scheduled" && (
+                <DropdownMenuItem onClick={() => handleStartMaintenance(record.id)}>
+                  <Play className="h-4 w-4 mr-2" />
+                  Start
+                </DropdownMenuItem>
+              )}
+              {record.status === "in_progress" && (
+                <DropdownMenuItem onClick={() => handleCompleteRecord(record.id)}>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Complete
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => handleEditRecord(record)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setRecordPendingDelete(record)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
 
   const resetNewRecord = () => {
     setNewRecord(buildDefaultRecord());
@@ -590,20 +759,60 @@ export function MaintenanceTab() {
     }
   };
 
-  const handleSendReminders = async () => {
+  useEffect(
+    () => {
+      if (isSendRemindersDialogOpen && schedule) {
+        setRecipientEmail(schedule.recipientEmail);
+        setReminderDaysBefore(String(schedule.leadDays));
+      }
+    },
+    [
+      isSendRemindersDialogOpen,
+      schedule,
+    ],
+  );
+
+  const handleSaveSchedule = async () => {
     if (!recipientEmail) {
       toast.error("Please enter a recipient email");
       return;
     }
-
+    const leadDays = Number(reminderDaysBefore) as MaintenanceReminderLeadDays;
     try {
-      await sendRemindersMutation.mutateAsync();
-      toast.success("Maintenance reminders queued");
-      setIsSendRemindersDialogOpen(false);
+      await upsertScheduleMutation.mutateAsync({
+        data: {
+          recipientEmail, leadDays, enabled: true,
+        },
+      });
+      toast.success("Reminder schedule saved");
+    }
+    catch (error) {
+      const err = error as { message?: string };
+      toast.error(err?.message ?? "Failed to save schedule");
+    }
+  };
+
+  const handleDeleteSchedule = async () => {
+    try {
+      await deleteScheduleMutation.mutateAsync();
+      toast.success("Reminder schedule removed");
       setRecipientEmail("");
     }
     catch (error) {
-      toast.error(error.message || "Failed to send reminders");
+      const err = error as { message?: string };
+      toast.error(err?.message ?? "Failed to remove schedule");
+    }
+  };
+
+  const handleSendReminders = async () => {
+    try {
+      const res = await sendRemindersMutation.mutateAsync();
+      const due = res.data?.dueInWindow;
+      toast.success(due !== undefined ? `Sent — ${due} vehicles due in the next ${schedule?.leadDays ?? reminderDaysBefore} days` : "Maintenance reminders queued");
+    }
+    catch (error) {
+      const err = error as { message?: string };
+      toast.error(err?.message ?? "Failed to send reminders");
     }
   };
 
@@ -628,7 +837,7 @@ export function MaintenanceTab() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-4">
           {[...Array.from({ length: 5 })].map((_, i) => (
             <Card
               key={i}
@@ -662,14 +871,27 @@ export function MaintenanceTab() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-4">
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/20">
+              <div className="p-2 rounded-lg bg-primary/20 shrink-0">
+                <Wrench className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-xs text-muted-foreground">Total Maintenance Records</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/50 border-border/50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/20 shrink-0">
                 <Calendar className="h-5 w-5 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">{stats.scheduled}</p>
                 <p className="text-xs text-muted-foreground">Scheduled</p>
               </div>
@@ -679,10 +901,10 @@ export function MaintenanceTab() {
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-warning/20">
+              <div className="p-2 rounded-lg bg-warning/20 shrink-0">
                 <Clock className="h-5 w-5 text-warning" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">{stats.inProgress}</p>
                 <p className="text-xs text-muted-foreground">In Progress</p>
               </div>
@@ -692,10 +914,10 @@ export function MaintenanceTab() {
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-destructive/20">
+              <div className="p-2 rounded-lg bg-destructive/20 shrink-0">
                 <AlertTriangle className="h-5 w-5 text-destructive" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">{stats.overdue}</p>
                 <p className="text-xs text-muted-foreground">Overdue</p>
               </div>
@@ -705,29 +927,12 @@ export function MaintenanceTab() {
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/20">
+              <div className="p-2 rounded-lg bg-success/20 shrink-0">
                 <CheckCircle className="h-5 w-5 text-success" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-2xl font-bold">{stats.completed}</p>
                 <p className="text-xs text-muted-foreground">Completed</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-accent/20">
-                <DollarSign className="h-5 w-5 text-accent" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  NGN
-                  {(stats.totalCost / 1000).toFixed(0)}
-                  K
-                </p>
-                <p className="text-xs text-muted-foreground">Total Cost</p>
               </div>
             </div>
           </CardContent>
@@ -773,6 +978,21 @@ export function MaintenanceTab() {
                 <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
               )}
             </div>
+            <Select
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+            >
+              <SelectTrigger className="w-[160px] bg-card/50 border-border/50">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="overdue">Overdue</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
             <Popover
               open={filterOpen}
               onOpenChange={(open) => {
@@ -979,129 +1199,15 @@ export function MaintenanceTab() {
             </Popover>
           </div>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border/50 hover:bg-transparent">
-                <TableHead>Vehicle</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Scheduled</TableHead>
-                <TableHead>Cost</TableHead>
-                <TableHead className="w-[60px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredRecords.length === 0
-                ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="text-center py-8 text-muted-foreground"
-                      >
-                        No maintenance records found.
-                      </TableCell>
-                    </TableRow>
-                  )
-                : (
-                    filteredRecords.map(record => (
-                      <TableRow
-                        key={record.id}
-                        className="border-border/50"
-                      >
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Truck className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-mono">{getVehicleLabel(record.vehicleId)}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="capitalize">{record.maintenanceType}</TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[record.displayStatus] || statusColors.scheduled}>
-                            {record.displayStatus.replace(
-                              "_",
-                              " ",
-                            )}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={priorityColors[record.priority] || priorityColors.medium}>
-                            {record.priority}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            {formatDate(
-                              record.scheduledDate,
-                              "Not scheduled",
-                            )}
-                            {record.displayStatus === "overdue" && record.scheduledDate
-                              ? (
-                                  <p className="text-xs text-destructive">
-                                    {Math.abs(daysUntil(record.scheduledDate) ?? 0)}
-                                    {" "}
-                                    days overdue
-                                  </p>
-                                )
-                              : null}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {formatCurrency(
-                            record.cost,
-                            record.currency,
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                              align="end"
-                              className="bg-popover border-border"
-                            >
-                              <DropdownMenuItem onClick={() => handleViewDetails(record)}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              {record.status === "scheduled" && (
-                                <DropdownMenuItem onClick={() => handleStartMaintenance(record.id)}>
-                                  <Play className="h-4 w-4 mr-2" />
-                                  Start
-                                </DropdownMenuItem>
-                              )}
-                              {record.status === "in_progress" && (
-                                <DropdownMenuItem onClick={() => handleCompleteRecord(record.id)}>
-                                  <CheckCircle className="h-4 w-4 mr-2" />
-                                  Complete
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem onClick={() => handleEditRecord(record)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => setRecordPendingDelete(record)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-            </TableBody>
-          </Table>
+        <CardContent className="overflow-x-auto p-0">
+          <DataTable
+            columns={maintenanceColumns}
+            data={filteredRecords}
+            isLoading={isLoading}
+            hasActiveFilters={hasActiveMaintenanceFilters}
+            emptyState="No maintenance records yet."
+            filteredEmptyState="No maintenance records match your filters."
+          />
         </CardContent>
       </Card>
 
@@ -1507,8 +1613,12 @@ export function MaintenanceTab() {
       >
         <DialogContent className="bg-card border-border max-w-md">
           <DialogHeader>
-            <DialogTitle>Send Maintenance Reminders</DialogTitle>
-            <DialogDescription>Send email reminders for upcoming and overdue maintenance.</DialogDescription>
+            <DialogTitle>Maintenance Reminders</DialogTitle>
+            <DialogDescription>
+              {schedule
+                ? "Update the recurring schedule, or send it now."
+                : "Save a schedule to have reminders sent automatically."}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -1521,7 +1631,7 @@ export function MaintenanceTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Remind me before</Label>
+              <Label>Lead days</Label>
               <Select
                 value={reminderDaysBefore}
                 onValueChange={setReminderDaysBefore}
@@ -1530,28 +1640,59 @@ export function MaintenanceTab() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="7">7 days</SelectItem>
-                  <SelectItem value="14">14 days</SelectItem>
-                  <SelectItem value="30">30 days</SelectItem>
-                  <SelectItem value="60">60 days</SelectItem>
-                  <SelectItem value="90">90 days</SelectItem>
+                  {leadDayOptions.map(d => (
+                    <SelectItem
+                      key={d}
+                      value={String(d)}
+                    >
+                      {d}
+                      {" "}
+                      days
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
+            {schedule && (
+              <div className="rounded-md border border-border bg-secondary/30 p-3 text-xs text-muted-foreground">
+                Last run:
+                {" "}
+                {schedule.lastRunAt ? formatDate(schedule.lastRunAt) : "never"}
+                {" "}
+                · Sent
+                {" "}
+                {schedule.lastSentCount ?? 0}
+              </div>
+            )}
           </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsSendRemindersDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSendReminders}
-              loading={isSending}
-            >
-              Send Reminders
-            </Button>
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
+            <div>
+              {schedule && (
+                <Button
+                  variant="ghost"
+                  onClick={handleDeleteSchedule}
+                  loading={deleteScheduleMutation.isPending}
+                >
+                  Delete schedule
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleSaveSchedule}
+                loading={upsertScheduleMutation.isPending}
+              >
+                Save schedule
+              </Button>
+              <Button
+                onClick={handleSendReminders}
+                loading={isSending}
+                disabled={!schedule}
+              >
+                Send now
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
