@@ -128,7 +128,13 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   // ─── Drivers ───────────────────────────────────────────────────
   {
     label: "Drivers", href: "/drivers", icon: Users,
+    labelByRole: {
+      ENTERPRISE_ADMIN: "My Drivers",
+      OWNER_OPERATOR: "My Drivers",
+    },
     hasPermission: [
+      "ENTERPRISE_ADMIN",
+      "OWNER_OPERATOR",
       "FLEET_ADMIN",
       "AGGREGATOR_ADMIN",
       "DISPATCHER",
@@ -138,6 +144,10 @@ export const SIDEBAR_ENTRIES: (SidebarEntry & { hasPermission: UserRole[] })[] =
   // ─── Devices & connectivity ────────────────────────────────────
   {
     label: "Devices", href: "/devices", icon: Cpu,
+    labelByRole: {
+      ENTERPRISE_ADMIN: "My Devices",
+      OWNER_OPERATOR: "My Devices",
+    },
     hasPermission: [
       "ENTERPRISE_ADMIN",
       "FLEET_ADMIN",
@@ -334,8 +344,8 @@ export function getEntriesForRole(role: UserRole): SidebarEntry[] {
       if (items.length) {
         visible.push(changed
           ? {
-              ...entry, items, label,
-            }
+            ...entry, items, label,
+          }
           : entry);
       }
       continue;

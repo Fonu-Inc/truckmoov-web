@@ -14,6 +14,7 @@ import {
   useFleetAnalyticsFuelLevels,
   useFleetAnalyticsJobPipeline,
   useFleetAnalyticsSummary,
+  useVehiclesByTab,
 } from "@truckmoov/api/fleet";
 import {
   Activity,
@@ -348,6 +349,8 @@ function KPICard({
 }
 
 export function FleetAnalyticsTab() {
+  // ponytail: page-shell tabbed summary from GET /fleet/vehicles (summary only, no items).
+  useVehiclesByTab("analytics");
   const { format: formatCurrency } = useCurrency();
   const [
     lastRefresh,

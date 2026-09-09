@@ -72,6 +72,32 @@ export type VehiclesQuery = {
   }
 }
 
+// GET /fleet/vehicles now accepts a `tabs` request header. No header (or
+// `tabs: vehicles`) returns the vehicle list unchanged; other values return a
+// tab-specific summary. Server silently falls back to the vehicles list on
+// unknown values — always trust the echoed `response.tab`, not the value sent.
+// The header path is a page-shell convenience: filtering/pagination still go
+// to the per-resource endpoints (`/fleet/maintenance/…`, `/fleet/fuel/…`, …).
+export type VehiclesTab = 'vehicles' | 'maintenance' | 'fuel' | 'compliance' | 'financials' | 'analytics'
+
+// ponytail: unknown-typed payloads until the live shapes come back — see
+// getVehiclesByTab / plan file. Tighten these once the server response is in.
+export type MaintenanceTabPayload = { summary: unknown, items: unknown[] }
+export type FuelTabPayload = { summary: unknown, items: unknown[] }
+export type ComplianceTabPayload = { summary: unknown, items: unknown[] }
+// financials + analytics return summary only — no `items` per the endpoint contract.
+export type FinancialsTabPayload = { summary: unknown }
+export type AnalyticsTabPayload = { summary: unknown }
+
+export type VehiclesTabResponse<T extends VehiclesTab> =
+  T extends 'vehicles' ? VehicleListResponse & { tab?: 'vehicles' } :
+    T extends 'maintenance' ? { status: boolean, message: string, tab: 'maintenance', data: MaintenanceTabPayload } :
+      T extends 'fuel' ? { status: boolean, message: string, tab: 'fuel', data: FuelTabPayload } :
+        T extends 'compliance' ? { status: boolean, message: string, tab: 'compliance', data: ComplianceTabPayload } :
+          T extends 'financials' ? { status: boolean, message: string, tab: 'financials', data: FinancialsTabPayload } :
+            T extends 'analytics' ? { status: boolean, message: string, tab: 'analytics', data: AnalyticsTabPayload } :
+              never
+
 export type NearestVehiclesQuery = {
   params: {
     lat: number

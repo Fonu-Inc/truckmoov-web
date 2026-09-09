@@ -138,6 +138,8 @@ import type {
   VehicleHealthListResponse,
   VehicleHealthResponse,
   VehicleListResponse,
+  VehiclesTab,
+  VehiclesTabResponse,
   VehicleSafetyRadarResponse,
   VehicleResponse,
   VehicleSummaryResponse,
@@ -174,6 +176,17 @@ export async function reportLocation({ vehicleId, data }: ReportLocationPayload)
 
 export async function getVehicles(payload?: VehiclesQuery) {
   const { data } = await axiosInstance.get<VehicleListResponse>('/fleet/vehicles', { params: payload?.params })
+  return data
+}
+
+export async function getVehiclesByTab<T extends VehiclesTab>(
+  tab: T,
+  params?: VehiclesQuery['params'],
+) {
+  const { data } = await axiosInstance.get<VehiclesTabResponse<T>>('/fleet/vehicles', {
+    params,
+    headers: { tabs: tab },
+  })
   return data
 }
 

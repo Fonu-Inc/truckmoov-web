@@ -6,6 +6,7 @@ import type {
 import {
   useFleetFinancialSummary,
   useFleetProfitability,
+  useVehiclesByTab,
 } from "@truckmoov/api/fleet";
 import {
   DollarSign, TrendingDown, TrendingUp, Truck,
@@ -48,6 +49,8 @@ export type FleetFinancialsLayoutContext = {
 };
 
 export function FleetFinancialsLayout() {
+  // ponytail: page-shell tabbed summary (summary only, no items).
+  useVehiclesByTab("financials");
   const vehicles: VehicleLookup[] = useMemo(
     () => [],
     [],

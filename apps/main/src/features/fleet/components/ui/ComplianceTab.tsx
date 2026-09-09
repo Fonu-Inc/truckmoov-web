@@ -13,6 +13,7 @@ import {
   useRenewComplianceDoc,
   useSendComplianceReminders,
   useSetComplianceDocFileUrl,
+  useVehiclesByTab,
 } from "@truckmoov/api/fleet";
 import {
   daysUntil, formatDate, formatDayMonth, toDateParam,
@@ -83,6 +84,9 @@ type UploadedDocumentMetadata = {
 };
 
 export function ComplianceTab() {
+  // ponytail: page-shell tabbed summary from GET /fleet/vehicles.
+  // Payload is `unknown` until server shape lands; filtering stays on useComplianceDocs.
+  useVehiclesByTab("compliance");
   const [
     searchQuery,
     setSearchQuery,

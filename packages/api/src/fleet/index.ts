@@ -94,6 +94,7 @@ import {
   getVehicle,
   getVehicleHealth,
   getVehicles,
+  getVehiclesByTab,
   getVehiclesSummary,
   importDevices,
   importDrivers,
@@ -173,6 +174,7 @@ import type {
   NearestVehiclesQuery,
   ValidateDeviceAssignmentQuery,
   VehiclesQuery,
+  VehiclesTab,
   ComplianceDocumentsQuery,
   GeofencesQuery,
 } from './types'
@@ -181,6 +183,7 @@ export const FLEET_QUERY_KEY = {
   overview: ['fleet', 'overview'] as const,
   vehiclesRoot: ['fleet', 'vehicles'],
   vehicles: (payload?: VehiclesQuery) => ['fleet', 'vehicles', payload],
+  vehiclesTab: (tab: VehiclesTab, params?: VehiclesQuery['params']) => ['fleet', 'vehicles', 'tab', tab, params],
   vehiclesSummary: ['fleet', 'vehiclesSummary'],
   vehicle: (id: string) => ['fleet', 'vehicle', id],
   vehiclesHealth: ['fleet', 'vehiclesHealth'],
@@ -275,6 +278,16 @@ export function getVehiclesQueryOptions(payload?: VehiclesQuery) {
   return queryOptions({
     queryKey: FLEET_QUERY_KEY.vehicles(payload),
     queryFn: () => getVehicles(payload),
+  })
+}
+
+export function getVehiclesByTabQueryOptions<T extends VehiclesTab>(
+  tab: T,
+  params?: VehiclesQuery['params'],
+) {
+  return queryOptions({
+    queryKey: FLEET_QUERY_KEY.vehiclesTab(tab, params),
+    queryFn: () => getVehiclesByTab(tab, params),
   })
 }
 
@@ -717,6 +730,13 @@ export function useFleetOverview() {
 
 export function useVehicles(payload?: VehiclesQuery) {
   return useQuery(getVehiclesQueryOptions(payload))
+}
+
+export function useVehiclesByTab<T extends VehiclesTab>(
+  tab: T,
+  params?: VehiclesQuery['params'],
+) {
+  return useQuery(getVehiclesByTabQueryOptions(tab, params))
 }
 
 export function useVehiclesSummary() {

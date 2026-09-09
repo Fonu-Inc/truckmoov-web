@@ -18,6 +18,7 @@ import {
   useUpdateMaintenanceRecord,
   useUpsertMaintenanceReminderSchedule,
   useVehicles,
+  useVehiclesByTab,
 } from "@truckmoov/api/fleet";
 import {
   daysUntil, formatDate, toDateParam,
@@ -311,6 +312,10 @@ export function MaintenanceTab() {
   const recordsQuery = useMaintenanceRecords(recordsQueryParams);
   const summaryQuery = useMaintenanceRecordsSummary();
   const vehiclesQuery = useVehicles();
+  // ponytail: page-shell tabbed summary from GET /fleet/vehicles. Payload shape
+  // is `unknown` until the server response is typed — filtering/pagination for
+  // this tab still comes from useMaintenanceRecords above.
+  useVehiclesByTab('maintenance');
   const createRecordMutation = useCreateMaintenanceRecord();
   const updateRecordMutation = useUpdateMaintenanceRecord();
   const deleteRecordMutation = useDeleteMaintenanceRecord();

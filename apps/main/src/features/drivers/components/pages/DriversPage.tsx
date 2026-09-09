@@ -2,10 +2,11 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type {
   DriverCommunicationPreference, DriverInput, DriverStatus, FleetDriver,
 } from "@truckmoov/api/fleet";
+import type { Driver } from "@/types";
 import type { DriverBulkUploadItem } from "@/components/drivers/DriverBulkUploadDialog";
 import type { DriverFormData } from "@/components/drivers/DriverFormDialog";
 import {
-  useCreateDriver, useDeleteDriver, useDrivers, useImportDrivers, useUpdateDriver,
+  useCreateDriver, useDrivers, useImportDrivers, useUpdateDriver,
 } from "@truckmoov/api/fleet";
 import { useAuthStore } from "@truckmoov/api/lib/auth-store";
 import { useSendNotifyMessage } from "@truckmoov/api/notification";
@@ -14,8 +15,9 @@ import {
   daysUntil, formatDate,
 } from "@truckmoov/app-core/utils/time-utils";
 import {
-  AlertTriangle, Eye, Inbox, Mail, MessageSquare,
-  MoreHorizontal, Pencil, Phone, Plus, Search, Send, Trash2, Upload, Users,
+  AlertTriangle, Ban, Clock, Eye, Mail, MessageSquare,
+  MoreHorizontal, Phone, Plus, Search, Send, SlidersHorizontal,
+  Upload, UserCheck, Users, UserX,
 } from "lucide-react";
 import {
   useEffect, useMemo, useState,
@@ -23,18 +25,15 @@ import {
 import { toast } from "sonner";
 import { CallInteractionModal } from "@/components/communications/CallInteractionModal";
 import { DriverBulkUploadDialog } from "@/components/drivers/DriverBulkUploadDialog";
+import { DriverDetailsSheet } from "@/components/drivers/DriverDetailsSheet";
 import { DriverFormDialog } from "@/components/drivers/DriverFormDialog";
-import { DriverMessagesInbox } from "@/components/drivers/DriverMessagesInbox";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
-import {
-  AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/shadcn/alert-dialog";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/shadcn/card";
+import { Checkbox } from "@/components/shadcn/checkbox";
 import { DataTable } from "@/components/shadcn/data-table";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -46,17 +45,21 @@ import { ExportButton } from "@/components/shadcn/export-button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/shadcn/popover";
+import { Progress } from "@/components/shadcn/progress";
+import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
 import { useFonuCall } from "@/contexts/FonuCallContext";
+import { getDriverPerformanceScore, getPerformanceBand } from "@/features/drivers/utils/driverPerformance";
 
 const DRIVER_STATUSES: DriverStatus[] = [
   "active",
   "available",
   "offline",
   "suspended",
-  "inactive",
 ];
 const COMMUNICATION_PREFERENCES: DriverCommunicationPreference[] = [
   "whatsapp",
@@ -65,12 +68,18 @@ const COMMUNICATION_PREFERENCES: DriverCommunicationPreference[] = [
   "voice",
 ];
 
-const statusColors: Record<DriverStatus, string> = {
+const statusColors: Record<string, string> = {
   active: "bg-primary/20 text-primary border-primary/30",
   available: "bg-success/20 text-success border-success/30",
-  inactive: "bg-muted text-muted-foreground border-muted",
   offline: "bg-muted text-muted-foreground border-muted",
   suspended: "bg-destructive/20 text-destructive border-destructive/30",
+};
+
+const commIcons: Record<string, React.ReactNode> = {
+  whatsapp: <WhatsAppIcon className="h-4 w-4 text-success" />,
+  sms: <MessageSquare className="h-4 w-4 text-primary" />,
+  email: <Mail className="h-4 w-4 text-warning" />,
+  voice: <Phone className="h-4 w-4 text-accent" />,
 };
 
 type DriverRow = Omit<FleetDriver, "status" | "communicationPreference"> & {
@@ -128,22 +137,42 @@ function toDriverInput(data: DriverFormData): DriverInput {
   };
 }
 
+/**
+ * ponytail: `rating` and `totalTrips` aren't on `FleetDriver` yet — seed
+ * deterministic dummy values from the id so the details sheet, performance
+ * column and stats stay stable across renders. Drop this adapter when the
+ * fleet service starts returning real fields.
+ */
+function toLocalDriver(row: DriverRow): Driver {
+  const seed = Array.from(row.id ?? "").reduce(
+    (acc, ch) => acc + ch.charCodeAt(0),
+    0,
+  );
+  return {
+    id: row.id,
+    name: row.name,
+    phone: row.phone,
+    email: row.email ?? undefined,
+    licenseNumber: row.licenseNumber,
+    licenseExpiry: row.licenseExpiryDate ? new Date(row.licenseExpiryDate) : new Date(),
+    status: (row.status ?? "available") as Driver["status"],
+    rating: 3 + (seed % 20) / 10, // 3.0 – 4.9
+    totalTrips: 20 + (seed % 250),
+    communicationPreference: (row.communicationPreference ?? "whatsapp") as Driver["communicationPreference"],
+  };
+}
+
 export default function DriversPage() {
   const { user } = useAuthStore();
   const driversQuery = useDrivers();
   const createDriver = useCreateDriver();
   const updateDriver = useUpdateDriver();
-  const deleteDriver = useDeleteDriver();
   const importDrivers = useImportDrivers();
   const sendMessage = useSendNotifyMessage();
   const {
     startCall, endCall, status: callStatus, durationSeconds,
   } = useFonuCall();
 
-  const [
-    showInbox,
-    setShowInbox,
-  ] = useState(false);
   const [
     searchQuery,
     setSearchQuery,
@@ -153,8 +182,16 @@ export default function DriversPage() {
     setStatusFilter,
   ] = useState("all");
   const [
-    channelFilter,
-    setChannelFilter,
+    ratingFilter,
+    setRatingFilter,
+  ] = useState("all");
+  const [
+    tripsFilter,
+    setTripsFilter,
+  ] = useState("all");
+  const [
+    commFilter,
+    setCommFilter,
   ] = useState("all");
   const [
     isFormOpen,
@@ -184,15 +221,28 @@ export default function DriversPage() {
     selectedDriver,
     setSelectedDriver,
   ] = useState<DriverRow | null>(null);
-  const [
-    driverToDelete,
-    setDriverToDelete,
-  ] = useState<DriverRow | null>(null);
 
   const drivers = useMemo(
     () => (driversQuery.data?.data ?? []).map(toDriverRow),
     [driversQuery.data?.data],
   );
+
+  const localDrivers = useMemo(
+    () => drivers.map(toLocalDriver),
+    [drivers],
+  );
+
+  const stats = useMemo(
+    () => ({
+      total: drivers.length,
+      onJob: drivers.filter(d => d.status === "active").length,
+      available: drivers.filter(d => d.status === "available").length,
+      offline: drivers.filter(d => d.status === "offline").length,
+      suspended: drivers.filter(d => d.status === "suspended").length,
+    }),
+    [drivers],
+  );
+
   const filteredDrivers = useMemo(
     () => {
       const query = searchQuery.trim().toLowerCase();
@@ -202,16 +252,34 @@ export default function DriversPage() {
           || driver.phone.toLowerCase().includes(query)
           || driver.licenseNumber.toLowerCase().includes(query);
         const matchesStatus = statusFilter === "all" || driver.status === statusFilter;
-        const matchesChannel = channelFilter === "all"
-          || driver.communicationPreference === channelFilter;
-        return matchesSearch && matchesStatus && matchesChannel;
+        const matchesChannel = commFilter === "all"
+          || driver.communicationPreference === commFilter;
+
+        const local = toLocalDriver(driver);
+        const score = getDriverPerformanceScore(local);
+        const matchesRating = ratingFilter === "all"
+          || (ratingFilter === "5" && score >= 85)
+          || (ratingFilter === "4" && score >= 70 && score < 85)
+          || (ratingFilter === "3" && score >= 50 && score < 70)
+          || (ratingFilter === "below3" && score < 50);
+
+        const trips = local.totalTrips;
+        const matchesTrips = tripsFilter === "all"
+          || (tripsFilter === "100plus" && trips >= 100)
+          || (tripsFilter === "50to99" && trips >= 50 && trips < 100)
+          || (tripsFilter === "10to49" && trips >= 10 && trips < 50)
+          || (tripsFilter === "below10" && trips < 10);
+
+        return matchesSearch && matchesStatus && matchesChannel && matchesRating && matchesTrips;
       });
     },
     [
-      channelFilter,
+      commFilter,
       drivers,
+      ratingFilter,
       searchQuery,
       statusFilter,
+      tripsFilter,
     ],
   );
 
@@ -231,10 +299,6 @@ export default function DriversPage() {
 
   const openAdd = () => {
     setSelectedDriver(null);
-    setIsFormOpen(true);
-  };
-  const openEdit = (driver: DriverRow) => {
-    setSelectedDriver(driver);
     setIsFormOpen(true);
   };
 
@@ -289,16 +353,16 @@ export default function DriversPage() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!driverToDelete)
-      return;
+  const handleSuspend = async (driver: DriverRow) => {
     try {
-      await deleteDriver.mutateAsync({ id: driverToDelete.id });
-      toast.success("Driver deleted");
-      setDriverToDelete(null);
+      await updateDriver.mutateAsync({
+        id: driver.id,
+        data: { status: "suspended" },
+      });
+      toast.success(`${driver.name} suspended`);
     }
     catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to delete driver");
+      toast.error(error instanceof Error ? error.message : "Unable to suspend driver");
     }
   };
 
@@ -353,13 +417,27 @@ export default function DriversPage() {
       /\D/g,
       "",
     );
-    const message = encodeURIComponent(`Hello ${driver.name}, this is Fleet Management.`);
+    const message = encodeURIComponent(`Hello ${driver.name}, this is a message from Fleet Management.`);
     window.open(
       `https://wa.me/${phone}?text=${message}`,
       "_blank",
       "noopener,noreferrer",
     );
   };
+
+  const activeFilterCount = [
+    ratingFilter !== "all",
+    tripsFilter !== "all",
+    commFilter !== "all",
+  ].filter(Boolean).length;
+
+  const hasActiveFilters = Boolean(searchQuery.trim())
+    || statusFilter !== "all"
+    || activeFilterCount > 0;
+
+  const selectedLocalDriver = selectedDriver
+    ? localDrivers.find(d => d.id === selectedDriver.id) ?? toLocalDriver(selectedDriver)
+    : null;
 
   const columns: ColumnDef<DriverRow>[] = [
     {
@@ -372,10 +450,6 @@ export default function DriversPage() {
           </div>
           <div>
             <p className="font-medium">{row.original.name || "Unnamed driver"}</p>
-            <p className="max-w-40 truncate text-xs text-muted-foreground">
-              ID:
-              {row.original.id}
-            </p>
           </div>
         </div>
       ),
@@ -386,7 +460,9 @@ export default function DriversPage() {
       cell: ({ row }) => (
         <div className="text-sm">
           <p>{row.original.phone || "—"}</p>
-          <p className="max-w-44 truncate text-muted-foreground">{row.original.email || "—"}</p>
+          {row.original.email && (
+            <p className="max-w-[150px] truncate text-muted-foreground">{row.original.email}</p>
+          )}
         </div>
       ),
     },
@@ -424,11 +500,58 @@ export default function DriversPage() {
         : <span className="text-muted-foreground">Unknown</span>,
     },
     {
+      id: "performance",
+      header: "Performance Score",
+      cell: ({ row }) => {
+        const local = toLocalDriver(row.original);
+        const score = getDriverPerformanceScore(local);
+        const band = getPerformanceBand(score);
+        return (
+          <div className="min-w-[120px] space-y-1">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-semibold">
+                {score}
+                %
+              </span>
+              <Badge
+                variant="outline"
+                className={`text-[10px] ${band.className}`}
+              >
+                {band.label}
+              </Badge>
+            </div>
+            <Progress
+              value={score}
+              className="h-1.5"
+            />
+            <p className="text-[10px] text-muted-foreground">
+              {local.totalTrips}
+              {" "}
+              trips ·
+              {" "}
+              {row.original.status ?? "unknown"}
+            </p>
+          </div>
+        );
+      },
+    },
+    {
+      id: "trips",
+      header: "Trips",
+      cell: ({ row }) => toLocalDriver(row.original).totalTrips,
+    },
+    {
       accessorKey: "communicationPreference",
-      header: "Preferred Channel",
-      cell: ({ row }) => (
-        <span className="capitalize">{row.original.communicationPreference || "Unknown"}</span>
-      ),
+      header: "Preferred",
+      cell: ({ row }) => {
+        const channel = row.original.communicationPreference;
+        return (
+          <div className="flex items-center gap-2">
+            {channel && commIcons[channel]}
+            <span className="text-sm capitalize">{channel || "Unknown"}</span>
+          </div>
+        );
+      },
     },
     {
       id: "actions",
@@ -477,7 +600,7 @@ export default function DriversPage() {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  title="More actions"
+                  title="More"
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
@@ -491,17 +614,13 @@ export default function DriversPage() {
                   <Eye className="mr-2 h-4 w-4" />
                   View Details
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => openEdit(driver)}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive"
-                  onClick={() => setDriverToDelete(driver)}
+                  onClick={() => void handleSuspend(driver)}
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+                  <Ban className="mr-2 h-4 w-4" />
+                  Suspend Driver
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -522,20 +641,80 @@ export default function DriversPage() {
         communicationPreference: selectedDriver.communicationPreference,
       }
     : null;
-  const hasActiveFilters = Boolean(searchQuery.trim())
-    || statusFilter !== "all"
-    || channelFilter !== "all";
 
   return (
     <div className="space-y-6">
+      {/* ponytail: 5 cards step at md/xl/2xl. Measured: the fixed w-64 sidebar leaves
+          only ~336px here at a 640px viewport, so sm:grid-cols-2 still clips. */}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <Users className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-muted-foreground">All Drivers</p>
+                <p className="mt-1 text-2xl font-bold">{stats.total}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10">
+                <UserCheck className="h-5 w-5 text-success" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-muted-foreground">Active</p>
+                <p className="mt-1 text-2xl font-bold text-success">{stats.onJob}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-warning/10">
+                <Clock className="h-5 w-5 text-warning" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-muted-foreground">Available</p>
+                <p className="mt-1 text-2xl font-bold text-warning">{stats.available}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                <UserX className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-muted-foreground">Offline</p>
+                <p className="mt-1 text-2xl font-bold text-muted-foreground">{stats.offline}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-destructive/10">
+                <Ban className="h-5 w-5 text-destructive" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-muted-foreground">Suspended</p>
+                <p className="mt-1 text-2xl font-bold text-destructive">{stats.suspended}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="flex flex-wrap justify-end gap-2">
-        <Button
-          variant="outline"
-          onClick={() => setShowInbox(value => !value)}
-        >
-          <Inbox className="mr-2 h-4 w-4" />
-          {showInbox ? "Hide Inbox" : "Message Inbox"}
-        </Button>
         <Button
           variant="outline"
           onClick={() => setIsBulkUploadOpen(true)}
@@ -552,8 +731,6 @@ export default function DriversPage() {
         </Button>
       </div>
 
-      {showInbox && <DriverMessagesInbox />}
-
       <Card className="border-border/50 bg-card/50">
         <CardHeader className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -564,7 +741,7 @@ export default function DriversPage() {
                 {filteredDrivers.length}
                 )
               </CardTitle>
-              <CardDescription>Roster of drivers with licence, status, and contact details.</CardDescription>
+              <CardDescription>Roster of drivers with licence, status and performance details.</CardDescription>
             </div>
             <ExportButton
               filename="drivers"
@@ -588,6 +765,12 @@ export default function DriversPage() {
                 },
                 {
                   header: "Status", accessor: row => row.status ?? "",
+                },
+                {
+                  header: "Performance Score", accessor: row => `${getDriverPerformanceScore(toLocalDriver(row))}%`,
+                },
+                {
+                  header: "Total Trips", accessor: row => toLocalDriver(row).totalTrips,
                 },
                 {
                   header: "Preferred Channel", accessor: row => row.communicationPreference ?? "",
@@ -629,29 +812,144 @@ export default function DriversPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select
-              value={channelFilter}
-              onValueChange={setChannelFilter}
-            >
-              <SelectTrigger
-                aria-label="Filter by preferred channel"
-                className="w-full border-border/50 bg-card/50 sm:w-[190px]"
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="relative border-border/50 bg-card/50"
+                >
+                  <SlidersHorizontal className="mr-2 h-4 w-4" />
+                  Filter
+                  {activeFilterCount > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="ml-2 h-5 px-1.5 text-[10px]"
+                    >
+                      {activeFilterCount}
+                    </Badge>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                className="w-72 space-y-4"
               >
-                <SelectValue placeholder="Preferred channel" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Channels</SelectItem>
-                {COMMUNICATION_PREFERENCES.map(channel => (
-                  <SelectItem
-                    key={channel}
-                    value={channel}
-                    className="capitalize"
+                <Label className="text-sm font-semibold">Only show drivers by...</Label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="drv-flt-rating"
+                      checked={ratingFilter !== "all"}
+                      onCheckedChange={(c) => {
+                        if (!c)
+                          setRatingFilter("all");
+                      }}
+                    />
+                    <Label
+                      htmlFor="drv-flt-rating"
+                      className="cursor-pointer text-xs"
+                    >
+                      Performance score
+                    </Label>
+                  </div>
+                  <Select
+                    value={ratingFilter}
+                    onValueChange={setRatingFilter}
                   >
-                    {channel}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="All Scores" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Scores</SelectItem>
+                      <SelectItem value="5">85% and above</SelectItem>
+                      <SelectItem value="4">70% – 84%</SelectItem>
+                      <SelectItem value="3">50% – 69%</SelectItem>
+                      <SelectItem value="below3">Below 50%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="drv-flt-trips"
+                      checked={tripsFilter !== "all"}
+                      onCheckedChange={(c) => {
+                        if (!c)
+                          setTripsFilter("all");
+                      }}
+                    />
+                    <Label
+                      htmlFor="drv-flt-trips"
+                      className="cursor-pointer text-xs"
+                    >
+                      Trips completed
+                    </Label>
+                  </div>
+                  <Select
+                    value={tripsFilter}
+                    onValueChange={setTripsFilter}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="All Trip Counts" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Trip Counts</SelectItem>
+                      <SelectItem value="100plus">100+ trips</SelectItem>
+                      <SelectItem value="50to99">50 – 99 trips</SelectItem>
+                      <SelectItem value="10to49">10 – 49 trips</SelectItem>
+                      <SelectItem value="below10">Below 10 trips</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="drv-flt-comm"
+                      checked={commFilter !== "all"}
+                      onCheckedChange={(c) => {
+                        if (!c)
+                          setCommFilter("all");
+                      }}
+                    />
+                    <Label
+                      htmlFor="drv-flt-comm"
+                      className="cursor-pointer text-xs"
+                    >
+                      Preferred channel
+                    </Label>
+                  </div>
+                  <Select
+                    value={commFilter}
+                    onValueChange={setCommFilter}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="All Channels" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Channels</SelectItem>
+                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                      <SelectItem value="sms">SMS</SelectItem>
+                      <SelectItem value="email">Email</SelectItem>
+                      <SelectItem value="voice">Voice</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    setCommFilter("all");
+                    setRatingFilter("all");
+                    setTripsFilter("all");
+                  }}
+                >
+                  Reset Filters
+                </Button>
+              </PopoverContent>
+            </Popover>
           </div>
         </CardHeader>
         <CardContent className="overflow-x-auto p-0">
@@ -682,62 +980,11 @@ export default function DriversPage() {
         onUpload={handleBulkUpload}
       />
 
-      <Dialog
+      <DriverDetailsSheet
         open={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{selectedDriver?.name || "Driver details"}</DialogTitle>
-            <DialogDescription>Current driver information from the fleet service.</DialogDescription>
-          </DialogHeader>
-          {selectedDriver && (
-            <dl className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
-              {[
-                [
-                  "Phone",
-                  selectedDriver.phone,
-                ],
-                [
-                  "Email",
-                  selectedDriver.email,
-                ],
-                [
-                  "License number",
-                  selectedDriver.licenseNumber,
-                ],
-                [
-                  "License expiry",
-                  formatDate(selectedDriver.licenseExpiryDate),
-                ],
-                [
-                  "Status",
-                  selectedDriver.status,
-                ],
-                [
-                  "Preferred channel",
-                  selectedDriver.communicationPreference,
-                ],
-                [
-                  "Assigned vehicle",
-                  selectedDriver.assignedVehicleId,
-                ],
-              ].map(([
-                label,
-                value,
-              ]) => (
-                <div
-                  key={label}
-                  className="rounded-lg border border-border/50 p-3"
-                >
-                  <dt className="text-muted-foreground">{label}</dt>
-                  <dd className="mt-1 font-medium capitalize">{value || "—"}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-        </DialogContent>
-      </Dialog>
+        driver={selectedLocalDriver}
+      />
 
       <CallInteractionModal
         open={isCallOpen}
@@ -809,34 +1056,6 @@ export default function DriversPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog
-        open={!!driverToDelete}
-        onOpenChange={open => !open && setDriverToDelete(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete driver?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently removes
-              {driverToDelete?.name || "this driver"}
-              {" "}
-              from the fleet.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteDriver.isPending}>Cancel</AlertDialogCancel>
-            <Button
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              loading={deleteDriver.isPending}
-              disabled={deleteDriver.isPending}
-              onClick={() => void handleDelete()}
-            >
-              Delete
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

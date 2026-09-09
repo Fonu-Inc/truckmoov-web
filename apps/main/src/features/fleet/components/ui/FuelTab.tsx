@@ -4,7 +4,7 @@ import type {
 } from "@truckmoov/api/fleet";
 import type { PeriodValue } from "./PeriodFilter";
 import {
-  exportFuelTransactions, useDeleteFuelTransaction, useDrivers, useFuelBudgetVsActual, useFuelEfficiency, useFuelMetrics, useFuelSummary, useFuelTransactionsList, useFuelWeeklyAnalytics, useRecordFuelTransaction, useUpdateFuelTransaction, useVehicles,
+  exportFuelTransactions, useDeleteFuelTransaction, useDrivers, useFuelBudgetVsActual, useFuelEfficiency, useFuelMetrics, useFuelSummary, useFuelTransactionsList, useFuelWeeklyAnalytics, useRecordFuelTransaction, useUpdateFuelTransaction, useVehicles, useVehiclesByTab,
 } from "@truckmoov/api/fleet";
 import {
   formatDate, formatDayMonth, formatDayMonthTime, toDateParam,
@@ -341,6 +341,8 @@ export function FuelTab() {
   const summaryQuery = useFuelSummary();
   const efficiencyQuery = useFuelEfficiency();
   const vehiclesQuery = useVehicles();
+  // ponytail: page-shell tabbed summary — payload untyped until server response is in.
+  useVehiclesByTab('fuel');
   const driversQuery = useDrivers();
   const fuelMetricsQuery = useFuelMetrics({ params: { period: metricsPeriod } });
   const budgetRange = useMemo(

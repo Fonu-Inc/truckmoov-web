@@ -24,6 +24,7 @@ import {
 import { queryClient } from "@truckmoov/api/lib/query-client";
 import { formatRelative } from "@truckmoov/app-core/utils/time-utils";
 import {
+  CheckCircle2,
   Cpu,
   Download,
   Edit,
@@ -35,6 +36,7 @@ import {
   RefreshCw,
   Search,
   Settings,
+  ShieldAlert,
   Signal,
   SlidersHorizontal,
   Trash2,
@@ -284,6 +286,18 @@ export default function DeviceManagement() {
         ...devices.map(device => device.manufacturer),
       ]),
     ],
+    [devices],
+  );
+
+  const stats = useMemo(
+    () => ({
+      total: devices.length,
+      active: devices.filter(d => d.status === "active").length,
+      registered: devices.filter(d => d.status === "registered" || d.lifecycle_status === "registered").length,
+      assigned: devices.filter(d => Boolean(d.vehicle_id)).length,
+      unassigned: devices.filter(d => !d.vehicle_id).length,
+      configured: devices.filter(d => d.status === "configured" || d.lifecycle_status === "configured").length,
+    }),
     [devices],
   );
 
@@ -543,6 +557,90 @@ export default function DeviceManagement() {
             </Button>
           )}
         </div>
+
+        {/* KPI stats */}
+        {!isAggregatorAdmin && (
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <Cpu className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-muted-foreground">Total Devices</p>
+                    <p className="mt-1 text-2xl font-bold">{stats.total}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10">
+                    <CheckCircle2 className="h-5 w-5 text-success" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Active</p>
+                    <p className="mt-1 text-2xl font-bold text-success">{stats.active}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    <ShieldAlert className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Registered</p>
+                    <p className="mt-1 text-2xl font-bold">{stats.registered}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <Link className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Assigned</p>
+                    <p className="mt-1 text-2xl font-bold text-primary">{stats.assigned}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-warning/10">
+                    <Signal className="h-5 w-5 text-warning" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Unassigned</p>
+                    <p className="mt-1 text-2xl font-bold text-warning">{stats.unassigned}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <Settings className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Configured</p>
+                    <p className="mt-1 text-2xl font-bold text-primary">{stats.configured}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Device List */}
         {!isAggregatorAdmin && (

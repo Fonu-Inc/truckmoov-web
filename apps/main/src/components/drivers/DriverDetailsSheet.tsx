@@ -70,7 +70,7 @@ function ScoreGauge({
     return "text-destructive";
   };
 
-  const dimensions = size === "sm" ? "w-14 h-14" : "w-20 h-20";
+  const dimensions = size === "sm" ? "w-14 h-14" : "w-16 h-16 sm:w-20 sm:h-20";
   const textSize = size === "sm" ? "text-sm" : "text-lg";
 
   return (
@@ -338,10 +338,10 @@ export function DriverDetailsSheet({
         <DialogHeader className="space-y-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-2xl font-bold text-primary-foreground">
+              <div className="h-16 w-16 shrink-0 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-2xl font-bold text-primary-foreground">
                 {getInitials(driver.name)}
               </div>
-              <div>
+              <div className="min-w-0">
                 <DialogTitle className="text-xl">{driver.name}</DialogTitle>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge className={statusColors[driver.status]}>
@@ -360,7 +360,7 @@ export function DriverDetailsSheet({
           </div>
 
           {/* Quick Score Summary */}
-          <div className="grid grid-cols-3 gap-3 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
             <Card className="bg-muted/30 border-border/50">
               <CardContent className="p-3 text-center">
                 <Activity className="h-5 w-5 mx-auto mb-1 text-primary" />
@@ -411,7 +411,7 @@ export function DriverDetailsSheet({
                   Contact Information
                 </CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-4 text-sm">
+              <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-muted-foreground" />
                   <span>{driver.phone}</span>
@@ -470,7 +470,7 @@ export function DriverDetailsSheet({
                   {licenseWarning && <AlertTriangle className="h-4 w-4 text-warning" />}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-4 text-sm">
+              <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">License Number</p>
                   <p className="font-medium">{driver.licenseNumber}</p>
@@ -561,7 +561,7 @@ export function DriverDetailsSheet({
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-4 gap-3 mb-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                       <ScoreGauge
                         score={driverScore.brakingScore}
                         label="Braking"
@@ -582,7 +582,7 @@ export function DriverDetailsSheet({
 
                     <Separator className="my-4" />
 
-                    <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
                       <div className="p-2 rounded-lg bg-destructive/10">
                         <p className="font-semibold text-destructive">{driverScore.eventBreakdown.harshBraking}</p>
                         <p className="text-muted-foreground">Hard Brake</p>
@@ -724,7 +724,7 @@ export function DriverDetailsSheet({
                                 {formatRelative(latestFatigueAlert.created_at)}
                               </span>
                             </div>
-                            <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                               <div className="flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
                                 {latestFatigueAlert.driving_duration_minutes}
@@ -873,7 +873,7 @@ export function DriverDetailsSheet({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="text-center p-3 bg-muted/30 rounded-lg">
                     <p className="text-2xl font-bold">{driver.totalTrips}</p>
                     <p className="text-xs text-muted-foreground">Total Trips</p>
