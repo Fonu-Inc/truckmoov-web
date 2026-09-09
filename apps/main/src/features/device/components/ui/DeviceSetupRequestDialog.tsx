@@ -289,7 +289,7 @@ export function DeviceSetupRequestDialog({
               <SelectContent>
                 <SelectItem value="obd">OBD-II Plug & Play</SelectItem>
                 <SelectItem value="hardwired">Hardwired</SelectItem>
-                <SelectItem value="battery">Battery / Portable</SelectItem>
+                <SelectItem value="asset">Battery / Portable</SelectItem>
               </SelectContent>
             </Select>
           </div>

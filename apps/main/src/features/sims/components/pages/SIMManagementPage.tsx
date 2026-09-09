@@ -18,8 +18,11 @@ import {
   useUploadSimRequestDeviceMapping,
 } from "@truckmoov/api/auth";
 import {
-  Plus, Upload,
+  CheckCircle2, Clock, Link, PauseCircle, Plus, Upload, Wifi,
 } from "lucide-react";
+import {
+  Card, CardContent,
+} from "@/components/shadcn/card";
 import {
   useEffect, useMemo, useState,
 } from "react";
@@ -141,6 +144,17 @@ export default function SIMManagement() {
     dataLimit: s.dataLimitGb ?? 0,
     deviceId: s.assignedDevice?.id,
   }));
+
+  const stats = useMemo(
+    () => ({
+      total: sims.length,
+      active: sims.filter(s => s.status === "active").length,
+      assigned: sims.filter(s => s.status === "assigned").length,
+      suspended: sims.filter(s => s.status === "suspended").length,
+      registered: sims.filter(s => s.status === "registered").length,
+    }),
+    [sims],
+  );
 
   const operators = (carriersQuery.data?.data.carriers ?? []).map(c => c.displayName);
 
@@ -396,6 +410,75 @@ export default function SIMManagement() {
   return (
     <>
       <div className="space-y-6">
+        {/* KPI stats */}
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Wifi className="h-5 w-5 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-muted-foreground">Total SIMs</p>
+                  <p className="mt-1 truncate text-xl font-bold">{stats.total}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10">
+                  <CheckCircle2 className="h-5 w-5 text-success" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-muted-foreground">Active</p>
+                  <p className="mt-1 truncate text-xl font-bold text-success">{stats.active}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-info/10">
+                  <Link className="h-5 w-5 text-info" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-muted-foreground">Assigned</p>
+                  <p className="mt-1 truncate text-xl font-bold text-info">{stats.assigned}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-warning/10">
+                  <PauseCircle className="h-5 w-5 text-warning" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-muted-foreground">Suspended</p>
+                  <p className="mt-1 truncate text-xl font-bold text-warning">{stats.suspended}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                  <Clock className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-muted-foreground">Registered</p>
+                  <p className="mt-1 truncate text-xl font-bold">{stats.registered}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Top-right actions */}
         <div className="flex items-center justify-end gap-2">
           <Button

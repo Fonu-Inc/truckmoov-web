@@ -257,9 +257,10 @@ export function SIMInventoryTable({
           <table className="w-full">
             <thead>
               <tr className="border-b border-border text-left text-sm text-muted-foreground">
+                <th className="pb-3 font-medium">SIM ID</th>
                 <th className="pb-3 font-medium">ICCID</th>
                 <th className="pb-3 font-medium">Mobile Number</th>
-                <th className="pb-3 font-medium">Operator</th>
+                <th className="pb-3 font-medium">Carrier</th>
                 <th className="pb-3 font-medium">Status</th>
                 <th className="pb-3 font-medium">Device</th>
                 <th className="pb-3 font-medium">Data Usage</th>
@@ -275,6 +276,14 @@ export function SIMInventoryTable({
                     key={sim.id}
                     className="group transition-colors hover:bg-secondary/30"
                   >
+                    <td className="py-4">
+                      <span
+                        className="rounded bg-secondary px-2 py-1 font-mono text-xs"
+                        title={sim.id}
+                      >
+                        {sim.id.slice(0, 8)}
+                      </span>
+                    </td>
                     <td className="py-4">
                       <div className="flex items-center gap-3">
                         <div

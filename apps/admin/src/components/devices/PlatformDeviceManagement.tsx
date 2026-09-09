@@ -207,6 +207,51 @@ function getStatusBadgeClass(status: string) {
   }
 }
 
+/**
+ * Fold lifecycle + operational fields into fleetflow's 7 normalized buckets so
+ * the table Status column and stats agree. Mirrors the helper in
+ * `fleetflow-pro-main/src/components/devices/PlatformDeviceManagement.tsx`.
+ */
+const NORMALIZED_STATUS_LABELS: Record<string, string> = {
+  active: "Active",
+  inactive: "Inactive",
+  assigned: "Assigned",
+  unassigned: "Unassigned",
+  configured: "Configured",
+  registered: "Registered",
+  unregistered: "Unregistered",
+};
+
+const NORMALIZED_STATUS_CLASSES: Record<string, string> = {
+  active: "border-success/30 bg-success/10 text-success hover:bg-success/10",
+  inactive: "border-border bg-muted text-muted-foreground hover:bg-muted",
+  assigned: "border-primary/30 bg-primary/10 text-primary hover:bg-primary/10",
+  unassigned: "border-warning/30 bg-warning/10 text-warning hover:bg-warning/10",
+  configured: "border-info/30 bg-info/10 text-info hover:bg-info/10",
+  registered: "border-secondary bg-secondary text-secondary-foreground",
+  unregistered: "border-secondary bg-secondary text-muted-foreground",
+};
+
+function normalizeDeviceStatus(device: SystemDeviceInventoryItem): string {
+  const lifecycle = (device.lifecycleStatus ?? "").toString();
+  const legacy = (device.operationalStatus ?? "").toString();
+  if (legacy === "active")
+    return "active";
+  if (legacy === "unregistered")
+    return "unregistered";
+  if (lifecycle === "assigned" || legacy === "assigned")
+    return "assigned";
+  if (lifecycle === "assignable" || lifecycle === "verified_online")
+    return "unassigned";
+  if (lifecycle === "configured" || lifecycle === "config_pending" || legacy === "configured")
+    return "configured";
+  if (lifecycle === "registered" || legacy === "registered")
+    return "registered";
+  if (legacy === "inactive" || lifecycle === "inactive")
+    return "inactive";
+  return "unregistered";
+}
+
 export function PlatformDeviceManagement() {
   const queryClient = useQueryClient();
   const [
@@ -289,19 +334,16 @@ export function PlatformDeviceManagement() {
         className: "",
       },
       {
-        label: "Registered",
-        value: summary?.registeredDevices ?? "N/A",
-        className: "text-muted-foreground",
-      },
-      {
-        label: "Configured",
-        value: summary?.configuredDevices ?? "N/A",
-        className: "text-info",
-      },
-      {
-        label: "Assignable",
-        value: summary?.assignableDevices ?? "N/A",
+        label: "Active",
+        value: summary?.activeDevices ?? "N/A",
         className: "text-success",
+      },
+      {
+        label: "Inactive",
+        // ponytail: API doesn't ship inactiveDevices — treat pending config as inactive.
+        // Drop this fallback when the summary endpoint gains the field.
+        value: summary?.pendingConfigDevices ?? "N/A",
+        className: "text-muted-foreground",
       },
       {
         label: "Assigned",
@@ -309,14 +351,26 @@ export function PlatformDeviceManagement() {
         className: "text-primary",
       },
       {
-        label: "Active",
-        value: summary?.activeDevices ?? "N/A",
-        className: "text-success",
+        label: "Unassigned",
+        // fleetflow's "unassigned" == assignable-but-not-yet-assigned.
+        value: summary?.assignableDevices ?? "N/A",
+        className: "text-warning",
       },
       {
-        label: "Faulty",
-        value: summary?.faultyDevices ?? "N/A",
-        className: "text-destructive",
+        label: "Configured",
+        value: summary?.configuredDevices ?? "N/A",
+        className: "text-info",
+      },
+      {
+        label: "Registered",
+        value: summary?.registeredDevices ?? "N/A",
+        className: "text-muted-foreground",
+      },
+      {
+        label: "Unregistered",
+        // ponytail: API doesn't ship unregisteredDevices — 0 until backend adds it.
+        value: 0,
+        className: "text-muted-foreground",
       },
     ],
     [summary],
@@ -361,21 +415,14 @@ export function PlatformDeviceManagement() {
       ),
     },
     {
-      id: "lifecycle",
-      header: "Lifecycle / Operational",
+      id: "status",
+      header: "Status",
       cell: ({ row }) => {
-        const device = row.original;
+        const normalized = normalizeDeviceStatus(row.original);
         return (
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge className={getStatusBadgeClass(device.lifecycleStatus)}>
-              {formatStatusLabel(device.lifecycleStatus)}
-            </Badge>
-            {device.operationalStatus && device.operationalStatus !== device.lifecycleStatus && (
-              <Badge className={getStatusBadgeClass(device.operationalStatus)}>
-                {formatStatusLabel(device.operationalStatus)}
-              </Badge>
-            )}
-          </div>
+          <Badge className={NORMALIZED_STATUS_CLASSES[normalized]}>
+            {NORMALIZED_STATUS_LABELS[normalized]}
+          </Badge>
         );
       },
     },
@@ -565,7 +612,7 @@ export function PlatformDeviceManagement() {
               </div>
             )
           : (
-              <div className="grid gap-4 mt-4 grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
+              <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-8">
                 {summaryCards.map(stat => (
                   <div
                     key={stat.label}

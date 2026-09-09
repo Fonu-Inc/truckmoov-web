@@ -1,25 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
-import { getSystemDevicesSummaryQueryOptions } from "@truckmoov/api/auth";
 import {
-  Activity,
-  AlertTriangle,
   BookOpen,
   ClipboardCheck,
   Cpu,
-  Satellite,
-  Signal,
-  WifiOff,
 } from "lucide-react";
-import {
-  useMemo,
-  useState,
-} from "react";
-import { StatCard } from "@/components/dashboard/StatCard";
+import { useState } from "react";
 import { DeviceCatalogManager } from "@/components/devices/DeviceCatalogManager";
 import { DeviceProvisioningQueue } from "@/components/devices/DeviceProvisioningQueue";
 import { PlatformDeviceManagement } from "@/components/devices/PlatformDeviceManagement";
-import { Button } from "@/components/shadcn/button";
-import { Skeleton } from "@/components/shadcn/skeleton";
 import {
   Tabs,
   TabsContent,
@@ -32,89 +19,9 @@ export default function PlatformDevices() {
     activeTab,
     setActiveTab,
   ] = useState("management");
-  const summaryQuery = useQuery(getSystemDevicesSummaryQueryOptions());
-
-  // Stats are sourced from the system summary endpoint.
-  const stats = useMemo(
-    () => {
-      const summary = summaryQuery.data?.data;
-
-      return {
-        total: summary?.totalDevices ?? "N/A",
-        verified: summary?.verifiedActiveDevices ?? "N/A",
-        pending: summary?.pendingConfigDevices ?? "N/A",
-        online: summary?.onlineNowDevices ?? "N/A",
-        faulty: summary?.faultyDevices ?? "N/A",
-      };
-    },
-    [summaryQuery.data],
-  );
 
   return (
     <div className="space-y-6">
-      {/* Stats - Same data for both tabs */}
-      {summaryQuery.isError
-        ? (
-            <div className="rounded-lg border border-border/50 bg-card/50 py-6 text-center">
-              <p className="text-destructive">Unable to load device summary.</p>
-              <Button
-                variant="link"
-                className="mt-1"
-                onClick={() => summaryQuery.refetch()}
-              >
-                Try again
-              </Button>
-            </div>
-          )
-        : (
-            <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
-              {summaryQuery.isLoading
-                ? (
-                    Array.from({ length: 5 }).fill(0).map((_, i) => (
-                      <Skeleton
-                        key={i}
-                        className="h-24"
-                      />
-                    ))
-                  )
-                : (
-                    <>
-                      <StatCard
-                        title="Total Devices"
-                        value={stats.total}
-                        icon={Satellite}
-                        changeLabel="Registered devices"
-                      />
-                      <StatCard
-                        title="Verified / Active"
-                        value={stats.verified}
-                        icon={Activity}
-                        changeLabel="Ready for assignment"
-                      />
-                      <StatCard
-                        title="Pending Config"
-                        value={stats.pending}
-                        icon={WifiOff}
-                        changeLabel="Awaiting verification"
-                      />
-                      <StatCard
-                        title="Online Now"
-                        value={stats.online}
-                        icon={Signal}
-                        changeLabel="Last 5 minutes"
-                      />
-                      <StatCard
-                        title="Faulty"
-                        value={stats.faulty}
-                        icon={AlertTriangle}
-                        changeLabel="Needs attention"
-                      />
-                    </>
-                  )}
-            </div>
-          )}
-
-      {/* Tabs for Management, Tracking, and Catalog */}
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}

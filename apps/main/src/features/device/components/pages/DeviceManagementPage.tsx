@@ -239,12 +239,34 @@ export default function DeviceManagement() {
   const availableVehicles = availableVehiclesResponse?.data ?? [];
   const detailDevice = deviceResponse?.data;
 
+  /**
+   * Fold the raw `status` + `lifecycle_status` fields into the 6 buckets
+   * fleetflow's `/admin/devices` displays, so the badge, filter and stats
+   * all agree. Ported verbatim from fleetflow's `normalizeStatus` (see
+   * `fleetflow-pro-main/src/pages/admin/DeviceManagement.tsx` line 121).
+   */
+  const normalizeStatus = (device: DeviceWithTelemetry): string => {
+    const lifecycle = (device.lifecycle_status || "") as string;
+    const legacy = (device.status || "") as string;
+    if (legacy === "active")
+      return "active";
+    if (lifecycle === "assigned" || legacy === "assigned" || device.vehicle_id)
+      return "assigned";
+    if (lifecycle === "assignable" || lifecycle === "verified_online")
+      return "unassigned";
+    if (lifecycle === "configured" || lifecycle === "config_pending" || legacy === "configured")
+      return "configured";
+    if (lifecycle === "registered" || legacy === "registered")
+      return "registered";
+    return "unregistered";
+  };
+
   const filteredDevices = useMemo(
     () => {
       const now = Date.now();
       return devices.filter((device) => {
         const matchesSearch = true;
-        const matchesStatus = true;
+        const matchesStatus = statusFilter === "all" || normalizeStatus(device) === statusFilter;
         const matchesManufacturer = manufacturerFilters.length === 0 || manufacturerFilters.includes(device.manufacturer);
 
         let matchesLastSeen = true;
@@ -276,6 +298,7 @@ export default function DeviceManagement() {
       devices,
       manufacturerFilters,
       lastSeenFilters,
+      statusFilter,
     ],
   );
 
@@ -290,14 +313,17 @@ export default function DeviceManagement() {
   );
 
   const stats = useMemo(
-    () => ({
-      total: devices.length,
-      active: devices.filter(d => d.status === "active").length,
-      registered: devices.filter(d => d.status === "registered" || d.lifecycle_status === "registered").length,
-      assigned: devices.filter(d => Boolean(d.vehicle_id)).length,
-      unassigned: devices.filter(d => !d.vehicle_id).length,
-      configured: devices.filter(d => d.status === "configured" || d.lifecycle_status === "configured").length,
-    }),
+    () => {
+      const buckets = devices.map(normalizeStatus);
+      return {
+        total: devices.length,
+        active: buckets.filter(s => s === "active").length,
+        registered: buckets.filter(s => s === "registered").length,
+        assigned: buckets.filter(s => s === "assigned").length,
+        unassigned: buckets.filter(s => s === "unassigned").length,
+        configured: buckets.filter(s => s === "configured").length,
+      };
+    },
     [devices],
   );
 
@@ -495,7 +521,15 @@ export default function DeviceManagement() {
   const handleExportDevices = async () => {
     try {
       setIsExporting(true);
-      const blob = await exportDevices();
+      // Send the current on-screen filters so the download matches the table (§ 5).
+      const blob = await exportDevices({
+        params: {
+          query: debouncedSearch.trim() || undefined,
+          status: apiStatus,
+          lifecycleStatus,
+          manufacturer: apiManufacturer,
+        },
+      });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -569,7 +603,7 @@ export default function DeviceManagement() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-muted-foreground">Total Devices</p>
-                    <p className="mt-1 text-2xl font-bold">{stats.total}</p>
+                    <p className="mt-1 truncate text-xl font-bold">{stats.total}</p>
                   </div>
                 </div>
               </CardContent>
@@ -580,9 +614,9 @@ export default function DeviceManagement() {
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10">
                     <CheckCircle2 className="h-5 w-5 text-success" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm text-muted-foreground">Active</p>
-                    <p className="mt-1 text-2xl font-bold text-success">{stats.active}</p>
+                    <p className="mt-1 truncate text-xl font-bold text-success">{stats.active}</p>
                   </div>
                 </div>
               </CardContent>
@@ -593,9 +627,9 @@ export default function DeviceManagement() {
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
                     <ShieldAlert className="h-5 w-5 text-muted-foreground" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm text-muted-foreground">Registered</p>
-                    <p className="mt-1 text-2xl font-bold">{stats.registered}</p>
+                    <p className="mt-1 truncate text-xl font-bold">{stats.registered}</p>
                   </div>
                 </div>
               </CardContent>
@@ -603,12 +637,12 @@ export default function DeviceManagement() {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                    <Link className="h-5 w-5 text-primary" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-info/10">
+                    <Link className="h-5 w-5 text-info" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm text-muted-foreground">Assigned</p>
-                    <p className="mt-1 text-2xl font-bold text-primary">{stats.assigned}</p>
+                    <p className="mt-1 truncate text-xl font-bold text-info">{stats.assigned}</p>
                   </div>
                 </div>
               </CardContent>
@@ -619,9 +653,9 @@ export default function DeviceManagement() {
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-warning/10">
                     <Signal className="h-5 w-5 text-warning" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm text-muted-foreground">Unassigned</p>
-                    <p className="mt-1 text-2xl font-bold text-warning">{stats.unassigned}</p>
+                    <p className="mt-1 truncate text-xl font-bold text-warning">{stats.unassigned}</p>
                   </div>
                 </div>
               </CardContent>
@@ -629,12 +663,12 @@ export default function DeviceManagement() {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                    <Settings className="h-5 w-5 text-primary" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-info/10">
+                    <Settings className="h-5 w-5 text-info" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm text-muted-foreground">Configured</p>
-                    <p className="mt-1 text-2xl font-bold text-primary">{stats.configured}</p>
+                    <p className="mt-1 truncate text-xl font-bold text-info">{stats.configured}</p>
                   </div>
                 </div>
               </CardContent>
@@ -691,12 +725,12 @@ export default function DeviceManagement() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="registered">Registered</SelectItem>
-                    <SelectItem value="configured">Configured</SelectItem>
-                    <SelectItem value="assignable">Assignable</SelectItem>
-                    <SelectItem value="assigned">Assigned</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="faulty">Faulty</SelectItem>
+                    <SelectItem value="assigned">Assigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    <SelectItem value="configured">Configured</SelectItem>
+                    <SelectItem value="registered">Registered</SelectItem>
+                    <SelectItem value="unregistered">Unregistered</SelectItem>
                   </SelectContent>
                 </Select>
                 <Popover>
@@ -850,6 +884,7 @@ export default function DeviceManagement() {
                         <table className="w-full">
                           <thead>
                             <tr className="border-b border-border text-left text-sm text-muted-foreground">
+                              <th className="pb-3 font-medium">Device ID</th>
                               <th className="pb-3 font-medium">Device</th>
                               <th className="pb-3 font-medium">IMEI</th>
                               <th className="pb-3 font-medium">Status</th>
@@ -867,6 +902,14 @@ export default function DeviceManagement() {
                                   key={device.id}
                                   className="group transition-colors hover:bg-secondary/30"
                                 >
+                                  <td className="py-4">
+                                    <span
+                                      className="rounded bg-secondary px-2 py-1 font-mono text-xs"
+                                      title={device.id}
+                                    >
+                                      {device.id.slice(0, 8)}
+                                    </span>
+                                  </td>
                                   <td className="py-4">
                                     <div className="flex items-center gap-3">
                                       <div className={cn(
@@ -900,17 +943,23 @@ export default function DeviceManagement() {
                                     </span>
                                   </td>
                                   <td className="py-4">
-                                    <span className={cn(
-                                      "rounded-full px-2.5 py-1 text-xs font-medium",
-                                      device.status === "active" && "bg-success/10 text-success",
-                                      device.status === "registered" && "bg-muted text-muted-foreground",
-                                      device.status === "configured" && "bg-info/10 text-info",
-                                      device.status === "inactive" && "bg-warning/10 text-warning",
-                                      device.status === "faulty" && "bg-destructive/10 text-destructive",
-                                    )}
-                                    >
-                                      {device.status}
-                                    </span>
+                                    {(() => {
+                                      const s = normalizeStatus(device);
+                                      return (
+                                        <span className={cn(
+                                          "rounded-full px-2.5 py-1 text-xs font-medium capitalize",
+                                          s === "active" && "bg-success/10 text-success",
+                                          s === "assigned" && "bg-info/10 text-info",
+                                          s === "unassigned" && "bg-warning/10 text-warning",
+                                          s === "configured" && "bg-info/10 text-info",
+                                          s === "registered" && "bg-muted text-muted-foreground",
+                                          s === "unregistered" && "bg-secondary text-muted-foreground",
+                                        )}
+                                        >
+                                          {s}
+                                        </span>
+                                      );
+                                    })()}
                                   </td>
                                   <td className="py-4">
                                     {vehicle
@@ -975,6 +1024,12 @@ export default function DeviceManagement() {
                                           Edit
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
+                                        {(device.lifecycle_status === "registered" || device.status === "registered") && (
+                                          <DropdownMenuItem onClick={() => handleMarkConfigured(device.id)}>
+                                            <Settings className="mr-2 h-4 w-4" />
+                                            Mark as Configured
+                                          </DropdownMenuItem>
+                                        )}
                                         {device.vehicle_id
                                           ? (
                                               <DropdownMenuItem onClick={() => handleUnassignDevice(device)}>
@@ -992,12 +1047,6 @@ export default function DeviceManagement() {
                                                 Assign to Vehicle
                                               </DropdownMenuItem>
                                             )}
-                                        {(device.lifecycle_status === "registered" || device.status === "registered") && (
-                                          <DropdownMenuItem onClick={() => handleMarkConfigured(device.id)}>
-                                            <Settings className="mr-2 h-4 w-4" />
-                                            Mark as Configured
-                                          </DropdownMenuItem>
-                                        )}
                                         <DropdownMenuItem onClick={() => openFirmwareDialog(device)}>
                                           <RefreshCw className="mr-2 h-4 w-4" />
                                           Update Firmware

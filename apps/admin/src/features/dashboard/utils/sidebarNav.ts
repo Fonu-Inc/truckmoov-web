@@ -6,7 +6,6 @@ import {
   CreditCard,
   Database,
   LayoutDashboard,
-  Send,
   Settings,
   ShieldCheck,
   ShieldHalf,
@@ -72,10 +71,7 @@ export const SIDEBAR_ENTRIES: (SidebarNavItem & { hasPermission: UserRole[] })[]
     label: "IoT SIMs", href: "/sims", icon: Wifi, hasPermission: ADMIN_ROLES,
   },
   {
-    label: "M2M Iot Bundles", href: "/data-bundles", icon: Database, hasPermission: ADMIN_ROLES,
-  },
-  {
-    label: "Channel Providers", href: "/communications", icon: Send, hasPermission: ADMIN_ROLES,
+    label: "M2M IoT Bundles", href: "/data-bundles", icon: Database, hasPermission: ADMIN_ROLES,
   },
   {
     label: "Subscription", href: "/subscription", icon: CreditCard, hasPermission: ADMIN_ROLES,

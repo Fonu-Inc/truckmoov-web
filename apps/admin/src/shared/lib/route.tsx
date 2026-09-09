@@ -129,10 +129,6 @@ export const router = createBrowserRouter([
             lazy: async () => ({ Component: (await import("@/pages/platform/DeviceSimulator")).default }),
           },
           {
-            path: "/communications",
-            lazy: async () => ({ Component: (await import("@/pages/platform/PlatformCommunications")).default }),
-          },
-          {
             path: "/messaging",
             lazy: async () => ({ Component: (await import("@/pages/platform/PlatformMessagingCenter")).default }),
           },

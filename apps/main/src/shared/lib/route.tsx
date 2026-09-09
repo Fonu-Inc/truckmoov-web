@@ -298,10 +298,6 @@ export const router = createBrowserRouter([
         loader: () => redirect("/messages?tab=ivr-dashboard"),
       },
       {
-        path: "/analytics",
-        loader: () => redirect("/fleet?tab=analytics"),
-      },
-      {
         path: "/maintenance",
         loader: () => redirect("/fleet?tab=maintenance"),
       },
@@ -471,6 +467,22 @@ export const router = createBrowserRouter([
                 lazy: async () => ({ Component: (await import("@/features/data-bundle/components/pages/CurrentRatesPage")).default }),
               },
             ],
+          },
+          // Nav entries whose page isn't built yet — the sidebar row works, the
+          // body says "Coming soon". Swap the importer when the page lands.
+          {
+            path: "/analytics",
+            lazy: guarded(
+              "/analytics",
+              () => import("@/features/dashboard/components/pages/ComingSoon"),
+            ),
+          },
+          {
+            path: "/subscription",
+            lazy: guarded(
+              "/subscription",
+              () => import("@/features/dashboard/components/pages/ComingSoon"),
+            ),
           },
           {
             path: "/jobs",

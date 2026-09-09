@@ -209,10 +209,11 @@ role. `SIDEBAR_ENTRIES` is a module constant, so a role's answer can never go
 stale, and the cache is what makes the sidebar's `memo`'d rows referentially
 stable. There are no per-role entry arrays. Two consequences:
 
-- One route means one entry with one label. A page is called the same thing for
-  everybody who can reach it — `/fleet` is "Fleet" for the fleet provider,
-  the aggregator and the enterprise alike — so a route is never listed twice
-  under different names.
+- One route means one entry. A route is never listed twice, but the label may
+  differ per role via a sparse `labelByRole` — `/fleet` is "Fleet" for the fleet
+  provider and the aggregator, "My Vehicles" for the enterprise admin and the
+  owner-operator. Roles absent from `labelByRole` see the base `label`, and the
+  resolved label is also the top-bar title.
 - The array order is the single canonical order; each role's sidebar is a
   projection of it. Moving an entry moves it for every role that sees it.
 
@@ -226,6 +227,15 @@ border. Inactive: `text-sidebar-foreground/80` with `hover:bg-sidebar-accent`.
 
 **To add a page to the nav, add one entry to `SIDEBAR_ENTRIES` in
 `sidebarNav.ts` with the roles that may see it.**
+
+Two ways to show something that isn't built yet. A single entry gets a normal
+route pointing at `features/dashboard/components/pages/ComingSoon` — the row
+navigates and highlights, the body reads "Coming soon" (`/analytics` and
+`/subscription` today). A whole section gets `disabled: true` on its group
+instead: the row greys out, stops being a link, and carries a "Coming soon"
+tooltip ("Communications"). Both are one-line reversals when the feature ships.
+`apps/admin`'s flat nav has no `disabled` field — it never needed one, and
+adding it means adding the branch to its `NavRowBase` too.
 
 The settings tab bar has its own list with its own field: `SETTINGS_TABS` in
 `features/settings/utils/settingsNav.ts` carries `hasPermissions: UserRole[]`,
