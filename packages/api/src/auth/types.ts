@@ -316,7 +316,7 @@ export type SuspendSystemSimPayload = {
 export type SystemTenantsQuery = {
   params?: {
     search?: string
-    status?: 'active' | 'pending' | 'suspended' | 'inactive'
+    status?: 'active' | 'pending' | 'suspended' | 'inactive' | 'terminated'
     plan?: 'starter' | 'professional' | 'enterprise'
     organizationType?: 'fleet_provider' | 'enterprise' | 'aggregator' | 'owner_operator'
     kycStatus?: 'not_submitted' | 'pending' | 'under_review' | 'verified' | 'rejected'
@@ -1278,6 +1278,13 @@ export type DeleteOnboardingKycDocumentPayload = {
   id: string
 }
 
+export type SystemTenantQuotas = {
+  vehicles: number | null
+  drivers: number | null
+  devices: number | null
+  sims: number | null
+}
+
 export type SystemTenant = {
   id: string
   name: string
@@ -1294,6 +1301,7 @@ export type SystemTenant = {
   driverCount: number
   deviceCount: number
   simCount: number
+  quotas: SystemTenantQuotas
   features: Record<string, boolean>
   createdAt: string
   monthlyRevenueNgn: number
@@ -1326,6 +1334,9 @@ export type SystemTenantsSummary = {
   totalTenants: number
   activeTenants: number
   suspendedTenants: number
+  terminatedTenants: number
+  inactiveTenants: number
+  pendingTenants: number
   totalVehicles: number
   totalSims: number
   overdueInvoices: number | null
@@ -2762,6 +2773,15 @@ export type OnboardingApplication = {
   applicationStatus: OnboardingApplicationStatus
   createdAt: string
   updatedAt: string
+  documentCount?: number
+  setupLink?: OnboardingApplicationSetupLink | null
+}
+
+export type OnboardingApplicationSetupLink = {
+  status: 'sent' | 'failed' | null
+  sentAt: string | null
+  error: string | null
+  attempts: number
 }
 
 export type CreateOnboardingApplicationPayload = {
@@ -3073,3 +3093,99 @@ export type SystemAuditLogVerification = {
 }
 
 export type SystemAuditLogVerifyResponse = ServerResponse<SystemAuditLogVerification>
+
+// ─── System — tenant terminate ───────────────────────────────────────────────
+
+export type TerminateSystemTenantPayload = {
+  id: string
+  data: { reason: string; confirmation: 'TERMINATE' }
+}
+export type TerminateSystemTenantResponse = ServerResponse<Record<string, unknown>>
+
+// ─── System — tenant detail: resource tabs / documents / audit-log ───────────
+
+export type SystemTenantResourceTab = 'vehicles' | 'drivers' | 'devices' | 'sims'
+
+export type SystemTenantVehicleRow = {
+  vehicleId: string
+  registrationNumber: string
+  make: string | null
+  model: string | null
+  status: string
+}
+export type SystemTenantDriverRow = {
+  driverId: string
+  name: string
+  phone: string | null
+  licenseNumber: string | null
+  status: string
+}
+export type SystemTenantDeviceRow = {
+  deviceId: string
+  manufacturer: string | null
+  model: string | null
+  imei: string | null
+  status: string
+  assignedVehicleId: string | null
+}
+export type SystemTenantSimRow = {
+  simId: string
+  msisdn: string | null
+  carrier: string | null
+  iccid: string | null
+  status: string
+}
+
+// `available: false` means the fleet service was unreachable — not empty.
+export type SystemTenantResourcesResponse<TItem> = ServerResponse<{
+  available: boolean
+  total: number
+  used: number
+  limit: number | null
+  items: TItem[]
+}>
+
+export type SystemTenantResourcesPayload = {
+  id: string
+  tab: SystemTenantResourceTab
+  planCode?: string
+}
+
+export type SystemTenantDocument = {
+  documentId: string
+  documentType: string
+  documentName: string
+  fileSize: number
+  mimeType: string
+  status: string
+  uploadedAt: string
+}
+export type SystemTenantDocumentsResponse = ServerResponse<{
+  total: number
+  items: SystemTenantDocument[]
+}>
+
+export type SystemTenantAuditLogEntry = {
+  id: string
+  action: string
+  summary: string | null
+  actorName: string | null
+  actorEmail: string | null
+  occurredAt: string
+}
+export type SystemTenantAuditLogResponse = ServerResponse<{
+  total: number
+  items: SystemTenantAuditLogEntry[]
+}>
+
+// ─── System — onboarding applications summary ────────────────────────────────
+
+export type SystemOnboardingApplicationsSummary = {
+  total: number
+  pendingReview: number
+  approved: number
+  rejected: number
+  changesRequested: number
+}
+export type SystemOnboardingApplicationsSummaryResponse =
+  ServerResponse<SystemOnboardingApplicationsSummary>

@@ -302,6 +302,13 @@ import type {
   SystemAuditLogResponse,
   SystemAuditLogVerifyResponse,
   SystemOnboardingApplicationsQuery,
+  SystemOnboardingApplicationsSummaryResponse,
+  SystemTenantAuditLogResponse,
+  SystemTenantDocumentsResponse,
+  SystemTenantResourcesPayload,
+  SystemTenantResourcesResponse,
+  TerminateSystemTenantPayload,
+  TerminateSystemTenantResponse,
   SystemRejectOnboardingApplicationDocumentPayload,
   SystemRejectOnboardingApplicationPayload,
   SystemRequestChangesOnboardingApplicationPayload,
@@ -1994,4 +2001,47 @@ export async function exportSystemAuditLog(payload?: SystemAuditLogQuery) {
     responseType: 'blob',
   })
   return res.data
+}
+
+// ─── System — tenant terminate / detail resource tabs / docs / audit ─────────
+
+export async function terminateSystemTenant({ id, data }: TerminateSystemTenantPayload) {
+  const { data: res } = await axiosInstance.post<TerminateSystemTenantResponse>(
+    `/auth/system/tenants/${id}/terminate`,
+    data,
+  )
+  return res
+}
+
+export async function getSystemTenantResources({
+  id,
+  tab,
+  planCode,
+}: SystemTenantResourcesPayload) {
+  const { data } = await axiosInstance.get<SystemTenantResourcesResponse<unknown>>(
+    `/auth/system/tenants/${id}/resources/${tab}`,
+    { params: planCode ? { planCode } : undefined },
+  )
+  return data
+}
+
+export async function getSystemTenantDocuments({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<SystemTenantDocumentsResponse>(
+    `/auth/system/tenants/${id}/documents`,
+  )
+  return data
+}
+
+export async function getSystemTenantAuditLog({ id }: { id: string }) {
+  const { data } = await axiosInstance.get<SystemTenantAuditLogResponse>(
+    `/auth/system/tenants/${id}/audit-log`,
+  )
+  return data
+}
+
+export async function getSystemOnboardingApplicationsSummary() {
+  const { data } = await axiosInstance.get<SystemOnboardingApplicationsSummaryResponse>(
+    '/auth/system/onboarding/applications/summary',
+  )
+  return data
 }

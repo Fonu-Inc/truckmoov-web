@@ -74,7 +74,7 @@ export const SIDEBAR_ENTRIES: (SidebarNavItem & { hasPermission: UserRole[] })[]
     label: "M2M IoT Bundles", href: "/data-bundles", icon: Database, hasPermission: ADMIN_ROLES,
   },
   {
-    label: "Subscription", href: "/subscription", icon: CreditCard, hasPermission: ADMIN_ROLES,
+    label: "Billing", href: "/subscription", icon: CreditCard, hasPermission: ADMIN_ROLES,
   },
   {
     label: "Security", href: "/security", icon: ShieldHalf, hasPermission: ADMIN_ROLES,

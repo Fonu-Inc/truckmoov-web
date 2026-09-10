@@ -1,5 +1,5 @@
 import type { SystemTenant } from "@truckmoov/api/auth";
-import { useDeleteTenant } from "@truckmoov/api/auth";
+import { useTerminateSystemTenant } from "@truckmoov/api/auth";
 import {
   AlertTriangle,
   Loader2,
@@ -45,11 +45,8 @@ export function TerminateTenantDialog({
     confirmation,
     setConfirmation,
   ] = useState("");
-  const [
-    submitting,
-    setSubmitting,
-  ] = useState(false);
-  const deleteTenantMutation = useDeleteTenant();
+  const terminateMutation = useTerminateSystemTenant();
+  const submitting = terminateMutation.isPending;
 
   const canSubmit
     = confirmation === "TERMINATE" && reason.trim().length >= 10 && !submitting;
@@ -67,20 +64,22 @@ export function TerminateTenantDialog({
   const handleTerminate = async () => {
     if (!canSubmit)
       return;
-    setSubmitting(true);
     try {
-      await deleteTenantMutation.mutateAsync({ id: tenant.id });
+      await terminateMutation.mutateAsync({
+        id: tenant.id,
+        data: {
+          reason: reason.trim(), confirmation: "TERMINATE",
+        },
+      });
       toast.success(`${tenant.name} has been terminated`);
       setReason("");
       setConfirmation("");
       onTerminated?.();
       onOpenChange(false);
     }
-    catch {
-      // error handled by react-query
-    }
-    finally {
-      setSubmitting(false);
+    catch (error) {
+      const message = error instanceof Error ? error.message : "Termination failed";
+      toast.error(message);
     }
   };
 
@@ -111,16 +110,9 @@ export function TerminateTenantDialog({
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>This is irreversible</AlertTitle>
           <AlertDescription className="text-xs space-y-1 mt-2">
-            <p>• All active SIMs will be terminated at the MTN HLR.</p>
-            <p>• All WhatsApp numbers will be retired from the WABA.</p>
-            <p>
-              • A data export will be generated and emailed to the tenant's
-              primary contact (link valid for 30 days).
-            </p>
-            <p>
-              • Tenant data will be purged after 30 days per NDPR policy unless
-              NCC retention applies.
-            </p>
+            <p>• All tenant users lose access immediately.</p>
+            <p>• Active sessions are revoked.</p>
+            <p>• The tenant's SIMs are deactivated on this platform.</p>
             <p>• Terminated tenants cannot be reinstated.</p>
           </AlertDescription>
         </Alert>

@@ -251,6 +251,11 @@ import {
   getSystemAuditLog,
   getSystemAuditLogFilters,
   verifySystemAuditLog,
+  getSystemOnboardingApplicationsSummary,
+  getSystemTenantAuditLog,
+  getSystemTenantDocuments,
+  getSystemTenantResources,
+  terminateSystemTenant,
   updateMailboxMessageFlags,
   updateOnboardingApplication,
   updatePlatformIntegration,
@@ -300,6 +305,7 @@ import type {
   CreateOnboardingApplicationResponse,
   SystemAuditLogQuery,
   SystemOnboardingApplicationsQuery,
+  SystemTenantResourcesPayload,
 } from './types'
 
 // Every type in ./types is public — no hand-maintained list to fall out of date.
@@ -466,6 +472,12 @@ export const AUTH_QUERY_KEY = {
     payload ? ['systemAuditLog', payload] : ['systemAuditLog'],
   systemAuditLogFilters: ['systemAuditLogFilters'],
   systemAuditLogVerify: ['systemAuditLogVerify'],
+
+  systemTenantResources: (payload: SystemTenantResourcesPayload) =>
+    ['systemTenantResources', payload],
+  systemTenantDocuments: (id: string) => ['systemTenantDocuments', id],
+  systemTenantAuditLog: (id: string) => ['systemTenantAuditLog', id],
+  systemOnboardingApplicationsSummary: ['systemOnboardingApplicationsSummary'],
 } as const
 
 // Public auth/session
@@ -2399,4 +2411,48 @@ export function getSystemAuditLogVerifyQueryOptions() {
 }
 
 export { exportSystemAuditLog }
+
+// ─── System — tenant terminate / detail resource tabs / documents / audit ────
+
+export function useTerminateSystemTenant() {
+  return useMutation({
+    mutationFn: terminateSystemTenant,
+    onSuccess: (_res, vars) => {
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemTenants() })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemTenantsSummary })
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY.systemTenant(vars.id) })
+    },
+  })
+}
+
+export function getSystemTenantResourcesQueryOptions(payload: SystemTenantResourcesPayload) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemTenantResources(payload),
+    queryFn: () => getSystemTenantResources(payload),
+    enabled: Boolean(payload.id),
+  })
+}
+
+export function getSystemTenantDocumentsQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemTenantDocuments(id),
+    queryFn: () => getSystemTenantDocuments({ id }),
+    enabled: Boolean(id),
+  })
+}
+
+export function getSystemTenantAuditLogQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemTenantAuditLog(id),
+    queryFn: () => getSystemTenantAuditLog({ id }),
+    enabled: Boolean(id),
+  })
+}
+
+export function getSystemOnboardingApplicationsSummaryQueryOptions() {
+  return queryOptions({
+    queryKey: AUTH_QUERY_KEY.systemOnboardingApplicationsSummary,
+    queryFn: getSystemOnboardingApplicationsSummary,
+  })
+}
 

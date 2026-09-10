@@ -1,27 +1,40 @@
-import { format } from "date-fns";
+import type {
+  OnboardingApplication,
+  OnboardingApplicationSetupLink,
+  OnboardingApplicationStatus,
+} from "@truckmoov/api/auth";
+import { useQuery } from "@tanstack/react-query";
 import {
-  Building2,
+  getSystemOnboardingApplicationsQueryOptions,
+  getSystemOnboardingApplicationsSummaryQueryOptions,
+  useApproveSystemOnboardingApplication,
+  useRejectSystemOnboardingApplication,
+  useRequestChangesSystemOnboardingApplication,
+  useResendSystemOnboardingApplicationSetupLink,
+} from "@truckmoov/api/auth";
+import { formatDayMonthTime } from "@truckmoov/app-core/utils/time-utils";
+import {
+  AlertCircle,
   CheckCircle2,
   ChevronDown,
   Clock,
-  Download,
-  Eye,
   FileText,
   Mail,
+  RefreshCw,
   Search,
   Send,
   XCircle,
 } from "lucide-react";
 import {
-  useMemo, useState,
+  useEffect, useState,
 } from "react";
 import { toast } from "sonner";
+import { StatCard } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/shadcn/badge";
 import { Button } from "@/components/shadcn/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/shadcn/card";
@@ -39,851 +52,477 @@ import {
   DialogTitle,
 } from "@/components/shadcn/dialog";
 import { Input } from "@/components/shadcn/input";
-import { Separator } from "@/components/shadcn/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/select";
 import { Textarea } from "@/components/shadcn/textarea";
 
-// ponytail: demo-only panel ported from fleetflow. Wire real KYC submissions
-// via @truckmoov/api when the backend exposes tenant_business_info / kyc_documents.
-
-type KycDoc = {
-  id: string;
-  document_type: string;
-  document_name: string;
-  file_size: number | null;
-  created_at: string;
+const STATUS_LABELS: Record<OnboardingApplicationStatus, string> = {
+  draft: "Draft",
+  submitted: "Submitted",
+  under_review: "Under Review",
+  approved: "Approved",
+  rejected: "Rejected",
+  changes_requested: "Changes Requested",
 };
 
-type KycApplication = {
-  tenantId: string;
-  companyName: string;
-  contactName: string;
-  businessEmail: string;
-  phone: string;
-  registrationNumber: string;
-  taxId: string;
-  businessType: string;
-  industry: string;
-  address: string;
-  customerType: string;
-  fleetSize: string;
-  plan: string;
-  billingModel: string;
-  submittedAt: string;
-  documents: KycDoc[];
-};
+function statusBadge(status: OnboardingApplicationStatus) {
+  switch (status) {
+    case "approved":
+      return <Badge className="bg-success/10 text-success border-success/30">Approved</Badge>;
+    case "rejected":
+      return <Badge variant="destructive">Rejected</Badge>;
+    case "changes_requested":
+      return <Badge className="bg-warning/10 text-warning border-warning/30">Changes Requested</Badge>;
+    case "under_review":
+      return <Badge className="bg-primary/10 text-primary border-primary/30">Under Review</Badge>;
+    case "submitted":
+      return <Badge className="bg-primary/10 text-primary border-primary/30">Submitted</Badge>;
+    default:
+      return <Badge variant="secondary">{STATUS_LABELS[status]}</Badge>;
+  }
+}
 
-type Decision = "pending" | "approved" | "rejected";
-
-type ReviewState = {
-  decision: Decision;
-  reason?: string;
-  linkSentAt?: string;
-  linkType?: "setup" | "rejection";
-  deliveryStatus?: "sent" | "failed";
-  attempts?: number;
-};
-
-const DOC_LABELS: Record<string, string> = {
-  certificate_of_incorporation: "Certificate of Incorporation",
-  tax_identification: "Tax Identification (TIN)",
-  tax_clearance: "Tax Clearance Certificate",
-  utility_bill: "Proof of Business Address",
-  directors_id: "Director ID / NIN",
-  board_resolution: "Board Resolution",
-  fleet_insurance: "Fleet Insurance Certificate",
-  business_license: "Business License / Permit",
-};
-
-function prettyType(t: string) {
-  return DOC_LABELS[t] || t.replace(
-    /_/g,
-    " ",
-  ).replace(
-    /\b\w/g,
-    c => c.toUpperCase(),
+// ponytail: transport-accepted, not delivered. Spec §5 is explicit — never
+// call this "delivered", there is no bounce feedback.
+function SetupLinkPill({ link }: { link: OnboardingApplicationSetupLink | null | undefined }) {
+  if (!link || link.status === null)
+    return null;
+  if (link.status === "sent") {
+    return (
+      <div className="flex items-center gap-2 text-xs text-success">
+        <CheckCircle2 className="h-3.5 w-3.5" />
+        <span>
+          Setup link sent
+          {link.sentAt ? ` · ${formatDayMonthTime(link.sentAt)}` : ""}
+          {link.attempts > 1 ? ` · ${link.attempts} attempts` : ""}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2 text-xs text-destructive">
+      <AlertCircle className="h-3.5 w-3.5" />
+      <span>
+        Delivery failed
+        {link.error ? ` — ${link.error}` : ""}
+        {link.attempts > 1 ? ` · ${link.attempts} attempts` : ""}
+      </span>
+    </div>
   );
 }
 
-const prettySize = (b: number | null) => (b ? `${(b / 1024).toFixed(0)} KB` : "—");
-
-const daysAgo = (d: number) => new Date(Date.now() - d * 86400000).toISOString();
-
-const DEMO_APPLICATIONS: KycApplication[] = [
-  {
-    tenantId: "app-1",
-    companyName: "Chidi Trucking",
-    contactName: "Chidi Okafor",
-    businessEmail: "chidi@chiditrucking.ng",
-    phone: "+234 803 221 4499",
-    registrationNumber: "RC-1928374",
-    taxId: "TIN-98237465-0001",
-    businessType: "Sole Proprietorship",
-    industry: "Transport & Logistics",
-    address: "22 Ojota Road, Ikeja, Lagos, Nigeria",
-    customerType: "Owner-Operator (≤10 vehicles)",
-    fleetSize: "6 vehicles",
-    plan: "Starter",
-    billingModel: "Prepaid",
-    submittedAt: daysAgo(1),
-    documents: [
-      {
-        id: "a1-d1", document_type: "certificate_of_incorporation", document_name: "CAC-Certificate.pdf", file_size: 421_000, created_at: daysAgo(1),
-      },
-      {
-        id: "a1-d2", document_type: "tax_identification", document_name: "TIN-Certificate.pdf", file_size: 198_000, created_at: daysAgo(1),
-      },
-      {
-        id: "a1-d3", document_type: "directors_id", document_name: "Owner-NIN-Slip.jpg", file_size: 88_000, created_at: daysAgo(1),
-      },
-      {
-        id: "a1-d4", document_type: "utility_bill", document_name: "Utility-Bill.pdf", file_size: 144_000, created_at: daysAgo(1),
-      },
-    ],
-  },
-  {
-    tenantId: "app-2",
-    companyName: "Ada Haulage Services",
-    contactName: "Adaeze Nwosu",
-    businessEmail: "ada@adahaulage.ng",
-    phone: "+234 811 550 7723",
-    registrationNumber: "RC-2841930",
-    taxId: "TIN-11223344-0001",
-    businessType: "Limited Liability Company",
-    industry: "Haulage",
-    address: "9 Aba Road, Port Harcourt, Rivers, Nigeria",
-    customerType: "Owner-Operator (≤10 vehicles)",
-    fleetSize: "4 vehicles",
-    plan: "Starter",
-    billingModel: "Postpaid",
-    submittedAt: daysAgo(3),
-    documents: [
-      {
-        id: "a2-d1", document_type: "certificate_of_incorporation", document_name: "CAC-Cert-Ada.pdf", file_size: 388_000, created_at: daysAgo(3),
-      },
-      {
-        id: "a2-d2", document_type: "tax_clearance", document_name: "Tax-Clearance-2026.pdf", file_size: 254_000, created_at: daysAgo(3),
-      },
-      {
-        id: "a2-d3", document_type: "fleet_insurance", document_name: "Fleet-Insurance.pdf", file_size: 512_000, created_at: daysAgo(3),
-      },
-    ],
-  },
-  {
-    tenantId: "app-3",
-    companyName: "Kano Freight Movers",
-    contactName: "Musa Ibrahim",
-    businessEmail: "musa@kanofreight.ng",
-    phone: "+234 706 118 2200",
-    registrationNumber: "RC-3390182",
-    taxId: "TIN-55667788-0001",
-    businessType: "Sole Proprietorship",
-    industry: "Freight & Cargo",
-    address: "Zaria Road, Kano, Nigeria",
-    customerType: "Owner-Operator (≤10 vehicles)",
-    fleetSize: "8 vehicles",
-    plan: "Starter",
-    billingModel: "Prepaid",
-    submittedAt: daysAgo(6),
-    documents: [
-      {
-        id: "a3-d1", document_type: "certificate_of_incorporation", document_name: "CAC-Kano-Freight.pdf", file_size: 402_000, created_at: daysAgo(6),
-      },
-      {
-        id: "a3-d2", document_type: "directors_id", document_name: "Owner-Passport.jpg", file_size: 121_000, created_at: daysAgo(6),
-      },
-      {
-        id: "a3-d3", document_type: "utility_bill", document_name: "Office-Utility.pdf", file_size: 132_000, created_at: daysAgo(6),
-      },
-      {
-        id: "a3-d4", document_type: "board_resolution", document_name: "Resolution-Signed.pdf", file_size: 287_000, created_at: daysAgo(6),
-      },
-      {
-        id: "a3-d5", document_type: "business_license", document_name: "Operating-Permit.pdf", file_size: 175_000, created_at: daysAgo(6),
-      },
-    ],
-  },
-  {
-    tenantId: "app-4",
-    companyName: "Enugu Express Carriers",
-    contactName: "Ngozi Eze",
-    businessEmail: "ngozi@enuguexpress.ng",
-    phone: "+234 902 334 8811",
-    registrationNumber: "RC-4109283",
-    taxId: "TIN-66778899-0001",
-    businessType: "Limited Liability Company",
-    industry: "Transport & Logistics",
-    address: "14 Ogui Road, Enugu, Nigeria",
-    customerType: "Owner-Operator (≤10 vehicles)",
-    fleetSize: "9 vehicles",
-    plan: "Growth",
-    billingModel: "Prepaid",
-    submittedAt: daysAgo(2),
-    documents: [
-      {
-        id: "a4-d1", document_type: "certificate_of_incorporation", document_name: "CAC-Enugu-Express.pdf", file_size: 356_000, created_at: daysAgo(2),
-      },
-      {
-        id: "a4-d2", document_type: "tax_identification", document_name: "TIN-Enugu.pdf", file_size: 187_000, created_at: daysAgo(2),
-      },
-      {
-        id: "a4-d3", document_type: "tax_clearance", document_name: "Tax-Clearance-Enugu.pdf", file_size: 243_000, created_at: daysAgo(2),
-      },
-      {
-        id: "a4-d4", document_type: "utility_bill", document_name: "PHCN-Bill-Enugu.pdf", file_size: 129_000, created_at: daysAgo(2),
-      },
-      {
-        id: "a4-d5", document_type: "directors_id", document_name: "Director-NIN-Ngozi.jpg", file_size: 96_000, created_at: daysAgo(2),
-      },
-      {
-        id: "a4-d6", document_type: "fleet_insurance", document_name: "Insurance-Cover-Note.pdf", file_size: 478_000, created_at: daysAgo(2),
-      },
-    ],
-  },
-  {
-    tenantId: "app-5",
-    companyName: "Ibadan City Movers",
-    contactName: "Tunde Adebayo",
-    businessEmail: "tunde@ibadancitymovers.ng",
-    phone: "+234 805 990 1122",
-    registrationNumber: "RC-5091734",
-    taxId: "TIN-33445566-0001",
-    businessType: "Sole Proprietorship",
-    industry: "Last-Mile Delivery",
-    address: "3 Ring Road, Ibadan, Oyo, Nigeria",
-    customerType: "Owner-Operator (≤10 vehicles)",
-    fleetSize: "5 vehicles",
-    plan: "Starter",
-    billingModel: "Prepaid",
-    submittedAt: daysAgo(4),
-    documents: [
-      {
-        id: "a5-d1", document_type: "certificate_of_incorporation", document_name: "CAC-Ibadan-City.pdf", file_size: 391_000, created_at: daysAgo(4),
-      },
-      {
-        id: "a5-d2", document_type: "utility_bill", document_name: "Water-Corp-Bill.pdf", file_size: 118_000, created_at: daysAgo(4),
-      },
-      {
-        id: "a5-d3", document_type: "directors_id", document_name: "Owner-Drivers-License.jpg", file_size: 104_000, created_at: daysAgo(4),
-      },
-    ],
-  },
-  {
-    tenantId: "app-6",
-    companyName: "Benin Royal Logistics",
-    contactName: "Osaze Omoruyi",
-    businessEmail: "osaze@beninroyal.ng",
-    phone: "+234 701 445 6677",
-    registrationNumber: "RC-6028834",
-    taxId: "TIN-77889900-0001",
-    businessType: "Limited Liability Company",
-    industry: "Freight & Cargo",
-    address: "41 Airport Road, Benin City, Edo, Nigeria",
-    customerType: "Owner-Operator (≤10 vehicles)",
-    fleetSize: "7 vehicles",
-    plan: "Growth",
-    billingModel: "Postpaid",
-    submittedAt: daysAgo(8),
-    documents: [
-      {
-        id: "a6-d1", document_type: "certificate_of_incorporation", document_name: "CAC-Benin-Royal.pdf", file_size: 412_000, created_at: daysAgo(8),
-      },
-      {
-        id: "a6-d2", document_type: "tax_identification", document_name: "TIN-Benin.pdf", file_size: 203_000, created_at: daysAgo(8),
-      },
-      {
-        id: "a6-d3", document_type: "board_resolution", document_name: "Board-Resolution.pdf", file_size: 298_000, created_at: daysAgo(8),
-      },
-      {
-        id: "a6-d4", document_type: "business_license", document_name: "Haulage-Permit.pdf", file_size: 167_000, created_at: daysAgo(8),
-      },
-    ],
-  },
-  {
-    tenantId: "app-7",
-    companyName: "Aba Market Runners",
-    contactName: "Uche Okonkwo",
-    businessEmail: "uche@abamarket.ng",
-    phone: "+234 810 223 5599",
-    registrationNumber: "RC-7155261",
-    taxId: "TIN-44556677-0001",
-    businessType: "Sole Proprietorship",
-    industry: "Trade Distribution",
-    address: "7 Ariaria Market Road, Aba, Abia, Nigeria",
-    customerType: "Owner-Operator (≤10 vehicles)",
-    fleetSize: "3 vehicles",
-    plan: "Starter",
-    billingModel: "Prepaid",
-    submittedAt: daysAgo(10),
-    documents: [
-      {
-        id: "a7-d1", document_type: "certificate_of_incorporation", document_name: "CAC-Aba-Market.pdf", file_size: 364_000, created_at: daysAgo(10),
-      },
-      {
-        id: "a7-d2", document_type: "utility_bill", document_name: "Shop-Utility-Bill.pdf", file_size: 141_000, created_at: daysAgo(10),
-      },
-    ],
-  },
-  {
-    tenantId: "app-8",
-    companyName: "Jos Highland Freight",
-    contactName: "Pam Dung",
-    businessEmail: "pam@joshighland.ng",
-    phone: "+234 913 778 0044",
-    registrationNumber: "RC-8201145",
-    taxId: "TIN-88990011-0001",
-    businessType: "Limited Liability Company",
-    industry: "Transport & Logistics",
-    address: "18 Bukuru Road, Jos, Plateau, Nigeria",
-    customerType: "Owner-Operator (≤10 vehicles)",
-    fleetSize: "10 vehicles",
-    plan: "Growth",
-    billingModel: "Prepaid",
-    submittedAt: daysAgo(12),
-    documents: [
-      {
-        id: "a8-d1", document_type: "certificate_of_incorporation", document_name: "CAC-Jos-Highland.pdf", file_size: 434_000, created_at: daysAgo(12),
-      },
-      {
-        id: "a8-d2", document_type: "tax_clearance", document_name: "Tax-Clearance-Jos.pdf", file_size: 261_000, created_at: daysAgo(12),
-      },
-      {
-        id: "a8-d3", document_type: "fleet_insurance", document_name: "Comprehensive-Fleet-Policy.pdf", file_size: 540_000, created_at: daysAgo(12),
-      },
-      {
-        id: "a8-d4", document_type: "directors_id", document_name: "Director-Voters-Card.jpg", file_size: 91_000, created_at: daysAgo(12),
-      },
-      {
-        id: "a8-d5", document_type: "utility_bill", document_name: "JED-Bill-Jos.pdf", file_size: 127_000, created_at: daysAgo(12),
-      },
-    ],
-  },
-];
-
-const DEMO_REVIEWS: Record<string, ReviewState> = {
-  "app-3": {
-    decision: "approved", linkSentAt: daysAgo(4), linkType: "setup", deliveryStatus: "sent", attempts: 1,
-  },
-  "app-4": {
-    decision: "approved", linkSentAt: daysAgo(1), linkType: "setup", deliveryStatus: "failed", attempts: 1,
-  },
-  "app-5": { decision: "approved" },
-  "app-6": {
-    decision: "rejected", reason: "Tax identification number could not be verified with FIRS records.", linkSentAt: daysAgo(6), linkType: "rejection", deliveryStatus: "sent", attempts: 1,
-  },
-  "app-7": {
-    decision: "rejected", reason: "Proof of business address is older than 3 months. Please submit a current utility bill.",
-  },
-};
+type DecisionDialog
+  = | {
+    kind: "reject" | "changes"; application: OnboardingApplication;
+  }
+  | null;
 
 export function KYCReviewPanel() {
-  const [
-    reviews,
-    setReviews,
-  ] = useState<Record<string, ReviewState>>(DEMO_REVIEWS);
   const [
     search,
     setSearch,
   ] = useState("");
   const [
-    openId,
-    setOpenId,
-  ] = useState<string | null>(DEMO_APPLICATIONS[0]?.tenantId ?? null);
-  const [
-    rejectTarget,
-    setRejectTarget,
-  ] = useState<KycApplication | null>(null);
-  const [
-    rejectReason,
-    setRejectReason,
+    debouncedSearch,
+    setDebouncedSearch,
   ] = useState("");
   const [
-    sending,
-    setSending,
+    status,
+    setStatus,
+  ] = useState<OnboardingApplicationStatus | "all">("all");
+  const [
+    expandedId,
+    setExpandedId,
   ] = useState<string | null>(null);
+  const [
+    decisionDialog,
+    setDecisionDialog,
+  ] = useState<DecisionDialog>(null);
+  const [
+    reason,
+    setReason,
+  ] = useState("");
 
-  const filtered = useMemo(
+  useEffect(
     () => {
-      const q = search.toLowerCase();
-      return DEMO_APPLICATIONS.filter(
-        a =>
-          !q
-          || a.companyName.toLowerCase().includes(q)
-          || a.businessEmail.toLowerCase().includes(q)
-          || a.contactName.toLowerCase().includes(q),
+      const t = setTimeout(
+        setDebouncedSearch,
+        400,
+        search,
       );
+      return () => clearTimeout(t);
     },
     [search],
   );
 
-  const stateOf = (id: string): ReviewState => reviews[id] ?? { decision: "pending" };
+  const summaryQuery = useQuery(getSystemOnboardingApplicationsSummaryQueryOptions());
+  const summary = summaryQuery.data?.data;
 
-  const openDoc = () => {
-    toast.info("Sample document — preview not available in demo data.");
+  const listQuery = useQuery(getSystemOnboardingApplicationsQueryOptions({
+    params: {
+      ...(debouncedSearch ? { search: debouncedSearch } : {}),
+      ...(status !== "all" ? { status } : {}),
+    },
+  }));
+  const applications: OnboardingApplication[] = listQuery.data?.data?.items ?? [];
+
+  const approveMutation = useApproveSystemOnboardingApplication();
+  const rejectMutation = useRejectSystemOnboardingApplication();
+  const changesMutation = useRequestChangesSystemOnboardingApplication();
+  const resendMutation = useResendSystemOnboardingApplicationSetupLink();
+
+  const handleApprove = async (application: OnboardingApplication) => {
+    try {
+      const res = await approveMutation.mutateAsync({ id: application.id });
+      // Approve response's `message` says whether the setup-link send succeeded.
+      toast.success(res.message || `${application.organizationName} approved`);
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : "Approval failed";
+      toast.error(message);
+    }
   };
 
-  const approve = (app: KycApplication) => {
-    setReviews(p => ({
-      ...p, [app.tenantId]: { decision: "approved" },
-    }));
-    toast.success(`${app.companyName} approved — send the setup link to complete activation.`);
+  const handleResend = async (application: OnboardingApplication) => {
+    try {
+      const res = await resendMutation.mutateAsync({ id: application.id });
+      toast.success(res.message || "Setup link resend requested");
+      listQuery.refetch();
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : "Resend failed";
+      toast.error(message);
+    }
   };
 
-  const confirmReject = () => {
-    if (!rejectTarget) {
+  const handleDecisionSubmit = async () => {
+    if (!decisionDialog || reason.trim().length < 5) {
+      toast.error("Reason must be at least 5 characters");
       return;
     }
-    if (!rejectReason.trim()) {
-      toast.error("Provide a reason for the rejection");
-      return;
+    try {
+      if (decisionDialog.kind === "reject") {
+        await rejectMutation.mutateAsync({
+          id: decisionDialog.application.id,
+          data: { reason: reason.trim() },
+        });
+        toast.success("Application rejected");
+      }
+      else {
+        await changesMutation.mutateAsync({
+          id: decisionDialog.application.id,
+          data: { reason: reason.trim() },
+        });
+        toast.success("Changes requested");
+      }
+      setDecisionDialog(null);
+      setReason("");
     }
-    setReviews(p => ({
-      ...p,
-      [rejectTarget.tenantId]: {
-        decision: "rejected", reason: rejectReason.trim(),
-      },
-    }));
-    toast.success(`${rejectTarget.companyName} rejected — send the rejection notice.`);
-    setRejectTarget(null);
-    setRejectReason("");
-  };
-
-  const sendLink = async (app: KycApplication, type: "setup" | "rejection") => {
-    setSending(app.tenantId);
-    await new Promise(r => setTimeout(
-      r,
-      700,
-    ));
-    const prev = stateOf(app.tenantId);
-    const attempts = (prev.attempts ?? 0) + 1;
-    const failed = attempts === 1 && app.tenantId.charCodeAt(app.tenantId.length - 1) % 3 === 0;
-    setReviews(p => ({
-      ...p,
-      [app.tenantId]: {
-        ...prev,
-        linkSentAt: new Date().toISOString(),
-        linkType: type,
-        deliveryStatus: failed ? "failed" : "sent",
-        attempts,
-      },
-    }));
-    setSending(null);
-    if (failed) {
-      toast.error(`Delivery to ${app.businessEmail} failed — resend the email.`);
-      return;
+    catch (error) {
+      const message = error instanceof Error ? error.message : "Action failed";
+      toast.error(message);
     }
-    toast.success(
-      type === "setup"
-        ? `Setup link sent to ${app.businessEmail}`
-        : `Rejection notice sent to ${app.businessEmail}`,
-    );
   };
-
-  const pendingCount = filtered.filter(a => stateOf(a.tenantId).decision === "pending").length;
-  const approvedCount = filtered.filter(a => stateOf(a.tenantId).decision === "approved").length;
-  const rejectedCount = filtered.filter(a => stateOf(a.tenantId).decision === "rejected").length;
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-4">
-        {[
-          {
-            label: "Awaiting review", value: pendingCount, icon: Clock, tone: "text-warning bg-warning/10",
-          },
-          {
-            label: "Approved", value: approvedCount, icon: CheckCircle2, tone: "text-success bg-success/10",
-          },
-          {
-            label: "Rejected", value: rejectedCount, icon: XCircle, tone: "text-destructive bg-destructive/10",
-          },
-        ].map(({
-          label, value, icon: Icon, tone,
-        }) => (
-          <Card key={label}>
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone}`}>
-                <Icon className="h-5 w-5" />
+    <>
+      <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
+          <StatCard
+            title="Total"
+            value={summary?.total ?? "N/A"}
+            icon={FileText}
+            loading={summaryQuery.isPending}
+          />
+          <StatCard
+            title="Pending Review"
+            value={summary?.pendingReview ?? "N/A"}
+            icon={Clock}
+            variant="warning"
+            loading={summaryQuery.isPending}
+          />
+          <StatCard
+            title="Approved"
+            value={summary?.approved ?? "N/A"}
+            icon={CheckCircle2}
+            variant="success"
+            loading={summaryQuery.isPending}
+          />
+          <StatCard
+            title="Rejected"
+            value={summary?.rejected ?? "N/A"}
+            icon={XCircle}
+            variant="danger"
+            loading={summaryQuery.isPending}
+          />
+          <StatCard
+            title="Changes Requested"
+            value={summary?.changesRequested ?? "N/A"}
+            icon={Mail}
+            loading={summaryQuery.isPending}
+          />
+        </div>
+
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              Onboarding Applications
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-3 md:flex-row md:items-center mb-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search by organisation, email, or reference..."
+                  className="pl-10"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
               </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="truncate text-xl font-semibold">{value}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <Select
+                value={status}
+                onValueChange={v => setStatus(v as OnboardingApplicationStatus | "all")}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="submitted">Submitted</SelectItem>
+                  <SelectItem value="under_review">Under Review</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="changes_requested">Changes Requested</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            KYC Review by Organization
-          </CardTitle>
-          <CardDescription>
-            Each application is grouped by organization. Expand to review the submitted documents
-            and application form, then approve or reject and send the outcome link.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search organizations, contacts or emails..."
-              className="pl-10"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
-
-          {filtered.length === 0
-            ? <p className="py-10 text-center text-sm text-muted-foreground">No applications found.</p>
-            : filtered.map((app) => {
-                const st = stateOf(app.tenantId);
-                const isOpen = openId === app.tenantId;
-                return (
-                  <Collapsible
-                    key={app.tenantId}
-                    open={isOpen}
-                    onOpenChange={o => setOpenId(o ? app.tenantId : null)}
-                    className="rounded-2xl border border-border/60"
-                  >
-                    <CollapsibleTrigger asChild>
-                      <button
-                        type="button"
-                        className="flex w-full items-center justify-between gap-3 p-4 text-left"
-                      >
-                        <div className="flex min-w-0 items-center gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                            <Building2 className="h-5 w-5" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="truncate font-medium">{app.companyName}</p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {app.contactName}
-                              {" · "}
-                              {app.businessEmail}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <Badge
-                            variant="outline"
-                            className="rounded-full"
-                          >
-                            {app.documents.length}
-                            {" document"}
-                            {app.documents.length === 1 ? "" : "s"}
-                          </Badge>
-                          {st.decision === "approved"
-                            ? (
-                                <Badge className="rounded-full border-success/30 bg-success/10 text-success">
-                                  Approved
-                                </Badge>
-                              )
-                            : st.decision === "rejected"
-                              ? (
-                                  <Badge
-                                    variant="destructive"
-                                    className="rounded-full"
-                                  >
-                                    Rejected
-                                  </Badge>
-                                )
-                              : (
-                                  <Badge className="rounded-full border-warning/30 bg-warning/10 text-warning">
-                                    Pending review
-                                  </Badge>
-                                )}
-                          {st.linkSentAt && (
-                            <Badge
-                              variant="outline"
-                              className="rounded-full gap-1 text-xs"
-                            >
-                              <Mail className="h-3 w-3" />
-                              {st.linkType === "setup" ? "Setup link sent" : "Rejection sent"}
-                            </Badge>
-                          )}
-                          <ChevronDown
-                            className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
-                          />
-                        </div>
-                      </button>
-                    </CollapsibleTrigger>
-
-                    <CollapsibleContent className="space-y-5 border-t border-border/60 p-4">
-                      <div>
-                        <h4 className="mb-3 text-sm font-medium text-muted-foreground">Application</h4>
-                        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-                          {(
-                            [
-                              [
-                                "Organization name",
-                                app.companyName,
-                              ],
-                              [
-                                "Contact name",
-                                app.contactName,
-                              ],
-                              [
-                                "Business email",
-                                app.businessEmail,
-                              ],
-                              [
-                                "Phone",
-                                app.phone,
-                              ],
-                              [
-                                "Customer type",
-                                app.customerType,
-                              ],
-                              [
-                                "Fleet size",
-                                app.fleetSize,
-                              ],
-                              [
-                                "Registration number",
-                                app.registrationNumber,
-                              ],
-                              [
-                                "Tax ID",
-                                app.taxId,
-                              ],
-                              [
-                                "Business type",
-                                app.businessType,
-                              ],
-                              [
-                                "Industry",
-                                app.industry,
-                              ],
-                              [
-                                "Plan requested",
-                                app.plan,
-                              ],
-                              [
-                                "Billing model",
-                                app.billingModel,
-                              ],
-                              [
-                                "Address",
-                                app.address,
-                              ],
-                              [
-                                "Submitted",
-                                format(
-                                  new Date(app.submittedAt),
-                                  "MMM d, yyyy · HH:mm",
-                                ),
-                              ],
-                            ] as Array<[string, string]>
-                          ).map(([
-                            label,
-                            value,
-                          ]) => (
-                            <div
-                              key={label}
-                              className="space-y-0.5"
-                            >
-                              <dt className="text-xs text-muted-foreground">{label}</dt>
-                              <dd className="text-sm font-medium">{value || "—"}</dd>
-                            </div>
-                          ))}
-                        </dl>
-                      </div>
-
-                      <Separator />
-
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-muted-foreground">
-                          Submitted documents (
-                          {app.documents.length}
-                          )
-                        </h4>
-                        {app.documents.map(d => (
-                          <div
-                            key={d.id}
-                            className="flex items-center justify-between gap-3 rounded-xl border border-border/60 p-3"
-                          >
-                            <div className="flex min-w-0 items-center gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                                <FileText className="h-5 w-5 text-primary" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-medium">{prettyType(d.document_type)}</p>
-                                <p className="truncate text-xs text-muted-foreground">
-                                  {d.document_name}
-                                  {" · "}
-                                  {prettySize(d.file_size)}
-                                  {" · "}
-                                  {format(
-                                    new Date(d.created_at),
-                                    "MMM d, yyyy",
-                                  )}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={openDoc}
+            {listQuery.isLoading
+              ? <p className="text-sm text-muted-foreground py-8 text-center">Loading applications…</p>
+              : applications.length === 0
+                ? (
+                    <div className="py-8 text-center text-sm text-muted-foreground">
+                      No applications match these filters.
+                    </div>
+                  )
+                : (
+                    <div className="space-y-2">
+                      {applications.map(app => (
+                        <Collapsible
+                          key={app.id}
+                          open={expandedId === app.id}
+                          onOpenChange={o => setExpandedId(o ? app.id : null)}
+                        >
+                          <Card className="border-border/60">
+                            <CollapsibleTrigger asChild>
+                              <button
+                                type="button"
+                                className="w-full p-4 text-left hover:bg-muted/30 transition-colors rounded-lg"
                               >
-                                <Eye className="mr-2 h-4 w-4" />
-                                View
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={openDoc}
-                              >
-                                <Download className="mr-2 h-4 w-4" />
-                                Download
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <Separator />
-
-                      <div className="space-y-3">
-                        {st.decision === "pending"
-                          ? (
-                              <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                  className="bg-success text-success-foreground hover:bg-success/90"
-                                  onClick={() => approve(app)}
-                                >
-                                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                                  Approve application
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  className="border-destructive/40 text-destructive hover:bg-destructive/10"
-                                  onClick={() => {
-                                    setRejectTarget(app);
-                                    setRejectReason("");
-                                  }}
-                                >
-                                  <XCircle className="mr-2 h-4 w-4" />
-                                  Reject application
-                                </Button>
-                              </div>
-                            )
-                          : (
-                              <div className="space-y-3 rounded-xl border border-border/60 p-3">
-                                <div className="flex flex-wrap items-center justify-between gap-3">
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-medium">
-                                      {st.decision === "approved" ? "Application approved" : "Application rejected"}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {st.decision === "approved"
-                                        ? `Send the activation setup link to ${app.businessEmail}.`
-                                        : st.reason || "Rejection recorded."}
-                                    </p>
-                                  </div>
-                                  <Button
-                                    disabled={sending === app.tenantId}
-                                    variant={st.decision === "approved" ? "default" : "outline"}
-                                    onClick={() => sendLink(
-                                      app,
-                                      st.decision === "approved" ? "setup" : "rejection",
-                                    )}
-                                  >
-                                    <Send className="mr-2 h-4 w-4" />
-                                    {sending === app.tenantId
-                                      ? "Sending..."
-                                      : st.decision === "approved"
-                                        ? st.linkSentAt ? "Resend setup link" : "Send setup link"
-                                        : st.linkSentAt ? "Resend rejection link" : "Send rejection link"}
-                                  </Button>
-                                </div>
-                                {st.linkSentAt && st.deliveryStatus !== "failed" && (
-                                  <div className="flex items-center gap-2 rounded-lg bg-success/10 px-3 py-2 text-xs text-success">
-                                    <CheckCircle2 className="h-4 w-4" />
-                                    {st.linkType === "setup" ? "Setup link" : "Rejection notice"}
-                                    {" successfully sent to "}
-                                    {app.businessEmail}
-                                    {" on "}
-                                    {format(
-                                      new Date(st.linkSentAt),
-                                      "MMM d, yyyy · HH:mm",
-                                    )}
-                                  </div>
-                                )}
-                                {st.linkSentAt && st.deliveryStatus === "failed" && (
-                                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                                    <span className="flex items-center gap-2">
-                                      <XCircle className="h-4 w-4" />
-                                      {"Delivery of the "}
-                                      {st.linkType === "setup" ? "setup link" : "rejection notice"}
-                                      {" to "}
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <p className="font-medium truncate">{app.organizationName}</p>
+                                      {statusBadge(app.applicationStatus)}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground truncate">
+                                      {app.contactFullName}
+                                      {" · "}
                                       {app.businessEmail}
-                                      {" failed on "}
-                                      {format(
-                                        new Date(st.linkSentAt),
-                                        "MMM d, yyyy · HH:mm",
-                                      )}
-                                    </span>
+                                    </p>
+                                    <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                                      <span className="inline-flex items-center gap-1">
+                                        <FileText className="h-3 w-3" />
+                                        {app.documentCount ?? app.documents?.length ?? 0}
+                                        {" documents"}
+                                      </span>
+                                      <span>
+                                        Submitted
+                                        {formatDayMonthTime(app.createdAt)}
+                                      </span>
+                                    </div>
+                                    <div className="mt-2">
+                                      <SetupLinkPill link={app.setupLink} />
+                                    </div>
+                                  </div>
+                                  <ChevronDown
+                                    className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === app.id ? "rotate-180" : ""}`}
+                                  />
+                                </div>
+                              </button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <div className="border-t border-border/60 p-4 space-y-4">
+                                <div className="grid grid-cols-2 gap-3 text-xs">
+                                  <div>
+                                    <p className="text-muted-foreground">Contact</p>
+                                    <p className="font-medium">
+                                      {app.contactFullName}
+                                      {" · "}
+                                      {app.contactRole}
+                                    </p>
+                                    <p>{app.organizationPhone}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Address</p>
+                                    <p>
+                                      {app.streetAddress}
+                                      ,
+                                      {" "}
+                                      {app.city}
+                                      ,
+                                      {" "}
+                                      {app.state}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {app.documents?.length > 0 && (
+                                  <div>
+                                    <p className="text-xs text-muted-foreground mb-2">Documents</p>
+                                    <div className="space-y-1">
+                                      {app.documents.map(doc => (
+                                        <div
+                                          key={doc.id}
+                                          className="flex items-center justify-between text-xs p-2 rounded bg-muted/30"
+                                        >
+                                          <div className="flex items-center gap-2 min-w-0">
+                                            <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                            <span className="truncate">{doc.fileName || doc.documentType}</span>
+                                          </div>
+                                          <Badge
+                                            variant="outline"
+                                            className="text-[10px] shrink-0 capitalize"
+                                          >
+                                            {doc.reviewStatus ?? "pending"}
+                                          </Badge>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="flex flex-wrap gap-2 pt-2 border-t border-border/60">
+                                  {(app.applicationStatus === "submitted" || app.applicationStatus === "under_review") && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="default"
+                                        onClick={() => handleApprove(app)}
+                                        disabled={approveMutation.isPending}
+                                      >
+                                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                                        Approve
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          setReason("");
+                                          setDecisionDialog({
+                                            kind: "changes", application: app,
+                                          });
+                                        }}
+                                      >
+                                        Request Changes
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => {
+                                          setReason("");
+                                          setDecisionDialog({
+                                            kind: "reject", application: app,
+                                          });
+                                        }}
+                                      >
+                                        <XCircle className="h-3.5 w-3.5 mr-1" />
+                                        Reject
+                                      </Button>
+                                    </>
+                                  )}
+                                  {app.applicationStatus === "approved" && app.setupLink?.status === "failed" && (
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      disabled={sending === app.tenantId}
-                                      className="h-7 border-destructive/40 text-destructive hover:bg-destructive/10"
-                                      onClick={() => sendLink(
-                                        app,
-                                        st.linkType ?? (st.decision === "approved" ? "setup" : "rejection"),
-                                      )}
+                                      onClick={() => handleResend(app)}
+                                      disabled={resendMutation.isPending}
                                     >
-                                      <Send className="mr-1.5 h-3.5 w-3.5" />
-                                      {sending === app.tenantId ? "Resending..." : "Resend email"}
+                                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                                      Resend setup link
                                     </Button>
-                                  </div>
-                                )}
+                                  )}
+                                  {app.applicationStatus === "approved" && app.setupLink?.status === "sent" && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleResend(app)}
+                                      disabled={resendMutation.isPending}
+                                    >
+                                      <Send className="h-3.5 w-3.5 mr-1" />
+                                      Resend
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
-                            )}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                );
-              })}
-        </CardContent>
-      </Card>
+                            </CollapsibleContent>
+                          </Card>
+                        </Collapsible>
+                      ))}
+                    </div>
+                  )}
+          </CardContent>
+        </Card>
+      </div>
 
       <Dialog
-        open={!!rejectTarget}
-        onOpenChange={o => !o && setRejectTarget(null)}
+        open={!!decisionDialog}
+        onOpenChange={o => !o && setDecisionDialog(null)}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Reject application</DialogTitle>
+            <DialogTitle>
+              {decisionDialog?.kind === "reject" ? "Reject application" : "Request changes"}
+            </DialogTitle>
             <DialogDescription>
-              {rejectTarget?.companyName}
-              {" will be notified with the reason you provide here."}
+              {decisionDialog?.application.organizationName}
             </DialogDescription>
           </DialogHeader>
-          <Textarea
-            placeholder="Reason for rejection (e.g. illegible certificate of incorporation)"
-            value={rejectReason}
-            onChange={e => setRejectReason(e.target.value)}
-            rows={4}
-          />
+          <div className="space-y-2">
+            <Textarea
+              value={reason}
+              onChange={e => setReason(e.target.value)}
+              placeholder="Reason (shared with the applicant)"
+              rows={4}
+              maxLength={1000}
+            />
+            <p className="text-xs text-muted-foreground">Minimum 5 characters.</p>
+          </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setRejectTarget(null)}
+              onClick={() => setDecisionDialog(null)}
             >
               Cancel
             </Button>
             <Button
-              variant="destructive"
-              onClick={confirmReject}
+              variant={decisionDialog?.kind === "reject" ? "destructive" : "default"}
+              onClick={handleDecisionSubmit}
+              disabled={rejectMutation.isPending || changesMutation.isPending || reason.trim().length < 5}
             >
-              Confirm rejection
+              {decisionDialog?.kind === "reject" ? "Reject" : "Send"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

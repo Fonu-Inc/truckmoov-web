@@ -1,10 +1,23 @@
-import type { SystemTenant } from "@truckmoov/api/auth";
+import type {
+  SystemTenant,
+  SystemTenantAuditLogEntry,
+  SystemTenantDeviceRow,
+  SystemTenantDocument,
+  SystemTenantDriverRow,
+  SystemTenantResourcesResponse,
+  SystemTenantResourceTab,
+  SystemTenantSimRow,
+  SystemTenantVehicleRow,
+} from "@truckmoov/api/auth";
 import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import {
+  getSystemTenantAuditLogQueryOptions,
+  getSystemTenantDocumentsQueryOptions,
   getSystemTenantQueryOptions,
+  getSystemTenantResourcesQueryOptions,
   useUpdateTenantStatus,
 } from "@truckmoov/api/auth";
 import { getInitials } from "@truckmoov/app-core/utils/general-utils";
@@ -62,7 +75,6 @@ import {
 } from "@/components/shadcn/tabs";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { DataExportPanel } from "./DataExportPanel";
-import { TenantKYCVerification } from "./TenantKYCVerification";
 import { TerminateTenantDialog } from "./TerminateTenantDialog";
 
 type TenantDetailsSheetProps = {
@@ -92,6 +104,86 @@ const planDetails = {
   },
 };
 
+// Usage bar for a resource tab. Mirrors renderQuota on the list page:
+// limit === null → unlimited; used > limit → destructive.
+type ResourceUsageProps = {
+  icon: typeof Building2;
+  label: string;
+  used: number;
+  limit: number | null;
+};
+function ResourceUsage({
+  icon: Icon, label, used, limit,
+}: ResourceUsageProps) {
+  const unlimited = limit === null || limit === undefined;
+  const over = !unlimited && used > (limit as number);
+  const pct = unlimited || (limit as number) === 0
+    ? 0
+    : Math.min(
+        100,
+        Math.round((used / (limit as number)) * 100),
+      );
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Icon className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium">{label}</span>
+        </div>
+        <span className={`text-sm font-semibold ${over ? "text-destructive" : ""}`}>
+          {used}
+          {unlimited
+            ? <span className="text-muted-foreground font-normal"> · Unlimited</span>
+            : (
+                <span className="text-muted-foreground font-normal">
+                  {" / "}
+                  {limit}
+                </span>
+              )}
+        </span>
+      </div>
+      {!unlimited && (
+        <Progress
+          value={pct}
+          className="h-2"
+        />
+      )}
+    </Card>
+  );
+}
+
+// `available: false` means the fleet service was unreachable — not empty.
+type ResourceStateProps = {
+  payload: {
+    available: boolean; items: unknown[];
+  } | undefined;
+  isLoading: boolean;
+  empty: string;
+};
+function ResourceState({
+  payload, isLoading, empty,
+}: ResourceStateProps) {
+  if (isLoading)
+    return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (!payload)
+    return null;
+  if (!payload.available) {
+    return (
+      <Card className="p-6 text-center text-sm text-muted-foreground">
+        Service unavailable — could not reach the fleet service.
+      </Card>
+    );
+  }
+  if (payload.items.length === 0) {
+    return (
+      <Card className="p-6 text-center text-sm text-muted-foreground">
+        {empty}
+      </Card>
+    );
+  }
+  return null;
+}
+
 export function TenantDetailsSheet({
   tenant,
   open,
@@ -103,6 +195,10 @@ export function TenantDetailsSheet({
     terminateOpen,
     setTerminateOpen,
   ] = useState(false);
+  const [
+    activeTab,
+    setActiveTab,
+  ] = useState("overview");
   const updateStatusMutation = useUpdateTenantStatus();
 
   // Fetch fresh tenant detail when the sheet opens
@@ -208,57 +304,43 @@ export function TenantDetailsSheet({
     queryFn: async () => null as any,
   });
 
-  // Vehicles list
-  const {
-    data: tenantVehicles = [],
-    isLoading: loadingVehicles,
-  } = useQuery({
-    queryKey: [
-      "tenant-vehicles-list",
-      tenant?.id,
-    ],
-    enabled: false,
-    queryFn: async () => [] as any[],
-  });
+  const tenantId = tenant?.id ?? "";
+  const planCode = tenant?.planCode ?? undefined;
 
-  // SIMs list
-  const {
-    data: tenantSims = [],
-    isLoading: loadingSims,
-  } = useQuery({
-    queryKey: [
-      "tenant-sims-list",
-      tenant?.id,
-    ],
-    enabled: false,
-    queryFn: async () => [] as any[],
-  });
+  // Resource tabs — one endpoint, four shapes. Only the visible tab fetches.
+  function useResourceTab<TItem>(tab: SystemTenantResourceTab) {
+    const query = useQuery({
+      ...getSystemTenantResourcesQueryOptions({
+        id: tenantId, tab, planCode,
+      }),
+      enabled: open && !!tenantId && activeTab === tab,
+    });
+    return {
+      payload: query.data?.data as SystemTenantResourcesResponse<TItem>["data"] | undefined,
+      isLoading: query.isLoading,
+      isError: query.isError,
+    };
+  }
 
-  // Devices list
-  const {
-    data: tenantDevices = [],
-    isLoading: loadingDevices,
-  } = useQuery({
-    queryKey: [
-      "tenant-devices-list",
-      tenant?.id,
-    ],
-    enabled: false,
-    queryFn: async () => [] as any[],
-  });
+  const vehiclesTab = useResourceTab<SystemTenantVehicleRow>("vehicles");
+  const driversTab = useResourceTab<SystemTenantDriverRow>("drivers");
+  const devicesTab = useResourceTab<SystemTenantDeviceRow>("devices");
+  const simsTab = useResourceTab<SystemTenantSimRow>("sims");
 
-  // Audit log
-  const {
-    data: tenantAuditLog = [],
-    isLoading: loadingAudit,
-  } = useQuery({
-    queryKey: [
-      "tenant-audit-log",
-      tenant?.id,
-    ],
-    enabled: false,
-    queryFn: async () => [] as any[],
+  // Documents
+  const documentsQuery = useQuery({
+    ...getSystemTenantDocumentsQueryOptions(tenantId),
+    enabled: open && !!tenantId && activeTab === "kyc",
   });
+  const documents = documentsQuery.data?.data?.items ?? [];
+
+  // Audit log — fixed 10 entries server-side, no pagination.
+  const auditQuery = useQuery({
+    ...getSystemTenantAuditLogQueryOptions(tenantId),
+    enabled: open && !!tenantId && activeTab === "audit",
+  });
+  const auditEntries: SystemTenantAuditLogEntry[] = auditQuery.data?.data?.items ?? [];
+  const loadingAudit = auditQuery.isLoading;
 
   // Trial status (from view)
   const { data: trialStatus } = useQuery({
@@ -448,10 +530,11 @@ export function TenantDetailsSheet({
         </SheetHeader>
 
         <Tabs
-          defaultValue="overview"
+          value={activeTab}
+          onValueChange={setActiveTab}
           className="mt-6"
         >
-          <TabsList className="grid grid-cols-8 w-full">
+          <TabsList className="grid grid-cols-9 w-full">
             <TabsTrigger
               value="overview"
               className="flex items-center gap-2"
@@ -465,6 +548,13 @@ export function TenantDetailsSheet({
             >
               <Truck className="w-4 h-4" />
               Vehicles
+            </TabsTrigger>
+            <TabsTrigger
+              value="drivers"
+              className="flex items-center gap-2"
+            >
+              <Users className="w-4 h-4" />
+              Drivers
             </TabsTrigger>
             <TabsTrigger
               value="devices"
@@ -902,90 +992,134 @@ export function TenantDetailsSheet({
           >
             <ScrollArea className="h-[calc(100vh-280px)]">
               <div className="space-y-4 pr-4">
-                {/* Vehicle usage indicator */}
-                {(() => {
-                  const used = tenantQuotaData?.activeCount ?? 0;
-                  const quota = tenantQuotaData?.quota ?? 25;
-                  const pct = quota > 0
-                    ? Math.min(
-                        100,
-                        Math.round((used / quota) * 100),
-                      )
-                    : 0;
-                  return (
-                    <Card className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Truck className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">Vehicle Usage</span>
-                        </div>
-                        <span className="text-sm font-semibold">
-                          {used}
-                          {" "}
-                          <span className="text-muted-foreground font-normal">
-                            of
-                            {quota}
-                            {" "}
-                            (
-                            {pct}
-                            %)
-                          </span>
-                        </span>
-                      </div>
-                      <Progress
-                        value={pct}
-                        className="h-2"
-                      />
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Active vehicles registered against this tenant's quota.
-                      </p>
-                    </Card>
-                  );
-                })()}
+                {vehiclesTab.payload && (
+                  <ResourceUsage
+                    icon={Truck}
+                    label="Vehicle Usage"
+                    used={vehiclesTab.payload.used}
+                    limit={vehiclesTab.payload.limit}
+                  />
+                )}
                 <h4 className="font-medium text-sm text-muted-foreground">
                   Vehicles (
-                  {tenantVehicles.length}
+                  {vehiclesTab.payload?.total ?? 0}
                   )
                 </h4>
-                {loadingVehicles
-                  ? (
-                      <p className="text-sm text-muted-foreground">Loading vehicles...</p>
-                    )
-                  : tenantVehicles.length === 0
-                    ? (
-                        <Card className="p-6 text-center text-sm text-muted-foreground">
-                          No vehicles registered for this tenant.
-                        </Card>
-                      )
-                    : (
-                        <div className="space-y-2">
-                          {tenantVehicles.map((v: any) => (
-                            <Card
-                              key={v.id}
-                              className="p-3 flex items-center justify-between"
-                            >
-                              <div className="flex items-center gap-3">
-                                <Truck className="h-4 w-4 text-muted-foreground" />
-                                <div>
-                                  <p className="text-sm font-medium">{v.plate_number || "—"}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {[
-                                      v.make,
-                                      v.model,
-                                    ].filter(Boolean).join(" ") || "Unknown vehicle"}
-                                  </p>
-                                </div>
-                              </div>
-                              <Badge
-                                variant="outline"
-                                className="capitalize text-xs"
-                              >
-                                {v.status || "unknown"}
-                              </Badge>
-                            </Card>
-                          ))}
+                <ResourceState
+                  payload={vehiclesTab.payload}
+                  isLoading={vehiclesTab.isLoading}
+                  empty="No vehicles registered for this tenant."
+                />
+                {vehiclesTab.payload?.available && vehiclesTab.payload.items.length > 0 && (
+                  <div className="space-y-2">
+                    {(vehiclesTab.payload.items as SystemTenantVehicleRow[]).map(v => (
+                      <Card
+                        key={v.vehicleId}
+                        className="p-3 flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Truck className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium">{v.registrationNumber || "—"}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {[
+                                v.make,
+                                v.model,
+                              ].filter(Boolean).join(" ") || "Unknown vehicle"}
+                            </p>
+                          </div>
                         </div>
-                      )}
+                        <Badge
+                          variant="outline"
+                          className="capitalize text-xs"
+                        >
+                          {v.status || "unknown"}
+                        </Badge>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+                {vehiclesTab.payload && vehiclesTab.payload.total > vehiclesTab.payload.items.length && (
+                  <p className="text-xs text-muted-foreground">
+                    Showing
+                    {" "}
+                    {vehiclesTab.payload.items.length}
+                    {" "}
+                    of
+                    {" "}
+                    {vehiclesTab.payload.total}
+                    . Open the tenant's own pages for the full roster.
+                  </p>
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent
+            value="drivers"
+            className="mt-4"
+          >
+            <ScrollArea className="h-[calc(100vh-280px)]">
+              <div className="space-y-4 pr-4">
+                {driversTab.payload && (
+                  <ResourceUsage
+                    icon={Users}
+                    label="Driver Usage"
+                    used={driversTab.payload.used}
+                    limit={driversTab.payload.limit}
+                  />
+                )}
+                <h4 className="font-medium text-sm text-muted-foreground">
+                  Drivers (
+                  {driversTab.payload?.total ?? 0}
+                  )
+                </h4>
+                <ResourceState
+                  payload={driversTab.payload}
+                  isLoading={driversTab.isLoading}
+                  empty="No drivers registered for this tenant."
+                />
+                {driversTab.payload?.available && driversTab.payload.items.length > 0 && (
+                  <div className="space-y-2">
+                    {(driversTab.payload.items as SystemTenantDriverRow[]).map(d => (
+                      <Card
+                        key={d.driverId}
+                        className="p-3 flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium">{d.name || "—"}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {[
+                                d.phone,
+                                d.licenseNumber,
+                              ].filter(Boolean).join(" · ") || "—"}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className="capitalize text-xs"
+                        >
+                          {d.status || "unknown"}
+                        </Badge>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+                {driversTab.payload && driversTab.payload.total > driversTab.payload.items.length && (
+                  <p className="text-xs text-muted-foreground">
+                    Showing
+                    {" "}
+                    {driversTab.payload.items.length}
+                    {" "}
+                    of
+                    {" "}
+                    {driversTab.payload.total}
+                    .
+                  </p>
+                )}
               </div>
             </ScrollArea>
           </TabsContent>
@@ -996,98 +1130,70 @@ export function TenantDetailsSheet({
           >
             <ScrollArea className="h-[calc(100vh-280px)]">
               <div className="space-y-4 pr-4">
-                {/* Device usage indicator */}
-                {(() => {
-                  const used = opQuotaData?.device.count ?? 0;
-                  const quota = opQuotaData?.device.quota ?? 25;
-                  const pct = quota > 0
-                    ? Math.min(
-                        100,
-                        Math.round((used / quota) * 100),
-                      )
-                    : 0;
-                  return (
-                    <Card className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Cpu className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">Device Usage</span>
-                        </div>
-                        <span className="text-sm font-semibold">
-                          {used}
-                          {" "}
-                          <span className="text-muted-foreground font-normal">
-                            of
-                            {quota}
-                            {" "}
-                            (
-                            {pct}
-                            %)
-                          </span>
-                        </span>
-                      </div>
-                      <Progress
-                        value={pct}
-                        className="h-2"
-                      />
-                      <p className="text-xs text-muted-foreground mt-2">
-                        IoT devices registered to this tenant against the configured quota.
-                      </p>
-                    </Card>
-                  );
-                })()}
-
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm text-muted-foreground">
-                    Devices (
-                    {tenantDevices.length}
-                    )
-                  </h4>
-                  {loadingDevices
-                    ? (
-                        <p className="text-sm text-muted-foreground">Loading devices...</p>
-                      )
-                    : tenantDevices.length === 0
-                      ? (
-                          <Card className="p-6 text-center text-sm text-muted-foreground">
-                            No devices registered for this tenant.
-                          </Card>
-                        )
-                      : (
-                          <div className="space-y-2">
-                            {tenantDevices.map((d: any) => (
-                              <Card
-                                key={d.id}
-                                className="p-3 flex items-center justify-between"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <Cpu className="h-4 w-4 text-muted-foreground" />
-                                  <div>
-                                    <p className="text-sm font-medium">
-                                      {d.manufacturer || "—"}
-                                      {" "}
-                                      {d.model || ""}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      IMEI:
-                                      {" "}
-                                      {d.imei || "—"}
-                                      {d.vehicle_id ? " · Assigned" : " · Unassigned"}
-                                    </p>
-                                  </div>
-                                </div>
-                                <Badge
-                                  variant="outline"
-                                  className="capitalize text-xs"
-                                >
-                                  {d.lifecycle_status || d.status || "unknown"}
-                                </Badge>
-                              </Card>
-                            ))}
+                {devicesTab.payload && (
+                  <ResourceUsage
+                    icon={Cpu}
+                    label="Device Usage"
+                    used={devicesTab.payload.used}
+                    limit={devicesTab.payload.limit}
+                  />
+                )}
+                <h4 className="font-medium text-sm text-muted-foreground">
+                  Devices (
+                  {devicesTab.payload?.total ?? 0}
+                  )
+                </h4>
+                <ResourceState
+                  payload={devicesTab.payload}
+                  isLoading={devicesTab.isLoading}
+                  empty="No devices registered for this tenant."
+                />
+                {devicesTab.payload?.available && devicesTab.payload.items.length > 0 && (
+                  <div className="space-y-2">
+                    {(devicesTab.payload.items as SystemTenantDeviceRow[]).map(d => (
+                      <Card
+                        key={d.deviceId}
+                        className="p-3 flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Cpu className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium">
+                              {[
+                                d.manufacturer,
+                                d.model,
+                              ].filter(Boolean).join(" ") || "—"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              IMEI:
+                              {" "}
+                              {d.imei || "—"}
+                              {d.assignedVehicleId ? " · Assigned" : " · Unassigned"}
+                            </p>
                           </div>
-                        )}
-                </div>
-
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className="capitalize text-xs"
+                        >
+                          {d.status || "unknown"}
+                        </Badge>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+                {devicesTab.payload && devicesTab.payload.total > devicesTab.payload.items.length && (
+                  <p className="text-xs text-muted-foreground">
+                    Showing
+                    {" "}
+                    {devicesTab.payload.items.length}
+                    {" "}
+                    of
+                    {" "}
+                    {devicesTab.payload.total}
+                    .
+                  </p>
+                )}
               </div>
             </ScrollArea>
           </TabsContent>
@@ -1098,89 +1204,65 @@ export function TenantDetailsSheet({
           >
             <ScrollArea className="h-[calc(100vh-280px)]">
               <div className="space-y-4 pr-4">
-                {/* SIM usage indicator */}
-                {(() => {
-                  const used = opQuotaData?.sim.count ?? 0;
-                  const quota = opQuotaData?.sim.quota ?? 25;
-                  const pct = quota > 0
-                    ? Math.min(
-                        100,
-                        Math.round((used / quota) * 100),
-                      )
-                    : 0;
-                  return (
-                    <Card className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Smartphone className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">SIM Usage</span>
-                        </div>
-                        <span className="text-sm font-semibold">
-                          {used}
-                          {" "}
-                          <span className="text-muted-foreground font-normal">
-                            of
-                            {quota}
-                            {" "}
-                            (
-                            {pct}
-                            %)
-                          </span>
-                        </span>
-                      </div>
-                      <Progress
-                        value={pct}
-                        className="h-2"
-                      />
-                      <p className="text-xs text-muted-foreground mt-2">
-                        SIMs assigned to this tenant against the configured quota.
-                      </p>
-                    </Card>
-                  );
-                })()}
+                {simsTab.payload && (
+                  <ResourceUsage
+                    icon={Smartphone}
+                    label="SIM Usage"
+                    used={simsTab.payload.used}
+                    limit={simsTab.payload.limit}
+                  />
+                )}
                 <h4 className="font-medium text-sm text-muted-foreground">
                   SIM Cards (
-                  {tenantSims.length}
+                  {simsTab.payload?.total ?? 0}
                   )
                 </h4>
-                {loadingSims
-                  ? (
-                      <p className="text-sm text-muted-foreground">Loading SIMs...</p>
-                    )
-                  : tenantSims.length === 0
-                    ? (
-                        <Card className="p-6 text-center text-sm text-muted-foreground">
-                          No SIMs assigned to this tenant.
-                        </Card>
-                      )
-                    : (
-                        <div className="space-y-2">
-                          {tenantSims.map((s: any) => (
-                            <Card
-                              key={s.id}
-                              className="p-3 flex items-center justify-between"
-                            >
-                              <div className="flex items-center gap-3">
-                                <Smartphone className="h-4 w-4 text-muted-foreground" />
-                                <div>
-                                  <p className="text-sm font-medium">{s.msisdn || s.iccid || "—"}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {s.provider ? `${s.provider} · ` : ""}
-                                    ICCID:
-                                    {s.iccid || "—"}
-                                  </p>
-                                </div>
-                              </div>
-                              <Badge
-                                variant="outline"
-                                className="capitalize text-xs"
-                              >
-                                {s.status || "unknown"}
-                              </Badge>
-                            </Card>
-                          ))}
+                <ResourceState
+                  payload={simsTab.payload}
+                  isLoading={simsTab.isLoading}
+                  empty="No SIMs assigned to this tenant."
+                />
+                {simsTab.payload?.available && simsTab.payload.items.length > 0 && (
+                  <div className="space-y-2">
+                    {(simsTab.payload.items as SystemTenantSimRow[]).map(s => (
+                      <Card
+                        key={s.simId}
+                        className="p-3 flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Smartphone className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium">{s.msisdn || s.iccid || "—"}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {s.carrier ? `${s.carrier} · ` : ""}
+                              ICCID:
+                              {" "}
+                              {s.iccid || "—"}
+                            </p>
+                          </div>
                         </div>
-                      )}
+                        <Badge
+                          variant="outline"
+                          className="capitalize text-xs"
+                        >
+                          {s.status || "unknown"}
+                        </Badge>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+                {simsTab.payload && simsTab.payload.total > simsTab.payload.items.length && (
+                  <p className="text-xs text-muted-foreground">
+                    Showing
+                    {" "}
+                    {simsTab.payload.items.length}
+                    {" "}
+                    of
+                    {" "}
+                    {simsTab.payload.total}
+                    .
+                  </p>
+                )}
               </div>
             </ScrollArea>
           </TabsContent>
@@ -1190,10 +1272,55 @@ export function TenantDetailsSheet({
             className="mt-4"
           >
             <ScrollArea className="h-[calc(100vh-280px)]">
-              <TenantKYCVerification
-                tenantId={tenant.id}
-                readOnly
-              />
+              <div className="space-y-3 pr-4">
+                <h4 className="font-medium text-sm text-muted-foreground">
+                  Documents (
+                  {documents.length}
+                  )
+                </h4>
+                {documentsQuery.isLoading
+                  ? <p className="text-sm text-muted-foreground">Loading documents…</p>
+                  : documents.length === 0
+                    ? (
+                        <Card className="p-6 text-center text-sm text-muted-foreground">
+                          No documents submitted at onboarding.
+                        </Card>
+                      )
+                    : (
+                        <div className="space-y-2">
+                          {(documents as SystemTenantDocument[]).map(doc => (
+                            <Card
+                              key={doc.documentId}
+                              className="p-3 flex items-center justify-between gap-3"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate">
+                                    {doc.documentName || doc.documentType}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {doc.documentType}
+                                    {" · "}
+                                    {doc.mimeType}
+                                    {" · "}
+                                    {(doc.fileSize / 1024).toFixed(1)}
+                                    {" KB · "}
+                                    {formatDayMonthTime(doc.uploadedAt)}
+                                  </p>
+                                </div>
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className="capitalize text-xs shrink-0"
+                              >
+                                {doc.status}
+                              </Badge>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+              </div>
             </ScrollArea>
           </TabsContent>
 
@@ -1545,149 +1672,55 @@ export function TenantDetailsSheet({
             className="mt-4"
           >
             <ScrollArea className="h-[calc(100vh-280px)]">
-              {(() => {
-                const DEMO_AUDIT = [
-                  {
-                    id: "demo-a1",
-                    event_type: "TENANT_LOGIN",
-                    description: `Admin logged in for ${tenant.name}.`,
-                    severity: "info",
-                    created_at: new Date(Date.now() - 1000 * 60 * 8).toISOString(),
-                    user_name: `olumide.adeyemi@${tenant.email?.split("@")[1] ?? "tenant.com"}`,
-                  },
-                  {
-                    id: "demo-a2",
-                    event_type: "VEHICLE_CREATED",
-                    description: "New vehicle LSR-482-XK registered (MAN TGS 33.480).",
-                    severity: "info",
-                    created_at: new Date(Date.now() - 1000 * 60 * 47).toISOString(),
-                    user_name: `fleet.manager@${tenant.email?.split("@")[1] ?? "tenant.com"}`,
-                  },
-                  {
-                    id: "demo-a3",
-                    event_type: "USER_INVITED",
-                    description: "Invitation sent to chinedu.okafor@gmail.com (role: dispatcher).",
-                    severity: "info",
-                    created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-                    user_name: `hr@${tenant.email?.split("@")[1] ?? "tenant.com"}`,
-                  },
-                  {
-                    id: "demo-a4",
-                    event_type: "PAYMENT_SUCCEEDED",
-                    description: "Wallet top-up of ₦250,000 via MTN MoMo (ref: MTN-9F2A1B).",
-                    severity: "info",
-                    created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-                    user_name: `billing@${tenant.email?.split("@")[1] ?? "tenant.com"}`,
-                  },
-                  {
-                    id: "demo-a5",
-                    event_type: "GEOFENCE_BREACH",
-                    description: "Vehicle LSR-117-AA exited 'Apapa Port' geofence at 14:23.",
-                    severity: "warning",
-                    created_at: new Date(Date.now() - 1000 * 60 * 60 * 9).toISOString(),
-                    user_name: "system",
-                  },
-                  {
-                    id: "demo-a6",
-                    event_type: "KYC_DOCUMENT_UPLOADED",
-                    description: "Tax Clearance Certificate uploaded (under review).",
-                    severity: "info",
-                    created_at: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(),
-                    user_name: `compliance@${tenant.email?.split("@")[1] ?? "tenant.com"}`,
-                  },
-                  {
-                    id: "demo-a7",
-                    event_type: "FAILED_LOGIN_ATTEMPT",
-                    description: `3 consecutive failed logins for admin@${tenant.email?.split("@")[1] ?? "tenant.com"}.`,
-                    severity: "warning",
-                    created_at: new Date(Date.now() - 1000 * 60 * 60 * 27).toISOString(),
-                    user_name: "security",
-                  },
-                  {
-                    id: "demo-a8",
-                    event_type: "SUBSCRIPTION_RENEWED",
-                    description: "Professional plan auto-renewed for next billing cycle.",
-                    severity: "info",
-                    created_at: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-                    user_name: "system",
-                  },
-                  {
-                    id: "demo-a9",
-                    event_type: "ROLE_CHANGED",
-                    description: "User adebayo.t@ promoted from dispatcher to manager.",
-                    severity: "info",
-                    created_at: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
-                    user_name: `olumide.adeyemi@${tenant.email?.split("@")[1] ?? "tenant.com"}`,
-                  },
-                  {
-                    id: "demo-a10",
-                    event_type: "API_KEY_GENERATED",
-                    description: "New API key created (scope: read:vehicles, read:trips).",
-                    severity: "info",
-                    created_at: new Date(Date.now() - 1000 * 60 * 60 * 96).toISOString(),
-                    user_name: `developer@${tenant.email?.split("@")[1] ?? "tenant.com"}`,
-                  },
-                ];
-                const usingDemoAudit = tenantAuditLog.length === 0 && !loadingAudit;
-                const events = usingDemoAudit ? DEMO_AUDIT : (tenantAuditLog as any[]);
-                return (
-                  <div className="space-y-3 pr-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-sm text-muted-foreground">
-                        Recent Activity (
-                        {events.length}
-                        )
-                      </h4>
-                      {usingDemoAudit && (
-                        <Badge
-                          variant="outline"
-                          className="text-xs"
-                        >
-                          Demo data
-                        </Badge>
-                      )}
-                    </div>
-                    {loadingAudit
-                      ? (
-                          <p className="text-sm text-muted-foreground">Loading audit log...</p>
-                        )
-                      : (
-                          <div className="space-y-2">
-                            {events.map((log: any) => (
-                              <Card
-                                key={log.id}
-                                className="p-3"
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="flex items-start gap-3 min-w-0">
-                                    <FileText className={`h-4 w-4 mt-0.5 shrink-0 ${log.severity === "warning" ? "text-warning" : log.severity === "error" ? "text-destructive" : "text-muted-foreground"}`} />
-                                    <div className="min-w-0">
-                                      <p className="text-sm font-medium truncate">
-                                        {log.event_type || "Event"}
-                                      </p>
+              <div className="space-y-3 pr-4">
+                <h4 className="font-medium text-sm text-muted-foreground">
+                  Recent Activity (
+                  {auditEntries.length}
+                  )
+                </h4>
+                {loadingAudit
+                  ? <p className="text-sm text-muted-foreground">Loading audit log…</p>
+                  : auditEntries.length === 0
+                    ? (
+                        <Card className="p-6 text-center text-sm text-muted-foreground">
+                          No recent activity.
+                        </Card>
+                      )
+                    : (
+                        <div className="space-y-2">
+                          {auditEntries.map(log => (
+                            <Card
+                              key={log.id}
+                              className="p-3"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-start gap-3 min-w-0">
+                                  <FileText className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium truncate">{log.action}</p>
+                                    {log.summary && (
                                       <p className="text-xs text-muted-foreground truncate">
-                                        {log.description || ""}
+                                        {log.summary}
                                       </p>
-                                      {log.user_name && (
-                                        <p className="text-[11px] text-muted-foreground/70 truncate mt-0.5">
-                                          by
-                                          {" "}
-                                          {log.user_name}
-                                        </p>
-                                      )}
-                                    </div>
+                                    )}
+                                    {(log.actorName || log.actorEmail) && (
+                                      <p className="text-[11px] text-muted-foreground/70 truncate mt-0.5">
+                                        by
+                                        {" "}
+                                        {log.actorName || log.actorEmail}
+                                      </p>
+                                    )}
                                   </div>
-                                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                    {formatDayMonthTime(log.created_at)}
-                                  </span>
                                 </div>
-                              </Card>
-                            ))}
-                          </div>
-                        )}
-                  </div>
-                );
-              })()}
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                  {formatDayMonthTime(log.occurredAt)}
+                                </span>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+              </div>
             </ScrollArea>
           </TabsContent>
         </Tabs>

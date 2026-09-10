@@ -1,8 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import type {
-  SubscriptionPlan,
-  SystemTenant,
-} from "@truckmoov/api/auth";
+import type { SystemTenant } from "@truckmoov/api/auth";
 import type {
   FilterDraft,
   FilterField,
@@ -25,6 +22,7 @@ import {
   Ban,
   Building2,
   CheckCircle,
+  Clock,
   Cpu,
   Download,
   Eye,
@@ -196,13 +194,6 @@ const tenantFilterFields: FilterField[] = [
   },
 ];
 
-// Badge colours are a UI concern — not returned by the API
-const TIER_COLORS: Record<string, string> = {
-  starter: "bg-muted text-muted-foreground",
-  professional: "bg-primary/10 text-primary",
-  enterprise: "bg-success/10 text-success",
-};
-
 export default function PlatformTenants() {
   const queryClient = useQueryClient();
   const updateTenantStatusMutation = useUpdateTenantStatus();
@@ -240,7 +231,7 @@ export default function PlatformTenants() {
 
   // Derive server-side filter params.
   const apiStatus = advancedFilters.status?.enabled && advancedFilters.status?.value
-    ? advancedFilters.status.value as "active" | "pending" | "suspended" | "inactive"
+    ? advancedFilters.status.value as "active" | "pending" | "suspended" | "inactive" | "terminated"
     : undefined;
   const apiPlan = advancedFilters.plan?.enabled && advancedFilters.plan?.value
     ? advancedFilters.plan.value as "starter" | "professional" | "enterprise"
@@ -322,26 +313,17 @@ export default function PlatformTenants() {
     [refetchDbTenants],
   );
 
-  const plansByTier = useMemo(
-    () => {
-      const map: Record<string, SubscriptionPlan> = {};
-      (plansQuery.data?.data?.plans ?? []).forEach((p) => {
-        map[p.tier] = p;
-      });
-      return map;
-    },
-    [plansQuery.data],
-  );
-
-  const getPlanLimits = (tier: string) => {
-    const p = plansByTier[tier];
-    const maxVehicles = p?.maxActiveVehicles ?? 10;
-    return {
-      maxVehicles,
-      maxDrivers: Math.ceil(maxVehicles * 1.5),
-      maxDevices: maxVehicles,
-      maxSims: maxVehicles,
-    };
+  // Quota fraction for a resource. limit === null means unlimited — plain count.
+  const renderQuota = (used: number, limit: number | null) => {
+    if (limit === null || limit === undefined) return <span>{used}</span>;
+    const over = used > limit;
+    return (
+      <span className={over ? "text-destructive font-medium" : ""}>
+        {used}
+        /
+        {limit}
+      </span>
+    );
   };
 
   // Org types per tenant — derived from API response
@@ -362,17 +344,15 @@ export default function PlatformTenants() {
     totalTenants,
     activeTenants,
     suspendedTenants,
-    totalVehicles,
-    totalSims,
-    overdueInvoices,
+    inactiveTenants,
+    terminatedTenants,
   } = useMemo(
     () => ({
       totalTenants: summaryPayload?.totalTenants ?? "N/A",
       activeTenants: summaryPayload?.activeTenants ?? "N/A",
       suspendedTenants: summaryPayload?.suspendedTenants ?? "N/A",
-      totalVehicles: summaryPayload?.totalVehicles ?? 0,
-      totalSims: summaryPayload?.totalSims ?? 0,
-      overdueInvoices: summaryPayload?.overdueInvoices ?? "N/A",
+      inactiveTenants: summaryPayload?.inactiveTenants ?? "N/A",
+      terminatedTenants: summaryPayload?.terminatedTenants ?? "N/A",
     }),
     [summaryPayload],
   );
@@ -411,23 +391,6 @@ export default function PlatformTenants() {
   };
 
   const tenantColumns: ColumnDef<SystemTenant>[] = [
-    {
-      id: "tenantId",
-      header: "Tenant ID",
-      enableSorting: false,
-      cell: ({ row }) => (
-        <span className="font-mono text-xs px-2 py-1 rounded bg-muted text-foreground">
-          TENANT-
-          {String(row.original.id).replace(
-            /-/g,
-            "",
-          ).slice(
-            0,
-            8,
-          ).toUpperCase()}
-        </span>
-      ),
-    },
     {
       id: "name",
       accessorFn: row => row.name?.toLowerCase() ?? "",
@@ -484,25 +447,6 @@ export default function PlatformTenants() {
       ),
     },
     {
-      id: "plan",
-      accessorFn: row => row.plan ?? "",
-      header: "Plan",
-      cell: ({ row }) => (
-        <Badge className={`${TIER_COLORS[row.original.plan]} capitalize`}>
-          {row.original.plan}
-        </Badge>
-      ),
-    },
-    {
-      id: "billingModel",
-      header: "Billing Model",
-      enableSorting: false,
-      cell: () => (
-        // ponytail: replace with real Prepaid/Postpaid badge when SystemTenant exposes billing model
-        <span className="text-muted-foreground">—</span>
-      ),
-    },
-    {
       id: "status",
       accessorFn: row => row.status ?? "",
       header: "Status",
@@ -512,73 +456,45 @@ export default function PlatformTenants() {
       id: "vehicleCount",
       accessorFn: row => row.vehicleCount ?? 0,
       header: "Vehicles",
-      cell: ({ row }) => {
-        const tenant = row.original;
-        return (
-          <div className="flex items-center gap-1">
-            <Truck className="h-4 w-4 text-muted-foreground" />
-            <span className={tenant.vehicleCount >= getPlanLimits(tenant.plan).maxVehicles ? "text-destructive font-medium" : ""}>
-              {tenant.vehicleCount}
-              /
-              {getPlanLimits(tenant.plan).maxVehicles}
-            </span>
-          </div>
-        );
-      },
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
+          <Truck className="h-4 w-4 text-muted-foreground" />
+          {renderQuota(row.original.vehicleCount, row.original.quotas?.vehicles ?? null)}
+        </div>
+      ),
     },
     {
       id: "drivers",
       header: "Drivers",
       enableSorting: false,
-      cell: ({ row }) => {
-        const tenant = row.original;
-        return (
-          <div className="flex items-center gap-1">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <span className={tenant.driverCount >= getPlanLimits(tenant.plan).maxDrivers ? "text-destructive font-medium" : ""}>
-              {tenant.driverCount}
-              /
-              {getPlanLimits(tenant.plan).maxDrivers}
-            </span>
-          </div>
-        );
-      },
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
+          <Users className="h-4 w-4 text-muted-foreground" />
+          {renderQuota(row.original.driverCount, row.original.quotas?.drivers ?? null)}
+        </div>
+      ),
     },
     {
       id: "devices",
       header: "Devices",
       enableSorting: false,
-      cell: ({ row }) => {
-        const tenant = row.original;
-        return (
-          <div className="flex items-center gap-1">
-            <Cpu className="h-4 w-4 text-muted-foreground" />
-            <span className={tenant.deviceCount >= getPlanLimits(tenant.plan).maxDevices ? "text-destructive font-medium" : ""}>
-              {tenant.deviceCount}
-              /
-              {getPlanLimits(tenant.plan).maxDevices}
-            </span>
-          </div>
-        );
-      },
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
+          <Cpu className="h-4 w-4 text-muted-foreground" />
+          {renderQuota(row.original.deviceCount, row.original.quotas?.devices ?? null)}
+        </div>
+      ),
     },
     {
       id: "simCount",
       accessorFn: row => row.simCount ?? 0,
       header: "SIMs",
-      cell: ({ row }) => {
-        const tenant = row.original;
-        return (
-          <div className="flex items-center gap-1">
-            <Smartphone className="h-4 w-4 text-muted-foreground" />
-            <span className={tenant.simCount >= getPlanLimits(tenant.plan).maxSims ? "text-destructive font-medium" : ""}>
-              {tenant.simCount}
-              /
-              {getPlanLimits(tenant.plan).maxSims}
-            </span>
-          </div>
-        );
-      },
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
+          <Smartphone className="h-4 w-4 text-muted-foreground" />
+          {renderQuota(row.original.simCount, row.original.quotas?.sims ?? null)}
+        </div>
+      ),
     },
     {
       id: "lastActiveAt",
@@ -693,67 +609,61 @@ export default function PlatformTenants() {
 
   return (
     <>
-      <div className="space-y-6">
-        {/* Stats */}
-        <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
-          <StatCard
-            title="Total Tenants"
-            value={totalTenants}
-            icon={Building2}
-            change={12}
-            changeLabel="this month"
-            loading={summaryQuery.isPending}
-          />
-          <StatCard
-            title="Active Tenants"
-            value={activeTenants}
-            icon={CheckCircle}
-            variant="success"
-            loading={summaryQuery.isPending}
-          />
-          <StatCard
-            title="Suspended"
-            value={suspendedTenants}
-            icon={Ban}
-            variant="danger"
-            loading={summaryQuery.isPending}
-          />
-          <StatCard
-            title="Total Vehicles"
-            value={typeof totalVehicles === "number" ? totalVehicles.toLocaleString() : totalVehicles}
-            icon={Truck}
-            loading={summaryQuery.isPending}
-          />
-          <StatCard
-            title="Total SIMs"
-            value={typeof totalSims === "number" ? totalSims.toLocaleString() : totalSims}
-            icon={Smartphone}
-            loading={summaryQuery.isPending}
-          />
-          <StatCard
-            title="Overdue Invoices"
-            value={overdueInvoices}
-            icon={AlertTriangle}
-            variant={typeof overdueInvoices === "number" && overdueInvoices > 0 ? "warning" : "default"}
-            loading={summaryQuery.isPending}
-          />
-        </div>
+      {/* ponytail: stats live inside the All Tenants tab (mirrors the platform
+          reference at :8080/platform/tenants). Tab-scoped context sits under
+          its tab, not floating above the tab bar. */}
+      <Tabs
+        defaultValue="all-tenants"
+        className="space-y-4"
+      >
+        <TabsList>
+          <TabsTrigger value="all-tenants">All Tenants</TabsTrigger>
+          <TabsTrigger value="kyc-review">Applications by Organizations</TabsTrigger>
+        </TabsList>
 
-        {/* Tenants Tabs */}
-        <Tabs
-          defaultValue="all-tenants"
+        <TabsContent
+          value="all-tenants"
           className="space-y-4"
         >
-          <TabsList>
-            <TabsTrigger value="all-tenants">All Tenants</TabsTrigger>
-            <TabsTrigger value="kyc-review">KYC Review</TabsTrigger>
-          </TabsList>
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
+            <StatCard
+              title="Total Tenants"
+              value={totalTenants}
+              icon={Building2}
+              change={12}
+              changeLabel="this month"
+              loading={summaryQuery.isPending}
+            />
+            <StatCard
+              title="Active Tenants"
+              value={activeTenants}
+              icon={CheckCircle}
+              variant="success"
+              loading={summaryQuery.isPending}
+            />
+            <StatCard
+              title="Suspended Tenants"
+              value={suspendedTenants}
+              icon={Ban}
+              variant="warning"
+              loading={summaryQuery.isPending}
+            />
+            <StatCard
+              title="Terminated Tenants"
+              value={terminatedTenants}
+              icon={AlertTriangle}
+              variant="danger"
+              loading={summaryQuery.isPending}
+            />
+            <StatCard
+              title="Inactive Tenants"
+              value={inactiveTenants}
+              icon={Clock}
+              loading={summaryQuery.isPending}
+            />
+          </div>
 
-          <TabsContent
-            value="all-tenants"
-            className="space-y-4"
-          >
-            <Card>
+          <Card>
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="space-y-1">
@@ -868,11 +778,10 @@ export default function PlatformTenants() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="kyc-review">
-            <KYCReviewPanel />
-          </TabsContent>
-        </Tabs>
-      </div>
+        <TabsContent value="kyc-review">
+          <KYCReviewPanel />
+        </TabsContent>
+      </Tabs>
 
       {/* Database Tenant Details Sheet */}
       <TenantDetailsSheet

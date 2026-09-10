@@ -23,7 +23,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/shadcn/tooltip";
-import { getRoleLabel } from "@/features/auth/utils/role-label";
 import { useSidebarStore } from "@/features/dashboard/stores/sidebarStore";
 import { getEntriesForRole } from "@/features/dashboard/utils/sidebarNav";
 import { cn } from "@/lib/utils";
@@ -100,13 +99,11 @@ function SidebarBody({
   collapsed,
   navItems,
   role,
-  email,
   onLogout,
 }: {
   collapsed: boolean;
   navItems: SidebarNavItem[];
   role: string | undefined;
-  email: string | undefined;
   onLogout: () => void;
 }) {
   return (
@@ -144,11 +141,14 @@ function SidebarBody({
             <Building2 className="h-5 w-5 text-primary" />
           </div>
           <div className="min-w-0 flex-1">
+            {/* ponytail: static app-identity strings, not signed-in user info
+                (mirrors the platform reference at :8080). The block is a rail,
+                not a profile card — the header owns the identity avatar. */}
             <p className="truncate text-sm font-semibold leading-tight text-sidebar-foreground">
-              {email ?? "Signed in"}
+              Platform Administration
             </p>
             <p className="mt-0.5 truncate text-[10px] font-medium uppercase tracking-wide text-primary">
-              {getRoleLabel(role)}
+              Platform Admin
             </p>
           </div>
         </div>
@@ -215,7 +215,6 @@ function SidebarBody({
  */
 function DashboardSidebarBase() {
   const role = useAuthStore(s => s.user?.role);
-  const email = useAuthStore(s => s.user?.email);
   const logout = useAuthStore(s => s.logout);
   const collapsed = useSidebarStore(s => s.collapsed);
   const mobileOpen = useSidebarStore(s => s.mobileOpen);
@@ -255,7 +254,6 @@ function DashboardSidebarBase() {
                 collapsed={false}
                 navItems={navItems}
                 role={role}
-                email={email}
                 onLogout={logout}
               />
             </div>
@@ -277,7 +275,6 @@ function DashboardSidebarBase() {
           collapsed={collapsed}
           navItems={navItems}
           role={role}
-          email={email}
           onLogout={logout}
         />
       </aside>

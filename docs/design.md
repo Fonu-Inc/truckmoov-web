@@ -313,6 +313,11 @@ The sidebar shows org branding (`branding.logoUrl`, `organizationName` from
 `getOrganizationSettingsQueryOptions`), falling back to the MTN logo, plus a
 short role badge (`ENTERPRISE`, `FLEET`, `OPERATOR`, …).
 
+In `apps/admin` the rail block below the logo is a **static identity strip**
+— "Platform Administration" / "Platform Admin" — not the signed-in user's
+email or role label. The header owns the per-user identity; the sidebar
+names the app section.
+
 ## Standard page composition
 
 Most pages are: layout → optional `Tabs` → `Card` per section → `TableToolbar`
